@@ -1,0 +1,40 @@
+{
+  "root": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie",
+  "git_sha": "nogit",
+  "generated_at": "2026-05-25T16:24:58Z",
+  "features": [
+    {
+      "id": "feat-20f70940",
+      "kind": "npm-script",
+      "name": "test",
+      "path": "package.json",
+      "language": "node",
+      "evidence": {
+        "file": "package.json"
+      },
+      "related": []
+    },
+    {
+      "id": "feat-84ed15ea",
+      "kind": "npm-script",
+      "name": "typecheck",
+      "path": "package.json",
+      "language": "node",
+      "evidence": {
+        "file": "package.json"
+      },
+      "related": []
+    },
+    {
+      "id": "feat-08c5fac3",
+      "kind": "npm-script",
+      "name": "build",
+      "path": "package.json",
+      "language": "node",
+      "evidence": {
+        "file": "package.json"
+      },
+      "related": []
+    }
+  ]
+}

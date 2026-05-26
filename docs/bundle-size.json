@@ -1,0 +1,22 @@
+{
+  "measuredAt": "2026-05-25T02:21:11.220Z",
+  "budgetKB": 240,
+  "note": "gz = minified+gzipped. Renderer floor has no tree-shaking applied; real app bundle is the Phase-2 dogfood number (strategy §33).",
+  "rows": [
+    {
+      "label": "@render/core (fflate external)",
+      "minKB": 22.8,
+      "gzKB": 7.8
+    },
+    {
+      "label": "@render/core + fflate",
+      "minKB": 35.1,
+      "gzKB": 13.8
+    },
+    {
+      "label": "OSD + Annotorious + plugin-tools",
+      "minKB": 790.5,
+      "gzKB": 222.7
+    }
+  ]
+}
