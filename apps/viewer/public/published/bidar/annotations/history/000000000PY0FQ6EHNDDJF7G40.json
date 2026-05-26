@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/000000000PY0FQ6EHNDDJF7G40.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/000000000PY0FQ6EHNDDJF7G40/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:3619,2192,269,269"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.022Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Bhooteru/Bhooteya are of a community that identifies itself with the ritualistic practices associated with the Bhavani Mata Temples. Their performance happens in a group, either in the temples or at homes where they are invited during which they sing various songs. The group we engaged with comprised of seven members from this community who live in Maniyar Taleem in the Old City of Bidar. They are performers who are mostly non-binary. Some continue to remain as women and the others transform into a woman at the time of the worship. They believe that they become the goddess Yellamma-incarnate as they worship. These fuzzy gender boundaries have also allowed a safe space for the otherwise ostracised trans-communities to find spaces with more dignity and respect.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000PY0FQ6EHNDDJF7G40",
+      "archie:rev": "000000000PX53VW3KP12ZQQ37S",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

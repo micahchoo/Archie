@@ -1,0 +1,27 @@
+{
+  "name": "@archie/viewer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Viewer — the published static site built by Studio's publish step. Astro + Svelte islands (ADR-0002 / Q-2). Adopts annomea's 3-state pane + popup/drawer in Phase 2. Read-only. Phase 0 = boundary shell.",
+  "scripts": {
+    "gen": "vite-node scripts/gen-published.mts",
+    "dev": "astro dev",
+    "predev": "vite-node scripts/gen-published.mts",
+    "build": "astro build",
+    "prebuild": "vite-node scripts/gen-published.mts",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@annotorious/openseadragon": "^3.8.2",
+    "@annotorious/plugin-tools": "^1.6.0",
+    "@render/core": "workspace:*",
+    "@render/svelte": "workspace:*"
+  },
+  "devDependencies": {
+    "@astrojs/svelte": "^7.0.2",
+    "astro": "^5.1.1",
+    "svelte": "^5.15.0",
+    "vite-node": "^6.0.0"
+  }
+}

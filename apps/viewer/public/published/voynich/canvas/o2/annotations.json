@@ -1,0 +1,117 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/canvas/o2/annotations.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/0000000005S7QJAPVRG5WHVHPC/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o2",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:100,80,1400,1970"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.005Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**A biological / balneological-style folio.** Despite the filename, this isn't one of the famous radial cosmological diagrams — it's a multi-zone page with a central vertical figure of nude women descending through a blue-canopied form, surrounded by paragraph-blocks of Voynichese, with a separate green herbal-like bulb at the bottom right. Pages like this dominate the manuscript's middle quires.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000005S7QJAPVRG5WHVHPC.json"
+    },
+    {
+      "id": "https://archie.demo/voynich/annotations/0000000006QCAVFRW26XYF4NAK/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o2",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:500,80,350,1070"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.006Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**Column of nude figures.** A vertical column of small nude women is drawn inside a blue-leafed canopy, descending toward a green basin or root. The motif of stacked nymphs occurs across the manuscript's balneological / biological quires; readers have variously read this as embryology, allegorical alchemy, or a generative diagram of bodily fluids — nothing has stuck.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000006QCAVFRW26XYF4NAK.json"
+    },
+    {
+      "id": "https://archie.demo/voynich/annotations/00000000079MTJ1CSRRP0G7JKH/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o2",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:110,90,360,420"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.007Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**Upper-left Voynichese block.** A solid paragraph of running text in the manuscript's untranslated script. Word lengths cluster in the 4-6 character range; spacing is regular; line endings show the same statistical asymmetry that researchers cite as evidence of underlying language.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/00000000079MTJ1CSRRP0G7JKH.json"
+    },
+    {
+      "id": "https://archie.demo/voynich/annotations/000000000857CQR3J2T8SFT6NC/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o2",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:900,1400,620,670"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.008Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**The lower-right herbal form.** A bulbous green cabbage-like figure with small nude women clustered at its base — visually unlike the page's main top figure, more reminiscent of the herbal quire. Multi-figure pages like this blur the manuscript's quire boundaries: the categories herbal / balneological / cosmological were imposed by later scholars and don't always match how the original scribe partitioned content.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000000857CQR3J2T8SFT6NC.json"
+    },
+    {
+      "id": "https://archie.demo/voynich/annotations/0000000009708F5S5ZV6E08ESE/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o2",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1092,511,279,541"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.009Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "yiugilkhli.kbbkbk",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000009708F5S5ZV6E08ESE.json"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@archie/studio",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Studio — the authoring app. Svelte SPA via Vite (ADR-0002 / Q-2). Adopts anvil's editor shell / AnnotationForm / List / NarrativeEditor / PublishDialog as running code in Phase 2. Phase 0 = boundary shell.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@render/core": "workspace:*",
+    "@render/svelte": "workspace:*",
+    "@annotorious/openseadragon": "^3.8.2",
+    "@annotorious/plugin-tools": "^1.6.0"
+  },
+  "devDependencies": {
+    "svelte": "^5.15.0",
+    "vite": "^6.0.5",
+    "@sveltejs/vite-plugin-svelte": "^5.0.3"
+  }
+}

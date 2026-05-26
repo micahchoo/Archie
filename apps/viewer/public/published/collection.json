@@ -1,0 +1,56 @@
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "id": "https://archie.demo/collection.json",
+  "type": "Collection",
+  "label": {
+    "none": [
+      "The Archie Library"
+    ]
+  },
+  "summary": {
+    "none": [
+      "Voynich folios courtesy of the Beinecke Rare Book and Manuscript Library, Yale University (MS 408)."
+    ]
+  },
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/manifest.json",
+      "type": "Manifest",
+      "label": {
+        "none": [
+          "Voynich manuscript"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "/voynich/article.png",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/bidar/manifest.json",
+      "type": "Manifest",
+      "label": {
+        "none": [
+          "Techno-Futures from Bidar"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://one.compost.digital/micah/nb-v24.jpg",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/av/manifest.json",
+      "type": "Manifest",
+      "label": {
+        "none": [
+          "A Field Recording from Bidar"
+        ]
+      }
+    }
+  ]
+}

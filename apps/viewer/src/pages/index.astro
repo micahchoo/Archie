@@ -1,0 +1,83 @@
+---
+// Archie Viewer — the Library Gallery landing (locked frame "exhibit gallery"; CONTEXT §Gallery,
+// UX-Q7). A static page projected from exhibits.json: a uniform card grid on a warm gallery wall,
+// inviting the visitor down into the exhibits. No island here — pure static (SSG-safe).
+import "../tokens.css";
+
+// Stand-in for the generated exhibits.json (build-time projection of the Library).
+const library = { title: "The Archie Library", intro: "Close readings — a manuscript nobody can read, a map of a mesh network, and a recording read line by line." };
+// A waveform cover for the AV exhibit (no image): forest-green bars on the dark light-table.
+const avCover = "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='300'%20height='200'%3E%3Crect%20width='300'%20height='200'%20fill='%23181714'/%3E%3Cg%20fill='%233a6b4c'%3E%3Crect%20x='66'%20y='86'%20width='7'%20height='28'%20rx='3'/%3E%3Crect%20x='84'%20y='66'%20width='7'%20height='68'%20rx='3'/%3E%3Crect%20x='102'%20y='48'%20width='7'%20height='104'%20rx='3'/%3E%3Crect%20x='120'%20y='78'%20width='7'%20height='44'%20rx='3'/%3E%3Crect%20x='138'%20y='58'%20width='7'%20height='84'%20rx='3'/%3E%3Crect%20x='156'%20y='42'%20width='7'%20height='116'%20rx='3'/%3E%3Crect%20x='174'%20y='64'%20width='7'%20height='72'%20rx='3'/%3E%3Crect%20x='192'%20y='80'%20width='7'%20height='40'%20rx='3'/%3E%3Crect%20x='210'%20y='56'%20width='7'%20height='88'%20rx='3'/%3E%3Crect%20x='228'%20y='74'%20width='7'%20height='52'%20rx='3'/%3E%3C/g%3E%3C/svg%3E";
+const exhibits = [
+  { slug: "voynich", title: "Voynich manuscript", description: "Five folios of MS 408 — herbal, cosmological, balneological, and script quires — closely annotated.", cover: "/voynich/cosmological.jpg", objects: 5, notes: 25 },
+  { slug: "bidar", title: "Techno-Futures from Bidar", description: "A condensed map of the Bidar mesh network — places, people, songs, and reflections from the field.", cover: "https://one.compost.digital/images/title-images/micah-cover-700x350.png", objects: 1, notes: 25 },
+  { slug: "av", title: "A Field Recording from Bidar", description: "A dholak geet recorded on the mesh at Faizpura, read against descriptive notes — click a line to travel the audio.", cover: avCover, objects: 1, notes: 4 },
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{library.title} — Archie</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Work+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <main class="gallery">
+      <header class="intro">
+        <p class="eyebrow">Exhibition gallery</p>
+        <h1>{library.title}</h1>
+        <p class="blurb">{library.intro}</p>
+      </header>
+
+      {
+        exhibits.length === 0 ? (
+          /* empty state (orphan gate §39) — a library with nothing published yet */
+          <p class="empty">No exhibits published yet.</p>
+        ) : (
+          <ul class="grid">
+            {exhibits.map((ex) => (
+              <li>
+                <a class="card" href={`/${ex.slug}`}>
+                  <span class="cover" style={`background-image:url(${ex.cover})`}></span>
+                  <span class="caption">
+                    <span class="title">{ex.title}</span>
+                    <span class="desc">{ex.description}</span>
+                    <span class="count">{ex.objects} objects · {ex.notes} notes</span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </main>
+
+    <style>
+      /* Gallery wall — warm, lamplit; cards float as invitations (system.md §Exhibit Gallery). */
+      body { margin: 0; background: var(--surface-gallery); color: var(--ink-paper-primary); }
+      .gallery { max-width: 1040px; margin: 0 auto; padding: var(--space-12) var(--space-6); }
+      .intro { margin-bottom: var(--space-10); max-width: 40rem; }
+      .eyebrow { color: var(--accent); }
+      .intro h1 { font-family: var(--font-display); font-weight: 600; font-size: 3rem; line-height: 1.05; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); }
+      .blurb { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0; }
+
+      .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-6); }
+      .card { display: flex; flex-direction: column; text-decoration: none; background: var(--surface-paper-card); border: 1px solid var(--border-paper); border-radius: var(--radius-lg); overflow: hidden; transition: transform 160ms ease, background 160ms ease; }
+      .card:hover { background: var(--surface-paper-hover); transform: translateY(-2px); }
+      .cover { display: block; aspect-ratio: 3 / 2; background-color: var(--surface-canvas); background-size: cover; background-position: center; border-bottom: 1px solid var(--border-paper); }
+      .caption { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5) var(--space-5); }
+      .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-paper-primary); }
+      .desc { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; color: var(--ink-paper-secondary); }
+      .count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); margin-top: var(--space-1); }
+
+      /* Empty gallery (orphan gate §39) */
+      .empty { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-8); border: 1px dashed var(--border-paper); border-radius: var(--radius-lg); }
+    </style>
+  </body>
+</html>

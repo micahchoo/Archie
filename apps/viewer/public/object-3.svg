@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2800" height="1500" viewBox="0 0 2800 1500">
+  <defs>
+    <linearGradient id="bg3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1c3026"/>
+      <stop offset="0.55" stop-color="#274034"/>
+      <stop offset="1" stop-color="#3f5a3a"/>
+    </linearGradient>
+    <pattern id="hatch" width="100" height="100" patternUnits="userSpaceOnUse">
+      <path d="M0 100L100 0" fill="none" stroke="#ffffff" stroke-opacity="0.05" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="2800" height="1500" fill="url(#bg3)"/>
+  <rect width="2800" height="1500" fill="url(#hatch)"/>
+  <text x="60" y="90" fill="#ffffff" fill-opacity="0.45" font-family="system-ui, sans-serif" font-size="40">Archie — The Landscape (2800×1500)</text>
+
+  <!-- Region A: 220,520,760,520 -->
+  <rect x="220" y="520" width="760" height="520" rx="12" fill="#81b29a" fill-opacity="0.26" stroke="#81b29a" stroke-width="4"/>
+  <text x="250" y="580" fill="#d6f0e4" font-family="system-ui, sans-serif" font-size="44">Pentimento — a felled tree</text>
+
+  <!-- Region B: 1840,300,720,420 -->
+  <rect x="1840" y="300" width="720" height="420" rx="12" fill="#a8c686" fill-opacity="0.26" stroke="#a8c686" stroke-width="4"/>
+  <text x="1870" y="360" fill="#eaf6d6" font-family="system-ui, sans-serif" font-size="44">Distant spire</text>
+</svg>

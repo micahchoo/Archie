@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2000" height="2600" viewBox="0 0 2000 2600">
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a2f1c"/>
+      <stop offset="1" stop-color="#5a4326"/>
+    </linearGradient>
+    <pattern id="laid" width="160" height="40" patternUnits="userSpaceOnUse">
+      <path d="M0 20H160" fill="none" stroke="#ffffff" stroke-opacity="0.05" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="2000" height="2600" fill="url(#bg2)"/>
+  <rect width="2000" height="2600" fill="url(#laid)"/>
+  <text x="60" y="90" fill="#ffffff" fill-opacity="0.45" font-family="system-ui, sans-serif" font-size="36">Archie — The Letter (2000×2600)</text>
+
+  <!-- Region A: 300,360,1100,180 -->
+  <rect x="300" y="360" width="1100" height="180" rx="10" fill="#e9c46a" fill-opacity="0.26" stroke="#e9c46a" stroke-width="4"/>
+  <text x="330" y="430" fill="#fbe7c0" font-family="system-ui, sans-serif" font-size="40">Salutation</text>
+
+  <!-- Region B: 360,1320,1280,420 -->
+  <rect x="360" y="1320" width="1280" height="420" rx="10" fill="#e76f51" fill-opacity="0.24" stroke="#e76f51" stroke-width="4"/>
+  <text x="390" y="1390" fill="#ffd9cc" font-family="system-ui, sans-serif" font-size="40">Struck-through passage</text>
+
+  <!-- Region C: 1040,2120,720,260 -->
+  <rect x="1040" y="2120" width="720" height="260" rx="10" fill="#c44536" fill-opacity="0.26" stroke="#c44536" stroke-width="4"/>
+  <text x="1070" y="2190" fill="#ffd9cc" font-family="system-ui, sans-serif" font-size="40">Wax seal</text>
+</svg>

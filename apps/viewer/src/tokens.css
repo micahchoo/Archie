@@ -1,0 +1,68 @@
+/* Archie design tokens — "a curator's study at night" (.interface-design/system.md).
+   Dark light-table canvas + warm paper panels + forest-green accent. */
+
+:root {
+  /* ── Canvas (dark light-table side) ── */
+  --surface-canvas: #181714;
+  --surface-canvas-raised: #1e1d19;
+  --surface-canvas-overlay: #252420;
+  --ink-canvas-primary: #e8e4db;
+  --ink-canvas-secondary: #a09b8e;
+  --ink-canvas-muted: #5c584e;
+  --border-canvas: rgba(160, 155, 142, 0.15);
+  --border-canvas-emphasis: rgba(160, 155, 142, 0.3);
+
+  /* ── Paper (reading / annotation side) ── */
+  --surface-paper: #f5f0e6;
+  --surface-paper-card: #fcf9f2;
+  --surface-paper-hover: #ede7d8;
+  --ink-paper-primary: #2c2618;
+  --ink-paper-secondary: #6b6250;
+  --ink-paper-muted: #a09880;
+  --border-paper: rgba(107, 98, 80, 0.15);
+  --border-paper-emphasis: rgba(107, 98, 80, 0.32);
+
+  /* ── Gallery wall ── */
+  --surface-gallery: #ebdfce;
+
+  /* ── Accent — forest green (the scholar's ink) ── */
+  --accent: #3a6b4c;
+  --accent-hover: #2d553d;
+  --accent-muted: rgba(58, 107, 76, 0.12);
+  --ink-on-accent: #fff;
+
+  /* ── Semantic ── */
+  --semantic-success: #5a8f4a;
+  --semantic-warning: #c49b36;
+  --semantic-error: #c44536;
+
+  /* ── Typography ── */
+  --font-display: "Cormorant Garamond", Georgia, serif;
+  --font-body: "Crimson Text", Georgia, serif;
+  --font-ui: "Work Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* ── Type scale (UI) ── */
+  --text-ui-sm: 0.8125rem;   /* 13px — buttons, chrome labels */
+  --text-ui-xs: 0.7rem;      /* 11px — captions, eyebrow labels */
+  --text-ui-md: 0.75rem;     /* 12px — section headers, hints */
+
+  /* ── Spacing (4px base) ── */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
+
+  /* ── Radius ── */
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: var(--font-ui); color: var(--ink-paper-primary); }
+
+/* Section-header treatment used across both apps: Work Sans, small, tracked, muted. */
+.eyebrow {
+  font-family: var(--font-ui);
+  font-size: var(--text-ui-md);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
