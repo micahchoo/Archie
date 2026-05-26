@@ -1,0 +1,45 @@
+{
+  "schema_version": "1.0.0",
+  "project_shape": "monorepo",
+  "analyzed_at": "2026-05-25T16:30:00Z",
+  "git_sha": "nogit",
+  "levels_completed": [1, 2, 3, 4, 5, 6, 7, 8],
+  "levels_skipped": [],
+  "subsystems": [
+    "annotation-spine",
+    "rendering",
+    "storage",
+    "publish",
+    "studio",
+    "viewer"
+  ],
+  "cross_cutting_lenses": [
+    "data",
+    "configuration",
+    "security",
+    "quality",
+    "evolution",
+    "convention"
+  ],
+  "staleness_hashes": {
+    "domain.md": "nogit",
+    "ecosystem.md": "nogit",
+    "infrastructure.md": "nogit",
+    "subsystems.md": "nogit",
+    "cross-cutting/patterns.md": "nogit",
+    "risk-map.md": "nogit",
+    "evolution.md": "nogit",
+    "overview.md": "nogit"
+  },
+  "sources": [
+    "CONTEXT.md (2026-05-24 grill session)",
+    "HANDOFF.md (2026-05-25 implementation log)",
+    "docs/adr/0001-0004",
+    "docs/decisions/archie.md (Q-1..Q-7)",
+    "codebase-analytics.sh (2026-05-25)",
+    "feature-map.sh (2026-05-25)",
+    ".understand-anything/ knowledge graph (2026-05-24, 188 files)"
+  ],
+  "confidence": "high",
+  "stale_since": null
+}
