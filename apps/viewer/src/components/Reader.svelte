@@ -5,8 +5,10 @@
   // Object-parameterized (Phase-2 Grid): the parent (ExhibitView) supplies which object to read
   // and that object's projected annotations; `onback` returns to the exhibit's object grid.
   import Canvas from "@render/svelte/Canvas.svelte";
+  import NoteLightbox from "./NoteLightbox.svelte";
+  import NoteMedia from "./NoteMedia.svelte";
   import { renderMarkdown, stripMarkdown } from "@render/svelte";
-  import type { W3CAnnotation, W3CBody } from "@render/core";
+  import { splitNoteMedia, type NoteMediaItem, type W3CAnnotation, type W3CBody } from "@render/core";
 
   let {
     object,
@@ -34,6 +36,9 @@
   const commentOf = (it: W3CAnnotation) => { const b = bodies(it).find((x) => { const p = (x as { purpose?: string }).purpose; return p === undefined || p === "commenting"; }); return (b as { value?: string } | undefined)?.value ?? "(untitled)"; };
   const tagsOf = (it: W3CAnnotation) => bodies(it).filter((x) => (x as { purpose?: string }).purpose === "tagging").map((x) => (x as { value?: string }).value ?? "");
   const current = $derived(annotations.find((it) => it.id === selected));
+  // Split the selected note into media (clickable tiles → lightbox) + prose (CONTEXT §"Local view loop").
+  const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
+  let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);
 </script>
 
 <div class="reader">
@@ -47,8 +52,9 @@
       <!-- detail state (annomea drawer): the selected note -->
       <button class="back" onclick={() => (selected = null)}>← All notes</button>
       <article>
-        <!-- bodies are authored markdown — rendered to sanitized HTML for reading -->
-        <div class="body">{@html renderMarkdown(commentOf(current))}</div>
+        <!-- prose (media stripped) + the note's media as clickable tiles (image/audio/video) -->
+        {#if noteParts.text}<div class="body">{@html renderMarkdown(noteParts.text)}</div>{/if}
+        <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
         <div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>
       </article>
     {:else}
@@ -69,7 +75,11 @@
 
   {#if current}
     <!-- popup: a small floating callout echoing the selection (annomea popup) -->
-    <div class="popup"><strong>Selected</strong> · {stripMarkdown(commentOf(current))}</div>
+    <div class="popup"><strong>Selected</strong> · {stripMarkdown(noteParts.text) || `${noteParts.media.length} media`}</div>
+  {/if}
+
+  {#if lightbox}
+    <NoteLightbox media={lightbox.media} text={lightbox.text} index={lightbox.index} onclose={() => (lightbox = null)} />
   {/if}
 </div>
 
@@ -117,6 +127,8 @@
   article .body :global(em) { font-style: italic; }
   article .body :global(a) { color: var(--accent); }
   article .body :global(ul), article .body :global(ol) { margin: 0 0 var(--space-3); padding-left: var(--space-5); }
+  /* Note images render as thumbnails (not full-bleed) — click to open the lightbox. */
+  article .body :global(img) { display: block; max-width: 100%; max-height: 200px; height: auto; margin-top: var(--space-2); border-radius: var(--radius-sm); cursor: zoom-in; }
   .tags { margin-top: var(--space-4); display: flex; gap: var(--space-3); }
   .tag { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); }
   .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-muted); line-height: 1.6; margin-top: var(--space-5); }

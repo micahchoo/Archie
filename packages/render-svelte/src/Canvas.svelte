@@ -20,6 +20,7 @@
     oncreate,
     onupdate,
     ondelete,
+    onmarkerrect,
   }: {
     source: string;
     canvasId?: string;
@@ -34,11 +35,21 @@
     oncreate?: (a: W3CAnnotation) => void;
     onupdate?: (a: W3CAnnotation) => void;
     ondelete?: (id: string) => void;
+    /** The selected marker's on-screen rect — streamed on select, every pan/zoom frame, and after a
+     *  geometry edit — so the host can anchor an editing popover to it (ADR-0006). Null when nothing is
+     *  selected or the marker isn't resolvable (e.g. off-screen during an animation frame). */
+    onmarkerrect?: (rect: { left: number; top: number; right: number; bottom: number } | null) => void;
   } = $props();
+
+  // Emit the selected marker's current screen rect (OSD re-anchors natively, so this just re-reads).
+  function emitRect() {
+    if (surface && onmarkerrect) onmarkerrect(selected != null ? surface.markerScreenRect(selected) : null);
+  }
 
   let el: HTMLDivElement;
   let surface: MountSurface | undefined;
   let controller: CanvasController | undefined;
+  let offViewport: (() => void) | undefined; // unsubscribe from OSD pan/zoom (popover re-anchor)
   let status = $state<"loading" | "ready" | "error">("loading");
   let errorMsg = $state("");
 
@@ -58,6 +69,9 @@
       // re-run on tool/drawing CHANGES, so a state set during the async mount gap would be lost.
       surface.setDrawingTool(tool);
       surface.setDrawingEnabled(drawing);
+      // Follow the selected marker as the viewport moves (OSD-native re-anchor — donor pattern, no dep).
+      offViewport = surface.onViewportChange(emitRect);
+      emitRect();
       status = "ready";
     } catch (e) {
       status = "error";
@@ -68,14 +82,14 @@
   // Read the reactive props FIRST, before any `surface?.`/`if (surface)` guard — otherwise the
   // optional-chain short-circuits on the (async) initially-undefined surface and the effect never
   // subscribes to the prop, so it never re-runs when the prop changes (Svelte 5 dep-tracking gotcha).
-  $effect(() => { const a = annotations; if (surface) surface.setAnnotations(a); });
+  $effect(() => { const a = annotations; if (surface) surface.setAnnotations(a); emitRect(); });
   $effect(() => { const t = tool; if (surface) surface.setDrawingTool(t); });
   $effect(() => { const d = drawing; if (surface) surface.setDrawingEnabled(d); });
-  $effect(() => { const s = selected; if (controller && s !== controller.selected) controller.select(s); });
+  $effect(() => { const s = selected; if (controller && s !== controller.selected) controller.select(s); emitRect(); });
   // A Section's camera target (not an annotation) → fit the region. Read `focus` first (dep-tracking gotcha).
   $effect(() => { const f = focus; if (f && surface) surface.fitRegion(f); });
 
-  onDestroy(() => controller?.destroy());
+  onDestroy(() => { offViewport?.(); controller?.destroy(); });
 </script>
 
 <div class="archie-canvas-wrap">

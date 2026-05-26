@@ -51,3 +51,14 @@ export function shouldRenderGallery(library: Library): boolean {
   const hasFraming = (library.title ?? "").length > 0 || (library.summary ?? "").length > 0;
   return !(single && !hasFraming);
 }
+
+/**
+ * Consumer-side collapse threshold: the Viewer fetches `exhibits.json` (an ExhibitsJson), not a
+ * Library, so it can't call shouldRenderGallery. Same rule, on the published shape — skip the
+ * Gallery only when exactly one Exhibit AND no Library title/summary to frame it.
+ */
+export function shouldRenderGalleryFromJson(ex: ExhibitsJson): boolean {
+  const single = ex.exhibits.length === 1;
+  const hasFraming = (ex.library.title ?? "").length > 0 || (ex.library.summary ?? "").length > 0;
+  return !(single && !hasFraming);
+}

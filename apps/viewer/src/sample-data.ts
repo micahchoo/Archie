@@ -5,11 +5,12 @@
 import { appendNew, asClientId, importTranscript, type AObject, type AnnotationLog, type Library, type Section } from "@render/core";
 import { voynichObjects, voynichNotes, voynichTitle, voynichCredits } from "./voynich.js";
 import { bidarObject, bidarNotes, bidarTitle } from "./bidar.js";
+// Single source of truth lives in the viewer-owned base module (not this demo file), so the shell
+// can import canvasIdFor without pulling in demo fixtures. Re-exported for gen-published.mts.
+import { BASE, canvasIdFor } from "./published-base.js";
+export { BASE, canvasIdFor };
 
-export const BASE = "https://archie.demo/";
 const author = asClientId("curator");
-/** Canvas IRI grammar — MUST match publishLibrary's `${baseUrl}${slug}/canvas/${objId}`. */
-export const canvasIdFor = (slug: string, objectId: string) => `${BASE}${slug}/canvas/${objectId}`;
 
 interface SeedNote { objectId: string; region: [number, number, number, number]; comment: string }
 

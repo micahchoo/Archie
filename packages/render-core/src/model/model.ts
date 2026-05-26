@@ -116,3 +116,14 @@ export interface Library {
   summary?: string;
   exhibits: Exhibit[];
 }
+
+/**
+ * Scope a Library to a single Exhibit — the "single-exhibit export = a Library with N=1" resolution
+ * (CONTEXT §"Local view loop"): NOT a new artifact type, just a one-exhibit Library. Drops the
+ * Library title/summary so the Gallery collapses straight to the exhibit (shouldRenderGallery →
+ * false). Unknown slug → an empty Library (defensive; nothing to publish).
+ */
+export function singleExhibitLibrary(library: Library, slug: string): Library {
+  const ex = library.exhibits.find((e) => e.slug === slug);
+  return { id: library.id, exhibits: ex ? [ex] : [] };
+}

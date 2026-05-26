@@ -67,6 +67,19 @@ function mediaFromBodyType(t: string | undefined): MediaType {
   return t === "Sound" ? "sound" : t === "Video" ? "video" : "image";
 }
 
+/**
+ * Map each Object id → its FULL canvas IRI as written in the manifest. The published source of
+ * truth for canvas ids: a real publish bakes its own origin into them, which reconstructing from a
+ * fixed viewer-side BASE would not match (the Phase-A canvasId SNAG). Consumers wire annotation
+ * targeting from this, not from `canvasIdFor(slug,id)`. Additive — leaves objectsFromManifest's
+ * round-trip contract (publish↔load) untouched.
+ */
+export function canvasIdMap(manifest: IIIFManifest): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const canvas of manifest.items) map[objIdFromCanvasId(canvas.id)] = canvas.id;
+  return map;
+}
+
 /** Reverse of toManifest: recover the Objects from an IIIF Manifest's canvases (load path). */
 export function objectsFromManifest(manifest: IIIFManifest): AObject[] {
   return manifest.items.map((canvas) => {
