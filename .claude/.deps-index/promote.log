@@ -1,0 +1,208 @@
+Cloning https://github.com/microsoft/TypeScript...
+Checking out main...
+Using: typescript@main
+✓ Reading from repository root
+✓ Found 5 markdown files
+Building package...
+✓ Built package: typescript@main
+✓ Saved to /home/micah/.context/packages/typescript@main.db
+
+Installed: typescript@main (56.0 KB, 14 sections)
+
+⚠️  Warning: Only 14 sections found (threshold: 50)
+   This repository may not contain substantial documentation.
+   Many projects keep docs in a separate repository.
+
+   🔍 Search for the docs repo: https://www.google.com/search?q=typescript%20documentation%20site%20github.com
+
+   Or try:
+   - Use --path to specify a different docs folder
+   - Check for a dedicated docs repo (e.g., typescript-docs, typescript.github.io)
+2026-05-25T00:09:03Z | added typescript@main
+Cloning https://github.com/vitest-dev/vitest...
+Checking out main...
+Using: vitest@main
+✓ Found docs at /docs
+✓ Found 213 markdown files
+Building package...
+✓ Built package: vitest@main
+✓ Saved to /home/micah/.context/packages/vitest@main.db
+
+Installed: vitest@main (2.2 MB, 1314 sections)
+2026-05-25T00:09:08Z | added vitest@main
+Cloning https://github.com/sveltejs/vite-plugin-svelte...
+Checking out main...
+Using: vite-plugin-svelte@main
+✓ Found docs at /docs
+✓ Found 5 markdown files
+Building package...
+✓ Built package: vite-plugin-svelte@main
+✓ Saved to /home/micah/.context/packages/vite-plugin-svelte@main.db
+
+Installed: vite-plugin-svelte@main (84.0 KB, 17 sections)
+
+⚠️  Warning: Only 17 sections found (threshold: 50)
+   This repository may not contain substantial documentation.
+   Many projects keep docs in a separate repository.
+
+   🔍 Search for the docs repo: https://www.google.com/search?q=vite-plugin-svelte%20documentation%20site%20github.com
+
+   Or try:
+   - Use --path to specify a different docs folder
+   - Check for a dedicated docs repo (e.g., vite-plugin-svelte-docs, vite-plugin-svelte.github.io)
+2026-05-25T00:10:43Z | added @sveltejs/vite-plugin-svelte@main
+Cloning https://github.com/sveltejs/svelte...
+Checking out main...
+Using: svelte@main
+✓ Found docs at /documentation
+✓ Found 94 markdown files
+Building package...
+✓ Built package: svelte@main
+✓ Saved to /home/micah/.context/packages/svelte@main.db
+
+Installed: svelte@main (540.0 KB, 278 sections)
+2026-05-25T00:10:46Z | added svelte@main
+Cloning https://github.com/vitejs/vite...
+Checking out main...
+Using: vite@main
+✓ Found docs at /docs
+✓ Found 55 markdown files
+Building package...
+✓ Built package: vite@main
+✓ Saved to /home/micah/.context/packages/vite@main.db
+
+Installed: vite@main (928.0 KB, 460 sections)
+2026-05-25T00:10:50Z | added vite@main
+Cloning https://github.com/withastro/astro...
+Checking out main...
+Using: astro@main
+✓ Reading from repository root
+✓ Found 63 markdown files
+Building package...
+✓ Built package: astro@main
+✓ Saved to /home/micah/.context/packages/astro@main.db
+
+Installed: astro@main (924.0 KB, 306 sections)
+2026-05-25T00:11:03Z | added @astrojs/svelte@main
+Cloning https://github.com/withastro/astro...
+Checking out main...
+Using: astro@main
+✓ Reading from repository root
+✓ Found 63 markdown files
+Building package...
+✓ Built package: astro@main
+✓ Saved to /home/micah/.context/packages/astro@main.db
+
+Installed: astro@main (924.0 KB, 306 sections)
+2026-05-25T00:11:07Z | added astro@main
+Cloning https://github.com/recogito/annotorious...
+Checking out main...
+Using: annotorious@main
+✓ Reading from repository root
+✓ Found 6 markdown files
+Building package...
+✓ Built package: annotorious@main
+✓ Saved to /home/micah/.context/packages/annotorious@main.db
+
+Installed: annotorious@main (32.0 KB, 5 sections)
+
+⚠️  Warning: Only 5 sections found (threshold: 50)
+   This repository may not contain substantial documentation.
+   Many projects keep docs in a separate repository.
+
+   🔍 Search for the docs repo: https://www.google.com/search?q=annotorious%20documentation%20site%20github.com
+
+   Or try:
+   - Use --path to specify a different docs folder
+   - Check for a dedicated docs repo (e.g., annotorious-docs, annotorious.github.io)
+2026-05-25T00:52:54Z | added @annotorious/openseadragon@main
+Cloning https://github.com/annotorious/annotorious-plugin-tools...
+Checking out main...
+Using: annotorious-plugin-tools@main
+✓ Reading from repository root
+✓ Found 1 markdown files
+Building package...
+✓ Built package: annotorious-plugin-tools@main
+✓ Saved to /home/micah/.context/packages/annotorious-plugin-tools@main.db
+
+Installed: annotorious-plugin-tools@main (32.0 KB, 4 sections)
+
+⚠️  Warning: Only 4 sections found (threshold: 50)
+   This repository may not contain substantial documentation.
+   Many projects keep docs in a separate repository.
+
+   🔍 Search for the docs repo: https://www.google.com/search?q=annotorious-plugin-tools%20documentation%20site%20github.com
+
+   Or try:
+   - Use --path to specify a different docs folder
+   - Check for a dedicated docs repo (e.g., annotorious-plugin-tools-docs, annotorious-plugin-tools.github.io)
+2026-05-25T00:52:56Z | added @annotorious/plugin-tools@main
+Cloning https://github.com/openseadragon/openseadragon...
+Checking out master...
+Using: openseadragon@master
+✓ Reading from repository root
+✓ Found 2 markdown files
+Building package...
+✓ Built package: openseadragon@master
+✓ Saved to /home/micah/.context/packages/openseadragon@master.db
+
+Installed: openseadragon@master (32.0 KB, 10 sections)
+
+⚠️  Warning: Only 10 sections found (threshold: 50)
+   This repository may not contain substantial documentation.
+   Many projects keep docs in a separate repository.
+
+   🔍 Search for the docs repo: https://www.google.com/search?q=openseadragon%20documentation%20site%20github.com
+
+   Or try:
+   - Use --path to specify a different docs folder
+   - Check for a dedicated docs repo (e.g., openseadragon-docs, openseadragon.github.io)
+2026-05-25T00:53:00Z | added openseadragon@master
+Cloning https://github.com/capricorn86/happy-dom...
+Checking out master...
+Using: happy-dom@master
+✓ Found docs at /docs
+Error: No markdown files found in docs. Use --path to specify or --lang all to include all languages.
+2026-05-25T00:59:54Z | failed happy-dom@master — context add failed
+Cloning https://github.com/cure53/DOMPurify...
+Checking out main...
+Using: dompurify@main
+✓ Reading from repository root
+✓ Found 19 markdown files
+Building package...
+✓ Built package: dompurify@main
+✓ Saved to /home/micah/.context/packages/dompurify@main.db
+
+Installed: dompurify@main (140.0 KB, 31 sections)
+
+⚠️  Warning: Only 31 sections found (threshold: 50)
+   This repository may not contain substantial documentation.
+   Many projects keep docs in a separate repository.
+
+   🔍 Search for the docs repo: https://www.google.com/search?q=dompurify%20documentation%20site%20github.com
+
+   Or try:
+   - Use --path to specify a different docs folder
+   - Check for a dedicated docs repo (e.g., dompurify-docs, dompurify.github.io)
+2026-05-25T02:49:32Z | added dompurify@main
+Cloning https://github.com/antfu-collective/vite-node...
+Checking out main...
+Using: vite-node@main
+✓ Reading from repository root
+✓ Found 1 markdown files
+Building package...
+✓ Built package: vite-node@main
+✓ Saved to /home/micah/.context/packages/vite-node@main.db
+
+Installed: vite-node@main (52.0 KB, 7 sections)
+
+⚠️  Warning: Only 7 sections found (threshold: 50)
+   This repository may not contain substantial documentation.
+   Many projects keep docs in a separate repository.
+
+   🔍 Search for the docs repo: https://www.google.com/search?q=vite-node%20documentation%20site%20github.com
+
+   Or try:
+   - Use --path to specify a different docs folder
+   - Check for a dedicated docs repo (e.g., vite-node-docs, vite-node.github.io)
+2026-05-25T14:37:01Z | added vite-node@main
