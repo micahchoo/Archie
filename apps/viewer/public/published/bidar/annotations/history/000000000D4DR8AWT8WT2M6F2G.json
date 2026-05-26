@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/000000000D4DR8AWT8WT2M6F2G.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/000000000D4DR8AWT8WT2M6F2G/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:2831,735,677,677"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.013Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "These are a few women living in and around the Multani Pasha Dargah situated in the Old City, the historic precinct of Bidar. They offer services to the Dargah and the followers of the Sufi saint, Hazrat Multani Pasha. They maintain and clean the Dargah premises, as well as sing at different occasions such as the naming of a newborn, the asking of a Mannat (a wish or a desire) for a particular problem or person, the cooking of a communal meal, offering a prayer and so on. Devotees offer alms in payment for their services.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000D4DR8AWT8WT2M6F2G",
+      "archie:rev": "000000000DXQVRT66RFRW49YA3",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

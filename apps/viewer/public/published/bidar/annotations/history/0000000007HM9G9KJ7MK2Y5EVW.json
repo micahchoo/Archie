@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/0000000007HM9G9KJ7MK2Y5EVW.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/0000000007HM9G9KJ7MK2Y5EVW/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:3792,2428,165,165"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.007Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "\"If these kinds of projects (community networks) are truly for the communities, the grantees would consider how it actually works on the ground. There are important questions that must come up. Why is it even important? Who is maintaining this network on the ground? An ordinary person won't even understand the language of technology. Someone who may have to learn this would need to first memorise all the jargon that doesn’t translate and then learn further. How can this be done in a span of a year? Why are there no follow-ups from the grantee about how the project is functioning on ground presently? It takes long-term support for everyone involved.\"",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "0000000007HM9G9KJ7MK2Y5EVW",
+      "archie:rev": "00000000076KN8SGAGQ79A7WHQ",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

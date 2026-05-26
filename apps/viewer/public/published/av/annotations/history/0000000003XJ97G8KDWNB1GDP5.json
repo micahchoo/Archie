@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/av/annotations/history/0000000003XJ97G8KDWNB1GDP5.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/av/annotations/0000000003XJ97G8KDWNB1GDP5/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/av/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=50,90"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.003Z",
+      "body": {
+        "type": "TextualBody",
+        "value": "Other voices answer around her; the song is communal, sung with the room rather than performed for the mic.",
+        "format": "text/plain",
+        "purpose": "supplementing"
+      },
+      "motivation": "supplementing",
+      "archie:logicalId": "0000000003XJ97G8KDWNB1GDP5",
+      "archie:rev": "00000000031EDZJ5ASH45VC1QB",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

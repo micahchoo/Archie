@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1600" viewBox="0 0 2400 1600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1b2330"/>
+      <stop offset="1" stop-color="#3a2a3f"/>
+    </linearGradient>
+    <pattern id="grid" width="120" height="120" patternUnits="userSpaceOnUse">
+      <path d="M120 0H0V120" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <rect width="2400" height="1600" fill="url(#bg)"/>
+  <rect width="2400" height="1600" fill="url(#grid)"/>
+  <text x="60" y="90" fill="#ffffff" fill-opacity="0.5" font-family="system-ui, sans-serif" font-size="40">Archie — sample object (2400×1600)</text>
+
+  <!-- Region A: 240,240,520,360 -->
+  <rect x="240" y="240" width="520" height="360" rx="12" fill="#e07a5f" fill-opacity="0.28" stroke="#e07a5f" stroke-width="4"/>
+  <text x="270" y="300" fill="#ffd9cc" font-family="system-ui, sans-serif" font-size="44">The Sitter</text>
+
+  <!-- Region B: 1500,360,640,520 -->
+  <rect x="1500" y="360" width="640" height="520" rx="12" fill="#81b29a" fill-opacity="0.28" stroke="#81b29a" stroke-width="4"/>
+  <text x="1530" y="420" fill="#d6f0e4" font-family="system-ui, sans-serif" font-size="44">The Inscription</text>
+
+  <!-- Region C: 820,1040,760,380 -->
+  <rect x="820" y="1040" width="760" height="380" rx="12" fill="#6c8ed4" fill-opacity="0.28" stroke="#6c8ed4" stroke-width="4"/>
+  <text x="850" y="1100" fill="#d6e2ff" font-family="system-ui, sans-serif" font-size="44">Foreground Detail</text>
+</svg>

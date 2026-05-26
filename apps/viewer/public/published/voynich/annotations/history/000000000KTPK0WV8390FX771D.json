@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/000000000KTPK0WV8390FX771D.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/000000000KTPK0WV8390FX771D/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o4",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:null,null,null,null"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.019Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000KTPK0WV8390FX771D",
+      "archie:rev": "000000000K8RFG8SQV27T2NPED",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/000000000QA2BC10X74VZQ0XXX.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/000000000QA2BC10X74VZQ0XXX/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o5",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:5,20,55,340"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.023Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**The marginal stars.** A column of small six- and eight-pointed star glyphs runs down the left margin, one per line of text. These margin-stars occur on several manuscript pages and may mark verse divisions, paragraph beginnings, or list items — their function is unsettled.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000QA2BC10X74VZQ0XXX",
+      "archie:rev": "000000000QRV27NZB75YRGV9SA",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

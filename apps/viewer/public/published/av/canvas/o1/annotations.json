@@ -1,0 +1,95 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/av/canvas/o1/annotations.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/av/annotations/0000000001BB8Y2F4GWPA070HC/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/av/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=0,20"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.001Z",
+      "body": {
+        "type": "TextualBody",
+        "value": "A dholak sets the pulse; a woman's voice enters over the drum — a geet carried on the mesh from Faizpura.",
+        "format": "text/plain",
+        "purpose": "supplementing"
+      },
+      "motivation": "supplementing",
+      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000001BB8Y2F4GWPA070HC.json"
+    },
+    {
+      "id": "https://archie.demo/av/annotations/0000000002QWSM9MMM6A2NGGF4/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/av/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=20,50"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.002Z",
+      "body": {
+        "type": "TextualBody",
+        "value": "The melody settles into its refrain; you can hear the room — the recorder is a Raspberry Pi node on the network.",
+        "format": "text/plain",
+        "purpose": "supplementing"
+      },
+      "motivation": "supplementing",
+      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000002QWSM9MMM6A2NGGF4.json"
+    },
+    {
+      "id": "https://archie.demo/av/annotations/0000000003XJ97G8KDWNB1GDP5/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/av/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=50,90"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.003Z",
+      "body": {
+        "type": "TextualBody",
+        "value": "Other voices answer around her; the song is communal, sung with the room rather than performed for the mic.",
+        "format": "text/plain",
+        "purpose": "supplementing"
+      },
+      "motivation": "supplementing",
+      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000003XJ97G8KDWNB1GDP5.json"
+    },
+    {
+      "id": "https://archie.demo/av/annotations/0000000004M6XTY36CDA78WT1F/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/av/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=90,180"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.004Z",
+      "body": {
+        "type": "TextualBody",
+        "value": "It loosens into talk and ambient sound — the field recording keeps running past the song.",
+        "format": "text/plain",
+        "purpose": "supplementing"
+      },
+      "motivation": "supplementing",
+      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000004M6XTY36CDA78WT1F.json"
+    }
+  ]
+}

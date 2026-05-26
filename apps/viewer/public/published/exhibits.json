@@ -1,0 +1,31 @@
+{
+  "library": {
+    "id": "archie-lib",
+    "title": "The Archie Library",
+    "summary": "Voynich folios courtesy of the Beinecke Rare Book and Manuscript Library, Yale University (MS 408)."
+  },
+  "exhibits": [
+    {
+      "slug": "voynich",
+      "title": "Voynich manuscript",
+      "cover": "/voynich/article.png",
+      "description": "Five folios of MS 408 — herbal, cosmological, balneological, and script quires — closely read.",
+      "order": 0
+    },
+    {
+      "slug": "bidar",
+      "title": "Techno-Futures from Bidar",
+      "cover": "https://one.compost.digital/micah/nb-v24.jpg",
+      "description": "A condensed map of the Bidar mesh network — places, people, songs, and reflections from the field.",
+      "order": 1
+    },
+    {
+      "slug": "av",
+      "title": "A Field Recording from Bidar",
+      "description": "One sound from the mesh, read against its transcript — click a line to travel the audio.",
+      "order": 2
+    }
+  ],
+  "presentation": {},
+  "schemaVersion": 1
+}

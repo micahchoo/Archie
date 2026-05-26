@@ -1,0 +1,202 @@
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "id": "https://archie.demo/voynich/manifest.json",
+  "type": "Manifest",
+  "label": {
+    "none": [
+      "Voynich manuscript"
+    ]
+  },
+  "summary": {
+    "none": [
+      "Five folios of MS 408 — herbal, cosmological, balneological, and script quires — closely read."
+    ]
+  },
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/canvas/o1",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "The cipher"
+        ]
+      },
+      "width": 1280,
+      "height": 3200,
+      "items": [
+        {
+          "id": "https://archie.demo/voynich/canvas/o1/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich/canvas/o1/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "/voynich/article.png",
+                "type": "Image",
+                "width": 1280,
+                "height": 3200
+              },
+              "target": "https://archie.demo/voynich/canvas/o1"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/voynich/canvas/o1/annotations.json",
+          "type": "AnnotationPage"
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/voynich/canvas/o2",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Cosmological folio"
+        ]
+      },
+      "width": 1600,
+      "height": 2109,
+      "items": [
+        {
+          "id": "https://archie.demo/voynich/canvas/o2/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich/canvas/o2/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "/voynich/cosmological.jpg",
+                "type": "Image",
+                "width": 1600,
+                "height": 2109
+              },
+              "target": "https://archie.demo/voynich/canvas/o2"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/voynich/canvas/o2/annotations.json",
+          "type": "AnnotationPage"
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/voynich/canvas/o3",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Herbal folio"
+        ]
+      },
+      "width": 1143,
+      "height": 1536,
+      "items": [
+        {
+          "id": "https://archie.demo/voynich/canvas/o3/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich/canvas/o3/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "/voynich/herbal.jpg",
+                "type": "Image",
+                "width": 1143,
+                "height": 1536
+              },
+              "target": "https://archie.demo/voynich/canvas/o3"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/voynich/canvas/o3/annotations.json",
+          "type": "AnnotationPage"
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/voynich/canvas/o4",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Balneological folio"
+        ]
+      },
+      "width": 1536,
+      "height": 1494,
+      "items": [
+        {
+          "id": "https://archie.demo/voynich/canvas/o4/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich/canvas/o4/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "/voynich/balneological.jpg",
+                "type": "Image",
+                "width": 1536,
+                "height": 1494
+              },
+              "target": "https://archie.demo/voynich/canvas/o4"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/voynich/canvas/o4/annotations.json",
+          "type": "AnnotationPage"
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/voynich/canvas/o5",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Voynichese script"
+        ]
+      },
+      "width": 441,
+      "height": 378,
+      "items": [
+        {
+          "id": "https://archie.demo/voynich/canvas/o5/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich/canvas/o5/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "/voynich/script.jpg",
+                "type": "Image",
+                "width": 441,
+                "height": 378
+              },
+              "target": "https://archie.demo/voynich/canvas/o5"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/voynich/canvas/o5/annotations.json",
+          "type": "AnnotationPage"
+        }
+      ]
+    }
+  ]
+}

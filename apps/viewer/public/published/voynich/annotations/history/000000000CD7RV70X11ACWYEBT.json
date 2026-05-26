@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/000000000CD7RV70X11ACWYEBT.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/000000000CD7RV70X11ACWYEBT/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o3",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:380,400,700,720"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.012Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**The red sun-flowers.** Four near-identical blossoms with deep red petals around white-pollen centres. The repetition of the same flower across four positions is unusual for medieval herbals, which usually showed one flower per page or staged flowers at different life stages. Here all four are mature and indistinguishable — suggesting the page is illustrating the species' general appearance, not its life cycle.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000CD7RV70X11ACWYEBT",
+      "archie:rev": "000000000CF6WSSSV4YYF3PHP6",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

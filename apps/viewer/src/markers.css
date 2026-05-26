@@ -1,0 +1,28 @@
+/* A2 + stroke-over-stroke marker styling (CONTEXT §122). Annotorious's default inner stroke is
+   BLACK with the outer halo hidden — invisible on Archie's dark light-table (#181714) and on any
+   matching photo region. We enable a light outer HALO + a forest-green INNER stroke (stroke-over-
+   stroke), so markers read on ANY background — at low visual weight (A2), full on select.
+   MUST load AFTER the Annotorious CSS (same specificity → source order wins). */
+.a9s-annotationlayer .a9s-outer {
+  display: block;
+  stroke: rgba(245, 240, 230, 0.85); /* warm-paper light halo — the "light" of stroke-over-stroke */
+  stroke-width: 3px;
+  stroke-opacity: 0.55;
+}
+.a9s-annotationlayer .a9s-inner {
+  fill: transparent;
+  stroke: var(--accent, #3a6b4c); /* forest green — the scholar's ink */
+  stroke-width: 1.5px;
+  stroke-opacity: 0.78;
+}
+/* Full styling on selection (Annotorious marks the selected shape; cover both placements). */
+.a9s-annotationlayer .a9s-inner.selected,
+.a9s-annotationlayer .selected .a9s-inner {
+  stroke-opacity: 1;
+  stroke-width: 2px;
+  fill: rgba(196, 69, 54, 0.14);
+}
+.a9s-annotationlayer .a9s-outer.selected,
+.a9s-annotationlayer .selected .a9s-outer {
+  stroke-opacity: 0.9;
+}

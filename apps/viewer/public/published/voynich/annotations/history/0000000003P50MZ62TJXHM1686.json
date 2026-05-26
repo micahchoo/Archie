@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/0000000003P50MZ62TJXHM1686.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/0000000003P50MZ62TJXHM1686/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:265,80,247,50"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.003Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**Voynich manuscript** — an illustrated codex written in an unknown script, carbon-dated to the early fifteenth century. The article you're looking at is itself the first page of this demo project.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "0000000003P50MZ62TJXHM1686",
+      "archie:rev": "0000000003EAZHKT0ENKRW2ETB",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}
