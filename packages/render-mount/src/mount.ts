@@ -14,7 +14,7 @@ import OpenSeadragon from "openseadragon";
 import { createOSDAnnotator, W3CImageFormat, UserSelectAction } from "@annotorious/openseadragon";
 import type { ImageAnnotation, W3CImageAnnotation } from "@annotorious/openseadragon";
 import { mountPlugin } from "@annotorious/plugin-tools";
-import { resolveTileSource, isDegenerateSelectorValue } from "@render/core";
+import { resolveTileSource, isDegenerateSelectorValue, selectorBBox } from "@render/core";
 import { dispatchFitBounds, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import type { W3CSelector } from "@render/core";
 import type { MountSurface, SelectionId } from "./surface.js";
@@ -171,6 +171,29 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     },
     setDrawingTool(tool) {
       annotator.setDrawingTool(tool);
+    },
+    markerScreenRect(id) {
+      // Compute from the PUBLIC annotation list + core geometry (NOT Annotorious internals — that store
+      // lookup proved fragile). Find the W3C annotation by id, take its selector bbox (rect or polygon via
+      // core selectorBBox), convert image px → VIEWPORT px (element coords + the OSD container's page offset)
+      // so a position:fixed popover anchors to the marker regardless of layout (ADR-0006).
+      try {
+        const anns = annotator.getAnnotations() as Array<{ id?: string; target?: { selector?: { value?: string } } }>;
+        const v = anns.find((a) => a.id === id)?.target?.selector?.value;
+        if (!v) return null;
+        const box = selectorBBox({ type: v.includes("<") ? "SvgSelector" : "FragmentSelector", value: v } as W3CSelector);
+        if (!box) return null;
+        const o = viewer.element.getBoundingClientRect();
+        const tl = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box.x, box.y));
+        const br = viewer.viewport.imageToViewerElementCoordinates(new OpenSeadragon.Point(box.x + box.w, box.y + box.h));
+        return { left: tl.x + o.left, top: tl.y + o.top, right: br.x + o.left, bottom: br.y + o.top };
+      } catch {
+        return null;
+      }
+    },
+    onViewportChange(cb) {
+      viewer.addHandler("update-viewport", cb);
+      return () => viewer.removeHandler("update-viewport", cb);
     },
     destroy() {
       if (disposed) return;

@@ -24,6 +24,7 @@ data. If `freshness` is `very-stale` and the answer is load-bearing, call
 | `openseadragon` | `master` | 2026-05-25 | fresh | https://github.com/openseadragon/openseadragon |
 | `dompurify` | `main` | 2026-05-25 | fresh | https://github.com/cure53/DOMPurify |
 | `vite-node` | `main` | 2026-05-25 | fresh | https://github.com/antfu-collective/vite-node |
+| `wavesurfer.js` | `main` | 2026-05-26 | fresh | https://github.com/katspaugh/wavesurfer.js |
 
 ## Indexing failures
 

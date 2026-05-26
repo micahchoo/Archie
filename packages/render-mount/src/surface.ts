@@ -25,6 +25,14 @@ export interface MountSurface {
   setDrawingEnabled(enabled: boolean): void;
   /** Pick the active drawing tool (rect or polygon — the v1 vocab). */
   setDrawingTool(tool: DrawTool): void;
+  /** On-screen rect (in viewer-element pixels) of an annotation's marker, for anchoring an editing popover
+   *  to it (ADR-0006). Uses Annotorious geometry bounds → OSD `imageToViewerElementCoordinates` (donor:
+   *  annotorious-svelte OpenSeadragonPopup.svelte:53-68). Null if the marker/viewport isn't resolvable.
+   *  Recompute via onViewportChange — OSD re-anchors natively on pan/zoom, no positioning dep needed. */
+  markerScreenRect(id: SelectionId): { left: number; top: number; right: number; bottom: number } | null;
+  /** Subscribe to OSD pan/zoom (`update-viewport`) — fires each frame the viewport moves, so a popover can
+   *  follow its marker (donor: OpenSeadragonPopup.svelte:70-81). Returns an unsubscribe fn. */
+  onViewportChange(cb: () => void): () => void;
   /** Tear down OSD + Annotorious instances and release listeners. */
   destroy(): void;
   /** Subscribe to user selection on the surface. Returns an unsubscribe fn. */

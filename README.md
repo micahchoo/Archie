@@ -1,41 +1,82 @@
 # Archie
 
-**Annotate deep-zoom images, audio, and video in your browser — then publish a self-contained static site to GitHub Pages. No server, no database, no lock-in.**
-
-Archie is a multi-media exhibit annotation platform. You author in a browser **Studio**, draw regions on high-resolution images (or mark time-ranges on audio/video), attach notes and media, and publish a read-only **Viewer** site. Annotations are stored as [W3C Web Annotation Data Model](https://www.w3.org/TR/annotation-model/) (WADM) records and laid out on disk as [IIIF Presentation 3](https://iiif.io/api/presentation/3.0/) — so your work is portable, standards-based, and readable by third-party IIIF tools.
-
-> [!NOTE]
-> **Status: Phase 2 in progress.** The data layer and both apps are built and have been dogfooded on real exhibits (the Voynich folios and a Bidar map with 25 annotated regions). Browser-regression verification is still pending, and several Phase-3 features are not yet built — see [Status & roadmap](#status--roadmap).
+**Annotate deep-zoom images, audio, and video in your browser — then publish a self-contained static site. No server, no database, no lock-in.**
 
 ---
 
-## Contents
+## What you can build
 
-[Why Archie](#why-archie) · [Features](#features) · [Architecture](#architecture) · [Installation](#installation) · [Quickstart](#quickstart) · [Status & roadmap](#status--roadmap) · [Core concepts](#core-concepts) · [Documentation](#documentation) · [License](#license)
+Archie turns your media into interactive, linkable exhibits that live on the web as plain files.
+
+| You want to... | You do this in Archie |
+|---|---|
+| **Annotate a historic map** | Open the high-res image, draw regions, attach notes. Publish. Visitors explore your annotations on the map. |
+| **Build a multimedia essay** | Combine images, audio clips, and video in one exhibit. Write a narrative spine that guides readers through each object. |
+| **Create a scholarly edition** | Transcribe and annotate manuscript pages. Link notes to each other. Export as IIIF — readable in Mirador, Universal Viewer, or any IIIF tool. |
+| **Publish without a server** | Author in the browser. Publish produces a folder of HTML + JSON + media. Drop it on GitHub Pages, Netlify, or any static host. |
+
+The bundled exhibits — a 5-folio Voynich manuscript set and a 25-region Bidar map — show what a finished exhibit looks like.
+
+> [!NOTE]
+> **Status: Phase 2 in progress.** The data layer and both apps are built and dogfooded. Browser-regression verification is pending; several Phase 3 features are not yet built — see [Status & roadmap](#status--roadmap).
 
 ## Why Archie
 
-- **Standards on disk, not in a vendor format.** Notes are WADM `Annotation`s; an exhibit is an IIIF `Manifest`; objects are `Canvas`es. A published exhibit's annotation pages render in Mirador / Universal Viewer, not just in Archie.
-- **Static output.** Publish produces a folder (or a `.archie.zip`) of HTML + JSON + media that drops onto GitHub Pages, Netlify, or any static host. The Viewer needs no backend.
-- **Multi-media, multi-object.** One exhibit can hold many images, audio, and video objects, with notes at the library, exhibit, object, region, and time-range level.
-- **Linkable, navigable notes.** Cite one note from another (`⌘K`), deep-link straight to a region (`#/a/<id>`), and let visitors move through prose-led or object-led readings.
-- **Versioned by design.** Annotations live on an append-only log with a version-parent DAG, so edits are non-destructive and concurrent changes can be merged.
+- **Standards on disk, not in a vendor format.** Notes are [W3C Web Annotation](https://www.w3.org/TR/annotation-model/) records. Exhibits are [IIIF Presentation 3](https://iiif.io/api/presentation/3.0/) manifests. Your work is portable and readable by third-party IIIF tools.
+- **Static output.** Publish produces a folder (or `.archie.zip`) that drops onto GitHub Pages, Netlify, or any static host. The Viewer needs no backend.
+- **Multi-media, multi-object.** One exhibit holds many images, audio, and video objects, with notes at the library, exhibit, object, region, and time-range level.
+- **Linkable, navigable notes.** Cite one note from another (<kbd>Cmd</kbd> + <kbd>K</kbd>), deep-link to a region (`#/a/<id>`), and let visitors move through prose-led or object-led readings.
+- **Versioned by design.** Annotations live on an append-only log with a version-parent DAG. Edits are non-destructive and concurrent changes can be merged.
+
+## Quickstart
+
+**Prerequisites:** Node.js ≥ 22 and pnpm 10.
+
+```bash
+pnpm install            # install the whole workspace
+pnpm typecheck          # type-check every package + app
+pnpm test               # run ~290 tests
+```
+
+### Run the Studio (authoring)
+
+```bash
+pnpm --filter @archie/studio dev      # opens http://localhost:5173
+```
+
+Pick or create an exhibit, draw a region, attach a note, publish.
+
+### Run the Viewer (reading)
+
+```bash
+pnpm --filter @archie/viewer gen      # generate the published tree
+pnpm --filter @archie/viewer dev      # opens http://localhost:4321
+```
+
+Target a single workspace with `--filter`, e.g. `pnpm --filter @render/core test`.
 
 ## Features
 
-What works today (data layer fully tested; app surfaces built and dogfooded, browser-verify pending):
-
 | Area | Capability |
-|------|------------|
-| **Image annotation** | OpenSeadragon deep-zoom + Annotorious; rectangle / polygon / ellipse / path regions → WADM selectors |
-| **A/V annotation** | Import VTT/SRT transcripts, mark time-range notes, click-to-seek cue linking |
-| **Data model** | Append-only log → version DAG → heads/history projection; non-destructive edits + multi-parent merge |
+|---|---|
+| **Image annotation** | OpenSeadragon deep-zoom + Annotorious; rectangle, polygon, ellipse, path regions |
+| **A/V annotation** | Import VTT/SRT transcripts, mark time-range notes, click-to-seek |
+| **Data model** | Append-only log with version DAG; heads/history projection; non-destructive edits; multi-parent merge |
 | **IIIF** | Exhibit → `Manifest`, object → `Canvas`, per-canvas `AnnotationPage` heads; Presentation 3 on disk |
-| **Storage** | Three backends behind one seam — in-memory, `.archie.zip` (anywhere), and File System Access folders (Chromium autosave) |
-| **EXIF** | Read orientation, generate an upright display master, preserve the original |
-| **Linking** | `⌘K` cite/insert across the library, deep-link arrival, link validation |
-| **Reading modes** | Single (OSD + 3-state pane), Grid (object gallery), Narrative (prose spine + map canvas) |
-| **Publish** | Whole library → `.archie.zip` download **or** GitHub Pages push (Contents API) |
+| **Storage** | Three backends behind one seam — in-memory, `.archie.zip`, File System Access (Chromium autosave) |
+| **EXIF** | Read orientation, generate upright display master, preserve original |
+| **Linking** | Cite/insert across the library, deep-link arrival, link validation |
+| **Reading modes** | Single (OSD + 3-state pane), Grid (object gallery), Narrative (prose spine) |
+| **Publish** | Library → `.archie.zip` download or GitHub Pages push |
+
+## Installation
+
+```bash
+pnpm install
+```
+
+> [!IMPORTANT]
+> The repo requires Node.js ≥ 22. Older versions fail with a version-engine error. Switch first: `nvm install 22 && nvm use 22`.
 
 ## Architecture
 
@@ -45,8 +86,8 @@ Archie is a pnpm monorepo. A three-layer rendering core (headless → vanilla DO
 graph TD
     subgraph packages
         core["@render/core<br/>headless TS: WADM spine,<br/>IIIF, selectors, storage, publish"]
-        mount["@render/mount<br/>vanilla wiring of OSD +<br/>Annotorious + Wavesurfer"]
-        svelte["@render/svelte<br/>thin Svelte adapter (&lt;500 LOC)"]
+        mount["@render/mount<br/>vanilla wiring: OSD +<br/>Annotorious + Wavesurfer"]
+        svelte["@render/svelte<br/>thin Svelte adapter"]
     end
     subgraph apps
         studio["@archie/studio<br/>Vite SPA — authoring"]
@@ -58,93 +99,85 @@ graph TD
     studio -. "publish step builds" .-> viewer
 ```
 
-| Workspace | Name | What it is |
-|-----------|------|------------|
-| `packages/render-core` | `@render/core` | Pure, headless TypeScript: WADM types + annotation spine, IIIF manifest generation, selector/geometry, the `Filesystem` seam, publish projection, EXIF, linking, A/V. No DOM. |
-| `packages/render-mount` | `@render/mount` | Framework-free wiring of OpenSeadragon + Annotorious + Wavesurfer behind an imperative surface (`fitBounds` / `setSelected` / `destroy`) + an `onSelect` callback. |
-| `packages/render-svelte` | `@render/svelte` | Thin Svelte reactivity adapter over `@render/mount`. Kept under ~500 LOC as a logic-leak detector. |
-| `apps/studio` | `@archie/studio` | The authoring app — a Vite Svelte SPA. Library browser, canvas editor, A/V editor, merge-review, publish dialog. See [apps/studio/README.md](apps/studio/README.md). |
-| `apps/viewer` | `@archie/viewer` | The published site — Astro with Svelte islands. Gallery landing + per-exhibit readers. See [apps/viewer/README.md](apps/viewer/README.md). |
+| Workspace | Package | What it is |
+|---|---|---|
+| `packages/render-core` | `@render/core` | Pure TypeScript: WADM types, annotation spine, IIIF manifests, selectors, storage seam, publish, EXIF, linking, A/V. No DOM. (60 source files) |
+| `packages/render-mount` | `@render/mount` | Framework-free wiring of OpenSeadragon + Annotorious + Wavesurfer behind an imperative surface. (11 source files) |
+| `packages/render-svelte` | `@render/svelte` | Thin Svelte 5 reactivity adapter over `@render/mount`. (9 source files) |
+| `apps/studio` | `@archie/studio` | Authoring SPA — library browser, canvas editor, A/V editor, merge review, publish dialog. |
+| `apps/viewer` | `@archie/viewer` | Published reader — Astro with Svelte islands, gallery landing, per-exhibit readers. |
 
-Deeper maps live in [`docs/architecture/`](docs/architecture/) (subsystem components + contracts). Design rationale is in the [ADRs](docs/adr/) and [decision records](docs/decisions/).
+### Where to start in the code
 
-## Installation
+**Understanding the data model** (work inward from the edges):
+- `packages/render-core/src/wadm/types.ts` — the W3C annotation types
+- `packages/render-core/src/wadm/brand.ts` — branded ULID identity types (LogicalId, RevId, VersionId) that prevent type confusion
+- `packages/render-core/src/model/model.ts` — Library, Exhibit, Object, Note domain model
 
-**Prerequisites:** Node.js ≥ 22 and pnpm 10 (the repo is a pnpm workspace).
+**Understanding the annotation spine** (the versioning core):
+- `packages/render-core/src/spine/log.ts` — append-only log (highest-degree node in the graph: 14 edges)
+- `packages/render-core/src/spine/heads.ts` — multi-head projection for concurrency
+- `packages/render-core/src/spine/merge.ts` — three-way merge resolution
+- `packages/render-core/src/spine/serialize.ts` — on-disk persistence format
 
-> [!IMPORTANT]
-> The repo was last developed against Node 20, where `pnpm install` / `pnpm test` fail with a version-engine error. Switch to Node 22+ first (e.g. `nvm install 22 && nvm use 22`).
+**Understanding how it all wires together**:
+- `packages/render-core/src/index.ts` — the barrel export (34 re-exports, the codebase map)
+- `packages/render-core/src/fs/seam.ts` — the filesystem abstraction (3 backends, 1 interface)
+- `packages/render-mount/src/mount.ts` — where OSD + Annotorious get wired to the render surface
+- `apps/studio/src/store.ts` — the Studio's OPFS working store (where core packages meet the authoring UI)
 
-```bash
-pnpm install            # install the whole workspace (run from the repo root)
-```
-
-## Quickstart
-
-Verify the workspace, then run an app:
-
-```bash
-pnpm typecheck          # type-check every package + app
-pnpm build              # build every package + app
-pnpm test               # run the full test suite (requires Node 22+)
-```
-
-### Run the Studio (authoring app)
-
-```bash
-pnpm --filter @archie/studio dev      # Vite SPA on http://localhost:5173
-```
-
-Open it, pick or create an exhibit, draw a region, attach a note, and use the publish dialog to download a `.archie.zip` or push to GitHub Pages.
-
-### Run the Viewer (published reader)
-
-```bash
-pnpm --filter @archie/viewer gen      # generate the static published tree first
-pnpm --filter @archie/viewer dev      # Astro dev server on http://localhost:4321
-```
-
-The Viewer reads the static tree built by `gen` (the same projection the Studio's publish step emits). The bundled Voynich and Bidar exhibits load out of the box.
-
-Target a single workspace with `--filter`, e.g. `pnpm --filter @render/core test` or `pnpm --filter @archie/studio build`.
-
-## Status & roadmap
-
-**Tests:** 290 tests last passed locally on 2026-05-25 (per [`HANDOFF.md`](HANDOFF.md): `@render/core` 241, `@render/mount` 18, `@render/svelte` 18 — counts approximate, re-run to confirm). `pnpm test` currently requires Node ≥ 22.
-
-**Phase 2 — in progress.** Both apps are built and dogfooded on the Voynich and Bidar exhibits. Owed before Phase 2 closes: browser-regression verification, and minor polish (styled A/V scrubber + `mm:ss` time inputs, publish-originals opt-in, a broken-links surface).
-
-**Phase 3 — not yet built (gated inventions, each behind a user-comprehension gate):**
-- Overview-as-canvas (a zoomable canvas instead of a list)
-- Local identity prompt on first import
-- Grid slideshow sub-mode (step through fullscreen)
-- Narrative section-authoring UI (sections currently derive from order)
-- Viewer: breadcrumb / zoom-to-fit chrome, IIIF Content-State arrival (`?iiif-content`)
-
-The phasing and gate mechanism are described in [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md).
+**Additional maps:** [`docs/architecture/`](docs/architecture/) (subsystem components + contracts), [`docs/adr/`](docs/adr/) (ADRs), [`docs/decisions/`](docs/decisions/) (Q-N decision records).
 
 ## Core concepts
 
-Archie uses a precise vocabulary (full glossary in [`CONTEXT.md`](CONTEXT.md)):
+Archie uses a precise vocabulary. One-sentence definitions below; full glossary in [`CONTEXT.md`](CONTEXT.md).
 
 - **Library** — top-level container for one project; on disk a directory or zip; an IIIF `Collection`.
 - **Exhibit** — one published narrative artifact; an IIIF `Manifest`. Owns its objects, media, notes, and narrative.
 - **Object** — one media item inside an exhibit (image / audio / video / embed); an IIIF `Canvas`.
 - **Note** — a single WADM `Annotation`, targeting a library, exhibit, object, region, or time-range.
 - **Layer** — a named, toggleable grouping of notes with editorial intent; an IIIF `AnnotationCollection`.
-- **Section** — one ordered unit of an exhibit's narrative; an IIIF `Range`.
+- **Section** — one ordered unit of an exhibit's narrative; an IIIF `Range`. Independent of Notes — Sections point at Notes via links, not structural references.
 - **Studio** / **Viewer** — the authoring app / the read-only published site.
+
+## Status & roadmap
+
+**Tests:** ~290 tests (241 `@render/core`, 18 `@render/mount`, 18 `@render/svelte`). Requires Node ≥ 22.
+
+**Phase 2 — in progress.** Both apps built and dogfooded on Voynich and Bidar exhibits. Owed: browser-regression verification, styled A/V scrubber, publish-originals opt-in, broken-links surface.
+
+**Phase 3 — not yet built:**
+- Overview-as-canvas (zoomable exhibit overview instead of a list)
+- Local identity prompt on first import
+- Grid slideshow sub-mode
+- Narrative section-authoring UI
+- Viewer breadcrumb / zoom-to-fit chrome, IIIF Content-State arrival
+
+The phasing and gate mechanism is in [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md).
 
 ## Documentation
 
-| Doc | What it covers |
-|-----|----------------|
-| [`CONTEXT.md`](CONTEXT.md) | Domain language, locked frames, full glossary |
+| Doc | For |
+|---|---|
+| [`CONTEXT.md`](CONTEXT.md) | Domain language, locked design frames, full glossary |
 | [`docs/README.md`](docs/README.md) | Index to all design docs |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0004) |
+| [`docs/architecture/overview.md`](docs/architecture/overview.md) | Architecture map (start here as a developer) |
+| [`docs/architecture/subsystems/`](docs/architecture/subsystems/) | Per-subsystem component + contract maps |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0005) |
 | [`docs/decisions/`](docs/decisions/) | Citable decision records (Q-N) |
-| [`docs/architecture/`](docs/architecture/) | Subsystem component + contract maps |
 | [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md) | Phasing, sequencing, validation gates |
+| [`HANDOFF.md`](HANDOFF.md) | Agent-to-agent session continuity |
+
+## Contributing
+
+Pull requests are welcome. Before opening one:
+
+1. Run `pnpm typecheck` and `pnpm test` — both must pass.
+2. For new features, include tests. The suite lives alongside source (`*.test.ts`), not in a separate directory.
+3. Architecture decisions go in `docs/adr/` (new) or `docs/decisions/` (Q-N citation). Design discussion belongs in an issue before a PR.
+4. The rendering core (`@render/core`) is pure TypeScript with no DOM dependencies — keep it that way. Browser APIs belong in `@render/mount` or the apps.
+
+See [`docs/architecture/overview.md`](docs/architecture/overview.md) for the subsystem map and [`CONTEXT.md`](CONTEXT.md) for the domain language used throughout the codebase.
 
 ## License
 

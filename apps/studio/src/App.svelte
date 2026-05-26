@@ -7,12 +7,14 @@
   import { stripMarkdown } from "@render/svelte";
   import MergeReview from "./MergeReview.svelte";
   import Publish from "./Publish.svelte";
+  import PublishDialog from "./PublishDialog.svelte";
   import LibraryHome from "./LibraryHome.svelte";
   import CmdK from "./CmdK.svelte";
   import AvEditor from "./AvEditor.svelte";
   import LayoutPicker from "./LayoutPicker.svelte";
   import IdentityPrompt from "./IdentityPrompt.svelte";
   import ExhibitOverview from "./ExhibitOverview.svelte";
+  import NarrativeEditor from "./NarrativeEditor.svelte";
   import {
     AnnotationSession, libraryToZip, asClientId, mintRevId, encodeLinkRef,
     MemoryFilesystem, ZipFilesystem, FsaFilesystem, publishLibrary, loadLibrary, collectFiles, publishToGitHub,
@@ -249,6 +251,66 @@
     libraryMeta = { exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, sections } : e)) };
     void persistLibrary();
   }
+  // --- narrative camera FRAMING (ADR-0005 + placement correction 2026-05-25) ---
+  // A Section's camera (`start`) is set by FRAMING it on the editor canvas — the same gesture as a note's
+  // geometry — not by typing a fragment. "Frame camera" on a section rail-JUMPS to that section's object
+  // (an explicit, visible move — never an implicit rebind), then arms the canvas draw; the next drawn box
+  // (or AV in-out) becomes the camera instead of creating a note. Re-binding a section to a different
+  // object is the separate, explicit "Move here" action in the spine panel.
+  let framingSectionId = $state<string | null>(null);
+  function startFraming(sectionId: string) {
+    const s = (currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
+    if (!s) return;
+    switchObject(s.objectId); // jump the rail to the section's object so you frame on the right canvas
+    framingSectionId = sectionId;
+    const mt = OBJECTS.find((o) => o.id === s.objectId)?.mediaType;
+    if (mt !== "sound" && mt !== "video") { tool = "rectangle"; mode = "draw"; } // arm the OSD box draw
+  }
+  function cancelFraming() { framingSectionId = null; mode = "select"; }
+  // Capture a framed camera onto the section (objectId = the object now in view, set when framing began).
+  function setSectionStart(sectionId: string, start: string) {
+    setSections((currentExhibit?.sections ?? []).map((s) => (s.id === sectionId ? { ...s, start, objectId: currentObjectId } : s)));
+  }
+
+  // --- note editing POPOVER (ADR-0006): the WADM form anchors to the selected marker on the image canvas
+  // instead of sitting at the bottom of a scrolling sidebar. `notePos` is streamed up from Canvas
+  // (onmarkerrect) and OSD re-anchors it on every pan/zoom (donor: annotorious-svelte). The user can DRAG
+  // it; the manual position pins to THAT note (keyed by id) so a fresh selection re-anchors to its marker. ---
+  let notePos = $state<{ left: number; top: number } | null>(null);
+  let noteManualPos = $state<{ id: string; left: number; top: number } | null>(null);
+  let mainEl = $state<HTMLElement | null>(null); // the canvas pane — the popover (position:fixed) falls back INSIDE it
+  const notePopoverPos = $derived.by(() => {
+    if (noteManualPos && noteManualPos.id === editing) return { left: noteManualPos.left, top: noteManualPos.top };
+    if (notePos) return notePos;
+    // Marker rect not resolved yet → anchor inside the canvas pane (viewport coords), NEVER the viewport
+    // corner (which is over the left sidebar). Re-derives once notePos arrives.
+    void rev;
+    const r = mainEl?.getBoundingClientRect();
+    return r ? { left: r.left + 24, top: r.top + 24 } : { left: 380, top: 96 };
+  });
+  let noteDragging = false;
+  let noteDragStart = { x: 0, y: 0, left: 0, top: 0 };
+  function noteDragDown(e: PointerEvent) {
+    if (editing === null) return;
+    noteDragging = true;
+    noteDragStart = { x: e.clientX, y: e.clientY, left: notePopoverPos.left, top: notePopoverPos.top };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function noteDragMove(e: PointerEvent) {
+    if (!noteDragging || editing === null) return;
+    noteManualPos = { id: editing, left: noteDragStart.left + (e.clientX - noteDragStart.x), top: noteDragStart.top + (e.clientY - noteDragStart.y) };
+  }
+  function noteDragUp(e: PointerEvent) {
+    noteDragging = false;
+    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+  }
+  // "Save" on the note editor: commit any uncommitted comment text (edits already autosave live, but a click
+  // might not have blurred the textarea first), then deselect → the popover hides (selected drives `sel`).
+  function closeNote() {
+    if (sel && commentEl) applyForm(commentEl.value, tagsOf(sel).join(", "), sel.layers ?? []);
+    selected = null;
+    editing = null;
+  }
   // Reorder the current exhibit's objects to a new id sequence (the overview's drag-reorder). Object array
   // ORDER is the canonical reading order (Grid display order / Narrative sequence; ADR model.ts) — the
   // published projection derives from it, so this is real structure, settable nowhere else in the app.
@@ -387,12 +449,22 @@
   // preserved beside it (assets-original/), provenance records the transform, and the object targets
   // the upright master so the coord layer stays orientation-blind.
   async function addObjectFromFile(file: File) {
-    if (!file.type.startsWith("image/")) return;
     if (!storeReady) return; // OPFS unavailable — don't create an object whose bytes can't persist
     const ex = libraryMeta.exhibits.find((e) => e.slug === currentSlug);
     if (!ex) return;
     const id = nextObjectId(ex);
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+    // AV INGEST (§152 gate lifted 2026-05-26, user): store an audio/video file as an OPFS asset — no EXIF/dims.
+    // It renders in AvEditor (WaveSurfer waveform for audio · <video> for video). Local blob → no CORS on decode.
+    if (file.type.startsWith("audio/") || file.type.startsWith("video/")) {
+      const mediaType: "sound" | "video" = file.type.startsWith("video/") ? "video" : "sound";
+      const avName = `${id}-${safe}`;
+      await saveAssetFile(currentSlug, avName, file);
+      await appendObject({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file));
+      return;
+    }
+    if (!file.type.startsWith("image/")) return; // unsupported type — ignore
 
     const orientation = readExifOrientation(await file.arrayBuffer());
     let master: Blob = file;
@@ -447,6 +519,9 @@
   const canvasId = $derived(canvasIdOf(currentObjectId));
   // AV objects (sound/video) get the temporal AvEditor instead of the OSD Canvas (draw tools too).
   const isAvCurrent = $derived(current?.mediaType === "sound" || current?.mediaType === "video");
+  // Video has no per-note locus yet (frame regions = Wave 2), so its notes keep the inline sidebar form;
+  // image (canvas marker) + audio (waveform region) both edit in the marker popover (ADR-0006 "edit at the locus").
+  const isVideoCurrent = $derived(current?.mediaType === "video");
   // The image URL the Canvas mounts: imported (/assets) objects resolve to their blob: URL.
   const currentSource = $derived(current ? (isAsset(current.source) ? (assetUrls[current.id] ?? current.source) : current.source) : "");
   // Resolved image URL for an object's rail thumbnail (asset → blob: URL, else its path/URL).
@@ -541,6 +616,14 @@
 
   // --- canvas lifecycle ---
   function onCreate(a: W3CAnnotation) {
+    if (framingSectionId) {
+      // Framing a narrative camera, not creating a note: the drawn box's xywh fragment becomes the camera.
+      const frag = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
+      if (frag) setSectionStart(framingSectionId, frag);
+      framingSectionId = null;
+      mode = "select";
+      return;
+    }
     const id = session.createNote({ target: a.target, ...(layerFilter !== "all" ? { layers: [layerFilter] } : {}) });
     bump();
     selected = id;
@@ -551,6 +634,12 @@
   // Hand-annotate AV: AvEditor marked a [start,end] region → create a supplementing time note, then
   // select it so the WADM form opens to type the note (the temporal analogue of onCreate for OSD draws).
   function onCreateTime(start: number, end: number) {
+    if (framingSectionId) {
+      // Framing an AV-bound narrative camera: the [start,end] becomes a `t=` moment, not a note.
+      setSectionStart(framingSectionId, timeFragmentValue(start, end));
+      framingSectionId = null;
+      return;
+    }
     const id = session.createNote({ target: timeSel(canvasId, start, end), body: [{ type: "TextualBody", value: "", purpose: "supplementing" }], motivation: "supplementing" });
     bump();
     selected = id;
@@ -624,39 +713,52 @@
     }
     return out;
   }
-  async function openCmdK() {
-    if (!sel) return; // ⌘K cites INTO the note being edited
+  // The cite palette (⌘K) is FIELD-AGNOSTIC: a requester supplies an `insert` closure that splices the
+  // chosen `[label](ref)` into ITS OWN text field — a note's Comment, or a Section's prose (the spine→note
+  // bridge, ADR-0005). One palette, many targets. (This abstraction survives Wave 2 — the note Comment moves
+  // into the marker popover, but its insert closure comes with it.)
+  let pendingCiteInsert: ((md: string) => void) | null = null;
+  async function requestCite(insert: (md: string) => void) {
+    pendingCiteInsert = insert;
     cmdkEntries = await buildCmdEntries();
     cmdkOpen = true;
   }
-  // Splice `[label](archie:ref)` at the Comment cursor, persist, then restore focus past the link.
-  async function insertCite(entry: CmdEntry) {
+  function insertCite(entry: CmdEntry) {
+    pendingCiteInsert?.(`[${entry.label}](${entry.ref})`);
+    pendingCiteInsert = null;
+    cmdkOpen = false;
+  }
+  // The note-Comment cite target: splice at the cursor, persist via applyForm, restore focus past the link.
+  async function citeIntoComment(md: string) {
     if (!sel) return;
-    const md = `[${entry.label}](${entry.ref})`;
     const full = commentEl?.value ?? commentOf(sel);
     const start = commentEl?.selectionStart ?? full.length;
     const end = commentEl?.selectionEnd ?? full.length;
     const next = full.slice(0, start) + md + full.slice(end);
     applyForm(next, tagsOf(sel).join(", "), sel.layers ?? []);
-    cmdkOpen = false;
     await tick();
     const pos = start + md.length;
     commentEl?.focus();
     commentEl?.setSelectionRange(pos, pos);
   }
   function onGlobalKey(e: KeyboardEvent) {
+    if (e.key === "Escape" && framingSectionId) { e.preventDefault(); cancelFraming(); return; } // bail out of camera framing
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && view === "editor" && sel) {
       e.preventDefault();
-      void openCmdK();
+      void requestCite(citeIntoComment);
     }
   }
 
   // Publish/Download project the WHOLE library — every exhibit (the published site IS the library:
   // collection.json + the Gallery list all exhibits). Each exhibit's notes live in its own log.
-  function buildFullLibrary(): Library {
+  function buildFullLibrary(opts: { includeTemplates?: boolean } = {}): Library {
+    // Exclude bundled EXAMPLE exhibits by default (CONTEXT §"Local view loop": "avoid the template
+    // ones, or opt-in") — a template is a Playground example, not the author's content. Reuses the
+    // existing isTemplate machinery; opt-in via includeTemplates for a populated demo publish.
+    const source = opts.includeTemplates ? libraryMeta.exhibits : libraryMeta.exhibits.filter((ex) => !isTemplate(ex.slug));
     return {
       id: "demo", title: "Archie demo",
-      exhibits: libraryMeta.exhibits.map((ex) => ({
+      exhibits: source.map((ex) => ({
         id: ex.id, slug: ex.slug, title: ex.title,
         ...(ex.layout ? { layout: ex.layout } : {}),
         ...(ex.mode ? { mode: ex.mode } : {}),
@@ -710,6 +812,25 @@
     const res = await publishLibrary(new MemoryFilesystem(), buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset });
     brokenLinks = res.brokenLinks;
     publishOpen = true;
+  }
+
+  // Unified Publish menu (CONTEXT §"Local view loop") — ONE entry, two destinations: Locally (preview
+  // in the Viewer) or GitHub Pages. The menu makes the host choice; each opens its flow dialog.
+  // Templates already excluded by buildFullLibrary; "publish = same tree → per-host adapter".
+  let publishDialogOpen = $state(false);
+  /** Local flow: pick a folder + write the published tree; returns the folder name (null = cancelled). */
+  async function localPublishFolder(): Promise<string | null> {
+    await save(); // flush current edits so the published tree is current
+    const handle = await pickFolder();
+    if (!handle) return null;
+    await writeToFolder(handle);
+    return handle.name;
+  }
+  /** Local flow (non-Chromium, no folder picker): save the project zip; returns its filename. */
+  async function localPublishZip(): Promise<string> {
+    await save();
+    await downloadProjectZip();
+    return binding.kind === "file" && binding.name ? binding.name : zipNameFor(PROJECT_TITLE);
   }
 
   // --- Library-binding actions (invention #3). The persistence PRIMITIVES are reused as-is
@@ -889,21 +1010,22 @@
       onsetlayout={() => (layoutPickerOpen = true)}
       onback={backToLibrary}
       onreorder={reorderObjects}
-      sections={currentExhibit?.sections ?? []}
-      onsections={setSections}
-      notes={narrativeNotes}
     />
   </div>
 {:else}
   <header>
     <button class="exhibit-back" onclick={hasOverview ? backToOverview : backToLibrary}>← {hasOverview ? "Overview" : "Exhibits"}</button>
-    <span class="wordmark">{currentExhibit.title}</span><span class="sub">Studio</span>
+    <!-- Breadcrumb: Exhibit › Object — surfaces the two scales (the spine lives at the exhibit level, notes
+         at the object level; the crumb names where you are). -->
+    <span class="wordmark">{currentExhibit.title}</span>{#if current}<span class="crumb">› {current.label}</span>{/if}<span class="sub">Studio</span>
     <span class="spacer"></span>
     {#if !isAvCurrent}
-      <div class="tools">
-        <button class:on={mode === "select"} onclick={() => (mode = "select")}>Select</button>
-        <button class:on={mode === "draw" && tool === "rectangle"} onclick={() => { mode = "draw"; tool = "rectangle"; }}>▭ Rect</button>
-        <button class:on={mode === "draw" && tool === "polygon"} onclick={() => { mode = "draw"; tool = "polygon"; }}>⬠ Polygon</button>
+      <!-- While framing a narrative camera the canvas is locked to the box draw, so the tool switches are
+           disabled (you can't switch to Polygon/Select mid-frame); Esc or the banner's Cancel exits. -->
+      <div class="tools" class:framing={framingSectionId !== null}>
+        <button class:on={mode === "select"} disabled={framingSectionId !== null} onclick={() => (mode = "select")}>Select</button>
+        <button class:on={mode === "draw" && tool === "rectangle"} disabled={framingSectionId !== null} onclick={() => { mode = "draw"; tool = "rectangle"; }}>▭ Rect</button>
+        <button class:on={mode === "draw" && tool === "polygon"} disabled={framingSectionId !== null} onclick={() => { mode = "draw"; tool = "polygon"; }}>⬠ Polygon</button>
       </div>
     {/if}
     <label>Layer
@@ -919,7 +1041,7 @@
     {#if identity !== null}<span class="you" title="Your name in the shared history (merge attribution)">You · {identity || "Anonymous"}</span>{/if}
     <button onclick={importChanges} disabled={objNotes.length === 0 || conflicts.length > 0} title={conflicts.length > 0 ? "Resolve the open merge first" : ""}>Import changes</button>
     <button onclick={download}>Download .archie.zip</button>
-    <button onclick={() => void openPublish()}>Publish…</button>
+    <button onclick={() => (publishDialogOpen = true)}>Publish…</button>
   </header>
 
   {#if isTemplate(currentSlug)}
@@ -949,7 +1071,7 @@
     {/each}
     {#if addingObject}
       <form class="add-obj" onsubmit={(e) => { e.preventDefault(); void addObject(addSource, addLabel); }}>
-        <label class="file-btn">Choose image…<input type="file" accept="image/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; void addFiles(el.files).then(() => (el.value = "")); }} /></label>
+        <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; void addFiles(el.files).then(() => (el.value = "")); }} /></label>
         <span class="or">or</span>
         <input bind:value={addSource} placeholder="Source URL or /path (image / audio / video)" aria-label="Object source URL" />
         <input class="lbl" bind:value={addLabel} placeholder="Label" aria-label="Object label" />
@@ -961,9 +1083,71 @@
     {/if}
   </nav>
 
+  {#if framingSectionId}
+    <!-- Loud cue that the canvas is in camera-framing mode, not note-drawing — with the way out. -->
+    <div class="framing-banner" role="status">
+      <span class="fb-tag">Framing camera</span>
+      <span class="fb-msg">{isAvCurrent ? "Use “Set in” on the recording to mark this section’s moment." : "Draw a box on the canvas to frame this section’s camera — it isn’t a note."}</span>
+      <button class="fb-cancel" onclick={cancelFraming}>Cancel <kbd>Esc</kbd></button>
+    </div>
+  {/if}
+
+  <!-- The WADM edit form, declared ONCE as a snippet (ADR-0006): rendered as a marker-anchored POPOVER over
+       the image canvas (below, in <main>), or INLINE in the sidebar for an AV object (no spatial marker yet —
+       Wave-2 WaveSurfer). Declared at branch scope so both <aside> and <main> can @render it. -->
+  {#snippet noteForm()}
+    {#if sel}
+      {@const comment = commentOf(sel)}
+      {@const tags = tagsOf(sel).join(", ")}
+      {@const layers = sel.layers ?? []}
+      {@const trange = timeOf(sel)}
+      <form class="wadm" onsubmit={(e) => { e.preventDefault(); }}>
+        <h3>Edit note</h3>
+        <label>
+          <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button></span>
+          <textarea bind:this={commentEl} rows="3" value={comment} onchange={(e) => applyForm((e.currentTarget as HTMLTextAreaElement).value, tags, layers)}></textarea>
+        </label>
+        {#if trange}
+          <fieldset class="time">
+            <legend>Time (m:ss)</legend>
+            <label class="t">Start<input type="text" inputmode="numeric" placeholder="m:ss" value={fmtMMSS(trange.start)} onchange={(e) => applyTime(parseMMSS((e.currentTarget as HTMLInputElement).value), trange.end ?? trange.start)} /></label>
+            <label class="t">End<input type="text" inputmode="numeric" placeholder="m:ss" value={fmtMMSS(trange.end ?? trange.start)} onchange={(e) => applyTime(trange.start, parseMMSS((e.currentTarget as HTMLInputElement).value))} /></label>
+          </fieldset>
+        {/if}
+        <label>Tags (comma-separated)<input value={tags} onchange={(e) => applyForm(comment, (e.currentTarget as HTMLInputElement).value, layers)} /></label>
+        <fieldset>
+          <legend>Layers</legend>
+          {#each ["conservation", "iconography"] as l}
+            <label class="cb"><input type="checkbox" checked={layers.includes(l)} onchange={(e) => toggleLayer(l, (e.currentTarget as HTMLInputElement).checked)} /> {l}</label>
+          {/each}
+        </fieldset>
+        <div class="wadm-actions">
+          <button type="button" class="save" onclick={closeNote}>Save</button>
+          <button type="button" class="del" onclick={() => onDelete(editing!)}>Delete note</button>
+        </div>
+      </form>
+    {/if}
+  {/snippet}
+
   <div class="body">
     <aside>
       <MergeReview {session} {conflicts} {synced} onchange={() => { conflicts = session.conflicts(); bump(); }} />
+      {#if currentLayout === "narrative"}
+        <!-- The narrative spine lives HERE, beside the object-local notes (placement correction): exhibit
+             scope on top (persists across rail switches), object scope below (swaps). -->
+        <NarrativeEditor
+          sections={currentExhibit?.sections ?? []}
+          objects={OBJECTS}
+          {currentObjectId}
+          framingId={framingSectionId}
+          notes={narrativeNotes}
+          onchange={setSections}
+          onframe={startFraming}
+          oncancelframe={cancelFraming}
+          onrequestcite={requestCite}
+        />
+        <div class="scope-sep"><span>This object</span></div>
+      {/if}
       {#if current}
         <!-- editable object label (authored structure; persists). Enter or blur commits. -->
         <input
@@ -991,39 +1175,14 @@
           </li>
         {/each}
       </ul>
-      <p class="hint">{isAvCurrent ? "Play the recording · “Set in” then “Add note” marks a region (or add a 5s region at the playhead) · click a note to seek · edit it below." : "Draw a Rect/Polygon to add a note · click a note to zoom to it (fitBounds) · edit it below."}</p>
+      <p class="hint">{isAvCurrent ? "Play the recording · “Set in” then “Add note” marks a region (or add a 5s region at the playhead) · click a note to seek · edit it below." : "Draw a Rect/Polygon to add a note · click a marker to edit it right there · its editor follows it as you pan/zoom."}</p>
 
-      {#if sel}
-        {@const comment = commentOf(sel)}
-        {@const tags = tagsOf(sel).join(", ")}
-        {@const layers = sel.layers ?? []}
-        {@const trange = timeOf(sel)}
-        <form class="wadm" onsubmit={(e) => { e.preventDefault(); }}>
-          <h3>Edit note</h3>
-          <label>
-            <span class="field-head">Comment<button type="button" class="cite" onclick={() => void openCmdK()} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button></span>
-            <textarea bind:this={commentEl} rows="3" value={comment} onchange={(e) => applyForm((e.currentTarget as HTMLTextAreaElement).value, tags, layers)}></textarea>
-          </label>
-          {#if trange}
-            <!-- AV note: the time range IS its geometry (the OSD shape's analogue). mm:ss (bare seconds also accepted). -->
-            <fieldset class="time">
-              <legend>Time (m:ss)</legend>
-              <label class="t">Start<input type="text" inputmode="numeric" placeholder="m:ss" value={fmtMMSS(trange.start)} onchange={(e) => applyTime(parseMMSS((e.currentTarget as HTMLInputElement).value), trange.end ?? trange.start)} /></label>
-              <label class="t">End<input type="text" inputmode="numeric" placeholder="m:ss" value={fmtMMSS(trange.end ?? trange.start)} onchange={(e) => applyTime(trange.start, parseMMSS((e.currentTarget as HTMLInputElement).value))} /></label>
-            </fieldset>
-          {/if}
-          <label>Tags (comma-separated)<input value={tags} onchange={(e) => applyForm(comment, (e.currentTarget as HTMLInputElement).value, layers)} /></label>
-          <fieldset>
-            <legend>Layers</legend>
-            {#each ["conservation", "iconography"] as l}
-              <label class="cb"><input type="checkbox" checked={layers.includes(l)} onchange={(e) => toggleLayer(l, (e.currentTarget as HTMLInputElement).checked)} /> {l}</label>
-            {/each}
-          </fieldset>
-          <button type="button" class="del" onclick={() => onDelete(editing!)}>Delete note</button>
-        </form>
-      {/if}
+      <!-- Image + audio notes edit in the marker popover (in <main>, anchored to canvas marker / waveform
+           region); only VIDEO edits inline here, until its Wave-2 frame-region locus exists (ADR-0006). -->
+      {#if isVideoCurrent}{@render noteForm()}{/if}
     </aside>
     <main
+      bind:this={mainEl}
       class:drag-over={dragOver}
       ondrop={onDrop}
       ondragover={(e) => { e.preventDefault(); dragOver = true; }}
@@ -1035,20 +1194,42 @@
       {#if current && isAvCurrent}
         <!-- AV object → temporal editor (remount on object switch so the media element reloads). -->
         {#key canvasId}
-          <AvEditor source={currentSource} label={current.label} mediaType={current.mediaType} {annotations} bind:selected oncreate={onCreateTime} onimport={onImportTranscript} />
+          <AvEditor source={currentSource} label={current.label} mediaType={current.mediaType} {annotations} bind:selected oncreate={onCreateTime} onimport={onImportTranscript}
+            onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
         {/key}
       {:else if current && assetsReady}
         {#key canvasId}
-          <Canvas source={currentSource} {canvasId} {annotations} {tool} drawing={mode === "draw"} bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} />
+          <Canvas source={currentSource} {canvasId} {annotations} {tool} drawing={mode === "draw"} bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
+            onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
         {/key}
       {:else if current}
         <div class="no-canvas">Loading…</div>
       {:else}
         <div class="no-canvas">Add an object — drop an image here, or use “+ Object” on the rail.</div>
       {/if}
+
+      {#if sel && !isVideoCurrent && mode !== "draw"}
+        <!-- The WADM form anchored to the selected marker (ADR-0006): an image's canvas marker OR an audio
+             cue's waveform region (both stream their screen-rect via onmarkerrect → notePos). Offset off the
+             marker, follows the surface, draggable by the grip; stopPropagation so dragging never pans OSD.
+             HIDDEN in draw mode — a position:fixed popover would otherwise intercept the canvas pointer events
+             that Annotorious needs to draw a new shape (it reappears on the new note once mode → select). -->
+        <div class="note-popover" role="group" aria-label="Note editor" style={`left:${notePopoverPos.left}px; top:${notePopoverPos.top}px`} onpointerdown={(e) => e.stopPropagation()}>
+          <button type="button" class="np-grip" onpointerdown={noteDragDown} onpointermove={noteDragMove} onpointerup={noteDragUp} onpointercancel={noteDragUp} title="Drag to move" aria-label="Move the note editor">⠿</button>
+          {@render noteForm()}
+        </div>
+      {/if}
     </main>
   </div>
 
+  <PublishDialog
+    open={publishDialogOpen}
+    canFolder={canFolder}
+    onclose={() => (publishDialogOpen = false)}
+    onfolder={localPublishFolder}
+    onzip={localPublishZip}
+    ongithub={() => { publishDialogOpen = false; void openPublish(); }}
+  />
   <Publish open={publishOpen} onclose={() => (publishOpen = false)} onpublish={publish} {brokenLinks} />
   <IdentityPrompt open={identityOpen} onsave={(n) => setIdentity(n)} onskip={() => setIdentity("")} />
   <CmdK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />
@@ -1110,6 +1291,25 @@
   .pg-keep:hover { background: var(--accent-hover); }
   .pg-keep:disabled { opacity: 0.6; cursor: default; }
 
+  /* Breadcrumb crumb — the object level of "Exhibit › Object" (the spine is exhibit-level, notes object-level). */
+  .crumb { font-family: var(--font-display); font-size: 1.15rem; font-weight: 500; color: var(--ink-canvas-secondary); margin-left: var(--space-1); }
+  /* Tool switches are locked while framing a narrative camera (canvas is on the box draw). */
+  .tools button:disabled { opacity: 0.4; cursor: default; }
+  .tools.framing { opacity: 0.5; }
+
+  /* Framing banner — the canvas is capturing a SECTION camera, not a note (accent = action, with the way out). */
+  .framing-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); background: var(--accent-muted); border-bottom: 1px solid var(--border-canvas); border-left: 3px solid var(--accent); }
+  .framing-banner .fb-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .framing-banner .fb-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-canvas-primary); }
+  .framing-banner .fb-cancel { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: var(--space-2); }
+  .framing-banner .fb-cancel kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-canvas-muted); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
+  .framing-banner .fb-cancel:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Scope separator — the line between exhibit-level (spine, above) and object-level (notes, below). */
+  .scope-sep { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
+  .scope-sep::after { content: ""; flex: 1; height: 1px; background: var(--border-paper); }
+  .scope-sep span { font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-paper-muted); }
+
   /* Object rail — the exhibit's works laid along the table edge; the active one marked in forest green. */
   .objects {
     display: flex; gap: var(--space-2); align-items: stretch;
@@ -1160,9 +1360,29 @@
   .add-obj .or { font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); }
 
   .body { display: flex; flex: 1; min-height: 0; }
-  main { flex: 1; min-width: 0; background: var(--surface-canvas); }
+  main { flex: 1; min-width: 0; background: var(--surface-canvas); position: relative; }
   /* Drag-and-drop import feedback over the light table */
   main.drag-over { outline: 2px dashed var(--accent); outline-offset: -8px; }
+
+  /* Marker-anchored note editor (ADR-0006) — a paper card floating over the dark canvas, positioned by
+     Canvas's onmarkerrect (+14px off the marker, donor PADDING) and following it on pan/zoom. */
+  .note-popover {
+    position: fixed; z-index: 50; width: 320px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px);
+    overflow-y: auto; box-sizing: border-box;
+    background: var(--surface-paper); color: var(--ink-paper-primary);
+    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-md);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  }
+  .np-grip {
+    display: block; width: 100%; cursor: grab; text-align: center; user-select: none;
+    padding: 2px 0; font-size: 0.8rem; line-height: 1.4; color: var(--ink-paper-muted);
+    background: var(--surface-paper-hover); border: none; border-bottom: 1px solid var(--border-paper);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+  }
+  .np-grip:hover { color: var(--accent); }
+  .np-grip:active { cursor: grabbing; }
+  /* Inside the popover the form provides its own padding (the sidebar used to give it the surrounding space). */
+  .note-popover .wadm { margin-top: 0; border-top: none; padding-top: 0; padding: var(--space-4); }
 
   /* Notes sidebar — the notebook (warm paper) */
   aside {
@@ -1235,4 +1455,8 @@
   .wadm .cb { flex-direction: row; align-items: center; gap: var(--space-2); text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-paper-primary); }
   .del { align-self: flex-start; font-family: var(--font-ui); font-size: 0.8rem; padding: var(--space-1) var(--space-3); background: none; color: var(--accent); border: 1px solid var(--accent-muted); border-radius: var(--radius-sm); cursor: pointer; }
   .del:hover { background: var(--accent-muted); border-color: var(--accent); }
+  /* Note-editor action row — Save (commit + close the popover) beside Delete. */
+  .wadm-actions { display: flex; align-items: center; gap: var(--space-3); }
+  .save { cursor: pointer; font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
+  .save:hover { background: var(--accent-hover); }
 </style>

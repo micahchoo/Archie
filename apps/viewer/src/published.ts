@@ -3,9 +3,14 @@
 // {slug}/manifest.json gives the objects (+ title via IIIF label); each {slug}/canvas/{objId}/
 // annotations.json gives that object's published notes. No in-app publish — this is exactly what a
 // third party hitting the GH-Pages site does. (Swap the base for the deployed origin and it's live.)
-import { objectsFromManifest, sectionsFromManifest, type AObject, type IIIFManifest, type Section, type W3CAnnotation } from "@render/core";
+import { objectsFromManifest, canvasIdMap, sectionsFromManifest, type AObject, type ExhibitsJson, type IIIFManifest, type Section, type W3CAnnotation } from "@render/core";
 
 const PUBLISHED = "/published";
+
+/** The Library Gallery source — `exhibits.json` (CONTEXT §Gallery). What the shell lists. */
+export async function loadGallery(): Promise<ExhibitsJson> {
+  return fetchJson<ExhibitsJson>("exhibits.json");
+}
 
 async function fetchJson<T>(path: string): Promise<T> {
   const res = await fetch(`${PUBLISHED}/${path}`);
@@ -22,6 +27,8 @@ export interface PublishedExhibit {
   annotationsByObject: Record<string, W3CAnnotation[]>;
   /** Narrative spine recovered from the manifest's Ranges (empty for non-narrative exhibits). */
   sections: Section[];
+  /** Object id → full canvas IRI from the manifest (the published source of truth; SNAG fix). */
+  canvasIdByObject: Record<string, string>;
 }
 
 export async function loadPublishedExhibit(slug: string): Promise<PublishedExhibit> {
@@ -37,5 +44,6 @@ export async function loadPublishedExhibit(slug: string): Promise<PublishedExhib
   const title = manifest.label?.none?.[0] ?? slug;
   const summary = (manifest as { summary?: { none?: string[] } }).summary?.none?.[0];
   const sections = sectionsFromManifest(manifest); // round-trip the narrative spine from the published Ranges
-  return { slug, title, objects, annotationsByObject, sections, ...(summary !== undefined ? { summary } : {}) };
+  const canvasIdByObject = canvasIdMap(manifest); // canvas IRIs as baked at publish (not a fixed BASE)
+  return { slug, title, objects, annotationsByObject, sections, canvasIdByObject, ...(summary !== undefined ? { summary } : {}) };
 }

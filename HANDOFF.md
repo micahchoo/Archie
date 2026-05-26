@@ -229,7 +229,152 @@ shows the time-oriented focus hint.
 (5) overview section dividers — **RECONSIDERED/DEFERRED:** under model (A) largely redundant (the "Sections" mode
 already shows the full ordered spine; sections↔objects is many-to-one so plate-level dividers map muddily). Revisit
 only if plate-level "in narrative §N" badges prove wanted. Narrative MODEL + read path shipped (model locked + ADR-0005 + steps 1–4; /bidar region-zoom user-verified).
-**SECTION-AUTHORING PLACEMENT — CORRECTED (user, 2026-05-25; REWORK OWED):** section authoring must live in the
+**SECTION-AUTHORING PLACEMENT — REWORK DONE (2026-05-26; Studio builds, 190 modules, node22; COMPREHENSION GATE +
+browser-verify OWED — gated invention, do NOT self-certify):** relocated per the correction below.
+- (1) `NarrativeEditor.svelte` REWRITTEN as an **"Exhibit narrative" spine panel in the editor `<aside>`** (above the
+  object-local notes, gated on `currentLayout==="narrative"`); removed from the overview "Sections" mode.
+- (2) Camera (`start`) is now set by **FRAMING on the canvas**, not a typed fragment: "Frame camera" on a section →
+  App `startFraming` **rail-jumps to the section's object** (`switchObject` — explicit move, NOT implicit rebind, per
+  advisor) + arms the box draw; the next `onCreate` rect's xywh (or AV `onCreateTime` → `t=`) is captured via
+  `setSectionStart`, no note made. Exit = **Esc** (`onGlobalKey`) or the framing banner's **Cancel**; tool buttons
+  disabled while framing.
+- (3) `ExhibitOverview` reverted to **canvas|list** (Sections mode + NarrativeEditor import + sections/onsections/notes
+  props all removed) — viewing/arranging only.
+- (4) **SCALE SURFACED:** breadcrumb `Exhibit › Object` (header crumb); spine `max-height:40vh` scroll; each card NAMES
+  its target object + **lit when targeting the viewed object, dimmed otherwise**; explicit "Move here" rebind (clears
+  the now-invalid camera) shown only off-object; distinct verbs "Add note" vs "＋ Add to the narrative"; "This object"
+  scope separator above the notes.
+- Files: `NarrativeEditor.svelte` (rewrite), `App.svelte` (framing state/handlers + sidebar panel + banner + crumb +
+  CSS), `ExhibitOverview.svelte` (sections-mode removal). UNCHANGED: model (A), ADR-0005, archie-narrative Q-1,
+  setSections, publish (toRanges), Viewer read path, bidar.
+- **COMPREHENSION GATE:** open a NARRATIVE exhibit (Voynich after ▦→Narrative, or Bidar) → overview → click a plate →
+  editor shows the "Exhibit narrative" panel; "＋ Add to the narrative" makes a beat bound to the viewed object; "Frame
+  camera" → draw a box → card reads "▭ framed region"; switch objects on the rail → spine PERSISTS, off-object cards
+  dim, "Move here" appears; AV object → "Set moment" captures `t=`; Esc/Cancel exits; reload → sections persist; publish
+  → Ranges carry them. **GATE Q: does editor-placement + frame-on-canvas + the lit/dim cue teach "notes object-local,
+  sections exhibit-wide" WITHOUT explanation?** If not → redesign signal.
+
+**AUTHORING-EXPERIENCE GRILL → ADR-0006 (2026-05-26; /grill-with-docs; design LOCKED, build NOT started):** user hit
+two pains on the shipped rework + asked to rethink authoring — (1) sections need the same ⌘K cite as notes; (2) editing
+a note among many means scrolling to the bottom form. Grilled to a unified model (**docs/adr/0006** + CONTEXT §editing):
+- **Edit at the LOCUS:** ONE WADM-form definition — author = an editable **canvas popover at the marker**, reader =
+  annomea inline popup (REFINES §121's "zero new editing surfaces"; not a new editor). Sidebar notes list → **nav index**
+  (click → fitBounds §83 → popover; draw → popover opens at the new marker, so *add* = draw→type → kills add-scroll).
+- **Note = point** (→ marker popover) vs **Section = beat** (prose edited in the **sidebar spine**, mirroring the
+  reader's prose column, + the same ⌘K; camera still framed on canvas — ADR-0005 unchanged).
+- **Selector dim = medium dim** (EXTENDS §82 AV-temporal-only): image `xywh=` (Annotorious rect) · audio `t=`
+  (**WaveSurfer** regions = waveform locus) · video **`xywh=&t=`** spatiotemporal (frame-box + timeline).
+- **Popover mitigations** (else fall back to a **pinned sidebar inspector** — the overview's 1a/1b retreat): offset off
+  its marker · draggable · dismiss/detach on pan-zoom (not pixel-chase).
+- **STAGED build (locked, awaiting GO):**
+  - **WAVE 1** (today's pains + audio): (a) note editing → **canvas-anchored popover** = the WADM form re-anchored
+    (reuse comment/tags/layers/time/⌘K) with offset/draggable/dismiss-on-pan; sidebar notes list → nav-only
+    (click=select+fitBounds+popover; draw=popover-at-marker). (b) wire **⌘K into section prose** (spine textarea,
+    focus-routed). (c) **audio → WaveSurfer + regions plugin** (waveform draw surface; a cue region = the `t=` locus) —
+    **PRIOR-ART CHECK owed** before adding the dep (project CLAUDE.md).
+  - **WAVE-1 STATUS (2026-05-26):** **Task 0 scout DONE** → `docs/plans/wave1-editing-prior-art.md`: ADOPT annomea
+    `PopupAnchor` (floating-ui virtual-ref, re-anchors on OSD `update-viewport` — `Prior Art/.../viewer/popup.ts:166`)
+    for positioning; REUSE Archie's existing WADM form as popover content (annomea's form lacks tags/layers/⌘K);
+    ADOPT field-studio's WaveSurfer 7.8.6 + Regions pattern (`.../media/ui/molecules/AudioWaveform.svelte:128`),
+    greenfield in Archie. **Task 1 (b) ⌘K-into-section-prose DONE + builds** (190 modules): field-agnostic cite
+    palette — `requestCite(insert)` in App, `pendingCiteInsert` closure, `citeIntoComment` (note) / `citeInto`
+    (section, per-card `proseEls` ref + ¶Cite button + ⌘K keydown). **Task 2 (note popover) NEXT — needs go; ZERO new dep**
+    (user-driven prior-art revision): the §83 re-anchor is OSD-native, NOT floating-ui. Donor =
+    `IIIF/annotorious/packages/annotorious-svelte/src/osd/OpenSeadragonPopup.svelte:53–81` — `setPosition` via
+    `viewer.viewport.imageToViewerElementCoordinates(bounds)` + a `viewer.addHandler('update-viewport', …)` so
+    OSD repositions the popup every frame; offsets at `bottomRight.x + PADDING`; a `dragged` flag freezes
+    auto-reposition once moved. (annotorious-REACT uses floating-ui; the SVELTE donor does not — we follow
+    Svelte.) Drag = hand-rolled pointer events (donor uses `@neodrag/svelte`; we skip the dep). Build: a mount
+    seam (`MountSurface` exposes the selected marker's screen-rect + an `onViewportChange` subscription);
+    `NotePopover.svelte` (the extracted WADM form) absolutely-positioned in the canvas wrap; sidebar notes list
+    → nav-only; draw → popover at the new marker. Fallback = pinned sidebar inspector (ADR-0006).
+  - **Task 2 (note popover) DONE + builds (192 modules; core 274 / mount 18 / svelte 18 green); browser-verify +
+    comprehension gate OWED.** Implemented dep-free: seam `MountSurface.markerScreenRect(id)` (Annotorious
+    geometry bounds → `viewport.imageToViewerElementCoordinates`) + `onViewportChange(cb)` (OSD `update-viewport`)
+    in `surface.ts`/`mount.ts`; `Canvas.svelte` gained `onmarkerrect` + `emitRect()` (fires on select / viewport /
+    annotations-change). App: the WADM form is now a `{#snippet noteForm}` rendered as a **marker-anchored popover
+    in `<main>`** for image objects (`.note-popover`, +14px offset, follows on pan/zoom, draggable grip pins
+    per-note via `noteManualPos` keyed by id) — and **inline in the sidebar only for AV** (`{#if isAvCurrent}`);
+    the sidebar notes list is now **nav-only** (click → fitBounds → popover; draw → popover at the new marker).
+    NO new dep (no NotePopover.svelte component — a snippet sufficed; no @neodrag — hand-rolled pointer drag).
+    **Browser-verify owed:** draw a rect → popover opens at it to type; click a sidebar note → canvas fits + popover
+    at the marker; pan/zoom → popover follows; drag the grip → it pins; ⌘K inside it cites; delete works; AV object
+    → form still inline in the sidebar. Plus a **Save button** on the note editor (`closeNote` — commits comment +
+    deselects → popover closes; beside Delete in `noteForm`). **Builds (192 modules).**
+  - **Task 3 (audio) — WAVESURFER CONTESTED by prior art; needs user call.** Scout of
+    `/mnt/Ghar/.../osd-audio-video` → `docs/plans/osd-audio-video-scout.md`: a dep-free vanilla W3C audio+video
+    annotation prototype. **Verdict: DON'T add WaveSurfer** — plain `<audio>` + the EXISTING AvEditor markbar
+    (Set-in → Add-note → `t=`) already does audio temporal annotation; a waveform is visual-only (bundle bloat,
+    "zero annotation benefit"). The donor's REAL gift = the **spatiotemporal VIDEO** selector
+    `t=start,end&xywh=percent:x,y,w,h` (video-canvas.html:772-775, serialized to WADM) — unlocks Wave 2.
+    **RESOLVED: user chose to ADD WaveSurfer** (for the waveform VISUAL aid). **Task 3 DONE + builds (195 modules).**
+    `AvEditor.svelte` audio branch rewritten: `<audio>` → a **WaveSurfer waveform** (dynamic `import("wavesurfer.js")`
+    + `/dist/plugins/regions.js`, donor field-studio AudioWaveform pattern) — drag across the waveform = a new `t=`
+    cue (`region-created` → `oncreate`, temp region removed, real one re-renders from `annotations`); existing cues =
+    non-draggable regions; click a region → seek + select; play/pause button (WS has no native controls). Video
+    UNCHANGED (`<video>` — spatiotemporal is Wave 2). The dynamic import means WS is a **lazy code-split chunk**
+    (~17 kB gz, loads only when an audio object opens — main bundle unaffected, answers the bloat concern).
+    **pnpm store-mismatch WORKAROUND:** global pnpm was upgraded to **11.3.0** (wants store `v11`); node_modules was
+    linked by pnpm 10 (`v10`). pnpm 11 `install` demands a full node_modules PURGE — avoided by adding the dep with
+    **`npx --yes pnpm@10 install`** (matches the v10 store, no purge, 1s). **For future deps: use `pnpm@10`, NOT the
+    global `pnpm` (11), until the workspace is intentionally migrated to the v11 store.**
+  - **WAVE 1 COMPLETE:** ⌘K-in-sections (T1) + note popover (T2) + Save button + audio WaveSurfer (T3). All build
+    (195 modules). **Browser-verify owed** (popover follow/drag/occlusion; waveform drag-create + region select).
+    **Video spatiotemporal = Wave 2**, spec'd by the osd-audio-video donor selector `t=start,end&xywh=percent:x,y,w,h`
+    (`docs/plans/osd-audio-video-scout.md`).
+  - **[SNAG→FIX 2026-05-26, user browser-verify]:** (1) **AV file import wasn't built** — `addObjectFromFile`
+    rejected non-images (§152 ingest gate). FIXED: it now stores an audio/video file as an OPFS asset with
+    `mediaType` sound/video (no EXIF/dims), and the +Object picker accepts `image/*,audio/*,video/*` (drag-drop too).
+    §152 AV-ingest gate LIFTED (user). (2) **Waveform drag wasn't creating a note** — root cause almost certainly the
+    external fixture mp3 (`one.compost.digital/...`) failing CORS so WaveSurfer never DECODES → `ready` never fires →
+    no drag surface; compounded by `enableDragSelection` being armed before decode. FIXED: `enableDragSelection`
+    moved INTO the `ready` handler + a `wsError` surface ("import a local file") on decode failure. The AV-import fix
+    is the real unblock — a LOCAL audio file decodes with no CORS, so the waveform + drag-create work. Builds (197
+    modules). **Browser-verify owed:** import a local .mp3 → waveform renders → drag across it creates a `t=` note;
+    the external-URL fixture may still show the CORS hint (expected).
+  - **WAVE 2 KEYSTONE DONE + tested (core 295, +16):** `@render/core` `parseMediaFragment` / `mediaFragmentValue`
+    (`geometry/mediafragment.ts`) — the spatiotemporal selector. Splits `&`-separated W3C media-fragment dims,
+    delegating each axis to the existing `parseTimeFragment` (t) + a unit-aware xywh parser (pixel|percent);
+    round-trips image `xywh=pixel:…`, audio `t=…`, and **video `t=…&xywh=percent:…`** (order-independent), exported
+    from index. This is the SOURCE the video UI projects from (strategy: source-before-projection). **REMAINING Wave 2
+    (browser UI, own phase):** a frame-draw-over-`<video>` surface (draw a box on a paused frame = the `xywh` while
+    a `t=` window is set on a timeline) + wire it through `onCreate`/the note form to a combined selector via
+    `mediaFragmentValue`. Best done AFTER the user browser-verifies the AV-import + waveform fixes above.
+  - **[FIX 2026-05-26, user clarification] AV note editing UNIFIED to the popover model** (was inline-in-sidebar):
+    the "notes → popover, sections → sidebar" design now applies to AUDIO too. An audio cue's locus = its
+    **waveform region**; `AvEditor` emits the selected region's screen-rect (relative to its root) via a new
+    `onmarkerrect` prop (`emitRegionRect`, fired on select / ready / annotations-change) → App's `notePos` → the
+    SAME `noteForm` popover in `<main>`. Image (canvas marker) + audio (waveform region) → popover; **only VIDEO**
+    keeps the inline sidebar form (`{#if isVideoCurrent}`) until its Wave-2 frame-region locus. Sidebar is now
+    nav + spine only for audio too. Builds (198 modules). **Browser-verify owed:** select an audio cue (list or
+    region) → its note opens in a popover near the waveform region, not inline; spine stays in the sidebar.
+  - **[SNAG→FIX 2026-05-26, user] popover appeared OVER THE SIDEBAR, not at the locus.** Cause: mixed coordinate
+    spaces (Canvas emitted viewer-element-relative, AvEditor `.av`-relative) + `position:absolute`-in-`main`, so the
+    `{16,16}` fallback (when a rect didn't resolve) landed viewport-top-left = over the sidebar. FIX: everything is
+    now **VIEWPORT coords + the popover is `position:fixed` (z-50)**. `markerScreenRect` (mount.ts) adds
+    `viewer.element` page offset; AvEditor `emitRegionRect` emits `getBoundingClientRect()` directly with a
+    **waveform fallback** (`region.element ?? waveformEl`) so audio always anchors near the wave, never a corner.
+    Mount tests 18/18; studio builds (199 modules). **Browser-verify:** popover now sits at the marker (image) /
+    waveform region (audio), not over the sidebar.
+  - **[SNAG→FIX v2 2026-05-26, user: "still over the sidebar"]** — the v1 fix didn't take because `notePos` was
+    coming back NULL (so the popover used the fallback, which was viewport `{16,16}` = top-left = over the LEFT
+    sidebar). ROOT CAUSE: `markerScreenRect` read Annotorious's INTERNAL store (`state.store.getAnnotation` →
+    `geometry.bounds`), which proved fragile/empty. FIX: compute from the **PUBLIC** `annotator.getAnnotations()`
+    + core `selectorBBox` (rect or polygon) → OSD `imageToViewerElementCoordinates` + element page-offset = viewport
+    px. AND the null-fallback now anchors **inside the canvas pane** (`mainEl.getBoundingClientRect()` + 24, bound
+    via `bind:this`), never the viewport corner — so even an unresolved rect can't land over the sidebar. Mount 18/18,
+    studio 199. **Browser-verify:** image marker + audio cue popovers sit at/over the canvas, never the sidebar.
+  - **[SNAG→FIX 2026-05-26, user: "drag to create annotations not working"]** — the `position:fixed` z-50 popover
+    floats over the canvas; once a note is selected it intercepts the pointerdown Annotorious needs to start a draw.
+    FIX: popover condition gains `&& mode !== "draw"` — it steps aside in draw mode (reappears on the new note once
+    mode → select). Builds (199). If draw is STILL broken after this, suspect the AUDIO waveform path (WaveSurfer
+    `enableDragSelection` / `region-created`), not the image canvas. Browser-verify owed.
+  - **WAVE 2** (video spatiotemporal): combined `xywh=&t=` parse/serialize in `@render/core` (today `parseTimeFragment`
+    = t only, `rectSel` = xywh only) · frame-draw-over-video surface · timeline.
+- SUPERSEDES the just-shipped note placement (notes were sidebar-list + bottom form → now popover); the **section-spine
+  placement STANDS** (gains ⌘K). The narrative-relocation rework (above) remains valid for sections; only NOTE editing moves.
+
+**SECTION-AUTHORING PLACEMENT — CORRECTED (user, 2026-05-25; ✅ NOW REWORKED ABOVE):** section authoring must live in the
 **EDITOR space** (canvas + object rail + sidebar), NOT the separate overview "Sections" tab I built (steps 2–4).
 WHY: a section's camera (`start`) must be FRAMED on the object's canvas (like a note's geometry), and the rail
 already gives multi-object movement — a separate screen divorces the spine from the canvas you need to frame it.
@@ -240,6 +385,16 @@ INTO the editor sidebar as a "Narrative" spine panel beside the notes list; (2) 
 narrative" + prose, reorder in the panel; (3) overview-as-canvas stays VIEWING/arranging only. UNCHANGED: model (A),
 ADR-0005, setSections, publish (toRanges), the Viewer read path, bidar. Only the HOST SURFACE moves (overview tab →
 editor sidebar) + the typed `start` field becomes a canvas gesture. The NarrativeEditor component largely survives.
+**SURFACE THE SCALE (notes = object-local, sections = exhibit-wide) — the IA spec for the rework:** the
+governing principle is *scope is taught by what changes vs persists as you move the rail* — switch objects →
+notes SWAP, the narrative spine STAYS. Devices: (1) scope eyebrows — "This object · {label}" over the notes,
+"Exhibit narrative" over the spine; (2) spine persists on rail-switch + highlights the section(s) targeting the
+CURRENT object, dims the rest (each showing its target object name); (3) each section card NAMES its target
+object ("§4 · the map") — notes never name an object; (4) distinct verbs: "Add note" (here) vs "Add to the
+narrative" (the exhibit's spine); (5) breadcrumb `Exhibit › Object` — spine at the Exhibit level (top,
+persistent), notes at the Object level (below, swappable); (6) optional: rail plate badges ("§1,§3") show the
+spine's reach. Narrative panel = persistent exhibit-level region atop the sidebar, visually distinct from the
+object-local notes — must NOT read as just another per-object list.
 **This is the real "multi-object / AV narrative reads correctly" work** — the authoring (Wave 2) + round-trip
 (Wave 3) are done; this makes the read side honor the model. ADR-worthy (offered, not yet written).
 **OTHER NEXT (non-gated, see registry):** styled AV scrubber · KNOWN SCALING GAP (below) ·

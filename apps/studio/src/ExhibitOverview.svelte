@@ -4,9 +4,9 @@
   // ZOOM (wheel / ± controls), the SAME zoom metaphor as descending into an Object's deep-zoom surface
   // (1a). Click a plate → open that Object. The comprehension gate: does this read as a CANVAS, not a list
   // pretending to be one? The 1b fallback (an explicit List view) ships alongside so the contrast is in hand.
-  // Browser-verified (pointer/wheel transforms). Section dividers await Studio narrative section-authoring.
-  import type { LayoutType, Section } from "@render/core";
-  import NarrativeEditor from "./NarrativeEditor.svelte";
+  // Browser-verified (pointer/wheel transforms). Narrative SECTION authoring lives in the editor sidebar
+  // (NarrativeEditor), not here — this overview is the zoomed-OUT viewing/arranging scale only.
+  import type { LayoutType } from "@render/core";
 
   type OverviewObject = { id: string; label: string; source: string; mediaType?: "image" | "sound" | "video" };
 
@@ -21,9 +21,6 @@
     onsetlayout,
     onback,
     onreorder,
-    sections = [],
-    onsections,
-    notes = [],
   }: {
     title: string;
     layout: LayoutType;
@@ -37,16 +34,9 @@
     onback: () => void;
     /** New reading order, by object id — the overview's reason to exist (Grid/Narrative sequence). */
     onreorder: (orderedIds: string[]) => void;
-    /** Narrative spine (authored sections) — editable only for the narrative layout (the "Sections" mode). */
-    sections?: Section[];
-    onsections?: (sections: Section[]) => void;
-    /** The exhibit's notes, for the NarrativeEditor's "add section from a Note" shortcut. */
-    notes?: ReadonlyArray<{ id: string; objectId: string; start?: string; lead: string }>;
   } = $props();
-  // The narrative-authoring mode is offered only for a narrative exhibit with a persistence callback.
-  const isNarrative = $derived(layout === "narrative" && onsections !== undefined);
 
-  let mode = $state<"canvas" | "list" | "sections">("canvas"); // 1a canvas ↔ 1b list ↔ narrative spine editor
+  let mode = $state<"canvas" | "list">("canvas"); // 1a spatial canvas ↔ 1b plain list
   let viewport = $state<HTMLDivElement | null>(null);
 
   // Pan/zoom transform of the whole tableau (the canvas gesture). z clamped to a sane range.
@@ -130,7 +120,6 @@
     <div class="viewtoggle" role="group" aria-label="Overview mode">
       <button class:on={mode === "canvas"} onclick={() => (mode = "canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>
       <button class:on={mode === "list"} onclick={() => (mode = "list")} title="Plain list">List</button>
-      {#if isNarrative}<button class:on={mode === "sections"} onclick={() => (mode = "sections")} title="Author the narrative spine (sections + prose)">Sections</button>{/if}
     </div>
   </header>
 
@@ -194,9 +183,6 @@
       </div>
       <p class="hint">Click a plate to annotate it up close</p>
     </div>
-  {:else if mode === "sections"}
-    <!-- Narrative spine authoring (the §118 "sidebar = sections/narrative" surface, here as a mode). -->
-    <NarrativeEditor {sections} {objects} {notes} onchange={(s) => onsections?.(s)} />
   {:else}
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->

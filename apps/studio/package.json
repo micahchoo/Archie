@@ -13,7 +13,8 @@
     "@render/core": "workspace:*",
     "@render/svelte": "workspace:*",
     "@annotorious/openseadragon": "^3.8.2",
-    "@annotorious/plugin-tools": "^1.6.0"
+    "@annotorious/plugin-tools": "^1.6.0",
+    "wavesurfer.js": "^7.8.6"
   },
   "devDependencies": {
     "svelte": "^5.15.0",

@@ -11,13 +11,13 @@
 import type { Filesystem, FsDirectory } from "../fs/seam.js";
 import { ZipFilesystem } from "../fs/zip.js";
 import type { Library } from "../model/model.js";
-import type { AnnotationLog, AnnotationRecord } from "../wadm/types.js";
+import type { AnnotationLog, AnnotationRecord, W3CAnnotation } from "../wadm/types.js";
 import { buildLinkIndex, resolveLink, validateLink, rewriteArchieLinks, type LinkTarget } from "../link/link.js";
 import { toCollection } from "../iiif/collection.js";
 import { toExhibitsJson, type ExhibitsJson } from "../iiif/exhibits.js";
-import { toManifest, objectsFromManifest } from "../iiif/manifest.js";
+import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest } from "../iiif/manifest.js";
 import type { IIIFManifest } from "../iiif/presentation.js";
-import type { Exhibit } from "../model/model.js";
+import type { Exhibit, AObject, Section } from "../model/model.js";
 import { readAnnotations } from "../spine/persist.js";
 import { toHistory } from "../spine/serialize.js";
 import { projectHeads } from "../spine/heads.js";
@@ -238,4 +238,43 @@ export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
     ...(ex.library.summary !== undefined ? { summary: ex.library.summary } : {}),
   };
   return { library, logs };
+}
+
+/** One published exhibit read from a Filesystem (the in-memory PREVIEW shape). */
+export interface PublishedExhibitData {
+  slug: string;
+  title: string;
+  summary?: string;
+  objects: AObject[];
+  /** Published head notes per object id (the per-canvas heads-page items). */
+  annotationsByObject: Record<string, W3CAnnotation[]>;
+  /** Narrative spine recovered from the manifest's Ranges (empty for non-narrative exhibits). */
+  sections: Section[];
+  /** Object id → full canvas IRI from the manifest. */
+  canvasIdByObject: Record<string, string>;
+}
+
+/**
+ * Read ONE published exhibit from a Filesystem — the in-memory PREVIEW path (CONTEXT §"Local view
+ * loop": Preview renders the published projection, so what you preview == what publishes). Mirrors
+ * the Viewer's HTTP loadPublishedExhibit, but over the Filesystem seam: Studio runs publishLibrary
+ * into a MemoryFilesystem, then reads it back here — NO fetch, NO second app.
+ */
+export async function readPublishedExhibit(fs: Filesystem, slug: string): Promise<PublishedExhibitData> {
+  const root = await fs.root();
+  const exDir = await root.getDirectory(slug);
+  const manifest = await readJson<IIIFManifest>(exDir, "manifest.json");
+  const objects = objectsFromManifest(manifest);
+  const canvasIdByObject = canvasIdMap(manifest);
+  const sections = sectionsFromManifest(manifest);
+  const canvasDir = await exDir.getDirectory("canvas");
+  const annotationsByObject: Record<string, W3CAnnotation[]> = {};
+  for (const obj of objects) {
+    const objDir = await canvasDir.getDirectory(obj.id);
+    const page = await readJson<{ items?: W3CAnnotation[] }>(objDir, "annotations.json");
+    annotationsByObject[obj.id] = page.items ?? [];
+  }
+  const title = manifest.label?.none?.[0] ?? slug;
+  const summary = (manifest as { summary?: { none?: string[] } }).summary?.none?.[0];
+  return { slug, title, objects, annotationsByObject, sections, canvasIdByObject, ...(summary !== undefined ? { summary } : {}) };
 }

@@ -6,15 +6,15 @@
   // authored prose-spine; round-tripping them through manifest Ranges is a follow-up).
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import { resolveLayout, parseNoteDeepLink, type Exhibit, type LayoutDescriptor, type W3CAnnotation } from "@render/core";
+  import { resolveLayout, type Exhibit, type LayoutDescriptor, type W3CAnnotation } from "@render/core";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
-  import { canvasIdFor } from "../sample-data.js";
+  import { canvasIdFor } from "../published-base.js";
   import ObjectGrid from "./ObjectGrid.svelte";
   import Reader from "./Reader.svelte";
   import NarrativeReader from "./NarrativeReader.svelte";
   import MediaPlayer from "./MediaPlayer.svelte";
 
-  let { slug }: { slug: string } = $props();
+  let { slug, noteId }: { slug: string; noteId?: string } = $props();
 
   let status = $state<"loading" | "ready" | "error">("loading");
   let errorMsg = $state("");
@@ -39,13 +39,13 @@
       selectedObjectId = l.type === "grid" ? null : (l.objects[0]?.id ?? null);
       status = "ready";
 
-      // deep-link arrival (§82/§124): #/a/<id> → land in context on that note + show fading chrome.
-      const dl = parseNoteDeepLink(location.hash);
-      if (dl) {
-        const owner = l.objects.find((o) => (d.annotationsByObject[o.id] ?? []).some((a) => a.id === dl.logicalId));
+      // deep-link arrival (§82/§124): the shell parses #/<slug>/a/<id> and passes the note id here
+      // (the hash is slug-qualified now, so ExhibitView no longer reads location.hash itself).
+      if (noteId) {
+        const owner = l.objects.find((o) => (d.annotationsByObject[o.id] ?? []).some((a) => a.id === noteId));
         if (owner) {
           selectedObjectId = owner.id; // land on the object (not the grid overview)
-          arrivedNote = dl.logicalId; // → Reader/NarrativeReader initialSelected → fitBounds
+          arrivedNote = noteId; // → Reader/NarrativeReader initialSelected → fitBounds
           chromeVisible = true;
           setTimeout(() => (chromeVisible = false), 6000);
         }
@@ -64,6 +64,9 @@
   const isAV = $derived(activeData?.mediaType === "sound" || activeData?.mediaType === "video");
   const noNotes: W3CAnnotation[] = [];
   const annotationsOf = (objectId: string): W3CAnnotation[] => data?.annotationsByObject[objectId] ?? noNotes;
+  // Canvas IRI from the published manifest (SNAG fix — matches annotation targets for any publish
+  // origin); falls back to the demo BASE reconstruction only if the map lacks it.
+  const canvasIdOf = (objectId: string): string => data?.canvasIdByObject[objectId] ?? canvasIdFor(slug, objectId);
 </script>
 
 {#if status === "loading"}
@@ -76,7 +79,7 @@
   {:else if layout.type === "narrative" && layout.sections && layout.objects[0]}
     <NarrativeReader
       objects={data.objects}
-      canvasIdOf={(id) => canvasIdFor(slug, id)}
+      canvasIdOf={canvasIdOf}
       annotationsByObject={data.annotationsByObject}
       sections={layout.sections}
       title={data.title}
@@ -84,7 +87,7 @@
     />
   {:else if activeObject}
     <Reader
-      object={{ source: activeObject.source, canvasId: canvasIdFor(slug, activeObject.id), label: activeObject.label }}
+      object={{ source: activeObject.source, canvasId: canvasIdOf(activeObject.id), label: activeObject.label }}
       annotations={annotationsOf(activeObject.id)}
       onback={isGrid ? () => (selectedObjectId = null) : undefined}
       initialSelected={arrivedNote}

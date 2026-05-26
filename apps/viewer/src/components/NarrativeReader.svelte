@@ -6,8 +6,10 @@
   // MediaPlayer instead of the OSD canvas. Markers shown = the active object's notes (progressive §122 = v1.1).
   import Canvas from "@render/svelte/Canvas.svelte";
   import MediaPlayer from "./MediaPlayer.svelte";
+  import NoteLightbox from "./NoteLightbox.svelte";
+  import NoteMedia from "./NoteMedia.svelte";
   import { renderMarkdown } from "@render/svelte";
-  import type { AObject, W3CAnnotation, Section } from "@render/core";
+  import { splitNoteMedia, type AObject, type NoteMediaItem, type W3CAnnotation, type W3CBody, type Section } from "@render/core";
 
   let {
     objects = [],
@@ -44,6 +46,15 @@
   const multiObject = $derived(new Set(sections.map((s) => s.objectId)).size > 1);
 
   function activate(i: number) { activeIndex = i; selected = null; }
+
+  // Note popup on marker click (CONTEXT §123 "Both: annomea popup/drawer on marker click"). Narrative
+  // was missing this entirely — a clicked marker selected but showed nothing, so notes never surfaced.
+  const bodies = (it: W3CAnnotation): W3CBody[] => (Array.isArray(it.body) ? it.body : it.body ? [it.body] : []);
+  const commentOf = (it: W3CAnnotation) => { const b = bodies(it).find((x) => { const p = (x as { purpose?: string }).purpose; return p === undefined || p === "commenting"; }); return (b as { value?: string } | undefined)?.value ?? "(untitled)"; };
+  const tagsOf = (it: W3CAnnotation) => bodies(it).filter((x) => (x as { purpose?: string }).purpose === "tagging").map((x) => (x as { value?: string }).value ?? "");
+  const current = $derived(activeNotes.find((it) => it.id === selected));
+  const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
+  let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);
 </script>
 
 <div class="narrative">
@@ -80,6 +91,20 @@
       {/each}
     </ol>
   </aside>
+
+  {#if current}
+    <!-- annomea popup: the selected marker's note, floating over the canvas (CONTEXT §123) -->
+    <div class="note-pop">
+      <button class="close" onclick={() => (selected = null)} aria-label="Close note">×</button>
+      {#if noteParts.text}<div class="note-body">{@html renderMarkdown(noteParts.text)}</div>{/if}
+      <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
+      {#if tagsOf(current).length}<div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>{/if}
+    </div>
+  {/if}
+
+  {#if lightbox}
+    <NoteLightbox media={lightbox.media} text={lightbox.text} index={lightbox.index} onclose={() => (lightbox = null)} />
+  {/if}
 </div>
 
 <style>
@@ -121,4 +146,25 @@
   .prose :global(a) { color: var(--accent); }
   .prose :global(img) { max-width: 100%; height: auto; border-radius: var(--radius-sm); margin-top: var(--space-2); }
   .prose :global(audio) { width: 100%; margin-top: var(--space-2); }
+
+  /* Note popup — a forest-green callout over the light table (annomea popup; mirrors Reader's). */
+  .note-pop {
+    position: absolute; left: var(--space-5); bottom: var(--space-5); z-index: 5; max-width: min(44ch, 46%);
+    padding: var(--space-4) var(--space-6) var(--space-4) var(--space-5);
+    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
+    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent);
+    border-radius: var(--radius-md);
+  }
+  .note-pop .close { position: absolute; top: 4px; right: 8px; background: none; border: none; cursor: pointer; color: var(--ink-canvas-secondary); font-size: 1.2rem; line-height: 1; }
+  .note-pop .close:hover { color: var(--accent); }
+  .note-body { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-canvas-primary); }
+  .note-body :global(p) { margin: 0 0 var(--space-2); }
+  .note-body :global(p:last-child) { margin-bottom: 0; }
+  .note-body :global(strong) { font-weight: 700; }
+  .note-body :global(em) { font-style: italic; }
+  .note-body :global(a) { color: var(--accent); }
+  /* Note images render as thumbnails — click opens the lightbox. */
+  .note-body :global(img) { display: block; max-width: 100%; max-height: 180px; height: auto; margin-top: var(--space-2); border-radius: var(--radius-sm); cursor: zoom-in; }
+  .note-pop .tags { margin-top: var(--space-3); display: flex; gap: var(--space-3); }
+  .note-pop .tag { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); }
 </style>

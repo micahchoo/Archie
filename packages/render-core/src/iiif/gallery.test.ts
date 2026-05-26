@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { toCollection } from "./collection.js";
-import { toExhibitsJson, shouldRenderGallery } from "./exhibits.js";
+import { toExhibitsJson, shouldRenderGallery, shouldRenderGalleryFromJson } from "./exhibits.js";
 import type { Library } from "../model/model.js";
 
 const base = "https://u.gh.io/lib/";
@@ -53,5 +53,14 @@ describe("shouldRenderGallery (UX-Q7 single-exhibit collapse THRESHOLD)", () => 
   });
   it("renders an empty library (nothing to collapse to)", () => {
     expect(shouldRenderGallery({ id: "x", exhibits: [] })).toBe(true);
+  });
+});
+
+describe("shouldRenderGalleryFromJson (consumer side — same rule on the published ExhibitsJson)", () => {
+  it("agrees with shouldRenderGallery for every framing case", () => {
+    expect(shouldRenderGalleryFromJson(toExhibitsJson(lib))).toBe(true); // N>1
+    expect(shouldRenderGalleryFromJson(toExhibitsJson({ id: "x", exhibits: [lib.exhibits[0]!] }))).toBe(false); // N=1, no framing
+    expect(shouldRenderGalleryFromJson(toExhibitsJson({ id: "x", title: "Framed", exhibits: [lib.exhibits[0]!] }))).toBe(true); // N=1, framed
+    expect(shouldRenderGalleryFromJson(toExhibitsJson({ id: "x", exhibits: [] }))).toBe(true); // empty
   });
 });
