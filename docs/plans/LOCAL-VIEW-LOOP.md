@@ -127,7 +127,7 @@ user` — an LLM cannot self-certify a visual/interactive result.
 
 - **ADR-0002 amendment** (2 sentences): `client:only` + arbitrary authored slugs → runtime-data
   shell, not SSG-per-page; Astro demotes to shell-builder + island bundler.
-- **Candidate ADR-0006** — "Viewer is a runtime-data client shell (hash-routed), not SSG": this is
+- **Candidate ADR-0006a** — "Viewer is a runtime-data client shell (hash-routed), not SSG" (0006 is taken by edit-at-locus): this is
   hard-to-reverse, surprising without context, and a real trade-off (gave up SSG/SEO/pretty URLs).
   Meets the ADR bar; decide at ADR-writing time whether it's an ADR-0002 amendment or its own ADR.
 - **Q-N minting** for the CONTEXT §"Local view loop" decisions (one-smart-hall, hash, multi-library=no,

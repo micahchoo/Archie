@@ -39,7 +39,7 @@ mount OSD → `@archie/viewer` (human browser gate).** This mirrors why `parseNo
 
 ```
 TASK LV-A1  slug-qualified hash route parser
-  implements:    CONTEXT §"Local view loop" (routing=hash); ADR-0006 (queued)
+  implements:    CONTEXT §"Local view loop" (routing=hash); ADR-0006a (queued)
   blocked-by:    []
   donor:         @render/core parseNoteDeepLink (the existing `#/a/<id>` parser — EXTEND its grammar)
   write-targets: packages/render-core/src/link/route.ts + route.test.ts
@@ -106,7 +106,7 @@ TASK LV-A4  Gallery island from exhibits.json
                  exhibits.json (verify by editing the tree, not the array), cards navigate.
 
 TASK LV-A5  ViewerShell — the single client-routed shell
-  implements:    CONTEXT §"Local view loop" (one smart hall); ADR-0006 (queued)
+  implements:    CONTEXT §"Local view loop" (one smart hall); ADR-0006a (queued)
   blocked-by:    [LV-A1, LV-A3, LV-A4]
   donor:         apps/viewer/src/components/ExhibitView.svelte (already slug-driven) + LV-A1/A3/A4
   write-targets: apps/viewer/src/components/ViewerShell.svelte (new) ;
