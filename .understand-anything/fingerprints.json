@@ -1,0 +1,2892 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "HEAD",
+  "generatedAt": "2026-05-25T06:45:56.487Z",
+  "files": {
+    ".claude/.deps-index/pending.json": {
+      "filePath": ".claude/.deps-index/pending.json",
+      "contentHash": "1ec166356f0bbc8e69eaeb1c227b14b40be137c5012cb0a110d108d2616c85bf",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 43,
+      "hasStructuralAnalysis": true
+    },
+    ".claude/.deps-index/resolved.json": {
+      "filePath": ".claude/.deps-index/resolved.json",
+      "contentHash": "43a93749f928fc1d9679eb2b33dcd5407dec279d5150ce13b861819f96a39a02",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 88,
+      "hasStructuralAnalysis": true
+    },
+    ".claude/.skill-invocation-log": {
+      "filePath": ".claude/.skill-invocation-log",
+      "contentHash": "71550f5fcbab7f89b6b79092bf0652152caebee90358b1a5c1fe75dd4a3c609d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": false
+    },
+    ".claude/SUGGESTED_SKILLS.md": {
+      "filePath": ".claude/SUGGESTED_SKILLS.md",
+      "contentHash": "3169381e2396e6246078e687f55ccf15632b1cfb54f1686dc016c186dec4e133",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 17,
+      "hasStructuralAnalysis": true
+    },
+    ".claude/rules/deps-index.md": {
+      "filePath": ".claude/rules/deps-index.md",
+      "contentHash": "233342b639fceecc12aef070e701c69ce9e81c1cc2a2e688a4a38ff818477cc9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 32,
+      "hasStructuralAnalysis": true
+    },
+    ".claude/settings.json": {
+      "filePath": ".claude/settings.json",
+      "contentHash": "43fd9292d8554aea3381e56d82032711f710bf8de2cec4c06ef2966351c70934",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
+    ".claude/skills/librarian/SKILL.md": {
+      "filePath": ".claude/skills/librarian/SKILL.md",
+      "contentHash": "0f42e7e1265b634fa36b1734d5a3e38beed025c209abda4b3513b836f07c06d9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 194,
+      "hasStructuralAnalysis": true
+    },
+    ".foxhound/store.db": {
+      "filePath": ".foxhound/store.db",
+      "contentHash": "2a72643a3fad4fddababfd2945a25af23d76efa66d74f3b8ddcb0981083b2eb5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    ".foxhound/store.db-shm": {
+      "filePath": ".foxhound/store.db-shm",
+      "contentHash": "8f0b59063d391fac0f2971c6555f2a1391a32d202c2b90a0e31c04a7a34b83c0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 3,
+      "hasStructuralAnalysis": false
+    },
+    ".foxhound/store.db-wal": {
+      "filePath": ".foxhound/store.db-wal",
+      "contentHash": "1613144b419d82b7398c6a9206f47cf1c1c56dd9e27f124977d7368ddba86af7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 42,
+      "hasStructuralAnalysis": false
+    },
+    ".gitattributes": {
+      "filePath": ".gitattributes",
+      "contentHash": "7cf80f3a97f2fb145e2706f774bab2b52447c14328780bccb8d9d8ed418f3093",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": false
+    },
+    ".gitignore": {
+      "filePath": ".gitignore",
+      "contentHash": "545b12d090475ffc72c47df4f20e21be631abe933aa8be799b7e636f9c4f5078",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 7,
+      "hasStructuralAnalysis": false
+    },
+    ".interface-design/system.md": {
+      "filePath": ".interface-design/system.md",
+      "contentHash": "278c505bb145df4417f7e472b8f53d6fc4c56bf5a77a39d9ccb154956a59254a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 186,
+      "hasStructuralAnalysis": true
+    },
+    ".mulch/README.md": {
+      "filePath": ".mulch/README.md",
+      "contentHash": "7d7562c9ef651a42873a60fed4cc928e1a7b45ba8879ff51e489399c03eec786",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 22,
+      "hasStructuralAnalysis": true
+    },
+    ".mulch/mulch.config.yaml": {
+      "filePath": ".mulch/mulch.config.yaml",
+      "contentHash": "2afb70006e5c7703e314de73dbf30ba2d8cc99e19e99c2486eef03473fa79e42",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 14,
+      "hasStructuralAnalysis": true
+    },
+    ".seeds/.gitignore": {
+      "filePath": ".seeds/.gitignore",
+      "contentHash": "23825359950a9036a928d888fb1d4cba834bf8f31d4a79cea2dd79042c909f63",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    ".seeds/config.yaml": {
+      "filePath": ".seeds/config.yaml",
+      "contentHash": "c935ee9ca801587a0820c193fda75c51bf397a0bf63d9f90a1c9ff3f9a6b5e4b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 3,
+      "hasStructuralAnalysis": true
+    },
+    ".seeds/issues.jsonl": {
+      "filePath": ".seeds/issues.jsonl",
+      "contentHash": "1bdf70fa2cc1d14f2a6e71542a664575ffb3255a3c092e9e5f29ceb73426cb81",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 24,
+      "hasStructuralAnalysis": false
+    },
+    ".seeds/templates.jsonl": {
+      "filePath": ".seeds/templates.jsonl",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    ".understand-anything/.understandignore": {
+      "filePath": ".understand-anything/.understandignore",
+      "contentHash": "aa3059ec929b05cf8d086b5e0fd416430c3498a72ca24c5e3235ce3532de9c69",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 24,
+      "hasStructuralAnalysis": false
+    },
+    "CLAUDE.md": {
+      "filePath": "CLAUDE.md",
+      "contentHash": "22d22690f59a833f4bf44bb2ac864cc56ce8cfc8f20c4b37a9dedfe83c9773f5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "CONTEXT.md": {
+      "filePath": "CONTEXT.md",
+      "contentHash": "7ae6745a8c424d3e8b692639f4cb71f29c1e86dc9ecb1f122fcf65104d744871",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 162,
+      "hasStructuralAnalysis": true
+    },
+    "HANDOFF.md": {
+      "filePath": "HANDOFF.md",
+      "contentHash": "b5dd7ad1f34138ac156b14bf95be81a0db8e6818cc32395661631337e9c1bcbc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 574,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/00-INDEX.md": {
+      "filePath": "Prior Art/00-INDEX.md",
+      "contentHash": "c81f1c1f6289e2c415967d1fe34244bdb56fd7d3e070920c16703b9778669d2b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 137,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/01-deep-zoom-viewer.md": {
+      "filePath": "Prior Art/01-deep-zoom-viewer.md",
+      "contentHash": "3ec4b17626c42c451f2e1f7f25c3f4a890d052d2cdbb8815fdb3e1515726dd89",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 62,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/02-annotation-tools.md": {
+      "filePath": "Prior Art/02-annotation-tools.md",
+      "contentHash": "7ea96af0e298ae2fd402684a0a0667174d6356927ecd6a0ac4d550d8f8721e4d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 60,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/03-annotation-data-model.md": {
+      "filePath": "Prior Art/03-annotation-data-model.md",
+      "contentHash": "6b9189040f4722ac2d0ddf602d75d69bb3a33e11bdeb905fed7454c6b7152e22",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 76,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/04-multimedia-av.md": {
+      "filePath": "Prior Art/04-multimedia-av.md",
+      "contentHash": "363c83bd9851cb82adfa984c349f4dd4cf131d319e2e678ddf564d0ae278fe66",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/05-multi-object-collections.md": {
+      "filePath": "Prior Art/05-multi-object-collections.md",
+      "contentHash": "db24d42eb5c95bbc857b0cf30193af78f3ac2eba750e5869e1b91f090cc5eaa7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/06-authoring-cms.md": {
+      "filePath": "Prior Art/06-authoring-cms.md",
+      "contentHash": "3dedfddf2e49c84c0b205c94ca1866cd388e261bd56a18c797ad934ef533773d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 76,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/07-published-read-ui.md": {
+      "filePath": "Prior Art/07-published-read-ui.md",
+      "contentHash": "40988e40224389780fd3c023417ea4fa8b91e0b92eea394d6cec9ad0227d8130",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 68,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/08-linkable-navigable.md": {
+      "filePath": "Prior Art/08-linkable-navigable.md",
+      "contentHash": "f8b03771bacc2321025841dfee8e881850b605ca7bf5ef10d7c9ea81b1592c3a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 68,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/09-web-publishable-serverless.md": {
+      "filePath": "Prior Art/09-web-publishable-serverless.md",
+      "contentHash": "48013d646248e361730ac8cd66cfff43c3e5b315fd226989fadcb908e6ee285d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 67,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/10-state-mutation-patterns.md": {
+      "filePath": "Prior Art/10-state-mutation-patterns.md",
+      "contentHash": "51f0cc4a8f6e809d43e8a5ede72ba8e9a946040d7eebf0ce290b144dab5f6781",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 83,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/11-20-NEW-AXES.md": {
+      "filePath": "Prior Art/11-20-NEW-AXES.md",
+      "contentHash": "115612c74a2ee8956762cc3b34698e4f5336c24b37b9a0a6ebfaa68d26b16a33",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/11-search-discovery.md": {
+      "filePath": "Prior Art/11-search-discovery.md",
+      "contentHash": "85aebfb9a6293e3ebedce57c7f278c3bd4ef45521c30f08d96bde792c1a09e86",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 65,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/12-accessibility.md": {
+      "filePath": "Prior Art/12-accessibility.md",
+      "contentHash": "2f91aa2e2e7256ac9ef10713f2e00c83bf89994171eefcbc4088e445c4126404",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/13-i18n-localization.md": {
+      "filePath": "Prior Art/13-i18n-localization.md",
+      "contentHash": "89d6413b6840736aed7037206bf3e2365b13bd9050db5465df05d5224e08ab11",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 62,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/14-import-interop.md": {
+      "filePath": "Prior Art/14-import-interop.md",
+      "contentHash": "3cb423ba013d6e1f7bd0b4fe6dc8d87986bc57cd4218bb18c55fc4acc1c6dbdf",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 72,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/15-provenance-citation.md": {
+      "filePath": "Prior Art/15-provenance-citation.md",
+      "contentHash": "e532b99515a1f5fd00a3d2abf19d1fd13dba823aa4789083dbbe3cc7b5a3e5a1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 74,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/16-performance-ux.md": {
+      "filePath": "Prior Art/16-performance-ux.md",
+      "contentHash": "00b65e7cebe439dd35573c4e943561495a2f4110b1276f5943de03e6a0031c46",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/17-tile-generation.md": {
+      "filePath": "Prior Art/17-tile-generation.md",
+      "contentHash": "6b23ccc278564b509413426010fa337c60dd61c75ea4de58ed3fd6b270fe9866",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/18-embedding-ecosystem.md": {
+      "filePath": "Prior Art/18-embedding-ecosystem.md",
+      "contentHash": "00c9ddd2fbdef355e4e182fb467f530e6db37438204e764c26ad72a24ff85e83",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 59,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/19-ai-authoring.md": {
+      "filePath": "Prior Art/19-ai-authoring.md",
+      "contentHash": "9e23d7d3316e9bbcda10a84b457312d78e3ea9faeee19ddc9ca2d17e1ea56767",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/20-security-sanitization.md": {
+      "filePath": "Prior Art/20-security-sanitization.md",
+      "contentHash": "dce3a2e4a69e9fa9ef0b96cb104303824c765453c0382608bf3876829d35c407",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_COVERAGE.md": {
+      "filePath": "Prior Art/_COVERAGE.md",
+      "contentHash": "1f01f3b89dfb463e552d6e07b4955cfce200a84656cc7841026b15c47f9ca0d5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 164,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_DISPATCH-CONTEXT.md": {
+      "filePath": "Prior Art/_DISPATCH-CONTEXT.md",
+      "contentHash": "93f55e3c0ddda3009c05b6176774c3138dfef106179ab2c185a0262e7f87b6b6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 93,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_FRAMING.md": {
+      "filePath": "Prior Art/_FRAMING.md",
+      "contentHash": "be9dbf8210e80562302671237f1888a9c1920c7f2c1c561f092c8d7ab4cb8f27",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 51,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_GAP-ANSWERS.md": {
+      "filePath": "Prior Art/_GAP-ANSWERS.md",
+      "contentHash": "e4bade185706914bf4565fc9ceb591643f2727dd71b1cb2ac62aa804336ae21f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 64,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_GAPS.md": {
+      "filePath": "Prior Art/_GAPS.md",
+      "contentHash": "ea5e528347fe098c2efdc21dacb76935f6643ab433e71330e9b7dc7c8e6ac58c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 100,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_PAPADAM.md": {
+      "filePath": "Prior Art/_PAPADAM.md",
+      "contentHash": "745fec8c9d38d7cc85207c8210c2cc5c839e4b848813dc6d1acea7e3370da0d7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/.gitkeep": {
+      "filePath": "apps/studio/.gitkeep",
+      "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/README.md": {
+      "filePath": "apps/studio/README.md",
+      "contentHash": "b01b46202e08ca36fb8a0ee00e65cc9638e1fb4cfa923f8a00f841352cc28f1c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/index.html": {
+      "filePath": "apps/studio/index.html",
+      "contentHash": "546d2112a848a057d94993cf35049b63cbd68c605f59eb442fd13431f0af918c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 19,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/package.json": {
+      "filePath": "apps/studio/package.json",
+      "contentHash": "0b8cd65c7197bcd562afccd15d7ebbd049b7268073c0999055f21337855051d0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 24,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/src/App.svelte": {
+      "filePath": "apps/studio/src/App.svelte",
+      "contentHash": "2d8e0feb4ee32010cf30b9b42c667c14c490a222c10591a1cf6240ccc1a7537b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 663,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/LibraryHome.svelte": {
+      "filePath": "apps/studio/src/LibraryHome.svelte",
+      "contentHash": "91549f8cfe661bf222a7028d86663e9fc135f99c53456966e8639e37b8371858",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 92,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/main.ts": {
+      "filePath": "apps/studio/src/main.ts",
+      "contentHash": "5f9cd5af967f10fade9aeccd86cf718fc8804fecb802d6e0412ed45eedd406cd",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./tokens.css",
+          "specifiers": []
+        },
+        {
+          "source": "@annotorious/openseadragon/annotorious-openseadragon.css",
+          "specifiers": []
+        },
+        {
+          "source": "@annotorious/plugin-tools/annotorious-plugin-tools.css",
+          "specifiers": []
+        },
+        {
+          "source": "svelte",
+          "specifiers": [
+            "mount"
+          ]
+        },
+        {
+          "source": "./App.svelte",
+          "specifiers": [
+            "App"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/src/MergeReview.svelte": {
+      "filePath": "apps/studio/src/MergeReview.svelte",
+      "contentHash": "ec9a2df742f96b923b7bc922c3e6d394fac06861999303118ed43f0f6ae13afe",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 81,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/Publish.svelte": {
+      "filePath": "apps/studio/src/Publish.svelte",
+      "contentHash": "9201a2f5127665ed7116942fcc816bffa3217d6102cccb864cd1e4edb21c57c7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 135,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/store.ts": {
+      "filePath": "apps/studio/src/store.ts",
+      "contentHash": "76528b190d8d4b522a8509ff9f5b0a9ed20b31e9901800aa41be98e07bfc4b3b",
+      "functions": [
+        {
+          "name": "openProjectDir",
+          "params": [],
+          "returnType": "Promise<FsDirectory | null>",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "openExhibitAnnotationsDir",
+          "params": [
+            "slug"
+          ],
+          "returnType": "Promise<FsDirectory | null>",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "loadLibraryMeta",
+          "params": [],
+          "returnType": "Promise<LibraryMeta | null>",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "saveLibraryMeta",
+          "params": [
+            "meta"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "assetsDir",
+          "params": [
+            "slug",
+            "create"
+          ],
+          "returnType": "Promise<FileSystemDirectoryHandle | null>",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "saveAssetFile",
+          "params": [
+            "slug",
+            "name",
+            "file"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "readAssetUrl",
+          "params": [
+            "slug",
+            "name"
+          ],
+          "returnType": "Promise<string | null>",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "clearExhibitAnnotations",
+          "params": [
+            "slug"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "readAssetBytes",
+          "params": [
+            "slug",
+            "name"
+          ],
+          "returnType": "Promise<ArrayBuffer | null>",
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "FsaFilesystem",
+            "FsDirectory"
+          ]
+        }
+      ],
+      "exports": [
+        "openExhibitAnnotationsDir",
+        "loadLibraryMeta",
+        "saveLibraryMeta",
+        "saveAssetFile",
+        "readAssetUrl",
+        "clearExhibitAnnotations",
+        "readAssetBytes"
+      ],
+      "totalLines": 150,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/src/tokens.css": {
+      "filePath": "apps/studio/src/tokens.css",
+      "contentHash": "a8dc7079ad890eecb63bea394eab5d4e17a7d741b55097e8d19bb3360ad5b51d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 63,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/voynich.ts": {
+      "filePath": "apps/studio/src/voynich.ts",
+      "contentHash": "cbd1aa17fdaf27d7ae6e1665536adeca904fb61c4e1c8b5fdb03bfef71a5b475",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "voynichTitle",
+        "voynichCredits",
+        "voynichObjects",
+        "voynichNotes"
+      ],
+      "totalLines": 297,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/vite.config.ts": {
+      "filePath": "apps/studio/vite.config.ts",
+      "contentHash": "f24ac423b888b236c2cb95fd12fbf59b538cc4444924beac577a7ff51ebb961f",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vite",
+          "specifiers": [
+            "defineConfig"
+          ]
+        },
+        {
+          "source": "@sveltejs/vite-plugin-svelte",
+          "specifiers": [
+            "svelte"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 8,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/README.md": {
+      "filePath": "apps/viewer/README.md",
+      "contentHash": "30dd22c73730ab1e6623fffde3aee166163877ddbad2656bc6dd78d27b870587",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/astro.config.mjs": {
+      "filePath": "apps/viewer/astro.config.mjs",
+      "contentHash": "16f119512287712c9357222b86b90a172134ee24ec1636fb31ee50ceb2ecabf8",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "astro/config",
+          "specifiers": [
+            "defineConfig"
+          ]
+        },
+        {
+          "source": "@astrojs/svelte",
+          "specifiers": [
+            "svelte"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/package.json": {
+      "filePath": "apps/viewer/package.json",
+      "contentHash": "d75f8a98033d9e066a664d811ee4efa364f9493974a4c2ab94ac3ffd37c473d6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 24,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/src/components/ExhibitView.svelte": {
+      "filePath": "apps/viewer/src/components/ExhibitView.svelte",
+      "contentHash": "01b427fbc6468bf0a72a2d7786a02f3b421a441449a0120a960fb3ffa18f779f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 81,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/components/ObjectGrid.svelte": {
+      "filePath": "apps/viewer/src/components/ObjectGrid.svelte",
+      "contentHash": "0d6c8b76e3bf53ab440fdce642c7c6f0915e4e5edc9ea92aa1bed779df7a230c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 79,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/components/Reader.svelte": {
+      "filePath": "apps/viewer/src/components/Reader.svelte",
+      "contentHash": "a899d57e374952cd1ef5b611081edbca1c5c562fdcf33131d26727994981f8d6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 131,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/pages/index.astro": {
+      "filePath": "apps/viewer/src/pages/index.astro",
+      "contentHash": "08381e719e5934aa50a319af84a413dd6031c1469cfcb6b80234df8df51aecdc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 81,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/published.ts": {
+      "filePath": "apps/viewer/src/published.ts",
+      "contentHash": "8945a23d2217d5e27e0db54dcad11d8a895b7b644c5cfcb71bdf8aa56a013b15",
+      "functions": [
+        {
+          "name": "readJson",
+          "params": [
+            "dir",
+            "name"
+          ],
+          "returnType": "Promise<T>",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "loadPublishedExhibit",
+          "params": [
+            "slug"
+          ],
+          "returnType": "Promise<PublishedExhibit>",
+          "exported": true,
+          "lineCount": 26
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "MemoryFilesystem",
+            "publishLibrary",
+            "objectsFromManifest",
+            "AObject",
+            "FsDirectory",
+            "IIIFManifest",
+            "W3CAnnotation"
+          ]
+        },
+        {
+          "source": "./sample-data.js",
+          "specifiers": [
+            "library",
+            "getLog",
+            "BASE"
+          ]
+        }
+      ],
+      "exports": [
+        "libraryCards",
+        "loadPublishedExhibit"
+      ],
+      "totalLines": 55,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/src/sample-data.ts": {
+      "filePath": "apps/viewer/src/sample-data.ts",
+      "contentHash": "dacadbc1419b1cbe4219a362062ee3b0de99d2d06f25d54a731e938a5a190e14",
+      "functions": [
+        {
+          "name": "canvasIdFor",
+          "params": [
+            "slug",
+            "objectId"
+          ],
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "buildLog",
+          "params": [
+            "slug",
+            "notes"
+          ],
+          "returnType": "AnnotationLog",
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "getLog",
+          "params": [
+            "exhibitId"
+          ],
+          "returnType": "AnnotationLog",
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "appendNew",
+            "asClientId",
+            "AObject",
+            "AnnotationLog",
+            "Library"
+          ]
+        },
+        {
+          "source": "./voynich.js",
+          "specifiers": [
+            "voynichObjects",
+            "voynichNotes",
+            "voynichTitle",
+            "voynichCredits"
+          ]
+        },
+        {
+          "source": "./bidar.js",
+          "specifiers": [
+            "bidarObject",
+            "bidarNotes",
+            "bidarTitle"
+          ]
+        }
+      ],
+      "exports": [
+        "BASE",
+        "canvasIdFor",
+        "library",
+        "getLog"
+      ],
+      "totalLines": 53,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/src/voynich.ts": {
+      "filePath": "apps/viewer/src/voynich.ts",
+      "contentHash": "cbd1aa17fdaf27d7ae6e1665536adeca904fb61c4e1c8b5fdb03bfef71a5b475",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "voynichTitle",
+        "voynichCredits",
+        "voynichObjects",
+        "voynichNotes"
+      ],
+      "totalLines": 297,
+      "hasStructuralAnalysis": true
+    },
+    "docs/IMPLEMENTATION-STRATEGY.md": {
+      "filePath": "docs/IMPLEMENTATION-STRATEGY.md",
+      "contentHash": "be35e0251776b8420c9649d92f975961f38ae127a7e7662adb5f86f068b5a102",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 261,
+      "hasStructuralAnalysis": true
+    },
+    "docs/adr/0001-objects-are-exhibit-nested.md": {
+      "filePath": "docs/adr/0001-objects-are-exhibit-nested.md",
+      "contentHash": "551e8ba22512b1f179e3f09bc8c211666019aba0973e59dffeba7bbc7588c182",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 24,
+      "hasStructuralAnalysis": true
+    },
+    "docs/adr/0002-rendering-and-framework.md": {
+      "filePath": "docs/adr/0002-rendering-and-framework.md",
+      "contentHash": "0aa6e4941e5bc3177ea80fef8f0628cfed8211504a94737834abfe96e7ac7e06",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    },
+    "docs/adr/0003-annotation-spine-append-only-version-dag.md": {
+      "filePath": "docs/adr/0003-annotation-spine-append-only-version-dag.md",
+      "contentHash": "4754e79431cb6675dd0d4d83d5197759a91cbfc9cf95759ac4ad5defc7ed9ed7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 42,
+      "hasStructuralAnalysis": true
+    },
+    "docs/adr/0004-no-wasm-vips-tiling.md": {
+      "filePath": "docs/adr/0004-no-wasm-vips-tiling.md",
+      "contentHash": "3e24c7287d9c49ab91314c33f3fe610f057fd2597239f8d65700433c0c01809f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 11,
+      "hasStructuralAnalysis": true
+    },
+    "docs/bundle-size.json": {
+      "filePath": "docs/bundle-size.json",
+      "contentHash": "2e5930b053132bab2a9371dea33b1281dc7a917c0f5c5dfaab4be7f5dac77c00",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 23,
+      "hasStructuralAnalysis": true
+    },
+    "docs/decisions/archie.md": {
+      "filePath": "docs/decisions/archie.md",
+      "contentHash": "4f2697bdb8f01b6b6790e772f4ac86f27e383aac301293f9e0a4442821e04b4c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    "docs/plans/PHASE-0.md": {
+      "filePath": "docs/plans/PHASE-0.md",
+      "contentHash": "2eddfd36e7b7637b387eb56b23fb43d85ab0a157f268830745320eed367b912a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 122,
+      "hasStructuralAnalysis": true
+    },
+    "docs/plans/PHASE-1.md": {
+      "filePath": "docs/plans/PHASE-1.md",
+      "contentHash": "f92dcc00c6a1e8e9b03c4a027882bedb03288864459795d67fe4cdf524047f34",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 93,
+      "hasStructuralAnalysis": true
+    },
+    "docs/plans/PHASE-2.md": {
+      "filePath": "docs/plans/PHASE-2.md",
+      "contentHash": "e03ef57bb55cc5f4d5d653a17eeaa18c388fb7338d8e39b7ffa0400e6508256b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 157,
+      "hasStructuralAnalysis": true
+    },
+    "docs/spikes/0001-anvil-render-core-extraction.md": {
+      "filePath": "docs/spikes/0001-anvil-render-core-extraction.md",
+      "contentHash": "1fc9f5a9193b439ef20673d13c01610ccfd686bbbd1415059da89347de13057e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 86,
+      "hasStructuralAnalysis": true
+    },
+    "package.json": {
+      "filePath": "package.json",
+      "contentHash": "64034e34549e896cd5c587b9d6a8fbeb02e9b882ab5213ea73614ed30608d906",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 17,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/package.json": {
+      "filePath": "packages/render-core/package.json",
+      "contentHash": "791fa33ed1048191851e7c122b19ca63aec88086f2aa59844172a01a4b29de3e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/av/transcript.ts": {
+      "filePath": "packages/render-core/src/av/transcript.ts",
+      "contentHash": "fecaff94126a5c7db375ed3531c2a5e0f4fefb8f11b96ac89810dda73d0e7b1b",
+      "functions": [
+        {
+          "name": "parseTimestamp",
+          "params": [
+            "s"
+          ],
+          "returnType": "number",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "parseCues",
+          "params": [
+            "input"
+          ],
+          "returnType": "VttCue[]",
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "parseVtt",
+          "params": [
+            "input"
+          ],
+          "returnType": "VttCue[]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "parseSrt",
+          "params": [
+            "input"
+          ],
+          "returnType": "VttCue[]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "timeFragment",
+          "params": [
+            "start",
+            "end"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "cuesToNotes",
+          "params": [
+            "cues",
+            "source"
+          ],
+          "returnType": "TranscriptNote[]",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "importTranscript",
+          "params": [
+            "log",
+            "input",
+            "opts"
+          ],
+          "returnType": "AnnotationLog",
+          "exported": true,
+          "lineCount": 18
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "ClientId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "W3CSpecificResource",
+            "W3CTextualBody"
+          ]
+        }
+      ],
+      "exports": [
+        "parseVtt",
+        "parseSrt",
+        "cuesToNotes",
+        "importTranscript"
+      ],
+      "totalLines": 106,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/exif/orientation.test.ts": {
+      "filePath": "packages/render-core/src/exif/orientation.test.ts",
+      "contentHash": "d3dc8064f3c8861f8690955ecd6f4576ba56f648f31f963fe35dc08630c28a10",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./orientation.js",
+          "specifiers": [
+            "orientationTransform",
+            "normalizeDimensions",
+            "isOrientationNoop"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 52,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/exif/orientation.ts": {
+      "filePath": "packages/render-core/src/exif/orientation.ts",
+      "contentHash": "6454ed9b6de19ff41b2d27b18f019e2fda4f71afbcbcdb0cecaf630e6722a6c9",
+      "functions": [
+        {
+          "name": "orientationTransform",
+          "params": [
+            "orientation"
+          ],
+          "returnType": "OrientationTransform",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "normalizeDimensions",
+          "params": [
+            "width",
+            "height",
+            "orientation"
+          ],
+          "returnType": "{ width: number; height: number }",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "isOrientationNoop",
+          "params": [
+            "orientation"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "orientationTransform",
+        "normalizeDimensions",
+        "isOrientationNoop"
+      ],
+      "totalLines": 47,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/fs/conformance.test.ts": {
+      "filePath": "packages/render-core/src/fs/conformance.test.ts",
+      "contentHash": "e80b78a80608be7ee077bc3c3e1c8409fc639082da7f600bd4cf0e73d51163c0",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./conformance.js",
+          "specifiers": [
+            "runConformance"
+          ]
+        },
+        {
+          "source": "./memory.js",
+          "specifiers": [
+            "MemoryFilesystem"
+          ]
+        },
+        {
+          "source": "./zip.js",
+          "specifiers": [
+            "ZipFilesystem"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/fs/conformance.ts": {
+      "filePath": "packages/render-core/src/fs/conformance.ts",
+      "contentHash": "55087c3cf243395da899b7e44c8b09e96700fc4209958f1484c1e6c8476b4e39",
+      "functions": [
+        {
+          "name": "expectFailure",
+          "params": [
+            "op"
+          ],
+          "returnType": "Promise<void>",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "runConformance",
+          "params": [
+            "name",
+            "makeFs"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 78
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./seam.js",
+          "specifiers": [
+            "Filesystem"
+          ]
+        }
+      ],
+      "exports": [
+        "runConformance"
+      ],
+      "totalLines": 97,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/fs/fsa.ts": {
+      "filePath": "packages/render-core/src/fs/fsa.ts",
+      "contentHash": "0a2a17d6a6fc6985173d6bb0d4f4210d49a87b1dca21ecd539692cb9c7c22e0d",
+      "functions": [],
+      "classes": [
+        {
+          "name": "FsaFile",
+          "methods": [
+            "constructor",
+            "readable",
+            "writable",
+            "getFile"
+          ],
+          "properties": [],
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "FsaDir",
+          "methods": [
+            "constructor",
+            "getDirectory",
+            "getFile",
+            "remove",
+            "entries"
+          ],
+          "properties": [],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "FsaFilesystem",
+          "methods": [
+            "constructor",
+            "root"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "./seam.js",
+          "specifiers": [
+            "Filesystem",
+            "FsDirectory",
+            "FsFile",
+            "FsWritable"
+          ]
+        }
+      ],
+      "exports": [
+        "FsaFilesystem"
+      ],
+      "totalLines": 51,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/fs/memory.ts": {
+      "filePath": "packages/render-core/src/fs/memory.ts",
+      "contentHash": "4a39765fa11c1466ba9fe8d49aa1a98dfd81da45b6a4237674bcb7aadb132863",
+      "functions": [],
+      "classes": [
+        {
+          "name": "MemFile",
+          "methods": [
+            "constructor",
+            "readable",
+            "writable",
+            "getFile"
+          ],
+          "properties": [],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "MemDir",
+          "methods": [
+            "getDirectory",
+            "getFile",
+            "remove",
+            "entries"
+          ],
+          "properties": [
+            "files",
+            "dirs"
+          ],
+          "exported": false,
+          "lineCount": 30
+        },
+        {
+          "name": "MemoryFilesystem",
+          "methods": [
+            "root"
+          ],
+          "properties": [
+            "_root"
+          ],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "./seam.js",
+          "specifiers": [
+            "Filesystem",
+            "FsDirectory",
+            "FsFile",
+            "FsWritable"
+          ]
+        }
+      ],
+      "exports": [
+        "MemoryFilesystem"
+      ],
+      "totalLines": 72,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/fs/seam.test.ts": {
+      "filePath": "packages/render-core/src/fs/seam.test.ts",
+      "contentHash": "a263775ec4a33f4a913d63eb99638f135a88c90561ed87401d84456a0482f894",
+      "functions": [],
+      "classes": [
+        {
+          "name": "MemFile",
+          "methods": [
+            "constructor",
+            "readable",
+            "writable",
+            "getFile"
+          ],
+          "properties": [],
+          "exported": false,
+          "lineCount": 22
+        },
+        {
+          "name": "MemDir",
+          "methods": [
+            "getDirectory",
+            "getFile",
+            "remove",
+            "entries"
+          ],
+          "properties": [
+            "files",
+            "dirs"
+          ],
+          "exported": false,
+          "lineCount": 30
+        },
+        {
+          "name": "MemFilesystem",
+          "methods": [
+            "root"
+          ],
+          "properties": [
+            "_root"
+          ],
+          "exported": false,
+          "lineCount": 6
+        }
+      ],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./seam.js",
+          "specifiers": [
+            "Filesystem",
+            "FsDirectory",
+            "FsFile",
+            "FsWritable"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 98,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/fs/seam.ts": {
+      "filePath": "packages/render-core/src/fs/seam.ts",
+      "contentHash": "1f931f8d32614c96e20c06e12755bd27124354e12230aea52b4e2017d9cd813c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 41,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/fs/zip.test.ts": {
+      "filePath": "packages/render-core/src/fs/zip.test.ts",
+      "contentHash": "8810457aa446dfde3fee01dfb59e7d45c1a2dc0f9cdb4c2e8cd4462a8ce9a577",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./zip.js",
+          "specifiers": [
+            "ZipFilesystem"
+          ]
+        },
+        {
+          "source": "../spine/persist.js",
+          "specifiers": [
+            "writeAnnotations",
+            "readAnnotations"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew",
+            "appendEdit"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 68,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/fs/zip.ts": {
+      "filePath": "packages/render-core/src/fs/zip.ts",
+      "contentHash": "de46c4a160e9ea34e1b86bcb107b1244b1c08aa15fd607df17ab0524aadeffa3",
+      "functions": [
+        {
+          "name": "join",
+          "params": [
+            "prefix",
+            "name"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [
+        {
+          "name": "ZipStore",
+          "methods": [],
+          "properties": [
+            "files"
+          ],
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "ZipFile",
+          "methods": [
+            "constructor",
+            "readable",
+            "writable",
+            "getFile"
+          ],
+          "properties": [],
+          "exported": false,
+          "lineCount": 29
+        },
+        {
+          "name": "ZipDir",
+          "methods": [
+            "constructor",
+            "getDirectory",
+            "getFile",
+            "remove",
+            "entries"
+          ],
+          "properties": [],
+          "exported": false,
+          "lineCount": 48
+        },
+        {
+          "name": "ZipFilesystem",
+          "methods": [
+            "root",
+            "toZip",
+            "fromZip"
+          ],
+          "properties": [
+            "store"
+          ],
+          "exported": true,
+          "lineCount": 19
+        }
+      ],
+      "imports": [
+        {
+          "source": "fflate",
+          "specifiers": [
+            "zipSync",
+            "unzipSync",
+            "strToU8"
+          ]
+        },
+        {
+          "source": "./seam.js",
+          "specifiers": [
+            "Filesystem",
+            "FsDirectory",
+            "FsFile",
+            "FsWritable"
+          ]
+        }
+      ],
+      "exports": [
+        "ZipFilesystem"
+      ],
+      "totalLines": 115,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/geometry/selector.test.ts": {
+      "filePath": "packages/render-core/src/geometry/selector.test.ts",
+      "contentHash": "0c7549682a222b641cbd3ff42746f134eb325b23680600a32fbcbae2d1f6cbb5",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./selector.js",
+          "specifiers": [
+            "parseFragmentXYWH",
+            "parsePolygonPoints",
+            "polygonBBox",
+            "selectorBBox",
+            "isDegenerateSelectorValue",
+            "shapeLabel",
+            "isV1Shape"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "W3CFragmentSelector",
+            "W3CSvgSelector"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 87,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/geometry/selector.ts": {
+      "filePath": "packages/render-core/src/geometry/selector.ts",
+      "contentHash": "d76080725ec34989892276495ac95938756896ea88545e4f976e1d6944daec86",
+      "functions": [
+        {
+          "name": "parseFragmentXYWH",
+          "params": [
+            "value"
+          ],
+          "returnType": "Box | null",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "parsePolygonPoints",
+          "params": [
+            "svg"
+          ],
+          "returnType": "Point[] | null",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "polygonBBox",
+          "params": [
+            "points"
+          ],
+          "returnType": "Box | null",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "selectorBBox",
+          "params": [
+            "selector"
+          ],
+          "returnType": "Box | null",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "isDegenerateSelectorValue",
+          "params": [
+            "value"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "shapeLabel",
+          "params": [
+            "selector"
+          ],
+          "returnType": "ShapeLabel",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "isV1Shape",
+          "params": [
+            "selector"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "W3CSelector"
+          ]
+        }
+      ],
+      "exports": [
+        "parseFragmentXYWH",
+        "parsePolygonPoints",
+        "polygonBBox",
+        "selectorBBox",
+        "isDegenerateSelectorValue",
+        "shapeLabel",
+        "isV1Shape"
+      ],
+      "totalLines": 94,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/migrate/migrate.test.ts": {
+      "filePath": "packages/render-core/src/migrate/migrate.test.ts",
+      "contentHash": "3a2ecd087dd5e7a02ecb723c06b87ae4adc97a48b683725c85035b86b8d3822f",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./migrate.js",
+          "specifiers": [
+            "migrate",
+            "stamp",
+            "SCHEMA_VERSION",
+            "Migration"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 52,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/migrate/migrate.ts": {
+      "filePath": "packages/render-core/src/migrate/migrate.ts",
+      "contentHash": "c9a4355ea3e33624a45c57e949149bae76ee65826f71033529643758b62a8f7b",
+      "functions": [
+        {
+          "name": "versionOf",
+          "params": [
+            "doc"
+          ],
+          "returnType": "number",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "stamp",
+          "params": [
+            "doc"
+          ],
+          "returnType": "T & { schemaVersion: number }",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "migrate",
+          "params": [
+            "doc",
+            "migrations"
+          ],
+          "returnType": "Record<string, unknown>",
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "SCHEMA_VERSION",
+        "MIGRATIONS",
+        "stamp",
+        "migrate"
+      ],
+      "totalLines": 57,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/model/layout.test.ts": {
+      "filePath": "packages/render-core/src/model/layout.test.ts",
+      "contentHash": "9c0820d7565afc3c3346348b6ccce1d8bd9d2c5ab81c0820254795b72c15f850",
+      "functions": [
+        {
+          "name": "obj",
+          "params": [
+            "id"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "ex",
+          "params": [
+            "over"
+          ],
+          "returnType": "Exhibit",
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./layout.js",
+          "specifiers": [
+            "resolveLayout"
+          ]
+        },
+        {
+          "source": "./model.js",
+          "specifiers": [
+            "Exhibit"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 30,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/model/layout.ts": {
+      "filePath": "packages/render-core/src/model/layout.ts",
+      "contentHash": "3518decc0e7c2b1e06360934f5054d8b2832e73864d2704aad2c9b53502c329e",
+      "functions": [
+        {
+          "name": "resolveLayout",
+          "params": [
+            "exhibit"
+          ],
+          "returnType": "LayoutDescriptor",
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./model.js",
+          "specifiers": [
+            "AObject",
+            "Exhibit",
+            "LayoutType",
+            "Section"
+          ]
+        }
+      ],
+      "exports": [
+        "resolveLayout"
+      ],
+      "totalLines": 25,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/model/model.ts": {
+      "filePath": "packages/render-core/src/model/model.ts",
+      "contentHash": "a7b58f8026b47322d32921011e81c7539bd9fc4ff38a0fb692512c1c93b7c368",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/publish/ghpages.ts": {
+      "filePath": "packages/render-core/src/publish/ghpages.ts",
+      "contentHash": "3e1d3621a2eae0eda0340cd28ee778341d02325bd62e50cc5cf9aec73efa1c0b",
+      "functions": [
+        {
+          "name": "toBase64",
+          "params": [
+            "buf"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "collectFiles",
+          "params": [
+            "dir",
+            "prefix"
+          ],
+          "returnType": "Promise<Record<string, FileContent>>",
+          "exported": true,
+          "lineCount": 14
+        },
+        {
+          "name": "buildGitTree",
+          "params": [
+            "files"
+          ],
+          "returnType": "GitTreeEntry[]",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "publishToGitHub",
+          "params": [
+            "files",
+            "target"
+          ],
+          "returnType": "Promise<{ commitUrl: string }>",
+          "exported": true,
+          "lineCount": 31
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../fs/seam.js",
+          "specifiers": [
+            "FsDirectory"
+          ]
+        }
+      ],
+      "exports": [
+        "collectFiles",
+        "buildGitTree",
+        "publishToGitHub"
+      ],
+      "totalLines": 102,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/persist.ts": {
+      "filePath": "packages/render-core/src/spine/persist.ts",
+      "contentHash": "4c58e9c182a7bc05607a91c9f221fc4a680a9531de4983f8e432741600387944",
+      "functions": [
+        {
+          "name": "writeJson",
+          "params": [
+            "dir",
+            "name",
+            "data"
+          ],
+          "returnType": "Promise<void>",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "readJson",
+          "params": [
+            "dir",
+            "name"
+          ],
+          "returnType": "Promise<T>",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "writeAnnotations",
+          "params": [
+            "annDir",
+            "log",
+            "opts"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "readAnnotations",
+          "params": [
+            "annDir"
+          ],
+          "returnType": "Promise<AnnotationLog>",
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./serialize.js",
+          "specifiers": [
+            "toHistory",
+            "toHeadsPage",
+            "SerializeOptions"
+          ]
+        },
+        {
+          "source": "./deserialize.js",
+          "specifiers": [
+            "fromHistory"
+          ]
+        },
+        {
+          "source": "../fs/seam.js",
+          "specifiers": [
+            "FsDirectory"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "W3CAnnotationPage"
+          ]
+        }
+      ],
+      "exports": [
+        "writeAnnotations",
+        "readAnnotations"
+      ],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/resolve.test.ts": {
+      "filePath": "packages/render-core/src/spine/resolve.test.ts",
+      "contentHash": "1fcdf0772b8eb6f7d0cb6d3e8e39361f5f7965e38296a63ee71303e9ade8f35a",
+      "functions": [
+        {
+          "name": "diverged",
+          "params": [],
+          "returnType": "{ log: AnnotationLog; lid: string; a: AnnotationRecord; b: AnnotationRecord }",
+          "exported": false,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./log.js",
+          "specifiers": [
+            "appendNew",
+            "append"
+          ]
+        },
+        {
+          "source": "./merge.js",
+          "specifiers": [
+            "resolveConflict"
+          ]
+        },
+        {
+          "source": "./merge.js",
+          "specifiers": [
+            "headsOf",
+            "ancestors"
+          ]
+        },
+        {
+          "source": "./heads.js",
+          "specifiers": [
+            "projectHeads"
+          ]
+        },
+        {
+          "source": "./serialize.js",
+          "specifiers": [
+            "toHistory"
+          ]
+        },
+        {
+          "source": "./deserialize.js",
+          "specifiers": [
+            "fromHistory"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId",
+            "mintRevId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationRecord",
+            "AnnotationLog"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/serialize.test.ts": {
+      "filePath": "packages/render-core/src/spine/serialize.test.ts",
+      "contentHash": "7fed509da618245fff341e6c22b91277925861c2357e10e75226445540fed40d",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./log.js",
+          "specifiers": [
+            "appendNew",
+            "appendEdit",
+            "append"
+          ]
+        },
+        {
+          "source": "./serialize.js",
+          "specifiers": [
+            "toHeadsPage",
+            "toHistory",
+            "recordToAnnotation"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId",
+            "mintRevId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "ARCHIE_HAS_HISTORY",
+            "PROV_WAS_REVISION_OF",
+            "WADM_CONTEXT",
+            "AnnotationRecord",
+            "W3CSpecificResource"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 106,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/serialize.ts": {
+      "filePath": "packages/render-core/src/spine/serialize.ts",
+      "contentHash": "9c405c6a298cbcce4e15709101b52fdbb2062b2eed764495e366cf08c5955abe",
+      "functions": [
+        {
+          "name": "cmp",
+          "params": [
+            "a",
+            "b"
+          ],
+          "returnType": "number",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "dedupe",
+          "params": [
+            "log"
+          ],
+          "returnType": "AnnotationRecord[]",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "citationIds",
+          "params": [
+            "log",
+            "baseUrl"
+          ],
+          "returnType": "Map<RevId, string>",
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "recordToAnnotation",
+          "params": [
+            "record",
+            "id",
+            "withContext"
+          ],
+          "returnType": "ArchieAnnotation",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "withProvLink",
+          "params": [
+            "ann",
+            "parent",
+            "ids"
+          ],
+          "returnType": "ArchieAnnotation",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "withDagMeta",
+          "params": [
+            "ann",
+            "record"
+          ],
+          "returnType": "ArchieAnnotation",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "withLayers",
+          "params": [
+            "ann",
+            "record"
+          ],
+          "returnType": "ArchieAnnotation",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "targetSource",
+          "params": [
+            "record"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "headsPageFromRecords",
+          "params": [
+            "heads",
+            "pageId",
+            "ids",
+            "opts"
+          ],
+          "returnType": "W3CAnnotationPage",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "toHeadsPage",
+          "params": [
+            "log",
+            "pageId",
+            "opts"
+          ],
+          "returnType": "W3CAnnotationPage",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "citationIdMap",
+          "params": [
+            "log",
+            "baseUrl"
+          ],
+          "returnType": "Map<RevId, string>",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "toHistory",
+          "params": [
+            "log",
+            "opts"
+          ],
+          "returnType": "HistoryOutput",
+          "exported": true,
+          "lineCount": 22
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "LogicalId",
+            "RevId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "AnnotationRecord",
+            "W3CAnnotation",
+            "ArchieAnnotation",
+            "W3CAnnotationPage"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "WADM_CONTEXT",
+            "ARCHIE_HAS_HISTORY",
+            "PROV_WAS_REVISION_OF",
+            "ARCHIE_LOGICAL_ID",
+            "ARCHIE_LAYERS",
+            "ARCHIE_REV",
+            "ARCHIE_PARENT",
+            "ARCHIE_MERGE_PARENTS",
+            "ARCHIE_VERSION",
+            "ARCHIE_LAST_EDITOR",
+            "ARCHIE_DELETED"
+          ]
+        },
+        {
+          "source": "./heads.js",
+          "specifiers": [
+            "projectHeads"
+          ]
+        }
+      ],
+      "exports": [
+        "recordToAnnotation",
+        "targetSource",
+        "headsPageFromRecords",
+        "toHeadsPage",
+        "citationIdMap",
+        "toHistory"
+      ],
+      "totalLines": 189,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/wadm/brand.ts": {
+      "filePath": "packages/render-core/src/wadm/brand.ts",
+      "contentHash": "eff3debf3e7a78e03664e08405a75d6827fcb7874a23d49ff3041899ecfd5394",
+      "functions": [
+        {
+          "name": "encodeTime",
+          "params": [
+            "time",
+            "len"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "encodeRandom",
+          "params": [
+            "len",
+            "rng"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "mintLogicalId",
+          "params": [
+            "now",
+            "rng"
+          ],
+          "returnType": "LogicalId",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "mintRevId",
+          "params": [
+            "now",
+            "rng"
+          ],
+          "returnType": "RevId",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "asRevId",
+          "params": [
+            "s"
+          ],
+          "returnType": "RevId",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "asLogicalId",
+          "params": [
+            "s"
+          ],
+          "returnType": "LogicalId",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "versionId",
+          "params": [
+            "logicalId",
+            "version"
+          ],
+          "returnType": "VersionId",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "parseVersionId",
+          "params": [
+            "vid"
+          ],
+          "returnType": "{ logicalId: LogicalId; version: number }",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "asClientId",
+          "params": [
+            "s"
+          ],
+          "returnType": "ClientId",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "asExhibitId",
+          "params": [
+            "s"
+          ],
+          "returnType": "ExhibitId",
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "mintLogicalId",
+        "mintRevId",
+        "asRevId",
+        "asLogicalId",
+        "versionId",
+        "parseVersionId",
+        "asClientId",
+        "asExhibitId"
+      ],
+      "totalLines": 125,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/test/fixtures/exif/manifest.json": {
+      "filePath": "packages/render-core/test/fixtures/exif/manifest.json",
+      "contentHash": "cdf87bf19d37fab3e46d09afd769d99012c21eedf86ed06c7c74fca3bf7ea1d8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 19,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-mount/package.json": {
+      "filePath": "packages/render-mount/package.json",
+      "contentHash": "c289f0db6559d2047cdbfc9f19f31990f38c9897fe849667d0b051937e223652",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 25,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-mount/tsconfig.json": {
+      "filePath": "packages/render-mount/tsconfig.json",
+      "contentHash": "9222ec437c1c4b8378784ebceca444214102b64598ff2d611cb4f362d576990d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-mount/vitest.config.ts": {
+      "filePath": "packages/render-mount/vitest.config.ts",
+      "contentHash": "2f782b6f201aa2b4f6d0b361f85cdcae9a495a706f0a15a2c110813c90f92a0d",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest/config",
+          "specifiers": [
+            "defineConfig"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 12,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-svelte/package.json": {
+      "filePath": "packages/render-svelte/package.json",
+      "contentHash": "3b16d0037e10910cc139f159f948765110db3c57531d273bced0b5c440e93341",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 30,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-svelte/tsconfig.json": {
+      "filePath": "packages/render-svelte/tsconfig.json",
+      "contentHash": "9222ec437c1c4b8378784ebceca444214102b64598ff2d611cb4f362d576990d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-svelte/src/Canvas.svelte": {
+      "filePath": "packages/render-svelte/src/Canvas.svelte",
+      "contentHash": "e80a4a812ece9cf05e156e983ac561395fca9048dc1b09477cb377870685bc99",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 102,
+      "hasStructuralAnalysis": false
+    },
+    "packages/render-svelte/src/controller.test.ts": {
+      "filePath": "packages/render-svelte/src/controller.test.ts",
+      "contentHash": "94c5272cd58d955891d0b7baf2207ca3b3751fadfd400b8f3e9e878cd83fa5a7",
+      "functions": [
+        {
+          "name": "mockSurface",
+          "params": [],
+          "exported": false,
+          "lineCount": 25
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect",
+            "vi"
+          ]
+        },
+        {
+          "source": "./controller.js",
+          "specifiers": [
+            "createCanvasController"
+          ]
+        },
+        {
+          "source": "@render/mount",
+          "specifiers": [
+            "MountSurface",
+            "SelectionId"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 85,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-svelte/src/controller.ts": {
+      "filePath": "packages/render-svelte/src/controller.ts",
+      "contentHash": "3d3d4017400cc43264c9505900101514e65e597139b47443b6d55b2ba0f9ce7f",
+      "functions": [
+        {
+          "name": "createCanvasController",
+          "params": [
+            "surface"
+          ],
+          "returnType": "CanvasController",
+          "exported": true,
+          "lineCount": 37
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@render/mount",
+          "specifiers": [
+            "MountSurface",
+            "SelectionId"
+          ]
+        }
+      ],
+      "exports": [
+        "createCanvasController"
+      ],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "pnpm-lock.yaml": {
+      "filePath": "pnpm-lock.yaml",
+      "contentHash": "1572469d5cd4eadbd62c0bcd13b00952e54cf13868878ac5c5845b0060e5e92c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5422,
+      "hasStructuralAnalysis": true
+    },
+    "pnpm-workspace.yaml": {
+      "filePath": "pnpm-workspace.yaml",
+      "contentHash": "af261372097773546d4000a74b771c8c09c4114ca5e9dd715c95018b44e1fbe3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "scripts/bundle-size.mjs": {
+      "filePath": "scripts/bundle-size.mjs",
+      "contentHash": "2ed38b2298fc21b94c8541492d4b86b7dc711125d62ccde8d8d4485a8434439f",
+      "functions": [
+        {
+          "name": "measureEntry",
+          "params": [
+            "label",
+            "entry"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "measureStdin",
+          "params": [
+            "label",
+            "contents",
+            "resolveDir"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "size",
+          "params": [
+            "label",
+            "raw"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:zlib",
+          "specifiers": [
+            "gzipSync"
+          ]
+        },
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "writeFileSync"
+          ]
+        },
+        {
+          "source": "node:module",
+          "specifiers": [
+            "createRequire"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "scripts/import-voynich.mjs": {
+      "filePath": "scripts/import-voynich.mjs",
+      "contentHash": "bc7b1d4731274db61e8bd3dd53a6a222d666e5364fdac8554f1f66df0240b4f8",
+      "functions": [
+        {
+          "name": "pngDims",
+          "params": [
+            "b"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "jpegDims",
+          "params": [
+            "b"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "imageDims",
+          "params": [
+            "path"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "selectorToRect",
+          "params": [
+            "sel"
+          ],
+          "exported": false,
+          "lineCount": 13
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "readFileSync",
+            "writeFileSync",
+            "copyFileSync",
+            "mkdirSync",
+            "existsSync"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "dirname",
+            "join"
+          ]
+        },
+        {
+          "source": "node:url",
+          "specifiers": [
+            "fileURLToPath"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 98,
+      "hasStructuralAnalysis": true
+    },
+    "tsconfig.base.json": {
+      "filePath": "tsconfig.base.json",
+      "contentHash": "d948e3d4fdb98516d45475197dee8652a8559db713fa2b9e06d3e9bf3adf73c3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 20,
+      "hasStructuralAnalysis": true
+    }
+  }
+}

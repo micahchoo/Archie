@@ -1,0 +1,94 @@
+[
+  {
+    "name": "typescript",
+    "url": "https://github.com/microsoft/TypeScript",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T00:09:03Z"
+  },
+  {
+    "name": "vitest",
+    "url": "https://github.com/vitest-dev/vitest",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T00:09:08Z"
+  },
+  {
+    "name": "@sveltejs/vite-plugin-svelte",
+    "url": "https://github.com/sveltejs/vite-plugin-svelte",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T00:10:43Z"
+  },
+  {
+    "name": "svelte",
+    "url": "https://github.com/sveltejs/svelte",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T00:10:46Z"
+  },
+  {
+    "name": "vite",
+    "url": "https://github.com/vitejs/vite",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T00:10:50Z"
+  },
+  {
+    "name": "@astrojs/svelte",
+    "url": "https://github.com/withastro/astro",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T00:11:03Z"
+  },
+  {
+    "name": "astro",
+    "url": "https://github.com/withastro/astro",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T00:11:07Z"
+  },
+  {
+    "name": "@annotorious/openseadragon",
+    "url": "https://github.com/recogito/annotorious",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T00:52:54Z"
+  },
+  {
+    "name": "@annotorious/plugin-tools",
+    "url": "https://github.com/annotorious/annotorious-plugin-tools",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T00:52:56Z"
+  },
+  {
+    "name": "openseadragon",
+    "url": "https://github.com/openseadragon/openseadragon",
+    "ref": "master",
+    "status": "added",
+    "indexed_at": "2026-05-25T00:53:00Z"
+  },
+  {
+    "name": "happy-dom",
+    "url": "https://github.com/capricorn86/happy-dom",
+    "ref": "master",
+    "status": "failed",
+    "indexed_at": "2026-05-25T00:59:54Z",
+    "error": "context add failed"
+  },
+  {
+    "name": "dompurify",
+    "url": "https://github.com/cure53/DOMPurify",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T02:49:32Z"
+  },
+  {
+    "name": "vite-node",
+    "url": "https://github.com/antfu-collective/vite-node",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-05-25T14:37:01Z"
+  }
+]

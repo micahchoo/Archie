@@ -1,0 +1,42 @@
+[
+  {
+    "name": "@render/core",
+    "source": "unresolved",
+    "reason": "no repo URL in registry metadata",
+    "status": "pending",
+    "added_at": "2026-05-25T00:09:35Z",
+    "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-mount/package.json"
+  },
+  {
+    "name": "@render/mount",
+    "source": "unresolved",
+    "reason": "no repo URL in registry metadata",
+    "status": "pending",
+    "added_at": "2026-05-25T00:09:58Z",
+    "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-svelte/package.json"
+  },
+  {
+    "name": "@render/svelte",
+    "source": "unresolved",
+    "reason": "no repo URL in registry metadata",
+    "status": "pending",
+    "added_at": "2026-05-25T00:10:38Z",
+    "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/package.json"
+  },
+  {
+    "name": "@types/openseadragon",
+    "source": "unresolved",
+    "reason": "no repo URL in registry metadata",
+    "status": "pending",
+    "added_at": "2026-05-25T00:52:48Z",
+    "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-mount/package.json"
+  },
+  {
+    "name": "isomorphic-dompurify",
+    "source": "unresolved",
+    "reason": "no repo URL in registry metadata",
+    "status": "pending",
+    "added_at": "2026-05-25T02:51:11Z",
+    "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-svelte/package.json"
+  }
+]
