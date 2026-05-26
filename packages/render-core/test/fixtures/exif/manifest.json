@@ -1,0 +1,18 @@
+{
+  "purpose": "EXIF orientation test corpus (ADR-0003 orphan-gate; CONTEXT.md deceptively-simple row 'EXIF orientation'). The display-master projection must normalize all 8 orientations. Gate: 8-orientation set passes before the first phone-photo public exhibit.",
+  "consumerStatus": "WIRED for headless reader+mapping (src/exif/read.test.ts asserts all 8 against this spec, both byte orders + APP0-before-APP1 + edge cases); pixel-bearing exif-1.jpg..exif-8.jpg still owed for the browser BAKE verify (canvas/createImageBitmap can't run headless). Reader = readExifOrientation (src/exif/read.ts); bake = apps/studio/src/bake.ts wired into addObjectFromFile.",
+  "note": "Orientations 5 and 7 (transpose/transverse) are the ones 'nobody tests' — they MUST be in the corpus. Orientation 1 is a no-op. Source images preserved untouched (provenance); a normalized display-master derivative is generated; annotations target the master (zero orientation-awareness in the coord layer).",
+  "sourceImageWxH": { "w": 4, "h": 2 },
+  "expectedNormalizedWxH": { "w": 4, "h": 2 },
+  "orientations": [
+    { "exif": 1, "name": "normal",            "transform": "none",                       "noop": true,  "swapsAxes": false },
+    { "exif": 2, "name": "flip-horizontal",   "transform": "mirror-x",                   "noop": false, "swapsAxes": false },
+    { "exif": 3, "name": "rotate-180",         "transform": "rotate-180",                 "noop": false, "swapsAxes": false },
+    { "exif": 4, "name": "flip-vertical",      "transform": "mirror-y",                   "noop": false, "swapsAxes": false },
+    { "exif": 5, "name": "transpose",          "transform": "mirror-x + rotate-90-cw",    "noop": false, "swapsAxes": true,  "rarelyTested": true },
+    { "exif": 6, "name": "rotate-90-cw",       "transform": "rotate-90-cw",               "noop": false, "swapsAxes": true },
+    { "exif": 7, "name": "transverse",         "transform": "mirror-x + rotate-90-ccw",   "noop": false, "swapsAxes": true,  "rarelyTested": true },
+    { "exif": 8, "name": "rotate-90-ccw",      "transform": "rotate-90-ccw",              "noop": false, "swapsAxes": true }
+  ],
+  "fixtureFilesOwed": "exif-1.jpg .. exif-8.jpg — a 4x2 image whose top-left pixel encodes orientation, tagged with each EXIF value. Generated when the EXIF normalize code lands (requires image-encode tooling not run in Phase 0). For axis-swapping orientations (5,6,7,8) the source stored dimensions are 2x4 and normalize to 4x2."
+}

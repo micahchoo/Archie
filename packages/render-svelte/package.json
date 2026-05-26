@@ -1,0 +1,29 @@
+{
+  "name": "@render/svelte",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Thin Svelte adapter over @render/mount. Owns reactivity (binds selectedId to setSelected, subscribes onSelect). Budget <500 LOC = logic-leak detector (ADR-0002 / Q-2). Filled in Phase 1.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./Canvas.svelte": "./src/Canvas.svelte"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@render/core": "workspace:*",
+    "@render/mount": "workspace:*",
+    "isomorphic-dompurify": "^2.16.0",
+    "snarkdown": "^2.0.0"
+  },
+  "peerDependencies": {
+    "svelte": "^5.0.0"
+  },
+  "devDependencies": {
+    "svelte": "^5.15.0"
+  }
+}
