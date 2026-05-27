@@ -1,0 +1,34 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/annotations/history/000000000PE7BE80MV8DECC6BD.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/000000000PE7BE80MV8DECC6BD/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o4",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:260,2900,2300,560"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.022Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the grille reading, the fantastical plant is exactly what a forger with no botanical source produces; image and text are both invented, independently.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000PE7BE80MV8DECC6BD",
+      "archie:rev": "000000000PRYF20JWG1A8ZHPWX",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "hoax"
+    }
+  ]
+}

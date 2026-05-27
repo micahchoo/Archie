@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/000000001GT3G3D5CGGF72XRHS.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/000000001GT3G3D5CGGF72XRHS/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o12",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=250,296"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.048Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The reading ends without resolving. That the ear can't decide between language and noise is the manuscript's whole condition — undeciphered, even when sounded.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000001GT3G3D5CGGF72XRHS",
+      "archie:rev": "000000001GGSX2GACJFMWF55K0",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}
