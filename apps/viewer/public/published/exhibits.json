@@ -2,28 +2,42 @@
   "library": {
     "id": "archie-lib",
     "title": "The Archie Library",
-    "summary": "Voynich folios courtesy of the Beinecke Rare Book and Manuscript Library, Yale University (MS 408)."
+    "summary": "Annotated exhibits read more than one way — a contested manuscript, a field map, and a recording from the mesh."
   },
   "exhibits": [
     {
-      "slug": "voynich",
-      "title": "Voynich manuscript",
-      "cover": "/voynich/article.png",
-      "description": "Five folios of MS 408 — herbal, cosmological, balneological, and script quires — closely read.",
+      "slug": "voynich-rosettes",
+      "title": "The Rosettes",
+      "cover": "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg",
+      "description": "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas.",
       "order": 0
+    },
+    {
+      "slug": "voynich",
+      "title": "The Whole Manuscript",
+      "cover": "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg",
+      "description": "A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.",
+      "order": 1
+    },
+    {
+      "slug": "voynich-reading",
+      "title": "Reading the Unreadable",
+      "cover": "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg",
+      "description": "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.",
+      "order": 2
     },
     {
       "slug": "bidar",
       "title": "Techno-Futures from Bidar",
       "cover": "https://one.compost.digital/micah/nb-v24.jpg",
       "description": "A condensed map of the Bidar mesh network — places, people, songs, and reflections from the field.",
-      "order": 1
+      "order": 3
     },
     {
       "slug": "av",
       "title": "A Field Recording from Bidar",
       "description": "One sound from the mesh, read against its transcript — click a line to travel the audio.",
-      "order": 2
+      "order": 4
     }
   ],
   "presentation": {},

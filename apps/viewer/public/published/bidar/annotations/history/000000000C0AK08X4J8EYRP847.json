@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/000000000C0AK08X4J8EYRP847.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/000000000C0AK08X4J8EYRP847/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:4283,1077,326,326"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.012Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "\"Another possibility of a mesh like this is to provide an alternative digital infrastructure to support ground movements.\" (This is loaded with the context of socio-political tensions and oppressions in India. The backlash almost always in the past eight years has been a shutdown of the internet and increased censoring of 'anti-national' speech online.)\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/12/APC_SAHASRA_SAHABHOJANA_WORKSHOP_20191229_V004.mp3)",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000C0AK08X4J8EYRP847",
+      "archie:rev": "000000000C02DMN3BAY55AM9WV",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

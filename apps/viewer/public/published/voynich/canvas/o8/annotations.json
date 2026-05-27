@@ -1,0 +1,6 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/canvas/o8/annotations.json",
+  "type": "AnnotationPage",
+  "items": []
+}

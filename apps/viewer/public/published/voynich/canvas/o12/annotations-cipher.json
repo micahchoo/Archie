@@ -1,0 +1,7 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/canvas/o12/annotations-cipher.json",
+  "type": "AnnotationPage",
+  "items": [],
+  "partOf": "https://archie.demo/voynich/annotations/readings/cipher.json"
+}

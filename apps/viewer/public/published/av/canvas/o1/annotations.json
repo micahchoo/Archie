@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/av/annotations/0000000001CNXR2TAE2G8PEJB4/v1",
+      "id": "https://archie.demo/av/annotations/00000000015B2CY0QRX323F0F4/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -23,10 +23,10 @@
         "purpose": "supplementing"
       },
       "motivation": "supplementing",
-      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000001CNXR2TAE2G8PEJB4.json"
+      "archie:hasHistory": "https://archie.demo/av/annotations/history/00000000015B2CY0QRX323F0F4.json"
     },
     {
-      "id": "https://archie.demo/av/annotations/0000000002R45HEF2PZ50ZZ14R/v1",
+      "id": "https://archie.demo/av/annotations/0000000002YH9G4MT80PM8JQ2P/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -45,10 +45,10 @@
         "purpose": "supplementing"
       },
       "motivation": "supplementing",
-      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000002R45HEF2PZ50ZZ14R.json"
+      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000002YH9G4MT80PM8JQ2P.json"
     },
     {
-      "id": "https://archie.demo/av/annotations/0000000003WGKHCG6HVA43KFA1/v1",
+      "id": "https://archie.demo/av/annotations/0000000003YHM2ECJQVE5DVBPT/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -67,10 +67,10 @@
         "purpose": "supplementing"
       },
       "motivation": "supplementing",
-      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000003WGKHCG6HVA43KFA1.json"
+      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000003YHM2ECJQVE5DVBPT.json"
     },
     {
-      "id": "https://archie.demo/av/annotations/0000000004DEGZBVKDZZWMSYB6/v1",
+      "id": "https://archie.demo/av/annotations/0000000004AH0S3282EF4RWBA9/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -89,7 +89,7 @@
         "purpose": "supplementing"
       },
       "motivation": "supplementing",
-      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000004DEGZBVKDZZWMSYB6.json"
+      "archie:hasHistory": "https://archie.demo/av/annotations/history/0000000004AH0S3282EF4RWBA9.json"
     }
   ]
 }

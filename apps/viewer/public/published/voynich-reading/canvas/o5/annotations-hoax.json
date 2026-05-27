@@ -1,0 +1,31 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/canvas/o5/annotations-hoax.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/000000000E58CWPWKVJ0Y4AGA7/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o5",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:3600,520,420,180"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.014Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the grille reading, the label is a short grille-drawn token with no referent; its placement on a star is mimicry of real astronomical diagrams, not naming.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:reading": "hoax",
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000E58CWPWKVJ0Y4AGA7.json"
+    }
+  ],
+  "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
+}

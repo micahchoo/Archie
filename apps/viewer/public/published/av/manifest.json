@@ -12,6 +12,18 @@
       "One sound from the mesh, read against its transcript — click a line to travel the audio."
     ]
   },
+  "requiredStatement": {
+    "label": {
+      "none": [
+        "Attribution"
+      ]
+    },
+    "value": {
+      "none": [
+        "Field recording republished from one.compost.digital under the same license."
+      ]
+    }
+  },
   "items": [
     {
       "id": "https://archie.demo/av/canvas/o1",

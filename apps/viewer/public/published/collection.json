@@ -9,21 +9,51 @@
   },
   "summary": {
     "none": [
-      "Voynich folios courtesy of the Beinecke Rare Book and Manuscript Library, Yale University (MS 408)."
+      "Annotated exhibits read more than one way — a contested manuscript, a field map, and a recording from the mesh."
     ]
   },
   "items": [
+    {
+      "id": "https://archie.demo/voynich-rosettes/manifest.json",
+      "type": "Manifest",
+      "label": {
+        "none": [
+          "The Rosettes"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg",
+          "type": "Image"
+        }
+      ]
+    },
     {
       "id": "https://archie.demo/voynich/manifest.json",
       "type": "Manifest",
       "label": {
         "none": [
-          "Voynich manuscript"
+          "The Whole Manuscript"
         ]
       },
       "thumbnail": [
         {
-          "id": "/voynich/article.png",
+          "id": "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg",
+          "type": "Image"
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/voynich-reading/manifest.json",
+      "type": "Manifest",
+      "label": {
+        "none": [
+          "Reading the Unreadable"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg",
           "type": "Image"
         }
       ]

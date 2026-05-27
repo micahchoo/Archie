@@ -1,0 +1,54 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/annotations/history/0000000001D0EXE8PSSJP619JX.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/0000000001D0EXE8PSSJP619JX/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1500,360,1200,520"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.001Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the cipher reading, this is the manuscript's enciphered incipit — the opening lines a cryptographer would attack first, since openings often carry a title or invocation whose plaintext is guessable. The professional codebreakers (Currier, the Friedmans, Tiltman) all began here and none recovered it.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "botanical",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "currier-hand-A",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "marginalia",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "provenance",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "0000000001D0EXE8PSSJP619JX",
+      "archie:rev": "0000000001BV0QVPG3FQC8M10N",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "cipher"
+    }
+  ]
+}
