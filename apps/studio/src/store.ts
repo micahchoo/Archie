@@ -7,7 +7,7 @@
 //   {PROJECT}/annotations/                       — the "sample" exhibit's annotations (LEGACY path,
 //                                                   kept so pre-multi-exhibit work isn't orphaned)
 //   {PROJECT}/exhibits/{slug}/annotations/       — every OTHER exhibit's annotations
-import { FsaFilesystem, type FsDirectory, type OrientationTransform, type MediaType, type Section } from "@render/core";
+import { FsaFilesystem, type FsDirectory, type OrientationTransform, type MediaType, type Section, type Reading, type RightsFields } from "@render/core";
 
 const PROJECT = "archie-demo-project";
 const SAMPLE_SLUG = "sample";
@@ -47,10 +47,14 @@ export interface ObjectProvenance {
   originalName: string;
 }
 
-export interface ObjectMeta {
+/** A persisted object. Carries `RightsFields` (per-object credit/license — the truest provenance level:
+ *  each folio = its holding institution). Projects to the Canvas's IIIF rights. */
+export interface ObjectMeta extends RightsFields {
   id: string;
   source: string;
   label: string;
+  /** Optional description/caption — projects to the Canvas `summary`. */
+  summary?: string;
   width?: number;
   height?: number;
   /** Media kind — "image" (default, OSD) vs "sound"/"video" (the temporal AvEditor). */
@@ -59,22 +63,30 @@ export interface ObjectMeta {
   duration?: number;
   provenance?: ObjectProvenance;
 }
-/** A persisted exhibit (authored structure). */
-export interface ExhibitMeta {
+/** A persisted exhibit (authored structure). Carries `RightsFields` (exhibit-level credit/license). */
+export interface ExhibitMeta extends RightsFields {
   id: string;
   slug: string;
   title: string;
+  /** Optional exhibit description — projects to the Manifest `summary` (the Gallery card + exhibit chrome). */
+  summary?: string;
   layout?: "single" | "grid" | "narrative";
   /** RESERVED (§43 reading-MODE axis) — v1.1 pacing variant (slideshow/scrollytelling). Unused in v1. */
   mode?: string;
   objects: ObjectMeta[];
   /** Ordered narrative sections (the authored spine; IIIF Ranges at publish). Present for narrative exhibits. */
   sections?: Section[];
+  /** The exhibit's curated Readings (interpretive passes; ADR-0007). A note references one by id (`record.reading`). */
+  readings?: Reading[];
   /** Bundled defaults only: bump when the seeded notes change so the reconcile reseeds (P0 fixture iteration). */
   seedVersion?: number;
 }
-/** The authored library structure persisted at `{PROJECT}/library.json`. */
-export interface LibraryMeta {
+/** The authored library structure persisted at `{PROJECT}/library.json`. Carries the library-level
+ *  identity (`title`/`summary`) + `RightsFields` (collection credit/license). `title`/`summary` were
+ *  previously hardcoded in buildFullLibrary; now authorable so the Library has a home (rights grill Q6). */
+export interface LibraryMeta extends RightsFields {
+  title?: string;
+  summary?: string;
   exhibits: ExhibitMeta[];
 }
 

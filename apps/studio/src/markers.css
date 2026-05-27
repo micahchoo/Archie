@@ -1,13 +1,19 @@
-/* A2 + stroke-over-stroke marker styling (CONTEXT §122). Annotorious's default inner stroke is
-   BLACK with the outer halo hidden — invisible on Archie's dark light-table (#181714) and on any
-   matching photo region. We enable a light outer HALO + a forest-green INNER stroke (stroke-over-
-   stroke), so markers read on ANY background — at low visual weight (A2), full on select.
+/* A2 + stroke-over-stroke marker styling (CONTEXT §122 weight; §123 overlay-contrast). Annotorious's
+   default inner stroke is BLACK with the outer halo hidden — invisible on Archie's dark light-table
+   (#181714) and on any matching photo region. We pair a light outer HALO with a DARK contrast edge
+   (drop-shadow) around the forest-green INNER stroke — a true stroke-over-stroke so a marker reads on
+   ANY background, pale parchment or dark table, at low weight (A2), full on select. This is contrast
+   that holds WITHOUT sampling the image; true image-aware ADAPTIVE styling (§123) stays v1.5.
+   NOTE: this file is duplicated in apps/viewer/src/markers.css — keep the two in sync.
    MUST load AFTER the Annotorious CSS (same specificity → source order wins). */
 .a9s-annotationlayer .a9s-outer {
   display: block;
   stroke: rgba(245, 240, 230, 0.85); /* warm-paper light halo — the "light" of stroke-over-stroke */
   stroke-width: 3px;
   stroke-opacity: 0.55;
+  /* the "dark" of stroke-over-stroke: a tight dark halo so a marker stays legible on a LIGHT
+     background (pale parchment), not only the dark table — §123 overlay-contrast, no pixel sampling. */
+  filter: drop-shadow(0 0 1px rgba(24, 23, 20, 0.72));
 }
 .a9s-annotationlayer .a9s-inner {
   fill: transparent;
