@@ -4,7 +4,7 @@
   // (parseTimeFragment) as a prose SPINE beside the media — clicking a line travels the audio (seek),
   // and playback lights the active line (activeNoteIndex on timeupdate). The same reading idiom as the
   // spatial NarrativeReader: AV is narrative over time. Import-only v1 — read-only, no recording.
-  import { parseTimeFragment, activeNoteIndex, type W3CAnnotation, type TimeRange } from "@render/core";
+  import { parseMediaFragment, activeNoteIndex, type W3CAnnotation, type TimeRange } from "@render/core";
 
   let {
     object,
@@ -23,18 +23,26 @@
   };
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
-  interface Cue { id: string; text: string; range: TimeRange; }
-  // Notes carrying a temporal selector, sorted by start — the transcript spine.
+  interface Cue { id: string; text: string; range: TimeRange; box?: { x: number; y: number; w: number; h: number }; }
+  // Notes carrying a temporal selector, sorted by start — the transcript spine. A video note may also carry
+  // a spatial box (`t=…&xywh=percent:…`, ADR-0006) read via parseMediaFragment.
   const cues = $derived.by<Cue[]>(() => {
     const out: Cue[] = [];
     for (const a of annotations) {
-      const sel = (a.target as { selector?: { value?: string } } | undefined)?.selector;
-      const range = sel?.value ? parseTimeFragment(sel.value) : null;
-      if (range) out.push({ id: a.id, text: bodyText(a), range });
+      const v = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
+      const f = v ? parseMediaFragment(v) : {};
+      if (f.time) out.push({ id: a.id, text: bodyText(a), range: f.time, ...(f.box ? { box: f.box } : {}) });
     }
     return out.sort((x, y) => x.range.start - y.range.start);
   });
   const activeIdx = $derived(activeNoteIndex(cues.map((c) => c.range), currentTime));
+  // Spatiotemporal regions visible at the current moment — each box shows while currentTime ∈ its window;
+  // the active cue's box is emphasised. The read-side mirror of the Studio's frame-draw (ADR-0006).
+  const videoBoxes = $derived.by(() =>
+    cues
+      .filter((c) => c.box && currentTime >= c.range.start && currentTime <= (c.range.end ?? c.range.start))
+      .map((c) => ({ id: c.id, box: c.box!, active: cues[activeIdx]?.id === c.id })),
+  );
 
   const isVideo = $derived(object.mediaType === "video");
   function seek(i: number) {
@@ -50,7 +58,14 @@
     <!-- The media on the dark light-table — same surface as the image canvas, so sound/image read
          as one kind of object. Controls are the native scrubber (read-only consumer). -->
     {#if isVideo}
-      <video bind:this={mediaEl} src={object.source} controls ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
+      <div class="video-wrap">
+        <!-- svelte-ignore a11y_media_has_caption -->
+        <video bind:this={mediaEl} src={object.source} controls ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
+        <!-- Spatiotemporal note regions (ADR-0006): the box appears on the frame during its time window. -->
+        <div class="box-overlay" aria-hidden="true">
+          {#each videoBoxes as b (b.id)}<div class="rbox" class:active={b.active} style={`left:${b.box.x}%;top:${b.box.y}%;width:${b.box.w}%;height:${b.box.h}%`}></div>{/each}
+        </div>
+      </div>
     {:else}
       <div class="audio-stage">
         <span class="now">Now playing</span>
@@ -91,7 +106,12 @@
   .audio-stage .now { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
   .audio-stage h1 { font-family: var(--font-display); font-weight: 600; font-size: 2rem; line-height: 1.1; margin: 0; color: var(--ink-canvas-primary); }
   .audio-stage audio { width: 100%; margin-top: var(--space-2); }
-  main video { max-width: 100%; max-height: 100%; }
+  /* The wrap hugs the rendered video so the overlay aligns with the frame (boxes are % of the frame). */
+  .video-wrap { position: relative; display: inline-block; max-width: 100%; max-height: 100%; line-height: 0; }
+  .video-wrap video { display: block; max-width: 100%; max-height: 84vh; }
+  .box-overlay { position: absolute; inset: 0; pointer-events: none; }
+  .rbox { position: absolute; box-sizing: border-box; border: 2px solid var(--accent); background: rgba(58, 107, 76, 0.1); border-radius: 2px; }
+  .rbox.active { box-shadow: 0 0 0 2px rgba(58, 107, 76, 0.45); background: rgba(58, 107, 76, 0.18); }
 
   aside {
     width: 420px; flex-shrink: 0; overflow: auto; box-sizing: border-box;

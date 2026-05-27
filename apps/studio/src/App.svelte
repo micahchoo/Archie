@@ -15,17 +15,19 @@
   import IdentityPrompt from "./IdentityPrompt.svelte";
   import ExhibitOverview from "./ExhibitOverview.svelte";
   import NarrativeEditor from "./NarrativeEditor.svelte";
+  import ShortcutsHelp from "./ShortcutsHelp.svelte";
+  import { matches, typingInField } from "./shortcuts.js";
   import {
     AnnotationSession, libraryToZip, asClientId, mintRevId, encodeLinkRef,
     MemoryFilesystem, ZipFilesystem, FsaFilesystem, publishLibrary, loadLibrary, collectFiles, publishToGitHub,
     readExifOrientation, isOrientationNoop, orientationTransform,
-    mediaTypeFromSource, timeFragmentValue, parseTimeFragment, importTranscript,
+    mediaTypeFromSource, timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript,
     bindingLabel, recentFromBinding, addRecent, removeRecent,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type GitHubTarget, type Binding, type RecentProject, type BrokenLink, type Section,
   } from "@render/core";
   import type { DrawTool } from "@render/mount";
   import { bakeDisplayMaster } from "./bake.js";
-  import { openExhibitAnnotationsDir, loadLibraryMeta, saveLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, readAssetBytes, readOriginalBytes, clearExhibitAnnotations, type ExhibitMeta, type LibraryMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
+  import { openExhibitAnnotationsDir, loadLibraryMeta, saveLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, readAssetBytes, readOriginalBytes, assetSize, clearExhibitAnnotations, type ExhibitMeta, type LibraryMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
   import { supportsFolderPicker, pickFolder, downloadZip, zipNameFor, loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
   import { putHandle, getHandle, deleteHandle, requestPermission } from "./handles-db.js";
   import { voynichObjects, voynichNotes, voynichTitle } from "./voynich.js";
@@ -519,9 +521,6 @@
   const canvasId = $derived(canvasIdOf(currentObjectId));
   // AV objects (sound/video) get the temporal AvEditor instead of the OSD Canvas (draw tools too).
   const isAvCurrent = $derived(current?.mediaType === "sound" || current?.mediaType === "video");
-  // Video has no per-note locus yet (frame regions = Wave 2), so its notes keep the inline sidebar form;
-  // image (canvas marker) + audio (waveform region) both edit in the marker popover (ADR-0006 "edit at the locus").
-  const isVideoCurrent = $derived(current?.mediaType === "video");
   // The image URL the Canvas mounts: imported (/assets) objects resolve to their blob: URL.
   const currentSource = $derived(current ? (isAsset(current.source) ? (assetUrls[current.id] ?? current.source) : current.source) : "");
   // Resolved image URL for an object's rail thumbnail (asset → blob: URL, else its path/URL).
@@ -532,6 +531,13 @@
     selected = null;
     editing = null;
     mode = "select";
+  }
+  // Step to the previous/next object on the rail ([ / ] shortcuts).
+  function stepObject(dir: -1 | 1) {
+    if (OBJECTS.length < 2) return;
+    const i = OBJECTS.findIndex((o) => o.id === currentObjectId);
+    const j = Math.max(0, Math.min(OBJECTS.length - 1, i + dir));
+    if (OBJECTS[j]) switchObject(OBJECTS[j]!.id);
   }
   // Rename an object (its label is authored structure → persist to library.json). Empty = ignored.
   function renameObject(objId: string, label: string) {
@@ -633,14 +639,17 @@
   const onDelete = (id: string) => { session.deleteNote(id as LogicalId); bump(); if (selected === id) selected = null; if (editing === id) editing = null; };
   // Hand-annotate AV: AvEditor marked a [start,end] region → create a supplementing time note, then
   // select it so the WADM form opens to type the note (the temporal analogue of onCreate for OSD draws).
-  function onCreateTime(start: number, end: number) {
+  function onCreateTime(start: number, end: number, box?: { x: number; y: number; w: number; h: number }) {
+    // A video region note is SPATIOTEMPORAL — `t=…&xywh=percent:…` (ADR-0006); audio/whole-frame stay `t=`.
+    const value = box ? mediaFragmentValue({ time: { start, end }, box, unit: "percent" }) : timeFragmentValue(start, end);
     if (framingSectionId) {
-      // Framing an AV-bound narrative camera: the [start,end] becomes a `t=` moment, not a note.
-      setSectionStart(framingSectionId, timeFragmentValue(start, end));
+      // Framing an AV-bound narrative camera: the moment (± region) becomes the section's `start`, not a note.
+      setSectionStart(framingSectionId, value);
       framingSectionId = null;
       return;
     }
-    const id = session.createNote({ target: timeSel(canvasId, start, end), body: [{ type: "TextualBody", value: "", purpose: "supplementing" }], motivation: "supplementing" });
+    const target = { type: "SpecificResource" as const, source: canvasId, selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value } };
+    const id = session.createNote({ target, body: [{ type: "TextualBody", value: "", purpose: "supplementing" }], motivation: "supplementing" });
     bump();
     selected = id;
   }
@@ -741,12 +750,31 @@
     commentEl?.focus();
     commentEl?.setSelectionRange(pos, pos);
   }
+  let helpOpen = $state(false); // the `?` shortcuts cheat-sheet
+  // Global + image-editor keyboard shortcuts (registry-driven; AV shortcuts live in AvEditor, palette in CmdK).
   function onGlobalKey(e: KeyboardEvent) {
-    if (e.key === "Escape" && framingSectionId) { e.preventDefault(); cancelFraming(); return; } // bail out of camera framing
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && view === "editor" && sel) {
-      e.preventDefault();
-      void requestCite(citeIntoComment);
+    // ? toggles the cheat-sheet (not while typing); Esc closes it first.
+    if (matches(e, "?") && !typingInField(e)) { e.preventDefault(); helpOpen = !helpOpen; return; }
+    if (helpOpen && matches(e, "Esc")) { e.preventDefault(); helpOpen = false; return; }
+    // ⌘K — cite into the note/section being edited (works inside the textarea too).
+    if (matches(e, "⌘K") && view === "editor" && sel) { e.preventDefault(); void requestCite(citeIntoComment); return; }
+    // Esc dismiss-ladder: palette (self-closes) → note popover → camera framing → overview → library.
+    if (matches(e, "Esc")) {
+      if (cmdkOpen) return;
+      if (framingSectionId) { e.preventDefault(); cancelFraming(); return; }
+      if (sel) { e.preventDefault(); selected = null; editing = null; return; }
+      if (view === "editor" && hasOverview) { e.preventDefault(); void backToOverview(); return; }
+      if (view === "overview") { e.preventDefault(); void backToLibrary(); return; }
+      return;
     }
+    // Image-canvas shortcuts — bare letters, so skip while typing / on AV / while framing.
+    if (typingInField(e) || view !== "editor" || isAvCurrent || framingSectionId) return;
+    if (matches(e, "V")) { e.preventDefault(); mode = "select"; }
+    else if (matches(e, "R")) { e.preventDefault(); mode = "draw"; tool = "rectangle"; }
+    else if (matches(e, "P")) { e.preventDefault(); mode = "draw"; tool = "polygon"; }
+    else if (matches(e, "⌫") && editing) { e.preventDefault(); onDelete(editing); }
+    else if (matches(e, "[")) { e.preventDefault(); stepObject(-1); }
+    else if (matches(e, "]")) { e.preventDefault(); stepObject(1); }
   }
 
   // Publish/Download project the WHOLE library — every exhibit (the published site IS the library:
@@ -780,6 +808,7 @@
   }
 
   async function download() {
+    if (!(await zipSizeOk())) return; // large-library guard (LARGE-MEDIA-MEMORY-CEILING #1)
     const logs = await loadAllLogs();
     const { zip: bytes, brokenLinks } = await libraryToZip(buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset: (slug, name) => readAssetBytes(slug, name) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
@@ -851,11 +880,37 @@
     const logs = await loadAllLogs();
     await publishLibrary(new FsaFilesystem(handle), buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset });
   }
-  /** Download the whole library as a .archie.zip (non-Chromium "the zip IS the file"). */
-  async function downloadProjectZip() {
+  // --- large-library memory guard (LARGE-MEDIA-MEMORY-CEILING #1): the .archie.zip is built ENTIRELY in
+  // memory (~2× peak), so before a zip Save we sum the imported assets (metadata only — File.size, no byte
+  // read) and, over a threshold, warn + STEER to the streaming sink (folder) or the no-bundle path (URL).
+  // The folder sink streams to disk and isn't guarded; external-URL media is referenced, never summed. ---
+  const ZIP_WARN_BYTES = 250 * 1024 * 1024; // ~250 MB
+  async function estimateLibraryBytes(): Promise<number> {
+    let total = 0;
+    for (const ex of libraryMeta.exhibits) {
+      for (const o of ex.objects) {
+        if (isAsset(o.source)) total += await assetSize(ex.slug, o.source.slice(ASSET_PREFIX.length));
+      }
+    }
+    return total;
+  }
+  /** True = ok to build the in-memory zip. Over the threshold, confirm + steer (folder / link-by-URL). */
+  async function zipSizeOk(): Promise<boolean> {
+    const bytes = await estimateLibraryBytes();
+    if (bytes < ZIP_WARN_BYTES) return true;
+    const mb = Math.round(bytes / (1024 * 1024));
+    const steer = canFolder
+      ? "On this browser, “Save to disk” → choose a folder writes straight to disk without holding the whole archive in memory — better for a library this size."
+      : "Tip: link large media by URL (paste a source URL in “+ Object”) so the archive references it instead of bundling the bytes.";
+    return window.confirm(`This library is about ${mb} MB. A single .archie.zip is built entirely in memory and may be slow or fail on a library this large.\n\n${steer}\n\nBuild the zip anyway?`);
+  }
+  /** Download the whole library as a .archie.zip (non-Chromium "the zip IS the file"). False = user declined. */
+  async function downloadProjectZip(): Promise<boolean> {
+    if (!(await zipSizeOk())) return false;
     const logs = await loadAllLogs();
     const { zip } = await libraryToZip(buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset });
     downloadZip(zip, binding.kind === "file" && binding.name ? binding.name : zipNameFor(PROJECT_TITLE));
+    return true;
   }
   /** Re-acquire a folder binding's handle + permission (needs a user gesture). Null + bindingError if lost. */
   async function reacquireFolder(): Promise<FileSystemDirectoryHandle | null> {
@@ -882,14 +937,14 @@
           await writeToFolder(handle);
         } else {
           binding = { kind: "file", name: zipNameFor(PROJECT_TITLE) };
-          await downloadProjectZip();
+          if (!(await downloadProjectZip())) return; // declined the large-library zip → stay unsaved
         }
       } else if (binding.kind === "folder") {
         const handle = await reacquireFolder();
         if (!handle) return;
         await writeToFolder(handle);
       } else {
-        await downloadProjectZip();
+        if (!(await downloadProjectZip())) return; // declined the large-library zip → stay unsaved
       }
       bindingDirty = false;
       rememberBinding();
@@ -1042,6 +1097,7 @@
     <button onclick={importChanges} disabled={objNotes.length === 0 || conflicts.length > 0} title={conflicts.length > 0 ? "Resolve the open merge first" : ""}>Import changes</button>
     <button onclick={download}>Download .archie.zip</button>
     <button onclick={() => (publishDialogOpen = true)}>Publish…</button>
+    <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
   </header>
 
   {#if isTemplate(currentSlug)}
@@ -1073,7 +1129,7 @@
       <form class="add-obj" onsubmit={(e) => { e.preventDefault(); void addObject(addSource, addLabel); }}>
         <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; void addFiles(el.files).then(() => (el.value = "")); }} /></label>
         <span class="or">or</span>
-        <input bind:value={addSource} placeholder="Source URL or /path (image / audio / video)" aria-label="Object source URL" />
+        <input bind:value={addSource} placeholder="Source URL or /path (image / audio / video)" aria-label="Object source URL" title="Best for LARGE media: a URL links the file (the archive references it, never bundles the bytes) — keeps your .archie.zip small." />
         <input class="lbl" bind:value={addLabel} placeholder="Label" aria-label="Object label" />
         <button type="submit" disabled={addSource.trim() === ""}>Add</button>
         <button type="button" class="cancel" onclick={() => { addingObject = false; addSource = ""; addLabel = ""; }}>✕</button>
@@ -1175,11 +1231,10 @@
           </li>
         {/each}
       </ul>
-      <p class="hint">{isAvCurrent ? "Play the recording · “Set in” then “Add note” marks a region (or add a 5s region at the playhead) · click a note to seek · edit it below." : "Draw a Rect/Polygon to add a note · click a marker to edit it right there · its editor follows it as you pan/zoom."}</p>
+      <p class="hint">{isAvCurrent ? "Play it · “Set in” → “Add note” marks a moment (video: “+ Region on frame” adds a box) · click a note to seek + edit it in the popover." : "Draw a Rect/Polygon to add a note · click a marker to edit it right there · its editor follows it as you pan/zoom."}</p>
 
-      <!-- Image + audio notes edit in the marker popover (in <main>, anchored to canvas marker / waveform
-           region); only VIDEO edits inline here, until its Wave-2 frame-region locus exists (ADR-0006). -->
-      {#if isVideoCurrent}{@render noteForm()}{/if}
+      <!-- All notes (image / audio / video) edit in the marker popover anchored to their locus (in <main>);
+           the sidebar is nav + the narrative spine only — no inline form (ADR-0006). -->
     </aside>
     <main
       bind:this={mainEl}
@@ -1208,7 +1263,7 @@
         <div class="no-canvas">Add an object — drop an image here, or use “+ Object” on the rail.</div>
       {/if}
 
-      {#if sel && !isVideoCurrent && mode !== "draw"}
+      {#if sel && mode !== "draw"}
         <!-- The WADM form anchored to the selected marker (ADR-0006): an image's canvas marker OR an audio
              cue's waveform region (both stream their screen-rect via onmarkerrect → notePos). Offset off the
              marker, follows the surface, draggable by the grip; stopPropagation so dragging never pans OSD.
@@ -1240,6 +1295,8 @@
        so a narrative layout couldn't be set from the overview → the "Sections" tab never appeared. -->
   <LayoutPicker current={currentLayout} onpick={setLayout} onclose={() => (layoutPickerOpen = false)} />
 {/if}
+<!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
+<ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
 </div>
 
 <style>
@@ -1281,6 +1338,8 @@
   .savestate.dirty { color: var(--accent); }
   /* Identity chip — your name in the shared history (invention #6); mono like other identifiers. */
   .you { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: 999px; padding: 1px var(--space-3); }
+  /* The ? shortcuts button — a round, quiet affordance for the cheat-sheet. */
+  header > button.help-btn { border-radius: 999px; min-width: 1.9rem; padding: var(--space-1) 0; text-align: center; font-weight: 700; }
 
   /* Playground banner — honest ephemerality (§115). Amber tint = transient/attention; the keep button
      carries the action accent (green). */
