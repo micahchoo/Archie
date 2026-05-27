@@ -28,20 +28,18 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-          cache-dependency-path: Archie/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        working-directory: Archie
         run: pnpm install --frozen-lockfile
 
       - name: Build Studio + Viewer
-        working-directory: Archie
         run: bash scripts/build-gh-pages.sh
 
       - uses: actions/configure-pages@v4
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: Archie/gh-pages-dist
+          path: gh-pages-dist
 
       - uses: actions/deploy-pages@v4
