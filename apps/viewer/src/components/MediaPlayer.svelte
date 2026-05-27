@@ -4,18 +4,23 @@
   // (parseTimeFragment) as a prose SPINE beside the media — clicking a line travels the audio (seek),
   // and playback lights the active line (activeNoteIndex on timeupdate). The same reading idiom as the
   // spatial NarrativeReader: AV is narrative over time. Import-only v1 — read-only, no recording.
-  import { parseMediaFragment, activeNoteIndex, type W3CAnnotation, type TimeRange } from "@render/core";
+  import { parseMediaFragment, activeNoteIndex, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
+  import Credit from "./Credit.svelte";
 
   let {
     object,
     annotations = [],
+    rights,
   }: {
     object: { source: string; label: string; mediaType?: "image" | "sound" | "video"; duration?: number };
     annotations?: W3CAnnotation[];
+    /** The recording's credit/license (Q5) — AV is MUST-display too; shown by the title. */
+    rights?: RightsFields;
   } = $props();
 
   let mediaEl = $state<HTMLMediaElement | null>(null);
   let currentTime = $state(0);
+  let mediaError = $state(false); // the recording's file failed to load (missing / unsupported codec)
 
   const bodyText = (a: W3CAnnotation): string => {
     const b = Array.isArray(a.body) ? a.body[0] : a.body;
@@ -57,10 +62,12 @@
   <main>
     <!-- The media on the dark light-table — same surface as the image canvas, so sound/image read
          as one kind of object. Controls are the native scrubber (read-only consumer). -->
-    {#if isVideo}
+    {#if mediaError}
+      <p class="media-failed">This recording couldn’t be loaded — the file may be missing or in a format this browser can’t play.</p>
+    {:else if isVideo}
       <div class="video-wrap">
         <!-- svelte-ignore a11y_media_has_caption -->
-        <video bind:this={mediaEl} src={object.source} controls ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
+        <video bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
         <!-- Spatiotemporal note regions (ADR-0006): the box appears on the frame during its time window. -->
         <div class="box-overlay" aria-hidden="true">
           {#each videoBoxes as b (b.id)}<div class="rbox" class:active={b.active} style={`left:${b.box.x}%;top:${b.box.y}%;width:${b.box.w}%;height:${b.box.h}%`}></div>{/each}
@@ -70,7 +77,7 @@
       <div class="audio-stage">
         <span class="now">Now playing</span>
         <h1>{object.label}</h1>
-        <audio bind:this={mediaEl} src={object.source} controls ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
+        <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
       </div>
     {/if}
   </main>
@@ -79,6 +86,7 @@
     <p class="eyebrow">Transcript · {cues.length} lines</p>
     {#if isVideo}<h1 class="vid-label">{object.label}</h1>{/if}
     <p class="hint">Read down the transcript — the recording travels to each line. The line now playing is inked.</p>
+    <p class="credit-row"><Credit {rights} tone="paper" /></p>
     {#if cues.length === 0}
       <p class="empty">No transcript for this recording.</p>
     {:else}
@@ -106,6 +114,8 @@
   .audio-stage .now { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
   .audio-stage h1 { font-family: var(--font-display); font-weight: 600; font-size: 2rem; line-height: 1.1; margin: 0; color: var(--ink-canvas-primary); }
   .audio-stage audio { width: 100%; margin-top: var(--space-2); }
+  /* Broken-media fallback (empty/error gate): a missing/undecodable recording, on the dark table. */
+  .media-failed { max-width: 32rem; font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-canvas-secondary); text-align: center; padding: var(--space-6); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); }
   /* The wrap hugs the rendered video so the overlay aligns with the frame (boxes are % of the frame). */
   .video-wrap { position: relative; display: inline-block; max-width: 100%; max-height: 100%; line-height: 0; }
   .video-wrap video { display: block; max-width: 100%; max-height: 84vh; }

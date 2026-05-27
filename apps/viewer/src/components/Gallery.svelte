@@ -3,6 +3,7 @@
   // hardcoded stand-in array in index.astro). A uniform card grid on the warm gallery wall; cards
   // link via the hash router (#/<slug>) — the shell handles navigation, no page reload.
   import type { ExhibitsJson } from "@render/core";
+  import Credit from "./Credit.svelte";
 
   let { gallery }: { gallery: ExhibitsJson } = $props();
 
@@ -15,6 +16,7 @@
     <p class="eyebrow">Exhibition gallery</p>
     <h1>{title}</h1>
     {#if gallery.library.summary}<p class="blurb">{gallery.library.summary}</p>{/if}
+    <p class="credit-row"><Credit rights={gallery.library} tone="paper" /></p>
   </header>
 
   {#if cards.length === 0}
@@ -44,6 +46,7 @@
   .eyebrow { color: var(--accent); }
   .intro h1 { font-family: var(--font-display); font-weight: 600; font-size: 3rem; line-height: 1.05; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); }
   .blurb { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0; }
+  .credit-row { margin: var(--space-3) 0 0; }
 
   .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-6); }
   .card { display: flex; flex-direction: column; text-decoration: none; background: var(--surface-paper-card); border: 1px solid var(--border-paper); border-radius: var(--radius-lg); overflow: hidden; transition: transform 160ms ease, background 160ms ease; }

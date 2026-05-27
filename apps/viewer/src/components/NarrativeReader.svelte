@@ -8,23 +8,41 @@
   import MediaPlayer from "./MediaPlayer.svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import NoteMedia from "./NoteMedia.svelte";
-  import { renderMarkdown } from "@render/svelte";
-  import { splitNoteMedia, type AObject, type NoteMediaItem, type W3CAnnotation, type W3CBody, type Section } from "@render/core";
+  import Credit from "./Credit.svelte";
+  import ReadingLegend from "./ReadingLegend.svelte";
+  import { renderMarkdown, type MarkerStyle } from "@render/svelte";
+  import { splitNoteMedia, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type W3CBody, type Section } from "@render/core";
 
   let {
     objects = [],
     canvasIdOf,
     annotationsByObject = {},
+    readingAnnotationsByObject = {},
     sections = [],
     title = "",
+    rights,
+    readings = [],
+    activeReading = null,
+    onreading,
+    styleFor,
     initialSelected = null,
   }: {
     objects: AObject[];
     /** Resolve an object id to its published canvas IRI (the Viewer owns the slug). */
     canvasIdOf: (objectId: string) => string;
     annotationsByObject?: Record<string, W3CAnnotation[]>;
+    /** Per object id → per reading id → that reading's notes (ADR-0007). */
+    readingAnnotationsByObject?: Record<string, Record<string, W3CAnnotation[]>>;
     sections?: Section[];
     title?: string;
+    /** The exhibit-level credit/license (Q5), shown under the title beside the spine hint. */
+    rights?: RightsFields;
+    /** The exhibit's Readings (ADR-0007) — drives the canvas legend. Empty = no legend. */
+    readings?: Reading[];
+    activeReading?: string | null;
+    onreading?: (id: string | null) => void;
+    /** Per-object marker styler (objectId → (annId → style)); colours markers by Reading. */
+    styleFor?: (objectId: string) => (id: string) => MarkerStyle | undefined;
     initialSelected?: string | null; // deep-link arrival: land on the section whose object owns this note
   } = $props();
 
@@ -42,7 +60,16 @@
   const activeSection = $derived(sections[activeIndex]);
   const activeObject = $derived(objects.find((o) => o.id === activeSection?.objectId) ?? objects[0]);
   const isAV = $derived(activeObject?.mediaType === "sound" || activeObject?.mediaType === "video");
-  const activeNotes = $derived(activeObject ? (annotationsByObject[activeObject.id] ?? []) : []);
+  // Base notes are always visible (Q16); an active Reading overlays its notes on top (ADR-0007) —
+  // mirrors ExhibitView.annotationsOf / Reader semantics so the narrative spine carries Readings too.
+  const activeNotes = $derived.by(() => {
+    if (!activeObject) return [] as W3CAnnotation[];
+    const base = annotationsByObject[activeObject.id] ?? [];
+    if (activeReading === null) return base;
+    const r = readingAnnotationsByObject[activeObject.id]?.[activeReading] ?? [];
+    return r.length ? [...base, ...r] : base;
+  });
+  const activeStyleOf = $derived(activeObject ? styleFor?.(activeObject.id) : undefined);
   const multiObject = $derived(new Set(sections.map((s) => s.objectId)).size > 1);
 
   function activate(i: number) { activeIndex = i; selected = null; }
@@ -68,6 +95,7 @@
             source={activeObject.source}
             canvasId={canvasIdOf(activeObject.id)}
             annotations={activeNotes}
+            styleOf={activeStyleOf}
             focus={activeSection?.start ?? null}
             bind:selected
           />
@@ -76,10 +104,15 @@
     {/if}
   </main>
 
+  {#if onreading && readings.length > 0}
+    <ReadingLegend {readings} active={activeReading} onselect={onreading} />
+  {/if}
+
   <aside>
     <p class="eyebrow">Narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}</p>
     <h1>{title}</h1>
     <p class="hint">Read down the spine — the canvas travels to each section's focus{multiObject ? ", moving between objects" : ""}.</p>
+    <p class="credit-row"><Credit {rights} tone="paper" /></p>
     <ol class="sections">
       {#each sections as s, i (s.id)}
         <li>

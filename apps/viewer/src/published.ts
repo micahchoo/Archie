@@ -3,7 +3,7 @@
 // {slug}/manifest.json gives the objects (+ title via IIIF label); each {slug}/canvas/{objId}/
 // annotations.json gives that object's published notes. No in-app publish — this is exactly what a
 // third party hitting the GH-Pages site does. (Swap the base for the deployed origin and it's live.)
-import { objectsFromManifest, canvasIdMap, sectionsFromManifest, type AObject, type ExhibitsJson, type IIIFManifest, type Reading, type Section, type W3CAnnotation } from "@render/core";
+import { objectsFromManifest, canvasIdMap, sectionsFromManifest, rightsFromIIIF, type AObject, type ExhibitsJson, type IIIFManifest, type Reading, type RightsFields, type Section, type W3CAnnotation } from "@render/core";
 
 const PUBLISHED = `${import.meta.env.BASE_URL}published`;
 
@@ -25,7 +25,7 @@ async function fetchJsonOptional<T>(path: string): Promise<T | null> {
   return (await res.json()) as T;
 }
 
-export interface PublishedExhibit {
+export interface PublishedExhibit extends RightsFields {
   slug: string;
   title: string;
   summary?: string;
@@ -67,5 +67,5 @@ export async function loadPublishedExhibit(slug: string): Promise<PublishedExhib
   const summary = (manifest as { summary?: { none?: string[] } }).summary?.none?.[0];
   const sections = sectionsFromManifest(manifest); // round-trip the narrative spine from the published Ranges
   const canvasIdByObject = canvasIdMap(manifest); // canvas IRIs as baked at publish (not a fixed BASE)
-  return { slug, title, objects, annotationsByObject, readings, readingAnnotationsByObject, sections, canvasIdByObject, ...(summary !== undefined ? { summary } : {}) };
+  return { slug, title, objects, annotationsByObject, readings, readingAnnotationsByObject, sections, canvasIdByObject, ...rightsFromIIIF(manifest), ...(summary !== undefined ? { summary } : {}) };
 }
