@@ -22,16 +22,20 @@ interface PublishedLibrary {
 
 ### GitHub Pages Contract
 ```ts
-interface GhPagesTarget {
+interface GitHubTarget {
   owner: string;
   repo: string;
-  branch: string;  // default: 'gh-pages'
-  token: string;   // fine-grained PAT, contents:write + pages:write
+  branch?: string;  // default: 'gh-pages'
+  token: string;    // fine-grained PAT — Contents: write (push) + Pages: write (auto-enable)
 }
 ```
-- `publishToGitHub(files, target)` → `{ commitSha, pagesUrl }`
+- `publishToGitHub(files, target)` → `GitHubPublishResult` = `{ commitUrl, pagesUrl, pagesEnabled }`
+  - **Error mapping:** every network step ok-checks; any non-2xx throws `GitHubPublishError` with an actionable cause (bad token / missing scope / repo not found), never a silent `undefined.sha`.
+  - **Bounded uploads:** binary blobs upload with at most `BLOB_CONCURRENCY` (6) in flight — unbounded `Promise.all` trips GitHub's secondary rate limit on media-heavy libraries.
+  - **Best-effort Pages enable:** after the push, attempts deploy-from-branch Pages. The commit has already landed, so a Pages failure (no Pages scope, org policy, private-repo entitlement) does NOT fail the publish — it returns `pagesEnabled: false` and the UI tells the author to enable Pages manually.
+  - **`pagesUrl`** is project- vs user-site aware (`pagesUrlFor`): `{owner}.github.io` repo → root, else `/{repo}/`.
 - Token NEVER persisted (paste-each-publish)
-- FileContent: `{ path, content } | { path, base64 }` (binary = base64)
+- FileContent: `{ text } | { base64 }` (binary assets = base64)
 
 ## Cross-Subsystem Contracts
 

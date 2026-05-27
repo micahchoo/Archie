@@ -19,25 +19,35 @@ The bundled exhibits — a 5-folio Voynich manuscript set and a 25-region Bidar 
 
 ## Screenshots
 
+> **New here?** The [**user guide**](docs/guide/) walks the whole arc — library → annotate → publish — using the three bundled exhibits as worked examples. The screenshots below are figures from it.
+
 ### Studio — authoring
 
-![Archie Studio exhibit overview](docs/screenshots/Screenshot%202026-05-26%20at%2017-42-28%20Archie%20Studio.png)
+![Archie Studio library](docs/screenshots/auto/studio-library.desktop.png)
 
-*Exhibit overview: every object on one zoomable canvas — drag to pan, scroll to zoom, drag objects to set the reading order.*
+*Your library: every exhibit lives here. The three bundled examples — Voynich, Bidar, and a field recording — show what a finished exhibit looks like.*
 
-![Archie Studio canvas editor](docs/screenshots/Screenshot%202026-05-26%20at%2017-39-37%20Archie%20Studio.png)
+![Archie Studio exhibit overview](docs/screenshots/auto/studio-overview.desktop.png)
 
-*Canvas editor: draw rectangle or polygon regions on a deep-zoom object and annotate at the canvas-anchored popover (shown on a video object, with a time-window selector).*
+*Exhibit overview: every object on one zoomable canvas — drag to pan, scroll to zoom, drag plates to set the reading order.*
 
-![Archie Studio audio annotation](docs/screenshots/Screenshot%202026-05-26%20at%2017-41-20%20Archie%20Studio.png)
+![Archie Studio image editor](docs/screenshots/auto/studio-editor-image.desktop.png)
 
-*Audio annotation: WaveSurfer waveform — drag to create time-range notes, import VTT/SRT transcripts.*
+*Image editor: draw rectangle or polygon regions on a deep-zoom object and annotate in the canvas-anchored popover; markers follow as you pan and zoom.*
+
+![Archie Studio audio editor](docs/screenshots/auto/studio-editor-av.desktop.png)
+
+*Audio editor: drag across the WaveSurfer waveform to mark a moment and attach a note; import VTT/SRT transcripts.*
 
 ![Archie Studio narrative spine](docs/screenshots/Screenshot%202026-05-26%20at%2017-42-02%20Archie%20Studio.png)
 
 *Narrative spine: author sections with framed cameras, reorder beats, switch objects on the rail.*
 
 ### Viewer — published site
+
+![Archie Viewer published exhibit](docs/screenshots/auto/viewer-voynich.desktop.png)
+
+*Published exhibit: the Voynich folios as a live gallery — visitors open a folio, zoom in, and read your notes in place.*
 
 ![Archie Viewer narrative reading](docs/screenshots/Screenshot%202026-05-26%20at%2017-40-28%20Archie.png)
 
@@ -113,10 +123,13 @@ pnpm --filter @archie/viewer gen   # generate the static tree
 pnpm --filter @archie/viewer dev   # opens http://localhost:4321
 ```
 
-**7. Deploy to GitHub Pages.** In the Studio, open **Publish → Connect to GitHub**. Enter your repo **owner** and **name**, a branch (defaults to `gh-pages`), and a [fine-grained personal access token](https://github.com/settings/tokens?type=beta) with **`contents: write`** scope. Archie pushes the whole library — every exhibit — to that branch via the GitHub Contents API; the token is used once and never stored. Then, in your repo's **Settings → Pages**, set the source to the `gh-pages` branch. Your site goes live at `https://<owner>.github.io/<repo>/`.
+**7. Deploy to GitHub Pages.** In the Studio, open **Publish → Connect to GitHub**. Enter your repo **owner** and **name**, a branch (defaults to `gh-pages`), and a [fine-grained personal access token](https://github.com/settings/tokens?type=beta) with **`Contents: write`** (and, to let Archie switch Pages on for you, **`Pages: write`**). Archie pushes the whole library — every exhibit — to that branch via the GitHub git-trees API, then best-effort enables GitHub Pages; the token is used once and never stored. If it couldn't enable Pages (no Pages scope, or a private repo), the success screen tells you to set the source to the `gh-pages` branch under **Settings → Pages**. Your site goes live at `https://<owner>.github.io/<repo>/`.
 
 > [!NOTE]
 > The push writes your library's **data tree** (IIIF manifests, annotations, media, `exhibits.json`). The Viewer is a single client-routed shell that renders *any* published library at runtime — but the publish step writes data only, so the built Viewer (`astro build` output) must be deployed alongside the data for the site to render. See [Status & roadmap](#status--roadmap).
+
+> [!TIP]
+> **For the best experience, run the apps locally — don't rely on the GitHub Pages copy.** A published Pages site is **read-only**: visitors can read and navigate an exhibit, but they can't author, annotate, or edit it, and its interactivity is limited next to the running apps. Use **Studio** locally to build and revise, the local **Viewer** to read with full fidelity, and publish to Pages only to share a public, read-only snapshot.
 
 ## Features
 
@@ -238,6 +251,7 @@ The full phasing and gate mechanism is in [`docs/IMPLEMENTATION-STRATEGY.md`](do
 
 | Doc | For |
 |---|---|
+| [`docs/guide/`](docs/guide/) | **Users** — a screenshot walkthrough from library to published site |
 | [`CONTEXT.md`](CONTEXT.md) | Domain language, locked design frames, full glossary |
 | [`docs/README.md`](docs/README.md) | Index to all design docs |
 | [`docs/architecture/overview.md`](docs/architecture/overview.md) | Architecture map (start here as a developer) |
