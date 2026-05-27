@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/0000000006GJ98KK5PV9QMDABS.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/0000000006GJ98KK5PV9QMDABS/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:202,2622,708,708"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.006Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "We contributed, presented, and participated in the Anthillhacks and the CNX event organised in December 2019. The event is a more situated hackathon that happens in Tumkur, consisting of people from different specialities and places coming together to hack together something that is needed in their own places. The exchange of this event led to:\n1) A dialogue on feminist geography and decentralised network — about how intersubjectivity is something that subverts claims to universality in projects like community networks. The situated context truly changes the way the network is set up, bought into and maintained. This kind of specificity also requires a much more long term engagement than can be afforded while operating within a project mode.\n2) Our team sharing our experience of initiating the mesh network and exchanging learnings from the approaches by communities in other parts of India and the world.\nWe continue to engage with Servelots/Janastu, as well as the wider network of communities connected during Anthillhacks.\n\n![](https://one.compost.digital/micah/annotation-assets/6/APC_ANTHILLHACKS_CNX_20191211_P030.jpg)\n\n![](https://one.compost.digital/micah/annotation-assets/6/APC_ANTHILLHACKS_CNX_20191214_P022.jpg)",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "0000000006GJ98KK5PV9QMDABS",
+      "archie:rev": "0000000006J6JFPVBC9952XWQP",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

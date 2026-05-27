@@ -25,9 +25,13 @@ export const PROV_WAS_REVISION_OF = "prov:wasRevisionOf" as const;
 // ADR-0003 rejects a non-WADM log store, so the DAG metadata must ride on the WADM annotations.
 // A pure consumer ignores all `archie:` keys; Archie reads them to reconstruct the log.
 export const ARCHIE_LOGICAL_ID = "archie:logicalId" as const;
-/** Layer membership (per-note, cross-object — Q layers v1). On heads (Archie viewer filters)
- *  AND history (round-trip). A pure consumer ignores it (three-tier: Archie filters, pure shows all). */
+/** @deprecated Layer membership (per-note, multi-valued). SUPERSEDED by ARCHIE_READING (ADR-0007);
+ *  kept during the expand-and-contract rename. Migrated to Tags on read (layers[] → purpose:tagging). */
 export const ARCHIE_LAYERS = "archie:layers" as const;
+/** Reading membership (per-note, single — ADR-0007). A Reading = a mutually-exclusive interpretive pass,
+ *  serialized as the AnnotationPage the note lands in (`partOf` → the reading's AnnotationCollection).
+ *  On heads + history (round-trip). A pure consumer ignores it (three-tier: Archie filters, pure shows all). */
+export const ARCHIE_READING = "archie:reading" as const;
 export const ARCHIE_REV = "archie:rev" as const;
 export const ARCHIE_PARENT = "archie:parent" as const;
 /** Additional parents of a merge-resolution node (Q-7) — the other branch heads it reconciles. */
@@ -158,8 +162,12 @@ export interface AnnotationRecord {
   body?: W3CBody | W3CBody[];
   target: W3CTarget;
   motivation?: string | string[];
-  /** Layer ids this Note belongs to (per-note membership, cross-object — Q layers v1). */
+  /** @deprecated Multi-valued layer membership. SUPERSEDED by `reading` (ADR-0007); kept during the
+   *  expand-and-contract rename, migrated to Tags on read. Do not set on new records. */
   layers?: string[];
+  /** The single Reading this Note belongs to (mutually exclusive — ADR-0007), or undefined = base.
+   *  A Reading is a curated interpretive pass; the id resolves against the Exhibit's reading registry. */
+  reading?: string;
 }
 
 /** The append-only annotation log — the authoritative source every projection reads. */

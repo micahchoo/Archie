@@ -189,10 +189,18 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   return { brokenLinks };
 }
 
-/** Assemble the whole site into a `.archie.zip` (the architectural publish primitive). */
-export async function libraryToZip(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ zip: Uint8Array; brokenLinks: BrokenLink[] }> {
+/** Assemble the whole site into an in-memory ZipFilesystem (the architectural publish primitive),
+ *  WITHOUT serializing — the caller chooses `fs.toZip()` (eager) or `fs.streamZip(sink)` (A.1, stream
+ *  straight to a disk handle so the archive never fully materializes). */
+export async function libraryToZipFs(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ fs: ZipFilesystem; brokenLinks: BrokenLink[] }> {
   const fs = new ZipFilesystem();
   const { brokenLinks } = await publishLibrary(fs, library, getLog, opts);
+  return { fs, brokenLinks };
+}
+
+/** Assemble the whole site into a `.archie.zip` (eager: builds the entire archive in memory). */
+export async function libraryToZip(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ zip: Uint8Array; brokenLinks: BrokenLink[] }> {
+  const { fs, brokenLinks } = await libraryToZipFs(library, getLog, opts);
   return { zip: fs.toZip(), brokenLinks };
 }
 

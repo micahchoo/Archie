@@ -1,13 +1,36 @@
 # HANDOFF — Archie implementation
 
-_Last updated: 2026-05-26. **v1 COMPLETE + user-verified.** This handoff is oriented toward the v1.1 arc — see ▶ V1.1 below._
+_Last updated: 2026-05-27. **v1 COMPLETE + user-verified.** This handoff is oriented toward the v1.1 arc — see ▶ V1.1 below. NEWEST: the "Layers→Readings" reframe at the top of ▶ RESUME._
 
 ## ▶ RESUME (read first — newest sections are at the BOTTOM; this is the live summary)
-**✅ ALL BROWSER-VERIFY-OWED ITEMS CONFIRMED BY USER through 2026-05-26.** Every "browser-verify owed" note
+
+**🔶 NEWEST (2026-05-27) — "LAYERS" REFRAMED → "READINGS" (/grill-with-docs + /simplify; design LOCKED, build NOT started).**
+Grilled the symptom *"layers & tags are underused, purpose unclear."* Outcome: **"Layer" was one word doing two jobs (a stroad) — retired and split.** **Authoritative design = `CONTEXT.md` → "Readings & Tags" section (Q1–Q12).** Read that before touching layer code.
+- **LOCKED.** **Reading** = a curated, *mutually-exclusive interpretive pass* over an Object (one Note → one `reading`, or none); **IS an IIIF `AnnotationPage` per Object** grouped by an **`AnnotationCollection` per Exhibit** → pure IIIF viewers (Mirador) get real toggleable readings free; canvas **legend** = framing. **Tag** = additive per-note discovery chip (note-pane), **now also the home for apparatus/reference strata** (paleography/codicology/material) — Frame C. Splits: visitor (framing vs discovery) · IA (canvas legend vs note-pane chips) · authoring scale (Reading = overarching/Exhibit-level; Tag = per-note). Mutual exclusivity chosen for IIIF cleanliness (multi-membership = v1.1 debt; ⌘K link-grammar gains a reading id only then).
+- **COLLABORATION SYNERGY (scout-verified, high-coherence).** Readings are the structural home for *competing collaborative interpretations* — different scholars' readings **coexist** instead of forcing a merge conflict. **merge = reconcile *accidental* divergence (per-logicalId, `merge.ts:61–67`); Readings = preserve *essential* divergence.** Authorship already supported via `AnnotationRecord.lastEditor: ClientId`. Possible enrichment: a "fork into a separate Reading" option on the conflict card.
+- **REJECTED en route (provenance in CONTEXT §92 + Readings&Tags):** §92 per-note-string layer model (→ reversed to AnnotationPage) · namespaces-in-one-field (Q9–10 stroad hack) · imposed taxonomy lens-names ×2 (must DERIVE from fixtures, never impose).
+- **DEMO DECISION:** bundled fixtures are single-thread *layout* demos → can't honestly source lens examples. **Reconceive the Voynich fixture as the genuinely-plural Readings demo** (more Beinecke folios/objects; rival readings of the same marks; the Voynich is famously contested). Member readings + apparatus-tags **deliberately NOT named yet** — derive from real folios.
+- **(GRILL STATUS — see the consolidated status lower in this block: design tree Q1–Q16 WALKED; only the mechanical publish-warning + migration remain.)**
+- **BUILD / RENAME DEBT:** `record.layers`→`reading` (single, optional) · `archie:layers`→`archie:reading` · `filterByLayer`/`allLayers` in `query/filter.ts` · heads compiler `publish/site.ts:175–187` → **N AnnotationPages per Object partitioned by `reading`** (pure grouping step, NO DAG change) · `Canvas.annotations` (`iiif/manifest.ts:57`) → multi-element array · mount per-page toggle (today flattens one page, `mount.ts:150`) · Studio layer filter → Reading legend/single-select · Viewer: build the canvas Reading **legend** + the Tag **chip row** (Tag viewer UI was never built). The CONTEXT "Readings & Tags" bullets are still written in old "Layer/lens" vocab — propagating the rename there is part of this debt.
+- **PLANNED BUILD — Voynich plural-Readings exercise (user: "make all fixes to the voynich manuscript, treat it like a genuine exercise"; PARKED in plan, grill continuing).** Reconceive the `voynich` demo into a genuine, scholarship-grade plural-Readings exhibit. **GROUNDED INPUTS (research-verified, sourced):**
+  - **Live IIIF source:** Yale Beinecke MS 408 = public **IIIF Presentation 3.0 manifest** `https://collections.library.yale.edu/manifests/2002046` (213 folios, each an IIIF Image API 2.0 service). Licensing = viewable/downloadable but **NOT openly licensed** → fine for a demo, flag before redistribution. Lets "more objects" use REAL folios + dogfoods the external-IIIF path (CONTEXT §81).
+  - **Genuine competing Readings (documented, not invented):** Cipher (Friedman/NSA) · Natural/encoded language (Bowern & Lindemann) · Hoax/meaningless (Rugg; Gaskell & Bowern 2022) · Constructed language (Friedman conjecture) · Proto-Romance (Cheshire 2019, fringe). Recommended minimal core = **Cipher vs Hoax** (meaning vs no-meaning — starkest, most legible), optional 3rd Natural-language.
+  - **Sections for "more objects":** Herbal · Astronomical (zodiac) · Cosmological (Rosettes foldout) · Balneological (nymphs) · Pharmaceutical · Recipes.
+  - **Apparatus → Tags (additive, NOT Readings):** Currier Hand A/B (paleography) · radiocarbon 1404–1438 (dating) · quire/foldout (codicology) · McCrone inks/pigments (material).
+  - **Keystone interaction:** annotate the SAME glyph-block under BOTH readings (cipher-note + hoax-note on one region) → flipping proves the whole model.
+  - **PIPELINE REALITY:** current fixture is GENERATED (`scripts/import-voynich.mjs`, from the anvil voynich fixture, NOT run by `build`), **lightweight schema lacks `reading`/`tags`** (`VoynichNote={objectId,region,comment}`), mislabeled (`cosmological.jpg` is actually balneological; `balneological.jpg` is actually the rosettes foldout), local jpgs not provenanced to folios. Published tree at `apps/viewer/public/published/voynich/`.
+  - **BLOCKED-BY:** the Reading-model build debt above (readings can't render until layers→reading + N-pages compiler + legend UI exist). **RESOLVED Q15:** author as a **REAL Studio project shipped as a TEMPLATE** (dogfood; canonical template form = committed source Library, retiring the lightweight `voynich.ts`+generator). **RESOLVED Q16:** viewer = **base-only arrival + flip** (legend-as-radio, no `defaultReading`, compare→v1.1). Content = **Cipher vs Hoax** + real Beinecke IIIF folios + apparatus→Tags + one shared region annotated under both readings (keystone).
+- **GRILL STATUS (2026-05-27): design tree WALKED (Q1–Q17); STRATEGY COMPILED.** Q17 = publish-time description **soft-warning** (joins the `brokenLinks` advisory strip, not a hard gate). **Authoritative design = `CONTEXT.md` → "Readings & Tags"; build method+sequence = `docs/plans/READINGS-IMPLEMENTATION-STRATEGY.md`; rationale = `docs/adr/0007-readings-as-annotationpages.md`.**
+- **⚠ MIGRATION IS A PHASE-1 PREREQUISITE, not v1.1 (advisor-caught):** v1 shipped, so live OPFS Libraries carry `record.layers: string[]` → Phase 1's `reading?` code fails at load unless migrated. Chosen: **inline migration on read; legacy `layers[]` → Tags (lossless)** — a Reading would force data-loss on multi-value layers; Tags absorb `string[]`. See strategy doc.
+- **NEXT (build, when ready):** Phase 1 (Reading data-model + migration corpus) → Phase 2 (heads partitioning) → Phase 3 (viewer legend+flip) → Phase 4 (Studio authoring) → Phase 5 (author Voynich → freeze as template → publish). **First move:** Phase 1 / Task 1 — write the `reading` test corpus, then rename `layers`→`reading`. Phases 1–2 mechanical-after-corpus; 3–5 invented + interface-design + human gates.
+
+**✅ ALL BROWSER-VERIFY-OWED ITEMS CONFIRMED BY USER through 2026-05-27** _(the **memory arc A.1–A.3 / #1–#5**
+— streaming-zip Save-As · import downscale · folder asset-stream — is now **USER-VERIFIED 2026-05-27**; arc A
+COMPLETE + verified)._ Every "browser-verify owed" note
 below (note popover follow/drag/Save · ⌘K-in-sections · audio WaveSurfer + drag-create + region popover · AV
 file import · video spatiotemporal frame-draw + timeline + box-during-window · viewer-side spatiotemporal
 playback · keyboard registry + ? cheat-sheet + all bindings · AV reload playback · large-library size guard)
-is **VERIFIED working** — treat them as done, not pending. Outstanding = only the v1.1 / out-of-v1 frontier below.
+is **VERIFIED working** — treat them as done, not pending. Outstanding = the A.1 verify above + the v1.1 / out-of-v1 frontier below.
 
 ## ▶ V1.1 — THE NEXT ARC (start here)
 **v1 is COMPLETE + verified:** annotation (image canvas-marker · audio WaveSurfer regions · video spatiotemporal
@@ -16,14 +39,52 @@ keyboard registry + `?` cheat-sheet · publish round-trip studio→viewer (incl.
 AV file ingest (reload-safe) · large-library size guard. **The next session's focus is v1.1.** Backlog, ordered by
 value + dependency (cites the deferred-work registry in `docs/IMPLEMENTATION-STRATEGY.md`, the CONTEXT §§, and `docs/plans/`):
 
-**A. Memory / scaling deepening** — `docs/plans/LARGE-MEDIA-MEMORY-CEILING.md` #3–#5 (#1+#2 already built):
-1. **Streaming-zip-to-file-handle** (#3 — the structural fix + **recommended v1.1 KEYSTONE**): fflate's streaming
-   `Zip`/`ZipPassThrough` (same dep, different entry) → Chromium `showSaveFilePicker` `FileSystemWritableFileStream`,
-   so the zip never fully materializes. Shape: a `StreamingZipFilesystem` behind the existing `Filesystem` seam
-   (`packages/render-core/src/fs/zip.ts` streaming variant + `apps/studio/src/binding.ts` `downloadZip`→save-to-handle).
-   Honest floor: a non-Chromium single-zip stays memory-bound (needs a StreamSaver-style SW; defer).
-2. **Import downscale** (#4): `apps/studio/src/bake.ts` caps image dims/quality (~6000–8000px, §80) so a 40 MP photo isn't bundled full-res.
-3. **OPFS→sink stream** (#5): `getAsset` returns a `Blob`; pipe `blob.stream()` to the writable (folder-path refinement).
+**A. Memory / scaling deepening** — `docs/plans/LARGE-MEDIA-MEMORY-CEILING.md` #4–#5 (#1+#2+#3 built):
+1. **Streaming-zip-to-file-handle** (#3 — the structural fix) — **✅ BUILT 2026-05-27 (browser-verify owed).**
+   Core `ZipFilesystem.streamZip(sink)` (fflate streaming `Zip` + `ZipPassThrough`, **serial-drain** so a slow disk
+   can't re-queue the archive in RAM; **store-not-deflate** so output is deterministic + media isn't recompressed;
+   `fs/zip.streaming.test.ts` = 7-case round-trip corpus: empty file · nested dirs · binary >64KB chunk boundary ·
+   N≥10 ordering · serial-drain close-order · empty fs). `libraryToZipFs` returns the UNSERIALIZED fs (kept
+   `libraryToZip` as the eager `toZip()` wrapper — no migration). Studio `binding.saveZipToDisk(fs, name)`: Chromium
+   `showSaveFilePicker` → `FileSystemWritableFileStream` (streams; aborts the partial on error) → `{kind:
+   streamed|downloaded|cancelled}`; non-Chromium falls back to eager `toZip()`+download. App `download()` +
+   `downloadProjectZip()` route through it; the **#1 size guard now applies to the EAGER path only**
+   (`!supportsFileStreamSave()`) since streaming removes its 2× premise. **HONEST SCOPE: peak ≈2× → ≈1× on Chromium
+   (removes the zip-serialization copy, NOT the in-memory Map — that's #5).** core 310 (+7) · mount 18 · Studio 202 mods.
+   **Browser-verify owed (FSA is headless-unverifiable):** on Chromium, "Download .archie.zip" → a Save-As picker
+   appears → the file writes (streams) → re-opens as a valid library; on Firefox/Safari → the old auto-download works.
+   _Minor notes (in-lane, for the verifier): (a) `download()`'s filename now derives from the project title
+   (`zipNameFor(PROJECT_TITLE)`) instead of the old hardcoded `"demo.archie.zip"` placeholder — expect a different
+   name in screenshots. (b) Known minor: if `handle.createWritable()` itself throws (rare — revoked permission), the
+   error propagates unsurfaced; the streamZip body already aborts-the-partial on error. Acceptable v1.1; watch in verify._
+2. **Import downscale** (#4) — **✅ BUILT 2026-05-27 (browser-verify owed).** Pure core `fitWithin(w,h,maxDim)` +
+   `exceedsCap` + `MAX_MASTER_DIM=6000` (`geometry/downscale.ts`, 13-case corpus). `bakeDisplayMaster(file,
+   {maxDim, mime, quality})` draws at the capped dims — **default no-opts call is byte-identical to before**
+   (backward-compat). `addObjectFromFile`: EXIF path now caps too (original still preserved); a non-rotated import
+   >6000px downscales **preserving the source format** (JPEG→JPEG, no PNG bloat), no separate original (§80: the
+   bundle is a display image not an archive — full-res source stays on the user's disk; giant → external IIIF).
+   core 323 (+13) · Studio 202 mods. **Browser-verify owed (canvas re-encode is headless-unverifiable):** import a
+   >6000px JPEG → the stored master is ≤6000px JPEG (smaller); a <6000px image → stored untouched; a >6000px photo
+   WITH EXIF rotation → upright PNG master ≤6000px + original preserved. _Defaults chosen (not gated): cap 6000px
+   (§80 lower bound, the value that bites at 40 MP — tunable constant); JPEG re-encode quality 0.92._
+   _Known minors for the verifier (advisor-flagged, all in-lane): (a) "Include source originals" publish opt-in
+   keys off `provenance.originalName` → ships EXIF-baked sources only, NOT downscaled imports (the §80 stance; fix
+   is Publish-dialog COPY if it ever reads as friction, never the import path — do NOT add a per-import "preserve?"
+   toggle). (b) `canvas.toBlob` silently falls back to PNG for mimes it can't encode (HEIC/AVIF) → spot-check an
+   HEIC import expecting PNG output; `file.type===""` (extension-less) re-encodes to JPEG (could artifact a PNG
+   screenshot). (c) over-cap orientation-1 imports decode twice (imageDims probe + createImageBitmap) — fine unless
+   browser-verify shows a hitch on huge imports._
+3. **OPFS→sink stream** (#5) — **✅ BUILT 2026-05-27 (browser-verify owed). MEMORY ARC COMPLETE (#1–#5).** Store
+   `readAssetBlob(slug,name)` returns the OPFS `File` (lazy Blob, never `.arrayBuffer()`'d); App's `getAsset`
+   callbacks use it. The seam already forwarded the payload to the writable and `fsa.ts` already forwards it to
+   `createWritable().write(blob)` — so the FSA folder backend now STREAMS each asset OPFS→disk, no JS-heap
+   materialization. **NO seam change needed** (simpler than planned). Headless guard: a Blob-returning `getAsset`
+   writes identically (site.test.ts +1, core 324). **CORRECTION to my earlier note:** #5 helps the **FOLDER path
+   only** — it does NOT shrink #3's zip Map (the zip still needs all bytes at serialize time; #3 streams that Map
+   OUT without a 2× copy, but the Map remains). End-state by sink: folder = ~constant memory; zip(Chromium) = ≈1×
+   the (downscaled, #4) library streamed out; zip(non-Chromium) = memory-bound floor. Removing the zip Map needs
+   interleaving publish+zip — a deeper future item, not in this plan. core 324 · Studio 202 mods. **Browser-verify
+   owed:** Chromium "Save to disk → folder" on a large library writes without a memory spike (assets stream).
 
 **B. Reading experience** — the prose-led half (CONTEXT §43 / §93 / §122 / §123):
 4. **Progressive marker reveal** (§122): in narrative reading a section's markers appear as the spine PASSES their
@@ -37,11 +98,21 @@ value + dependency (cites the deferred-work registry in `docs/IMPLEMENTATION-STR
    intercepts a non-rect `SvgSelector` BEFORE the broken stock `W3CImageFormat` branch (donor: svgpath, points-on-path).
 7. **Overlay-contrast** (§123, v1.5): image-aware adaptive marker styling (v1 stays A2 + stroke-over-stroke).
 
-**D. Out-of-v1 (defer unless prioritized):** search (minisearch) · curated cross-exhibit gallery · embedding/oEmbed (v1.2) · AI-authoring / mask→SvgSelector (v1.2/v2).
+**D. Out-of-v1 — USER DECISION 2026-05-27: keep ONLY AV ingest/upload UX polish; everything else DROPPED FOREVER.**
+~~search (minisearch)~~ · ~~curated cross-exhibit gallery~~ · ~~embedding/oEmbed~~ · ~~AI-authoring / mask→SvgSelector~~
+· ~~in-browser tiling (OffscreenCanvas DZI pyramid)~~ — **all CUT, do not revisit** (user, 2026-05-27). The single
+survivor: **AV ingest/upload UX polish** (codec/size affordances on the now-lifted §152 ingest gate) — pulled into
+the active build set below.
 
-**RECOMMENDED FIRST MOVE:** A.1 **streaming-zip-to-file-handle** — the structural memory fix the now-shipped AV
-ingest makes pertinent; a clean source-projection (new backend behind the existing seam); headless-specifiable
-(write the zip-stream round-trip test corpus FIRST, then build). #1/#2 buy time; #3 removes the ceiling on Chromium.
+**RECOMMENDED NEXT MOVE:** ~~A.1 streaming-zip~~ ✅ · ~~A.2 import-downscale~~ ✅ · ~~A.3 OPFS→sink stream~~ ✅
+**ARC A (memory/scaling, #1–#5) COMPLETE 2026-05-27** (all browser-verify owed; honest floor: zip-path Map +
+non-Chromium stay bounded — documented in `LARGE-MEDIA-MEMORY-CEILING.md`). **Next: the B. reading-experience arc.**
+Recommended **B.4 — progressive marker reveal (§122)** in the Viewer `NarrativeReader`: a section's markers appear
+as the spine PASSES their region ("region-passed"), accumulated markers persist faded. NOTE: this is **invented
+UX → comprehension-gated**, not corpus-mechanical — so the rhythm changes from arc A (write test corpus → build)
+to: prototype → STOP for the user's comprehension gate (the gated-invention contract). B.5 (reading modes) follows.
+Also still open + parallel: the **"Layers → Readings"** design thread at the top of this RESUME (design LOCKED,
+build not started; needs its own strategy-compile first).
 
 ---
 
@@ -486,8 +557,10 @@ a note among many means scrolling to the bottom form. Grilled to a unified model
   - **[SNAG→FIX 2026-05-26, user: "drag to create annotations not working"]** — the `position:fixed` z-50 popover
     floats over the canvas; once a note is selected it intercepts the pointerdown Annotorious needs to start a draw.
     FIX: popover condition gains `&& mode !== "draw"` — it steps aside in draw mode (reappears on the new note once
-    mode → select). Builds (199). **STILL BROKEN after this fix (user 2026-05-26)** — so the popover-overlay was NOT
-    the cause. Draw-to-create regressed somewhere in this session's rework but the path reads intact end-to-end
+    mode → select). Builds (199). **✅ RESOLVED — user-verified working (check-handoff, 2026-05-27):** image
+    draw-to-create works; the `mode !== "draw"` popover step-aside was the fix. _[Prior note, now stale: a later
+    test in-session reported it still broken; the user has since confirmed it works. Diagnostics kept below for
+    archive only.]_ The path reads intact end-to-end
     (tool→`mode="draw"`→Canvas `drawing` prop→`surface.setDrawingEnabled`→Annotorious `createAnnotation`→mount
     `createL`→Canvas `oncreate`→App `onCreate`→`session.createNote`). **NEXT SESSION: get raw data first** — browser
     console errors when dragging + WHICH surface (image canvas Rect/Polygon vs audio waveform). Candidate suspects to

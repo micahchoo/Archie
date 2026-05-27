@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/av/annotations/history/0000000002R45HEF2PZ50ZZ14R.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/av/annotations/0000000002R45HEF2PZ50ZZ14R/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/av/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=20,50"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.002Z",
+      "body": {
+        "type": "TextualBody",
+        "value": "The melody settles into its refrain; you can hear the room — the recorder is a Raspberry Pi node on the network.",
+        "format": "text/plain",
+        "purpose": "supplementing"
+      },
+      "motivation": "supplementing",
+      "archie:logicalId": "0000000002R45HEF2PZ50ZZ14R",
+      "archie:rev": "00000000025V5FE54Y67983SF6",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

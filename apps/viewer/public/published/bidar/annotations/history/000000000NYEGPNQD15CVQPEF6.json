@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/000000000NYEGPNQD15CVQPEF6.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/000000000NYEGPNQD15CVQPEF6/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1643,402,341,341"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.021Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Some of the women expressed the value in recording their practices, which seldom receives the kind of recognition it should. A 60-year-old Dholak singer was enthusiastic about recording traditional Dholak geet (songs). She has seven sisters and five granddaughters, but none of them had been keen to learn and continue the practice.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000NYEGPNQD15CVQPEF6",
+      "archie:rev": "000000000NSJ3BGPEX175PSSVY",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

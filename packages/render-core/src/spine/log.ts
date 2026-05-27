@@ -59,8 +59,10 @@ export interface NewNoteInput {
   target: W3CTarget;
   body?: W3CBody | W3CBody[];
   motivation?: string | string[];
-  /** Layer ids (per-note membership). */
+  /** @deprecated Layer ids. Use `reading` (ADR-0007). */
   layers?: string[];
+  /** The single Reading this note belongs to (mutually exclusive — ADR-0007). */
+  reading?: string;
   lastEditor: ClientId;
   /** Explicit ISO datetime; otherwise derived from `now`/Date.now(). In-card tiebreaker only (Q-3). */
   modifiedAt?: string;
@@ -88,6 +90,7 @@ export function appendNew(log: AnnotationLog, input: NewNoteInput): AppendResult
     ...(input.body !== undefined ? { body: input.body } : {}),
     ...(input.motivation !== undefined ? { motivation: input.motivation } : {}),
     ...(input.layers !== undefined ? { layers: input.layers } : {}),
+    ...(input.reading !== undefined ? { reading: input.reading } : {}),
   };
   return { log: append(log, record), record };
 }
@@ -96,8 +99,10 @@ export interface EditInput {
   target?: W3CTarget;
   body?: W3CBody | W3CBody[];
   motivation?: string | string[];
-  /** Layer ids; omitted = carry forward from the head. */
+  /** @deprecated Layer ids; omitted = carry forward from the head. */
   layers?: string[];
+  /** Reading id; omitted = carry forward from the head (ADR-0007). */
+  reading?: string;
   lastEditor: ClientId;
   modifiedAt?: string;
   now?: number;
@@ -116,6 +121,7 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
   const body = input.body ?? head.body;
   const motivation = input.motivation ?? head.motivation;
   const layers = input.layers ?? head.layers;
+  const reading = input.reading ?? head.reading;
   const record: AnnotationRecord = {
     logicalId,
     rev: mintRevId(input.now),
@@ -128,6 +134,7 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
     ...(body !== undefined ? { body } : {}),
     ...(motivation !== undefined ? { motivation } : {}),
     ...(layers !== undefined ? { layers } : {}),
+    ...(reading !== undefined ? { reading } : {}),
   };
   return { log: append(log, record), record };
 }
