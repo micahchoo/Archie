@@ -2,8 +2,8 @@ packages:
   - 'packages/*'
   - 'apps/*'
 allowBuilds:
-  esbuild: set this to true or false
-  sharp: set this to true or false
+  esbuild: true
+  sharp: true
 minimumReleaseAgeExclude:
   - '@astrojs/svelte@8.1.2'
   - astro@6.3.8

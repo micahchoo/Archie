@@ -1,3 +1,10 @@
+// DEPRECATED (Phase-4 A2 surgery, 2026-05-27): NO LONGER THE SOURCE OF TRUTH.
+// The Voynich seed is now authored by hand at apps/viewer/src/voynich.ts (real Yale IIIF AObject[] +
+// the readings/sections/AV data, per docs/exhibits/voynich-rewrite/04-design.md). This script targeted
+// the old `/voynich/*.{png,jpg}` local fixture + the VoynichObject/VoynichNote mini-schema, both retired.
+// It will OVERWRITE the hand-authored seed if re-run — do not run it. Kept only as the historical record
+// of how the original 5-folio fixture was imported.
+//
 // ONE-TIME import: the anvil "voynich-manuscript" fixture → Archie sample data.
 // Reads the anvil project (.anvil/project.json + annotations/*.json), converts each annotation
 // (SvgSelector polygon → xywh rect; "describing" body → a commenting note), parses real pixel
