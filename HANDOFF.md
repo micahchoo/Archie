@@ -1,8 +1,50 @@
 # HANDOFF — Archie implementation
 
-_Last updated: 2026-05-25. Producer: Phase 0 implementation session._
+_Last updated: 2026-05-26. **v1 COMPLETE + user-verified.** This handoff is oriented toward the v1.1 arc — see ▶ V1.1 below._
 
 ## ▶ RESUME (read first — newest sections are at the BOTTOM; this is the live summary)
+**✅ ALL BROWSER-VERIFY-OWED ITEMS CONFIRMED BY USER through 2026-05-26.** Every "browser-verify owed" note
+below (note popover follow/drag/Save · ⌘K-in-sections · audio WaveSurfer + drag-create + region popover · AV
+file import · video spatiotemporal frame-draw + timeline + box-during-window · viewer-side spatiotemporal
+playback · keyboard registry + ? cheat-sheet + all bindings · AV reload playback · large-library size guard)
+is **VERIFIED working** — treat them as done, not pending. Outstanding = only the v1.1 / out-of-v1 frontier below.
+
+## ▶ V1.1 — THE NEXT ARC (start here)
+**v1 is COMPLETE + verified:** annotation (image canvas-marker · audio WaveSurfer regions · video spatiotemporal
+frame-draw) all editing in ONE marker-anchored popover · narrative sections framed on the canvas + ⌘K cross-refs ·
+keyboard registry + `?` cheat-sheet · publish round-trip studio→viewer (incl. spatiotemporal box-during-window) ·
+AV file ingest (reload-safe) · large-library size guard. **The next session's focus is v1.1.** Backlog, ordered by
+value + dependency (cites the deferred-work registry in `docs/IMPLEMENTATION-STRATEGY.md`, the CONTEXT §§, and `docs/plans/`):
+
+**A. Memory / scaling deepening** — `docs/plans/LARGE-MEDIA-MEMORY-CEILING.md` #3–#5 (#1+#2 already built):
+1. **Streaming-zip-to-file-handle** (#3 — the structural fix + **recommended v1.1 KEYSTONE**): fflate's streaming
+   `Zip`/`ZipPassThrough` (same dep, different entry) → Chromium `showSaveFilePicker` `FileSystemWritableFileStream`,
+   so the zip never fully materializes. Shape: a `StreamingZipFilesystem` behind the existing `Filesystem` seam
+   (`packages/render-core/src/fs/zip.ts` streaming variant + `apps/studio/src/binding.ts` `downloadZip`→save-to-handle).
+   Honest floor: a non-Chromium single-zip stays memory-bound (needs a StreamSaver-style SW; defer).
+2. **Import downscale** (#4): `apps/studio/src/bake.ts` caps image dims/quality (~6000–8000px, §80) so a 40 MP photo isn't bundled full-res.
+3. **OPFS→sink stream** (#5): `getAsset` returns a `Blob`; pipe `blob.stream()` to the writable (folder-path refinement).
+
+**B. Reading experience** — the prose-led half (CONTEXT §43 / §93 / §122 / §123):
+4. **Progressive marker reveal** (§122): in narrative reading a section's markers appear as the spine PASSES their
+   region ("region-passed"), accumulated markers persist faded. Host = the Viewer `NarrativeReader`.
+5. **Reading MODES** — the reserved `Exhibit.mode` axis (`model.ts`; §93): **Scrollytelling** (passive scroll-spy /
+   pinning, inherits Narrative) · **Compare** (synced dual-canvas — a new spatial arrangement) · **Slideshow** (a Grid
+   mode). The `LayoutPicker` already declares these as its "Later:" additive future (anti-template-sprawl).
+
+**C. Authoring depth:**
+6. **Shape vocab v1.1** (§77): ellipse + freehand, behind a custom svgpath parse/sanitize/serialize module that
+   intercepts a non-rect `SvgSelector` BEFORE the broken stock `W3CImageFormat` branch (donor: svgpath, points-on-path).
+7. **Overlay-contrast** (§123, v1.5): image-aware adaptive marker styling (v1 stays A2 + stroke-over-stroke).
+
+**D. Out-of-v1 (defer unless prioritized):** search (minisearch) · curated cross-exhibit gallery · embedding/oEmbed (v1.2) · AI-authoring / mask→SvgSelector (v1.2/v2).
+
+**RECOMMENDED FIRST MOVE:** A.1 **streaming-zip-to-file-handle** — the structural memory fix the now-shipped AV
+ingest makes pertinent; a clean source-projection (new backend behind the existing seam); headless-specifiable
+(write the zip-stream round-trip test corpus FIRST, then build). #1/#2 buy time; #3 removes the ceiling on Chromium.
+
+---
+
 **Where we are:** the v1 adopted-tier tool works end-to-end, dogfooded on real fixtures.
 - **Studio** (`apps/studio`, vite :5173): multi-exhibit Library home + per-exhibit OPFS persistence;
   draw/select/WADM-form/layers/merge; **import** local images (file/drag-drop, OPFS) + rename objects;
@@ -340,6 +382,74 @@ a note among many means scrolling to the bottom form. Grilled to a unified model
     (browser UI, own phase):** a frame-draw-over-`<video>` surface (draw a box on a paused frame = the `xywh` while
     a `t=` window is set on a timeline) + wire it through `onCreate`/the note form to a combined selector via
     `mediaFragmentValue`. Best done AFTER the user browser-verifies the AV-import + waveform fixes above.
+    **DONOR RECIPE (osd-audio-video/video-canvas.html — how to build it, approach (a) confirmed):** (1) SPATIAL =
+    a transparent overlay `<div>` over the `<video>`; an "Add region on frame" toggle → `pointer-events:auto;
+    cursor:crosshair`; mousedown→mousemove compute the box as PERCENT of the overlay rect
+    (`(clientX-rect.left)/rect.width*100`), `{x,y,w,h}` percent; AUTO-EXIT drawing after one box (line 620-650).
+    (2) TEMPORAL = reuse Archie's existing markbar (Set-in → Add) for start/end (donor uses a separate timeline).
+    (3) COMBINE = `mediaFragmentValue({ time:{start,end}, box:{x,y,w,h}, unit:"percent" })` (core, built+tested) →
+    the note selector (donor `rebuildSelector:565`). (4) RENDER saved boxes as CSS-% divs on the overlay, shown
+    ONLY when `currentTime ∈ [start,end]` (line 652-672). (5) Video note editing joins the popover (anchor to the
+    box overlay rect, viewport coords like audio/image). Removes video from the inline-form path (`isVideoCurrent`).
+    Touch: `AvEditor.svelte` (video branch + overlay), `App.svelte` (`onCreate` for video carries box+time → selector;
+    video popover), maybe a new `onCreateSpatiotemporal`. Plus trivial: delete the now-unused `avRootEl` bind.
+  - **WAVE 2 VIDEO AUTHORING — DONE + builds (199 modules; browser-verify owed):** `AvEditor.svelte` rewritten —
+    VIDEO gets a `.video-wrap` with a `<video>` + a `.frame-overlay` (pointer-events:none → auto when drawing).
+    "+ Region on frame" toggle → mousedown/move draw a box in PERCENT of the overlay (`draftBox`), auto-exit after
+    one box (`<svelte:window onmouseup>`). "Add note" combines the markbar time window + `draftBox` →
+    `oncreate(start, end, box?)`. Saved boxes (`frameBoxes`) render as %-positioned divs, shown ONLY while
+    `currentTime ∈ [start,end]`. Selectors parsed via core `parseMediaFragment` (handles combined). App
+    `onCreateTime(start, end, box?)` builds `mediaFragmentValue({ time, box, unit:"percent" })` →
+    `t=…&xywh=percent:…`. ALL media now edit in the **popover** (image marker / audio waveform region / video frame
+    box via `emitRegionRect`); the inline sidebar form + `isVideoCurrent` are REMOVED; `avRootEl` gone.
+    **Browser-verify owed:** add a local video object → pause → "+ Region on frame" → drag a box → "Add note" →
+    a `t=…&xywh=percent:…` note; the box shows on the frame only during its window; selecting it opens the popover
+    at the box. **VIEWER-side spatiotemporal video — DONE (2026-05-26; viewer builds, 4 pages):** `apps/viewer/src/components/
+    MediaPlayer.svelte` now reads selectors via `parseMediaFragment` (was `parseTimeFragment`); a video note's box
+    renders on the frame **during its `t=` window** (`videoBoxes` filtered by currentTime; active cue emphasised) in
+    a `.video-wrap` that hugs the rendered video so the overlay aligns. Transcript spine + click-to-seek unchanged.
+    **WAVE 2 CLOSED END-TO-END:** studio frame-draw → `mediaFragmentValue` → publish Ranges/annotations →
+    `parseMediaFragment` → viewer box-during-window. **Browser-verify owed** (no video fixture yet — import a local
+    video, author a region, publish, view): the box appears on playback only within its window.
+  - **[FIX 2026-05-26] AV reload playback:** OPFS `getFile()` returns `type:""`, so reloaded AV assets had a
+    typeless blob: URL that `<video>`/`<audio>`/WaveSurfer could refuse. `store.readAssetUrl` now restores the MIME
+    from the filename extension (`EXT_MIME` map) via a zero-copy `slice(0, size, mime)`. Builds (202). Verify: import
+    a local audio/video, reload → it still plays.
+  - **SCALING GAP #1 + #2 — BUILT (2026-05-26; `docs/plans/LARGE-MEDIA-MEMORY-CEILING.md`):** became pertinent
+    once AV ingest shipped (big media in the in-memory zip). **#1 size-estimate + route:** `store.assetSize(slug,
+    name)` (metadata-only `File.size`, no byte read) + App `estimateLibraryBytes()`/`zipSizeOk()` — the three
+    in-memory zip sinks (`download`, `downloadProjectZip`, `saveProject`'s file/non-Chromium branches) confirm +
+    STEER over ~250 MB (Chromium → folder streams to disk; else → link-by-URL); declining stays unsaved. The folder
+    sink is unguarded (already streams; `fsa.ts`). **#2 link-don't-embed:** the +Object URL input nudges that large
+    media is best linked by URL (referenced, never bundled). No core change, no deps. Builds (202). **#3–#5
+    (streaming-zip-to-file-handle, import downscale, OPFS→sink stream) remain v1.1.** Browser-verify: a >250 MB
+    library → Save/Download warns + steers; small libraries are silent.
+  - **[UX/COPY 2026-05-26, user: AV copy unintuitive] AV markbar de-jargoned** (curator audience): "Set in" →
+    **"Mark start"**; "In {t}" chip → **"from {t}"**; "+ Region on frame" → **"▭ Draw a box on the video"**;
+    "Add note (5s at playhead / in→here)" → a live `addLabel` stating the actual coverage (**"Add note (at 0:42)"**
+    / **"(0:12 → 0:42)"** / **"(box · …)"**); "Import VTT/SRT" → **"Import captions"**; added a **"Now at {time}"**
+    label; every control got a plain-language tooltip. Builds (199 modules). Same model, clearer surface.
+  - **[UX 2026-05-26] AV affordance pareto-hybrid** (from `docs/plans/videojs-annotation-affordances.md`, user repo
+    scout): the highest-value 20% of the 4 videojs adoptions. (1) **Video annotation TIMELINE** — a `.vtimeline`
+    strip under `<video>`: each timed note = a range bar (`videoMarkers`, %-positioned by start/end over `duration`
+    from `onloadedmetadata`), click → seek+select, active one (currentTime ∈ range) lit, a playhead, empty-state
+    hint. Gives video the temporal map audio gets from the waveform (#1). (2) **Hover tooltip** = `mm:ss–mm:ss · note
+    text` on each bar; (4) **← →** step between notes (on the focusable bar buttons). (2-signal) **capture mode** =
+    `.capturing` accent outline + a "Marking a region — drag a box" pill while drawing (#2). #3 step-clarity already
+    covered by the de-jargoned labels + popover Save. Builds (199). **Browser-verify owed:** video timeline shows
+    bars; click a bar seeks+selects+opens popover; hover shows the note; ←→ steps; drawing a box shows the capture pill.
+  - **KEYBOARD SHORTCUTS — registry + ? cheat-sheet + wired scheme (2026-05-26; user: "figure out the shortcuts"):**
+    the anvil keyboard-registry intent (CONTEXT §79), finally built. **`shortcuts.ts`** = the single source of truth
+    (`SHORTCUTS` data + `matches(e, keys)` matcher + `typingInField(e)` guard). **`ShortcutsHelp.svelte`** = a `?`
+    cheat-sheet overlay GENERATED from the registry (can't go stale), grouped Anywhere/Image/Audio&video; opened by
+    `?` or the round **?** button in the editor header; closed by `?`/`Esc`/click-out. Wired: **App.onGlobalKey** —
+    `?` toggle help · `⌘S` save · `⌘K` cite · **Esc dismiss-ladder** (palette→note popover→framing→overview→library) ·
+    image: `V`/`R`/`P` tools, `⌫` delete note, `[`/`]` prev/next object (bare letters guarded by `typingInField`
+    + not-AV + not-framing). **AvEditor.onAvKey** (svelte:window, active when an AV object is open) — `Space`
+    play/pause, `I` mark start, `N` add note, `←`/`→` step notes, `B` draw box; `Space`/`←→` DEFER to native
+    `<video>` controls when the video element is focused (`e.target === mediaEl`). Builds (202 modules).
+    **Browser-verify owed:** `?` opens the cheat-sheet; V/R/P switch tools; `[`/`]` switch objects; ⌫ deletes;
+    Esc steps back out; on AV: Space/I/N/B/←→ work and don't fight the native scrubber; shortcuts don't fire while typing.
   - **[FIX 2026-05-26, user clarification] AV note editing UNIFIED to the popover model** (was inline-in-sidebar):
     the "notes → popover, sections → sidebar" design now applies to AUDIO too. An audio cue's locus = its
     **waveform region**; `AvEditor` emits the selected region's screen-rect (relative to its root) via a new
@@ -348,6 +458,15 @@ a note among many means scrolling to the bottom form. Grilled to a unified model
     keeps the inline sidebar form (`{#if isVideoCurrent}`) until its Wave-2 frame-region locus. Sidebar is now
     nav + spine only for audio too. Builds (198 modules). **Browser-verify owed:** select an audio cue (list or
     region) → its note opens in a popover near the waveform region, not inline; spine stays in the sidebar.
+  - **[FIX 2026-05-26] popover "over the sidebar" — coordinate-space mismatch.** The popover was changed to
+    `position: fixed` (z-50, vw/vh max) + a `mainEl` viewport fallback (so it can't be clipped by the pane), which
+    requires **viewport** coords. `mount.ts markerScreenRect` already returns viewport (element coords + `viewer.element`
+    page offset) → image OK. But `AvEditor.emitRegionRect` was emitting `.av`-relative (or a region-DOM-node rect that
+    can be zero/detached) → audio landed at the viewport corner = **over the left sidebar**. FIXED: emitRegionRect now
+    computes the cue's rect from its **TIME fraction across the waveform CONTAINER** in viewport coords (no region DOM
+    node) → always anchors at the wave. All 3 emitters now agree on viewport space. Builds (199 modules). NOTE:
+    `avRootEl` (the old `.av` bind) is now unused — safe to delete. **Browser-verify:** audio cue → popover sits AT the
+    waveform, not over the sidebar.
   - **[SNAG→FIX 2026-05-26, user] popover appeared OVER THE SIDEBAR, not at the locus.** Cause: mixed coordinate
     spaces (Canvas emitted viewer-element-relative, AvEditor `.av`-relative) + `position:absolute`-in-`main`, so the
     `{16,16}` fallback (when a rect didn't resolve) landed viewport-top-left = over the sidebar. FIX: everything is
@@ -367,8 +486,16 @@ a note among many means scrolling to the bottom form. Grilled to a unified model
   - **[SNAG→FIX 2026-05-26, user: "drag to create annotations not working"]** — the `position:fixed` z-50 popover
     floats over the canvas; once a note is selected it intercepts the pointerdown Annotorious needs to start a draw.
     FIX: popover condition gains `&& mode !== "draw"` — it steps aside in draw mode (reappears on the new note once
-    mode → select). Builds (199). If draw is STILL broken after this, suspect the AUDIO waveform path (WaveSurfer
-    `enableDragSelection` / `region-created`), not the image canvas. Browser-verify owed.
+    mode → select). Builds (199). **STILL BROKEN after this fix (user 2026-05-26)** — so the popover-overlay was NOT
+    the cause. Draw-to-create regressed somewhere in this session's rework but the path reads intact end-to-end
+    (tool→`mode="draw"`→Canvas `drawing` prop→`surface.setDrawingEnabled`→Annotorious `createAnnotation`→mount
+    `createL`→Canvas `oncreate`→App `onCreate`→`session.createNote`). **NEXT SESSION: get raw data first** — browser
+    console errors when dragging + WHICH surface (image canvas Rect/Polygon vs audio waveform). Candidate suspects to
+    check against the console: (a) the degenerate-selector guard in mount.ts suppressing the drawn shape; (b) the
+    Canvas annotations `$effect` now also depends on `selected` (via `emitRect`) → an extra `setAnnotations` on
+    create that may deselect/replace the fresh shape; (c) `framingSectionId` stuck non-null → draws swallowed into
+    the framing branch (only if a narrative exhibit + Set-camera was used); (d) audio: WaveSurfer
+    `enableDragSelection`/`region-created` not firing. Don't guess further without the console output.
   - **WAVE 2** (video spatiotemporal): combined `xywh=&t=` parse/serialize in `@render/core` (today `parseTimeFragment`
     = t only, `rectSel` = xywh only) · frame-draw-over-video surface · timeline.
 - SUPERSEDES the just-shipped note placement (notes were sidebar-list + bottom form → now popover); the **section-spine

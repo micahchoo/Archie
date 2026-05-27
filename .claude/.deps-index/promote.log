@@ -206,3 +206,24 @@ Installed: vite-node@main (52.0 KB, 7 sections)
    - Use --path to specify a different docs folder
    - Check for a dedicated docs repo (e.g., vite-node-docs, vite-node.github.io)
 2026-05-25T14:37:01Z | added vite-node@main
+Cloning https://github.com/katspaugh/wavesurfer.js...
+Checking out main...
+Using: wavesurfer@main
+✓ Reading from repository root
+✓ Found 7 markdown files
+Building package...
+✓ Built package: wavesurfer@main
+✓ Saved to /home/micah/.context/packages/wavesurfer@main.db
+
+Installed: wavesurfer@main (68.0 KB, 22 sections)
+
+⚠️  Warning: Only 22 sections found (threshold: 50)
+   This repository may not contain substantial documentation.
+   Many projects keep docs in a separate repository.
+
+   🔍 Search for the docs repo: https://www.google.com/search?q=wavesurfer%20documentation%20site%20github.com
+
+   Or try:
+   - Use --path to specify a different docs folder
+   - Check for a dedicated docs repo (e.g., wavesurfer-docs, wavesurfer.github.io)
+2026-05-26T05:52:29Z | added wavesurfer.js@main

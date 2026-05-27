@@ -133,13 +133,39 @@ export async function saveOriginalFile(slug: string, name: string, file: Blob): 
   await writeInto(await assetsDir(slug, true, "assets-original"), name, file);
 }
 
+// OPFS does NOT persist a file's MIME type — `getFile()` returns `type: ""`. Images sniff fine, but
+// `<video>`/`<audio>` (and WaveSurfer) can refuse a typeless blob: URL, so restore the type from the
+// extension on read. Zero-copy via `slice(…, type)` (no in-memory duplication of large media).
+const EXT_MIME: Record<string, string> = {
+  mp4: "video/mp4", m4v: "video/mp4", webm: "video/webm", mov: "video/quicktime", ogv: "video/ogg",
+  mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4", aac: "audio/aac", flac: "audio/flac",
+  png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", avif: "image/avif",
+};
+function mimeFromName(name: string): string {
+  return EXT_MIME[name.toLowerCase().split(".").pop() ?? ""] ?? "";
+}
+
+/** Byte size of a stored asset — METADATA ONLY (File.size needs no arrayBuffer read). 0 if absent.
+ *  Used by the pre-zip size estimate (LARGE-MEDIA-MEMORY-CEILING #1) — never reads the bytes. */
+export async function assetSize(slug: string, name: string): Promise<number> {
+  try {
+    const dir = await assetsDir(slug, false);
+    if (!dir) return 0;
+    return (await (await dir.getFileHandle(name)).getFile()).size;
+  } catch {
+    return 0;
+  }
+}
+
 /** Resolve a stored asset to a fresh blob: URL (caller must revokeObjectURL). Null if absent. */
 export async function readAssetUrl(slug: string, name: string): Promise<string | null> {
   try {
     const dir = await assetsDir(slug, false);
     if (!dir) return null;
     const fh = await dir.getFileHandle(name);
-    return URL.createObjectURL(await fh.getFile());
+    const f = await fh.getFile();
+    const mime = f.type || mimeFromName(name); // OPFS drops the type → restore it for AV playback
+    return URL.createObjectURL(f.type ? f : mime ? f.slice(0, f.size, mime) : f);
   } catch {
     return null; // not stored (e.g. a non-asset source, or OPFS unsupported)
   }

@@ -1,8 +1,14 @@
 # Plan — Large-media memory ceiling on publish/save
 
-_Created 2026-05-25. Status: PLANNED. Rests on archie-persistence Q-2 (three-configs persistence) +
-Q-4/CONTEXT §80 (tiling: external IIIF for giant media) + §89.1 (originals not published by default)._
-_Owner note: #1 + #2 are cheap-now candidates; #3–#5 are v1.1. Build only on the user's go (gated by review)._
+_Created 2026-05-25. Status: **#1 + #2 BUILT 2026-05-26** (became pertinent once AV file ingest shipped); #3–#5
+remain v1.1. Rests on archie-persistence Q-2 (three-configs persistence) + Q-4/CONTEXT §80 (tiling: external
+IIIF for giant media) + §89.1 (originals not published by default)._
+
+_BUILT: **#1** — `store.assetSize` (metadata-only File.size) + `App.estimateLibraryBytes`/`zipSizeOk` guard the
+THREE in-memory zip sinks (`download`, `downloadProjectZip`, and via it `saveProject` file/non-Chromium branches);
+over ~250 MB it confirms + steers (Chromium → folder/streams-to-disk; else → link-by-URL). Folder sink unguarded
+(already streams). **#2** — the +Object URL input nudges "large media is best linked by URL" (references, never
+bundles). No core change, no deps._
 
 ## Problem
 

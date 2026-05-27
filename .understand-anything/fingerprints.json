@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "HEAD",
-  "generatedAt": "2026-05-25T06:45:56.487Z",
+  "gitCommitHash": "6c8009a44613c2bf0341970ee54c865b6d65b2fc",
+  "generatedAt": "2026-05-26T04:34:46.626Z",
   "files": {
     ".claude/.deps-index/pending.json": {
       "filePath": ".claude/.deps-index/pending.json",
@@ -15,42 +15,32 @@
     },
     ".claude/.deps-index/resolved.json": {
       "filePath": ".claude/.deps-index/resolved.json",
-      "contentHash": "43a93749f928fc1d9679eb2b33dcd5407dec279d5150ce13b861819f96a39a02",
+      "contentHash": "4d3b513df3810e3eb256b2a44f91fc24b25d028eee9835338278245f48a1fbe1",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 88,
+      "totalLines": 95,
       "hasStructuralAnalysis": true
     },
     ".claude/.skill-invocation-log": {
       "filePath": ".claude/.skill-invocation-log",
-      "contentHash": "71550f5fcbab7f89b6b79092bf0652152caebee90358b1a5c1fe75dd4a3c609d",
+      "contentHash": "7224c7ea5fc47fb4fcb584917ba13d8424352006359b3f35425c7f8d22e39229",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 5,
+      "totalLines": 8,
       "hasStructuralAnalysis": false
-    },
-    ".claude/SUGGESTED_SKILLS.md": {
-      "filePath": ".claude/SUGGESTED_SKILLS.md",
-      "contentHash": "3169381e2396e6246078e687f55ccf15632b1cfb54f1686dc016c186dec4e133",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 17,
-      "hasStructuralAnalysis": true
     },
     ".claude/rules/deps-index.md": {
       "filePath": ".claude/rules/deps-index.md",
-      "contentHash": "233342b639fceecc12aef070e701c69ce9e81c1cc2a2e688a4a38ff818477cc9",
+      "contentHash": "f07ac73053316ccb5e79f8d4e2f6b4d8bc250b098928af30c4aadfbbb038ba6e",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 32,
+      "totalLines": 33,
       "hasStructuralAnalysis": true
     },
     ".claude/settings.json": {
@@ -73,35 +63,15 @@
       "totalLines": 194,
       "hasStructuralAnalysis": true
     },
-    ".foxhound/store.db": {
-      "filePath": ".foxhound/store.db",
-      "contentHash": "2a72643a3fad4fddababfd2945a25af23d76efa66d74f3b8ddcb0981083b2eb5",
+    ".claude/SUGGESTED_SKILLS.md": {
+      "filePath": ".claude/SUGGESTED_SKILLS.md",
+      "contentHash": "60b18666270fabf37f494c0149f80bd59766d72a40125f305d8cc903a8e3f488",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 1,
-      "hasStructuralAnalysis": false
-    },
-    ".foxhound/store.db-shm": {
-      "filePath": ".foxhound/store.db-shm",
-      "contentHash": "8f0b59063d391fac0f2971c6555f2a1391a32d202c2b90a0e31c04a7a34b83c0",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 3,
-      "hasStructuralAnalysis": false
-    },
-    ".foxhound/store.db-wal": {
-      "filePath": ".foxhound/store.db-wal",
-      "contentHash": "1613144b419d82b7398c6a9206f47cf1c1c56dd9e27f124977d7368ddba86af7",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 42,
-      "hasStructuralAnalysis": false
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
     },
     ".gitattributes": {
       "filePath": ".gitattributes",
@@ -113,24 +83,134 @@
       "totalLines": 5,
       "hasStructuralAnalysis": false
     },
-    ".gitignore": {
-      "filePath": ".gitignore",
-      "contentHash": "545b12d090475ffc72c47df4f20e21be631abe933aa8be799b7e636f9c4f5078",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 7,
-      "hasStructuralAnalysis": false
-    },
     ".interface-design/system.md": {
       "filePath": ".interface-design/system.md",
-      "contentHash": "278c505bb145df4417f7e472b8f53d6fc4c56bf5a77a39d9ccb154956a59254a",
+      "contentHash": "dd75fca48acc1c33b81c00ce21cb115393ac62e2e332e658b46d6ee99497e813",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 186,
+      "totalLines": 199,
+      "hasStructuralAnalysis": true
+    },
+    ".mulch/decisions/archie-av.q-counter": {
+      "filePath": ".mulch/decisions/archie-av.q-counter",
+      "contentHash": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/decisions/archie-linkability.q-counter": {
+      "filePath": ".mulch/decisions/archie-linkability.q-counter",
+      "contentHash": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/decisions/archie-narrative.q-counter": {
+      "filePath": ".mulch/decisions/archie-narrative.q-counter",
+      "contentHash": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/decisions/archie-persistence.q-counter": {
+      "filePath": ".mulch/decisions/archie-persistence.q-counter",
+      "contentHash": "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/decisions/archie-ux.q-counter": {
+      "filePath": ".mulch/decisions/archie-ux.q-counter",
+      "contentHash": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/decisions/archie.q-counter": {
+      "filePath": ".mulch/decisions/archie.q-counter",
+      "contentHash": "10159baf262b43a92d95db59dae1f72c645127301661e0a3ce4e38b295a97c58",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/expertise/archie.jsonl": {
+      "filePath": ".mulch/expertise/archie.jsonl",
+      "contentHash": "33e39d443e0986bf06bf5762df0e7f1ac675e8fe482584cad16cc48b3b9ff7c0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 5,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/expertise/architecture.jsonl": {
+      "filePath": ".mulch/expertise/architecture.jsonl",
+      "contentHash": "8e7d6f92f1c896fd02ee3625d9f4dc423195a7569799a29242157c8ccfedf42b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/expertise/decisions.jsonl": {
+      "filePath": ".mulch/expertise/decisions.jsonl",
+      "contentHash": "e965c5e513daa7171cb87af160bcb630c22ec2b9d4ff59beb17c1e4863de5b72",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 45,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/expertise/infrastructure.jsonl": {
+      "filePath": ".mulch/expertise/infrastructure.jsonl",
+      "contentHash": "a1f839e2de3738c9f354abc9a8e09d247595e28e6e75b70fc3b7ff508b37164e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 12,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/expertise/meta.jsonl": {
+      "filePath": ".mulch/expertise/meta.jsonl",
+      "contentHash": "06fdcd6569e2378716a018c57398b3351b3a60893da24272ddcfcbc3f6d34ca4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 11,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/mulch.config.yaml": {
+      "filePath": ".mulch/mulch.config.yaml",
+      "contentHash": "41812ebfda10761f1711c5e9b396d640d5946fba980b970a2b5263a88ecc4910",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 16,
       "hasStructuralAnalysis": true
     },
     ".mulch/README.md": {
@@ -142,26 +222,6 @@
       "exports": [],
       "totalLines": 22,
       "hasStructuralAnalysis": true
-    },
-    ".mulch/mulch.config.yaml": {
-      "filePath": ".mulch/mulch.config.yaml",
-      "contentHash": "2afb70006e5c7703e314de73dbf30ba2d8cc99e19e99c2486eef03473fa79e42",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 14,
-      "hasStructuralAnalysis": true
-    },
-    ".seeds/.gitignore": {
-      "filePath": ".seeds/.gitignore",
-      "contentHash": "23825359950a9036a928d888fb1d4cba834bf8f31d4a79cea2dd79042c909f63",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 2,
-      "hasStructuralAnalysis": false
     },
     ".seeds/config.yaml": {
       "filePath": ".seeds/config.yaml",
@@ -175,12 +235,12 @@
     },
     ".seeds/issues.jsonl": {
       "filePath": ".seeds/issues.jsonl",
-      "contentHash": "1bdf70fa2cc1d14f2a6e71542a664575ffb3255a3c092e9e5f29ceb73426cb81",
+      "contentHash": "457634d29278f6ecbe9b1a8963abe0c094c165c66551a75b6c41adb39d31de19",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 24,
+      "totalLines": 28,
       "hasStructuralAnalysis": false
     },
     ".seeds/templates.jsonl": {
@@ -203,314 +263,44 @@
       "totalLines": 24,
       "hasStructuralAnalysis": false
     },
-    "CLAUDE.md": {
-      "filePath": "CLAUDE.md",
-      "contentHash": "22d22690f59a833f4bf44bb2ac864cc56ce8cfc8f20c4b37a9dedfe83c9773f5",
+    ".understand-anything/domain-graph.json": {
+      "filePath": ".understand-anything/domain-graph.json",
+      "contentHash": "5ceb7f04ef4c9af0b85c86c431d5d52912bf0d35819e56ac6fdb2447477a1df6",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 63,
+      "totalLines": 1376,
       "hasStructuralAnalysis": true
     },
-    "CONTEXT.md": {
-      "filePath": "CONTEXT.md",
-      "contentHash": "7ae6745a8c424d3e8b692639f4cb71f29c1e86dc9ecb1f122fcf65104d744871",
+    ".understand-anything/fingerprints.json": {
+      "filePath": ".understand-anything/fingerprints.json",
+      "contentHash": "42033b644481bdb3bd76610b3f62fafb0e8a06ce3c3cd2f443388b326a5c9f8c",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 162,
+      "totalLines": 2892,
       "hasStructuralAnalysis": true
     },
-    "HANDOFF.md": {
-      "filePath": "HANDOFF.md",
-      "contentHash": "b5dd7ad1f34138ac156b14bf95be81a0db8e6818cc32395661631337e9c1bcbc",
+    ".understand-anything/knowledge-graph.json": {
+      "filePath": ".understand-anything/knowledge-graph.json",
+      "contentHash": "c25b74129263a47a2b76c53af295689fbf350467afed995d391001328031c323",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 574,
+      "totalLines": 11073,
       "hasStructuralAnalysis": true
     },
-    "Prior Art/00-INDEX.md": {
-      "filePath": "Prior Art/00-INDEX.md",
-      "contentHash": "c81f1c1f6289e2c415967d1fe34244bdb56fd7d3e070920c16703b9778669d2b",
+    ".understand-anything/meta.json": {
+      "filePath": ".understand-anything/meta.json",
+      "contentHash": "45d9c8806c50cc67455307f770df2b8e26aa2f5e06aad95d9dcc92e9d5988219",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 137,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/01-deep-zoom-viewer.md": {
-      "filePath": "Prior Art/01-deep-zoom-viewer.md",
-      "contentHash": "3ec4b17626c42c451f2e1f7f25c3f4a890d052d2cdbb8815fdb3e1515726dd89",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 62,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/02-annotation-tools.md": {
-      "filePath": "Prior Art/02-annotation-tools.md",
-      "contentHash": "7ea96af0e298ae2fd402684a0a0667174d6356927ecd6a0ac4d550d8f8721e4d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 60,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/03-annotation-data-model.md": {
-      "filePath": "Prior Art/03-annotation-data-model.md",
-      "contentHash": "6b9189040f4722ac2d0ddf602d75d69bb3a33e11bdeb905fed7454c6b7152e22",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 76,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/04-multimedia-av.md": {
-      "filePath": "Prior Art/04-multimedia-av.md",
-      "contentHash": "363c83bd9851cb82adfa984c349f4dd4cf131d319e2e678ddf564d0ae278fe66",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 71,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/05-multi-object-collections.md": {
-      "filePath": "Prior Art/05-multi-object-collections.md",
-      "contentHash": "db24d42eb5c95bbc857b0cf30193af78f3ac2eba750e5869e1b91f090cc5eaa7",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 71,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/06-authoring-cms.md": {
-      "filePath": "Prior Art/06-authoring-cms.md",
-      "contentHash": "3dedfddf2e49c84c0b205c94ca1866cd388e261bd56a18c797ad934ef533773d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 76,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/07-published-read-ui.md": {
-      "filePath": "Prior Art/07-published-read-ui.md",
-      "contentHash": "40988e40224389780fd3c023417ea4fa8b91e0b92eea394d6cec9ad0227d8130",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 68,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/08-linkable-navigable.md": {
-      "filePath": "Prior Art/08-linkable-navigable.md",
-      "contentHash": "f8b03771bacc2321025841dfee8e881850b605ca7bf5ef10d7c9ea81b1592c3a",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 68,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/09-web-publishable-serverless.md": {
-      "filePath": "Prior Art/09-web-publishable-serverless.md",
-      "contentHash": "48013d646248e361730ac8cd66cfff43c3e5b315fd226989fadcb908e6ee285d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 67,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/10-state-mutation-patterns.md": {
-      "filePath": "Prior Art/10-state-mutation-patterns.md",
-      "contentHash": "51f0cc4a8f6e809d43e8a5ede72ba8e9a946040d7eebf0ce290b144dab5f6781",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 83,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/11-20-NEW-AXES.md": {
-      "filePath": "Prior Art/11-20-NEW-AXES.md",
-      "contentHash": "115612c74a2ee8956762cc3b34698e4f5336c24b37b9a0a6ebfaa68d26b16a33",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 71,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/11-search-discovery.md": {
-      "filePath": "Prior Art/11-search-discovery.md",
-      "contentHash": "85aebfb9a6293e3ebedce57c7f278c3bd4ef45521c30f08d96bde792c1a09e86",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 65,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/12-accessibility.md": {
-      "filePath": "Prior Art/12-accessibility.md",
-      "contentHash": "2f91aa2e2e7256ac9ef10713f2e00c83bf89994171eefcbc4088e445c4126404",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 70,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/13-i18n-localization.md": {
-      "filePath": "Prior Art/13-i18n-localization.md",
-      "contentHash": "89d6413b6840736aed7037206bf3e2365b13bd9050db5465df05d5224e08ab11",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 62,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/14-import-interop.md": {
-      "filePath": "Prior Art/14-import-interop.md",
-      "contentHash": "3cb423ba013d6e1f7bd0b4fe6dc8d87986bc57cd4218bb18c55fc4acc1c6dbdf",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 72,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/15-provenance-citation.md": {
-      "filePath": "Prior Art/15-provenance-citation.md",
-      "contentHash": "e532b99515a1f5fd00a3d2abf19d1fd13dba823aa4789083dbbe3cc7b5a3e5a1",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 74,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/16-performance-ux.md": {
-      "filePath": "Prior Art/16-performance-ux.md",
-      "contentHash": "00b65e7cebe439dd35573c4e943561495a2f4110b1276f5943de03e6a0031c46",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 73,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/17-tile-generation.md": {
-      "filePath": "Prior Art/17-tile-generation.md",
-      "contentHash": "6b23ccc278564b509413426010fa337c60dd61c75ea4de58ed3fd6b270fe9866",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 69,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/18-embedding-ecosystem.md": {
-      "filePath": "Prior Art/18-embedding-ecosystem.md",
-      "contentHash": "00c9ddd2fbdef355e4e182fb467f530e6db37438204e764c26ad72a24ff85e83",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 59,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/19-ai-authoring.md": {
-      "filePath": "Prior Art/19-ai-authoring.md",
-      "contentHash": "9e23d7d3316e9bbcda10a84b457312d78e3ea9faeee19ddc9ca2d17e1ea56767",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 70,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/20-security-sanitization.md": {
-      "filePath": "Prior Art/20-security-sanitization.md",
-      "contentHash": "dce3a2e4a69e9fa9ef0b96cb104303824c765453c0382608bf3876829d35c407",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 73,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_COVERAGE.md": {
-      "filePath": "Prior Art/_COVERAGE.md",
-      "contentHash": "1f01f3b89dfb463e552d6e07b4955cfce200a84656cc7841026b15c47f9ca0d5",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 164,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_DISPATCH-CONTEXT.md": {
-      "filePath": "Prior Art/_DISPATCH-CONTEXT.md",
-      "contentHash": "93f55e3c0ddda3009c05b6176774c3138dfef106179ab2c185a0262e7f87b6b6",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 93,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_FRAMING.md": {
-      "filePath": "Prior Art/_FRAMING.md",
-      "contentHash": "be9dbf8210e80562302671237f1888a9c1920c7f2c1c561f092c8d7ab4cb8f27",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 51,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_GAP-ANSWERS.md": {
-      "filePath": "Prior Art/_GAP-ANSWERS.md",
-      "contentHash": "e4bade185706914bf4565fc9ceb591643f2727dd71b1cb2ac62aa804336ae21f",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 64,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_GAPS.md": {
-      "filePath": "Prior Art/_GAPS.md",
-      "contentHash": "ea5e528347fe098c2efdc21dacb76935f6643ab433e71330e9b7dc7c8e6ac58c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 100,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_PAPADAM.md": {
-      "filePath": "Prior Art/_PAPADAM.md",
-      "contentHash": "745fec8c9d38d7cc85207c8210c2cc5c839e4b848813dc6d1acea7e3370da0d7",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 63,
+      "totalLines": 7,
       "hasStructuralAnalysis": true
     },
     "apps/studio/.gitkeep": {
@@ -522,16 +312,6 @@
       "exports": [],
       "totalLines": 1,
       "hasStructuralAnalysis": false
-    },
-    "apps/studio/README.md": {
-      "filePath": "apps/studio/README.md",
-      "contentHash": "b01b46202e08ca36fb8a0ee00e65cc9638e1fb4cfa923f8a00f841352cc28f1c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 15,
-      "hasStructuralAnalysis": true
     },
     "apps/studio/index.html": {
       "filePath": "apps/studio/index.html",
@@ -553,29 +333,309 @@
       "totalLines": 24,
       "hasStructuralAnalysis": true
     },
-    "apps/studio/src/App.svelte": {
-      "filePath": "apps/studio/src/App.svelte",
-      "contentHash": "2d8e0feb4ee32010cf30b9b42c667c14c490a222c10591a1cf6240ccc1a7537b",
+    "apps/studio/README.md": {
+      "filePath": "apps/studio/README.md",
+      "contentHash": "c0daa0c1370f6fb7dc61b8951aa956581661365f300f0575656f10c48be23dc5",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 663,
+      "totalLines": 40,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/src/App.svelte": {
+      "filePath": "apps/studio/src/App.svelte",
+      "contentHash": "59356c02d94e05072271d3dc61257e21fb31e7381707fff83d5b77444980eb21",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1319,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/AvEditor.svelte": {
+      "filePath": "apps/studio/src/AvEditor.svelte",
+      "contentHash": "2ff7dec0cf7eaa205cb7df31f1e478acd8f8ce70f2851792de205e47de124f7c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 128,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/bake.ts": {
+      "filePath": "apps/studio/src/bake.ts",
+      "contentHash": "b1efec673d2b8e929accbaa8c636f2f9cf1eff22b1ac67d3ceb07afbe56a0566",
+      "functions": [
+        {
+          "name": "bakeDisplayMaster",
+          "params": [
+            "file"
+          ],
+          "returnType": "Promise<BakedMaster>",
+          "exported": true,
+          "lineCount": 16
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "bakeDisplayMaster"
+      ],
+      "totalLines": 34,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/src/bidar.ts": {
+      "filePath": "apps/studio/src/bidar.ts",
+      "contentHash": "ce51c86b8753798d2739cb3a59cb9d9ec4f69cc9887711cf4bb7b6602b0a6d9a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "bidarTitle",
+        "bidarObject",
+        "bidarNotes"
+      ],
+      "totalLines": 243,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/src/binding.ts": {
+      "filePath": "apps/studio/src/binding.ts",
+      "contentHash": "1998f9e998e358dcef20aa4aec4f12a3a23a97d27d9efe9a8cc9da6d8fc80ec3",
+      "functions": [
+        {
+          "name": "supportsFolderPicker",
+          "params": [],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "pickFolder",
+          "params": [],
+          "returnType": "Promise<FileSystemDirectoryHandle | null>",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "downloadZip",
+          "params": [
+            "bytes",
+            "filename"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "zipNameFor",
+          "params": [
+            "title"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "loadRecents",
+          "params": [],
+          "returnType": "RecentProject[]",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "saveRecents",
+          "params": [
+            "list"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "loadLastBinding",
+          "params": [],
+          "returnType": "Binding",
+          "exported": true,
+          "lineCount": 11
+        },
+        {
+          "name": "saveLastBinding",
+          "params": [
+            "b"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "parseRecents",
+            "serializeRecents",
+            "Binding",
+            "RecentProject"
+          ]
+        }
+      ],
+      "exports": [
+        "supportsFolderPicker",
+        "pickFolder",
+        "downloadZip",
+        "zipNameFor",
+        "loadRecents",
+        "saveRecents",
+        "loadLastBinding",
+        "saveLastBinding"
+      ],
+      "totalLines": 81,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/src/CmdK.svelte": {
+      "filePath": "apps/studio/src/CmdK.svelte",
+      "contentHash": "575cfa5a3e14af15af60bab67786d1cf01f789141a7ec7b8cd48a9ff7b517909",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 161,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/ExhibitOverview.svelte": {
+      "filePath": "apps/studio/src/ExhibitOverview.svelte",
+      "contentHash": "01ca81df928235f0c5abfdff83b4652eeb83b241d02961bcbfe60550371df285",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 290,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/handles-db.ts": {
+      "filePath": "apps/studio/src/handles-db.ts",
+      "contentHash": "72bcbfa275829dceb9de075ea08c202184956aa93d012561c0a91b5ee4973705",
+      "functions": [
+        {
+          "name": "hasIDB",
+          "params": [],
+          "returnType": "boolean",
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "openDb",
+          "params": [],
+          "returnType": "Promise<IDBDatabase>",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "tx",
+          "params": [
+            "mode",
+            "fn"
+          ],
+          "returnType": "Promise<T>",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "putHandle",
+          "params": [
+            "key",
+            "handle"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "getHandle",
+          "params": [
+            "key"
+          ],
+          "returnType": "Promise<FileSystemDirectoryHandle | null>",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "deleteHandle",
+          "params": [
+            "key"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "queryPermission",
+          "params": [
+            "handle",
+            "mode"
+          ],
+          "returnType": "Promise<PermState>",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "requestPermission",
+          "params": [
+            "handle",
+            "mode"
+          ],
+          "returnType": "Promise<PermState>",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "putHandle",
+        "getHandle",
+        "deleteHandle",
+        "queryPermission",
+        "requestPermission"
+      ],
+      "totalLines": 75,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/src/IdentityPrompt.svelte": {
+      "filePath": "apps/studio/src/IdentityPrompt.svelte",
+      "contentHash": "f9cf851aea0bc70b3aee9040fc9d540ddca48524ecc5eed0e8cd2e7bca0362a8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 69,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/LayoutPicker.svelte": {
+      "filePath": "apps/studio/src/LayoutPicker.svelte",
+      "contentHash": "583937c63fde4632f4414d86f2576b2e706eac7f7686a51cdfc7da8febc66d1b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 131,
       "hasStructuralAnalysis": false
     },
     "apps/studio/src/LibraryHome.svelte": {
       "filePath": "apps/studio/src/LibraryHome.svelte",
-      "contentHash": "91549f8cfe661bf222a7028d86663e9fc135f99c53456966e8639e37b8371858",
+      "contentHash": "ca900b2605fc0cb1a6bb5b5009e17454684d1a6841b2fc0df613684b5c742c65",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 92,
+      "totalLines": 248,
       "hasStructuralAnalysis": false
     },
     "apps/studio/src/main.ts": {
       "filePath": "apps/studio/src/main.ts",
-      "contentHash": "5f9cd5af967f10fade9aeccd86cf718fc8804fecb802d6e0412ed45eedd406cd",
+      "contentHash": "9414c634a48a961a3d920a06f12d15a591460e0163b0b49ceb3e5ecb687827d0",
       "functions": [],
       "classes": [],
       "imports": [
@@ -592,6 +652,10 @@
           "specifiers": []
         },
         {
+          "source": "./markers.css",
+          "specifiers": []
+        },
+        {
           "source": "svelte",
           "specifiers": [
             "mount"
@@ -605,12 +669,22 @@
         }
       ],
       "exports": [],
-      "totalLines": 12,
+      "totalLines": 13,
       "hasStructuralAnalysis": true
+    },
+    "apps/studio/src/markers.css": {
+      "filePath": "apps/studio/src/markers.css",
+      "contentHash": "aa5df6914c627b32348a654a6bc7af9d498ecdff7f2f202f8bc71e2db96519c9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": false
     },
     "apps/studio/src/MergeReview.svelte": {
       "filePath": "apps/studio/src/MergeReview.svelte",
-      "contentHash": "ec9a2df742f96b923b7bc922c3e6d394fac06861999303118ed43f0f6ae13afe",
+      "contentHash": "dc1544370f9d2a05f53334affb03feb8312c977b7d4021a289184e7d55ad7272",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -618,19 +692,29 @@
       "totalLines": 81,
       "hasStructuralAnalysis": false
     },
-    "apps/studio/src/Publish.svelte": {
-      "filePath": "apps/studio/src/Publish.svelte",
-      "contentHash": "9201a2f5127665ed7116942fcc816bffa3217d6102cccb864cd1e4edb21c57c7",
+    "apps/studio/src/NarrativeEditor.svelte": {
+      "filePath": "apps/studio/src/NarrativeEditor.svelte",
+      "contentHash": "180848d694db37d54bc205af1e69d762b48803748eed84701404ebdd38ff8836",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 135,
+      "totalLines": 191,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/Publish.svelte": {
+      "filePath": "apps/studio/src/Publish.svelte",
+      "contentHash": "7b11218eaecec75d1a80ef3700d09d34dd431f5b5d52bd096e524472daab4d08",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 170,
       "hasStructuralAnalysis": false
     },
     "apps/studio/src/store.ts": {
       "filePath": "apps/studio/src/store.ts",
-      "contentHash": "76528b190d8d4b522a8509ff9f5b0a9ed20b31e9901800aa41be98e07bfc4b3b",
+      "contentHash": "a82244d245626833b528b9688ad9c983a85b3c5c571536edb41e1aa53bfe12eb",
       "functions": [
         {
           "name": "openProjectDir",
@@ -668,11 +752,23 @@
           "name": "assetsDir",
           "params": [
             "slug",
-            "create"
+            "create",
+            "sub"
           ],
           "returnType": "Promise<FileSystemDirectoryHandle | null>",
           "exported": false,
           "lineCount": 9
+        },
+        {
+          "name": "writeInto",
+          "params": [
+            "dir",
+            "name",
+            "file"
+          ],
+          "returnType": "Promise<void>",
+          "exported": false,
+          "lineCount": 7
         },
         {
           "name": "saveAssetFile",
@@ -683,7 +779,18 @@
           ],
           "returnType": "Promise<void>",
           "exported": true,
-          "lineCount": 8
+          "lineCount": 3
+        },
+        {
+          "name": "saveOriginalFile",
+          "params": [
+            "slug",
+            "name",
+            "file"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 3
         },
         {
           "name": "readAssetUrl",
@@ -713,6 +820,16 @@
           "returnType": "Promise<ArrayBuffer | null>",
           "exported": true,
           "lineCount": 10
+        },
+        {
+          "name": "readOriginalBytes",
+          "params": [
+            "slug",
+            "name"
+          ],
+          "returnType": "Promise<ArrayBuffer | null>",
+          "exported": true,
+          "lineCount": 10
         }
       ],
       "classes": [],
@@ -721,7 +838,10 @@
           "source": "@render/core",
           "specifiers": [
             "FsaFilesystem",
-            "FsDirectory"
+            "FsDirectory",
+            "OrientationTransform",
+            "MediaType",
+            "Section"
           ]
         }
       ],
@@ -730,21 +850,23 @@
         "loadLibraryMeta",
         "saveLibraryMeta",
         "saveAssetFile",
+        "saveOriginalFile",
         "readAssetUrl",
         "clearExhibitAnnotations",
-        "readAssetBytes"
+        "readAssetBytes",
+        "readOriginalBytes"
       ],
-      "totalLines": 150,
+      "totalLines": 191,
       "hasStructuralAnalysis": true
     },
     "apps/studio/src/tokens.css": {
       "filePath": "apps/studio/src/tokens.css",
-      "contentHash": "a8dc7079ad890eecb63bea394eab5d4e17a7d741b55097e8d19bb3360ad5b51d",
+      "contentHash": "2fae9d61923d0244eef5fefe41edda1c2f8468444f48e9580aefaab0392556f6",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 63,
+      "totalLines": 69,
       "hasStructuralAnalysis": false
     },
     "apps/studio/src/voynich.ts": {
@@ -785,16 +907,6 @@
       "totalLines": 8,
       "hasStructuralAnalysis": true
     },
-    "apps/viewer/README.md": {
-      "filePath": "apps/viewer/README.md",
-      "contentHash": "30dd22c73730ab1e6623fffde3aee166163877ddbad2656bc6dd78d27b870587",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 15,
-      "hasStructuralAnalysis": true
-    },
     "apps/viewer/astro.config.mjs": {
       "filePath": "apps/viewer/astro.config.mjs",
       "contentHash": "16f119512287712c9357222b86b90a172134ee24ec1636fb31ee50ceb2ecabf8",
@@ -820,22 +932,766 @@
     },
     "apps/viewer/package.json": {
       "filePath": "apps/viewer/package.json",
-      "contentHash": "d75f8a98033d9e066a664d811ee4efa364f9493974a4c2ab94ac3ffd37c473d6",
+      "contentHash": "f6a9677285aa61dbfcca3d383b196edbbf7a91232370d06616f297b9df79a616",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 24,
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/av/annotations/history/0000000001BB8Y2F4GWPA070HC.json": {
+      "filePath": "apps/viewer/public/published/av/annotations/history/0000000001BB8Y2F4GWPA070HC.json",
+      "contentHash": "fb015ee3ac44196a067a836add2a9bc39af5107d739183630465ce76d66ddcaa",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/av/annotations/history/0000000002QWSM9MMM6A2NGGF4.json": {
+      "filePath": "apps/viewer/public/published/av/annotations/history/0000000002QWSM9MMM6A2NGGF4.json",
+      "contentHash": "dd6700f1ab8e300ade4f2442907f2e9c6bc016fb435ff89e2a39f04c4e7fc37f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/av/annotations/history/0000000003XJ97G8KDWNB1GDP5.json": {
+      "filePath": "apps/viewer/public/published/av/annotations/history/0000000003XJ97G8KDWNB1GDP5.json",
+      "contentHash": "1f5ad0512e5328d65cecc8f9c032ccf9da372ae049002b1d971141b432e94993",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/av/annotations/history/0000000004M6XTY36CDA78WT1F.json": {
+      "filePath": "apps/viewer/public/published/av/annotations/history/0000000004M6XTY36CDA78WT1F.json",
+      "contentHash": "c85f07dbf950c065c0cdc7b4729a2a17ea93a56f426280551cfa5d4de1aba74f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/av/annotations/history/index.json": {
+      "filePath": "apps/viewer/public/published/av/annotations/history/index.json",
+      "contentHash": "b9601a3e2a1db58dce67141b660fb9504800ee963c01fe4e9244508f5e0e248c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 6,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/av/canvas/o1/annotations.json": {
+      "filePath": "apps/viewer/public/published/av/canvas/o1/annotations.json",
+      "contentHash": "e8e965288c423cb360fbc96479e2cc83624f3cb1881ae80bebef432c2d908b09",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 95,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/av/manifest.json": {
+      "filePath": "apps/viewer/public/published/av/manifest.json",
+      "contentHash": "8cd848b7ce1362cc727e53597474852ca8abf1e8d8f02cf6ee43d4eac243b526",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 51,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/00000000014CYQZ060Q7TK88MT.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/00000000014CYQZ060Q7TK88MT.json",
+      "contentHash": "621696c60411abefb5f02c5f0a1c1d873796b25f0d6e35f7ad9566a6cd6f5937",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/0000000002YB5FZZ75KCQN7QRZ.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000002YB5FZZ75KCQN7QRZ.json",
+      "contentHash": "4bf3883b47f47f7e794d6268da9f1ee44ee7d1f976882091fdc7a6e85efd518f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/0000000003H9SM64Y64XQ2T4Z5.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000003H9SM64Y64XQ2T4Z5.json",
+      "contentHash": "9a3399155f8e181fb42d06b9c6255ce8445985381ac920ae76340b79f2658e89",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/0000000004QVXAPKEAEBY9P89Y.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000004QVXAPKEAEBY9P89Y.json",
+      "contentHash": "581c48c36bcb384c5acaedc3d4fc318b071d27a3deb8502797fba0a7bcc1ab6b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/0000000005Y06S6DVK2392YXF2.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000005Y06S6DVK2392YXF2.json",
+      "contentHash": "89e2932c6f0c6971adb033d833cce9214a29036bdfbf4b52058784c21527f777",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/0000000006Z75GC0WTAR7TD9S2.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000006Z75GC0WTAR7TD9S2.json",
+      "contentHash": "710e2ac07c4d7adef25ca33e6efae2073b0dc767bd58c91a59c16256dd52548d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/0000000007HM9G9KJ7MK2Y5EVW.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000007HM9G9KJ7MK2Y5EVW.json",
+      "contentHash": "4de17f846c4824593ac58925f8df262203217b91acdf12a64c8d3fd05c6106a1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/0000000008AE9M3GQM6A2GE5QW.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000008AE9M3GQM6A2GE5QW.json",
+      "contentHash": "ef3200e32715c13d251d1cf965eb2b26b95b52d7a70e1dd535288ea7c30e97df",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/0000000009R5X67F3KM4QD2EBP.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000009R5X67F3KM4QD2EBP.json",
+      "contentHash": "c5385225e596c65463c609b9ec380b5be39bdf8a3e9490653d07fbeacf25a7a8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000AM1M852F303PMD1QX.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000AM1M852F303PMD1QX.json",
+      "contentHash": "49f19d2a66da08ddc472832c8d008736e7875faf12a896fff5fb3d05e0c819bc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000BHWEKP4D414SY0RGS.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000BHWEKP4D414SY0RGS.json",
+      "contentHash": "427cf6ef775a0e87f19cdbdde33cd57ce15b5989ef610d173f52c4ecf789553e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000CYN34XMRTHB9DJ6JV.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000CYN34XMRTHB9DJ6JV.json",
+      "contentHash": "c9a043ec8de581863dc65169512a4ebf2c9531baf9be1deff281c2a776259448",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000D4DR8AWT8WT2M6F2G.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000D4DR8AWT8WT2M6F2G.json",
+      "contentHash": "7c54dcf316a1c5e727468bc3d54ca5a5bc08c37827cdb4967a6091fb7f4542f0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000EJG9Y72M6NDNPAAB2.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000EJG9Y72M6NDNPAAB2.json",
+      "contentHash": "56a3e8b4d6f257a26a1282abc10f3da4cc57cd94ac0ac0ef09dac6e843b40fba",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000FZQH297K1D5EREQJW.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000FZQH297K1D5EREQJW.json",
+      "contentHash": "a447afa023b4712e6005b2c3c00f3f8c6e181b644ef32a981a274eb5b037174c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000GJYKSCG31KTS80R6N.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000GJYKSCG31KTS80R6N.json",
+      "contentHash": "ff64b5a275f8ade1c9a3cc93d7d61458f1e3daf922b0cf5919c6b05275f9473f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000HD4SWHP8PKY9W6M2Y.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000HD4SWHP8PKY9W6M2Y.json",
+      "contentHash": "89657830a48eaf62baa401a05bb6ae2f66e2554b21f11f416b4ab2580cd76c9f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000JAFFK9K4H3QH7XPDD.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000JAFFK9K4H3QH7XPDD.json",
+      "contentHash": "b350d6bfe4dd5c3911cc684baa4d79569e9717bb162319794074a5f2f490610a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000KANWR4RR2BHYB8SNC.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000KANWR4RR2BHYB8SNC.json",
+      "contentHash": "2ea2baee1a023719e01923389876c5a6469c957d9c81246ac5b8d57ce1c26157",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000MMP6TEN6H2WC0ZAW2.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000MMP6TEN6H2WC0ZAW2.json",
+      "contentHash": "2a85409eba8b3d3fda6cf40981b1645cae175373b1a53b32acebdc85df1ad8d0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000NK8VS1GVN64T2KD91.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000NK8VS1GVN64T2KD91.json",
+      "contentHash": "f2ace0afac7d39b5fa4d786f38c46614d88806fad63df23f6233d1ee9b2f21fb",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000PY0FQ6EHNDDJF7G40.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000PY0FQ6EHNDDJF7G40.json",
+      "contentHash": "4bac737e768f685c011af05351fa78bd0d0c1ea909cb78a2bb9895a31740e7b3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000QZ789FZ81RHZ4CB1H.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000QZ789FZ81RHZ4CB1H.json",
+      "contentHash": "36fed07687f47318ad530e76dfad0abe3ee16716b74f768ae184ae60a5fd84a4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000R0M4CZSRNC8JN20E9.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000R0M4CZSRNC8JN20E9.json",
+      "contentHash": "1905963722037c09999a2d8385b2b2203bbae216fa2f712891b478e1287e5b3c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/000000000S3C9G458YAXDAW0PS.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000S3C9G458YAXDAW0PS.json",
+      "contentHash": "37211e9afc4a160dd15b606ba2cbb6a28d6df83b1a5615fed33a54865eeb7025",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/annotations/history/index.json": {
+      "filePath": "apps/viewer/public/published/bidar/annotations/history/index.json",
+      "contentHash": "1d21788c9d2ce376a94e8d0ec0b812217c067c17e30e7ecea9c3dc5f3764edcf",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/canvas/o1/annotations.json": {
+      "filePath": "apps/viewer/public/published/bidar/canvas/o1/annotations.json",
+      "contentHash": "c0a790c0e4d3311d88066e8e45ce02733a40c8ce4cdeb9bbe04fdf7ffb43e190",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 557,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/bidar/manifest.json": {
+      "filePath": "apps/viewer/public/published/bidar/manifest.json",
+      "contentHash": "e8b524cebc90232b7bbfaa806f34b2b8589d5fb0d15e6985680e2fd10faefd78",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 656,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/collection.json": {
+      "filePath": "apps/viewer/public/published/collection.json",
+      "contentHash": "3e2a97ae4ef25030ce22f036e995c6a8546ce681a17ee371ce5cfb5a70fd04b3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/exhibits.json": {
+      "filePath": "apps/viewer/public/published/exhibits.json",
+      "contentHash": "076f03a75200ad8b68b932e03249d4d60896d5e5a2ea774a75280a4d9cdd6f72",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 31,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/00000000014H7MXSRX1DT5PK64.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/00000000014H7MXSRX1DT5PK64.json",
+      "contentHash": "934886a08f4ea632e430b898b650278f79a94bafb853adb6e56bc24a6833358e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000227SA2A03KFYFXNYB.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000227SA2A03KFYFXNYB.json",
+      "contentHash": "80149ef4b569816f4ac2a75e3b630d8d527f97693b63d1555fb560048dcb0226",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/0000000003P50MZ62TJXHM1686.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/0000000003P50MZ62TJXHM1686.json",
+      "contentHash": "da546e2b7efac3678bdc9301a06b7f8d9e3ca23ae0287e344e3d9c5876b92aa0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/00000000045G61Q8K2AQJFF9TM.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/00000000045G61Q8K2AQJFF9TM.json",
+      "contentHash": "4c224f8a066eaf3e920b02f12d80cf4ac55df2e133c2a676c4d98452e64b58b0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/0000000005S7QJAPVRG5WHVHPC.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/0000000005S7QJAPVRG5WHVHPC.json",
+      "contentHash": "caec03504ac30b1d32463e3e5b6107c89c43283cd59437190b6e94a5447785af",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/0000000006QCAVFRW26XYF4NAK.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/0000000006QCAVFRW26XYF4NAK.json",
+      "contentHash": "ae10a7dcc4f9b56fe43b7f69cb7f084248d6a5b6e4be940ec361b88cb03583a6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/00000000079MTJ1CSRRP0G7JKH.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/00000000079MTJ1CSRRP0G7JKH.json",
+      "contentHash": "6b7d4d318e106805b71012c7a289080a6a6bbd194ecf013b234ba84a328df4b9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000857CQR3J2T8SFT6NC.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000857CQR3J2T8SFT6NC.json",
+      "contentHash": "f2bdf08faa5fd0b9e7931bebcc8bb91d4cb5d0e89d8ae2d5082ff2daf66bdd18",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/0000000009708F5S5ZV6E08ESE.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/0000000009708F5S5ZV6E08ESE.json",
+      "contentHash": "9b357ae7b0276125937d4d5bb6bff4fcdb30c600d7651ab529111d994292f91b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000AYQK4G2CQE8ZHBA80.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000AYQK4G2CQE8ZHBA80.json",
+      "contentHash": "f90008859a224478833556531538e1576dcc221a3982c7840ee1a7333565370e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000BPF2791JD86NR4RH4.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000BPF2791JD86NR4RH4.json",
+      "contentHash": "bb705b59f75367976cb502a03a4e2844b5883a14b76179f023728c1a05a868f2",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000CD7RV70X11ACWYEBT.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000CD7RV70X11ACWYEBT.json",
+      "contentHash": "a773f819c25a7de235aad4cd13ab01b3f9be8c9f2b3f4d66fc94c51338b7a9bd",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000DVCSDQQXJB6V1TS7K.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000DVCSDQQXJB6V1TS7K.json",
+      "contentHash": "2c6a0505fc16d6111a3b96b20498bee6dc5231fd60b29d4ecd0f1f8c59d62a58",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000EQ8P7Q1GNC5HNBJEH.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000EQ8P7Q1GNC5HNBJEH.json",
+      "contentHash": "68552548f57e8be3303c82abfd41ec79455155abab1d9f61148622033ec5ee0a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000F9SEBRPD87G4EG92S.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000F9SEBRPD87G4EG92S.json",
+      "contentHash": "5bd2bd21e6b0580cf0b153ff65d820f801b8552bc4722a843200e0ad2dfd2679",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000GJSGT3G0C92PCM8AW.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000GJSGT3G0C92PCM8AW.json",
+      "contentHash": "e3be346a913c2fdb87bbdbf6e4f6375b5ca6c5449258c46fbdcec1487312a835",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000HR9QJA0339YF8PT2T.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000HR9QJA0339YF8PT2T.json",
+      "contentHash": "78495ca07596beabe585cca907222a80f6822e7ac6ac5cd451e57724bfe36b68",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000J4JA1STRS9XA3CPDG.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000J4JA1STRS9XA3CPDG.json",
+      "contentHash": "67ea0fbfa83ac266e620331a26e4de358245bb2923338c74258fa0779765e70b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000KTPK0WV8390FX771D.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000KTPK0WV8390FX771D.json",
+      "contentHash": "6dff48b70f433324a5335306e2b695efefbaccb1d3651e5ee0c9fca5df5dfd64",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000M9FTX87JQ1VDSBT5Y.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000M9FTX87JQ1VDSBT5Y.json",
+      "contentHash": "f2d700ea2f31cbd3d1b50373854f92c166e264d29e00c60134af2e3b7f622518",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000NM6VBJWNXGWE2Z4M8.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000NM6VBJWNXGWE2Z4M8.json",
+      "contentHash": "bb84a2e6c2d2e92b2e2dcb748330b10e5d45bc1f2e2e76410caa9930300c1d13",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000PHHESCJMA2RG6EZFQ.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000PHHESCJMA2RG6EZFQ.json",
+      "contentHash": "93442e2c94d2e2aebf29e36b0a1ca19b166a8a0c3500456180ad31fdc85b825e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000QA2BC10X74VZQ0XXX.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000QA2BC10X74VZQ0XXX.json",
+      "contentHash": "214f155b3fefc2aea36e202ebed2e8e43511b723b93b420ee0ba82d0e187901e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000RE9BMCZMHESB6FSMZ.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000RE9BMCZMHESB6FSMZ.json",
+      "contentHash": "a99a68d01eae09a921e85f613cfecc40cda26e1ba9c5d6c3db2a4463e9be3c27",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/000000000SFF7ZT384SXK5WMAD.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000SFF7ZT384SXK5WMAD.json",
+      "contentHash": "496e06af25fc1f37919f61aed162169da0e8a4b5c7e5b76755a51fb99c8643b0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/annotations/history/index.json": {
+      "filePath": "apps/viewer/public/published/voynich/annotations/history/index.json",
+      "contentHash": "41068e3099dfada1922382eadaa6c530b9b4448fd7754e296e64ed61e09a4f7a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/canvas/o1/annotations.json": {
+      "filePath": "apps/viewer/public/published/voynich/canvas/o1/annotations.json",
+      "contentHash": "b1063b562e6b9597397f09ee994837a9da921e56248149e288ee6194b83fe88b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 95,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/canvas/o2/annotations.json": {
+      "filePath": "apps/viewer/public/published/voynich/canvas/o2/annotations.json",
+      "contentHash": "8ed40b55ed03a0fc03e7fe99aef66e394328493125e1950ce3678f95a700b483",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 117,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/canvas/o3/annotations.json": {
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "contentHash": "a80932012e52866cdd547def4f2e4b9636621eb4ae415d61c1a022281d18728e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 95,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/canvas/o4/annotations.json": {
+      "filePath": "apps/viewer/public/published/voynich/canvas/o4/annotations.json",
+      "contentHash": "6b6b0e79679f12f8603a598ec357149804606f4af68708dfbab46bb0a54ce7f7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 183,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/canvas/o5/annotations.json": {
+      "filePath": "apps/viewer/public/published/voynich/canvas/o5/annotations.json",
+      "contentHash": "29e7c6717c47c1d32cdc7561409f134526473a58497113a1e7ea2996b10a3f02",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 95,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/public/published/voynich/manifest.json": {
+      "filePath": "apps/viewer/public/published/voynich/manifest.json",
+      "contentHash": "d4e6ea9751a016b84994fa753fd6ecd52f38e128d70c22018b050df012e5b688",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 202,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/README.md": {
+      "filePath": "apps/viewer/README.md",
+      "contentHash": "7bebdf563b3fd9d63ed483b4712bcebd0ac23cbd5ade0ff2a0881513de0418b7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 44,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/scripts/gen-published.mts": {
+      "filePath": "apps/viewer/scripts/gen-published.mts",
+      "contentHash": "38d321b6e1c9ce76eca9d0b5b685d3d371731657d4872beef586759950bf07b3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 28,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/bidar.ts": {
+      "filePath": "apps/viewer/src/bidar.ts",
+      "contentHash": "ce51c86b8753798d2739cb3a59cb9d9ec4f69cc9887711cf4bb7b6602b0a6d9a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "bidarTitle",
+        "bidarObject",
+        "bidarNotes"
+      ],
+      "totalLines": 243,
       "hasStructuralAnalysis": true
     },
     "apps/viewer/src/components/ExhibitView.svelte": {
       "filePath": "apps/viewer/src/components/ExhibitView.svelte",
-      "contentHash": "01b427fbc6468bf0a72a2d7786a02f3b421a441449a0120a960fb3ffa18f779f",
+      "contentHash": "a65129754bd0d4fb74dc85124dd2d2b7bb42a9c9e7f4ee4e6a0a6eeccfa0767a",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 81,
+      "totalLines": 138,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/components/MediaPlayer.svelte": {
+      "filePath": "apps/viewer/src/components/MediaPlayer.svelte",
+      "contentHash": "c1da7762273f1ab990b3a3d9ce826a20eb7e6b9b6b62dcb07dd4ef21104c2252",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 123,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/components/NarrativeReader.svelte": {
+      "filePath": "apps/viewer/src/components/NarrativeReader.svelte",
+      "contentHash": "5441b260eda4697f902f99d10108ea136360b0402119ef827997777f1b3eb645",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 125,
       "hasStructuralAnalysis": false
     },
     "apps/viewer/src/components/ObjectGrid.svelte": {
@@ -850,37 +1706,76 @@
     },
     "apps/viewer/src/components/Reader.svelte": {
       "filePath": "apps/viewer/src/components/Reader.svelte",
-      "contentHash": "a899d57e374952cd1ef5b611081edbca1c5c562fdcf33131d26727994981f8d6",
+      "contentHash": "48a366c823428c4f7c35ae716da7639e9b65090482ddf2750010b0126190ff2d",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 131,
+      "totalLines": 136,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/markers.css": {
+      "filePath": "apps/viewer/src/markers.css",
+      "contentHash": "aa5df6914c627b32348a654a6bc7af9d498ecdff7f2f202f8bc71e2db96519c9",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 29,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/pages/av.astro": {
+      "filePath": "apps/viewer/src/pages/av.astro",
+      "contentHash": "8fcc20f8f7f52a1f2661beace0a832e18086a503bc843dd4244295d1ad55747c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 25,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/pages/bidar.astro": {
+      "filePath": "apps/viewer/src/pages/bidar.astro",
+      "contentHash": "1623665081a0033b46eafcd363ab75bb1843f85e7ec5c31c990044bd4db920e0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 27,
       "hasStructuralAnalysis": false
     },
     "apps/viewer/src/pages/index.astro": {
       "filePath": "apps/viewer/src/pages/index.astro",
-      "contentHash": "08381e719e5934aa50a319af84a413dd6031c1469cfcb6b80234df8df51aecdc",
+      "contentHash": "759c165348eedcf4b1a6a3b66036e85af78db2935740fc97bf81fef56b22a70e",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 81,
+      "totalLines": 84,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/pages/voynich.astro": {
+      "filePath": "apps/viewer/src/pages/voynich.astro",
+      "contentHash": "a34b8b2727f46b53dc9f8f55e43dab5f4ce1d651d21b4d3a25bb15b8beedeaca",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 28,
       "hasStructuralAnalysis": false
     },
     "apps/viewer/src/published.ts": {
       "filePath": "apps/viewer/src/published.ts",
-      "contentHash": "8945a23d2217d5e27e0db54dcad11d8a895b7b644c5cfcb71bdf8aa56a013b15",
+      "contentHash": "58b623df7ff3bc0a2071d81d237ab78abc4e191445e9504c232a204f1cc99fe9",
       "functions": [
         {
-          "name": "readJson",
+          "name": "fetchJson",
           "params": [
-            "dir",
-            "name"
+            "path"
           ],
           "returnType": "Promise<T>",
           "exported": false,
-          "lineCount": 4
+          "lineCount": 5
         },
         {
           "name": "loadPublishedExhibit",
@@ -889,7 +1784,7 @@
           ],
           "returnType": "Promise<PublishedExhibit>",
           "exported": true,
-          "lineCount": 26
+          "lineCount": 15
         }
       ],
       "classes": [],
@@ -897,34 +1792,24 @@
         {
           "source": "@render/core",
           "specifiers": [
-            "MemoryFilesystem",
-            "publishLibrary",
             "objectsFromManifest",
+            "sectionsFromManifest",
             "AObject",
-            "FsDirectory",
             "IIIFManifest",
+            "Section",
             "W3CAnnotation"
-          ]
-        },
-        {
-          "source": "./sample-data.js",
-          "specifiers": [
-            "library",
-            "getLog",
-            "BASE"
           ]
         }
       ],
       "exports": [
-        "libraryCards",
         "loadPublishedExhibit"
       ],
-      "totalLines": 55,
+      "totalLines": 42,
       "hasStructuralAnalysis": true
     },
     "apps/viewer/src/sample-data.ts": {
       "filePath": "apps/viewer/src/sample-data.ts",
-      "contentHash": "dacadbc1419b1cbe4219a362062ee3b0de99d2d06f25d54a731e938a5a190e14",
+      "contentHash": "c940ca642e6b0e19eb54ae52cb409cae5a575ac836435bcc75cb1b6c241ea579",
       "functions": [
         {
           "name": "canvasIdFor",
@@ -953,6 +1838,15 @@
           "returnType": "AnnotationLog",
           "exported": true,
           "lineCount": 1
+        },
+        {
+          "name": "sectionsFor",
+          "params": [
+            "slug"
+          ],
+          "returnType": "Section[]",
+          "exported": true,
+          "lineCount": 2
         }
       ],
       "classes": [],
@@ -962,9 +1856,11 @@
           "specifiers": [
             "appendNew",
             "asClientId",
+            "importTranscript",
             "AObject",
             "AnnotationLog",
-            "Library"
+            "Library",
+            "Section"
           ]
         },
         {
@@ -989,10 +1885,21 @@
         "BASE",
         "canvasIdFor",
         "library",
-        "getLog"
+        "getLog",
+        "sectionsFor"
       ],
-      "totalLines": 53,
+      "totalLines": 89,
       "hasStructuralAnalysis": true
+    },
+    "apps/viewer/src/tokens.css": {
+      "filePath": "apps/viewer/src/tokens.css",
+      "contentHash": "2fae9d61923d0244eef5fefe41edda1c2f8468444f48e9580aefaab0392556f6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 69,
+      "hasStructuralAnalysis": false
     },
     "apps/viewer/src/voynich.ts": {
       "filePath": "apps/viewer/src/voynich.ts",
@@ -1009,14 +1916,24 @@
       "totalLines": 297,
       "hasStructuralAnalysis": true
     },
-    "docs/IMPLEMENTATION-STRATEGY.md": {
-      "filePath": "docs/IMPLEMENTATION-STRATEGY.md",
-      "contentHash": "be35e0251776b8420c9649d92f975961f38ae127a7e7662adb5f86f068b5a102",
+    "CLAUDE.md": {
+      "filePath": "CLAUDE.md",
+      "contentHash": "22d22690f59a833f4bf44bb2ac864cc56ce8cfc8f20c4b37a9dedfe83c9773f5",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 261,
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "CONTEXT.md": {
+      "filePath": "CONTEXT.md",
+      "contentHash": "e88fdc7dd2f036f1cb3ec83b24a6265afde8a3343eea8cfb761253719e87004c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 180,
       "hasStructuralAnalysis": true
     },
     "docs/adr/0001-objects-are-exhibit-nested.md": {
@@ -1059,6 +1976,236 @@
       "totalLines": 11,
       "hasStructuralAnalysis": true
     },
+    "docs/adr/0005-narrative-section-model.md": {
+      "filePath": "docs/adr/0005-narrative-section-model.md",
+      "contentHash": "1ae8afaf9eb2d11d837b09032b01f6b1d5a5c430c520f400949561ca85badcc4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 18,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/_meta.json": {
+      "filePath": "docs/architecture/_meta.json",
+      "contentHash": "927e668801726dd3de00eec7c0b6f4ed7e3cef24186a6c997daa743de93a4836",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 46,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/cross-cutting/patterns.md": {
+      "filePath": "docs/architecture/cross-cutting/patterns.md",
+      "contentHash": "9783c35af86f856bfa5879d2a94200e8391e0136d7f959ff7c634371db82ae67",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 89,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/domain.md": {
+      "filePath": "docs/architecture/domain.md",
+      "contentHash": "43c0444ac74140aab325122a97c27cbbfb5edc8b88b2b2c87b1bf04a9b36533c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 64,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/ecosystem.md": {
+      "filePath": "docs/architecture/ecosystem.md",
+      "contentHash": "a89e87157f2db7e244397745d75c8e80e3bd45d9cea4ed567f2096856cad8b02",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 72,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/evolution.md": {
+      "filePath": "docs/architecture/evolution.md",
+      "contentHash": "d9f77d7bcfb875835394ea6510cbdbfdd878165cbea6f7ee90195c4134c6dc05",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 75,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/features.json": {
+      "filePath": "docs/architecture/features.json",
+      "contentHash": "16f84e08fa494dfe5a2b56f95b3bce8d742da4481ee01b8cf3c98b7c0531d4a0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 41,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/infrastructure.md": {
+      "filePath": "docs/architecture/infrastructure.md",
+      "contentHash": "433902256177bb1c4fa32506f31c761e5ca0241fc95bae9eddf6c689188a77f3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 87,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/overview.md": {
+      "filePath": "docs/architecture/overview.md",
+      "contentHash": "d8e915c859704ce5e28a1fe6d1643ab96354cb4083a925a794080fd4029a9776",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 102,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/risk-map.md": {
+      "filePath": "docs/architecture/risk-map.md",
+      "contentHash": "def949a7466d62bdf50355b1ce46e23087be0c2ded7fa7f0e6a00ea93e6d8d87",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems.md": {
+      "filePath": "docs/architecture/subsystems.md",
+      "contentHash": "9dd6a7b10d9c052824568ff6ca99ea76063a941c5c7c4d11ea64c77c6abeb6c6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 100,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/annotation-spine/components.md": {
+      "filePath": "docs/architecture/subsystems/annotation-spine/components.md",
+      "contentHash": "bbd1d2fcfe5e3a7b6c5080bfc4b23d265ab0e27cb4e0711113f57ad1835ad060",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 92,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/annotation-spine/contracts.md": {
+      "filePath": "docs/architecture/subsystems/annotation-spine/contracts.md",
+      "contentHash": "16b698e6ad0667c5fd3b9501b9ca85e2f51cadf9612ab56925f92ea5b47aad6a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 82,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/publish/components.md": {
+      "filePath": "docs/architecture/subsystems/publish/components.md",
+      "contentHash": "18be60c28e52b27909fb53eb10396ca11db6b3c79450a0cc0fb5a91af04508f7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 62,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/publish/contracts.md": {
+      "filePath": "docs/architecture/subsystems/publish/contracts.md",
+      "contentHash": "48f4be48fa6fbdf00f8305d8216f265ffc591ae9abe988b5257c871e19dee637",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/rendering/components.md": {
+      "filePath": "docs/architecture/subsystems/rendering/components.md",
+      "contentHash": "1ac55d63336a008b48bc529543673ec68e15f36c437c4a5ac62c5a1ba849efb8",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 105,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/rendering/contracts.md": {
+      "filePath": "docs/architecture/subsystems/rendering/contracts.md",
+      "contentHash": "5c03e637d142f14364a1ae6d416122bbbd1c743f593c81dd0d28c427840a3569",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 57,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/storage/components.md": {
+      "filePath": "docs/architecture/subsystems/storage/components.md",
+      "contentHash": "b2698b4869ec41ab644837a595c5b53a19a2a021f79300dfcc4af5b280715f03",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 54,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/storage/contracts.md": {
+      "filePath": "docs/architecture/subsystems/storage/contracts.md",
+      "contentHash": "daf6314d6d7d5ae46cf780652b909903482f22ee6d46ffeffad92edfceea40d0",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 84,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/studio/components.md": {
+      "filePath": "docs/architecture/subsystems/studio/components.md",
+      "contentHash": "9f1338be2ef8470d806b1dc1e356e8706ebd75bf86efde26b7e543e51dd1ecb2",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 77,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/studio/contracts.md": {
+      "filePath": "docs/architecture/subsystems/studio/contracts.md",
+      "contentHash": "f0a60b4da5b83eb3aa6a4b079b83867a78f327d41e0bc5b90bb903f0a4da4011",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 83,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/viewer/components.md": {
+      "filePath": "docs/architecture/subsystems/viewer/components.md",
+      "contentHash": "abbabacf2e972a7eab5eed3bdf707d0b502576fda76f8ae9161cfbf7c1b0bbc1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 83,
+      "hasStructuralAnalysis": true
+    },
+    "docs/architecture/subsystems/viewer/contracts.md": {
+      "filePath": "docs/architecture/subsystems/viewer/contracts.md",
+      "contentHash": "a7c4eed1f7363d0f2060b2d6fbc093c579a913220640f039101a1e959bc057da",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 87,
+      "hasStructuralAnalysis": true
+    },
     "docs/bundle-size.json": {
       "filePath": "docs/bundle-size.json",
       "contentHash": "2e5930b053132bab2a9371dea33b1281dc7a917c0f5c5dfaab4be7f5dac77c00",
@@ -1069,6 +2216,56 @@
       "totalLines": 23,
       "hasStructuralAnalysis": true
     },
+    "docs/decisions/archie-av.md": {
+      "filePath": "docs/decisions/archie-av.md",
+      "contentHash": "4c68c28b6f2cdaff513175437e448416a0aabae1c81410742904f1206766bc47",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 16,
+      "hasStructuralAnalysis": true
+    },
+    "docs/decisions/archie-linkability.md": {
+      "filePath": "docs/decisions/archie-linkability.md",
+      "contentHash": "5f75a5e3bc52f89a3c391a28e38cb8e3240fb552a7d6612697930c17e08196d1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
+    "docs/decisions/archie-narrative.md": {
+      "filePath": "docs/decisions/archie-narrative.md",
+      "contentHash": "ffc1a9a585454ed61515a1b736d1f605ae67c77fbc64a93ec7da6d3dea96ae89",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
+    "docs/decisions/archie-persistence.md": {
+      "filePath": "docs/decisions/archie-persistence.md",
+      "contentHash": "f47b532482f9d99aedbdbb1a1682dbee1ab290bdd02733b690ba7d81f5a8d378",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 16,
+      "hasStructuralAnalysis": true
+    },
+    "docs/decisions/archie-ux.md": {
+      "filePath": "docs/decisions/archie-ux.md",
+      "contentHash": "e937727972fb88da6ccc77188b95fd81a055e7e7f3de65ed14425b83dd56de0e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
     "docs/decisions/archie.md": {
       "filePath": "docs/decisions/archie.md",
       "contentHash": "4f2697bdb8f01b6b6790e772f4ac86f27e383aac301293f9e0a4442821e04b4c",
@@ -1077,6 +2274,26 @@
       "imports": [],
       "exports": [],
       "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    "docs/IMPLEMENTATION-STRATEGY.md": {
+      "filePath": "docs/IMPLEMENTATION-STRATEGY.md",
+      "contentHash": "a9a215bf0d831adc2b40ab03ed3885113d0576b92d950e8aa21275c5ff7165dd",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 306,
+      "hasStructuralAnalysis": true
+    },
+    "docs/plans/LARGE-MEDIA-MEMORY-CEILING.md": {
+      "filePath": "docs/plans/LARGE-MEDIA-MEMORY-CEILING.md",
+      "contentHash": "88d1f48daac58de883e54f6026cb94e9d0833f7f7768a4ef3770a90bd143f310",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 88,
       "hasStructuralAnalysis": true
     },
     "docs/plans/PHASE-0.md": {
@@ -1109,6 +2326,26 @@
       "totalLines": 157,
       "hasStructuralAnalysis": true
     },
+    "docs/PRE-P3-UX-AUDIT.md": {
+      "filePath": "docs/PRE-P3-UX-AUDIT.md",
+      "contentHash": "b9643bbed6f216dba2b3f036b90ee5015c5783e1d3cee4a3f8af9cda1caa261b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 112,
+      "hasStructuralAnalysis": true
+    },
+    "docs/README.md": {
+      "filePath": "docs/README.md",
+      "contentHash": "3a176d3eff012edd2f0d063a564999f4492b4cb7cda1a18d6a1075c50cedee17",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 51,
+      "hasStructuralAnalysis": true
+    },
     "docs/spikes/0001-anvil-render-core-extraction.md": {
       "filePath": "docs/spikes/0001-anvil-render-core-extraction.md",
       "contentHash": "1fc9f5a9193b439ef20673d13c01610ccfd686bbbd1415059da89347de13057e",
@@ -1117,6 +2354,16 @@
       "imports": [],
       "exports": [],
       "totalLines": 86,
+      "hasStructuralAnalysis": true
+    },
+    "HANDOFF.md": {
+      "filePath": "HANDOFF.md",
+      "contentHash": "fddd10f1836ece4056b6e3b4caa3e1da8a85584e038ce0b8a14e04b26ad81901",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1076,
       "hasStructuralAnalysis": true
     },
     "package.json": {
@@ -1139,9 +2386,121 @@
       "totalLines": 21,
       "hasStructuralAnalysis": true
     },
+    "packages/render-core/src/av/time.test.ts": {
+      "filePath": "packages/render-core/src/av/time.test.ts",
+      "contentHash": "d8757b0528ae2f2fe9e155c1211be8476c65b2f21cf2b1dfc0b7517ee770810e",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./time.js",
+          "specifiers": [
+            "parseTimeFragment",
+            "activeNoteIndex",
+            "timeFragmentValue",
+            "TimeRange"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/av/time.ts": {
+      "filePath": "packages/render-core/src/av/time.ts",
+      "contentHash": "38a87bbc26c817bcd2525457bc48ecbcb3c296921babc4f2910d03e9426cb31a",
+      "functions": [
+        {
+          "name": "timeFragmentValue",
+          "params": [
+            "start",
+            "end"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "parseTimeFragment",
+          "params": [
+            "value"
+          ],
+          "returnType": "TimeRange | null",
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "activeNoteIndex",
+          "params": [
+            "ranges",
+            "t"
+          ],
+          "returnType": "number",
+          "exported": true,
+          "lineCount": 13
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "timeFragmentValue",
+        "parseTimeFragment",
+        "activeNoteIndex"
+      ],
+      "totalLines": 72,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/av/transcript.test.ts": {
+      "filePath": "packages/render-core/src/av/transcript.test.ts",
+      "contentHash": "dfda336936973be830a793595d95a427406ecde8d191c6ce34acefd3a387c30e",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./transcript.js",
+          "specifiers": [
+            "parseVtt",
+            "parseSrt",
+            "cuesToNotes",
+            "importTranscript"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../spine/heads.js",
+          "specifiers": [
+            "projectHeads"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 74,
+      "hasStructuralAnalysis": true
+    },
     "packages/render-core/src/av/transcript.ts": {
       "filePath": "packages/render-core/src/av/transcript.ts",
-      "contentHash": "fecaff94126a5c7db375ed3531c2a5e0f4fefb8f11b96ac89810dda73d0e7b1b",
+      "contentHash": "cd57297bb3a81a566d93e5c1afbef751338d17fa15f6224727ae4ee1c5cfa731",
       "functions": [
         {
           "name": "parseTimestamp",
@@ -1180,16 +2539,6 @@
           "lineCount": 3
         },
         {
-          "name": "timeFragment",
-          "params": [
-            "start",
-            "end"
-          ],
-          "returnType": "string",
-          "exported": false,
-          "lineCount": 3
-        },
-        {
           "name": "cuesToNotes",
           "params": [
             "cues",
@@ -1220,6 +2569,12 @@
           ]
         },
         {
+          "source": "./time.js",
+          "specifiers": [
+            "timeFragmentValue"
+          ]
+        },
+        {
           "source": "../wadm/brand.js",
           "specifiers": [
             "ClientId"
@@ -1240,7 +2595,7 @@
         "cuesToNotes",
         "importTranscript"
       ],
-      "totalLines": 106,
+      "totalLines": 103,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/exif/orientation.test.ts": {
@@ -1312,6 +2667,234 @@
         "isOrientationNoop"
       ],
       "totalLines": 47,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/exif/read.test.ts": {
+      "filePath": "packages/render-core/src/exif/read.test.ts",
+      "contentHash": "f098fde6864133a51f8d9394255e91ae75e339eb27bf87390bc957f1ef9b612c",
+      "functions": [
+        {
+          "name": "buildExifJpeg",
+          "params": [
+            "orientation",
+            "opts"
+          ],
+          "returnType": "ArrayBuffer",
+          "exported": false,
+          "lineCount": 21
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "readFileSync"
+          ]
+        },
+        {
+          "source": "./read.js",
+          "specifiers": [
+            "readExifOrientation"
+          ]
+        },
+        {
+          "source": "./orientation.js",
+          "specifiers": [
+            "orientationTransform",
+            "normalizeDimensions",
+            "isOrientationNoop"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 81,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/exif/read.ts": {
+      "filePath": "packages/render-core/src/exif/read.ts",
+      "contentHash": "c065d675fddba39336845051a69e600c5a875faaf917841480e547f3087b8548",
+      "functions": [
+        {
+          "name": "readExifOrientation",
+          "params": [
+            "buf"
+          ],
+          "returnType": "number",
+          "exported": true,
+          "lineCount": 29
+        },
+        {
+          "name": "hasExifSignature",
+          "params": [
+            "v",
+            "at"
+          ],
+          "returnType": "boolean",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "parseTiffOrientation",
+          "params": [
+            "v",
+            "tiff",
+            "end"
+          ],
+          "returnType": "number | null",
+          "exported": false,
+          "lineCount": 19
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "readExifOrientation"
+      ],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/fs/binding.test.ts": {
+      "filePath": "packages/render-core/src/fs/binding.test.ts",
+      "contentHash": "1c1c1cd80f961fbe8edaafe6aa136c599f0b0f39b280947519f1eb281143c3f2",
+      "functions": [
+        {
+          "name": "r",
+          "params": [
+            "id",
+            "lastOpened",
+            "kind"
+          ],
+          "returnType": "RecentProject",
+          "exported": false,
+          "lineCount": 2
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./binding.js",
+          "specifiers": [
+            "bindingLabel",
+            "recentFromBinding",
+            "addRecent",
+            "touchRecent",
+            "removeRecent",
+            "serializeRecents",
+            "parseRecents",
+            "RECENTS_CAP",
+            "Binding",
+            "RecentProject"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 99,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/fs/binding.ts": {
+      "filePath": "packages/render-core/src/fs/binding.ts",
+      "contentHash": "1421f847be846dc0b05998101e12d2edb6d634f254cc25ccd89e0be255c2b3ec",
+      "functions": [
+        {
+          "name": "bindingLabel",
+          "params": [
+            "b"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "recentFromBinding",
+          "params": [
+            "b",
+            "now"
+          ],
+          "returnType": "RecentProject | null",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "addRecent",
+          "params": [
+            "list",
+            "entry",
+            "cap"
+          ],
+          "returnType": "RecentProject[]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "touchRecent",
+          "params": [
+            "list",
+            "id",
+            "now"
+          ],
+          "returnType": "RecentProject[]",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "removeRecent",
+          "params": [
+            "list",
+            "id"
+          ],
+          "returnType": "RecentProject[]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "serializeRecents",
+          "params": [
+            "list"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "parseRecents",
+          "params": [
+            "raw"
+          ],
+          "returnType": "RecentProject[]",
+          "exported": true,
+          "lineCount": 24
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "RECENTS_CAP",
+        "bindingLabel",
+        "recentFromBinding",
+        "addRecent",
+        "touchRecent",
+        "removeRecent",
+        "serializeRecents",
+        "parseRecents"
+      ],
+      "totalLines": 110,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/fs/conformance.test.ts": {
@@ -1853,6 +3436,538 @@
       "totalLines": 94,
       "hasStructuralAnalysis": true
     },
+    "packages/render-core/src/iiif/collection.ts": {
+      "filePath": "packages/render-core/src/iiif/collection.ts",
+      "contentHash": "2c435640339090e79947b32353bf1853f70583fff15788740b39cb8fffd5b48e",
+      "functions": [
+        {
+          "name": "toCollection",
+          "params": [
+            "library",
+            "opts"
+          ],
+          "returnType": "IIIFCollection",
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library"
+          ]
+        },
+        {
+          "source": "./presentation.js",
+          "specifiers": [
+            "IIIF_PRESENTATION_CONTEXT",
+            "langMap",
+            "IIIFCollection",
+            "IIIFCollectionItem"
+          ]
+        }
+      ],
+      "exports": [
+        "toCollection"
+      ],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/iiif/exhibits.ts": {
+      "filePath": "packages/render-core/src/iiif/exhibits.ts",
+      "contentHash": "ed25e71ef54557c75c9f15acd10eba0c9b5b7bd007da5921c5a9cd809f0c392c",
+      "functions": [
+        {
+          "name": "toExhibitsJson",
+          "params": [
+            "library"
+          ],
+          "returnType": "ExhibitsJson",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "shouldRenderGallery",
+          "params": [
+            "library"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library"
+          ]
+        }
+      ],
+      "exports": [
+        "toExhibitsJson",
+        "shouldRenderGallery"
+      ],
+      "totalLines": 54,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/iiif/gallery.test.ts": {
+      "filePath": "packages/render-core/src/iiif/gallery.test.ts",
+      "contentHash": "42412438277950eb4c51e8a393d36bc8ef63e6596538d3ade66d25246124387d",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./collection.js",
+          "specifiers": [
+            "toCollection"
+          ]
+        },
+        {
+          "source": "./exhibits.js",
+          "specifiers": [
+            "toExhibitsJson",
+            "shouldRenderGallery"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 58,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/iiif/manifest.test.ts": {
+      "filePath": "packages/render-core/src/iiif/manifest.test.ts",
+      "contentHash": "e5073c23adcef951c1359fecf5977a4e814e3ce350de6ab2698a196c76f99a0c",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./manifest.js",
+          "specifiers": [
+            "toManifest",
+            "sectionsFromManifest"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Exhibit"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 102,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/iiif/manifest.ts": {
+      "filePath": "packages/render-core/src/iiif/manifest.ts",
+      "contentHash": "c711293d3d43eecc24a68978f02bcb6ccd6c419d11436a0bba7991de717eef3c",
+      "functions": [
+        {
+          "name": "unLang",
+          "params": [
+            "m"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "bodyType",
+          "params": [
+            "media"
+          ],
+          "returnType": "IIIFContentResource[\"type\"]",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "toCanvas",
+          "params": [
+            "manifestBase",
+            "obj"
+          ],
+          "returnType": "IIIFCanvas",
+          "exported": false,
+          "lineCount": 28
+        },
+        {
+          "name": "objIdFromCanvasId",
+          "params": [
+            "canvasId"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "mediaFromBodyType",
+          "params": [
+            "t"
+          ],
+          "returnType": "MediaType",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "objectsFromManifest",
+          "params": [
+            "manifest"
+          ],
+          "returnType": "AObject[]",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "toRanges",
+          "params": [
+            "exhibit",
+            "opts"
+          ],
+          "returnType": "IIIFRange[]",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "sectionsFromManifest",
+          "params": [
+            "manifest"
+          ],
+          "returnType": "Section[]",
+          "exported": true,
+          "lineCount": 18
+        },
+        {
+          "name": "toManifest",
+          "params": [
+            "exhibit",
+            "opts"
+          ],
+          "returnType": "IIIFManifest",
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "AObject",
+            "Exhibit",
+            "MediaType",
+            "Section"
+          ]
+        },
+        {
+          "source": "./presentation.js",
+          "specifiers": [
+            "IIIF_PRESENTATION_CONTEXT",
+            "langMap",
+            "IIIFCanvas",
+            "IIIFContentResource",
+            "IIIFManifest",
+            "IIIFRange",
+            "LangMap"
+          ]
+        }
+      ],
+      "exports": [
+        "objectsFromManifest",
+        "toRanges",
+        "sectionsFromManifest",
+        "toManifest"
+      ],
+      "totalLines": 144,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/iiif/presentation.ts": {
+      "filePath": "packages/render-core/src/iiif/presentation.ts",
+      "contentHash": "4bd026a5fa8692a4a87ce2faa70d710f720422531b95ffaa1e9ab4295cdb74b4",
+      "functions": [
+        {
+          "name": "langMap",
+          "params": [
+            "value"
+          ],
+          "returnType": "LangMap",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "IIIF_PRESENTATION_CONTEXT",
+        "langMap"
+      ],
+      "totalLines": 88,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/iiif/resolve.test.ts": {
+      "filePath": "packages/render-core/src/iiif/resolve.test.ts",
+      "contentHash": "f384b7a3796e09162b400025ed6e872a49c4c26acd042b53a0c80735fc364ff9",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./resolve.js",
+          "specifiers": [
+            "resolveTileSource",
+            "isIiifImageInfo"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 43,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/iiif/resolve.ts": {
+      "filePath": "packages/render-core/src/iiif/resolve.ts",
+      "contentHash": "b5448f03b09c810ba0d18aac0773ad6f96923c3b3c35d8b2cf7a864a9e08ef97",
+      "functions": [
+        {
+          "name": "resolveTileSource",
+          "params": [
+            "source"
+          ],
+          "returnType": "TileSource",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "isIiifImageInfo",
+          "params": [
+            "value"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "resolveTileSource",
+        "isIiifImageInfo"
+      ],
+      "totalLines": 35,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/index.test.ts": {
+      "filePath": "packages/render-core/src/index.test.ts",
+      "contentHash": "97ed758e691c89862447b4c8b2bcf59943344c2bc75093d920fe4b25376465bb",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./index.js",
+          "specifiers": [
+            "RENDER_CORE"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/index.ts": {
+      "filePath": "packages/render-core/src/index.ts",
+      "contentHash": "3618f8736569417bcb7c3a41228676752808cdfeb765f25bfcfd86ad12d9b1f6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "RENDER_CORE"
+      ],
+      "totalLines": 61,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/link/link.test.ts": {
+      "filePath": "packages/render-core/src/link/link.test.ts",
+      "contentHash": "6aeff4961378d568da8a9f36594a06f612effe4c83ce2feb296b2773713da6d9",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./link.js",
+          "specifiers": [
+            "buildLinkIndex",
+            "resolveLink",
+            "validateLink",
+            "encodeLinkRef",
+            "parseLinkRef",
+            "rewriteArchieLinks",
+            "LinkTarget"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 109,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/link/link.ts": {
+      "filePath": "packages/render-core/src/link/link.ts",
+      "contentHash": "157b870e34cc1a2cd14c0286f46f5640f01085a0e8a9f0f5743e9316e840d008",
+      "functions": [
+        {
+          "name": "buildLinkIndex",
+          "params": [
+            "logsByExhibit"
+          ],
+          "returnType": "Map<LogicalId, IndexEntry>",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "resolveLink",
+          "params": [
+            "target",
+            "opts"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "validateLink",
+          "params": [
+            "target",
+            "index"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "encodeLinkRef",
+          "params": [
+            "target"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "parseLinkRef",
+          "params": [
+            "uri"
+          ],
+          "returnType": "LinkTarget | null",
+          "exported": true,
+          "lineCount": 24
+        },
+        {
+          "name": "rewriteArchieLinks",
+          "params": [
+            "md",
+            "opts"
+          ],
+          "returnType": "RewriteResult",
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../url/deeplink.js",
+          "specifiers": [
+            "buildNoteDeepLink",
+            "parseNoteDeepLink"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "LogicalId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog"
+          ]
+        }
+      ],
+      "exports": [
+        "buildLinkIndex",
+        "resolveLink",
+        "validateLink",
+        "encodeLinkRef",
+        "parseLinkRef",
+        "rewriteArchieLinks"
+      ],
+      "totalLines": 149,
+      "hasStructuralAnalysis": true
+    },
     "packages/render-core/src/migrate/migrate.test.ts": {
       "filePath": "packages/render-core/src/migrate/migrate.test.ts",
       "contentHash": "3a2ecd087dd5e7a02ecb723c06b87ae4adc97a48b683725c85035b86b8d3822f",
@@ -2006,14 +4121,131 @@
       "totalLines": 25,
       "hasStructuralAnalysis": true
     },
-    "packages/render-core/src/model/model.ts": {
-      "filePath": "packages/render-core/src/model/model.ts",
-      "contentHash": "a7b58f8026b47322d32921011e81c7539bd9fc4ff38a0fb692512c1c93b7c368",
+    "packages/render-core/src/model/model.test.ts": {
+      "filePath": "packages/render-core/src/model/model.test.ts",
+      "contentHash": "952447ff6458ff8d56c346a68601a7aadccbd48dca66475a3d0a86b35d7b9619",
       "functions": [],
       "classes": [],
-      "imports": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./model.js",
+          "specifiers": [
+            "mediaTypeFromSource",
+            "readingFamily",
+            "isValidMode"
+          ]
+        }
+      ],
       "exports": [],
-      "totalLines": 69,
+      "totalLines": 43,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/model/model.ts": {
+      "filePath": "packages/render-core/src/model/model.ts",
+      "contentHash": "46381e13f8bcf764cbb6c22d2dbd8781adf2581d20f7c4dc602fdc938c5a7f53",
+      "functions": [
+        {
+          "name": "mediaTypeFromSource",
+          "params": [
+            "source",
+            "format"
+          ],
+          "returnType": "MediaType",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "readingFamily",
+          "params": [
+            "layout"
+          ],
+          "returnType": "ReadingFamily",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "isValidMode",
+          "params": [
+            "_layout",
+            "mode"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "mediaTypeFromSource",
+        "readingFamily",
+        "isValidMode"
+      ],
+      "totalLines": 119,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/publish/ghpages.test.ts": {
+      "filePath": "packages/render-core/src/publish/ghpages.test.ts",
+      "contentHash": "c0ffd204bed3b849386bf3a0677134bed9eab924aff8819110f7be522e899f3e",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./ghpages.js",
+          "specifiers": [
+            "collectFiles",
+            "buildGitTree"
+          ]
+        },
+        {
+          "source": "./site.js",
+          "specifiers": [
+            "publishLibrary"
+          ]
+        },
+        {
+          "source": "../fs/memory.js",
+          "specifiers": [
+            "MemoryFilesystem"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 64,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/publish/ghpages.ts": {
@@ -2074,6 +4306,1477 @@
         "publishToGitHub"
       ],
       "totalLines": 102,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/publish/interop.test.ts": {
+      "filePath": "packages/render-core/src/publish/interop.test.ts",
+      "contentHash": "3948ab955782ad8bbff6abd6908ab8e9189870d0a2add0b2162e0c6e5822dfed",
+      "functions": [
+        {
+          "name": "buildLog",
+          "params": [],
+          "returnType": "AnnotationLog",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "fetchJson",
+          "params": [
+            "root",
+            "url"
+          ],
+          "returnType": "Promise<Record<string, unknown>>",
+          "exported": false,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./site.js",
+          "specifiers": [
+            "libraryToZip"
+          ]
+        },
+        {
+          "source": "../fs/zip.js",
+          "specifiers": [
+            "ZipFilesystem"
+          ]
+        },
+        {
+          "source": "../fs/seam.js",
+          "specifiers": [
+            "FsDirectory"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 84,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/publish/site.test.ts": {
+      "filePath": "packages/render-core/src/publish/site.test.ts",
+      "contentHash": "6675124055c43ddb74aea2acdd75271834845d4cfdf27f295f8a02d37e473cb4",
+      "functions": [
+        {
+          "name": "getLog",
+          "params": [
+            "id"
+          ],
+          "returnType": "AnnotationLog",
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./site.js",
+          "specifiers": [
+            "publishLibrary",
+            "libraryToZip",
+            "loadLibrary"
+          ]
+        },
+        {
+          "source": "../fs/zip.js",
+          "specifiers": [
+            "ZipFilesystem"
+          ]
+        },
+        {
+          "source": "../fs/memory.js",
+          "specifiers": [
+            "MemoryFilesystem"
+          ]
+        },
+        {
+          "source": "../spine/persist.js",
+          "specifiers": [
+            "readAnnotations"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../link/link.js",
+          "specifiers": [
+            "encodeLinkRef"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 187,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/publish/site.ts": {
+      "filePath": "packages/render-core/src/publish/site.ts",
+      "contentHash": "cab647edc5eff86d7d4bc870c81c5270431ad856c2c04ee979d05e0643ed2174",
+      "functions": [
+        {
+          "name": "rewriteHeadBodies",
+          "params": [
+            "rec",
+            "exhibitSlug",
+            "rw",
+            "sink"
+          ],
+          "returnType": "AnnotationRecord",
+          "exported": false,
+          "lineCount": 16
+        },
+        {
+          "name": "writeJson",
+          "params": [
+            "dir",
+            "name",
+            "data"
+          ],
+          "returnType": "Promise<void>",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "publishLibrary",
+          "params": [
+            "fs",
+            "library",
+            "getLog",
+            "opts"
+          ],
+          "returnType": "Promise<PublishResult>",
+          "exported": true,
+          "lineCount": 90
+        },
+        {
+          "name": "libraryToZip",
+          "params": [
+            "library",
+            "getLog",
+            "opts"
+          ],
+          "returnType": "Promise<{ zip: Uint8Array; brokenLinks: BrokenLink[] }>",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "readJson",
+          "params": [
+            "dir",
+            "name"
+          ],
+          "returnType": "Promise<T>",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "loadLibrary",
+          "params": [
+            "fs"
+          ],
+          "returnType": "Promise<LoadedLibrary>",
+          "exported": true,
+          "lineCount": 27
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../fs/seam.js",
+          "specifiers": [
+            "Filesystem",
+            "FsDirectory"
+          ]
+        },
+        {
+          "source": "../fs/zip.js",
+          "specifiers": [
+            "ZipFilesystem"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "AnnotationRecord"
+          ]
+        },
+        {
+          "source": "../link/link.js",
+          "specifiers": [
+            "buildLinkIndex",
+            "resolveLink",
+            "validateLink",
+            "rewriteArchieLinks",
+            "LinkTarget"
+          ]
+        },
+        {
+          "source": "../iiif/collection.js",
+          "specifiers": [
+            "toCollection"
+          ]
+        },
+        {
+          "source": "../iiif/exhibits.js",
+          "specifiers": [
+            "toExhibitsJson",
+            "ExhibitsJson"
+          ]
+        },
+        {
+          "source": "../iiif/manifest.js",
+          "specifiers": [
+            "toManifest",
+            "objectsFromManifest"
+          ]
+        },
+        {
+          "source": "../iiif/presentation.js",
+          "specifiers": [
+            "IIIFManifest"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Exhibit"
+          ]
+        },
+        {
+          "source": "../spine/persist.js",
+          "specifiers": [
+            "readAnnotations"
+          ]
+        },
+        {
+          "source": "../spine/serialize.js",
+          "specifiers": [
+            "toHistory"
+          ]
+        },
+        {
+          "source": "../spine/heads.js",
+          "specifiers": [
+            "projectHeads"
+          ]
+        },
+        {
+          "source": "../spine/serialize.js",
+          "specifiers": [
+            "headsPageFromRecords",
+            "citationIdMap",
+            "targetSource"
+          ]
+        },
+        {
+          "source": "../migrate/migrate.js",
+          "specifiers": [
+            "stamp"
+          ]
+        }
+      ],
+      "exports": [
+        "publishLibrary",
+        "libraryToZip",
+        "loadLibrary"
+      ],
+      "totalLines": 242,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/query/filter.test.ts": {
+      "filePath": "packages/render-core/src/query/filter.test.ts",
+      "contentHash": "999e361e0f84e6054749b49894b89cd19c6980e39011b6f5eccb40d1f12d7e4e",
+      "functions": [
+        {
+          "name": "note",
+          "params": [
+            "opts"
+          ],
+          "exported": false,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./filter.js",
+          "specifiers": [
+            "tagsOf",
+            "layersOf",
+            "filterByLayer",
+            "filterByTag",
+            "allLayers",
+            "allTags"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew",
+            "appendEdit"
+          ]
+        },
+        {
+          "source": "../spine/serialize.js",
+          "specifiers": [
+            "toHistory",
+            "toHeadsPage"
+          ]
+        },
+        {
+          "source": "../spine/deserialize.js",
+          "specifiers": [
+            "fromHistory"
+          ]
+        },
+        {
+          "source": "../spine/heads.js",
+          "specifiers": [
+            "projectHeads"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationRecord"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 68,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/query/filter.ts": {
+      "filePath": "packages/render-core/src/query/filter.ts",
+      "contentHash": "bbc79ef5f856134ca035c6567b36a6a92f334f246393d8aba5ef94f126776b79",
+      "functions": [
+        {
+          "name": "bodiesOf",
+          "params": [
+            "record"
+          ],
+          "returnType": "W3CBody[]",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "tagsOf",
+          "params": [
+            "record"
+          ],
+          "returnType": "string[]",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "layersOf",
+          "params": [
+            "record"
+          ],
+          "returnType": "string[]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "filterByLayer",
+          "params": [
+            "records",
+            "layerId"
+          ],
+          "returnType": "AnnotationRecord[]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "filterByTag",
+          "params": [
+            "records",
+            "tag"
+          ],
+          "returnType": "AnnotationRecord[]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "allLayers",
+          "params": [
+            "records"
+          ],
+          "returnType": "string[]",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "allTags",
+          "params": [
+            "records"
+          ],
+          "returnType": "string[]",
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationRecord",
+            "W3CBody"
+          ]
+        }
+      ],
+      "exports": [
+        "tagsOf",
+        "layersOf",
+        "filterByLayer",
+        "filterByTag",
+        "allLayers",
+        "allTags"
+      ],
+      "totalLines": 49,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/session/session.test.ts": {
+      "filePath": "packages/render-core/src/session/session.test.ts",
+      "contentHash": "e3d853bc67595ce79c09a4a540dc342dc5ea2405e129fd68fea650b6e1814c3d",
+      "functions": [
+        {
+          "name": "rect",
+          "params": [
+            "x",
+            "y",
+            "w",
+            "h"
+          ],
+          "returnType": "W3CSpecificResource",
+          "exported": false,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./session.js",
+          "specifiers": [
+            "AnnotationSession"
+          ]
+        },
+        {
+          "source": "../fs/memory.js",
+          "specifiers": [
+            "MemoryFilesystem"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId",
+            "mintRevId",
+            "LogicalId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "W3CSpecificResource"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 90,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/session/session.ts": {
+      "filePath": "packages/render-core/src/session/session.ts",
+      "contentHash": "da5382e3ba0bd17ae8272e18847149e7109fa8f0b4c86b12f2ac9ea87069e176",
+      "functions": [],
+      "classes": [
+        {
+          "name": "AnnotationSession",
+          "methods": [
+            "constructor",
+            "load",
+            "entries",
+            "createNote",
+            "editNote",
+            "deleteNote",
+            "notes",
+            "importChanges",
+            "conflicts",
+            "conflictHeads",
+            "resolve",
+            "workingAnnotations",
+            "save"
+          ],
+          "properties": [
+            "log"
+          ],
+          "exported": true,
+          "lineCount": 107
+        }
+      ],
+      "imports": [
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew",
+            "appendEdit",
+            "appendDelete"
+          ]
+        },
+        {
+          "source": "../spine/heads.js",
+          "specifiers": [
+            "projectHeads"
+          ]
+        },
+        {
+          "source": "../spine/serialize.js",
+          "specifiers": [
+            "recordToAnnotation"
+          ]
+        },
+        {
+          "source": "../spine/persist.js",
+          "specifiers": [
+            "writeAnnotations",
+            "readAnnotations"
+          ]
+        },
+        {
+          "source": "../spine/serialize.js",
+          "specifiers": [
+            "SerializeOptions"
+          ]
+        },
+        {
+          "source": "../fs/seam.js",
+          "specifiers": [
+            "FsDirectory"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "ARCHIE_LAYERS"
+          ]
+        },
+        {
+          "source": "../spine/merge.js",
+          "specifiers": [
+            "mergeLogs",
+            "headsOf",
+            "resolveConflict"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "AnnotationRecord",
+            "W3CAnnotation",
+            "W3CBody",
+            "W3CTarget"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "ClientId",
+            "LogicalId"
+          ]
+        }
+      ],
+      "exports": [
+        "AnnotationSession"
+      ],
+      "totalLines": 139,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/deserialize.test.ts": {
+      "filePath": "packages/render-core/src/spine/deserialize.test.ts",
+      "contentHash": "e9959e3422ab3aa868760926bfb6cd80d0d1bec844c8dac5d47d75002d3b7b54",
+      "functions": [
+        {
+          "name": "sortByRev",
+          "params": [
+            "log"
+          ],
+          "returnType": "AnnotationRecord[]",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "richLog",
+          "params": [],
+          "returnType": "AnnotationLog",
+          "exported": false,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./log.js",
+          "specifiers": [
+            "appendNew",
+            "appendEdit",
+            "appendDelete",
+            "append"
+          ]
+        },
+        {
+          "source": "./serialize.js",
+          "specifiers": [
+            "toHistory"
+          ]
+        },
+        {
+          "source": "./deserialize.js",
+          "specifiers": [
+            "fromHistory",
+            "fromHistoryPage"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId",
+            "mintRevId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "AnnotationRecord"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/deserialize.ts": {
+      "filePath": "packages/render-core/src/spine/deserialize.ts",
+      "contentHash": "5b65773f94f1de722332f280e7cbff48193ffe527056cca394ad9d3e41adc850",
+      "functions": [
+        {
+          "name": "asString",
+          "params": [
+            "v"
+          ],
+          "returnType": "string | undefined",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "recordFromHistoryAnnotation",
+          "params": [
+            "ann"
+          ],
+          "returnType": "AnnotationRecord | null",
+          "exported": true,
+          "lineCount": 32
+        },
+        {
+          "name": "fromHistoryPage",
+          "params": [
+            "page"
+          ],
+          "returnType": "AnnotationRecord[]",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "fromHistory",
+          "params": [
+            "pages"
+          ],
+          "returnType": "AnnotationLog",
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asLogicalId",
+            "asRevId",
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "ARCHIE_LOGICAL_ID",
+            "ARCHIE_LAYERS",
+            "ARCHIE_REV",
+            "ARCHIE_PARENT",
+            "ARCHIE_MERGE_PARENTS",
+            "ARCHIE_VERSION",
+            "ARCHIE_LAST_EDITOR",
+            "ARCHIE_DELETED"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "AnnotationRecord",
+            "W3CAnnotation",
+            "W3CAnnotationPage",
+            "W3CBody",
+            "W3CTarget"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "RevId"
+          ]
+        }
+      ],
+      "exports": [
+        "recordFromHistoryAnnotation",
+        "fromHistoryPage",
+        "fromHistory"
+      ],
+      "totalLines": 78,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/heads.test.ts": {
+      "filePath": "packages/render-core/src/spine/heads.test.ts",
+      "contentHash": "e2d9b8c3159a1a419a80adeda2e48ac5201d9f51a4587277d6a49133bc108870",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./log.js",
+          "specifiers": [
+            "appendNew",
+            "appendEdit",
+            "appendDelete",
+            "append"
+          ]
+        },
+        {
+          "source": "./heads.js",
+          "specifiers": [
+            "projectHeads"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId",
+            "mintRevId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationRecord"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/heads.ts": {
+      "filePath": "packages/render-core/src/spine/heads.ts",
+      "contentHash": "c748215c0d12a17d5c3b0cebe8d36546aebae88b0b662322f28a31b0e1e59412",
+      "functions": [
+        {
+          "name": "projectHeads",
+          "params": [
+            "log"
+          ],
+          "returnType": "AnnotationRecord[]",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "cmp",
+          "params": [
+            "a",
+            "b"
+          ],
+          "returnType": "number",
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "LogicalId",
+            "RevId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "AnnotationRecord"
+          ]
+        },
+        {
+          "source": "./merge.js",
+          "specifiers": [
+            "headsOf"
+          ]
+        }
+      ],
+      "exports": [
+        "projectHeads"
+      ],
+      "totalLines": 34,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/index.ts": {
+      "filePath": "packages/render-core/src/spine/index.ts",
+      "contentHash": "722613c41f9dd8bfc3a0d2f7a7aef4848f829555f808ba8d1968c52333bbe3ba",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/interop.test.ts": {
+      "filePath": "packages/render-core/src/spine/interop.test.ts",
+      "contentHash": "f43705d307cc00e956a6b090a3a268c2077d9d9a1bacd62f8e33979e891bfa46",
+      "functions": [
+        {
+          "name": "pureWadmConsumer",
+          "params": [
+            "headsPage"
+          ],
+          "returnType": "Array<Record<string, unknown>>",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "note",
+          "params": [
+            "target"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./log.js",
+          "specifiers": [
+            "appendNew",
+            "appendEdit",
+            "appendDelete",
+            "append"
+          ]
+        },
+        {
+          "source": "./serialize.js",
+          "specifiers": [
+            "toHeadsPage",
+            "toHistory"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId",
+            "mintRevId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "W3CAnnotation",
+            "W3CAnnotationPage",
+            "AnnotationRecord"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 116,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/log.test.ts": {
+      "filePath": "packages/render-core/src/spine/log.test.ts",
+      "contentHash": "8a5012142de6ff8a16e934caa1f06f4e06a50ae30e6670836e4a8b7ec08878a2",
+      "functions": [
+        {
+          "name": "freshNote",
+          "params": [],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./log.js",
+          "specifiers": [
+            "append",
+            "appendNew",
+            "appendEdit",
+            "appendDelete",
+            "linearHead"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId",
+            "mintRevId",
+            "LogicalId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "AnnotationRecord"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 122,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/log.ts": {
+      "filePath": "packages/render-core/src/spine/log.ts",
+      "contentHash": "ff4567d70de8302597feeb1f56424f3ff269d9e77d485c72a08d39387c345986",
+      "functions": [
+        {
+          "name": "isoOf",
+          "params": [
+            "modifiedAt",
+            "now"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "append",
+          "params": [
+            "log",
+            "record"
+          ],
+          "returnType": "AnnotationLog",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "versionsOf",
+          "params": [
+            "log",
+            "logicalId"
+          ],
+          "returnType": "AnnotationRecord[]",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "linearHead",
+          "params": [
+            "log",
+            "logicalId"
+          ],
+          "returnType": "AnnotationRecord",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "appendNew",
+          "params": [
+            "log",
+            "input"
+          ],
+          "returnType": "AppendResult",
+          "exported": true,
+          "lineCount": 17
+        },
+        {
+          "name": "appendEdit",
+          "params": [
+            "log",
+            "logicalId",
+            "input"
+          ],
+          "returnType": "AppendResult",
+          "exported": true,
+          "lineCount": 23
+        },
+        {
+          "name": "appendDelete",
+          "params": [
+            "log",
+            "logicalId",
+            "input"
+          ],
+          "returnType": "AppendResult",
+          "exported": true,
+          "lineCount": 17
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "mintLogicalId",
+            "mintRevId",
+            "LogicalId",
+            "RevId",
+            "ClientId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "AnnotationRecord",
+            "W3CBody",
+            "W3CTarget"
+          ]
+        }
+      ],
+      "exports": [
+        "append",
+        "linearHead",
+        "appendNew",
+        "appendEdit",
+        "appendDelete"
+      ],
+      "totalLines": 159,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/merge.test.ts": {
+      "filePath": "packages/render-core/src/spine/merge.test.ts",
+      "contentHash": "d8b4e86a8185b19dc5b71cf3dba44b7dd2e716e6ab7010c48438a32c2f51ec4f",
+      "functions": [
+        {
+          "name": "diverge",
+          "params": [],
+          "exported": false,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./log.js",
+          "specifiers": [
+            "appendNew",
+            "appendEdit"
+          ]
+        },
+        {
+          "source": "./merge.js",
+          "specifiers": [
+            "lineage",
+            "ancestors",
+            "commonAncestor",
+            "headsOf",
+            "mergeLogs",
+            "classifyMerge",
+            "classifyLogical",
+            "conflictTiebreak"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 128,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/merge.ts": {
+      "filePath": "packages/render-core/src/spine/merge.ts",
+      "contentHash": "0ce7de528cf0aa7f27a32c7b3d7292391726d7e358d031315cbe56d091e96fa0",
+      "functions": [
+        {
+          "name": "recordByRev",
+          "params": [
+            "log",
+            "rev"
+          ],
+          "returnType": "AnnotationRecord | undefined",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "lineage",
+          "params": [
+            "log",
+            "rev"
+          ],
+          "returnType": "RevId[]",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "parentsOf",
+          "params": [
+            "record"
+          ],
+          "returnType": "RevId[]",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "ancestors",
+          "params": [
+            "log",
+            "rev"
+          ],
+          "returnType": "Set<RevId>",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "commonAncestor",
+          "params": [
+            "log",
+            "revA",
+            "revB"
+          ],
+          "returnType": "RevId | null",
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "headsOf",
+          "params": [
+            "log",
+            "logicalId"
+          ],
+          "returnType": "AnnotationRecord[]",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "mergeLogs",
+          "params": [
+            "local",
+            "incoming"
+          ],
+          "returnType": "AnnotationLog",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "classifyMerge",
+          "params": [
+            "log",
+            "revA",
+            "revB"
+          ],
+          "returnType": "MergeClassification",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "classifyLogical",
+          "params": [
+            "local",
+            "incoming",
+            "logicalId"
+          ],
+          "returnType": "LogicalMergeResult",
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "conflictTiebreak",
+          "params": [
+            "a",
+            "b"
+          ],
+          "returnType": "AnnotationRecord",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "resolveConflict",
+          "params": [
+            "log",
+            "logicalId",
+            "resolution"
+          ],
+          "returnType": "AnnotationLog",
+          "exported": true,
+          "lineCount": 27
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "mintRevId",
+            "RevId",
+            "LogicalId",
+            "ClientId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "AnnotationRecord",
+            "W3CBody",
+            "W3CTarget"
+          ]
+        },
+        {
+          "source": "./log.js",
+          "specifiers": [
+            "linearHead",
+            "append"
+          ]
+        }
+      ],
+      "exports": [
+        "lineage",
+        "ancestors",
+        "commonAncestor",
+        "headsOf",
+        "mergeLogs",
+        "classifyMerge",
+        "classifyLogical",
+        "conflictTiebreak",
+        "resolveConflict"
+      ],
+      "totalLines": 180,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/spine/persist.test.ts": {
+      "filePath": "packages/render-core/src/spine/persist.test.ts",
+      "contentHash": "f54d9992e4c47ef7361f595ed62e849f1536a64e17be347afa6467015789998c",
+      "functions": [
+        {
+          "name": "sortByRev",
+          "params": [
+            "log"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "buildLog",
+          "params": [],
+          "returnType": "{ log: AnnotationLog }",
+          "exported": false,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./log.js",
+          "specifiers": [
+            "appendNew",
+            "appendEdit",
+            "appendDelete"
+          ]
+        },
+        {
+          "source": "./persist.js",
+          "specifiers": [
+            "writeAnnotations",
+            "readAnnotations"
+          ]
+        },
+        {
+          "source": "../fs/memory.js",
+          "specifiers": [
+            "MemoryFilesystem"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "AnnotationRecord"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 77,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/spine/persist.ts": {
@@ -2471,6 +6174,131 @@
       "totalLines": 189,
       "hasStructuralAnalysis": true
     },
+    "packages/render-core/src/url/deeplink.test.ts": {
+      "filePath": "packages/render-core/src/url/deeplink.test.ts",
+      "contentHash": "5223803ac0e688c6517bc94b9d45c9872b5b583b1af6b01649fefe5c9451cd69",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./deeplink.js",
+          "specifiers": [
+            "encodeContentState",
+            "decodeContentState",
+            "detectLegacyAnnotationParam",
+            "buildNoteDeepLink",
+            "parseNoteDeepLink"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 53,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/url/deeplink.ts": {
+      "filePath": "packages/render-core/src/url/deeplink.ts",
+      "contentHash": "b9f1fc180487d314a4677d53352bbf69e87454121a73539304f76455c65c74f7",
+      "functions": [
+        {
+          "name": "encodeContentState",
+          "params": [
+            "annotationId",
+            "canvasId",
+            "selector"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "decodeContentState",
+          "params": [
+            "encoded"
+          ],
+          "returnType": "{ annotationId: string; selector: SelectorRef } | null",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "detectLegacyAnnotationParam",
+          "params": [
+            "search"
+          ],
+          "returnType": "string | null",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "buildNoteDeepLink",
+          "params": [
+            "logicalId",
+            "opts"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "parseNoteDeepLink",
+          "params": [
+            "hash"
+          ],
+          "returnType": "NoteDeepLink | null",
+          "exported": true,
+          "lineCount": 7
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "encodeContentState",
+        "decodeContentState",
+        "detectLegacyAnnotationParam",
+        "buildNoteDeepLink",
+        "parseNoteDeepLink"
+      ],
+      "totalLines": 91,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/wadm/brand.test.ts": {
+      "filePath": "packages/render-core/src/wadm/brand.test.ts",
+      "contentHash": "566895cf898b2935b525f0c2faf23e05e3312d5a0a31b0c951420372e75bcbe1",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./brand.js",
+          "specifiers": [
+            "asLogicalId",
+            "mintLogicalId",
+            "versionId",
+            "parseVersionId",
+            "asClientId",
+            "LogicalId",
+            "ClientId"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 82,
+      "hasStructuralAnalysis": true
+    },
     "packages/render-core/src/wadm/brand.ts": {
       "filePath": "packages/render-core/src/wadm/brand.ts",
       "contentHash": "eff3debf3e7a78e03664e08405a75d6827fcb7874a23d49ff3041899ecfd5394",
@@ -2586,14 +6414,114 @@
       "totalLines": 125,
       "hasStructuralAnalysis": true
     },
+    "packages/render-core/src/wadm/index.ts": {
+      "filePath": "packages/render-core/src/wadm/index.ts",
+      "contentHash": "1245fa7c7620177e95ad00e5cd75ab0ce9b2b3fa9abe59205bd42bceaedc8906",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/wadm/types.test.ts": {
+      "filePath": "packages/render-core/src/wadm/types.test.ts",
+      "contentHash": "742d0b689c12b740e2260825db0772715fabe2ae9b3d8f186d7c663b7b06e90c",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./types.js",
+          "specifiers": [
+            "WADM_CONTEXT",
+            "ARCHIE_HAS_HISTORY",
+            "PROV_WAS_REVISION_OF",
+            "W3CAnnotation",
+            "ArchieAnnotation",
+            "AnnotationRecord",
+            "W3CAnnotationPage"
+          ]
+        },
+        {
+          "source": "./brand.js",
+          "specifiers": [
+            "mintLogicalId",
+            "mintRevId",
+            "asClientId"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 117,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/wadm/types.ts": {
+      "filePath": "packages/render-core/src/wadm/types.ts",
+      "contentHash": "cef7bf5ad1d16241467067918d6defe5f11ce43d58824b221502e5bbee1347c2",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./brand.js",
+          "specifiers": [
+            "LogicalId",
+            "RevId",
+            "ClientId"
+          ]
+        }
+      ],
+      "exports": [
+        "WADM_CONTEXT",
+        "ARCHIE_HAS_HISTORY",
+        "PROV_WAS_REVISION_OF",
+        "ARCHIE_LOGICAL_ID",
+        "ARCHIE_LAYERS",
+        "ARCHIE_REV",
+        "ARCHIE_PARENT",
+        "ARCHIE_MERGE_PARENTS",
+        "ARCHIE_VERSION",
+        "ARCHIE_LAST_EDITOR",
+        "ARCHIE_DELETED"
+      ],
+      "totalLines": 167,
+      "hasStructuralAnalysis": true
+    },
     "packages/render-core/test/fixtures/exif/manifest.json": {
       "filePath": "packages/render-core/test/fixtures/exif/manifest.json",
-      "contentHash": "cdf87bf19d37fab3e46d09afd769d99012c21eedf86ed06c7c74fca3bf7ea1d8",
+      "contentHash": "1d7a14d5274901d964fdc06ee7000ee5805fb7a73960699284039007b923a6e5",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
       "totalLines": 19,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/test/fixtures/exif/README.md": {
+      "filePath": "packages/render-core/test/fixtures/exif/README.md",
+      "contentHash": "bafacc559c1d8425a85e0d007e4bd1184303f0802cb985e147307a31eb1a68ac",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/tsconfig.json": {
+      "filePath": "packages/render-core/tsconfig.json",
+      "contentHash": "9222ec437c1c4b8378784ebceca444214102b64598ff2d611cb4f362d576990d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 9,
       "hasStructuralAnalysis": true
     },
     "packages/render-mount/package.json": {
@@ -2604,6 +6532,325 @@
       "imports": [],
       "exports": [],
       "totalLines": 25,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-mount/src/fitbounds.test.ts": {
+      "filePath": "packages/render-mount/src/fitbounds.test.ts",
+      "contentHash": "d123e912ccb2a951e49609896bd8653d1617bde77f2433ec43148537aa6f8328",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./fitbounds.js",
+          "specifiers": [
+            "fitBoundsRect",
+            "applyFitBounds",
+            "FitOptions",
+            "ViewportLike"
+          ]
+        },
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "W3CFragmentSelector",
+            "W3CSvgSelector"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 96,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-mount/src/fitbounds.ts": {
+      "filePath": "packages/render-mount/src/fitbounds.ts",
+      "contentHash": "f565b0ab3859cc9da447b84584305eb5a9eda978f6de1aafaab3b6d82ea4f72c",
+      "functions": [
+        {
+          "name": "fitBoundsRect",
+          "params": [
+            "selector",
+            "opts"
+          ],
+          "returnType": "Box | null",
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "applyFitBounds",
+          "params": [
+            "viewport",
+            "selector",
+            "opts"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "selectorOf",
+          "params": [
+            "ann"
+          ],
+          "returnType": "W3CSelector | null",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "dispatchFitBounds",
+          "params": [
+            "viewport",
+            "annotations",
+            "id",
+            "opts"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "selectorBBox",
+            "Box",
+            "W3CSelector"
+          ]
+        }
+      ],
+      "exports": [
+        "fitBoundsRect",
+        "applyFitBounds",
+        "selectorOf",
+        "dispatchFitBounds"
+      ],
+      "totalLines": 87,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-mount/src/gate.test.ts": {
+      "filePath": "packages/render-mount/src/gate.test.ts",
+      "contentHash": "d90e0bbed243f2b472dfe4292a2778bdba6bafabb007360071abc38ceba78d0e",
+      "functions": [
+        {
+          "name": "mockViewport",
+          "params": [],
+          "exported": false,
+          "lineCount": 8
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./fitbounds.js",
+          "specifiers": [
+            "dispatchFitBounds",
+            "fitBoundsRect",
+            "FitOptions",
+            "ViewportLike",
+            "AnnotationLike"
+          ]
+        },
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "W3CSelector"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 62,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-mount/src/index.test.ts": {
+      "filePath": "packages/render-mount/src/index.test.ts",
+      "contentHash": "574e9477580a3301ce12c985264525985bd7d68f188d49873413b36fa4c42016",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expectTypeOf",
+            "expect"
+          ]
+        },
+        {
+          "source": "./index.js",
+          "specifiers": [
+            "RENDER_MOUNT",
+            "boundsForSelector",
+            "MountSurface"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-mount/src/index.ts": {
+      "filePath": "packages/render-mount/src/index.ts",
+      "contentHash": "ee18439edf415c550a80caba91c423af2179d7b0e478053c0825b3e8a2d3aa12",
+      "functions": [
+        {
+          "name": "boundsForSelector",
+          "params": [
+            "selector"
+          ],
+          "returnType": "Box | null",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "selectorBBox",
+            "Box",
+            "W3CSelector"
+          ]
+        }
+      ],
+      "exports": [
+        "MountSurface",
+        "SelectionId",
+        "DrawTool",
+        "fitBoundsRect",
+        "applyFitBounds",
+        "FitOptions",
+        "ViewportLike",
+        "createMount",
+        "MountOptions",
+        "boundsForSelector",
+        "RENDER_MOUNT"
+      ],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-mount/src/mount.ts": {
+      "filePath": "packages/render-mount/src/mount.ts",
+      "contentHash": "4303dbc36f4546acead2664f0c76592edfb6f6aa4a07056963586fd79ac4434b",
+      "functions": [
+        {
+          "name": "selectorValue",
+          "params": [
+            "a"
+          ],
+          "returnType": "string | undefined",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "createMount",
+          "params": [
+            "container",
+            "opts"
+          ],
+          "returnType": "Promise<MountSurface>",
+          "exported": true,
+          "lineCount": 142
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "openseadragon",
+          "specifiers": [
+            "OpenSeadragon"
+          ]
+        },
+        {
+          "source": "@annotorious/openseadragon",
+          "specifiers": [
+            "createOSDAnnotator",
+            "W3CImageFormat",
+            "UserSelectAction"
+          ]
+        },
+        {
+          "source": "@annotorious/openseadragon",
+          "specifiers": [
+            "ImageAnnotation",
+            "W3CImageAnnotation"
+          ]
+        },
+        {
+          "source": "@annotorious/plugin-tools",
+          "specifiers": [
+            "mountPlugin"
+          ]
+        },
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "resolveTileSource",
+            "isDegenerateSelectorValue"
+          ]
+        },
+        {
+          "source": "./fitbounds.js",
+          "specifiers": [
+            "dispatchFitBounds",
+            "applyFitBounds",
+            "FitOptions",
+            "ViewportLike"
+          ]
+        },
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "W3CSelector"
+          ]
+        },
+        {
+          "source": "./surface.js",
+          "specifiers": [
+            "MountSurface",
+            "SelectionId"
+          ]
+        }
+      ],
+      "exports": [
+        "createMount"
+      ],
+      "totalLines": 191,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-mount/src/surface.ts": {
+      "filePath": "packages/render-mount/src/surface.ts",
+      "contentHash": "24b6e58fc12d5855c9ce587672ea8c10fd152bacf7dcf4cef00fab7d58e114f4",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "W3CAnnotation"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 39,
       "hasStructuralAnalysis": true
     },
     "packages/render-mount/tsconfig.json": {
@@ -2643,24 +6890,14 @@
       "totalLines": 30,
       "hasStructuralAnalysis": true
     },
-    "packages/render-svelte/tsconfig.json": {
-      "filePath": "packages/render-svelte/tsconfig.json",
-      "contentHash": "9222ec437c1c4b8378784ebceca444214102b64598ff2d611cb4f362d576990d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 9,
-      "hasStructuralAnalysis": true
-    },
     "packages/render-svelte/src/Canvas.svelte": {
       "filePath": "packages/render-svelte/src/Canvas.svelte",
-      "contentHash": "e80a4a812ece9cf05e156e983ac561395fca9048dc1b09477cb377870685bc99",
+      "contentHash": "89aa54f4db4784fb1029933e06ae9c7974cb28b617d81e83cce438b508227012",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 102,
+      "totalLines": 108,
       "hasStructuralAnalysis": false
     },
     "packages/render-svelte/src/controller.test.ts": {
@@ -2733,14 +6970,138 @@
       "totalLines": 56,
       "hasStructuralAnalysis": true
     },
-    "pnpm-lock.yaml": {
-      "filePath": "pnpm-lock.yaml",
-      "contentHash": "1572469d5cd4eadbd62c0bcd13b00952e54cf13868878ac5c5845b0060e5e92c",
+    "packages/render-svelte/src/index.test.ts": {
+      "filePath": "packages/render-svelte/src/index.test.ts",
+      "contentHash": "77a355e68723ebe088980cf6aede5a25489c1f12732dc5dd21cc3c4d26f5cbec",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./index.js",
+          "specifiers": [
+            "RENDER_SVELTE"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 9,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-svelte/src/index.ts": {
+      "filePath": "packages/render-svelte/src/index.ts",
+      "contentHash": "ec752910951ee4ed8f31027e4a4e04615717bb64efcf117258d74840f5166f35",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "RENDER_SVELTE",
+        "createCanvasController",
+        "CanvasController",
+        "sanitizeHtml",
+        "renderMarkdown",
+        "stripMarkdown"
+      ],
+      "totalLines": 13,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-svelte/src/sanitize.test.ts": {
+      "filePath": "packages/render-svelte/src/sanitize.test.ts",
+      "contentHash": "25fc08ad0245132aa9fba38564f8530e196ebdf7c7a1d4f356e20a452ba2c852",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./sanitize.js",
+          "specifiers": [
+            "sanitizeHtml",
+            "renderMarkdown",
+            "stripMarkdown"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 61,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-svelte/src/sanitize.ts": {
+      "filePath": "packages/render-svelte/src/sanitize.ts",
+      "contentHash": "fe5fab19a0a9ecf6e6dc9130ebd179bc5b974a080dfcc5150770f8ee62281c27",
+      "functions": [
+        {
+          "name": "sanitizeHtml",
+          "params": [
+            "dirty"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "renderMarkdown",
+          "params": [
+            "md"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "stripMarkdown",
+          "params": [
+            "md"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 9
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "isomorphic-dompurify",
+          "specifiers": [
+            "DOMPurify"
+          ]
+        },
+        {
+          "source": "snarkdown",
+          "specifiers": [
+            "snarkdown"
+          ]
+        }
+      ],
+      "exports": [
+        "sanitizeHtml",
+        "renderMarkdown",
+        "stripMarkdown"
+      ],
+      "totalLines": 36,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-svelte/tsconfig.json": {
+      "filePath": "packages/render-svelte/tsconfig.json",
+      "contentHash": "9222ec437c1c4b8378784ebceca444214102b64598ff2d611cb4f362d576990d",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 5422,
+      "totalLines": 9,
       "hasStructuralAnalysis": true
     },
     "pnpm-workspace.yaml": {
@@ -2751,6 +7112,296 @@
       "imports": [],
       "exports": [],
       "totalLines": 4,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_COVERAGE.md": {
+      "filePath": "Prior Art/_COVERAGE.md",
+      "contentHash": "1f01f3b89dfb463e552d6e07b4955cfce200a84656cc7841026b15c47f9ca0d5",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 164,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_DISPATCH-CONTEXT.md": {
+      "filePath": "Prior Art/_DISPATCH-CONTEXT.md",
+      "contentHash": "93f55e3c0ddda3009c05b6176774c3138dfef106179ab2c185a0262e7f87b6b6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 93,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_FRAMING.md": {
+      "filePath": "Prior Art/_FRAMING.md",
+      "contentHash": "be9dbf8210e80562302671237f1888a9c1920c7f2c1c561f092c8d7ab4cb8f27",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 51,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_GAP-ANSWERS.md": {
+      "filePath": "Prior Art/_GAP-ANSWERS.md",
+      "contentHash": "e4bade185706914bf4565fc9ceb591643f2727dd71b1cb2ac62aa804336ae21f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 64,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_GAPS.md": {
+      "filePath": "Prior Art/_GAPS.md",
+      "contentHash": "ea5e528347fe098c2efdc21dacb76935f6643ab433e71330e9b7dc7c8e6ac58c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 100,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/_PAPADAM.md": {
+      "filePath": "Prior Art/_PAPADAM.md",
+      "contentHash": "745fec8c9d38d7cc85207c8210c2cc5c839e4b848813dc6d1acea7e3370da0d7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 63,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/00-INDEX.md": {
+      "filePath": "Prior Art/00-INDEX.md",
+      "contentHash": "c81f1c1f6289e2c415967d1fe34244bdb56fd7d3e070920c16703b9778669d2b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 137,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/01-deep-zoom-viewer.md": {
+      "filePath": "Prior Art/01-deep-zoom-viewer.md",
+      "contentHash": "3ec4b17626c42c451f2e1f7f25c3f4a890d052d2cdbb8815fdb3e1515726dd89",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 62,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/02-annotation-tools.md": {
+      "filePath": "Prior Art/02-annotation-tools.md",
+      "contentHash": "7ea96af0e298ae2fd402684a0a0667174d6356927ecd6a0ac4d550d8f8721e4d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 60,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/03-annotation-data-model.md": {
+      "filePath": "Prior Art/03-annotation-data-model.md",
+      "contentHash": "6b9189040f4722ac2d0ddf602d75d69bb3a33e11bdeb905fed7454c6b7152e22",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 76,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/04-multimedia-av.md": {
+      "filePath": "Prior Art/04-multimedia-av.md",
+      "contentHash": "363c83bd9851cb82adfa984c349f4dd4cf131d319e2e678ddf564d0ae278fe66",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/05-multi-object-collections.md": {
+      "filePath": "Prior Art/05-multi-object-collections.md",
+      "contentHash": "db24d42eb5c95bbc857b0cf30193af78f3ac2eba750e5869e1b91f090cc5eaa7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/06-authoring-cms.md": {
+      "filePath": "Prior Art/06-authoring-cms.md",
+      "contentHash": "3dedfddf2e49c84c0b205c94ca1866cd388e261bd56a18c797ad934ef533773d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 76,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/07-published-read-ui.md": {
+      "filePath": "Prior Art/07-published-read-ui.md",
+      "contentHash": "40988e40224389780fd3c023417ea4fa8b91e0b92eea394d6cec9ad0227d8130",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 68,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/08-linkable-navigable.md": {
+      "filePath": "Prior Art/08-linkable-navigable.md",
+      "contentHash": "f8b03771bacc2321025841dfee8e881850b605ca7bf5ef10d7c9ea81b1592c3a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 68,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/09-web-publishable-serverless.md": {
+      "filePath": "Prior Art/09-web-publishable-serverless.md",
+      "contentHash": "48013d646248e361730ac8cd66cfff43c3e5b315fd226989fadcb908e6ee285d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 67,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/10-state-mutation-patterns.md": {
+      "filePath": "Prior Art/10-state-mutation-patterns.md",
+      "contentHash": "51f0cc4a8f6e809d43e8a5ede72ba8e9a946040d7eebf0ce290b144dab5f6781",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 83,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/11-20-NEW-AXES.md": {
+      "filePath": "Prior Art/11-20-NEW-AXES.md",
+      "contentHash": "115612c74a2ee8956762cc3b34698e4f5336c24b37b9a0a6ebfaa68d26b16a33",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/11-search-discovery.md": {
+      "filePath": "Prior Art/11-search-discovery.md",
+      "contentHash": "85aebfb9a6293e3ebedce57c7f278c3bd4ef45521c30f08d96bde792c1a09e86",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 65,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/12-accessibility.md": {
+      "filePath": "Prior Art/12-accessibility.md",
+      "contentHash": "2f91aa2e2e7256ac9ef10713f2e00c83bf89994171eefcbc4088e445c4126404",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/13-i18n-localization.md": {
+      "filePath": "Prior Art/13-i18n-localization.md",
+      "contentHash": "89d6413b6840736aed7037206bf3e2365b13bd9050db5465df05d5224e08ab11",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 62,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/14-import-interop.md": {
+      "filePath": "Prior Art/14-import-interop.md",
+      "contentHash": "3cb423ba013d6e1f7bd0b4fe6dc8d87986bc57cd4218bb18c55fc4acc1c6dbdf",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 72,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/15-provenance-citation.md": {
+      "filePath": "Prior Art/15-provenance-citation.md",
+      "contentHash": "e532b99515a1f5fd00a3d2abf19d1fd13dba823aa4789083dbbe3cc7b5a3e5a1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 74,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/16-performance-ux.md": {
+      "filePath": "Prior Art/16-performance-ux.md",
+      "contentHash": "00b65e7cebe439dd35573c4e943561495a2f4110b1276f5943de03e6a0031c46",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/17-tile-generation.md": {
+      "filePath": "Prior Art/17-tile-generation.md",
+      "contentHash": "6b23ccc278564b509413426010fa337c60dd61c75ea4de58ed3fd6b270fe9866",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 69,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/18-embedding-ecosystem.md": {
+      "filePath": "Prior Art/18-embedding-ecosystem.md",
+      "contentHash": "00c9ddd2fbdef355e4e182fb467f530e6db37438204e764c26ad72a24ff85e83",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 59,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/19-ai-authoring.md": {
+      "filePath": "Prior Art/19-ai-authoring.md",
+      "contentHash": "9e23d7d3316e9bbcda10a84b457312d78e3ea9faeee19ddc9ca2d17e1ea56767",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "Prior Art/20-security-sanitization.md": {
+      "filePath": "Prior Art/20-security-sanitization.md",
+      "contentHash": "dce3a2e4a69e9fa9ef0b96cb104303824c765453c0382608bf3876829d35c407",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 73,
+      "hasStructuralAnalysis": true
+    },
+    "README.md": {
+      "filePath": "README.md",
+      "contentHash": "48a43b692968586c5b31c691a9576d544d59b928e01fed7507ad32194eae4809",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 152,
       "hasStructuralAnalysis": true
     },
     "scripts/bundle-size.mjs": {
@@ -2809,6 +7460,54 @@
       ],
       "exports": [],
       "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "scripts/import-bidar.mjs": {
+      "filePath": "scripts/import-bidar.mjs",
+      "contentHash": "fafe91205eda7da5d154d83c4e644c8df8960e74a9f1622249e7dfc1770cd70c",
+      "functions": [
+        {
+          "name": "jpegDims",
+          "params": [
+            "buf"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "toPx",
+          "params": [
+            "v",
+            "ref"
+          ],
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:fs",
+          "specifiers": [
+            "writeFileSync"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "dirname",
+            "join"
+          ]
+        },
+        {
+          "source": "node:url",
+          "specifiers": [
+            "fileURLToPath"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 70,
       "hasStructuralAnalysis": true
     },
     "scripts/import-voynich.mjs": {

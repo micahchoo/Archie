@@ -17,8 +17,38 @@ Archie turns your media into interactive, linkable exhibits that live on the web
 
 The bundled exhibits — a 5-folio Voynich manuscript set and a 25-region Bidar map — show what a finished exhibit looks like.
 
+## Screenshots
+
+### Studio — authoring
+
+![Archie Studio exhibit overview](docs/screenshots/Screenshot%202026-05-26%20at%2017-42-28%20Archie%20Studio.png)
+
+*Exhibit overview: every object on one zoomable canvas — drag to pan, scroll to zoom, drag objects to set the reading order.*
+
+![Archie Studio canvas editor](docs/screenshots/Screenshot%202026-05-26%20at%2017-39-37%20Archie%20Studio.png)
+
+*Canvas editor: draw rectangle or polygon regions on a deep-zoom object and annotate at the canvas-anchored popover (shown on a video object, with a time-window selector).*
+
+![Archie Studio audio annotation](docs/screenshots/Screenshot%202026-05-26%20at%2017-41-20%20Archie%20Studio.png)
+
+*Audio annotation: WaveSurfer waveform — drag to create time-range notes, import VTT/SRT transcripts.*
+
+![Archie Studio narrative spine](docs/screenshots/Screenshot%202026-05-26%20at%2017-42-02%20Archie%20Studio.png)
+
+*Narrative spine: author sections with framed cameras, reorder beats, switch objects on the rail.*
+
+### Viewer — published site
+
+![Archie Viewer narrative reading](docs/screenshots/Screenshot%202026-05-26%20at%2017-40-28%20Archie.png)
+
+*Narrative reading: the prose spine drives the canvas — each section frames its region of the exhibit map.*
+
+![Archie Viewer narrative with media](docs/screenshots/Screenshot%202026-05-26%20at%2017-40-55%20Archie.png)
+
+*Narrative reading with media: audio and video play inline as the reader moves through the spine.*
+
 > [!NOTE]
-> **Status: Phase 2 in progress.** The data layer and both apps are built and dogfooded. Browser-regression verification is pending; several Phase 3 features are not yet built — see [Status & roadmap](#status--roadmap).
+> **Status: v1 nearly complete.** The data layer, both apps, and all major Phase 3 features are built and dogfooded. Browser-regression verification is owed on several features — see [Status & roadmap](#status--roadmap).
 
 ## Why Archie
 
@@ -35,7 +65,7 @@ The bundled exhibits — a 5-folio Voynich manuscript set and a 25-region Bidar 
 ```bash
 pnpm install            # install the whole workspace
 pnpm typecheck          # type-check every package + app
-pnpm test               # run ~290 tests
+pnpm test               # run ~330 tests
 ```
 
 ### Run the Studio (authoring)
@@ -55,19 +85,54 @@ pnpm --filter @archie/viewer dev      # opens http://localhost:4321
 
 Target a single workspace with `--filter`, e.g. `pnpm --filter @render/core test`.
 
+## Workflow — from clone to published site
+
+The whole author's arc, end to end:
+
+**1. Clone and stand up the repo.**
+
+```bash
+git clone <your-archie-repo-url> archie && cd archie
+nvm install 22 && nvm use 22       # Node ≥ 22 is required
+pnpm install                       # install the whole workspace
+pnpm --filter @archie/studio dev   # opens http://localhost:5173
+```
+
+**2. Create an exhibit.** In the library home, type a title into **New exhibit title…** and create it. The bundled Voynich and Bidar sets are *examples* — open one to explore, then **Keep a copy** to fork it into a saved exhibit of your own.
+
+**3. Add your objects.** Drop an image onto the canvas, or use **+ Object** on the rail to add an image, audio, or video object. The **exhibit overview** lays every object on one zoomable canvas — drag them to set the reading order.
+
+**4. Annotate.** On an image or video, draw a rectangle/polygon region and write the note in the canvas-anchored popover; on audio, drag across the waveform to create a time-range note. Tag notes, group them into layers, and cite one note from another with <kbd>Cmd</kbd> + <kbd>K</kbd>.
+
+**5. Write a narrative.** Switch to the narrative spine, add sections, and frame a camera on the canvas for each beat. Reorder sections and switch objects on the rail to shape the reading.
+
+**6. Preview the published site (optional).**
+
+```bash
+pnpm --filter @archie/viewer gen   # generate the static tree
+pnpm --filter @archie/viewer dev   # opens http://localhost:4321
+```
+
+**7. Deploy to GitHub Pages.** In the Studio, open **Publish → Connect to GitHub**. Enter your repo **owner** and **name**, a branch (defaults to `gh-pages`), and a [fine-grained personal access token](https://github.com/settings/tokens?type=beta) with **`contents: write`** scope. Archie pushes the whole library — every exhibit — to that branch via the GitHub Contents API; the token is used once and never stored. Then, in your repo's **Settings → Pages**, set the source to the `gh-pages` branch. Your site goes live at `https://<owner>.github.io/<repo>/`.
+
+> [!NOTE]
+> The push lands your whole library's data (IIIF manifests, annotations, media) on the branch. Today the Viewer ships fixed routes for the bundled sample exhibits — rendering *arbitrary* user-created exhibits on the published site is still [owed work](#status--roadmap).
+
 ## Features
 
 | Area | Capability |
 |---|---|
-| **Image annotation** | OpenSeadragon deep-zoom + Annotorious; rectangle, polygon, ellipse, path regions |
-| **A/V annotation** | Import VTT/SRT transcripts, mark time-range notes, click-to-seek |
-| **Data model** | Append-only log with version DAG; heads/history projection; non-destructive edits; multi-parent merge |
-| **IIIF** | Exhibit → `Manifest`, object → `Canvas`, per-canvas `AnnotationPage` heads; Presentation 3 on disk |
-| **Storage** | Three backends behind one seam — in-memory, `.archie.zip`, File System Access (Chromium autosave) |
-| **EXIF** | Read orientation, generate upright display master, preserve original |
-| **Linking** | Cite/insert across the library, deep-link arrival, link validation |
-| **Reading modes** | Single (OSD + 3-state pane), Grid (object gallery), Narrative (prose spine) |
-| **Publish** | Library → `.archie.zip` download or GitHub Pages push |
+| **Image annotation** | OpenSeadragon deep-zoom + Annotorious; rectangle and polygon regions; canvas-anchored popover form |
+| **Audio annotation** | WaveSurfer waveform; drag to create time-range notes; import VTT/SRT transcripts |
+| **Video annotation** | Spatiotemporal — draw a box on a paused frame + set a time window; combined `xywh=&t=` selectors |
+| **Data model** | Append-only log with version-parent DAG; heads/history projection; non-destructive edits; multi-parent merge; schema migration |
+| **IIIF** | Exhibit → `Manifest`, object → `Canvas`, per-canvas `AnnotationPage`; layers as `AnnotationCollection`; narrative sections as `Range`; Presentation 3 on disk |
+| **Storage** | Three backends behind one seam — OPFS (browser), `.archie.zip` (portable), File System Access (Chromium folder autosave) |
+| **EXIF** | Read orientation, bake upright display master, preserve original with provenance metadata |
+| **Linking** | <kbd>Cmd</kbd> + <kbd>K</kbd> cite/insert across the library; deep-link arrival (`#/a/<id>`); broken-link detection at publish |
+| **Reading modes** | Single (deep-zoom), Grid (thumbnail gallery), Narrative (prose spine with camera framing); overview-as-canvas (zoomable exhibit map, drag-to-reorder) |
+| **Publish** | Whole-library → `.archie.zip` download, GitHub Pages push, or local folder (Chromium); opt-in source-originals for citation |
+| **Collaboration** | Silent DAG merge; conflict-card resolution; identity prompt on first import |
 
 ## Installation
 
@@ -142,18 +207,32 @@ Archie uses a precise vocabulary. One-sentence definitions below; full glossary 
 
 ## Status & roadmap
 
-**Tests:** ~290 tests (241 `@render/core`, 18 `@render/mount`, 18 `@render/svelte`). Requires Node ≥ 22.
+**Tests:** ~330 tests (295 `@render/core`, 18 `@render/mount`, 18 `@render/svelte`). Requires Node ≥ 22.
 
-**Phase 2 — in progress.** Both apps built and dogfooded on Voynich and Bidar exhibits. Owed: browser-regression verification, styled A/V scrubber, publish-originals opt-in, broken-links surface.
+**v1 — nearly complete.** The data layer, both apps, and all major features are built and dogfooded on Voynich (5-folio manuscript) and Bidar (25-region annotated map) exhibits. Both apps build clean (Studio ~199 modules).
 
-**Phase 3 — not yet built:**
-- Overview-as-canvas (zoomable exhibit overview instead of a list)
-- Local identity prompt on first import
+**Shipped:**
+- Overview-as-canvas — zoomable exhibit map with drag-to-reorder reading order
+- Narrative section-authoring — frame cameras on canvas, reorder spine, publish as IIIF Ranges
+- Audio annotation — WaveSurfer waveform, drag-to-create time-range notes, transcript import
+- Video spatiotemporal annotation — frame-box + time-window combined selectors
+- Canvas-anchored note popover — edit at the marker, nav-only sidebar
+- <kbd>Cmd</kbd> + <kbd>K</kbd> intra-Library linking — cite notes/exhibits, broken-link detection at publish
+- EXIF display-master bake — upright master from phone photos, original preserved
+- Three-config persistence — OPFS / folder autosave / `.archie.zip` file, with recent-projects list
+- Playground vs project per-exhibit model — examples are ephemeral, user exhibits persist
+- Layout picker — spatial arrangement + reading-mode axes, grouped by reading family
+- Identity prompt — local display name, prompted on first merge (never at launch)
+
+**Owed (browser-verify / polish):**
+- Viewer dynamic routes — render arbitrary user-created exhibits on the published site (today the Viewer ships fixed routes for the bundled Voynich / Bidar / AV samples)
+- Browser-regression verification on AV editor, overview canvas, popover, and persistence flows
+- Video spatiotemporal — Viewer-side read (studio authoring done)
 - Grid slideshow sub-mode
-- Narrative section-authoring UI
-- Viewer breadcrumb / zoom-to-fit chrome, IIIF Content-State arrival
+- Viewer breadcrumb navigation and IIIF Content-State arrival
+- Overview section dividers (deferred — model (A) makes them largely redundant)
 
-The phasing and gate mechanism is in [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md).
+The full phasing and gate mechanism is in [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md). Deferred-work registry in that doc is the canonical remaining-work list.
 
 ## Documentation
 
@@ -163,7 +242,7 @@ The phasing and gate mechanism is in [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IM
 | [`docs/README.md`](docs/README.md) | Index to all design docs |
 | [`docs/architecture/overview.md`](docs/architecture/overview.md) | Architecture map (start here as a developer) |
 | [`docs/architecture/subsystems/`](docs/architecture/subsystems/) | Per-subsystem component + contract maps |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0005) |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0006) |
 | [`docs/decisions/`](docs/decisions/) | Citable decision records (Q-N) |
 | [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md) | Phasing, sequencing, validation gates |
 | [`HANDOFF.md`](HANDOFF.md) | Agent-to-agent session continuity |
