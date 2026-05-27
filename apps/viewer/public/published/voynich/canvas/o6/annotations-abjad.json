@@ -1,0 +1,31 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/canvas/o6/annotations-abjad.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/000000000JGGB4JQ3HC31BP99B/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o6",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:3400,1400,1000,1000"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.018Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the abjad reading, each label is a genuine star or constellation name in the invented alphabet, distributed across the cluster as a real celestial chart would name its points.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:reading": "abjad",
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000000JGGB4JQ3HC31BP99B.json"
+    }
+  ],
+  "partOf": "https://archie.demo/voynich/annotations/readings/abjad.json"
+}

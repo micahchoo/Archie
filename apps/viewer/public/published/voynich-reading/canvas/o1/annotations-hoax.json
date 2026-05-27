@@ -1,0 +1,31 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/canvas/o1/annotations-hoax.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/0000000002CH528R1VEHB1FRPV/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1500,360,1200,520"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.002Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the grille reading, this paragraph is the first output of a Cardan grille passed over prefix/stem/suffix tables — front-loaded, fluent-looking, and meaningless; its “opening” feel is an artefact of being generated first, not of any title.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:reading": "hoax",
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000002CH528R1VEHB1FRPV.json"
+    }
+  ],
+  "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
+}

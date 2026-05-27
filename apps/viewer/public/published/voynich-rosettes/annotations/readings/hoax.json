@@ -1,0 +1,15 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-rosettes/annotations/readings/hoax.json",
+  "type": "AnnotationCollection",
+  "label": {
+    "en": [
+      "Hoax reading"
+    ]
+  },
+  "summary": {
+    "en": [
+      "The glyphs carry no content: Voynich-like text can be generated mechanically from prefix/stem/suffix tables drawn through a Cardan grille (Rugg 2004; Gaskell & Bowern 2022)."
+    ]
+  }
+}

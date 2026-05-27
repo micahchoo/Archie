@@ -1,0 +1,31 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/canvas/o7/annotations-hoax.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/000000000MB0RBTRC0MN3GGXDF/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o7",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:300,900,2200,1900"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.020Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the grille reading, the writing among the pipes is meaningless filler; the statistical shift Currier found here is just a second grille table, not a second language.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:reading": "hoax",
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000MB0RBTRC0MN3GGXDF.json"
+    }
+  ],
+  "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
+}

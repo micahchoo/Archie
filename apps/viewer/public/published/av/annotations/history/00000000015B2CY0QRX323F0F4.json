@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/av/annotations/history/00000000015B2CY0QRX323F0F4.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/av/annotations/00000000015B2CY0QRX323F0F4/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/av/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=0,20"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.001Z",
+      "body": {
+        "type": "TextualBody",
+        "value": "A dholak sets the pulse; a woman's voice enters over the drum — a geet carried on the mesh from Faizpura.",
+        "format": "text/plain",
+        "purpose": "supplementing"
+      },
+      "motivation": "supplementing",
+      "archie:logicalId": "00000000015B2CY0QRX323F0F4",
+      "archie:rev": "0000000001BZJ3VEJR0GZSN1W5",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

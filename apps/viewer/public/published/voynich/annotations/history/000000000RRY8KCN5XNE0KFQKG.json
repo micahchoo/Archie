@@ -1,0 +1,34 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/000000000RRY8KCN5XNE0KFQKG.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/000000000RRY8KCN5XNE0KFQKG/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o8",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1400,1600,360,150"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.024Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the abjad reading, the label is a real word in a genuinely distinct dialect or register (Currier “Language A” vs “B” = two real linguistic states), consistent with natural-language variation across a long manuscript.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000RRY8KCN5XNE0KFQKG",
+      "archie:rev": "000000000RB871ZW9EC48D582Y",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "abjad"
+    }
+  ]
+}

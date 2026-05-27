@@ -1,0 +1,15 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/annotations/readings/abjad.json",
+  "type": "AnnotationCollection",
+  "label": {
+    "en": [
+      "Natural-language reading"
+    ]
+  },
+  "summary": {
+    "en": [
+      "The glyphs are a real natural language written plaintext in an invented alphabet — statistically compatible with natural language (Amancio et al. 2013), the basis of Bax's 2014 partial abjad-style reading."
+    ]
+  }
+}

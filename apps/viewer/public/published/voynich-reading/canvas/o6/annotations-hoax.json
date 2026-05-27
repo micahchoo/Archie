@@ -1,0 +1,31 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/canvas/o6/annotations-hoax.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/000000000HJS5SVP7DQWRJCWHE/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o6",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:3400,1400,1000,1000"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.017Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the grille reading, the scattered labels are grille-drawn tokens sprinkled to mimic a real star-chart; their density sells the diagram without any of them naming a star.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:reading": "hoax",
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000HJS5SVP7DQWRJCWHE.json"
+    }
+  ],
+  "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
+}

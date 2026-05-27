@@ -1,0 +1,31 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-abjad.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-rosettes/annotations/00000000030K3A0EK8D4E55V52/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-rosettes/canvas/o9",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:3500,3300,900,700"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.003Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the abjad reading, the label names a real place or region; the abjad hypothesis is what motivates reading the Rosettes as an actual (if stylised) geographic or cosmographic diagram.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:reading": "abjad",
+      "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/00000000030K3A0EK8D4E55V52.json"
+    }
+  ],
+  "partOf": "https://archie.demo/voynich-rosettes/annotations/readings/abjad.json"
+}

@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/000000000EV2H2W9ASGEWV8BZM.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/000000000EV2H2W9ASGEWV8BZM/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:2842,1643,222,222"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.014Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "We embarked on a collective process to recognise, appreciate, and co-create a platform for the lesser known or understood knowledge practices in Bidar. This particular engagement was to explore folklore, musical and storytelling-based mediums of different traditions, knowledge and ways of being.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000EV2H2W9ASGEWV8BZM",
+      "archie:rev": "000000000EVW0D006QSZ648JER",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

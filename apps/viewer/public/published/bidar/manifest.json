@@ -12,6 +12,18 @@
       "A condensed map of the Bidar mesh network — places, people, songs, and reflections from the field."
     ]
   },
+  "requiredStatement": {
+    "label": {
+      "none": [
+        "Attribution"
+      ]
+    },
+    "value": {
+      "none": [
+        "Republished from one.compost.digital under the same license."
+      ]
+    }
+  },
   "items": [
     {
       "id": "https://archie.demo/bidar/canvas/o1",

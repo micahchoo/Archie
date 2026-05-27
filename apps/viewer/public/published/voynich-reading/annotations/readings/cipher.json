@@ -1,0 +1,15 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/annotations/readings/cipher.json",
+  "type": "AnnotationCollection",
+  "label": {
+    "en": [
+      "Cipher reading"
+    ]
+  },
+  "summary": {
+    "en": [
+      "The glyphs encode a real language through a cipher or steganographic scheme — the working assumption of the professional cryptanalysts (Currier, the Friedmans, Tiltman) who studied the manuscript."
+    ]
+  }
+}

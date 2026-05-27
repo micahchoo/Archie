@@ -1,0 +1,90 @@
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "id": "https://archie.demo/voynich-rosettes/manifest.json",
+  "type": "Manifest",
+  "label": {
+    "none": [
+      "The Rosettes"
+    ]
+  },
+  "summary": {
+    "none": [
+      "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas."
+    ]
+  },
+  "requiredStatement": {
+    "label": {
+      "none": [
+        "Source"
+      ]
+    },
+    "value": {
+      "none": [
+        "Voynich folios courtesy of the Beinecke Rare Book and Manuscript Library, Yale University (MS 408), via the IIIF image service. Sound: Kryptogramm — “04-f18v” (Elias Schwerdtfeger), CC BY-NC-SA 3.0."
+      ]
+    }
+  },
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-rosettes/canvas/o9",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "f85v–86r — Cosmological (the Rosettes foldout)"
+        ]
+      },
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Source"
+          ]
+        },
+        "value": {
+          "none": [
+            "Beinecke Rare Book and Manuscript Library, Yale University — MS 408, via the IIIF image service."
+          ]
+        }
+      },
+      "width": 7925,
+      "height": 7268,
+      "items": [
+        {
+          "id": "https://archie.demo/voynich-rosettes/canvas/o9/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-rosettes/canvas/o9/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://collections.library.yale.edu/iiif/2/1006231",
+                "type": "Image",
+                "width": 7925,
+                "height": 7268
+              },
+              "target": "https://archie.demo/voynich-rosettes/canvas/o9"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations.json",
+          "type": "AnnotationPage"
+        },
+        {
+          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-cipher.json",
+          "type": "AnnotationPage"
+        },
+        {
+          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-hoax.json",
+          "type": "AnnotationPage"
+        },
+        {
+          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-abjad.json",
+          "type": "AnnotationPage"
+        }
+      ]
+    }
+  ]
+}
