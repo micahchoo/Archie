@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/00000000034RWV2GXA64EMVRB4.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/00000000034RWV2GXA64EMVRB4/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:318,1389,393,393"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.003Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Kumabara is an occupation-based community of potters. We engaged with women of Kumabara from Naubad, a locality in Bidar. The women and men both engage with the craft of making pottery. They sing Kumabara padagalu (songs) and as a bhajan (devotional songs). These songs are passed on from one generation to another through oral practice. More than seeing an implementation of the network, these women are keen on recording the songs as they are not available on the Internet.\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/3/APC_COMMUNITYS_2ND_WORKSHOP_20200109_V001.mp3)",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "00000000034RWV2GXA64EMVRB4",
+      "archie:rev": "0000000003453348CHP2R1NTQ8",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

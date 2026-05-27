@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-rosettes/annotations/00000000012VNYZNMCDBNPC7Q7/v1",
+      "id": "https://archie.demo/voynich-rosettes/annotations/0000000001CB8RF3NABMC5EH8X/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -39,7 +39,7 @@
         }
       ],
       "archie:reading": "cipher",
-      "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/00000000012VNYZNMCDBNPC7Q7.json"
+      "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000001CB8RF3NABMC5EH8X.json"
     }
   ],
   "partOf": "https://archie.demo/voynich-rosettes/annotations/readings/cipher.json"
