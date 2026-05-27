@@ -151,6 +151,13 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       // Replace the in-store set (anvil viewer pattern: setAnnotations(_, true)).
       annotator.setAnnotations(annotations as never, true);
     },
+    setStyle(styleFor) {
+      // Wire a per-annotation style to Annotorious's DrawingStyleExpression: it passes the parsed
+      // annotation; we key by its id and let the adapter map id → Reading colour (ADR-0007).
+      annotator.setStyle(
+        styleFor ? (((ann: { id?: unknown }) => styleFor(String(ann.id ?? ""))) as never) : undefined,
+      );
+    },
     fitBounds(id: SelectionId) {
       // The new path goes through the same dispatchFitBounds oracle the gate test pins.
       const anns = annotator.getAnnotations() as W3CImageAnnotation[];

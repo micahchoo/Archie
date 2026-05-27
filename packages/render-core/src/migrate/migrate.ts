@@ -6,8 +6,35 @@
 // change just appends a Migration entry — never a retrofit. (rev / layers / archie: metadata
 // were the schema edits that triggered owing this — strategy §39 "the first schema edit is the trigger".)
 
+import type { AnnotationRecord, W3CBody, W3CTextualBody } from "../wadm/types.js";
+
 /** Current on-disk schema version. v1 docs are stamped so a future runner can migrate them. */
 export const SCHEMA_VERSION = 1;
+
+/**
+ * ADR-0007 record migration: fold the deprecated multi-valued `layers` into Tags (purpose:tagging
+ * bodies), losslessly, and drop `layers`. A Reading is single/exclusive so it CANNOT absorb a
+ * multi-value `layers` without data-loss; Tags are additive and absorb `string[]` cleanly — so the
+ * old undifferentiated "layer" maps onto the additive side of the Frame-C split. Applied at the
+ * read/load boundary (deserialize + OPFS load). Idempotent: no `layers` → returned unchanged.
+ */
+export function foldLayersIntoTags(record: AnnotationRecord): AnnotationRecord {
+  const layers = record.layers;
+  if (layers === undefined || layers.length === 0) return record;
+  const bodies: W3CBody[] =
+    record.body === undefined ? [] : Array.isArray(record.body) ? [...record.body] : [record.body];
+  const existingTags = new Set(
+    bodies
+      .filter((b): b is W3CTextualBody => (b as W3CTextualBody).purpose === "tagging")
+      .map((b) => b.value),
+  );
+  for (const layer of layers) {
+    if (!existingTags.has(layer)) bodies.push({ type: "TextualBody", value: layer, purpose: "tagging" });
+  }
+  const rest = { ...record };
+  delete (rest as { layers?: string[] }).layers;
+  return { ...rest, body: bodies };
+}
 
 /** A named, ordered schema migration. `up` transforms a doc from version `to-1`-shape to `to`-shape. */
 export interface Migration {

@@ -106,3 +106,14 @@ describe("rewriteArchieLinks — heads-page projection: resolve valid refs, degr
     expect(broken).toEqual([]);
   });
 });
+
+describe("parseLinkRef — slug hardening (security S5)", () => {
+  it("rejects an exhibit slug with markup / attribute-injection characters", () => {
+    expect(parseLinkRef('archie:foo"onmouseover="alert(1)/')).toBeNull();
+    expect(parseLinkRef("archie:a b/")).toBeNull();
+    expect(parseLinkRef("archie:<svg>/")).toBeNull();
+  });
+  it("still accepts a normal slug", () => {
+    expect(parseLinkRef("archie:bidar/")).toEqual({ exhibitSlug: "bidar" });
+  });
+});

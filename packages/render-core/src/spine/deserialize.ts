@@ -7,6 +7,7 @@ import { asLogicalId, asRevId, asClientId } from "../wadm/brand.js";
 import {
   ARCHIE_LOGICAL_ID,
   ARCHIE_LAYERS,
+  ARCHIE_READING,
   ARCHIE_REV,
   ARCHIE_PARENT,
   ARCHIE_MERGE_PARENTS,
@@ -41,6 +42,7 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
   const mergeParents = Array.isArray(mpRaw) && mpRaw.every((x) => typeof x === "string") ? mpRaw.map((x) => asRevId(x as string)) : undefined;
   const layersRaw = a[ARCHIE_LAYERS];
   const layers = Array.isArray(layersRaw) && layersRaw.every((x) => typeof x === "string") ? (layersRaw as string[]) : undefined;
+  const reading = asString(a[ARCHIE_READING]);
   const target = (Array.isArray(ann.target) ? ann.target[0] : ann.target) as W3CTarget;
   const record: AnnotationRecord = {
     logicalId: asLogicalId(logical),
@@ -55,6 +57,7 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
     ...(ann.body !== undefined ? { body: ann.body as W3CBody | W3CBody[] } : {}),
     ...(ann.motivation !== undefined ? { motivation: ann.motivation } : {}),
     ...(layers !== undefined ? { layers } : {}),
+    ...(reading !== undefined ? { reading } : {}),
   };
   return record;
 }

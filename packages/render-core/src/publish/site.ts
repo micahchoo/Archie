@@ -16,12 +16,14 @@ import { buildLinkIndex, resolveLink, validateLink, rewriteArchieLinks, type Lin
 import { toCollection } from "../iiif/collection.js";
 import { toExhibitsJson, type ExhibitsJson } from "../iiif/exhibits.js";
 import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest } from "../iiif/manifest.js";
+import { rightsFromIIIF } from "../iiif/rights.js";
 import type { IIIFManifest } from "../iiif/presentation.js";
-import type { Exhibit, AObject, Section } from "../model/model.js";
+import type { Exhibit, AObject, Section, RightsFields } from "../model/model.js";
 import { readAnnotations } from "../spine/persist.js";
 import { toHistory } from "../spine/serialize.js";
 import { projectHeads } from "../spine/heads.js";
-import { headsPageFromRecords, citationIdMap, targetSource } from "../spine/serialize.js";
+import { headsPageFromRecords, headsPagesByReading, citationIdMap, targetSource } from "../spine/serialize.js";
+import { WADM_CONTEXT } from "../wadm/types.js";
 import { stamp } from "../migrate/migrate.js";
 
 export interface PublishOptions {
@@ -176,14 +178,41 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // the manifest references: {slug}/canvas/{objId}/annotations.json.
     const heads = projectHeads(log);
     const canvasDir = await exDir.getDirectory("canvas", { create: true });
+    const readings = exhibit.readings ?? [];
+    const collId = (rid: string) => `${baseUrl}${exhibit.slug}/annotations/readings/${rid}.json`;
+    // ADR-0007: one IIIF AnnotationCollection per Reading (the partOf target the reading-pages cite).
+    if (readings.length > 0) {
+      // Archie-viewer convenience index (the legend reads this); pure IIIF consumers use the
+      // AnnotationCollections below instead. Three-tier, like exhibits.json for the Gallery.
+      await writeJson(exDir, "readings.json", readings);
+      const rdDir = await (await exDir.getDirectory("annotations", { create: true })).getDirectory("readings", { create: true });
+      for (const r of readings) {
+        await writeJson(rdDir, `${r.id}.json`, {
+          "@context": WADM_CONTEXT,
+          id: collId(r.id),
+          type: "AnnotationCollection",
+          label: { en: [r.name] },
+          ...(r.description ? { summary: { en: [r.description] } } : {}),
+        });
+      }
+    }
     for (const obj of exhibit.objects) {
       const canvasId = `${baseUrl}${exhibit.slug}/canvas/${obj.id}`;
-      const canvasHeads = heads.filter((h) => targetSource(h) === canvasId);
       const objDir = await canvasDir.getDirectory(obj.id, { create: true });
       // Resolve in-body `archie:` links on the consumer projection only (history stays canonical).
-      const projected = canvasHeads.map((h) => rewriteHeadBodies(h, exhibit.slug, rw, brokenLinks));
-      const page = headsPageFromRecords(projected, `${canvasId}/annotations.json`, ids, { historyBase: historyBaseAbs });
-      await writeJson(objDir, "annotations.json", page);
+      const projected = heads.filter((h) => targetSource(h) === canvasId).map((h) => rewriteHeadBodies(h, exhibit.slug, rw, brokenLinks));
+      const fileFor = (r: string | undefined) => (r === undefined ? "annotations.json" : `annotations-${r}.json`);
+      const pageId = (r: string | undefined) => `${canvasId}/${fileFor(r)}`;
+      const opts = { historyBase: historyBaseAbs };
+      const partition = new Map(headsPagesByReading(projected, ids, pageId, collId, opts).map((p) => [p.reading, p.page]));
+      // Base page — always written (the manifest lists it unconditionally).
+      await writeJson(objDir, "annotations.json", partition.get(undefined) ?? headsPageFromRecords([], pageId(undefined), ids, opts));
+      // One page per REGISTRY reading — empty (with partOf) if this canvas has no notes for it,
+      // so every `Canvas.annotations` reference the manifest lists resolves to a real file.
+      for (const r of readings) {
+        const page = partition.get(r.id) ?? Object.assign(headsPageFromRecords([], pageId(r.id), ids, opts), { partOf: collId(r.id) });
+        await writeJson(objDir, fileFor(r.id), page);
+      }
     }
   }
   return { brokenLinks };
@@ -237,6 +266,7 @@ export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
       objects: objectsFromManifest(manifest),
       ...(card.description !== undefined ? { summary: card.description } : {}),
       ...(card.cover !== undefined ? { cover: card.cover } : {}),
+      ...rightsFromIIIF(manifest), // exhibit-level credit/license round-trips via the manifest
     });
   }
   const library: Library = {
@@ -244,12 +274,17 @@ export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
     exhibits,
     ...(ex.library.title !== undefined ? { title: ex.library.title } : {}),
     ...(ex.library.summary !== undefined ? { summary: ex.library.summary } : {}),
+    // Library-level credit/license round-trips via exhibits.json (the friendly model shape lives there).
+    ...(ex.library.rights !== undefined ? { rights: ex.library.rights } : {}),
+    ...(ex.library.requiredStatement !== undefined ? { requiredStatement: ex.library.requiredStatement } : {}),
   };
   return { library, logs };
 }
 
-/** One published exhibit read from a Filesystem (the in-memory PREVIEW shape). */
-export interface PublishedExhibitData {
+/** One published exhibit read from a Filesystem (the in-memory PREVIEW shape). Carries the
+ *  exhibit-level `RightsFields` (credit/license) recovered from the manifest, for the Viewer's
+ *  per-exhibit credit line; per-object rights ride on each `objects[]` entry. */
+export interface PublishedExhibitData extends RightsFields {
   slug: string;
   title: string;
   summary?: string;
@@ -284,5 +319,5 @@ export async function readPublishedExhibit(fs: Filesystem, slug: string): Promis
   }
   const title = manifest.label?.none?.[0] ?? slug;
   const summary = (manifest as { summary?: { none?: string[] } }).summary?.none?.[0];
-  return { slug, title, objects, annotationsByObject, sections, canvasIdByObject, ...(summary !== undefined ? { summary } : {}) };
+  return { slug, title, objects, annotationsByObject, sections, canvasIdByObject, ...rightsFromIIIF(manifest), ...(summary !== undefined ? { summary } : {}) };
 }

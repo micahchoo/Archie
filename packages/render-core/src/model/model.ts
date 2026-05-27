@@ -50,13 +50,33 @@ export function isValidMode(_layout: LayoutType, mode: string | undefined): bool
   return mode === undefined;
 }
 
+/**
+ * IIIF rights / attribution carried by a Library, Exhibit, or Object — the SAME field set at every
+ * level (CONTEXT "Exhibit / Library rights & metadata"; Q1–Q3). Authored as friendly inputs, projected
+ * THIN to the IIIF-standard vocabulary at publish so a pure IIIF viewer (Mirador) shows credit + license
+ * for free: `requiredStatement` → IIIF `requiredStatement` (a MUST-display label/value pair), `rights`
+ * → IIIF `rights` (a single license URI — CC / RightsStatements.org). `provider` / `metadata` /
+ * contributors / per-field opt-in `inherit` are ADDITIVE (the IIIF fields exist; exposed progressively).
+ * Core-first carries only `requiredStatement` + `rights`.
+ */
+export interface RightsFields {
+  /** A license URI (CC / RightsStatements.org). Projects to IIIF `rights`. Studio = an approved-URI picker. */
+  rights?: string;
+  /** The displayed attribution credit. Projects to IIIF `requiredStatement` (MUST-display). `label`
+   *  defaults to "Attribution" at projection when blank. "Republished from X under the same license"
+   *  lives HERE (it is statement text, not an approved `rights` URI). */
+  requiredStatement?: { label: string; value: string };
+}
+
 /** One media item inside an Exhibit; projects to an IIIF Canvas. */
-export interface AObject {
+export interface AObject extends RightsFields {
   /** Stable id within the Exhibit (used to build the canvas id). */
   id: string;
   /** Image URL or IIIF service/info.json (classified by resolveTileSource). */
   source: string;
   label: string;
+  /** Optional description/caption for this object — projects to the IIIF Canvas `summary`. */
+  summary?: string;
   /** Defaults to "image". */
   mediaType?: MediaType;
   /** Pixel dimensions — required by IIIF for image/video canvases when known. */
@@ -89,8 +109,29 @@ export interface Section {
   prose?: string;
 }
 
-/** One published narrative artifact; projects to an IIIF Manifest. Self-contained (Q-1). */
-export interface Exhibit {
+/**
+ * A Reading — a curated, mutually-exclusive interpretive PASS over the exhibit's objects (ADR-0007;
+ * e.g. a "cipher" vs a "hoax" reading of the same folio). The reader switches between Readings (the
+ * canvas legend is a radio); a Note belongs to one Reading via `record.reading` (this id) or none
+ * (the always-visible base). Projects to an IIIF `AnnotationCollection` per Exhibit; each object's
+ * notes for the reading form an `AnnotationPage` whose `partOf` points at it.
+ * NB: DISTINCT from the §42 reading-MODE axis (`Exhibit.mode` / `readingFamily`) — a Reading is
+ * *interpretation*; a mode is *pacing* (click vs scroll). Different concepts, similar word.
+ */
+export interface Reading {
+  /** Stable id; `record.reading` references this. */
+  id: string;
+  /** Display name shown in the legend (e.g. "Cipher"). */
+  name: string;
+  /** One-line description — makes the reading's intent legible in the legend (UX principle #1). */
+  description?: string;
+  /** Visual identity (legend swatch / marker accent). */
+  colour?: string;
+}
+
+/** One published narrative artifact; projects to an IIIF Manifest. Self-contained (Q-1).
+ *  Carries `RightsFields` (credit/license) at the Exhibit level. */
+export interface Exhibit extends RightsFields {
   id: string;
   /** URL segment — the published grammar is `/{slug}/` (CONTEXT linkability). */
   slug: string;
@@ -101,6 +142,9 @@ export interface Exhibit {
   objects: AObject[];
   /** Ordered narrative sections (IIIF Ranges). Present only for Narrative-layout exhibits. */
   sections?: Section[];
+  /** The exhibit's curated Readings — interpretive passes (ADR-0007). A Note references one by id
+   *  (`record.reading`) or none (base). Absent/empty = a base-only exhibit (no legend). Order = legend order. */
+  readings?: Reading[];
   /** The author's chosen spatial arrangement (reading-intent declaration). Inferred if absent. */
   layout?: LayoutType;
   /** RESERVED (§43 reading-MODE axis) — a pacing/mode variant of `layout` (e.g. "slideshow" of grid,
@@ -109,8 +153,9 @@ export interface Exhibit {
   mode?: string;
 }
 
-/** Top-level container for one project; projects to an IIIF Collection. Array order = display order. */
-export interface Library {
+/** Top-level container for one project; projects to an IIIF Collection. Array order = display order.
+ *  Carries `RightsFields` (credit/license) at the Library level. */
+export interface Library extends RightsFields {
   id: string;
   title?: string;
   summary?: string;
@@ -126,4 +171,9 @@ export interface Library {
 export function singleExhibitLibrary(library: Library, slug: string): Library {
   const ex = library.exhibits.find((e) => e.slug === slug);
   return { id: library.id, exhibits: ex ? [ex] : [] };
+}
+
+/** Resolve a Reading id to its registry entry (name/description/colour), or undefined (ADR-0007). */
+export function readingById(exhibit: Pick<Exhibit, "readings">, id: string): Reading | undefined {
+  return exhibit.readings?.find((r) => r.id === id);
 }

@@ -23,6 +23,7 @@ import {
   PROV_WAS_REVISION_OF,
   ARCHIE_LOGICAL_ID,
   ARCHIE_LAYERS,
+  ARCHIE_READING,
   ARCHIE_REV,
   ARCHIE_PARENT,
   ARCHIE_MERGE_PARENTS,
@@ -109,12 +110,19 @@ function withDagMeta(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnn
   if (record.mergeParents !== undefined && record.mergeParents.length > 0) a[ARCHIE_MERGE_PARENTS] = record.mergeParents;
   if (record.deleted) a[ARCHIE_DELETED] = true;
   if (record.layers !== undefined) a[ARCHIE_LAYERS] = record.layers;
+  if (record.reading !== undefined) a[ARCHIE_READING] = record.reading;
   return ann;
 }
 
-/** Put layer membership on a head annotation (the Archie viewer filters on it; pure ignores). */
+/** @deprecated Put layer membership on a head annotation. Superseded by {@link withReading} (ADR-0007). */
 function withLayers(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
   if (record.layers !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_LAYERS] = record.layers;
+  return ann;
+}
+
+/** Put the single Reading membership on a head annotation (Archie viewer filters; pure ignores) — ADR-0007. */
+function withReading(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
+  if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
   return ann;
 }
 
@@ -132,11 +140,43 @@ export function targetSource(record: AnnotationRecord): string {
 export function headsPageFromRecords(heads: AnnotationRecord[], pageId: string, ids: Map<RevId, string>, opts: SerializeOptions = {}): W3CAnnotationPage {
   const historyBase = opts.historyBase ?? "annotations/history/";
   const items: W3CAnnotation[] = heads.map((head) => {
-    const ann = withLayers(withProvLink(recordToAnnotation(head, ids.get(head.rev)!), head.parent, ids), head);
+    const ann = withReading(withLayers(withProvLink(recordToAnnotation(head, ids.get(head.rev)!), head.parent, ids), head), head);
     ann[ARCHIE_HAS_HISTORY] = `${historyBase}${head.logicalId}.json`;
     return ann;
   });
   return { "@context": WADM_CONTEXT, id: pageId, type: "AnnotationPage", items };
+}
+
+/**
+ * Phase-2 / ADR-0007: partition a canvas's head records into one AnnotationPage PER Reading,
+ * plus a base page for no-reading notes — the multi-AnnotationPage Canvas a IIIF viewer (Mirador)
+ * toggles. Deceptively-simple cases handled explicitly: (a) the base page (undefined reading) has
+ * NO `partOf`; (b) a reading with zero notes on this canvas emits NO page (only readings present in
+ * `heads` appear); (c) each reading-page's `partOf` points at the reading's AnnotationCollection id.
+ * Stable order: base first, then reading ids sorted. A pure function of the (already canvas-scoped) heads.
+ */
+export function headsPagesByReading(
+  heads: AnnotationRecord[],
+  ids: Map<RevId, string>,
+  pageId: (reading: string | undefined) => string,
+  collectionId: (reading: string) => string,
+  opts: SerializeOptions = {},
+): { reading: string | undefined; page: W3CAnnotationPage }[] {
+  const groups = new Map<string | undefined, AnnotationRecord[]>();
+  for (const h of heads) {
+    const arr = groups.get(h.reading);
+    if (arr) arr.push(h);
+    else groups.set(h.reading, [h]);
+  }
+  // NB: Array.sort moves `undefined` elements to the END regardless of comparator, so we sort the
+  // DEFINED reading keys and prepend base (undefined) explicitly to guarantee base-first order.
+  const defined = [...groups.keys()].filter((k): k is string => k !== undefined).sort(cmp);
+  const keys: (string | undefined)[] = groups.has(undefined) ? [undefined, ...defined] : defined;
+  return keys.map((reading) => {
+    const page = headsPageFromRecords(groups.get(reading)!, pageId(reading), ids, opts);
+    if (reading !== undefined) (page as { partOf?: unknown }).partOf = collectionId(reading);
+    return { reading, page };
+  });
 }
 
 /**

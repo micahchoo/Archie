@@ -10,9 +10,21 @@ export type SelectionId = string;
 /** The v1 drawing tools (the rect + polygon shape vocab — Q-1). */
 export type DrawTool = "rectangle" | "polygon";
 
+/** Per-marker draw style (maps to Annotorious DrawingStyle) — used to colour a marker by its Reading (ADR-0007). */
+export interface MarkerStyle {
+  fill?: string;
+  fillOpacity?: number;
+  stroke?: string;
+  strokeOpacity?: number;
+  strokeWidth?: number;
+}
+
 export interface MountSurface {
   /** Load (replace) the WADM annotations rendered on the surface — e.g. a canvas heads page. */
   setAnnotations(annotations: W3CAnnotation[]): void;
+  /** Style markers per-annotation (by id) — e.g. colour each marker by its Reading (ADR-0007). Return
+   *  undefined for the default style. Persistent: applies to current + future annotations. Pass undefined to reset. */
+  setStyle(styleFor: ((annotationId: SelectionId) => MarkerStyle | undefined) | undefined): void;
   /** Zoom/pan so the target's region fills the viewport. Handles polygon→bbox (core selectorBBox). */
   fitBounds(id: SelectionId): void;
   /** Zoom/pan to an arbitrary REGION fragment that is NOT an annotation — a narrative Section's camera

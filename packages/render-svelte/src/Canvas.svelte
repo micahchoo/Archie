@@ -4,7 +4,7 @@
   // component only wires the surface to $state, drawing props, and lifecycle callbacks.
   // NOT in the tsc/test gate (real OSD render = browser verification).
   import { onMount, onDestroy } from "svelte";
-  import { createMount, type FitOptions, type MountSurface, type DrawTool } from "@render/mount";
+  import { createMount, type FitOptions, type MountSurface, type DrawTool, type MarkerStyle } from "@render/mount";
   import type { W3CAnnotation } from "@render/core";
   import { createCanvasController, type CanvasController } from "./controller.js";
 
@@ -21,6 +21,7 @@
     onupdate,
     ondelete,
     onmarkerrect,
+    styleOf,
   }: {
     source: string;
     canvasId?: string;
@@ -39,6 +40,8 @@
      *  geometry edit — so the host can anchor an editing popover to it (ADR-0006). Null when nothing is
      *  selected or the marker isn't resolvable (e.g. off-screen during an animation frame). */
     onmarkerrect?: (rect: { left: number; top: number; right: number; bottom: number } | null) => void;
+    /** Per-marker style by annotation id — colours a marker by its Reading (ADR-0007). Undefined = default. */
+    styleOf?: (id: string) => MarkerStyle | undefined;
   } = $props();
 
   // Emit the selected marker's current screen rect (OSD re-anchors natively, so this just re-reads).
@@ -57,6 +60,7 @@
     try {
       surface = await createMount(el, { source, ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}) });
       surface.setAnnotations(annotations);
+      if (styleOf) surface.setStyle(styleOf);
       if (oncreate) surface.onCreate(oncreate);
       if (onupdate) surface.onUpdate(onupdate);
       if (ondelete) surface.onDelete(ondelete);
@@ -83,6 +87,7 @@
   // optional-chain short-circuits on the (async) initially-undefined surface and the effect never
   // subscribes to the prop, so it never re-runs when the prop changes (Svelte 5 dep-tracking gotcha).
   $effect(() => { const a = annotations; if (surface) surface.setAnnotations(a); emitRect(); });
+  $effect(() => { const sf = styleOf; if (surface) surface.setStyle(sf); });
   $effect(() => { const t = tool; if (surface) surface.setDrawingTool(t); });
   $effect(() => { const d = drawing; if (surface) surface.setDrawingEnabled(d); });
   $effect(() => { const s = selected; if (controller && s !== controller.selected) controller.select(s); emitRect(); });
@@ -108,6 +113,9 @@
 <style>
   .archie-canvas-wrap { position: relative; width: 100%; height: 100%; }
   .archie-canvas { width: 100%; height: 100%; }
+  /* Markers need a shadow to stay recognizable on LIGHT surfaces (light folios/paper) — the thin
+     stroke alone vanishes against pale parchment. A subtle drop-shadow on the SVG shape group. */
+  :global(.a9s-annotationlayer .a9s-annotation) { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55)); }
   /* Loading / error states over the light table (system.md §Reader States). */
   .overlay {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px;

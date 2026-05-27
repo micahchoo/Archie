@@ -198,3 +198,55 @@ describe("intra-Library links — resolved on the heads projection, raw in the c
     expect(hasRawRef).toBe(true); // Open-zip → edit → republish keeps the structured ref auto-updating
   });
 });
+
+describe("publishLibrary — Readings emit per-reading AnnotationPages + collections (Phase 2, ADR-0007)", () => {
+  const rbase = "https://u.gh.io/lib/";
+  const rCanvas = `${rbase}v/canvas/o1`;
+  const exV = {
+    id: "exV",
+    slug: "v",
+    title: "Voynich",
+    objects: [{ id: "o1", source: "https://img/v.jpg", label: "f1", width: 10, height: 10 }],
+    readings: [
+      { id: "cipher", name: "Cipher", description: "an enciphered natural language" },
+      { id: "hoax", name: "Hoax" },
+    ],
+  };
+  const libV: Library = { id: "lib", exhibits: [exV] };
+  // A cipher note ON the canvas; hoax has NO note on o1 (→ an empty hoax page must still be emitted).
+  const logV: AnnotationLog = appendNew([], { target: rCanvas, body: { type: "TextualBody", value: "noun-phrase" }, reading: "cipher", lastEditor: alice, modifiedAt: "t", now: 1 }).log;
+
+  const readJson = async (fs: MemoryFilesystem, ...path: string[]) => {
+    let dir = await fs.root();
+    for (let i = 0; i < path.length - 1; i++) dir = await dir.getDirectory(path[i]!);
+    return JSON.parse(new TextDecoder().decode(await (await dir.getFile(path[path.length - 1]!)).readable()));
+  };
+
+  it("manifest lists base + a page per reading; cipher page carries the note + partOf; hoax page empty; collection emitted", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libV, (id) => (id === "exV" ? logV : []), { baseUrl: rbase });
+
+    const manifest = await readJson(fs, "v", "manifest.json");
+    expect(manifest.items[0].annotations.map((a: { id: string }) => a.id)).toEqual([
+      `${rCanvas}/annotations.json`,
+      `${rCanvas}/annotations-cipher.json`,
+      `${rCanvas}/annotations-hoax.json`,
+    ]);
+
+    const cipher = await readJson(fs, "v", "canvas", "o1", "annotations-cipher.json");
+    expect(cipher.items).toHaveLength(1);
+    expect(cipher.partOf).toBe(`${rbase}v/annotations/readings/cipher.json`);
+
+    const hoax = await readJson(fs, "v", "canvas", "o1", "annotations-hoax.json");
+    expect(hoax.items).toHaveLength(0); // empty page so the manifest ref resolves
+    expect(hoax.partOf).toBe(`${rbase}v/annotations/readings/hoax.json`);
+
+    const base = await readJson(fs, "v", "canvas", "o1", "annotations.json");
+    expect(base.items).toHaveLength(0); // the only note went to the cipher reading
+    expect(base.partOf).toBeUndefined();
+
+    const coll = await readJson(fs, "v", "annotations", "readings", "cipher.json");
+    expect(coll.type).toBe("AnnotationCollection");
+    expect(coll.label.en[0]).toBe("Cipher");
+  });
+});
