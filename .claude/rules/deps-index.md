@@ -25,6 +25,8 @@ data. If `freshness` is `very-stale` and the answer is load-bearing, call
 | `dompurify` | `main` | 2026-05-25 | fresh | https://github.com/cure53/DOMPurify |
 | `vite-node` | `main` | 2026-05-25 | fresh | https://github.com/antfu-collective/vite-node |
 | `wavesurfer.js` | `main` | 2026-05-26 | fresh | https://github.com/katspaugh/wavesurfer.js |
+| `fflate` | `master` | 2026-05-27 | fresh | https://github.com/101arrowz/fflate |
+| `@astrojs/check` | `main` | 2026-05-27 | fresh | https://github.com/withastro/astro |
 
 ## Indexing failures
 
