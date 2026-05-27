@@ -1,5 +1,6 @@
 node_modules/
 dist/
+gh-pages-dist/
 .astro/
 *.tsbuildinfo
 .DS_Store
