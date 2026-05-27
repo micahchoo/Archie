@@ -19,8 +19,8 @@
     "@render/svelte": "workspace:*"
   },
   "devDependencies": {
-    "@astrojs/svelte": "^7.0.2",
-    "astro": "^5.1.1",
+    "@astrojs/svelte": "^8.1.2",
+    "astro": "^6.3.8",
     "svelte": "^5.15.0",
     "vite-node": "^6.0.0"
   }
