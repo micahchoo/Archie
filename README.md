@@ -116,7 +116,7 @@ pnpm --filter @archie/viewer dev   # opens http://localhost:4321
 **7. Deploy to GitHub Pages.** In the Studio, open **Publish → Connect to GitHub**. Enter your repo **owner** and **name**, a branch (defaults to `gh-pages`), and a [fine-grained personal access token](https://github.com/settings/tokens?type=beta) with **`contents: write`** scope. Archie pushes the whole library — every exhibit — to that branch via the GitHub Contents API; the token is used once and never stored. Then, in your repo's **Settings → Pages**, set the source to the `gh-pages` branch. Your site goes live at `https://<owner>.github.io/<repo>/`.
 
 > [!NOTE]
-> The push lands your whole library's data (IIIF manifests, annotations, media) on the branch. Today the Viewer ships fixed routes for the bundled sample exhibits — rendering *arbitrary* user-created exhibits on the published site is still [owed work](#status--roadmap).
+> The push writes your library's **data tree** (IIIF manifests, annotations, media, `exhibits.json`). The Viewer is a single client-routed shell that renders *any* published library at runtime — but the publish step writes data only, so the built Viewer (`astro build` output) must be deployed alongside the data for the site to render. See [Status & roadmap](#status--roadmap).
 
 ## Features
 
@@ -225,11 +225,11 @@ Archie uses a precise vocabulary. One-sentence definitions below; full glossary 
 - Identity prompt — local display name, prompted on first merge (never at launch)
 
 **Owed (browser-verify / polish):**
-- Viewer dynamic routes — render arbitrary user-created exhibits on the published site (today the Viewer ships fixed routes for the bundled Voynich / Bidar / AV samples)
+- Verify GH-Pages publish ships the Viewer shell + data path end-to-end (the shell renders arbitrary libraries at runtime; the publish step currently writes only the data tree)
 - Browser-regression verification on AV editor, overview canvas, popover, and persistence flows
 - Video spatiotemporal — Viewer-side read (studio authoring done)
 - Grid slideshow sub-mode
-- Viewer breadcrumb navigation and IIIF Content-State arrival
+- Viewer IIIF Content-State arrival
 - Overview section dividers (deferred — model (A) makes them largely redundant)
 
 The full phasing and gate mechanism is in [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md). Deferred-work registry in that doc is the canonical remaining-work list.
