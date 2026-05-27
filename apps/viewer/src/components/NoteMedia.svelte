@@ -8,17 +8,24 @@
 
   // Deterministic waveform bar heights (the av-cover motif) — decoration, not a real decode.
   const bars = Array.from({ length: 11 }, (_, b) => 28 + ((b * 53) % 64));
+
+  // Broken-media fallback (empty/error gate): track which tiles failed to load so a missing image/video
+  // shows a quiet placeholder instead of the browser's broken-image glyph.
+  let failed = $state(new Set<number>());
+  function markFailed(i: number) { failed.add(i); failed = new Set(failed); }
 </script>
 
 {#if media.length}
   <div class="strip">
     {#each media as m, i (m.url + i)}
       <button class="tile {m.kind}" onclick={() => onopen(i)} aria-label={`Open ${m.kind}`}>
-        {#if m.kind === "image"}
-          <img src={m.url} alt="" loading="lazy" />
+        {#if failed.has(i)}
+          <span class="tile-failed">couldn’t load</span>
+        {:else if m.kind === "image"}
+          <img src={m.url} alt="" loading="lazy" onerror={() => markFailed(i)} />
         {:else if m.kind === "video"}
           <!-- preload metadata → shows the first frame as a poster; muted, no controls (a thumbnail). -->
-          <video src={m.url} muted preload="metadata" tabindex="-1"></video>
+          <video src={m.url} muted preload="metadata" tabindex="-1" onerror={() => markFailed(i)}></video>
           <span class="badge">▶</span>
         {:else}
           <span class="wave" aria-hidden="true">{#each bars as h}<span style={`height:${h}%`}></span>{/each}</span>
@@ -39,6 +46,8 @@
   }
   .tile:hover { border-color: var(--accent); transform: translateY(-1px); }
   .tile img, .tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* Broken-media fallback: a quiet label instead of the browser's broken-image glyph. */
+  .tile-failed { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); font-style: italic; }
 
   /* Audio waveform motif — forest-green bars on the dark light-table (matches the av-cover SVG). */
   .tile.audio { display: flex; align-items: center; justify-content: center; }

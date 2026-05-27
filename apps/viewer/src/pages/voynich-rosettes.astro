@@ -1,0 +1,27 @@
+---
+// SINGLE-layout exhibit reader — "The Rosettes" (only o9, the f85v–86r foldout). Mirrors voynich.astro
+// but points ExhibitView at the voynich-rosettes slug; resolveLayout infers single (1 object, no sections).
+import ExhibitView from "../components/ExhibitView.svelte";
+import "../tokens.css";
+import "@annotorious/openseadragon/annotorious-openseadragon.css";
+import "@annotorious/plugin-tools/annotorious-plugin-tools.css";
+import "../markers.css"; // A2 + stroke-over-stroke marker styling — must load AFTER Annotorious CSS
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Rosettes — Archie</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body style="margin: 0">
+    <!-- client:only — OSD touches `document` at import, so the reader is browser-only (no SSR). -->
+    <ExhibitView client:only="svelte" slug="voynich-rosettes" />
+  </body>
+</html>

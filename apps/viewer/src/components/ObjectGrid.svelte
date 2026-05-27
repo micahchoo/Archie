@@ -3,7 +3,8 @@
   // (system.md signature) — the visitor scans the works and chooses one to read (object-led
   // reading, strategy §27). Deliberately a PLAIN thumbnail grid, NOT the Phase-3 "overview-as-canvas"
   // invention (a zoomable canvas-of-objects) — that stays gated. Selecting a card opens its Reader.
-  import type { AObject } from "@render/core";
+  import { thumbnailUrl, type AObject, type RightsFields } from "@render/core";
+  import Credit from "./Credit.svelte";
 
   let {
     title,
@@ -11,13 +12,21 @@
     objects,
     countOf,
     onselect,
+    rights,
   }: {
     title: string;
     summary?: string;
     objects: AObject[];
     countOf: (objectId: string) => number;
     onselect: (objectId: string) => void;
+    /** The exhibit-level credit/license (Q5) — shown under the title on this overview. */
+    rights?: RightsFields;
   } = $props();
+
+  // Broken-media fallback (empty/error gate): a plate whose image fails shows a quiet "couldn’t load"
+  // placeholder rather than a silent dark rectangle (was a CSS background-image — now an <img> for onerror).
+  let failed = $state(new Set<string>());
+  function markFailed(id: string) { failed.add(id); failed = new Set(failed); }
 </script>
 
 <main class="overview">
@@ -25,6 +34,7 @@
     <p class="eyebrow">Exhibit · {objects.length} objects</p>
     <h1>{title}</h1>
     {#if summary}<p class="summary">{summary}</p>{/if}
+    <p class="credit-row"><Credit {rights} tone="canvas" /></p>
   </header>
 
   {#if objects.length === 0}
@@ -35,7 +45,12 @@
       {#each objects as obj (obj.id)}
         <li>
           <button class="object" onclick={() => onselect(obj.id)}>
-            <span class="plate" style={`background-image:url(${obj.source})`}></span>
+            {#if failed.has(obj.id)}
+              <span class="plate plate-failed">couldn’t load this image</span>
+            {:else}
+              <!-- A bare IIIF service base isn't an image; thumbnailUrl derives a sized JPEG (else passes through). -->
+              <img class="plate" src={thumbnailUrl(obj.source, 480)} alt="" loading="lazy" onerror={() => markFailed(obj.id)} />
+            {/if}
             <span class="caption">
               <span class="label">{obj.label}</span>
               <span class="count">{countOf(obj.id)} notes</span>
@@ -68,7 +83,8 @@
 
   /* The plate — the object glows whole on the dark table (contain, not cover: don't truncate a
      portrait or a wide landscape; show the work entire, lamplight around it). */
-  .plate { display: block; aspect-ratio: 4 / 3; background-color: var(--surface-canvas); background-size: contain; background-position: center; background-repeat: no-repeat; border-bottom: 1px solid var(--border-canvas); }
+  .plate { display: block; width: 100%; aspect-ratio: 4 / 3; background-color: var(--surface-canvas); object-fit: contain; border-bottom: 1px solid var(--border-canvas); }
+  .plate-failed { display: flex; align-items: center; justify-content: center; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-style: italic; color: var(--ink-canvas-muted); }
   .caption { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) var(--space-5) var(--space-5); }
   .label { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-canvas-primary); }
   .count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); }

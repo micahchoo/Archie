@@ -7,20 +7,48 @@
   import Canvas from "@render/svelte/Canvas.svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import NoteMedia from "./NoteMedia.svelte";
-  import { renderMarkdown, stripMarkdown } from "@render/svelte";
-  import { splitNoteMedia, type NoteMediaItem, type W3CAnnotation, type W3CBody } from "@render/core";
+  import ReadingLegend from "./ReadingLegend.svelte";
+  import Credit from "./Credit.svelte";
+  import { renderMarkdown, stripMarkdown, type MarkerStyle } from "@render/svelte";
+  import { splitNoteMedia, thumbnailUrl, type NoteMediaItem, type RightsFields, type W3CAnnotation, type W3CBody, type Reading } from "@render/core";
 
   let {
     object,
     annotations = [],
+    readings = [],
+    activeReading = null,
+    onreading,
+    styleOf,
+    siblings = [],
+    currentId,
+    onnavigate,
     onback,
+    rights,
     initialSelected = null,
   }: {
-    object: { source: string; canvasId: string; label: string };
+    object: { source: string; canvasId: string; label: string; summary?: string };
     annotations?: W3CAnnotation[];
+    /** The object-level credit/license (Q5; falls back to the exhibit credit upstream). Shown by the label. */
+    rights?: RightsFields;
+    /** The exhibit's Readings (ADR-0007) — drives the canvas legend. Empty = no legend. */
+    readings?: Reading[];
+    activeReading?: string | null;
+    onreading?: (id: string | null) => void;
+    /** Per-marker style by annotation id — colours a marker by its Reading. */
+    styleOf?: (id: string) => MarkerStyle | undefined;
+    /** The exhibit's objects in reading order (for the prev/next carousel: id, label, thumbnail source). */
+    siblings?: { id: string; label: string; source: string }[];
+    currentId?: string;
+    onnavigate?: (id: string) => void;
     onback?: () => void;
     initialSelected?: string | null; // deep-link arrival: land selected on this note (→ fitBounds)
   } = $props();
+
+  // A note's Reading colour (from the registry) — accents its list card + marker (ADR-0007).
+  const readingColourOf = (it: W3CAnnotation): string | undefined => {
+    const rid = (it as unknown as Record<string, unknown>)["archie:reading"];
+    return typeof rid === "string" ? readings.find((r) => r.id === rid)?.colour : undefined;
+  };
 
   let selected = $state<string | null>(initialSelected);
   // Reset selection when the object ACTUALLY changes (grid → different object) — but not on the
@@ -42,7 +70,33 @@
 </script>
 
 <div class="reader">
-  <main><Canvas source={object.source} canvasId={object.canvasId} {annotations} bind:selected /></main>
+  <main>
+    <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
+         objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
+    {#key object.canvasId}
+      <Canvas source={object.source} canvasId={object.canvasId} {annotations} {styleOf} bind:selected />
+    {/key}
+    {#if onnavigate && siblings.length > 1}
+      {@const idx = siblings.findIndex((s) => s.id === currentId)}
+      {@const prev = idx > 0 ? siblings[idx - 1] : undefined}
+      {@const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : undefined}
+      <nav class="carousel" aria-label="Objects in this exhibit">
+        <button class="cnav" disabled={!prev} onclick={() => { if (prev) onnavigate(prev.id); }} title={prev ? `Previous: ${prev.label}` : "No previous object"}>
+          <span class="arr">‹</span>
+          {#if prev}<img class="cthumb" src={thumbnailUrl(prev.source, 120)} alt="" /><span class="lbl">{prev.label}</span>{/if}
+        </button>
+        <span class="cpos">{idx >= 0 ? idx + 1 : "–"} / {siblings.length}</span>
+        <button class="cnav" disabled={!next} onclick={() => { if (next) onnavigate(next.id); }} title={next ? `Next: ${next.label}` : "No next object"}>
+          {#if next}<span class="lbl">{next.label}</span><img class="cthumb" src={thumbnailUrl(next.source, 120)} alt="" />{/if}
+          <span class="arr">›</span>
+        </button>
+      </nav>
+    {/if}
+  </main>
+
+  {#if onreading && readings.length > 0}
+    <ReadingLegend {readings} active={activeReading} onselect={onreading} />
+  {/if}
 
   <aside class:detail={!!current}>
     {#if onback}
@@ -60,13 +114,15 @@
     {:else}
       <!-- list state -->
       <p class="object-label">{object.label}</p>
+      {#if object.summary}<p class="object-summary">{object.summary}</p>{/if}
+      <p class="credit-row"><Credit {rights} tone="paper" /></p>
       <h2 class="eyebrow">Notes · {annotations.length}</h2>
       {#if annotations.length === 0}
         <p class="empty">No notes on this object yet.</p>
       {/if}
       <ul>
         {#each annotations as it (it.id)}
-          <li><button onclick={() => (selected = it.id)}>{stripMarkdown(commentOf(it))}</button></li>
+          <li><button style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)}>{stripMarkdown(commentOf(it))}</button></li>
         {/each}
       </ul>
       <p class="hint">Click a note or a marker on the image. Markers re-anchor as you pan/zoom; selecting one zooms to it (the full nav contract).</p>
@@ -87,7 +143,27 @@
   /* The published reading experience: objects glow on the dark light table (left); notes read
      like catalog entries on warm paper (right); a forest-green popup echoes the selection. */
   .reader { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
-  main { flex: 1; min-width: 0; background: var(--surface-canvas); }
+  main { position: relative; flex: 1; min-width: 0; background: var(--surface-canvas); }
+
+  /* Prev/next object carousel — a canvas overlay, top-centered over the image (matches .popup/.legend). */
+  .carousel {
+    position: absolute; z-index: 20; top: var(--space-4); left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: 2px var(--space-2);
+    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
+    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-md);
+    font-family: var(--font-ui), sans-serif; font-size: 0.78rem;
+  }
+  .carousel .cnav {
+    display: flex; align-items: center; gap: var(--space-1); max-width: 11rem;
+    background: none; border: none; color: var(--ink-canvas-secondary); cursor: pointer; font: inherit;
+  }
+  .carousel .cnav:hover:not(:disabled) { color: var(--accent); }
+  .carousel .cnav:disabled { opacity: 0.3; cursor: default; }
+  .carousel .arr { font-size: 1.05rem; line-height: 1; }
+  .carousel .cthumb { width: 26px; height: 26px; object-fit: cover; border-radius: var(--radius-sm); flex: none; box-shadow: 0 0 0 1px var(--border-canvas-emphasis); }
+  .carousel .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .carousel .cpos { color: var(--ink-canvas-muted, #6b6356); font-variant-numeric: tabular-nums; padding: 0 var(--space-1); }
 
   /* Reader panel — warm paper, catalog entries under lamplight */
   aside {
@@ -102,12 +178,13 @@
   /* Return to the exhibit's object grid (only shown for multi-object exhibits) */
   .exhibit-back { background: none; border: none; cursor: pointer; padding: 0 0 var(--space-5); font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); }
   .exhibit-back:hover { color: var(--accent); }
-  .object-label { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-paper-primary); margin: 0 0 var(--space-3); }
+  .object-label { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-paper-primary); margin: 0 0 var(--space-2); }
+  .object-summary { font-family: var(--font-body); font-size: 0.95rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0 0 var(--space-2); }
+  .credit-row { margin: 0 0 var(--space-3); }
 
   /* Note card (list state) — clamp the markdown-stripped lead to a few lines */
   li button {
-    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
-    width: 100%; text-align: left; cursor: pointer;
+    display: block; width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-3) var(--space-4); margin-bottom: var(--space-2);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: 1px solid var(--border-paper); border-left: 3px solid transparent;

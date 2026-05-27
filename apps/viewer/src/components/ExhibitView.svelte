@@ -6,13 +6,14 @@
   // authored prose-spine; round-tripping them through manifest Ranges is a follow-up).
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
-  import { resolveLayout, type Exhibit, type LayoutDescriptor, type W3CAnnotation } from "@render/core";
+  import { resolveLayout, type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation } from "@render/core";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
   import { canvasIdFor } from "../published-base.js";
   import ObjectGrid from "./ObjectGrid.svelte";
   import Reader from "./Reader.svelte";
   import NarrativeReader from "./NarrativeReader.svelte";
   import MediaPlayer from "./MediaPlayer.svelte";
+  import type { MarkerStyle } from "@render/svelte";
 
   let { slug, noteId }: { slug: string; noteId?: string } = $props();
 
@@ -23,6 +24,7 @@
   let selectedObjectId = $state<string | null>(null);
   let arrivedNote = $state<string | null>(null); // deep-link target id (land-in-context)
   let chromeVisible = $state(false); // cold-arrival chrome (§124), fades after a few seconds
+  let activeReading = $state<string | null>(null); // ADR-0007 / Q16: base-only by default; null = base
 
   onMount(async () => {
     try {
@@ -42,8 +44,16 @@
       // deep-link arrival (§82/§124): the shell parses #/<slug>/a/<id> and passes the note id here
       // (the hash is slug-qualified now, so ExhibitView no longer reads location.hash itself).
       if (noteId) {
-        const owner = l.objects.find((o) => (d.annotationsByObject[o.id] ?? []).some((a) => a.id === noteId));
+        let foundReading: string | null = null;
+        const owner = l.objects.find((o) => {
+          if ((d.annotationsByObject[o.id] ?? []).some((a) => a.id === noteId)) return true;
+          for (const [rid, notes] of Object.entries(d.readingAnnotationsByObject[o.id] ?? {})) {
+            if (notes.some((a) => a.id === noteId)) { foundReading = rid; return true; }
+          }
+          return false;
+        });
         if (owner) {
+          if (foundReading) activeReading = foundReading; // a deep-link into a reading opens that reading
           selectedObjectId = owner.id; // land on the object (not the grid overview)
           arrivedNote = noteId; // → Reader/NarrativeReader initialSelected → fitBounds
           chromeVisible = true;
@@ -63,10 +73,39 @@
   const activeData = $derived(data?.objects.find((o) => o.id === selectedObjectId));
   const isAV = $derived(activeData?.mediaType === "sound" || activeData?.mediaType === "video");
   const noNotes: W3CAnnotation[] = [];
-  const annotationsOf = (objectId: string): W3CAnnotation[] => data?.annotationsByObject[objectId] ?? noNotes;
+  // Base notes are always visible (Q16); an active Reading overlays its notes on top of the base.
+  const annotationsOf = (objectId: string): W3CAnnotation[] => {
+    const base = data?.annotationsByObject[objectId] ?? noNotes;
+    if (activeReading === null) return base;
+    const r = data?.readingAnnotationsByObject[objectId]?.[activeReading] ?? noNotes;
+    return r.length ? [...base, ...r] : base;
+  };
   // Canvas IRI from the published manifest (SNAG fix — matches annotation targets for any publish
   // origin); falls back to the demo BASE reconstruction only if the map lacks it.
   const canvasIdOf = (objectId: string): string => data?.canvasIdByObject[objectId] ?? canvasIdFor(slug, objectId);
+  // Colour each marker by its Reading (ADR-0007) so toggling readings is VISIBLE on the canvas, not
+  // only in the note pane: build annotation-id → reading colour for an object, then a per-id style fn.
+  const readingColourById = (objectId: string): Record<string, string> => {
+    const m: Record<string, string> = {};
+    const byR = data?.readingAnnotationsByObject[objectId] ?? {};
+    for (const r of data?.readings ?? []) {
+      if (!r.colour) continue;
+      for (const a of byR[r.id] ?? []) if (a.id) m[a.id] = r.colour;
+    }
+    return m;
+  };
+  const readingStyleOf = (objectId: string): ((id: string) => MarkerStyle | undefined) => {
+    const m = readingColourById(objectId);
+    return (id) => (m[id] ? { fill: m[id], fillOpacity: 0.18, stroke: m[id], strokeOpacity: 0.95, strokeWidth: 2 } : undefined);
+  };
+
+  // Rights/credit (Q5): the Viewer renders ALREADY-RESOLVED published values and never re-runs the
+  // opt-in cascade (that collapsed at publish) — so the exhibit chrome shows the exhibit's own credit and
+  // the Reader shows the OBJECT's own credit, with NO display-time inheritance (no silent drift; Q2). Where
+  // an object should carry its own provenance (each Voynich folio = Beinecke), that lives on the object.
+  const pick = (r: RightsFields | undefined): RightsFields => ({ ...(r?.rights ? { rights: r.rights } : {}), ...(r?.requiredStatement ? { requiredStatement: r.requiredStatement } : {}) });
+  const exhibitRights = $derived(pick(data ?? undefined));
+  const objectRightsOf = (objectId: string): RightsFields => pick(data?.objects.find((x) => x.id === objectId));
 </script>
 
 {#if status === "loading"}
@@ -75,21 +114,35 @@
   <div class="state error"><span class="warn">⚠</span><span>{errorMsg}</span></div>
 {:else if data && layout}
   {#if isAV && activeData}
-    <MediaPlayer object={activeData} annotations={annotationsOf(activeData.id)} />
+    <MediaPlayer object={activeData} annotations={annotationsOf(activeData.id)} rights={objectRightsOf(activeData.id)} />
   {:else if layout.type === "narrative" && layout.sections && layout.objects[0]}
     <NarrativeReader
       objects={data.objects}
       canvasIdOf={canvasIdOf}
       annotationsByObject={data.annotationsByObject}
+      readingAnnotationsByObject={data.readingAnnotationsByObject}
       sections={layout.sections}
       title={data.title}
+      rights={exhibitRights}
+      readings={data.readings}
+      activeReading={activeReading}
+      onreading={(id) => (activeReading = id)}
+      styleFor={readingStyleOf}
       initialSelected={arrivedNote}
     />
   {:else if activeObject}
     <Reader
-      object={{ source: activeObject.source, canvasId: canvasIdOf(activeObject.id), label: activeObject.label }}
+      object={{ source: activeObject.source, canvasId: canvasIdOf(activeObject.id), label: activeObject.label, summary: activeData?.summary }}
       annotations={annotationsOf(activeObject.id)}
+      readings={data.readings}
+      activeReading={activeReading}
+      onreading={(id) => (activeReading = id)}
+      styleOf={readingStyleOf(activeObject.id)}
+      siblings={layout.objects.map((o) => ({ id: o.id, label: o.label, source: o.source }))}
+      currentId={activeObject.id}
+      onnavigate={(id) => (selectedObjectId = id)}
       onback={isGrid ? () => (selectedObjectId = null) : undefined}
+      rights={objectRightsOf(activeObject.id)}
       initialSelected={arrivedNote}
     />
   {:else}
@@ -99,6 +152,7 @@
       objects={layout.objects}
       countOf={(id) => annotationsOf(id).length}
       onselect={(id) => (selectedObjectId = id)}
+      rights={exhibitRights}
     />
   {/if}
 
