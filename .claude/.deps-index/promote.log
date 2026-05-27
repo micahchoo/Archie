@@ -227,3 +227,25 @@ Installed: wavesurfer@main (68.0 KB, 22 sections)
    - Use --path to specify a different docs folder
    - Check for a dedicated docs repo (e.g., wavesurfer-docs, wavesurfer.github.io)
 2026-05-26T05:52:29Z | added wavesurfer.js@main
+Cloning https://github.com/101arrowz/fflate...
+Checking out master...
+Using: fflate@master
+✓ Found docs at /docs
+✓ Found 87 markdown files
+Building package...
+✓ Built package: fflate@master
+✓ Saved to /home/micah/.context/packages/fflate@master.db
+
+Installed: fflate@master (224.0 KB, 221 sections)
+2026-05-27T05:52:21Z | added fflate@master
+Cloning https://github.com/withastro/astro...
+Checking out main...
+Using: astro@main
+✓ Reading from repository root
+✓ Found 63 markdown files
+Building package...
+✓ Built package: astro@main
+✓ Saved to /home/micah/.context/packages/astro@main.db
+
+Installed: astro@main (924.0 KB, 306 sections)
+2026-05-27T06:31:45Z | added @astrojs/check@main
