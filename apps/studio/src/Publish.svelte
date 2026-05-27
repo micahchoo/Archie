@@ -4,7 +4,7 @@
   // @render/core `publishToGitHub`; this is the thin form + state machine. The PAT is paste-each-
   // publish and NEVER persisted (CONTEXT: token not stored) — it lives only in this component's
   // local state for the duration of one publish, never written to OPFS/localStorage.
-  import type { GitHubTarget, BrokenLink } from "@render/core";
+  import type { GitHubTarget, BrokenLink, GitHubPublishResult, PublishProgress } from "@render/core";
 
   let {
     open = false,
@@ -14,7 +14,7 @@
   }: {
     open?: boolean;
     onclose: () => void;
-    onpublish: (target: GitHubTarget, opts: { includeOriginals: boolean }) => Promise<{ commitUrl: string }>;
+    onpublish: (target: GitHubTarget, opts: { includeOriginals: boolean }, onProgress: (p: PublishProgress) => void) => Promise<GitHubPublishResult>;
     /** Intra-Library links that won't resolve in the published site — they degrade to plain text. */
     brokenLinks?: BrokenLink[];
   } = $props();
@@ -30,19 +30,37 @@
   let token = $state("");
   let phase = $state<"idle" | "publishing" | "done" | "error">("idle");
   let commitUrl = $state("");
+  let pagesUrl = $state("");          // visitor-facing URL, returned by publishToGitHub (project- vs user-site aware)
+  let pagesEnabled = $state(false);   // false ⇒ the push landed but Pages must be enabled manually
   let errorMsg = $state("");
+  let progress = $state<PublishProgress | null>(null); // live step from publishToGitHub while publishing
 
-  const canPublish = $derived(owner.trim() !== "" && repo.trim() !== "" && token.trim() !== "" && phase !== "publishing");
-  // GitHub Pages serves a project site at this URL (the visitor-facing exhibit address).
-  const pagesUrl = $derived(`https://${owner.trim()}.github.io/${repo.trim()}/`);
+  // Human-readable progress for the long push (media upload is one request per asset → show the count).
+  const progressText = $derived(
+    progress?.phase === "uploading" ? `Uploading media — ${progress.done} of ${progress.total}…`
+    : progress?.phase === "committing" ? "Creating the commit…"
+    : progress?.phase === "enabling-pages" ? "Turning on GitHub Pages…"
+    : "Preparing the library…",
+  );
+
+  // Owner/repo are bare names — reject a pasted URL or "owner/repo" before it becomes a confusing 404.
+  const nameError = $derived(
+    /[/\s]/.test(owner.trim()) || /[/\s]/.test(repo.trim()) ? "Enter just the names — no slashes, spaces, or full URLs." : "",
+  );
+  const canPublish = $derived(owner.trim() !== "" && repo.trim() !== "" && token.trim() !== "" && nameError === "" && phase !== "publishing");
+  // Where the author flips Pages on if we couldn't (private repo / token without Pages scope).
+  const pagesSettingsUrl = $derived(`https://github.com/${owner.trim()}/${repo.trim()}/settings/pages`);
 
   async function publish() {
     phase = "publishing";
     errorMsg = "";
+    progress = null;
     try {
       const target: GitHubTarget = { owner: owner.trim(), repo: repo.trim(), branch: branch.trim() || "gh-pages", token: token.trim() };
-      const res = await onpublish(target, { includeOriginals });
+      const res = await onpublish(target, { includeOriginals }, (p) => (progress = p));
       commitUrl = res.commitUrl;
+      pagesUrl = res.pagesUrl;
+      pagesEnabled = res.pagesEnabled;
       phase = "done";
       token = ""; // drop the secret the instant we're done with it
     } catch (e) {
@@ -55,6 +73,7 @@
   function close() {
     token = "";
     phase = "idle";
+    progress = null;
     onclose();
   }
 </script>
@@ -72,7 +91,13 @@
       <div class="result">
         <p class="ok">Published.</p>
         <p class="line">Commit · <a href={commitUrl} target="_blank" rel="noopener">{commitUrl}</a></p>
-        <p class="line">Pages · <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a> <span class="muted">(may take a minute to go live)</span></p>
+        {#if pagesEnabled}
+          <p class="line">Pages · <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a> <span class="muted">(may take a minute to go live)</span></p>
+        {:else}
+          <p class="line">Pushed to the <code>{branch}</code> branch. To serve it on the web, turn on GitHub Pages for this repo:</p>
+          <p class="line"><a href={pagesSettingsUrl} target="_blank" rel="noopener">Settings → Pages</a> → <em>Deploy from a branch</em> → <code>{branch}</code>. It then appears at <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a>.</p>
+        {/if}
+        <p class="line muted">For editing and the fullest experience, run the apps locally — a published Pages site is read-only.</p>
         <button class="primary" onclick={close}>Done</button>
       </div>
     {:else}
@@ -93,12 +118,15 @@
           <label>Owner<input bind:value={owner} placeholder="your-username" autocomplete="off" /></label>
           <label>Repository<input bind:value={repo} placeholder="my-exhibit" autocomplete="off" /></label>
         </div>
+        {#if nameError}<p class="err">⚠ {nameError}</p>{/if}
         <label>Branch<input bind:value={branch} placeholder="gh-pages" autocomplete="off" /></label>
-        <label>Access token (fine-grained PAT · contents:write)
+        <p class="note">Publishing <strong>replaces everything</strong> on this branch with the current library — use a branch you keep for the published site (<code>gh-pages</code> by default).</p>
+        <label>Access token (fine-grained PAT · Contents + Pages, write)
           <input type="password" bind:value={token} placeholder="github_pat_…" autocomplete="off" />
         </label>
         <label class="cb"><input type="checkbox" bind:checked={includeOriginals} /><span class="cb-text">Include source originals for citation <span class="cb-sub">— preserved un-edited uploads, published beside the exhibit</span></span></label>
-        <p class="note">The token never leaves this browser except in the publish request to GitHub, and is dropped the moment publishing finishes. Archie does not store it.</p>
+        <p class="note">The token never leaves this browser except in the publish request to GitHub, and is dropped the moment publishing finishes. Archie does not store it. <strong>Pages</strong> write-access lets Archie turn on GitHub Pages for you; without it the push still works and you enable Pages by hand.</p>
+        {#if phase === "publishing"}<p class="note" role="status">{progressText} <span class="muted">Keep this tab open.</span></p>{/if}
         {#if phase === "error"}<p class="err">⚠ {errorMsg}</p>{/if}
         <div class="actions">
           <button type="button" class="ghost" onclick={close}>Cancel</button>

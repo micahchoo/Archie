@@ -5,33 +5,34 @@
   import { onMount, tick } from "svelte";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";
-  import MergeReview from "./MergeReview.svelte";
   import Publish from "./Publish.svelte";
   import PublishDialog from "./PublishDialog.svelte";
   import LibraryHome from "./LibraryHome.svelte";
   import CmdK from "./CmdK.svelte";
   import AvEditor from "./AvEditor.svelte";
-  import LayoutPicker from "./LayoutPicker.svelte";
-  import IdentityPrompt from "./IdentityPrompt.svelte";
+import LayoutPicker from "./LayoutPicker.svelte";
   import ExhibitOverview from "./ExhibitOverview.svelte";
   import NarrativeEditor from "./NarrativeEditor.svelte";
+  import DetailsEditor from "./DetailsEditor.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
   import { matches, typingInField } from "./shortcuts.js";
   import {
     AnnotationSession, libraryToZipFs, asClientId, mintRevId, encodeLinkRef,
     MemoryFilesystem, ZipFilesystem, FsaFilesystem, publishLibrary, loadLibrary, collectFiles, publishToGitHub,
     readExifOrientation, isOrientationNoop, orientationTransform,
-    mediaTypeFromSource, timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript,
-    MAX_MASTER_DIM, exceedsCap,
+    mediaTypeFromSource, timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
+    MAX_MASTER_DIM,
     bindingLabel, recentFromBinding, addRecent, removeRecent,
-    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type GitHubTarget, type Binding, type RecentProject, type BrokenLink, type Section,
+    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type GitHubTarget, type PublishProgress, type Binding, type RecentProject, type BrokenLink, type Section, type Reading, type RightsFields,
   } from "@render/core";
   import type { DrawTool } from "@render/mount";
-  import { bakeDisplayMaster } from "./bake.js";
+  import { bakeDisplayMaster, downscaleIfNeeded } from "./bake.js";
   import { openExhibitAnnotationsDir, loadLibraryMeta, saveLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, readAssetBlob, readOriginalBytes, assetSize, clearExhibitAnnotations, type ExhibitMeta, type LibraryMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
   import { supportsFolderPicker, supportsFileStreamSave, pickFolder, saveZipToDisk, zipNameFor, loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
   import { putHandle, getHandle, deleteHandle, requestPermission } from "./handles-db.js";
-  import { voynichObjects, voynichNotes, voynichTitle } from "./voynich.js";
+  // Phase-4 A2 surgery: the Studio's duplicate voynich.ts was deleted; the ONE seed lives in the
+  // Viewer (apps/viewer/src/voynich.ts) and both apps read it (single source of truth, §A).
+  import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichSections } from "../../viewer/src/voynich.js";
   import { bidarObject, bidarNotes, bidarTitle } from "./bidar.js";
 
   const BASE = "https://archie.demo/";
@@ -58,8 +59,20 @@
 
   // The default exhibits on first run: the imported Voynich manuscript (./voynich.ts, grid), the
   // "Techno-Futures from Bidar" COMPOST piece (./bidar.ts, single), and an AV exhibit (the mesh recording).
+  // §B object set: 11 IIIF-direct images + 1 sound (o12). Spread width/height/mediaType/duration
+  // conditionally — o12 (sound) carries no dims, and exactOptionalPropertyTypes forbids `width: undefined`.
+  const voynichObjMeta = voynichObjects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}) }));
   const DEFAULT_EXHIBITS: ExhibitMeta[] = [
-    { id: "ex-voynich", slug: "voynich", title: voynichTitle, layout: "grid", objects: voynichObjects.map((o) => ({ id: o.id, source: o.source, label: o.label, width: o.width, height: o.height })) },
+    // THE THREE-LAYOUT EXERCISE — one shared seed (../../viewer/src/voynich.ts), three exhibits, each a
+    // different Archie layout. The authored readings/sections come from the SHARED voynich.ts (§G / ADR-0007).
+    // seedVersion forces the onMount reconcile to treat a pre-exercise persisted copy as STALE and reseed
+    // (the old single `voynich` was narrative @seedVersion 1 → bumped to 2 now it's the GRID main).
+    // SINGLE — only o9 (the Rosettes foldout); no sections → single.
+    { id: "ex-voynich-rosettes", slug: "voynich-rosettes", title: "The Rosettes", layout: "single", seedVersion: 1, readings: voynichReadings, objects: voynichObjMeta.filter((o) => o.id === "o9") },
+    // GRID — all 11 folios + the sounded page; NO sections → grid (the main voynich slug).
+    { id: "ex-voynich", slug: "voynich", title: "The Whole Manuscript", layout: "grid", seedVersion: 2, readings: voynichReadings, objects: voynichObjMeta },
+    // NARRATIVE — all + the sounded page, the 6-beat spine → narrative.
+    { id: "ex-voynich-reading", slug: "voynich-reading", title: "Reading the Unreadable", layout: "narrative", seedVersion: 1, readings: voynichReadings, sections: voynichSections as Section[], objects: voynichObjMeta },
     { id: "ex-bidar", slug: "bidar", title: bidarTitle, layout: "single", seedVersion: 2, objects: [{ id: bidarObject.id, source: bidarObject.source, label: bidarObject.label, width: bidarObject.width, height: bidarObject.height }] },
     { id: "ex-av", slug: "av", title: "A Field Recording from Bidar", layout: "single", seedVersion: 1, objects: [{ id: "o1", source: AV_SOURCE, label: "Dholak Geet — recorded on the mesh, Faizpura", mediaType: "sound" }] },
   ];
@@ -110,11 +123,39 @@
   });
   // Seed a default exhibit's notes so it isn't empty on first run (pre-OPFS). Per-slug because the
   // two default exhibits carry their own real content (Voynich folios; the Bidar piece's prose).
-  function seededVoynich(): AnnotationSession {
+  // Seed the Voynich from the SHARED authored content (../../viewer/src/voynich.ts) — the SAME source the
+  // Viewer publishes from, so the Studio boots with the full Readings exhibit (it previously looped only the
+  // empty voynichNotes and booted empty — the runtime bug). Order mirrors sample-data: base notes → the 33
+  // reading notes (xywh + reading + tag bodies) → the 4 AV notes on the o12 sound canvas.
+  // Seed ONE Voynich exhibit's notes from the SHARED authored content, slug-parameterized: notes target
+  // ${BASE}{slug}/canvas/{objId}, matching publishLibrary's per-slug grammar. The three-layout exercise
+  // seeds three slugs off the same data — rosettes = only o9 (no AV); voynich/voynich-reading = all + AV.
+  function seededVoynich(slug: string, opts: { objectIds?: Set<string>; includeAv: boolean }): AnnotationSession {
+    const keep = (objectId: string) => !opts.objectIds || opts.objectIds.has(objectId);
     const s = new AnnotationSession(author);
     for (const n of voynichNotes) {
+      if (!keep(n.objectId)) continue;
       const [x, y, w, h] = n.region;
-      s.createNote({ target: rectSel(`${BASE}voynich/canvas/${n.objectId}`, x, y, w, h), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
+      s.createNote({ target: rectSel(`${BASE}${slug}/canvas/${n.objectId}`, x, y, w, h), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
+    }
+    for (const n of voynichReadingNotes) {
+      if (!keep(n.objectId)) continue;
+      const [x, y, w, h] = n.xywh.split(",").map(Number) as [number, number, number, number];
+      const body: W3CBody[] = [
+        { type: "TextualBody", value: n.comment, purpose: "commenting" },
+        ...(n.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" })),
+      ];
+      s.createNote({ target: rectSel(`${BASE}${slug}/canvas/${n.objectId}`, x, y, w, h), body, ...(n.reading ? { reading: n.reading } : {}) });
+    }
+    if (opts.includeAv && keep("o12")) {
+      for (const a of voynichAvNotes) {
+        const [start, end] = a.t.split(",").map(Number) as [number, number];
+        const body: W3CBody[] = [
+          { type: "TextualBody", value: a.comment, purpose: "commenting" },
+          ...(a.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" })),
+        ];
+        s.createNote({ target: timeSel(`${BASE}${slug}/canvas/o12`, start, end), body, ...(a.reading ? { reading: a.reading } : {}) });
+      }
     }
     return s;
   }
@@ -134,7 +175,10 @@
     return s;
   }
   const seededFor = (slug: string): (() => AnnotationSession) | null =>
-    slug === "voynich" ? seededVoynich : slug === "bidar" ? seededBidar : slug === "av" ? seededAv : null;
+    slug === "voynich-rosettes" ? () => seededVoynich("voynich-rosettes", { objectIds: new Set(["o9"]), includeAv: false })
+    : slug === "voynich" ? () => seededVoynich("voynich", { includeAv: true })
+    : slug === "voynich-reading" ? () => seededVoynich("voynich-reading", { includeAv: true })
+    : slug === "bidar" ? seededBidar : slug === "av" ? seededAv : null;
   let session = $state(new AnnotationSession(author));
 
   // --- persistence (OPFS working store; per-exhibit annotations + autosave) ---
@@ -189,7 +233,7 @@
         return p!;
       });
       const userExhibits = meta.exhibits.filter((e) => !templateSlugs.has(e.slug));
-      libraryMeta = { exhibits: [...reconciled, ...userExhibits] };
+      libraryMeta = { ...libraryMeta, exhibits: [...reconciled, ...userExhibits] };
       for (const slug of stale) await clearExhibitAnnotations(slug); // discard stale seed notes → reseed
       if (stale.length) await persistLibrary();
     } else {
@@ -210,7 +254,6 @@
     selected = null;
     editing = null;
     mode = "select";
-    conflicts = [];
     assetsReady = false;
     await resolveAssets(slug, ex?.objects ?? []); // OPFS /assets → blob: URLs (sets assetsReady)
     const seed = seededFor(slug);
@@ -231,7 +274,6 @@
         session = seed ? seed() : new AnnotationSession(author);
       }
     }
-    conflicts = session.conflicts(); // surface any persisted unresolved merge in the panel
     rev += 1;
     // Land at the exhibit's OVERVIEW scale (invention #1) when there's more than one object to arrange,
     // or it's a narrative; a single-object exhibit goes straight to its annotation surface.
@@ -251,7 +293,7 @@
   // Persist the authored narrative spine (NarrativeEditor onchange) → ExhibitMeta.sections → publishes as
   // IIIF Ranges (buildFullLibrary → toRanges). Library STRUCTURE persists ungated (sections aren't notes).
   function setSections(sections: Section[]) {
-    libraryMeta = { exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, sections } : e)) };
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, sections } : e)) };
     void persistLibrary();
   }
   // --- narrative camera FRAMING (ADR-0005 + placement correction 2026-05-25) ---
@@ -310,7 +352,7 @@
   // "Save" on the note editor: commit any uncommitted comment text (edits already autosave live, but a click
   // might not have blurred the textarea first), then deselect → the popover hides (selected drives `sel`).
   function closeNote() {
-    if (sel && commentEl) applyForm(commentEl.value, tagsOf(sel).join(", "), sel.layers ?? []);
+    if (sel && commentEl) applyForm(commentEl.value, tagsOf(sel).join(", "));
     selected = null;
     editing = null;
   }
@@ -324,7 +366,7 @@
     const next: ObjectMeta[] = [];
     for (const id of orderedIds) { const o = byId.get(id); if (o) next.push(o); }
     for (const o of ex.objects) if (!orderedIds.includes(o.id)) next.push(o); // safety: keep any unlisted
-    libraryMeta = { exhibits: libraryMeta.exhibits.map((e) => (e.slug === ex.slug ? { ...e, objects: next } : e)) };
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === ex.slug ? { ...e, objects: next } : e)) };
     void persistLibrary();
   }
 
@@ -342,18 +384,18 @@
     while (libraryMeta.exhibits.some((e) => e.slug === slug)) slug = `${ex.slug}-copy-${n++}`;
     const { seedVersion: _omit, ...rest } = ex; // a user copy is not a reconciled default
     const copy: ExhibitMeta = { ...rest, id: `ex-${slug}`, slug, title: `${ex.title} (copy)`, objects: ex.objects.map((o) => ({ ...o })) };
-    libraryMeta = { exhibits: [...libraryMeta.exhibits, copy] };
+    libraryMeta = { ...libraryMeta, exhibits: [...libraryMeta.exhibits, copy] };
     // Re-create the current head notes against the copy's canvas IRIs (fresh records — it's new content).
     const fromBase = `${BASE}${from}/canvas/`, toBase = `${BASE}${slug}/canvas/`;
     const carried = session.notes().filter((r) => !r.deleted).map((r) => {
       const src = srcOf(r.target);
       const target = src && src.startsWith(fromBase) && typeof r.target !== "string"
         ? { ...(r.target as object), source: toBase + src.slice(fromBase.length) } : r.target;
-      return { target, body: r.body, motivation: r.motivation, layers: r.layers };
+      return { target, body: r.body, motivation: r.motivation, layers: r.layers, reading: r.reading };
     });
     await persistLibrary();
     await openExhibit(slug); // not a template → persists; seeds empty
-    for (const c of carried) session.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.layers !== undefined ? { layers: c.layers } : {}) });
+    for (const c of carried) session.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.layers !== undefined ? { layers: c.layers } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}) });
     rev += 1;
     await save();
     keeping = false;
@@ -363,7 +405,7 @@
     const base = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "exhibit";
     let slug = base, n = 2;
     while (libraryMeta.exhibits.some((e) => e.slug === slug)) slug = `${base}-${n++}`;
-    libraryMeta = { exhibits: [...libraryMeta.exhibits, { id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", layout: "grid", objects: [] }] };
+    libraryMeta = { ...libraryMeta, exhibits: [...libraryMeta.exhibits, { id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", layout: "grid", objects: [] }] };
     await persistLibrary();
     await openExhibit(slug);
   }
@@ -396,9 +438,13 @@
       if (dir) await new AnnotationSession(author, loaded.logs[e.slug] ?? []).save(dir, { baseUrl: BASE });
     }
     libraryMeta = {
+      ...(loaded.library.title !== undefined ? { title: loaded.library.title } : {}),
+      ...(loaded.library.summary !== undefined ? { summary: loaded.library.summary } : {}),
+      ...rightsOf(loaded.library),
       exhibits: loaded.library.exhibits.map((e) => ({
-        id: e.id, slug: e.slug, title: e.title, ...(e.layout ? { layout: e.layout } : {}), ...((e as { mode?: string }).mode ? { mode: (e as { mode?: string }).mode } : {}),
-        objects: e.objects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}) })),
+        id: e.id, slug: e.slug, title: e.title, ...(e.summary !== undefined ? { summary: e.summary } : {}), ...(e.layout ? { layout: e.layout } : {}), ...((e as { mode?: string }).mode ? { mode: (e as { mode?: string }).mode } : {}),
+        ...rightsOf(e),
+        objects: e.objects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.summary !== undefined ? { summary: o.summary } : {}), ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}), ...rightsOf(o) })),
       })),
     };
     await persistLibrary();
@@ -408,6 +454,12 @@
 
   // --- add an object to the current exhibit (Phase D authoring) ---
   let addingObject = $state(false);
+  // Import feedback (AV ingest/upload UX): a large recording can take a beat to land in OPFS, so show
+  // which file is importing; `importNote` carries a transient curator-voice message (unsupported file,
+  // or a gentle link-by-URL nudge for very large media). Cleared at the start of each new import.
+  let importStatus = $state<{ name: string; index: number; total: number } | null>(null);
+  let importNote = $state("");
+  const LARGE_MEDIA_BYTES = 100 * 1024 * 1024; // ~100 MB — above this, suggest linking by URL (never blocks)
   let addSource = $state("");
   let addLabel = $state("");
   // Best-effort natural dimensions (IIIF wants them); resolves null if the URL can't be loaded.
@@ -427,7 +479,7 @@
   }
   // Append an object to the current exhibit + persist; for imported files, keep its blob: URL.
   async function appendObject(obj: ObjectMeta, blobUrl?: string) {
-    libraryMeta = { exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, objects: [...e.objects, obj] } : e)) };
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, objects: [...e.objects, obj] } : e)) };
     await persistLibrary();
     if (blobUrl) assetUrls = { ...assetUrls, [obj.id]: blobUrl };
     currentObjectId = obj.id;
@@ -465,9 +517,15 @@
       const avName = `${id}-${safe}`;
       await saveAssetFile(currentSlug, avName, file);
       await appendObject({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file));
+      if (file.size > LARGE_MEDIA_BYTES) {
+        importNote = `Imported “${file.name}” (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, pasting a source URL keeps your library light — the archive links it instead of bundling the bytes.`;
+      }
       return;
     }
-    if (!file.type.startsWith("image/")) return; // unsupported type — ignore
+    if (!file.type.startsWith("image/")) {
+      importNote = `Archie can’t read “${file.name}” — add an image, audio, or video file.`;
+      return;
+    }
 
     const orientation = readExifOrientation(await file.arrayBuffer());
     let master: Blob = file;
@@ -490,16 +548,11 @@
       // the source format (LARGE-MEDIA-MEMORY-CEILING #4) — a big JPEG stays JPEG. Under the cap → keep
       // the raw file untouched. No separate original: per §80 the bundle holds a display-sized image,
       // not an archive (the user's full-res source stays on their own disk; giant → external IIIF).
-      const probeUrl = URL.createObjectURL(file);
-      const probed = await imageDims(probeUrl);
-      URL.revokeObjectURL(probeUrl);
-      if (probed && exceedsCap(probed.w, probed.h, MAX_MASTER_DIM)) {
-        const baked = await bakeDisplayMaster(file, { maxDim: MAX_MASTER_DIM, mime: file.type || "image/jpeg" });
-        master = baked.blob;
-        dims = { w: baked.width, h: baked.height };
-      } else {
-        dims = probed;
-      }
+      // Decode ONCE to read dims; downscale only if over the cap, preserving the source format (a big JPEG
+      // stays JPEG); under the cap the raw file is kept untouched (POLISH P6: one decode, no <img> probe).
+      const prepared = await downscaleIfNeeded(file, MAX_MASTER_DIM, file.type || "image/jpeg");
+      master = prepared.blob;
+      dims = { w: prepared.width, h: prepared.height };
     }
 
     const blobUrl = URL.createObjectURL(master);
@@ -512,7 +565,16 @@
   }
   async function addFiles(files: FileList | null) {
     if (!files) return;
-    for (const f of Array.from(files)) await addObjectFromFile(f);
+    const list = Array.from(files);
+    importNote = "";
+    try {
+      for (let i = 0; i < list.length; i++) {
+        importStatus = { name: list[i]!.name, index: i + 1, total: list.length };
+        await addObjectFromFile(list[i]!);
+      }
+    } finally {
+      importStatus = null;
+    }
   }
   // Drag-and-drop onto the canvas area.
   let dragOver = $state(false);
@@ -532,7 +594,9 @@
   $effect(() => { if (selected !== null) editing = selected; });
   let mode = $state<"select" | "draw">("select");
   let tool = $state<DrawTool>("rectangle");
-  let layerFilter = $state("all");
+  let readingFilter = $state("all"); // "all" | "base" | a reading id — scopes the list + new-note default (ADR-0007)
+  let addingReading = $state(false); // shows the in-app new-reading input (AppNative, not an OS prompt)
+  let newReadingEl = $state<HTMLInputElement>();
   // Which object of the exhibit the editor is showing. Switching resets transient view state.
   let currentObjectId = $state("o1");
   const current = $derived(OBJECTS.find((o) => o.id === currentObjectId) ?? OBJECTS[0]);
@@ -541,8 +605,9 @@
   const isAvCurrent = $derived(current?.mediaType === "sound" || current?.mediaType === "video");
   // The image URL the Canvas mounts: imported (/assets) objects resolve to their blob: URL.
   const currentSource = $derived(current ? (isAsset(current.source) ? (assetUrls[current.id] ?? current.source) : current.source) : "");
-  // Resolved image URL for an object's rail thumbnail (asset → blob: URL, else its path/URL).
-  const thumbSrc = (o: { id: string; source: string }): string => (isAsset(o.source) ? (assetUrls[o.id] ?? "") : o.source);
+  // Resolved image URL for an object's rail thumbnail (asset → blob: URL; else a RENDERABLE derivative —
+  // a bare IIIF service base isn't an image, so thumbnailUrl derives a sized JPEG; plain files pass through).
+  const thumbSrc = (o: { id: string; source: string }): string => (isAsset(o.source) ? (assetUrls[o.id] ?? "") : thumbnailUrl(o.source, 240));
   function switchObject(id: string) {
     if (id === currentObjectId) return;
     currentObjectId = id;
@@ -561,7 +626,7 @@
   function renameObject(objId: string, label: string) {
     const l = label.trim();
     if (!l) return;
-    libraryMeta = { exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, objects: e.objects.map((o) => (o.id === objId ? { ...o, label: l } : o)) } : e)) };
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, objects: e.objects.map((o) => (o.id === objId ? { ...o, label: l } : o)) } : e)) };
     void persistLibrary();
   }
 
@@ -569,6 +634,7 @@
   // Layout is authored structure → persist; it shapes the PUBLISHED exhibit (resolveLayout/Viewer), not this view.
   let layoutPickerOpen = $state(false);
   const currentLayout = $derived<LayoutType>(currentExhibit?.layout ?? "grid");
+  const currentReadings = $derived<Reading[]>(currentExhibit?.readings ?? []);
   // Whether this exhibit has an overview scale (invention #1): >1 object to arrange, or a narrative.
   const hasOverview = $derived((currentExhibit?.objects.length ?? 0) > 1 || currentLayout === "narrative");
   // The current exhibit's notes, shaped for the NarrativeEditor's "add section from a Note" shortcut
@@ -582,58 +648,90 @@
     });
   });
   function setLayout(l: LayoutType) {
-    libraryMeta = { exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, layout: l } : e)) };
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, layout: l } : e)) };
     void persistLibrary();
     layoutPickerOpen = false;
   }
 
-  // --- collaboration (Import changes → review) ---
-  let conflicts = $state<string[]>([]);
-  let synced = $state(0);
-  let identityOpen = $state(false); // the first-Import display-name prompt (invention #6)
-  // Adopt a display name (or "" = Anonymous), then run the deferred import. The live session captured the
-  // OLD clientId at open, so rebuild it (keeping the log) with the new clientId — else this session's
-  // edits would still read as the old name in the merge panel.
-  function setIdentity(name: string) {
-    identity = name;
-    saveIdentity(name);
-    identityOpen = false;
-    session = new AnnotationSession(asClientId(name || "anonymous"), session.entries);
-    rev += 1;
-    doImportChanges();
+  // --- Readings (ADR-0007): the exhibit's curated interpretive passes. Persisted on ExhibitMeta,
+  // published as a registry + per-reading AnnotationPages. A note belongs to ONE reading or none (base). ---
+  function setReadings(readings: Reading[]) {
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, readings } : e)) };
+    void persistLibrary();
   }
-  // First Import = the moment identity acquires meaning (your work mixes with a collaborator's) → ask
-  // who you are before merging (CONTEXT invention #6). Already-named (incl. skipped→Anonymous) → straight in.
-  function importChanges() {
-    if (identity === null) { identityOpen = true; return; }
-    doImportChanges();
+  function addReading(name: string) {
+    const nm = name.trim();
+    if (!nm) return;
+    const id = nm.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `r${currentReadings.length + 1}`;
+    if (currentReadings.some((r) => r.id === id)) { readingFilter = id; return; }
+    const palette = ["#3a6b4c", "#a3553a", "#4c5d8a", "#8a6d3b"];
+    setReadings([...currentReadings, { id, name: nm, colour: palette[currentReadings.length % palette.length]! }]);
+    readingFilter = id; // make the new reading active so the next-drawn notes default into it
   }
-  function doImportChanges() {
-    const first = objNotes[0]; // the CURRENT object's first note, so the demo lands on what's shown
-    if (!first) return;
-    // Can't advance a note that already has plural heads (Q-6) — resolve the open merge first.
-    // Without this guard, re-running the demo over an unresolved conflict throws in editNote.
-    const open = session.conflicts();
-    if (open.length > 0) { conflicts = open; synced = 1; return; }
-    const baseRev = first.rev;
-    // I advance the note locally...
-    session.editNote(first.logicalId, { body: { type: "TextualBody", value: "My reading: original ground, not a later addition." } });
-    // ...while a colleague advanced the SAME note concurrently (from the shared base) + added one.
-    const theirs: AnnotationRecord = { logicalId: first.logicalId, rev: mintRevId(), version: first.version + 1, parent: baseRev, modifiedAt: new Date().toISOString(), lastEditor: asClientId("colleague"), deleted: false, target: first.target, body: { type: "TextualBody", value: "Colleague: I read this as a later addition." } };
-    const fresh = new AnnotationSession(asClientId("colleague"));
-    fresh.createNote({ target: rectSel(canvasIdOf(currentObjectId), 960, 220, 420, 300), body: { type: "TextualBody", value: "Colleague's new note on the hands.", purpose: "commenting" } });
-    conflicts = session.importChanges([theirs, ...fresh.entries]);
-    synced = 1;
+  function removeReading(id: string) {
+    setReadings(currentReadings.filter((r) => r.id !== id));
+    if (readingFilter === id) readingFilter = "all";
+  }
+  function setNoteReading(reading: string | null) {
+    if (!editing) return;
+    session.editNote(editing as LogicalId, { reading });
     bump();
+  }
+  function commitNewReading(name: string) {
+    const n = name.trim();
+    if (n) addReading(n);
+    addingReading = false;
+  }
+  $effect(() => { if (addingReading) newReadingEl?.focus(); });
+
+  // --- Rights & credit (rights grill Phase 2): the shared RightsEditor sets these at all three levels.
+  // Each replaces the level's rights fields with the editor's emitted next-state, then persists. ---
+  function setObjectRights(next: RightsFields) {
+    const objId = currentObjectId;
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, objects: e.objects.map((o) => (o.id === objId ? { ...o, rights: next.rights, requiredStatement: next.requiredStatement } : o)) } : e)) };
+    void persistLibrary();
+  }
+  function setExhibitRights(next: RightsFields) {
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, rights: next.rights, requiredStatement: next.requiredStatement } : e)) };
+    void persistLibrary();
+  }
+  function setLibraryRights(next: RightsFields) {
+    libraryMeta = { ...libraryMeta, rights: next.rights, requiredStatement: next.requiredStatement };
+    void persistLibrary();
+  }
+
+  // --- Title + description editing (Phase 4): library/exhibit/object identity, editable wherever the
+  // level's details surface lives. Object TITLE is the inline rail label (renameObject); object DESCRIPTION
+  // (summary) is set here. Empty string clears (stripped at publish). ---
+  function setLibraryTitle(v: string) { libraryMeta = { ...libraryMeta, title: v }; void persistLibrary(); }
+  function setLibrarySummary(v: string) { libraryMeta = { ...libraryMeta, summary: v }; void persistLibrary(); }
+  function setExhibitTitle(v: string) {
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, title: v } : e)) };
+    void persistLibrary();
+  }
+  function setExhibitSummary(v: string) {
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, summary: v } : e)) };
+    void persistLibrary();
+  }
+  function setObjectSummary(v: string) {
+    const objId = currentObjectId;
+    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, objects: e.objects.map((o) => (o.id === objId ? { ...o, summary: v } : o)) } : e)) };
+    void persistLibrary();
   }
 
   // Notes + working annotations are scoped to the CURRENT object's canvas (then the layer filter).
   const allNotes = $derived((rev, session.notes()));
   const objNotes = $derived(allNotes.filter((r) => srcOf(r.target) === canvasId));
-  const notes = $derived(layerFilter === "all" ? objNotes : objNotes.filter((r) => (r.layers ?? []).includes(layerFilter)));
+  const notes = $derived(
+    readingFilter === "all" ? objNotes : readingFilter === "base" ? objNotes.filter((r) => !r.reading) : objNotes.filter((r) => r.reading === readingFilter),
+  );
   const objAnnotations = $derived<W3CAnnotation[]>((rev, session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId)));
   const annotations = $derived<W3CAnnotation[]>(
-    layerFilter === "all" ? objAnnotations : objAnnotations.filter((a) => ((a as Record<string, unknown>)["archie:layers"] as string[] | undefined ?? []).includes(layerFilter)),
+    readingFilter === "all"
+      ? objAnnotations
+      : readingFilter === "base"
+        ? objAnnotations.filter((a) => !(a as Record<string, unknown>)["archie:reading"])
+        : objAnnotations.filter((a) => (a as Record<string, unknown>)["archie:reading"] === readingFilter),
   );
   const sel = $derived(notes.find((r) => r.logicalId === editing));
   const noteCountOf = (objId: string) => allNotes.filter((r) => srcOf(r.target) === canvasIdOf(objId)).length;
@@ -648,7 +746,7 @@
       mode = "select";
       return;
     }
-    const id = session.createNote({ target: a.target, ...(layerFilter !== "all" ? { layers: [layerFilter] } : {}) });
+    const id = session.createNote({ target: a.target, ...(readingFilter !== "all" && readingFilter !== "base" ? { reading: readingFilter } : {}) });
     bump();
     selected = id;
     mode = "select";
@@ -686,18 +784,12 @@
   const commentOf = (r: AnnotationRecord) => { const b = bodies(r).find((x) => { const p = (x as { purpose?: string }).purpose; return p === undefined || p === "commenting"; }); return (b as { value?: string } | undefined)?.value ?? ""; };
   const tagsOf = (r: AnnotationRecord) => bodies(r).filter((x) => (x as { purpose?: string }).purpose === "tagging").map((x) => (x as { value?: string }).value ?? "");
 
-  function applyForm(comment: string, tagsCsv: string, layers: string[]) {
+  function applyForm(comment: string, tagsCsv: string) {
     if (!editing) return;
     const body: W3CBody[] = [{ type: "TextualBody", value: comment, purpose: "commenting" }];
     for (const t of tagsCsv.split(",").map((s) => s.trim()).filter(Boolean)) body.push({ type: "TextualBody", value: t, purpose: "tagging" });
-    session.editNote(editing as LogicalId, { body, layers });
+    session.editNote(editing as LogicalId, { body }); // reading carries forward; change it via setNoteReading
     bump();
-  }
-  function toggleLayer(layer: string, on: boolean) {
-    if (!sel) return;
-    const cur = new Set(sel.layers ?? []);
-    if (on) cur.add(layer); else cur.delete(layer);
-    applyForm(commentOf(sel), tagsOf(sel).join(", "), [...cur]);
   }
   // AV note time range (for the WADM form's conditional time fieldset). Null for image (xywh) notes.
   const selectorValue = (r: AnnotationRecord): string => ((r.target as { selector?: { value?: string } } | undefined)?.selector?.value) ?? "";
@@ -762,7 +854,7 @@
     const start = commentEl?.selectionStart ?? full.length;
     const end = commentEl?.selectionEnd ?? full.length;
     const next = full.slice(0, start) + md + full.slice(end);
-    applyForm(next, tagsOf(sel).join(", "), sel.layers ?? []);
+    applyForm(next, tagsOf(sel).join(", "));
     await tick();
     const pos = start + md.length;
     commentEl?.focus();
@@ -803,15 +895,26 @@
     // existing isTemplate machinery; opt-in via includeTemplates for a populated demo publish.
     const source = opts.includeTemplates ? libraryMeta.exhibits : libraryMeta.exhibits.filter((ex) => !isTemplate(ex.slug));
     return {
-      id: "demo", title: "Archie demo",
+      id: "demo",
+      title: libraryMeta.title ?? PROJECT_TITLE,
+      ...(libraryMeta.summary ? { summary: libraryMeta.summary } : {}),
+      ...rightsOf(libraryMeta),
       exhibits: source.map((ex) => ({
         id: ex.id, slug: ex.slug, title: ex.title,
+        ...(ex.summary ? { summary: ex.summary } : {}),
         ...(ex.layout ? { layout: ex.layout } : {}),
         ...(ex.mode ? { mode: ex.mode } : {}),
         ...(ex.sections && ex.sections.length ? { sections: ex.sections } : {}),
-        objects: ex.objects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}), ...(o.provenance?.originalName ? { originalName: o.provenance.originalName } : {}) })),
+        ...(ex.readings && ex.readings.length ? { readings: ex.readings } : {}),
+        ...rightsOf(ex),
+        objects: ex.objects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.summary ? { summary: o.summary } : {}), ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}), ...(o.provenance?.originalName ? { originalName: o.provenance.originalName } : {}), ...rightsOf(o) })),
       })),
     };
+  }
+  /** Spread the present `RightsFields` (credit/license) off a store meta — used at every level in
+   *  buildFullLibrary so library/exhibit/object project their authored rights (rights grill Phase 2). */
+  function rightsOf(m: RightsFields): RightsFields {
+    return { ...(m.rights ? { rights: m.rights } : {}), ...(m.requiredStatement ? { requiredStatement: m.requiredStatement } : {}) };
   }
   // Load EVERY exhibit's annotation log for publish, keyed by exhibit id (publishLibrary's getLog):
   // the current exhibit uses the live session (freshest, incl. unsaved); others load from their dir.
@@ -840,25 +943,45 @@
   // --- publish (GH-Pages) ---
   let publishOpen = $state(false);
   let brokenLinks = $state<BrokenLink[]>([]); // intra-Library links that degrade to plain text on publish (surfaced in the dialog)
-  // Project the Library into the static site tree (in a MemoryFilesystem), then flatten it to the
-  // path→FileContent map the git-trees push consumes. Same projection the zip uses — different sink.
-  // getAsset writes imported-image bytes into the tree so collectFiles base64-encodes them for GH.
-  async function collectSiteFiles(withOriginals = false) {
+  let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish (no second projection)
+  // Project the Library into the static site tree (in a MemoryFilesystem). Same projection the zip uses
+  // — different sink. getAsset writes imported-image bytes in so collectFiles base64-encodes them for GH.
+  // withOriginals (opt-in, chosen in the dialog) re-projects with preserved source files included.
+  async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[] }> {
     const logs = await loadAllLogs();
     const fs = new MemoryFilesystem();
-    const { brokenLinks } = await publishLibrary(fs, buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset: (slug, name) => readAssetBlob(slug, name), ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks } = await publishLibrary(fs, buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
+    return { fs, brokenLinks };
+  }
+  // Flatten the projected tree to the path→FileContent map the git-trees push consumes. A no-originals
+  // publish reuses the tree openPublish already built; an originals publish re-projects (rare, opt-in).
+  async function collectSiteFiles(withOriginals = false) {
+    const fs = withOriginals || !cachedSiteFs ? (await projectSite(withOriginals)).fs : cachedSiteFs;
     return collectFiles(await fs.root());
   }
   // includeOriginals (opt-in from the Publish dialog) ships preserved originals to the public site for citation.
-  const publish = async (target: GitHubTarget, opts?: { includeOriginals?: boolean }) => publishToGitHub(await collectSiteFiles(opts?.includeOriginals ?? false), target);
-  // Scan the publish projection for broken intra-Library links FIRST, then open the dialog so the author
-  // sees which cited notes/exhibits will degrade to plain text before publishing (was console-only).
+  // onProgress (from the dialog) reports the upload/commit/Pages steps so the long push isn't opaque.
+  const publish = async (target: GitHubTarget, opts?: { includeOriginals?: boolean }, onProgress?: (p: PublishProgress) => void) =>
+    publishToGitHub(await collectSiteFiles(opts?.includeOriginals ?? false), target, onProgress);
+  // Size guard for the publish path — parity with download's zipSizeOk (publish has no streaming and
+  // uploads file-by-file, so a huge library risks GitHub rate limits). Same threshold; publish-specific steer.
+  async function publishSizeOk(): Promise<boolean> {
+    const bytes = await estimateLibraryBytes();
+    if (bytes < ZIP_WARN_BYTES) return true;
+    const mb = Math.round(bytes / (1024 * 1024));
+    return window.confirm(`This library is about ${mb} MB. Publishing uploads every file to GitHub one at a time, so a library this size may be slow or hit GitHub's rate limits.\n\nPublish anyway?`);
+  }
+  // Open the GitHub dialog immediately (no invisible gap), then project ONCE: caches the tree for the
+  // publish itself and surfaces broken intra-Library links so the author sees them before publishing.
   async function openPublish() {
-    const logs = await loadAllLogs();
-    const res = await publishLibrary(new MemoryFilesystem(), buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset });
-    brokenLinks = res.brokenLinks;
+    if (!(await publishSizeOk())) return; // size guard before the network push (its confirm IS the feedback)
+    brokenLinks = [];
+    cachedSiteFs = null;
     publishOpen = true;
+    const { fs, brokenLinks: bl } = await projectSite(false);
+    cachedSiteFs = fs;
+    brokenLinks = bl;
   }
 
   // Unified Publish menu (CONTEXT §"Local view loop") — ONE entry, two destinations: Locally (preview
@@ -1070,6 +1193,12 @@
     onclose={closeProject}
     onrecover={() => { closeProject(); void saveProject(); }}
     ondismisserror={() => (bindingError = null)}
+    rights={{ ...(libraryMeta.rights ? { rights: libraryMeta.rights } : {}), ...(libraryMeta.requiredStatement ? { requiredStatement: libraryMeta.requiredStatement } : {}) }}
+    onrights={setLibraryRights}
+    libTitle={libraryMeta.title}
+    librarySummary={libraryMeta.summary}
+    ontitle={setLibraryTitle}
+    onsummary={setLibrarySummary}
   />
 {:else if view === "overview"}
   <div class="overview-stage">
@@ -1084,6 +1213,11 @@
       onsetlayout={() => (layoutPickerOpen = true)}
       onback={backToLibrary}
       onreorder={reorderObjects}
+      rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
+      onrights={setExhibitRights}
+      summary={currentExhibit.summary}
+      ontitle={setExhibitTitle}
+      onsummary={setExhibitSummary}
     />
   </div>
 {:else}
@@ -1102,18 +1236,25 @@
         <button class:on={mode === "draw" && tool === "polygon"} disabled={framingSectionId !== null} onclick={() => { mode = "draw"; tool = "polygon"; }}>⬠ Polygon</button>
       </div>
     {/if}
-    <label>Layer
-      <select bind:value={layerFilter}>
-        <option value="all">All</option><option value="conservation">Conservation</option><option value="iconography">Iconography</option>
+    <label>Reading
+      <select bind:value={readingFilter}>
+        <option value="all">All notes</option>
+        <option value="base">Base only</option>
+        {#each currentReadings as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
       </select>
     </label>
+    {#if addingReading}
+      <input class="new-reading" type="text" placeholder="Name a reading — e.g. Cipher" bind:this={newReadingEl}
+        onkeydown={(e) => { if (e.key === "Enter") commitNewReading((e.currentTarget as HTMLInputElement).value); else if (e.key === "Escape") addingReading = false; }}
+        onblur={() => (addingReading = false)} />
+    {:else}
+      <button class="add-reading" onclick={() => (addingReading = true)} title="Add a way of reading this source — e.g. a Cipher reading vs a Hoax reading">+ Reading</button>
+    {/if}
     <button class="layout-trigger" onclick={() => (layoutPickerOpen = true)} title="How visitors read this exhibit (reading intent)">▦ {currentLayout}</button>
     {#if storeReady}
       <span class="savestate" class:dirty>{dirty ? "● Unsaved" : "Saved"}</span>
       <button onclick={() => void save()} disabled={!dirty}>Save</button>
     {/if}
-    {#if identity !== null}<span class="you" title="Your name in the shared history (merge attribution)">You · {identity || "Anonymous"}</span>{/if}
-    <button onclick={importChanges} disabled={objNotes.length === 0 || conflicts.length > 0} title={conflicts.length > 0 ? "Resolve the open merge first" : ""}>Import changes</button>
     <button onclick={download}>Download .archie.zip</button>
     <button onclick={() => (publishDialogOpen = true)}>Publish…</button>
     <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
@@ -1156,6 +1297,15 @@
     {:else}
       <button class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Object</button>
     {/if}
+    {#if importStatus}
+      <span class="import-status" role="status" aria-live="polite">
+        <span class="import-spinner" aria-hidden="true"></span>
+        Importing “{importStatus.name}”…{#if importStatus.total > 1} ({importStatus.index} of {importStatus.total}){/if}
+      </span>
+    {/if}
+    {#if importNote}
+      <span class="import-note" role="status" aria-live="polite">{importNote}<button type="button" class="import-note-x" onclick={() => (importNote = "")} aria-label="Dismiss">✕</button></span>
+    {/if}
   </nav>
 
   {#if framingSectionId}
@@ -1174,13 +1324,13 @@
     {#if sel}
       {@const comment = commentOf(sel)}
       {@const tags = tagsOf(sel).join(", ")}
-      {@const layers = sel.layers ?? []}
+      {@const reading = sel.reading ?? null}
       {@const trange = timeOf(sel)}
       <form class="wadm" onsubmit={(e) => { e.preventDefault(); }}>
         <h3>Edit note</h3>
         <label>
           <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button></span>
-          <textarea bind:this={commentEl} rows="3" value={comment} onchange={(e) => applyForm((e.currentTarget as HTMLTextAreaElement).value, tags, layers)}></textarea>
+          <textarea bind:this={commentEl} rows="3" value={comment} onchange={(e) => applyForm((e.currentTarget as HTMLTextAreaElement).value, tags)}></textarea>
         </label>
         {#if trange}
           <fieldset class="time">
@@ -1189,13 +1339,13 @@
             <label class="t">End<input type="text" inputmode="numeric" placeholder="m:ss" value={fmtMMSS(trange.end ?? trange.start)} onchange={(e) => applyTime(trange.start, parseMMSS((e.currentTarget as HTMLInputElement).value))} /></label>
           </fieldset>
         {/if}
-        <label>Tags (comma-separated)<input value={tags} onchange={(e) => applyForm(comment, (e.currentTarget as HTMLInputElement).value, layers)} /></label>
-        <fieldset>
-          <legend>Layers</legend>
-          {#each ["conservation", "iconography"] as l}
-            <label class="cb"><input type="checkbox" checked={layers.includes(l)} onchange={(e) => toggleLayer(l, (e.currentTarget as HTMLInputElement).checked)} /> {l}</label>
-          {/each}
-        </fieldset>
+        <label>Tags (comma-separated)<input value={tags} onchange={(e) => applyForm(comment, (e.currentTarget as HTMLInputElement).value)} /></label>
+        <label>Reading
+          <select value={reading ?? ""} onchange={(e) => setNoteReading((e.currentTarget as HTMLSelectElement).value || null)}>
+            <option value="">— None (base) —</option>
+            {#each currentReadings as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
+          </select>
+        </label>
         <div class="wadm-actions">
           <button type="button" class="save" onclick={closeNote}>Save</button>
           <button type="button" class="del" onclick={() => onDelete(editing!)}>Delete note</button>
@@ -1206,7 +1356,6 @@
 
   <div class="body">
     <aside>
-      <MergeReview {session} {conflicts} {synced} onchange={() => { conflicts = session.conflicts(); bump(); }} />
       {#if currentLayout === "narrative"}
         <!-- The narrative spine lives HERE, beside the object-local notes (placement correction): exhibit
              scope on top (persists across rail switches), object scope below (swaps). -->
@@ -1235,7 +1384,7 @@
       {/if}
       <h2 class="eyebrow">{notes.length} notes</h2>
       {#if notes.length === 0}
-        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Play it, then “Set in” → “Add note” to mark a moment." : layerFilter === "all" ? "No notes on this object yet. Pick ▭ Rect or ⬠ Polygon and draw to begin." : `No notes in the “${layerFilter}” layer on this object.`}</p>
+        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Play it, then “Set in” → “Add note” to mark a moment." : readingFilter === "all" ? "No notes on this object yet. Pick ▭ Rect or ⬠ Polygon and draw to begin." : readingFilter === "base" ? "No base notes here — switch Reading to “All notes”, or draw one." : `No notes in the “${currentReadings.find((r) => r.id === readingFilter)?.name ?? readingFilter}” reading on this object.`}</p>
       {/if}
       <ul>
         {#each notes as r (r.rev)}
@@ -1244,7 +1393,7 @@
               <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
               <div class="meta">
                 {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
-                {#each r.layers ?? [] as l}<span class="layer">{l}</span>{/each}
+                {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour};color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{/if}
               </div>
             </button>
           </li>
@@ -1254,6 +1403,22 @@
 
       <!-- All notes (image / audio / video) edit in the marker popover anchored to their locus (in <main>);
            the sidebar is nav + the narrative spine only — no inline form (ADR-0006). -->
+
+      <!-- Object-level rights (rights grill Q6): an INLINE disclosure in the object editor — you're
+           already editing this object, so no separate drawer. Object = the truest provenance level. -->
+      {#if current}
+        <details class="rights-disc">
+          <summary>Details &amp; rights{#if current.summary || current.rights || current.requiredStatement}<span class="dot" title="Set for this object">●</span>{/if}</summary>
+          <DetailsEditor
+            showTitle={false}
+            summary={current.summary ?? ""}
+            rights={{ ...(current.rights ? { rights: current.rights } : {}), ...(current.requiredStatement ? { requiredStatement: current.requiredStatement } : {}) }}
+            scope="object"
+            onsummary={setObjectSummary}
+            onrights={setObjectRights}
+          />
+        </details>
+      {/if}
     </aside>
     <main
       bind:this={mainEl}
@@ -1305,7 +1470,6 @@
     ongithub={() => { publishDialogOpen = false; void openPublish(); }}
   />
   <Publish open={publishOpen} onclose={() => (publishOpen = false)} onpublish={publish} {brokenLinks} />
-  <IdentityPrompt open={identityOpen} onsave={(n) => setIdentity(n)} onskip={() => setIdentity("")} />
   <CmdK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />
 {/if}
 {#if layoutPickerOpen}
@@ -1431,6 +1595,14 @@
   .add-obj button:disabled { background: var(--accent-muted); color: var(--ink-canvas-muted); border-color: transparent; cursor: default; }
   .add-obj .cancel { background: none; color: var(--ink-canvas-secondary); border-color: var(--border-canvas); }
   .add-obj .cancel:hover { color: var(--ink-canvas-primary); }
+  /* Import feedback on the rail (AV ingest/upload UX): understated, over the dark light-table. The
+     spinner is the scholar's-ink accent; the note is a quiet warning-toned line you can dismiss. */
+  .import-status { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); white-space: nowrap; }
+  .import-spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent-muted); border-top-color: var(--accent); animation: import-spin 0.7s linear infinite; }
+  @keyframes import-spin { to { transform: rotate(360deg); } }
+  .import-note { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 30rem; font-family: var(--font-ui); font-size: var(--text-ui-sm); line-height: 1.4; color: var(--ink-canvas-secondary); padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-left: 3px solid var(--semantic-warning); border-radius: var(--radius-sm); white-space: normal; }
+  .import-note-x { flex-shrink: 0; cursor: pointer; background: none; border: none; color: var(--ink-canvas-muted); font-size: var(--text-ui-xs); padding: 0 var(--space-1); }
+  .import-note-x:hover { color: var(--ink-canvas-primary); }
   /* File-pick button (hides the native input) + the "or" separator */
   .file-btn { display: inline-flex; align-items: center; cursor: pointer; padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
   .file-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -1499,6 +1671,18 @@
   .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); background: rgba(107,98,80,0.1); padding: 2px var(--space-2); border-radius: 999px; }
   .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-muted); line-height: 1.6; margin-top: var(--space-4); }
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
+  /* Object-level rights disclosure — tucked at the foot of the object editor (rights grill Q6). */
+  .rights-disc { margin-top: var(--space-4); border-top: 1px solid var(--border-paper); padding-top: var(--space-3); }
+  .rights-disc > summary {
+    cursor: pointer; list-style: none; display: flex; align-items: center; gap: var(--space-2);
+    font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-paper-secondary);
+  }
+  .rights-disc > summary::-webkit-details-marker { display: none; }
+  .rights-disc > summary::before { content: "▸"; color: var(--ink-paper-muted); transition: transform 0.15s; }
+  .rights-disc[open] > summary::before { content: "▾"; }
+  .rights-disc > summary .dot { color: var(--accent); font-size: 0.6rem; }
+  .rights-disc > :global(.rights) { margin-top: var(--space-3); }
 
   /* WADM form — editing on paper */
   .wadm { margin-top: var(--space-5); border-top: 1px solid var(--border-paper); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
@@ -1530,7 +1714,6 @@
   }
   .wadm .time input:focus { outline: none; border-color: var(--accent); }
   .wadm legend { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-paper-muted); padding: 0 var(--space-1); }
-  .wadm .cb { flex-direction: row; align-items: center; gap: var(--space-2); text-transform: none; letter-spacing: 0; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-paper-primary); }
   .del { align-self: flex-start; font-family: var(--font-ui); font-size: 0.8rem; padding: var(--space-1) var(--space-3); background: none; color: var(--accent); border: 1px solid var(--accent-muted); border-radius: var(--radius-sm); cursor: pointer; }
   .del:hover { background: var(--accent-muted); border-color: var(--accent); }
   /* Note-editor action row — Save (commit + close the popover) beside Delete. */

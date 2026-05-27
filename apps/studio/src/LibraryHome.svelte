@@ -9,7 +9,9 @@
   // only the place. Save is habit-forming (prominent + ⌘S + an unsaved dot); Open is as prominent as New;
   // recents survive sessions (the non-Chromium re-open mitigation); a lost binding is surfaced, never silent.
   import type { ExhibitMeta } from "./store.js";
-  import type { Binding, RecentProject } from "@render/core";
+  import type { Binding, RecentProject, RightsFields } from "@render/core";
+  import DetailsEditor from "./DetailsEditor.svelte";
+  import PropsDrawer from "./PropsDrawer.svelte";
 
   let {
     exhibits,
@@ -28,6 +30,12 @@
     onclose,
     onrecover,
     ondismisserror,
+    rights,
+    onrights,
+    libTitle,
+    librarySummary,
+    ontitle,
+    onsummary,
   }: {
     exhibits: ExhibitMeta[];
     onopen: (slug: string) => void;
@@ -51,7 +59,18 @@
     /** Recover from a lost binding: detach + save as a fresh project. */
     onrecover: () => void;
     ondismisserror: () => void;
+    /** Library-level credit/license (rights grill Q6) — edited via the header → drawer. */
+    rights: RightsFields;
+    onrights: (next: RightsFields) => void;
+    /** Library identity (Phase 4): title + description, editable in the same drawer. */
+    libTitle?: string;
+    librarySummary?: string;
+    ontitle: (v: string) => void;
+    onsummary: (v: string) => void;
   } = $props();
+
+  let rightsOpen = $state(false);
+  const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
 
   let newTitle = $state("");
   function create() {
@@ -74,8 +93,15 @@
 <main class="library">
   <header>
     <p class="eyebrow">Library · {exhibits.length} {exhibits.length === 1 ? "exhibit" : "exhibits"}</p>
-    <h1>Library</h1>
+    <div class="title-row">
+      <h1>{libTitle && libTitle.trim() ? libTitle : "Library"}</h1>
+      <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
+    </div>
     <p class="lede">Exhibits marked <span class="ex-word">Example</span> are templates — open one to explore (nothing's saved), keep a copy to make it yours. Your own exhibits save as you work. Start a new one any time.</p>
+
+    <PropsDrawer open={rightsOpen} title="Library details" onclose={() => (rightsOpen = false)}>
+      <DetailsEditor title={libTitle ?? ""} summary={librarySummary ?? ""} rights={rights} scope="library" ontitle={ontitle} onsummary={onsummary} onrights={onrights} />
+    </PropsDrawer>
 
     <!-- Project bar: where this whole library lives. -->
     <section class="projectbar" class:bound={binding.kind !== "unbound"}>
@@ -161,6 +187,16 @@
   .library { min-height: 100vh; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); padding: var(--space-12) var(--space-8); }
   header { max-width: 60rem; margin: 0 auto var(--space-10); }
   .eyebrow { color: var(--accent); }
+  .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
+  .librights {
+    flex: none; align-self: center; display: inline-flex; align-items: center; gap: var(--space-1);
+    font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer;
+    padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm);
+    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas);
+  }
+  .librights:hover { border-color: var(--accent); }
+  .librights.set { border-color: var(--accent); }
+  .librights .dot { color: var(--accent); font-size: 0.55rem; }
   h1 { font-family: var(--font-display); font-weight: 600; font-size: 3rem; line-height: 1.05; margin: var(--space-2) 0 var(--space-3); color: var(--ink-canvas-primary); }
   .lede { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.5; color: var(--ink-canvas-secondary); margin: 0; max-width: 42rem; }
 

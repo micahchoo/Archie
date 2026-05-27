@@ -6,7 +6,9 @@
   // pretending to be one? The 1b fallback (an explicit List view) ships alongside so the contrast is in hand.
   // Browser-verified (pointer/wheel transforms). Narrative SECTION authoring lives in the editor sidebar
   // (NarrativeEditor), not here — this overview is the zoomed-OUT viewing/arranging scale only.
-  import type { LayoutType } from "@render/core";
+  import type { LayoutType, RightsFields } from "@render/core";
+  import DetailsEditor from "./DetailsEditor.svelte";
+  import PropsDrawer from "./PropsDrawer.svelte";
 
   type OverviewObject = { id: string; label: string; source: string; mediaType?: "image" | "sound" | "video" };
 
@@ -21,6 +23,11 @@
     onsetlayout,
     onback,
     onreorder,
+    rights,
+    onrights,
+    summary,
+    ontitle,
+    onsummary,
   }: {
     title: string;
     layout: LayoutType;
@@ -34,7 +41,17 @@
     onback: () => void;
     /** New reading order, by object id — the overview's reason to exist (Grid/Narrative sequence). */
     onreorder: (orderedIds: string[]) => void;
+    /** This exhibit's credit/license (rights grill Q6) — edited in the header → drawer. */
+    rights: RightsFields;
+    onrights: (next: RightsFields) => void;
+    /** Exhibit identity (Phase 4): description + the title (the existing `title` prop), edited in the drawer. */
+    summary?: string;
+    ontitle: (v: string) => void;
+    onsummary: (v: string) => void;
   } = $props();
+
+  let rightsOpen = $state(false);
+  const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
 
   let mode = $state<"canvas" | "list">("canvas"); // 1a spatial canvas ↔ 1b plain list
   let viewport = $state<HTMLDivElement | null>(null);
@@ -117,11 +134,16 @@
     </div>
     <span class="spacer"></span>
     <button class="chip layout" onclick={onsetlayout} title="How visitors read this exhibit (reading intent)">▦ {layout}</button>
+    <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for this exhibit">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     <div class="viewtoggle" role="group" aria-label="Overview mode">
       <button class:on={mode === "canvas"} onclick={() => (mode = "canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>
       <button class:on={mode === "list"} onclick={() => (mode = "list")} title="Plain list">List</button>
     </div>
   </header>
+
+  <PropsDrawer open={rightsOpen} title="Exhibit details" onclose={() => (rightsOpen = false)}>
+    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} />
+  </PropsDrawer>
 
   {#if mode === "canvas"}
     <div
@@ -221,6 +243,9 @@
   .titles h1 { margin: 2px 0 0; font-family: var(--font-display); font-weight: 600; font-size: 1.9rem; line-height: 1.05; color: var(--ink-canvas-primary); }
   .spacer { flex: 1; }
   .chip { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
+  .chip.rights { display: inline-flex; align-items: center; gap: var(--space-1); }
+  .chip.rights.set { border-color: var(--accent); }
+  .chip.rights .dot { color: var(--accent); font-size: 0.55rem; }
   .chip:hover { border-color: var(--accent); color: var(--accent); }
   .viewtoggle { display: inline-flex; border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); overflow: hidden; }
   .viewtoggle button { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-1) var(--space-3); background: transparent; color: var(--ink-canvas-secondary); border: none; }
