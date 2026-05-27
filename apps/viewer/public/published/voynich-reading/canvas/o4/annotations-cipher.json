@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000000ACKS7RE13ZNSK5KHJ/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000000NZKVHR3ZGJ7XPQV64/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -15,7 +15,7 @@
           "value": "xywh=pixel:260,2900,2300,560"
         }
       },
-      "modified": "1970-01-01T00:00:00.010Z",
+      "modified": "1970-01-01T00:00:00.021Z",
       "body": [
         {
           "type": "TextualBody",
@@ -34,7 +34,7 @@
         }
       ],
       "archie:reading": "cipher",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000ACKS7RE13ZNSK5KHJ.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000NZKVHR3ZGJ7XPQV64.json"
     }
   ],
   "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"

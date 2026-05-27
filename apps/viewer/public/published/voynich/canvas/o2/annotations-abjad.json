@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich/annotations/0000000006HW4A5FQXVWA5FW22/v1",
+      "id": "https://archie.demo/voynich/annotations/000000000H1SGEWDXP4WR0PN7D/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -15,7 +15,7 @@
           "value": "xywh=pixel:300,1100,1100,620"
         }
       },
-      "modified": "1970-01-01T00:00:00.006Z",
+      "modified": "1970-01-01T00:00:00.017Z",
       "body": [
         {
           "type": "TextualBody",
@@ -24,7 +24,7 @@
         }
       ],
       "archie:reading": "abjad",
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000006HW4A5FQXVWA5FW22.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000000H1SGEWDXP4WR0PN7D.json"
     }
   ],
   "partOf": "https://archie.demo/voynich/annotations/readings/abjad.json"

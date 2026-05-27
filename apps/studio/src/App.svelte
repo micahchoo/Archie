@@ -33,7 +33,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // Phase-4 A2 surgery: the Studio's duplicate voynich.ts was deleted; the ONE seed lives in the
   // Viewer (apps/viewer/src/voynich.ts) and both apps read it (single source of truth, §A).
   import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichSections } from "../../viewer/src/voynich.js";
-  import { bidarObject, bidarNotes, bidarTitle } from "./bidar.js";
 
   const BASE = "https://archie.demo/";
   // Local display name → the clientId stamped as lastEditor in the merge DAG (CONTEXT invention #6).
@@ -46,19 +45,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const author = $derived(asClientId(identity || "anonymous"));
   const srcOf = (t: unknown): string | undefined => (typeof t === "string" ? t : (t as { source?: string } | null)?.source);
 
-  // AV fixture — MIRRORS the Viewer's `av` exhibit (same real Bidar recording + same descriptive cues),
-  // so authoring matches what publishes. A dholak geet recorded on the PiZ mesh; cues are descriptive
-  // listening notes (supplementing), not a verbatim transcript.
-  const AV_SOURCE = "https://one.compost.digital/micah/annotation-assets/8/DholakGeet_Recording_on_the_PiZ_Network_recorder_by_Woman_Singer_at_Faizpura-_02.mp3";
-  const AV_CUES: { start: number; end: number; text: string }[] = [
-    { start: 0, end: 20, text: "A dholak sets the pulse; a woman's voice enters over the drum — a geet carried on the mesh from Faizpura." },
-    { start: 20, end: 50, text: "The melody settles into its refrain; you can hear the room — the recorder is a Raspberry Pi node on the network." },
-    { start: 50, end: 90, text: "Other voices answer around her; the song is communal, sung with the room rather than performed for the mic." },
-    { start: 90, end: 180, text: "It loosens into talk and ambient sound — the field recording keeps running past the song." },
-  ];
-
-  // The default exhibits on first run: the imported Voynich manuscript (./voynich.ts, grid), the
-  // "Techno-Futures from Bidar" COMPOST piece (./bidar.ts, single), and an AV exhibit (the mesh recording).
+  // The default exhibits on first run: the imported Voynich manuscript (../../viewer/src/voynich.ts),
+  // one shared seed rendered three ways (rosettes / grid / narrative).
   // §B object set: 11 IIIF-direct images + 1 sound (o12). Spread width/height/mediaType/duration
   // conditionally — o12 (sound) carries no dims, and exactOptionalPropertyTypes forbids `width: undefined`.
   const voynichObjMeta = voynichObjects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}) }));
@@ -73,8 +61,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
     { id: "ex-voynich", slug: "voynich", title: "The Whole Manuscript", layout: "grid", seedVersion: 2, readings: voynichReadings, objects: voynichObjMeta },
     // NARRATIVE — all + the sounded page, the 6-beat spine → narrative.
     { id: "ex-voynich-reading", slug: "voynich-reading", title: "Reading the Unreadable", layout: "narrative", seedVersion: 1, readings: voynichReadings, sections: voynichSections as Section[], objects: voynichObjMeta },
-    { id: "ex-bidar", slug: "bidar", title: bidarTitle, layout: "single", seedVersion: 2, objects: [{ id: bidarObject.id, source: bidarObject.source, label: bidarObject.label, width: bidarObject.width, height: bidarObject.height }] },
-    { id: "ex-av", slug: "av", title: "A Field Recording from Bidar", layout: "single", seedVersion: 1, objects: [{ id: "o1", source: AV_SOURCE, label: "Dholak Geet — recorded on the mesh, Faizpura", mediaType: "sound" }] },
   ];
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
@@ -122,7 +108,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value: timeFragmentValue(start, end) },
   });
   // Seed a default exhibit's notes so it isn't empty on first run (pre-OPFS). Per-slug because the
-  // two default exhibits carry their own real content (Voynich folios; the Bidar piece's prose).
+  // three default exhibits share one seed (the Voynich folios) rendered three ways.
   // Seed the Voynich from the SHARED authored content (../../viewer/src/voynich.ts) — the SAME source the
   // Viewer publishes from, so the Studio boots with the full Readings exhibit (it previously looped only the
   // empty voynichNotes and booted empty — the runtime bug). Order mirrors sample-data: base notes → the 33
@@ -159,26 +145,11 @@ import LayoutPicker from "./LayoutPicker.svelte";
     }
     return s;
   }
-  function seededBidar(): AnnotationSession {
-    const s = new AnnotationSession(author);
-    for (const n of bidarNotes) {
-      const [x, y, w, h] = n.region;
-      s.createNote({ target: rectSel(`${BASE}bidar/canvas/o1`, x, y, w, h), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
-    }
-    return s;
-  }
-  function seededAv(): AnnotationSession {
-    const s = new AnnotationSession(author);
-    for (const c of AV_CUES) {
-      s.createNote({ target: timeSel(`${BASE}av/canvas/o1`, c.start, c.end), body: [{ type: "TextualBody", value: c.text, purpose: "supplementing" }], motivation: "supplementing" });
-    }
-    return s;
-  }
   const seededFor = (slug: string): (() => AnnotationSession) | null =>
     slug === "voynich-rosettes" ? () => seededVoynich("voynich-rosettes", { objectIds: new Set(["o9"]), includeAv: false })
     : slug === "voynich" ? () => seededVoynich("voynich", { includeAv: true })
     : slug === "voynich-reading" ? () => seededVoynich("voynich-reading", { includeAv: true })
-    : slug === "bidar" ? seededBidar : slug === "av" ? seededAv : null;
+    : null;
   let session = $state(new AnnotationSession(author));
 
   // --- persistence (OPFS working store; per-exhibit annotations + autosave) ---

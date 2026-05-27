@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/00000000077JTJAT06JNEA7CPM.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/00000000077JTJAT06JNEA7CPM/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o7",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:240,300,2360,3200"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.007Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A balneological page: small bathing figures moving through green networks of pipes, pools, and basins, with text running continuously between them.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "00000000077JTJAT06JNEA7CPM",
+      "archie:rev": "0000000007FR7WY1MWT7WSC0AE",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-rosettes/annotations/0000000001CB8RF3NABMC5EH8X/v1",
+      "id": "https://archie.demo/voynich-rosettes/annotations/0000000002G1BGJSGQGWZVW3NX/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -15,11 +15,11 @@
           "value": "xywh=pixel:3500,3300,900,700"
         }
       },
-      "modified": "1970-01-01T00:00:00.001Z",
+      "modified": "1970-01-01T00:00:00.002Z",
       "body": [
         {
           "type": "TextualBody",
-          "value": "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [A network rendered as a map — compare the mesh of Bidar.](https://archie.demo/bidar/) (§H cross-link, 03 §5 Link 1: the `archie:` in-body ref grammar from link.ts — rewritten to the published bidar URL on the heads projection; resolves to the exhibit root, the bidar mesh-map canvas.)",
+          "value": "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [See the Rosettes alone, deep-zoomed.](https://archie.demo/voynich-rosettes/) (§H cross-link, 03 §5: repointed from the sunset bidar exhibit to the SINGLE Rosettes study — `archie:` in-body ref grammar from link.ts, rewritten to the published voynich-rosettes URL on the heads projection; resolves to the exhibit root.)",
           "purpose": "commenting"
         },
         {
@@ -39,7 +39,7 @@
         }
       ],
       "archie:reading": "cipher",
-      "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000001CB8RF3NABMC5EH8X.json"
+      "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000002G1BGJSGQGWZVW3NX.json"
     }
   ],
   "partOf": "https://archie.demo/voynich-rosettes/annotations/readings/cipher.json"

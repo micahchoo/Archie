@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich/annotations/0000000012EQHPV11SKX4J695A/v1",
+      "id": "https://archie.demo/voynich/annotations/000000001D46HFRE6JAGPFMDPW/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -15,18 +15,18 @@
           "value": "t=0,30"
         }
       },
-      "modified": "1970-01-01T00:00:00.034Z",
+      "modified": "1970-01-01T00:00:00.045Z",
       "body": [
         {
           "type": "TextualBody",
-          "value": "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. [the page it reads aloud](https://archie.demo/voynich/) (03 §4 cross-link AV→image f18v; `archie:` ref resolves to the voynich exhibit. A note-precise `archie:voynich/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)",
+          "value": "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. [Read the manuscript through, page by page.](https://archie.demo/voynich-reading/) (03 §4 cross-link AV→the narrative walk; `archie:` ref resolves to the voynich-reading exhibit — the spoken/read metaphor matches the narrative spine. A note-precise `…/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)",
           "purpose": "commenting"
         }
       ],
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000012EQHPV11SKX4J695A.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001D46HFRE6JAGPFMDPW.json"
     },
     {
-      "id": "https://archie.demo/voynich/annotations/0000000013YQH5T489D18N904J/v1",
+      "id": "https://archie.demo/voynich/annotations/000000001ETF2P49Y4ZGJGD4KF/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -37,7 +37,7 @@
           "value": "t=45,80"
         }
       },
-      "modified": "1970-01-01T00:00:00.035Z",
+      "modified": "1970-01-01T00:00:00.046Z",
       "body": [
         {
           "type": "TextualBody",
@@ -45,10 +45,10 @@
           "purpose": "commenting"
         }
       ],
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000013YQH5T489D18N904J.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001ETF2P49Y4ZGJGD4KF.json"
     },
     {
-      "id": "https://archie.demo/voynich/annotations/0000000014BCYADNZ8BXDVCEN3/v1",
+      "id": "https://archie.demo/voynich/annotations/000000001FNXN5NNTHGH48MCPA/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -59,7 +59,7 @@
           "value": "t=120,160"
         }
       },
-      "modified": "1970-01-01T00:00:00.036Z",
+      "modified": "1970-01-01T00:00:00.047Z",
       "body": [
         {
           "type": "TextualBody",
@@ -67,10 +67,10 @@
           "purpose": "commenting"
         }
       ],
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000014BCYADNZ8BXDVCEN3.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001FNXN5NNTHGH48MCPA.json"
     },
     {
-      "id": "https://archie.demo/voynich/annotations/0000000015TXGKBW2S4SM04JCF/v1",
+      "id": "https://archie.demo/voynich/annotations/000000001GP5GVP8NBJVSAW26E/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -81,7 +81,7 @@
           "value": "t=250,296"
         }
       },
-      "modified": "1970-01-01T00:00:00.037Z",
+      "modified": "1970-01-01T00:00:00.048Z",
       "body": [
         {
           "type": "TextualBody",
@@ -89,7 +89,7 @@
           "purpose": "commenting"
         }
       ],
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000015TXGKBW2S4SM04JCF.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001GP5GVP8NBJVSAW26E.json"
     }
   ]
 }
