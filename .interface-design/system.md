@@ -187,6 +187,10 @@ The Viewer is a published static site (Astro + Svelte islands). Same palette, di
 
 3-state pane: mini (28px edge tab with TOC hint), half (shared screen), full (prose-led reading). Scroll-spy drives canvas pan; click on [ref] → fitBounds. Active section highlighted in prose. Popup on annotation click.
 
+### Empty Hall (portable mode — ADR-0008)
+
+Shown when the Viewer holds no library yet (a deployed shell with no baked tree, or before a `.archie.zip` is opened). The **vacant gallery wall** (`--surface-gallery`) with ONE centered invitation: a **dashed empty picture frame** (no fill, `1.5px dashed --border-paper-emphasis`, `--radius-lg`) — the signature, rhyming with the Studio's `+Object` dashed affordance ("bring something in"). Inside: eyebrow `Archie` · display `h1` "Open a library" · body lede · one **forest-green** action "Open a library…". The whole window is a drop target — dragging anywhere lifts an accent wash (`--accent-muted` + dashed accent border, "Release to open the library"). **Cold-arrival variant** (§96): a warning-toned line when a deep-link landed with no library open. **Voice:** name the action + the artifact the recipient holds, so they know what to open — "Open a library" + its `.archie.zip` file (2026-05-27: the filename IS named, for findability; what's still avoided is imperative tech-speak like "import ZIP" / "upload"). Component: `EmptyHall.svelte` (presentation + file capture; open logic is `published.ts`). The **"Open another library"** swap (CONTEXT §223) lives as quiet top-right chrome in `ViewerShell`, shown whenever a library is loaded (hosted or portable — revised 2026-05-27), present even when a single exhibit collapses the gallery (anti-trap); it drops to the empty hall.
+
 ---
 
 ## Craft Notes
