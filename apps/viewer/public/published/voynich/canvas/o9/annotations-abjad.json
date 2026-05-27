@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich/annotations/0000000016SN31ZSGBTMVAEPNN/v1",
+      "id": "https://archie.demo/voynich/annotations/0000000016ZXMERKB3YGSMK0TG/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -24,7 +24,7 @@
         }
       ],
       "archie:reading": "abjad",
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000016SN31ZSGBTMVAEPNN.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000016ZXMERKB3YGSMK0TG.json"
     }
   ],
   "partOf": "https://archie.demo/voynich/annotations/readings/abjad.json"

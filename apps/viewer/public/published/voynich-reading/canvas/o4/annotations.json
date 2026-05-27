@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000000481Y9DJ78JTK1BKB2/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/0000000004E3H5Y3FYRNGZ3QM4/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -23,7 +23,7 @@
           "purpose": "commenting"
         }
       ],
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000481Y9DJ78JTK1BKB2.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000004E3H5Y3FYRNGZ3QM4.json"
     }
   ]
 }
