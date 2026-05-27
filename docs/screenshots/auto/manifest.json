@@ -1,0 +1,58 @@
+[
+  {
+    "name": "viewer-home",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/viewer-home.desktop.png",
+    "at": "2026-05-27T05:01:49.999Z"
+  },
+  {
+    "name": "viewer-voynich",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/viewer-voynich.desktop.png",
+    "at": "2026-05-27T05:01:51.726Z"
+  },
+  {
+    "name": "viewer-av",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/viewer-av.desktop.png",
+    "at": "2026-05-27T05:01:53.517Z"
+  },
+  {
+    "name": "viewer-bidar",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/viewer-bidar.desktop.png",
+    "at": "2026-05-27T05:01:55.218Z"
+  },
+  {
+    "name": "studio-library",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-library.desktop.png",
+    "at": "2026-05-27T05:01:57.896Z"
+  },
+  {
+    "name": "studio-overview",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-overview.desktop.png",
+    "at": "2026-05-27T05:01:59.288Z"
+  },
+  {
+    "name": "studio-editor-image",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-editor-image.desktop.png",
+    "at": "2026-05-27T05:02:01.070Z"
+  },
+  {
+    "name": "studio-editor-av",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-editor-av.desktop.png",
+    "at": "2026-05-27T05:02:06.711Z"
+  }
+]
