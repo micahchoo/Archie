@@ -93,6 +93,9 @@ export function parseLinkRef(uri: string): LinkTarget | null {
   const fragment = hashAt === -1 ? "" : rest.slice(hashAt);
   const exhibitSlug = path.replace(/\/+$/, "");
   if (exhibitSlug.length === 0) return null;
+  // Slug hardening (security S5): reject anything outside the slug charset, so a crafted slug can't inject
+  // markup/attributes when rewritten into an <a href> on the published page (defence-in-depth past DOMPurify).
+  if (!/^[a-z0-9_-]+$/i.test(exhibitSlug)) return null;
   if (fragment.startsWith("#/a/")) {
     const note = parseNoteDeepLink(fragment);
     if (!note) return null;

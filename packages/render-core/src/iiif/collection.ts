@@ -3,6 +3,7 @@
 
 import type { Library } from "../model/model.js";
 import { IIIF_PRESENTATION_CONTEXT, langMap, type IIIFCollection, type IIIFCollectionItem } from "./presentation.js";
+import { rightsProps } from "./rights.js";
 
 export interface CollectionOptions {
   baseUrl?: string;
@@ -22,6 +23,7 @@ export function toCollection(library: Library, opts: CollectionOptions = {}): II
     type: "Collection",
     label: langMap(library.title ?? "Library"),
     ...(library.summary !== undefined ? { summary: langMap(library.summary) } : {}),
+    ...rightsProps(library),
     items,
   };
 }

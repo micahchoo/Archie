@@ -12,6 +12,7 @@ import {
   type IIIFRange,
   type LangMap,
 } from "./presentation.js";
+import { rightsProps, rightsFromIIIF } from "./rights.js";
 
 /** First value of a IIIF language map (Archie writes single-language `none` maps). */
 function unLang(m: LangMap): string {
@@ -29,7 +30,7 @@ function bodyType(media: MediaType | undefined): IIIFContentResource["type"] {
   return "Image";
 }
 
-function toCanvas(manifestBase: string, obj: AObject): IIIFCanvas {
+function toCanvas(manifestBase: string, obj: AObject, readingIds: string[] = []): IIIFCanvas {
   const canvasId = `${manifestBase}/canvas/${obj.id}`;
   const body: IIIFContentResource = {
     id: obj.source,
@@ -43,6 +44,8 @@ function toCanvas(manifestBase: string, obj: AObject): IIIFCanvas {
     id: canvasId,
     type: "Canvas",
     label: langMap(obj.label),
+    ...(obj.summary !== undefined && obj.summary !== "" ? { summary: langMap(obj.summary) } : {}),
+    ...rightsProps(obj),
     ...(obj.width !== undefined ? { width: obj.width } : {}),
     ...(obj.height !== undefined ? { height: obj.height } : {}),
     ...(obj.duration !== undefined ? { duration: obj.duration } : {}),
@@ -53,8 +56,12 @@ function toCanvas(manifestBase: string, obj: AObject): IIIFCanvas {
         items: [{ id: `${canvasId}/painting/1`, type: "Annotation", motivation: "painting", body, target: canvasId }],
       },
     ],
-    // Where the notes (Archie heads page) for this canvas live — a real static file path.
-    annotations: [{ id: `${canvasId}/annotations.json`, type: "AnnotationPage" }],
+    // The base notes page + one page per Reading (ADR-0007) — the multi-AnnotationPage Canvas a
+    // pure IIIF viewer (Mirador) can toggle. Reading pages carry partOf → the reading's collection.
+    annotations: [
+      { id: `${canvasId}/annotations.json`, type: "AnnotationPage" },
+      ...readingIds.map((r) => ({ id: `${canvasId}/annotations-${r}.json`, type: "AnnotationPage" as const })),
+    ],
   };
 }
 
@@ -88,11 +95,13 @@ export function objectsFromManifest(manifest: IIIFManifest): AObject[] {
       id: objIdFromCanvasId(canvas.id),
       source: body?.id ?? "",
       label: canvas.label?.none?.[0] ?? "",
+      ...(canvas.summary !== undefined ? { summary: unLang(canvas.summary) } : {}),
       ...(body?.type !== undefined && body.type !== "Image" ? { mediaType: mediaFromBodyType(body.type) } : {}),
       ...(canvas.width !== undefined ? { width: canvas.width } : {}),
       ...(canvas.height !== undefined ? { height: canvas.height } : {}),
       ...(canvas.duration !== undefined ? { duration: canvas.duration } : {}),
       ...(body?.format !== undefined ? { format: body.format } : {}),
+      ...rightsFromIIIF(canvas), // round-trip the per-object credit/license (ADR rights & metadata)
     };
     return obj;
   });
@@ -150,7 +159,8 @@ export function toManifest(exhibit: Exhibit, opts: ManifestOptions = {}): IIIFMa
     type: "Manifest",
     label: langMap(exhibit.title),
     ...(exhibit.summary !== undefined ? { summary: langMap(exhibit.summary) } : {}),
-    items: exhibit.objects.map((obj) => toCanvas(manifestBase, obj)),
+    ...rightsProps(exhibit),
+    items: exhibit.objects.map((obj) => toCanvas(manifestBase, obj, (exhibit.readings ?? []).map((r) => r.id))),
     ...(ranges.length > 0 ? { structures: ranges } : {}),
   };
 }

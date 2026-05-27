@@ -7,7 +7,7 @@
 import { selectorBBox, type Box, type W3CSelector } from "@render/core";
 
 // The imperative mount-surface contract (declared in ./surface to avoid a circular import).
-export type { MountSurface, SelectionId, DrawTool } from "./surface.js";
+export type { MountSurface, SelectionId, DrawTool, MarkerStyle } from "./surface.js";
 
 // fitBounds region computation + viewport dispatch (the delaminated oracle, P1-1).
 export { fitBoundsRect, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";

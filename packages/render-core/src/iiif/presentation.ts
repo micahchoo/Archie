@@ -7,6 +7,34 @@ export const IIIF_PRESENTATION_CONTEXT = "http://iiif.io/api/presentation/3/cont
 /** IIIF language map (e.g. `{ none: ["My Title"] }`). */
 export type LangMap = Record<string, string[]>;
 
+/** A IIIF label/value pair (both language maps) — used by `requiredStatement` and `metadata` entries. */
+export interface IIIFLabelValue {
+  label: LangMap;
+  value: LangMap;
+}
+
+/** A IIIF Agent (the `provider` of a resource — an institution/person). Additive; emitted in the later phase. */
+export interface IIIFAgent {
+  id: string;
+  type: "Agent";
+  label: LangMap;
+  homepage?: Array<{ id: string; type: "Text"; label?: LangMap }>;
+  logo?: Array<{ id: string; type: "Image"; format?: string }>;
+}
+
+/**
+ * The IIIF rights properties Archie projects onto a Collection / Manifest / Canvas
+ * (CONTEXT "Exhibit / Library rights & metadata"). `rights` = one license URI; `requiredStatement` =
+ * a MUST-display credit; `metadata` / `provider` are additive. Mixed into the three resource types so
+ * the same fields appear at every level (mirrors the model's `RightsFields`).
+ */
+export interface IIIFRightsProps {
+  rights?: string;
+  requiredStatement?: IIIFLabelValue;
+  metadata?: IIIFLabelValue[];
+  provider?: IIIFAgent[];
+}
+
 export interface IIIFContentResource {
   id: string;
   type: "Image" | "Sound" | "Video" | "Text" | "Dataset";
@@ -30,10 +58,12 @@ export interface IIIFAnnotationPage {
   items: IIIFPaintingAnnotation[];
 }
 
-export interface IIIFCanvas {
+export interface IIIFCanvas extends IIIFRightsProps {
   id: string;
   type: "Canvas";
   label?: LangMap;
+  /** Optional per-object description/caption (Archie's AObject.summary). */
+  summary?: LangMap;
   width?: number;
   height?: number;
   duration?: number;
@@ -54,7 +84,7 @@ export interface IIIFRange {
   start?: { id: string; type: "Canvas" };
 }
 
-export interface IIIFManifest {
+export interface IIIFManifest extends IIIFRightsProps {
   "@context": typeof IIIF_PRESENTATION_CONTEXT;
   id: string;
   type: "Manifest";
@@ -72,7 +102,7 @@ export interface IIIFCollectionItem {
   thumbnail?: Array<{ id: string; type: "Image" }>;
 }
 
-export interface IIIFCollection {
+export interface IIIFCollection extends IIIFRightsProps {
   "@context": typeof IIIF_PRESENTATION_CONTEXT;
   id: string;
   type: "Collection";

@@ -101,8 +101,8 @@ export interface EditInput {
   motivation?: string | string[];
   /** @deprecated Layer ids; omitted = carry forward from the head. */
   layers?: string[];
-  /** Reading id; omitted = carry forward from the head (ADR-0007). */
-  reading?: string;
+  /** Reading id (ADR-0007); omitted = carry forward, `null` = clear to base, string = set. */
+  reading?: string | null;
   lastEditor: ClientId;
   modifiedAt?: string;
   now?: number;
@@ -121,7 +121,7 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
   const body = input.body ?? head.body;
   const motivation = input.motivation ?? head.motivation;
   const layers = input.layers ?? head.layers;
-  const reading = input.reading ?? head.reading;
+  const reading = input.reading === undefined ? head.reading : input.reading === null ? undefined : input.reading;
   const record: AnnotationRecord = {
     logicalId,
     rev: mintRevId(input.now),

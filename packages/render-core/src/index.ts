@@ -53,6 +53,7 @@ export * from "./iiif/presentation.js";
 export * from "./iiif/manifest.js";
 export * from "./iiif/collection.js";
 export * from "./iiif/exhibits.js";
+export * from "./iiif/rights.js";
 
 // The Filesystem seam (source interface) + its backend projections (Q-5):
 // memory (tests/Playground), zip (DownloadFilesystem core), fsa (Chromium folder, browser).

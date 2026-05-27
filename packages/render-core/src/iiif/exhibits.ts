@@ -6,7 +6,7 @@
 // migration: a top-level `library` object (not a flat array), explicit ordering, first-class
 // cover/title/description, and a reserved `presentation` namespace.
 
-import type { Library } from "../model/model.js";
+import type { Library, RightsFields } from "../model/model.js";
 
 export interface ExhibitCard {
   slug: string;
@@ -18,7 +18,10 @@ export interface ExhibitCard {
 }
 
 export interface ExhibitsJson {
-  library: { id: string; title?: string; summary?: string };
+  /** Library framing for the Gallery. Carries `RightsFields` (credit/license) in the friendly model
+   *  shape so the Viewer renders the quiet credit line directly and `loadLibrary` restores it raw —
+   *  the Archie-convenience mirror of `collection.json`'s IIIF `requiredStatement`/`rights`. */
+  library: { id: string; title?: string; summary?: string } & RightsFields;
   exhibits: ExhibitCard[];
   /** Reserved namespace for v1.1 curated-landing config. Empty in v1. */
   presentation: Record<string, never>;
@@ -30,6 +33,8 @@ export function toExhibitsJson(library: Library): ExhibitsJson {
       id: library.id,
       ...(library.title !== undefined ? { title: library.title } : {}),
       ...(library.summary !== undefined ? { summary: library.summary } : {}),
+      ...(library.rights !== undefined ? { rights: library.rights } : {}),
+      ...(library.requiredStatement !== undefined ? { requiredStatement: library.requiredStatement } : {}),
     },
     exhibits: library.exhibits.map((e, order) => ({
       slug: e.slug,

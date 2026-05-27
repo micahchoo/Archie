@@ -32,3 +32,21 @@ describe("splitNoteMedia (note media vs prose, for the strip + lightbox)", () =>
     expect(splitNoteMedia("just prose")).toEqual({ media: [], text: "just prose" });
   });
 });
+
+describe("splitNoteMedia — URL scheme hardening (security S3)", () => {
+  it("does NOT treat an extension-bearing javascript: <img src> as media", () => {
+    // the dangerous case: a bad scheme that still matches the media-extension regex
+    expect(splitNoteMedia('<img src="javascript:alert(1)//x.jpg">').media).toEqual([]);
+  });
+  it("does NOT treat a markdown image with a javascript: URL as media (was defaulted to image)", () => {
+    expect(splitNoteMedia("![x](javascript:alert(1))").media).toEqual([]);
+  });
+  it("does NOT treat a vbscript: markdown link to a media file as media", () => {
+    expect(splitNoteMedia("[clip](vbscript:evil.mp3)").media).toEqual([]);
+  });
+  it("still accepts http(s), relative, and typed data:image/ media", () => {
+    expect(splitNoteMedia("![](https://ex.org/a.jpg)").media).toEqual([{ kind: "image", url: "https://ex.org/a.jpg" }]);
+    expect(splitNoteMedia("![](photo.png)").media).toEqual([{ kind: "image", url: "photo.png" }]);
+    expect(splitNoteMedia("![](data:image/png;base64,iVBOR)").media).toEqual([{ kind: "image", url: "data:image/png;base64,iVBOR" }]);
+  });
+});
