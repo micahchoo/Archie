@@ -9,7 +9,7 @@
   },
   "summary": {
     "none": [
-      "Annotated exhibits read more than one way — a contested manuscript, a field map, and a recording from the mesh."
+      "A contested manuscript read more than one way — Beinecke MS 408, the same undeciphered marks read three ways across three exhibits."
     ]
   },
   "items": [
@@ -57,30 +57,6 @@
           "type": "Image"
         }
       ]
-    },
-    {
-      "id": "https://archie.demo/bidar/manifest.json",
-      "type": "Manifest",
-      "label": {
-        "none": [
-          "Techno-Futures from Bidar"
-        ]
-      },
-      "thumbnail": [
-        {
-          "id": "https://one.compost.digital/micah/nb-v24.jpg",
-          "type": "Image"
-        }
-      ]
-    },
-    {
-      "id": "https://archie.demo/av/manifest.json",
-      "type": "Manifest",
-      "label": {
-        "none": [
-          "A Field Recording from Bidar"
-        ]
-      }
     }
   ]
 }

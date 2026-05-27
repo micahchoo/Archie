@@ -29,26 +29,64 @@ const AV_SOURCE = "https://archive.org/download/kryptogramm/04-f18v.mp3";
 // 12 objects: 11 IIIF-direct images across all six MS-408 sections + 1 sound (04-design §B).
 // width/height are the manifest's native px (verified live). NO pixel coords / regions this wave (Wave 1
 // scaffold) — the per-region reading/tag notes are authored in Wave 2.
+//
+// RIGHTS (per-object, on the SHARED seed so Studio + Viewer both carry it — AObject extends RightsFields).
+// Each folio o1–o11 IS a Beinecke MS 408 leaf → the attribution is truest at the OBJECT level: the
+// Public-Domain-Mark license URI (an approved LICENSES entry) + the MS-408 credit. The sound o12 is
+// Schwerdtfeger's Kryptogramm, a DIFFERENT rights-holder → its own CC BY-NC-SA 3.0 statement + URI.
+const BEINECKE_RIGHTS = "https://creativecommons.org/publicdomain/mark/1.0/"; // Public Domain Mark 1.0 (LICENSES)
+const BEINECKE_STATEMENT = { label: "Source", value: "Beinecke Rare Book & Manuscript Library, Yale University — MS 408 (public domain)" } as const;
+const folio = (o: AObject): AObject => ({ ...o, rights: BEINECKE_RIGHTS, requiredStatement: { ...BEINECKE_STATEMENT } });
 export const voynichObjects: AObject[] = [
-  { id: "o1", source: iiif("1006076"), label: "f1r — Herbal (opening page)", width: 2972, height: 3766 },
-  { id: "o2", source: iiif("1006109"), label: "f18v — Herbal (the sonified folio)", width: 2846, height: 3781 },
-  { id: "o3", source: iiif("1006123"), label: "f25v — Herbal", width: 2863, height: 3769 },
-  { id: "o4", source: iiif("1006139"), label: "f33v — Herbal", width: 2871, height: 3769 },
-  { id: "o5", source: iiif("1006194"), label: "f67r — Astronomical (foldout)", width: 4972, height: 3738 },
-  { id: "o6", source: iiif("1006196"), label: "f68r — Astronomical (foldout star-chart)", width: 7993, height: 3828 },
-  { id: "o7", source: iiif("1006208"), label: "f75r — Balneological", width: 2852, height: 3759 },
-  { id: "o8", source: iiif("1006214"), label: "f78r — Balneological", width: 2793, height: 3761 },
-  { id: "o9", source: iiif("1006231"), label: "f85v–86r — Cosmological (the Rosettes foldout)", width: 7925, height: 7268 },
-  { id: "o10", source: iiif("1006246"), label: "f99r — Pharmaceutical", width: 2702, height: 3765 },
-  { id: "o11", source: iiif("1006277"), label: "f116v — Recipes (the final page)", width: 2686, height: 3697 },
-  { id: "o12", source: AV_SOURCE, label: "Kryptogramm — “04-f18v” (sonified folio 18v)", mediaType: "sound", format: "audio/mpeg", duration: 296 },
+  folio({ id: "o1", source: iiif("1006076"), label: "f1r — Herbal (opening page)", width: 2972, height: 3766 }),
+  folio({ id: "o2", source: iiif("1006109"), label: "f18v — Herbal (the sonified folio)", width: 2846, height: 3781 }),
+  folio({ id: "o3", source: iiif("1006123"), label: "f25v — Herbal", width: 2863, height: 3769 }),
+  folio({ id: "o4", source: iiif("1006139"), label: "f33v — Herbal", width: 2871, height: 3769 }),
+  folio({ id: "o5", source: iiif("1006194"), label: "f67r — Astronomical (foldout)", width: 4972, height: 3738 }),
+  folio({ id: "o6", source: iiif("1006196"), label: "f68r — Astronomical (foldout star-chart)", width: 7993, height: 3828 }),
+  folio({ id: "o7", source: iiif("1006208"), label: "f75r — Balneological", width: 2852, height: 3759 }),
+  folio({ id: "o8", source: iiif("1006214"), label: "f78r — Balneological", width: 2793, height: 3761 }),
+  folio({ id: "o9", source: iiif("1006231"), label: "f85v–86r — Cosmological (the Rosettes foldout)", width: 7925, height: 7268 }),
+  folio({ id: "o10", source: iiif("1006246"), label: "f99r — Pharmaceutical", width: 2702, height: 3765 }),
+  folio({ id: "o11", source: iiif("1006277"), label: "f116v — Recipes (the final page)", width: 2686, height: 3697 }),
+  { id: "o12", source: AV_SOURCE, label: "Kryptogramm — “04-f18v” (sonified folio 18v)", mediaType: "sound", format: "audio/mpeg", duration: 296,
+    rights: "https://creativecommons.org/licenses/by-nc-sa/3.0/",
+    requiredStatement: { label: "Sound", value: "Kryptogramm — Elias Schwerdtfeger, CC BY-NC-SA 3.0" } },
 ];
 
-// Base captions (purpose:commenting) for the always-visible BASE layer. EMPTY this wave: the descriptive
-// base captions are authored in Wave 2 alongside the reading/tag notes (Wave 1 is scaffold — NO note
-// bodies). Shape preserved so sample-data's buildLog / studio's seededVoynich keep compiling.
+// Base captions (purpose:commenting) for the always-visible BASE layer. ONE reading-LESS note per image
+// folio o1–o11, so the DEFAULT view (no reading selected — activeReading === null) is never empty:
+// annotationsOf() returns these whenever no reading is active (ExhibitView §Q16). Content is NEUTRAL
+// curator description of what the folio DEPICTS, drawn from 03-analysis §3 + 01-foundation §2/§3 — NOT
+// interpretive (cipher/hoax/abjad stays in the reading notes). Filtered by object id in buildVoynichLog,
+// so the SINGLE Rosettes exhibit (o9 only) gets o9's, and the grid/narrative get all eleven. o12 (sound)
+// already carries its own AV base — none added here. `region` is an APPROX rect (// xywh APPROX —
+// human visual-tune): centred on the folio's characteristic feature, native px per voynichObjects.
 export interface VoynichNote { objectId: string; region: [number, number, number, number]; comment: string }
-export const voynichNotes: VoynichNote[] = [];
+export const voynichNotes: VoynichNote[] = [
+  // o1 f1r (2972×3766) Herbal — the opening page. // xywh APPROX — human visual-tune
+  { objectId: "o1", region: [260, 240, 2400, 3300], comment: "The opening page: a single herbal plant rising the height of the leaf, with the manuscript's first lines of script flowing around it. A faded, erased inscription sits in the top margin — the earliest trace of an owner's hand." },
+  // o2 f18v (2846×3781) Herbal — the sonified folio. // xywh APPROX — human visual-tune
+  { objectId: "o2", region: [240, 260, 2360, 3260], comment: "A herbal folio in the same plant-to-a-page grammar — one drawing, a block of text set beside it. This is the page sounded aloud in the recording that accompanies the manuscript." },
+  // o3 f25v (2863×3769) Herbal. // xywh APPROX — human visual-tune
+  { objectId: "o3", region: [240, 260, 2380, 3260], comment: "A vivid herbal plant in strong colour, among the most often reproduced of the botanical pages. The paint sits over an earlier outline, laid on more crudely than the drawing beneath it." },
+  // o4 f33v (2871×3769) Herbal. // xywh APPROX — human visual-tune
+  { objectId: "o4", region: [240, 260, 2380, 3260], comment: "A striking, near-fantastical herbal drawing — a plant that does not match any growing thing with certainty. Its layered paint and ink reward close looking." },
+  // o5 f67r (4972×3738) Astronomical foldout. // xywh APPROX — human visual-tune
+  { objectId: "o5", region: [300, 240, 4300, 3250], comment: "An astronomical foldout: circular diagrams of Sun, Moon, and stars, wider than a standard leaf. Rings of small labelled words surround the central wheel." },
+  // o6 f68r (7993×3828) Astronomical foldout star-chart. // xywh APPROX — human visual-tune
+  { objectId: "o6", region: [400, 240, 7100, 3350], comment: "A wide foldout star-chart: a dense cluster of stars, each tied to a small written label, spread across an unusually broad leaf." },
+  // o7 f75r (2852×3759) Balneological. // xywh APPROX — human visual-tune
+  { objectId: "o7", region: [240, 300, 2360, 3200], comment: "A balneological page: small bathing figures moving through green networks of pipes, pools, and basins, with text running continuously between them." },
+  // o8 f78r (2793×3761) Balneological. // xywh APPROX — human visual-tune
+  { objectId: "o8", region: [240, 300, 2300, 3200], comment: "The most reproduced of the bathing pages: nude figures connected by branching green tubes that carry liquid between basins — the signature imagery of this section." },
+  // o9 f85v–86r Rosettes (7925×7268) Cosmological foldout. // xywh APPROX — human visual-tune
+  { objectId: "o9", region: [600, 600, 6700, 6100], comment: "The Rosettes — nine medallions joined by causeways and castle-like forms, the largest spread in the manuscript. A six-panel foldout that opens far beyond a single leaf." },
+  // o10 f99r (2702×3765) Pharmaceutical. // xywh APPROX — human visual-tune
+  { objectId: "o10", region: [220, 300, 2260, 3200], comment: "A pharmaceutical page: rows of labelled containers set beside isolated roots and leaves — several of them tidier copies of plants from the opening herbal." },
+  // o11 f116v (2686×3697) Recipes — final page. // xywh APPROX — human visual-tune
+  { objectId: "o11", region: [200, 240, 2280, 3200], comment: "The manuscript's final page: short starred paragraphs and, set apart from the unknown script, a few lines in ordinary Latin written by a later hand." },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 // AUTHORED READINGS CONTENT (ADR-0007). The SINGLE SOURCE OF TRUTH for the genuinely-plural Voynich
@@ -131,7 +169,7 @@ export const voynichReadingNotes: VoynichReadingNote[] = [
   { objectId: "o8", xywh: R6, comment: "Under the abjad reading, the label is a real word in a genuinely distinct dialect or register (Currier “Language A” vs “B” = two real linguistic states), consistent with natural-language variation across a long manuscript.", reading: "abjad" },
 
   // R7 — f85v–86r Rosettes (o9, 7925×7268, foldout): label inside the central medallion. Cross-link source (§H).
-  { objectId: "o9", xywh: R7, comment: "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [A network rendered as a map — compare the mesh of Bidar.](archie:bidar/) (§H cross-link, 03 §5 Link 1: the `archie:` in-body ref grammar from link.ts — rewritten to the published bidar URL on the heads projection; resolves to the exhibit root, the bidar mesh-map canvas.)", reading: "cipher", tags: ["astronomical-symbol", "foldout", "label-word"] },
+  { objectId: "o9", xywh: R7, comment: "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [See the Rosettes alone, deep-zoomed.](archie:voynich-rosettes/) (§H cross-link, 03 §5: repointed from the sunset bidar exhibit to the SINGLE Rosettes study — `archie:` in-body ref grammar from link.ts, rewritten to the published voynich-rosettes URL on the heads projection; resolves to the exhibit root.)", reading: "cipher", tags: ["astronomical-symbol", "foldout", "label-word"] },
   { objectId: "o9", xywh: R7, comment: "Under the grille reading, the label is decorative gibberish; the causeways and castles are an impressive visual forgery, and the text laid over them carries no place-names because it carries nothing.", reading: "hoax" },
   { objectId: "o9", xywh: R7, comment: "Under the abjad reading, the label names a real place or region; the abjad hypothesis is what motivates reading the Rosettes as an actual (if stylised) geographic or cosmographic diagram.", reading: "abjad" },
 
@@ -153,7 +191,7 @@ export interface VoynichAvNote { t: string; comment: string; reading?: string; t
 // §E — AV-1…4 reading-bearing notes on the o12 sound canvas (03 §4). The fourth, audible row of the
 // same toggle. ORDER IS LOAD-BEARING (appended after the reading notes — see consumers). t= PROVISIONAL.
 export const voynichAvNotes: VoynichAvNote[] = [
-  { t: "0,30", comment: "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. [the page it reads aloud](archie:voynich/) (03 §4 cross-link AV→image f18v; `archie:` ref resolves to the voynich exhibit. A note-precise `archie:voynich/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)" },
+  { t: "0,30", comment: "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. [Read the manuscript through, page by page.](archie:voynich-reading/) (03 §4 cross-link AV→the narrative walk; `archie:` ref resolves to the voynich-reading exhibit — the spoken/read metaphor matches the narrative spine. A note-precise `…/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)" },
   { t: "45,80", comment: "A repeated cadence surfaces. Under the abjad reading this resembles a root-and-pattern morphology (Bax); under the grille reading it is the predictable repetition the prefix/stem/suffix tables force; under the cipher reading it is enciphered structure showing through." },
   { t: "120,160", comment: "Here the “words” cluster like labels. Cryptanalysts attacked exactly such short tokens as cribs (cipher); Rugg's tables emit them just as readily (grille); Bax read them as proper names (abjad)." },
   { t: "250,296", comment: "The reading ends without resolving. That the ear can't decide between language and noise is the manuscript's whole condition — undeciphered, even when sounded." },

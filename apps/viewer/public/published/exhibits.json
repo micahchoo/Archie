@@ -2,7 +2,7 @@
   "library": {
     "id": "archie-lib",
     "title": "The Archie Library",
-    "summary": "Annotated exhibits read more than one way — a contested manuscript, a field map, and a recording from the mesh."
+    "summary": "A contested manuscript read more than one way — Beinecke MS 408, the same undeciphered marks read three ways across three exhibits."
   },
   "exhibits": [
     {
@@ -25,19 +25,6 @@
       "cover": "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg",
       "description": "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.",
       "order": 2
-    },
-    {
-      "slug": "bidar",
-      "title": "Techno-Futures from Bidar",
-      "cover": "https://one.compost.digital/micah/nb-v24.jpg",
-      "description": "A condensed map of the Bidar mesh network — places, people, songs, and reflections from the field.",
-      "order": 3
-    },
-    {
-      "slug": "av",
-      "title": "A Field Recording from Bidar",
-      "description": "One sound from the mesh, read against its transcript — click a line to travel the audio.",
-      "order": 4
     }
   ],
   "presentation": {},

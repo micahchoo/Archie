@@ -2,5 +2,28 @@
   "@context": "http://www.w3.org/ns/anno.jsonld",
   "id": "https://archie.demo/voynich-reading/canvas/o11/annotations.json",
   "type": "AnnotationPage",
-  "items": []
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/000000000BS89E0Q37VAH3D6W0/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o11",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:200,240,2280,3200"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.011Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The manuscript's final page: short starred paragraphs and, set apart from the unknown script, a few lines in ordinary Latin written by a later hand.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000BS89E0Q37VAH3D6W0.json"
+    }
+  ]
 }

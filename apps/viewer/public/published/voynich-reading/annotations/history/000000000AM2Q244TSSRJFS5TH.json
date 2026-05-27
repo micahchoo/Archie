@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/annotations/history/000000000AM2Q244TSSRJFS5TH.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/000000000AM2Q244TSSRJFS5TH/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o10",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:220,300,2260,3200"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.010Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A pharmaceutical page: rows of labelled containers set beside isolated roots and leaves — several of them tidier copies of plants from the opening herbal.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000AM2Q244TSSRJFS5TH",
+      "archie:rev": "000000000AMYCF92TDB399CWA8",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-reading/annotations/0000000010CTX855B72Y45Y1ZS/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000001B2PAJR49V7C5AV7DE/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -15,7 +15,7 @@
           "value": "xywh=pixel:200,160,2300,420"
         }
       },
-      "modified": "1970-01-01T00:00:00.032Z",
+      "modified": "1970-01-01T00:00:00.043Z",
       "body": [
         {
           "type": "TextualBody",
@@ -24,7 +24,7 @@
         }
       ],
       "archie:reading": "hoax",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000010CTX855B72Y45Y1ZS.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001B2PAJR49V7C5AV7DE.json"
     }
   ],
   "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"

@@ -2,5 +2,28 @@
   "@context": "http://www.w3.org/ns/anno.jsonld",
   "id": "https://archie.demo/voynich-reading/canvas/o5/annotations.json",
   "type": "AnnotationPage",
-  "items": []
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/00000000050J2F8PF91K4C4K15/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o5",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:300,240,4300,3250"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.005Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "An astronomical foldout: circular diagrams of Sun, Moon, and stars, wider than a standard leaf. Rings of small labelled words surround the central wheel.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/00000000050J2F8PF91K4C4K15.json"
+    }
+  ]
 }

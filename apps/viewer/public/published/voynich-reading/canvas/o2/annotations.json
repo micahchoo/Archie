@@ -2,5 +2,28 @@
   "@context": "http://www.w3.org/ns/anno.jsonld",
   "id": "https://archie.demo/voynich-reading/canvas/o2/annotations.json",
   "type": "AnnotationPage",
-  "items": []
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/0000000002YKJX754V275FQVYH/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o2",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:240,260,2360,3260"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.002Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A herbal folio in the same plant-to-a-page grammar — one drawing, a block of text set beside it. This is the page sounded aloud in the recording that accompanies the manuscript.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000002YKJX754V275FQVYH.json"
+    }
+  ]
 }
