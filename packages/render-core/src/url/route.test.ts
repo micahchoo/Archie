@@ -59,3 +59,41 @@ describe("routeToHash (inverse)", () => {
     expect(routeToHash({ view: "gallery" })).toBe("#/");
   });
 });
+
+describe("?src= hosted-zip pointer (ADR-0009) — composes with any route", () => {
+  it("#/?src=<url> → gallery + src", () => {
+    expect(parseRoute("#/?src=https://h/x.zip")).toEqual({ view: "gallery", src: "https://h/x.zip" });
+  });
+
+  it("#/<slug>?src=<url> → exhibit + src", () => {
+    expect(parseRoute("#/voynich?src=https://h/x.zip")).toEqual({ view: "exhibit", slug: "voynich", src: "https://h/x.zip" });
+  });
+
+  it("composes with a deep-link: #/<slug>/a/<note>?src=<url> opens AND lands on the note", () => {
+    expect(parseRoute("#/voynich/a/n7?src=https://h/x.zip")).toEqual({
+      view: "exhibit", slug: "voynich", noteId: "n7", src: "https://h/x.zip",
+    });
+  });
+
+  it("coexists with ?xywh in the same query", () => {
+    expect(parseRoute("#/voynich/a/n7?xywh=1,2,3,4&src=https://h/x.zip")).toEqual({
+      view: "exhibit", slug: "voynich", noteId: "n7", xywh: "1,2,3,4", src: "https://h/x.zip",
+    });
+  });
+
+  it("a routeless src is absent → no src key (existing equalities hold)", () => {
+    expect(parseRoute("#/voynich")).toEqual({ view: "exhibit", slug: "voynich" });
+    expect(parseRoute("#/")).toEqual({ view: "gallery" });
+  });
+
+  it("round-trips a src whose own url carries :/?& (percent-encoded, then decoded back)", () => {
+    const tricky = "https://host.example/path/lib.archie.zip?v=2&t=a/b";
+    for (const r of [
+      { view: "gallery" as const, src: tricky },
+      { view: "exhibit" as const, slug: "voynich", src: tricky },
+      { view: "exhibit" as const, slug: "voynich", noteId: "n7", xywh: "1,2,3,4", src: tricky },
+    ]) {
+      expect(parseRoute(routeToHash(r))).toEqual(r);
+    }
+  });
+});

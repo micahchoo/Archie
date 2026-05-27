@@ -1,0 +1,123 @@
+// Portable read seam (ADR-0010) — promoted from spikes/portable-viewer-seam/approach-p. Proves, at
+// the data layer: (1) a published zip round-trips into the published.ts data shape; (2) an embedded
+// `{slug}/assets/{name}` image resolves to a usable blob: URL on object.source; (3) blob URLs pass
+// thumbnailUrl unchanged (zero sink change); (4) note-body `/assets/` media is rewritten too; (5)
+// revoke() frees them; (6) the gallery index reads. Node v24 supplies Blob/createObjectURL and
+// node:buffer.resolveObjectURL reads bytes back — the <img>/<video> PAINT is BROWSER-VERIFY-OWED.
+
+import { describe, it, expect } from "vitest";
+import { resolveObjectURL } from "node:buffer";
+import { ZipFilesystem } from "../fs/zip.js";
+import { publishLibrary } from "./site.js";
+import { appendNew } from "../spine/log.js";
+import { asClientId } from "../wadm/brand.js";
+import { thumbnailUrl } from "../iiif/resolve.js";
+import { splitNoteMedia } from "../note/media.js";
+import type { Library } from "../model/model.js";
+import type { AnnotationLog } from "../wadm/types.js";
+import { loadPortableExhibit, loadPortableGallery } from "./portable.js";
+
+// --- fixture: build a published `.archie.zip`'s bytes WITH an embedded asset image -------------
+const BASE = "https://u.gh.io/lib/";
+const SLUG = "voynich";
+const ASSET_NAME = "plate.png";
+const author = asClientId("curator");
+// A 1x1 PNG — the exact bytes don't matter, only that the SAME bytes survive the round-trip.
+const PNG_BYTES = new Uint8Array([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+  0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x62, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+  0x42, 0x60, 0x82,
+]);
+const canvasId = `${BASE}${SLUG}/canvas/o1`;
+
+function buildLog(): AnnotationLog {
+  let log: AnnotationLog = [];
+  ({ log } = appendNew(log, { target: canvasId, body: { type: "TextualBody", value: "a head note" }, lastEditor: author, modifiedAt: "t", now: 1 }));
+  ({ log } = appendNew(log, { target: canvasId, body: { type: "TextualBody", value: `Look ![](/assets/${ASSET_NAME}) here`, format: "text/markdown" }, lastEditor: author, modifiedAt: "t", now: 2 }));
+  return log;
+}
+
+const library: Library = {
+  id: "L",
+  title: "Lib",
+  exhibits: [{ id: "e1", slug: SLUG, title: "Voynich", objects: [{ id: "o1", source: `/assets/${ASSET_NAME}`, label: "folio 1" }] }],
+};
+
+async function buildArchiveBytes(): Promise<Uint8Array> {
+  const fs = new ZipFilesystem();
+  const logs: Record<string, AnnotationLog> = { e1: buildLog() };
+  await publishLibrary(fs, library, (id) => logs[id] ?? [], {
+    baseUrl: BASE,
+    getAsset: async (slug, name) => (slug === SLUG && name === ASSET_NAME ? PNG_BYTES.slice().buffer : null),
+  });
+  return fs.toZip();
+}
+const openArchive = (bytes: Uint8Array) => ZipFilesystem.fromZip(bytes);
+// ------------------------------------------------------------------------------------------------
+
+describe("portable read seam (ADR-0010) over a ZipFilesystem", () => {
+  it("round-trips the published tree into the PublishedExhibitData shape + readings (data parity)", async () => {
+    const { exhibit, revoke } = await loadPortableExhibit(openArchive(await buildArchiveBytes()), SLUG);
+    expect(exhibit.title).toBe("Voynich");
+    expect(exhibit.objects.map((o) => o.id)).toEqual(["o1"]);
+    expect(exhibit.canvasIdByObject.o1).toBe(`${BASE}${SLUG}/canvas/o1`);
+    expect(exhibit.annotationsByObject.o1?.length).toBe(2);
+    // The readings registry is present (empty here) — the field readPublishedExhibit OMITS.
+    expect(Array.isArray(exhibit.readings)).toBe(true);
+    expect(exhibit.readingAnnotationsByObject).toBeDefined();
+    revoke();
+  });
+
+  it("resolves an assets/-embedded image to a usable blob: URL on object.source (the media crux)", async () => {
+    const { exhibit, blobUrls, revoke } = await loadPortableExhibit(openArchive(await buildArchiveBytes()), SLUG);
+    const src = exhibit.objects[0]!.source;
+    expect(src.startsWith("blob:")).toBe(true);
+    expect(blobUrls).toContain(src);
+    const blob = resolveObjectURL(src);
+    expect(blob).toBeDefined();
+    expect(blob!.type).toBe("image/png");
+    expect([...new Uint8Array(await blob!.arrayBuffer())]).toEqual([...PNG_BYTES]);
+    revoke();
+  });
+
+  it("blob: URLs pass thumbnailUrl unchanged (zero component change at the sink)", async () => {
+    const { exhibit, revoke } = await loadPortableExhibit(openArchive(await buildArchiveBytes()), SLUG);
+    const src = exhibit.objects[0]!.source;
+    expect(thumbnailUrl(src, 480)).toBe(src);
+    revoke();
+  });
+
+  it("rewrites note-body /assets/ media to a blob: URL (the NoteMedia/NoteLightbox m.url sink)", async () => {
+    const { exhibit, revoke } = await loadPortableExhibit(openArchive(await buildArchiveBytes()), SLUG);
+    const notes = exhibit.annotationsByObject.o1!;
+    const mediaNote = notes.find((n) => {
+      const v = (Array.isArray(n.body) ? n.body[0] : n.body) as { value?: string } | undefined;
+      return typeof v?.value === "string" && v.value.includes("blob:");
+    });
+    expect(mediaNote, "the note carrying /assets/ media must have a rewritten body").toBeDefined();
+    const value = ((Array.isArray(mediaNote!.body) ? mediaNote!.body[0] : mediaNote!.body) as { value: string }).value;
+    expect(value.includes("/assets/")).toBe(false);
+    expect(value.includes("blob:")).toBe(true);
+    const parts = splitNoteMedia(value);
+    expect(parts.media[0]?.kind).toBe("image");
+    const url = parts.media[0]!.url;
+    expect(url.startsWith("blob:")).toBe(true);
+    const blob = resolveObjectURL(url);
+    expect([...new Uint8Array(await blob!.arrayBuffer())]).toEqual([...PNG_BYTES]);
+    revoke();
+  });
+
+  it("revoke() frees every minted blob URL (App.svelte:99 lifecycle)", async () => {
+    const { blobUrls, revoke } = await loadPortableExhibit(openArchive(await buildArchiveBytes()), SLUG);
+    expect(blobUrls.length).toBeGreaterThan(0);
+    revoke();
+    expect(blobUrls.length).toBe(0);
+  });
+
+  it("loadPortableGallery reads the exhibits.json index from the archive", async () => {
+    const gallery = await loadPortableGallery(openArchive(await buildArchiveBytes()));
+    expect(gallery.exhibits.map((e) => e.slug)).toContain(SLUG);
+  });
+});
