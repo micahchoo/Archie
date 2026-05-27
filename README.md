@@ -92,7 +92,7 @@ The whole author's arc, end to end:
 **1. Clone and stand up the repo.**
 
 ```bash
-git clone <your-archie-repo-url> archie && cd archie
+git clone https://github.com/micahchoo/Archie.git archie && cd archie
 nvm install 22 && nvm use 22       # Node ≥ 22 is required
 pnpm install                       # install the whole workspace
 pnpm --filter @archie/studio dev   # opens http://localhost:5173
