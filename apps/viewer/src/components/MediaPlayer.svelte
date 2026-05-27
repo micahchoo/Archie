@@ -4,6 +4,9 @@
   // (parseTimeFragment) as a prose SPINE beside the media — clicking a line travels the audio (seek),
   // and playback lights the active line (activeNoteIndex on timeupdate). The same reading idiom as the
   // spatial NarrativeReader: AV is narrative over time. Import-only v1 — read-only, no recording.
+  // Two read surfaces share that one `activeIdx`: the sequential transcript SPINE (right) and a
+  // temporal MAP — a marker strip under the media showing WHERE on the recording each note falls
+  // (read-only mirror of the Studio annotation timeline; HANDOFF "AV affordance pareto-hybrid").
   import { parseMediaFragment, activeNoteIndex, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
   import Credit from "./Credit.svelte";
 
@@ -20,7 +23,11 @@
 
   let mediaEl = $state<HTMLMediaElement | null>(null);
   let currentTime = $state(0);
+  let mediaDuration = $state(0); // actual length from `loadedmetadata`; the marker strip's denominator
   let mediaError = $state(false); // the recording's file failed to load (missing / unsupported codec)
+  // The recording's length for positioning marks: the loaded media's own duration, else the published
+  // value (voynich.ts o12 = 296s) so the strip can lay out before the file's metadata arrives.
+  const dur = $derived(mediaDuration || object.duration || 0);
 
   const bodyText = (a: W3CAnnotation): string => {
     const b = Array.isArray(a.body) ? a.body[0] : a.body;
@@ -50,34 +57,67 @@
   );
 
   const isVideo = $derived(object.mediaType === "video");
+  // Travel the recording to a moment and play from there — the one motion both read surfaces share
+  // (a transcript line, or a mark on the strip). Clamped so a stray click on the track can't overrun.
+  function seekTo(t: number) {
+    if (!mediaEl) return;
+    mediaEl.currentTime = Math.max(0, dur ? Math.min(dur, t) : t);
+    void mediaEl.play();
+  }
   function seek(i: number) {
     const c = cues[i];
-    if (!c || !mediaEl) return;
-    mediaEl.currentTime = c.range.start;
-    void mediaEl.play();
+    if (c) seekTo(c.range.start);
+  }
+  // Click the bare strip (not a mark) → travel to that point in the recording (scrub the time axis).
+  function trackSeek(e: MouseEvent, el: HTMLElement) {
+    if (!dur) return;
+    const r = el.getBoundingClientRect();
+    seekTo(((e.clientX - r.left) / r.width) * dur);
   }
 </script>
 
 <div class="player" class:video={isVideo}>
   <main>
-    <!-- The media on the dark light-table — same surface as the image canvas, so sound/image read
-         as one kind of object. Controls are the native scrubber (read-only consumer). -->
-    {#if mediaError}
-      <p class="media-failed">This recording couldn’t be loaded — the file may be missing or in a format this browser can’t play.</p>
-    {:else if isVideo}
-      <div class="video-wrap">
-        <!-- svelte-ignore a11y_media_has_caption -->
-        <video bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
-        <!-- Spatiotemporal note regions (ADR-0006): the box appears on the frame during its time window. -->
-        <div class="box-overlay" aria-hidden="true">
-          {#each videoBoxes as b (b.id)}<div class="rbox" class:active={b.active} style={`left:${b.box.x}%;top:${b.box.y}%;width:${b.box.w}%;height:${b.box.h}%`}></div>{/each}
+    <div class="media-region">
+      <!-- The media on the dark light-table — same surface as the image canvas, so sound/image read
+           as one kind of object. Controls are the native scrubber (read-only consumer). -->
+      {#if mediaError}
+        <p class="media-failed">This recording couldn’t be loaded — the file may be missing or in a format this browser can’t play.</p>
+      {:else if isVideo}
+        <div class="video-wrap">
+          <!-- svelte-ignore a11y_media_has_caption -->
+          <video bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={() => (mediaDuration = mediaEl?.duration ?? 0)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
+          <!-- Spatiotemporal note regions (ADR-0006): the box appears on the frame during its time window. -->
+          <div class="box-overlay" aria-hidden="true">
+            {#each videoBoxes as b (b.id)}<div class="rbox" class:active={b.active} style={`left:${b.box.x}%;top:${b.box.y}%;width:${b.box.w}%;height:${b.box.h}%`}></div>{/each}
+          </div>
         </div>
-      </div>
-    {:else}
-      <div class="audio-stage">
-        <span class="now">Now playing</span>
-        <h1>{object.label}</h1>
-        <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
+      {:else}
+        <div class="audio-stage">
+          <span class="now">Now playing</span>
+          <h1>{object.label}</h1>
+          <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={() => (mediaDuration = mediaEl?.duration ?? 0)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Temporal MAP: where each transcript note falls across the recording's length — a read-only
+         mirror of the Studio annotation timeline (HANDOFF "AV affordance pareto-hybrid"). The native
+         scrubber can't be marked (shadow DOM), so this sibling strip carries the marks. Click a mark to
+         travel there; the note now playing is inked (shared `activeIdx`); a quiet line tracks position. -->
+    {#if cues.length > 0 && !mediaError}
+      <div class="timeline">
+        <span class="tl-label">Where the notes fall in the recording</span>
+        <div class="tl-track" role="presentation" onclick={(e) => trackSeek(e, e.currentTarget)}>
+          {#each cues as c, i (c.id)}
+            <button type="button" class="tl-mark" class:active={i === activeIdx}
+              style={`left:${(c.range.start / (dur || 1)) * 100}%; width:${Math.max(0.8, (((c.range.end ?? c.range.start) - c.range.start) / (dur || 1)) * 100)}%`}
+              title={`${fmt(c.range.start)} · ${c.text}`}
+              aria-label={`Note at ${fmt(c.range.start)}: ${c.text}`}
+              onclick={(e) => { e.stopPropagation(); seekTo(c.range.start); }}></button>
+          {/each}
+          {#if dur}<div class="tl-cursor" style={`left:${(currentTime / dur) * 100}%`} aria-hidden="true"></div>{/if}
+        </div>
       </div>
     {/if}
   </main>
@@ -108,7 +148,19 @@
   /* Listening station: dark media surface (left) + warm-paper transcript spine (right); the active
      line is inked forest-green — the NarrativeReader idiom, applied to time instead of space. */
   .player { display: flex; height: 100vh; background: var(--surface-canvas); }
-  main { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; background: var(--surface-canvas); padding: var(--space-8); }
+  main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface-canvas); }
+  .media-region { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: var(--space-8); }
+
+  /* Temporal map: the recording's full length as a strip, each note a mark at its moment (read-only
+     mirror of the Studio .vtimeline — same tokens). A time axis, not a scrubber overlay: its width is
+     the media column, not the rendered frame, so a letterboxed video still maps marks honestly. */
+  .timeline { flex-shrink: 0; padding: var(--space-2) var(--space-6) var(--space-4); background: var(--surface-canvas-raised); border-top: 1px solid var(--border-canvas); }
+  .tl-label { display: block; margin-bottom: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .tl-track { position: relative; height: 1.5rem; background: var(--surface-canvas-overlay); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; }
+  .tl-mark { position: absolute; top: 2px; bottom: 2px; min-width: 3px; box-sizing: border-box; padding: 0; cursor: pointer; background: rgba(58, 107, 76, 0.35); border: 1px solid var(--accent); border-radius: 2px; transition: background 120ms ease; }
+  .tl-mark:hover, .tl-mark.active { background: var(--accent); }
+  .tl-mark:focus-visible { outline: 2px solid var(--ink-canvas-primary); outline-offset: 1px; z-index: 2; }
+  .tl-cursor { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink-canvas-primary); pointer-events: none; }
 
   .audio-stage { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); max-width: 32rem; text-align: center; }
   .audio-stage .now { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
