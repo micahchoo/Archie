@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/0000000009EKT17VA6GKX7AY90.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/0000000009EKT17VA6GKX7AY90/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1764,1001,181,181"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.009Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "\"This project revealed a lot of things, such as it is not necessary for everyone to know everything. It makes it harder to align. When we take the tech to the ground therefore, we have to be extremely care-full. The collaborations and relationships we have developed over the years work because of a certain trust. When we can’t follow through on the promises of the network, it becomes that much harder to go back in the future.\"",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "0000000009EKT17VA6GKX7AY90",
+      "archie:rev": "0000000009330TVNDYVJER55SW",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

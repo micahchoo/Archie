@@ -1,0 +1,34 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/00000000114CJMP3QV80WQS1H9.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/00000000114CJMP3QV80WQS1H9/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o11",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:200,160,2300,420"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.033Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the abjad reading, the Latin hand is a later scribe glossing the abjad text — treating it as a real language worth translating, which presupposes it has content.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "00000000114CJMP3QV80WQS1H9",
+      "archie:rev": "0000000011XDMFDP4W5AXT5SRA",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "abjad"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/000000000BG70RRDZH2Y655MCR.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/000000000BG70RRDZH2Y655MCR/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1764,1806,346,346"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.011Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Team YUVAA has now reoriented to mobilising political change through grassroots elections. This kind of intervention became necessary after the lockdown. The mesh network could be used to develop capacities for political participation and movement in the villages adjoining Bidar.\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/11/Vinay_Talk.mp3)",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000BG70RRDZH2Y655MCR",
+      "archie:rev": "000000000BFQ9A2T0P0AHMQ2JH",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

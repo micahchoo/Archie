@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/0000000008HKXFE02H0MP506YE.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/0000000008HKXFE02H0MP506YE/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1400,438,253,253"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.008Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "We engaged with the many forms in which women and non-binary gender groups hold knowledge. We engaged mainly with the oral traditions that are so closely linked to generational knowledge related to food, cultures, histories and home remedies.\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/8/APC_DHOLAK_ZAKIYABI_20191111_a06.mp3)\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/8/APC_KUMBARAHADU_VIDHYAVATI_20190929_a01.mp3)\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/8/APC_TULSAMMA_BHOOTERU_GONDAL_RENUKARAJA_STORY.mp3)\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/8/DholakGeet_Recording_on_the_PiZ_Network_recorder_by_Woman_Singer_at_Faizpura-_02.mp3)\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/8/MuharramPadagalu.mp3)\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/8/Qawwali_at_Abul_Faiz_Dargah.mp3)\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/8/SeegiHaadu_Woman_singing_Seegi_haadu_at_Bompalli-01.mp3)\n\n[♪ audio](https://one.compost.digital/micah/annotation-assets/8/Vamiki_Song.mp3)",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "0000000008HKXFE02H0MP506YE",
+      "archie:rev": "00000000089QHBW3E9PBWS8VQT",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}
