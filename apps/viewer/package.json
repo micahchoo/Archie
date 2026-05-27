@@ -10,7 +10,10 @@
     "predev": "vite-node scripts/gen-published.mts",
     "build": "astro build",
     "prebuild": "vite-node scripts/gen-published.mts",
-    "preview": "astro preview"
+    "preview": "astro preview",
+    "test": "vitest run",
+    "check": "astro check",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@annotorious/openseadragon": "^3.8.2",
@@ -19,9 +22,11 @@
     "@render/svelte": "workspace:*"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.4",
     "@astrojs/svelte": "^8.1.2",
     "astro": "^6.3.8",
     "svelte": "^5.15.0",
+    "typescript": "^5.9.3",
     "vite-node": "^6.0.0"
   }
 }
