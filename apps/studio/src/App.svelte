@@ -18,17 +18,18 @@
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
   import { matches, typingInField } from "./shortcuts.js";
   import {
-    AnnotationSession, libraryToZip, asClientId, mintRevId, encodeLinkRef,
+    AnnotationSession, libraryToZipFs, asClientId, mintRevId, encodeLinkRef,
     MemoryFilesystem, ZipFilesystem, FsaFilesystem, publishLibrary, loadLibrary, collectFiles, publishToGitHub,
     readExifOrientation, isOrientationNoop, orientationTransform,
     mediaTypeFromSource, timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript,
+    MAX_MASTER_DIM, exceedsCap,
     bindingLabel, recentFromBinding, addRecent, removeRecent,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type GitHubTarget, type Binding, type RecentProject, type BrokenLink, type Section,
   } from "@render/core";
   import type { DrawTool } from "@render/mount";
   import { bakeDisplayMaster } from "./bake.js";
-  import { openExhibitAnnotationsDir, loadLibraryMeta, saveLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, readAssetBytes, readOriginalBytes, assetSize, clearExhibitAnnotations, type ExhibitMeta, type LibraryMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
-  import { supportsFolderPicker, pickFolder, downloadZip, zipNameFor, loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
+  import { openExhibitAnnotationsDir, loadLibraryMeta, saveLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, readAssetBlob, readOriginalBytes, assetSize, clearExhibitAnnotations, type ExhibitMeta, type LibraryMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
+  import { supportsFolderPicker, supportsFileStreamSave, pickFolder, saveZipToDisk, zipNameFor, loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
   import { putHandle, getHandle, deleteHandle, requestPermission } from "./handles-db.js";
   import { voynichObjects, voynichNotes, voynichTitle } from "./voynich.js";
   import { bidarObject, bidarNotes, bidarTitle } from "./bidar.js";
@@ -475,13 +476,30 @@
     let provenance: ObjectProvenance | undefined;
 
     if (!isOrientationNoop(orientation)) {
-      const baked = await bakeDisplayMaster(file); // upright PNG; dims from the decoded bitmap
+      // EXIF path: upright PNG master, capped to the §80 display size; the untouched original is
+      // preserved for citation (the master differs by rotation — provenance records the transform).
+      const baked = await bakeDisplayMaster(file, { maxDim: MAX_MASTER_DIM }); // upright PNG; capped
       master = baked.blob;
       dims = { w: baked.width, h: baked.height };
       name = `${id}-${safe.replace(/\.[^.]+$/, "")}.png`;
       const originalName = `${id}-${safe}`;
       await saveOriginalFile(currentSlug, originalName, file); // preserve the untouched original
       provenance = { exifOrientation: orientation, transform: orientationTransform(orientation), originalName };
+    } else {
+      // No rotation needed. If the image exceeds the §80 cap, downscale to a display master PRESERVING
+      // the source format (LARGE-MEDIA-MEMORY-CEILING #4) — a big JPEG stays JPEG. Under the cap → keep
+      // the raw file untouched. No separate original: per §80 the bundle holds a display-sized image,
+      // not an archive (the user's full-res source stays on their own disk; giant → external IIIF).
+      const probeUrl = URL.createObjectURL(file);
+      const probed = await imageDims(probeUrl);
+      URL.revokeObjectURL(probeUrl);
+      if (probed && exceedsCap(probed.w, probed.h, MAX_MASTER_DIM)) {
+        const baked = await bakeDisplayMaster(file, { maxDim: MAX_MASTER_DIM, mime: file.type || "image/jpeg" });
+        master = baked.blob;
+        dims = { w: baked.width, h: baked.height };
+      } else {
+        dims = probed;
+      }
     }
 
     const blobUrl = URL.createObjectURL(master);
@@ -808,15 +826,15 @@
   }
 
   async function download() {
-    if (!(await zipSizeOk())) return; // large-library guard (LARGE-MEDIA-MEMORY-CEILING #1)
+    // A.1 (LARGE-MEDIA-MEMORY-CEILING #3): build the publish tree, then STREAM the zip straight to a
+    // file handle on Chromium (showSaveFilePicker) so the archive never fully materializes; elsewhere
+    // fall back to the eager in-memory zip + anchor download. The 2× size guard applies ONLY to that
+    // eager path — streaming holds ≈1× (the Map), not the zip copy on top.
+    if (!supportsFileStreamSave() && !(await zipSizeOk())) return; // large-library guard (#1), eager path only
     const logs = await loadAllLogs();
-    const { zip: bytes, brokenLinks } = await libraryToZip(buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset: (slug, name) => readAssetBytes(slug, name) });
+    const { fs, brokenLinks } = await libraryToZipFs(buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset: (slug, name) => readAssetBlob(slug, name) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([bytes as unknown as BlobPart], { type: "application/zip" }));
-    a.download = "demo.archie.zip";
-    a.click();
-    URL.revokeObjectURL(a.href);
+    await saveZipToDisk(fs, zipNameFor(PROJECT_TITLE));
   }
 
   // --- publish (GH-Pages) ---
@@ -828,7 +846,7 @@
   async function collectSiteFiles(withOriginals = false) {
     const logs = await loadAllLogs();
     const fs = new MemoryFilesystem();
-    const { brokenLinks } = await publishLibrary(fs, buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset: (slug, name) => readAssetBytes(slug, name), ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks } = await publishLibrary(fs, buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset: (slug, name) => readAssetBlob(slug, name), ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     return collectFiles(await fs.root());
   }
@@ -865,7 +883,7 @@
   // --- Library-binding actions (invention #3). The persistence PRIMITIVES are reused as-is
   // (publishLibrary→folder · libraryToZip→download · loadLibrary←both) — the invention is the model +
   // chrome, not new plumbing. Folder = autosave-in-place (Chromium); file = explicit Save downloads the zip. ---
-  const getAsset = (slug: string, name: string) => readAssetBytes(slug, name);
+  const getAsset = (slug: string, name: string) => readAssetBlob(slug, name);
   let folderHandle: FileSystemDirectoryHandle | null = null; // cached so autosave doesn't re-hit IndexedDB
   let autosaving = false;
   /** Mark the Library unsaved-to-disk (only meaningful once bound). */
@@ -906,11 +924,12 @@
   }
   /** Download the whole library as a .archie.zip (non-Chromium "the zip IS the file"). False = user declined. */
   async function downloadProjectZip(): Promise<boolean> {
-    if (!(await zipSizeOk())) return false;
+    if (!supportsFileStreamSave() && !(await zipSizeOk())) return false; // size guard (#1), eager path only
     const logs = await loadAllLogs();
-    const { zip } = await libraryToZip(buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset });
-    downloadZip(zip, binding.kind === "file" && binding.name ? binding.name : zipNameFor(PROJECT_TITLE));
-    return true;
+    const { fs } = await libraryToZipFs(buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset });
+    const name = binding.kind === "file" && binding.name ? binding.name : zipNameFor(PROJECT_TITLE);
+    const r = await saveZipToDisk(fs, name); // Chromium streams to disk (A.1); else eager download
+    return r.kind !== "cancelled"; // dismissed the picker → stay unsaved
   }
   /** Re-acquire a folder binding's handle + permission (needs a user gesture). Null + bindingError if lost. */
   async function reacquireFolder(): Promise<FileSystemDirectoryHandle | null> {

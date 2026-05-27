@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/bidar/annotations/history/00000000014A0M17PE1F3782VP.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/bidar/annotations/00000000014A0M17PE1F3782VP/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/bidar/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:713,1215,388,388"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.001Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A prototype of a recording device with local Wi-Fi, designed by Sanketh, a member of Janastu. We used the device to introduce the idea of a local network and the possibility of a digital archive for different knowledge practices anchored by women in Bidar. One of the activities that we relied on during the project was to use these devices to engage curiosity and start conversations about the heritage of Bidar.\n\n![](https://one.compost.digital/micah/annotation-assets/1/1.jpg)\n\n![](https://one.compost.digital/micah/annotation-assets/1/Pi0_recorder.jpg)",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "00000000014A0M17PE1F3782VP",
+      "archie:rev": "0000000001HBN00HFVHJ0H2XAR",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

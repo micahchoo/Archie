@@ -41,6 +41,7 @@ export * from "./model/layout.js";
 // CLEAN-LIFT pure modules (spike-0001): selector geometry, URL/deep-link, IIIF resolution.
 export * from "./geometry/selector.js";
 export * from "./geometry/mediafragment.js";
+export * from "./geometry/downscale.js";
 export * from "./url/deeplink.js";
 export * from "./url/route.js";
 export * from "./url/breadcrumb.js";

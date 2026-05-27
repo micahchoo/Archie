@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/000000000F8GM8X3QZPFTHAH23.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/000000000F8GM8X3QZPFTHAH23/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o4",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:500,280,510,530"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.015Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**The central rosette.** The largest figure on the foldout — concentric rings with a band of small bell-shaped figures around the inner disk and a label band that wraps the whole structure. Many readers have proposed it represents the centre of the cosmos, a city plan, a wind rose, or a botanical fruiting body; none of those readings has come close to consensus.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000F8GM8X3QZPFTHAH23",
+      "archie:rev": "000000000F282DGX7QS4511WV3",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

@@ -63,6 +63,20 @@ describe("publishLibrary — write the full site data tree via the seam", () => 
     expect(JSON.stringify(manifest)).not.toContain('"/assets/photo.jpg"');
   });
 
+  it("accepts a Blob (not only ArrayBuffer) from getAsset and writes it identically (A.3 OPFS→sink stream)", async () => {
+    // A.3 (#5): getAsset returns a lazy OPFS File (a Blob) instead of an eager ArrayBuffer, so the FSA
+    // folder backend can stream it to disk without ever holding the full bytes in the JS heap. The seam
+    // must treat a Blob return identically to an ArrayBuffer — this pins that contract headlessly. (The
+    // streaming peak-reduction itself is FSA-only, browser-verified.)
+    const fs = new MemoryFilesystem();
+    const exC = { id: "exC", slug: "c", title: "C", objects: [{ id: "o1", source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }] };
+    const blob = new Blob([new Uint8Array([9, 8, 7, 6])]);
+    await publishLibrary(fs, { id: "lib", exhibits: [exC] }, () => [], { baseUrl: "https://u.gh.io/lib/", getAsset: async () => blob });
+    const cDir = await (await fs.root()).getDirectory("c");
+    const assetFile = await (await cDir.getDirectory("assets")).getFile("photo.jpg");
+    expect(new Uint8Array(await assetFile.readable())).toEqual(new Uint8Array([9, 8, 7, 6]));
+  });
+
   it("leaves /assets/ sources untouched when no getAsset is supplied (backward compatible)", async () => {
     const fs = new MemoryFilesystem();
     const exC = { id: "exC", slug: "c", title: "C", objects: [{ id: "o1", source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }] };

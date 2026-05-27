@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/000000000DPVSY0WXFHDATHBD5.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/000000000DPVSY0WXFHDATHBD5/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o3",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:80,90,500,510"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.013Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**Upper-left Voynichese block.** Twelve or so lines of the manuscript's script, presumed to describe the plant — its name, uses, or preparation. Standalone glosses like this are a herbal-quire fingerprint: the running text never repeats verbatim across plants, even between visually similar ones, which argues against a copying-without-understanding theory.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000000DPVSY0WXFHDATHBD5",
+      "archie:rev": "000000000DN8RJ7NJ2WAKZ812Q",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

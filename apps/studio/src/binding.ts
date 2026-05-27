@@ -4,7 +4,7 @@
 // with its own library-building (publishLibrary/loadLibrary/libraryToZip) — this module stays free of
 // App's internals so the capability seam is isolated. Browser-verified (FSA / localStorage / download).
 
-import { parseRecents, serializeRecents, type Binding, type RecentProject } from "@render/core";
+import { parseRecents, serializeRecents, type Binding, type RecentProject, type ZipFilesystem } from "@render/core";
 
 const RECENTS_KEY = "archie.recentProjects.v1";
 const BINDING_KEY = "archie.activeBinding.v1";
@@ -36,6 +36,61 @@ export function downloadZip(bytes: Uint8Array, filename: string): void {
   a.remove();
   // Defer revoke so the download has committed (immediate revoke cancels it in some browsers).
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+/** Chromium-class browsers expose `showSaveFilePicker` → a writable file STREAM. This is where the
+ *  streaming-zip save (LARGE-MEDIA-MEMORY-CEILING A.1) goes, so a big library's archive never fully
+ *  materializes in memory. Distinct from `supportsFolderPicker` (which binds a whole project folder). */
+export function supportsFileStreamSave(): boolean {
+  return typeof window !== "undefined" && "showSaveFilePicker" in window;
+}
+
+type SavePicker = {
+  showSaveFilePicker(o?: {
+    suggestedName?: string;
+    types?: { description?: string; accept: Record<string, string[]> }[];
+  }): Promise<FileSystemFileHandle>;
+};
+
+/** What a save actually did, so the UI can report it honestly (streamed-to-disk vs eager download). */
+export type ZipSaveResult =
+  | { kind: "streamed"; name: string }
+  | { kind: "downloaded"; name: string }
+  | { kind: "cancelled" };
+
+/**
+ * Save a published library to a `.archie.zip` on disk. On Chromium, STREAM it chunk-by-chunk through
+ * a `showSaveFilePicker` file handle (`FileSystemWritableFileStream`) via `fs.streamZip`, so the
+ * archive never fully materializes — the A.1 memory fix. Elsewhere, fall back to the eager
+ * `fs.toZip()` + anchor download (the honest floor: non-Chromium has no streaming download sink
+ * without a service worker). Returns what happened. Aborts the partial file if streaming throws.
+ */
+export async function saveZipToDisk(fs: ZipFilesystem, filename: string): Promise<ZipSaveResult> {
+  const name = filename.endsWith(".archie.zip") ? filename : `${filename}.archie.zip`;
+  if (supportsFileStreamSave()) {
+    let handle: FileSystemFileHandle;
+    try {
+      handle = await (window as unknown as SavePicker).showSaveFilePicker({
+        suggestedName: name,
+        types: [{ description: "Archie library", accept: { "application/zip": [".archie.zip"] } }],
+      });
+    } catch {
+      return { kind: "cancelled" }; // user dismissed the picker
+    }
+    const writable = await handle.createWritable();
+    try {
+      await fs.streamZip({
+        write: (chunk) => writable.write(chunk as unknown as ArrayBufferView),
+        close: () => writable.close(),
+      });
+    } catch (e) {
+      await writable.abort().catch(() => {}); // discard the partial file
+      throw e;
+    }
+    return { kind: "streamed", name: handle.name ?? name };
+  }
+  downloadZip(fs.toZip(), name);
+  return { kind: "downloaded", name };
 }
 
 /** A filesystem-safe `.archie.zip` filename derived from a project/library title. */

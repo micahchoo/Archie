@@ -191,17 +191,21 @@ export async function clearExhibitAnnotations(slug: string): Promise<void> {
   }
 }
 
-/** Read a stored asset's bytes (for publishing into the site tree). Null if absent. */
-export async function readAssetBytes(slug: string, name: string): Promise<ArrayBuffer | null> {
+/** Resolve a stored asset to its OPFS File — a LAZY Blob, NOT read into the JS heap (the publish
+ *  getAsset reader, LARGE-MEDIA-MEMORY-CEILING #5). Returning the File (not an ArrayBuffer) lets the
+ *  FSA folder backend stream it straight to disk via `createWritable().write(blob)` so even one huge
+ *  asset never fully materializes; the zip/memory backends still read it (they need the bytes). Null if absent. */
+export async function readAssetBlob(slug: string, name: string): Promise<Blob | null> {
   try {
     const dir = await assetsDir(slug, false);
     if (!dir) return null;
-    const fh = await dir.getFileHandle(name);
-    return await (await fh.getFile()).arrayBuffer();
+    return await (await dir.getFileHandle(name)).getFile(); // the OPFS File — lazy; not read into memory here
   } catch {
     return null;
   }
 }
+// (readAssetBytes removed 2026-05-27 — A.3 routed publishing through the lazy `readAssetBlob`; it had no
+//  other caller. `readOriginalBytes` below still reads eagerly for the GH-publish originals opt-in.)
 
 /** Read a preserved ORIGINAL's bytes (from `assets-original/`) for opt-in citation publish. Null if absent. */
 export async function readOriginalBytes(slug: string, name: string): Promise<ArrayBuffer | null> {

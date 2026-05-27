@@ -265,6 +265,8 @@ Not a waterfall backlog — the **just-in-time discovery** rule above still hold
 
 **Build state at snapshot:** Phases 0–2 complete; **all 6 v1 inventions built** (three-configs + overview-as-canvas + playground→project gate-approved; identity-prompt + merge-summary + conflict-card shipped). 292 tests green; both apps build. The remaining frontier:
 
+> **▶ MAJOR NEW FRONTIER (2026-05-27): the Layers→Readings reframe.** The v1 "Layer" feature is being reframed — "Layer" was one word doing two jobs (a stroad) and is retired, splitting into **Reading** (a mutually-exclusive interpretive pass = an IIIF `AnnotationPage` per Object) + **Tag** (additive per-note discovery, now carrying apparatus). Full method + sequence (5 phases, reducibility cut, **migration as a Phase-1 prerequisite**, first move) → **`docs/plans/READINGS-IMPLEMENTATION-STRATEGY.md`**; rationale → **`docs/adr/0007-readings-as-annotationpages.md`**; design → CONTEXT "Readings & Tags". This SUPERSEDES the v1 per-note-`layers` model — treat any `layers`-related item below as folded into that strategy.
+
 ### A. Mechanical now (adopted-donor / greenfield-corpus → small-model-executable, enumerable this phase)
 | Item | Route | Donor / source | Trigger |
 |---|---|---|---|

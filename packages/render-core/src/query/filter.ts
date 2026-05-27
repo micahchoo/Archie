@@ -18,9 +18,31 @@ export function tagsOf(record: AnnotationRecord): string[] {
     .filter((v): v is string => typeof v === "string" && v.trim().length > 0);
 }
 
-/** Layer ids a Note belongs to. */
+/** @deprecated Layer ids a Note belongs to (multi-valued). Use {@link readingOf} (ADR-0007). */
 export function layersOf(record: AnnotationRecord): string[] {
   return record.layers ?? [];
+}
+
+/** The single Reading a Note belongs to, or undefined = base (ADR-0007; mutually exclusive). */
+export function readingOf(record: AnnotationRecord): string | undefined {
+  return record.reading;
+}
+
+/** Notes in Reading `readingId` (a note is in exactly one reading or none). */
+export function filterByReading(records: readonly AnnotationRecord[], readingId: string): AnnotationRecord[] {
+  return records.filter((r) => r.reading === readingId);
+}
+
+/** Notes in NO reading — the always-visible base (ADR-0007 / Q16). */
+export function baseNotes(records: readonly AnnotationRecord[]): AnnotationRecord[] {
+  return records.filter((r) => r.reading === undefined);
+}
+
+/** All distinct reading ids across the notes, sorted (base/undefined excluded). */
+export function allReadings(records: readonly AnnotationRecord[]): string[] {
+  const set = new Set<string>();
+  for (const r of records) if (r.reading !== undefined) set.add(r.reading);
+  return [...set].sort();
 }
 
 /** Notes that are members of `layerId`. */
