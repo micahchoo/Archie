@@ -16,6 +16,8 @@ export * from "./session/session.js";
 // Publish primitive: assemble the full site data tree + the architectural zip (CONTEXT publish).
 export * from "./publish/site.js";
 export * from "./publish/ghpages.js";
+// Portable read seam (ADR-0010): read a published tree out of an opened `.archie.zip`, media → blob URLs.
+export * from "./publish/portable.js";
 
 // AV transcript adapter (CONTEXT AV): WebVTT/SRT -> supplementing time-range Notes (import-only v1).
 export * from "./av/transcript.js";
