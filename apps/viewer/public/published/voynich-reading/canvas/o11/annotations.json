@@ -1,14 +1,14 @@
 {
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11/annotations.json",
+  "id": "https://archie.demo/voynich-reading/canvas/o11/annotations.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000000BDCR8P7FWJX5GERM6/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000000BCMFSQ7G858Z70NK2/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11",
+        "source": "https://archie.demo/voynich-reading/canvas/o11",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -23,7 +23,8 @@
           "purpose": "commenting"
         }
       ],
-      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000000BDCR8P7FWJX5GERM6.json"
+      "motivation": "commenting",
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000BCMFSQ7G858Z70NK2.json"
     }
   ]
 }

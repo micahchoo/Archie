@@ -1,7 +1,7 @@
 {
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12/annotations-hoax.json",
+  "id": "https://archie.demo/voynich-reading/canvas/o12/annotations-hoax.json",
   "type": "AnnotationPage",
   "items": [],
-  "partOf": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/readings/hoax.json"
+  "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
 }

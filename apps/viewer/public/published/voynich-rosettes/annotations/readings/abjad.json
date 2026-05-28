@@ -1,6 +1,6 @@
 {
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/readings/abjad.json",
+  "id": "https://archie.demo/voynich-rosettes/annotations/readings/abjad.json",
   "type": "AnnotationCollection",
   "label": {
     "en": [

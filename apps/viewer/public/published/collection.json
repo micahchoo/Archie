@@ -1,6 +1,6 @@
 {
   "@context": "http://iiif.io/api/presentation/3/context.json",
-  "id": "https://micahchoo.github.io/Archie/viewer/published/collection.json",
+  "id": "https://archie.demo/collection.json",
   "type": "Collection",
   "label": {
     "none": [
@@ -14,7 +14,7 @@
   },
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/manifest.json",
+      "id": "https://archie.demo/voynich-rosettes/manifest.json",
       "type": "Manifest",
       "label": {
         "none": [
@@ -29,7 +29,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/manifest.json",
+      "id": "https://archie.demo/voynich/manifest.json",
       "type": "Manifest",
       "label": {
         "none": [
@@ -44,7 +44,7 @@
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/manifest.json",
+      "id": "https://archie.demo/voynich-reading/manifest.json",
       "type": "Manifest",
       "label": {
         "none": [

@@ -1,14 +1,14 @@
 {
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o8/annotations-abjad.json",
+  "id": "https://archie.demo/voynich/canvas/o8/annotations-abjad.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001372PG7BW7675NB63F/v1",
+      "id": "https://archie.demo/voynich/annotations/0000000013VY99751JW7AP9Z7X/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o8",
+        "source": "https://archie.demo/voynich/canvas/o8",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -23,9 +23,10 @@
           "purpose": "commenting"
         }
       ],
+      "motivation": "commenting",
       "archie:reading": "abjad",
-      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001372PG7BW7675NB63F.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000013VY99751JW7AP9Z7X.json"
     }
   ],
-  "partOf": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/readings/abjad.json"
+  "partOf": "https://archie.demo/voynich/annotations/readings/abjad.json"
 }
