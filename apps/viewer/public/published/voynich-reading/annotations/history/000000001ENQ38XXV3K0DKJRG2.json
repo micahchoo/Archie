@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001ENQ38XXV3K0DKJRG2.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001ENQ38XXV3K0DKJRG2/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=45,80"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.046Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A repeated cadence surfaces. Under the abjad reading this resembles a root-and-pattern morphology (Bax); under the grille reading it is the predictable repetition the prefix/stem/suffix tables force; under the cipher reading it is enciphered structure showing through.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "000000001ENQ38XXV3K0DKJRG2",
+      "archie:rev": "000000001E5600YETFBQDAA1PE",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

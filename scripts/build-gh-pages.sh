@@ -11,7 +11,7 @@ pnpm exec vite build --base="/$REPO/studio/"
 
 echo "=== Building Viewer (Astro static) ==="
 cd "$ROOT/apps/viewer"
-SITE_BASE="/$REPO/viewer/" pnpm build
+SITE_BASE="/$REPO/viewer/" PUBLISH_BASE="https://micahchoo.github.io/$REPO/viewer/published/" pnpm build
 
 echo "=== Assembling deploy directory ==="
 rm -rf "$OUT"

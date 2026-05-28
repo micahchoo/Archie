@@ -1,6 +1,6 @@
 {
   "@context": "http://iiif.io/api/presentation/3/context.json",
-  "id": "https://archie.demo/voynich-rosettes/manifest.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/manifest.json",
   "type": "Manifest",
   "label": {
     "none": [
@@ -26,14 +26,14 @@
   },
   "items": [
     {
-      "id": "https://archie.demo/voynich-rosettes/canvas/o9",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
       "type": "Canvas",
       "label": {
         "none": [
           "f85v–86r — Cosmological (the Rosettes foldout)"
         ]
       },
-      "rights": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "rights": "http://creativecommons.org/publicdomain/mark/1.0/",
       "requiredStatement": {
         "label": {
           "none": [
@@ -50,39 +50,52 @@
       "height": 7268,
       "items": [
         {
-          "id": "https://archie.demo/voynich-rosettes/canvas/o9/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/canvas/o9/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
                 "id": "https://collections.library.yale.edu/iiif/2/1006231",
                 "type": "Image",
                 "width": 7925,
-                "height": 7268
+                "height": 7268,
+                "service": [
+                  {
+                    "id": "https://collections.library.yale.edu/iiif/2/1006231",
+                    "type": "ImageService2",
+                    "profile": "level2"
+                  }
+                ]
               },
-              "target": "https://archie.demo/voynich-rosettes/canvas/o9"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9"
             }
           ]
         }
       ],
+      "thumbnail": [
+        {
+          "id": "https://collections.library.yale.edu/iiif/2/1006231/full/240,/0/default.jpg",
+          "type": "Image"
+        }
+      ],
       "annotations": [
         {
-          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-cipher.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-hoax.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-abjad.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]

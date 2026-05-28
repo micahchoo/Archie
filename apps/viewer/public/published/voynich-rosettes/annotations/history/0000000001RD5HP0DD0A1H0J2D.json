@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000001RD5HP0DD0A1H0J2D.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/0000000001RD5HP0DD0A1H0J2D/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:600,600,6700,6100"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.001Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The Rosettes — nine medallions joined by causeways and castle-like forms, the largest spread in the manuscript. A six-panel foldout that opens far beyond a single leaf.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "0000000001RD5HP0DD0A1H0J2D",
+      "archie:rev": "0000000001PT2WFQ5Z7EV26KSK",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

@@ -1,14 +1,14 @@
 {
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "https://archie.demo/voynich/canvas/o12/annotations.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o12/annotations.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich/annotations/000000001D0BPYAR15GVWX34QE/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001DDF62JZE72488P0Z6/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://archie.demo/voynich/canvas/o12",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o12",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -19,18 +19,18 @@
       "body": [
         {
           "type": "TextualBody",
-          "value": "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. [Read the manuscript through, page by page.](https://archie.demo/voynich-reading/) (03 §4 cross-link AV→the narrative walk; `archie:` ref resolves to the voynich-reading exhibit — the spoken/read metaphor matches the narrative spine. A note-precise `…/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)",
+          "value": "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. [Read the manuscript through, page by page.](https://micahchoo.github.io/Archie/viewer/published/voynich-reading/) (03 §4 cross-link AV→the narrative walk; `archie:` ref resolves to the voynich-reading exhibit — the spoken/read metaphor matches the narrative spine. A note-precise `…/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)",
           "purpose": "commenting"
         }
       ],
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001D0BPYAR15GVWX34QE.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001DDF62JZE72488P0Z6.json"
     },
     {
-      "id": "https://archie.demo/voynich/annotations/000000001EA6FKRENJ8GESP74H/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001EMFTV5KY2D8G0E93T/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://archie.demo/voynich/canvas/o12",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o12",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -45,14 +45,14 @@
           "purpose": "commenting"
         }
       ],
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001EA6FKRENJ8GESP74H.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001EMFTV5KY2D8G0E93T.json"
     },
     {
-      "id": "https://archie.demo/voynich/annotations/000000001F9DM3H93EEQS3WJA1/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001F670XW181J7Z4A540/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://archie.demo/voynich/canvas/o12",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o12",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -67,14 +67,14 @@
           "purpose": "commenting"
         }
       ],
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001F9DM3H93EEQS3WJA1.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001F670XW181J7Z4A540.json"
     },
     {
-      "id": "https://archie.demo/voynich/annotations/000000001GT3G3D5CGGF72XRHS/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001GPXPAK3WQCY5AS3EH/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://archie.demo/voynich/canvas/o12",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o12",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -89,7 +89,7 @@
           "purpose": "commenting"
         }
       ],
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001GT3G3D5CGGF72XRHS.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001GPXPAK3WQCY5AS3EH.json"
     }
   ]
 }

@@ -1,0 +1,33 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000003VSGEWZM55W8YB0FH.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000003VSGEWZM55W8YB0FH/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o3",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:240,260,2380,3260"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.003Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A vivid herbal plant in strong colour, among the most often reproduced of the botanical pages. The paint sits over an earlier outline, laid on more crudely than the drawing beneath it.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:logicalId": "0000000003VSGEWZM55W8YB0FH",
+      "archie:rev": "00000000037MHBF1S2G34Q0E5Y",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

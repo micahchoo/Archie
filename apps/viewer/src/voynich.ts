@@ -34,7 +34,7 @@ const AV_SOURCE = "https://archive.org/download/kryptogramm/04-f18v.mp3";
 // Each folio o1–o11 IS a Beinecke MS 408 leaf → the attribution is truest at the OBJECT level: the
 // Public-Domain-Mark license URI (an approved LICENSES entry) + the MS-408 credit. The sound o12 is
 // Schwerdtfeger's Kryptogramm, a DIFFERENT rights-holder → its own CC BY-NC-SA 3.0 statement + URI.
-const BEINECKE_RIGHTS = "https://creativecommons.org/publicdomain/mark/1.0/"; // Public Domain Mark 1.0 (LICENSES)
+const BEINECKE_RIGHTS = "http://creativecommons.org/publicdomain/mark/1.0/"; // Public Domain Mark 1.0 (LICENSES)
 const BEINECKE_STATEMENT = { label: "Source", value: "Beinecke Rare Book & Manuscript Library, Yale University — MS 408 (public domain)" } as const;
 const folio = (o: AObject): AObject => ({ ...o, rights: BEINECKE_RIGHTS, requiredStatement: { ...BEINECKE_STATEMENT } });
 export const voynichObjects: AObject[] = [
@@ -50,7 +50,7 @@ export const voynichObjects: AObject[] = [
   folio({ id: "o10", source: iiif("1006246"), label: "f99r — Pharmaceutical", width: 2702, height: 3765 }),
   folio({ id: "o11", source: iiif("1006277"), label: "f116v — Recipes (the final page)", width: 2686, height: 3697 }),
   { id: "o12", source: AV_SOURCE, label: "Kryptogramm — “04-f18v” (sonified folio 18v)", mediaType: "sound", format: "audio/mpeg", duration: 296,
-    rights: "https://creativecommons.org/licenses/by-nc-sa/3.0/",
+    rights: "http://creativecommons.org/licenses/by-nc-sa/3.0/",
     requiredStatement: { label: "Sound", value: "Kryptogramm — Elias Schwerdtfeger, CC BY-NC-SA 3.0" } },
 ];
 
