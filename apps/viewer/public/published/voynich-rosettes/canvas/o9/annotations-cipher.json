@@ -1,14 +1,14 @@
 {
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-cipher.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations-cipher.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-rosettes/annotations/0000000002SGMPKXY2S3SSCXK6/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/00000000021ST12XKHYE4C05BM/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://archie.demo/voynich-rosettes/canvas/o9",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -19,7 +19,7 @@
       "body": [
         {
           "type": "TextualBody",
-          "value": "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [See the Rosettes alone, deep-zoomed.](https://archie.demo/voynich-rosettes/) (§H cross-link, 03 §5: repointed from the sunset bidar exhibit to the SINGLE Rosettes study — `archie:` in-body ref grammar from link.ts, rewritten to the published voynich-rosettes URL on the heads projection; resolves to the exhibit root.)",
+          "value": "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [See the Rosettes alone, deep-zoomed.](https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/) (§H cross-link, 03 §5: repointed from the sunset bidar exhibit to the SINGLE Rosettes study — `archie:` in-body ref grammar from link.ts, rewritten to the published voynich-rosettes URL on the heads projection; resolves to the exhibit root.)",
           "purpose": "commenting"
         },
         {
@@ -39,8 +39,8 @@
         }
       ],
       "archie:reading": "cipher",
-      "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000002SGMPKXY2S3SSCXK6.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/00000000021ST12XKHYE4C05BM.json"
     }
   ],
-  "partOf": "https://archie.demo/voynich-rosettes/annotations/readings/cipher.json"
+  "partOf": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/readings/cipher.json"
 }

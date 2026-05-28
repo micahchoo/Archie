@@ -2,20 +2,37 @@
 
 **Annotate deep-zoom images, audio, and video in your browser — then publish a self-contained static site. No server, no database, no lock-in.**
 
+![A published Archie library: "The Archie Library", a gallery of three exhibits](docs/screenshots/auto/gallery-after-sunset.png)
+
+*A published Archie library. You author in the browser; visitors get plain HTML, JSON, and media files that work offline and never phone home.*
+
 ---
 
-Archie turns your media into interactive, linkable exhibits that live on the web as plain files. Author in the browser with the **Studio** SPA; publish produces a folder of HTML + JSON + media that drops onto any static host. Your notes are [W3C Web Annotation](https://www.w3.org/TR/annotation-model/) records, your exhibits are [IIIF Presentation 3](https://iiif.io/api/presentation/3.0/) manifests — portable, standards-based, and readable by third-party IIIF tools.
+- [What it is](#what-it-is)
+- [How it works](#how-it-works)
+- [What you can build](#what-you-can-build)
+- [See it in action](#see-it-in-action)
+- [Archie in use — a real project](#archie-in-use--a-real-project)
+- [Quickstart](#quickstart)
+- [The bundled demo](#the-bundled-demo)
+- [Core concepts](#core-concepts)
+- [Features](#features)
+- [Publishing & deploying](#publishing--deploying)
+- [Architecture](#architecture)
+- [Status & roadmap](#status--roadmap)
+- [Documentation](#documentation)
+- [Contributing](#contributing) · [License](#license)
 
-## What you can build
+## What it is
 
-| You want to... | You do this in Archie |
-|---|---|
-| **Annotate a historic map** | Open the high-res image, draw regions, attach notes. Publish. Visitors explore your annotations on the map. |
-| **Build a multimedia essay** | Combine images, audio clips, and video in one exhibit. Write a narrative spine that guides readers through each object. |
-| **Create a scholarly edition** | Transcribe and annotate manuscript pages. Link notes to each other. Export as IIIF — readable in Mirador, Universal Viewer, or any IIIF tool. |
-| **Publish without a server** | Author in the browser. Publish produces a folder of HTML + JSON + media. Drop it on GitHub Pages, Netlify, or any static host. |
+Archie is a static-publishable, multi-media exhibit annotation platform. You annotate deep-zoom images, audio, and video in a browser-based **Studio**, then publish a self-contained static site — the **Viewer** — that drops onto GitHub Pages, Netlify, or any static host.
 
-The bundled exhibits — a Voynich manuscript set and a Bidar annotated map — show what a finished exhibit looks like.
+Your work is built on open standards, on disk, not in a vendor format:
+
+- **Notes are [W3C Web Annotations](https://www.w3.org/TR/annotation-model/).** Exhibits are [IIIF Presentation 3](https://iiif.io/api/presentation/3.0/) manifests. Third-party IIIF tools (Mirador, Universal Viewer) can read your work directly.
+- **The published site has no backend.** A folder of files — or a single `.archie.zip` — is the whole artifact.
+- **One exhibit holds many objects** (images, audio, video) with notes at the library, exhibit, object, region, and time-range level.
+- **Notes are versioned and linkable.** Annotations live on an append-only log with a version-parent DAG; edits are non-destructive and concurrent changes merge. Cite one note from another, deep-link to a region, and let visitors read prose-led or object-led.
 
 ## How it works
 
@@ -29,49 +46,63 @@ Archie has five domains that form the author's arc — from blank canvas to publ
 | **Viewer Presentation** | Astro static shell renders any published library at runtime — gallery browse, deep-zoom reading, hash-based deep-linking, portable zip mode |
 | **Media Processing** | EXIF orientation normalization (bakes upright display masters), AV transcript import (WebVTT/SRT → timed annotation notes) |
 
-## Screenshots
+## What you can build
 
-> **New here?** The [**user guide**](docs/guide/) walks the whole arc — library → annotate → publish — using the bundled exhibits as worked examples. The screenshots below are figures from it.
+| You want to… | You do this in Archie |
+|---|---|
+| **Annotate a historic map or manuscript** | Open the high-res image, draw rectangle or polygon regions, attach notes. Publish. Visitors explore your annotations in place. |
+| **Present competing interpretations** | Give the same object several **Readings** — a *cipher* reading vs a *hoax* reading — and let the visitor switch between them. |
+| **Build a multimedia essay** | Combine images, audio, and video in one exhibit; write a narrative spine that walks a reader from object to object. |
+| **Create a scholarly edition** | Transcribe and annotate pages, cite notes from notes, credit sources with IIIF rights metadata. Export readable in any IIIF tool. |
+| **Publish without a server** | Author in the browser; publish a folder of HTML + JSON + media to any static host. |
 
-### Studio — authoring
+## See it in action
 
-![Archie Studio library](docs/screenshots/auto/studio-library.desktop.png)
+**Studio — authoring.** Your library holds every exhibit. Open one and you land on a zoomable overview of its objects (drag to set the reading order); click an object to annotate it up close.
 
-*Your library: every exhibit lives here. The bundled examples show what a finished exhibit looks like.*
+![Archie Studio: the image editor — a manuscript folio with regions, the note list, and a canvas-anchored note popover](docs/screenshots/auto/studio-editor-image.desktop.png)
 
-![Archie Studio exhibit overview](docs/screenshots/auto/studio-overview.desktop.png)
+*Draw a region on a deep-zoom object and write the note in the popover anchored to the marker; the marker follows as you pan and zoom.*
 
-*Exhibit overview: every object on one zoomable canvas — drag to pan, scroll to zoom, drag plates to set the reading order.*
+**Viewer — competing Readings.** A **Reading** is one interpretive pass over an object. The legend is a radio: the reader picks one and the canvas re-frames. Pure IIIF viewers see each Reading as a real, toggleable annotation layer.
 
-![Archie Studio image editor](docs/screenshots/auto/studio-editor-image.desktop.png)
+![Archie Viewer: a Voynich folio with the Readings legend (Base · Cipher · Grille · Natural-language) and the Cipher reading selected](docs/screenshots/auto/voynich-readings-cipher.png)
 
-*Image editor: draw rectangle or polygon regions on a deep-zoom object and annotate in the canvas-anchored popover; markers follow as you pan and zoom.*
+*The reader arrives on the neutral **Base** notes, then enters a Reading — Cipher, Grille, or Natural-language — and watches the same marks get read a different way.*
 
-![Archie Studio audio editor](docs/screenshots/auto/studio-editor-av.desktop.png)
+**Audio, video, and credits.** Audio and video objects play inline with a transcript spine; a quiet credit line carries the IIIF attribution, with full license details behind an ⓘ disclosure.
 
-*Audio editor: drag across the WaveSurfer waveform to mark a moment and attach a note; import VTT/SRT transcripts.*
+![Archie Viewer: an audio object playing, with a transcript spine and an attribution credit line](docs/screenshots/auto/voynich-av-credit.png)
 
-### Viewer — published site
+*A sounded folio: play the recording, read down the transcript, each line seeking the audio. The credit line ("Kryptogramm — Elias Schwerdtfeger, CC BY-NC-SA 3.0") is published as a IIIF `requiredStatement`.*
 
-![Archie Viewer published exhibit](docs/screenshots/auto/viewer-voynich.desktop.png)
+> The [**user guide**](docs/guide/) walks the whole arc — library → annotate → publish — using the bundled exhibits as worked examples.
 
-*Published exhibit: the Voynich folios as a live gallery — visitors open a folio, zoom in, and read your notes in place.*
+## Archie in use
 
-![Archie Viewer narrative reading](docs/screenshots/Screenshot%202026-05-26%20at%2017-40-28%20Archie.png)
+![Archie Viewer: "Techno-Futures from Bidar", a narrative exhibit — an annotated map with photo-region markers and a prose spine](docs/screenshots/Screenshot%202026-05-26%20at%2017-40-28%20Archie.png)
 
-*Narrative reading: the prose spine drives the canvas — each section frames its region of the exhibit map.*
+*A narrative reading: the prose spine drives the canvas, framing a region of the map for each beat, with field photos and recordings inline.*
+
+![Archie Studio: video annotation — a box drawn on a paused frame of an aerial dome video, with the note popover and timeline](docs/screenshots/Screenshot%202026-05-26%20at%2017-39-37%20Archie%20Studio.png)
+
+*Authoring a video note: draw a box on a frame and set a time window — a combined spatiotemporal selector.*
+
+![Archie Studio: audio annotation — the field-recording waveform with a time-range note and the note popover](docs/screenshots/Screenshot%202026-05-26%20at%2017-41-20%20Archie%20Studio.png)
+
+*Authoring an audio note: drag across the waveform to mark a stretch, write the note, and import a VTT/SRT transcript.*
 
 ## Quickstart
 
-**Prerequisites:** Node.js ≥ 22 and pnpm 10.
+**Prerequisites:** Node.js 22 or newer (CI builds on Node 24) and pnpm 10.
 
 ```bash
 pnpm install            # install the whole workspace
 pnpm typecheck          # type-check every package + app
-pnpm test               # run ~330 tests
+pnpm test               # run the test suite (~420 tests)
 ```
 
-### Run the Studio (authoring)
+**Run the Studio (authoring):**
 
 ```bash
 pnpm --filter @archie/studio dev      # opens http://localhost:5173
@@ -79,36 +110,51 @@ pnpm --filter @archie/studio dev      # opens http://localhost:5173
 
 Pick or create an exhibit, draw a region, attach a note, publish.
 
-### Run the Viewer (reading)
+**Run the Viewer (reading):**
 
 ```bash
 pnpm --filter @archie/viewer gen      # generate the published tree
 pnpm --filter @archie/viewer dev      # opens http://localhost:4321
 ```
 
-## Workflow — from clone to published site
+Target a single workspace with `--filter`, e.g. `pnpm --filter @render/core test`.
 
-**1. Clone and stand up the repo.**
+> [!IMPORTANT]
+> The repo needs Node.js 22+. Older versions fail with a `node:sqlite` engine error inside pnpm. Switch first — e.g. `fnm use 24` or `nvm install 24 && nvm use 24`.
 
-```bash
-git clone https://github.com/micahchoo/Archie.git archie && cd archie
-nvm install 22 && nvm use 22
-pnpm install
-pnpm --filter @archie/studio dev   # opens http://localhost:5173
-```
+## The bundled demo
 
-**2. Create an exhibit.** In the library home, type a title and create it. Open a bundled example to explore, then **Keep a copy** to fork it into a saved exhibit of your own.
+Archie ships with **The Archie Library**: the Voynich manuscript (Beinecke MS 408) reframed as a *contested object* — the same undeciphered marks read three ways (cipher, grille, natural-language) across three exhibits, one per layout:
 
-**3. Add your objects.** Drop an image onto the canvas, or use **+ Object** on the rail to add an image, audio, or video object. The **exhibit overview** lays every object on one zoomable canvas — drag them to set the reading order.
+| Exhibit | Layout | What it shows |
+|---|---|---|
+| **The Rosettes** | Single | One deep-zoom folio (the Rosettes foldout), read three ways over one canvas. |
+| **The Whole Manuscript** | Grid | All eleven folios across six sections, each readable three ways, plus a sounded page (audio). |
+| **Reading the Unreadable** | Narrative | A prose walk through the manuscript's divisions, pausing to read each page three ways. |
 
-**4. Annotate.** On an image or video, draw a rectangle/polygon region and write the note in the canvas-anchored popover; on audio, drag across the waveform to create a time-range note. Tag notes, group them into layers, and cite one note from another with <kbd>Cmd</kbd> + <kbd>K</kbd>.
+> [!NOTE]
+> **IIIF manifest URLs.** The three bundled exhibits are published as IIIF Presentation 3 manifests. Paste these URLs into [Mirador](https://projectmirador.org/), [Universal Viewer](https://universalviewer.io/), [Clover](https://samvera-labs.github.io/clover-iiif/), or any IIIF viewer — they resolve to the live GitHub Pages deployment:
+> - `https://micahchoo.github.io/Archie/viewer/published/voynich/manifest.json`
+> - `https://micahchoo.github.io/Archie/viewer/published/voynich-reading/manifest.json`
+> - `https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/manifest.json`
+> The base URL is configured in [`scripts/build-gh-pages.sh`](scripts/build-gh-pages.sh) via `PUBLISH_BASE`.
 
-**5. Write a narrative.** Switch to the narrative spine, add sections, and frame a camera on the canvas for each beat. Reorder sections and switch objects on the rail to shape the reading.
+Folio images are pulled live from [Yale's Beinecke IIIF service](https://collections.library.yale.edu/), so the demo also exercises Archie's external-IIIF path. Opening a bundled exhibit is a **playground** — nothing is saved until you **Keep a copy** to fork it into an exhibit of your own.
 
-**6. Publish.** In the Studio, open **Publish** — download a `.archie.zip`, push to GitHub Pages, or (on Chromium) write directly to a local folder. A published site is a static tree that drops onto any host.
+## Core concepts
 
-> [!TIP]
-> **Run the apps locally for the full experience.** A published Pages site is read-only — visitors can read and navigate, but can't author or edit. Use **Studio** locally to build and revise, the local **Viewer** to read with full fidelity, and publish to Pages to share a public snapshot.
+Archie uses a precise vocabulary. One-sentence definitions below; the full glossary is in [`CONTEXT.md`](CONTEXT.md).
+
+- **Library** — top-level container for one project; on disk a directory or zip; an IIIF `Collection`.
+- **Exhibit** — one published narrative artifact; an IIIF `Manifest`. Owns its objects, media, notes, and narrative.
+- **Object** — one media item inside an exhibit (image / audio / video); an IIIF `Canvas`.
+- **Note** — a single W3C `Annotation`, targeting a library, exhibit, object, region, or time-range.
+- **Reading** — a curated, **mutually exclusive** interpretive pass over an object (e.g. *cipher* vs *hoax*); an IIIF `AnnotationPage` per object, grouped by an `AnnotationCollection`. The reader switches between Readings; only one shows at a time.
+- **Tag** — a lightweight, **additive** label on a note (a motif, a paleographic note); a flat filter chip with no curation. The deliberate inverse of a Reading.
+- **Section** — one ordered unit of an exhibit's narrative; an IIIF `Range`. Frames a camera on an object; the spine may switch objects across sections.
+- **Studio** / **Viewer** — the authoring app / the read-only published site.
+
+> **Note:** earlier versions called Readings and Tags both "Layers." "Layer" was retired because it did two jobs at once; see [ADR-0007](docs/adr/0007-readings-as-annotationpages.md).
 
 ## Features
 
@@ -117,14 +163,37 @@ pnpm --filter @archie/studio dev   # opens http://localhost:5173
 | **Image annotation** | OpenSeadragon deep-zoom + Annotorious; rectangle and polygon regions; canvas-anchored popover form |
 | **Audio annotation** | WaveSurfer waveform; drag to create time-range notes; import VTT/SRT transcripts |
 | **Video annotation** | Spatiotemporal — draw a box on a paused frame + set a time window; combined `xywh=&t=` selectors |
-| **Data model** | Append-only log with version-parent DAG; heads/history projection; non-destructive edits; multi-parent merge |
-| **IIIF** | Exhibit → `Manifest`, object → `Canvas`, per-canvas `AnnotationPage`; layers as `AnnotationCollection`; narrative sections as `Range`; Presentation 3 on disk |
+| **Readings & Tags** | Readings = mutually-exclusive interpretive passes (IIIF AnnotationPages — real toggleable layers in any IIIF viewer); Tags = additive per-note discovery chips |
+| **Rights & metadata** | IIIF `requiredStatement` (credit) + `rights` (license URI) at library / exhibit / object level, with opt-in inheritance; one quiet credit line + an ⓘ disclosure in the Viewer |
+| **Data model** | Append-only log with version-parent DAG; heads/history projection; non-destructive edits; multi-parent merge; schema migration |
+| **IIIF** | Exhibit → `Manifest`, object → `Canvas`, per-canvas `AnnotationPage`; Readings as `AnnotationCollection`; sections as `Range`; Presentation 3 on disk |
 | **Storage** | Three backends behind one seam — OPFS (browser), `.archie.zip` (portable), File System Access (Chromium folder autosave) |
 | **Linking** | <kbd>Cmd</kbd> + <kbd>K</kbd> cite/insert across the library; deep-link arrival (`#/a/<id>`); broken-link detection at publish |
-| **Reading modes** | Single (deep-zoom), Grid (thumbnail gallery), Narrative (prose spine with camera framing); overview-as-canvas (zoomable exhibit map) |
-| **Publish** | Whole-library → `.archie.zip` download, GitHub Pages push, or local folder (Chromium); portable Viewer reads zips directly |
+| **Reading modes** | Single (deep-zoom), Grid (thumbnail gallery), Narrative (prose spine with camera framing); overview-as-canvas with drag-to-reorder |
+| **Publish** | Whole-library → `.archie.zip`, GitHub Pages, or a local folder (Chromium); opt-in source-originals for citation |
+| **Portable Viewer** | One Viewer shell, two modes — render a hosted published tree, or open an `.archie.zip` a recipient was handed, entirely in-browser |
+| **EXIF** | Read orientation, bake an upright display master, preserve the original with provenance metadata |
 | **Collaboration** | Silent DAG merge; conflict-card resolution; identity prompt on first import |
-| **EXIF** | Read orientation, bake upright display master, preserve original with provenance metadata |
+
+## Publishing & deploying
+
+Publishing projects your **whole library** into a static site. There are two complementary paths:
+
+**1. Deploy the full site (recommended).** A GitHub Actions workflow ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) builds both apps on push to `main` via [`scripts/build-gh-pages.sh`](scripts/build-gh-pages.sh) and deploys a self-contained site: a landing page linking the **Studio** (`/studio/`) and the **Viewer** (`/viewer/`), with the bundled published data baked in.
+
+```bash
+pnpm build:gh-pages     # produces ./gh-pages-dist (studio + viewer + landing)
+```
+
+> [!NOTE]
+> `build-gh-pages.sh` hardcodes `REPO="Archie"` for the base paths (`/Archie/studio/`, `/Archie/viewer/`). If you fork under a different repo name, change that variable.
+
+**2. Push content from the Studio.** The Studio's **Publish → Connect to GitHub** pushes your library's *data tree* (IIIF manifests, annotations, media, `exhibits.json`) to a branch via the GitHub Contents API — useful for updating content without a full rebuild. Enter your repo owner/name, a branch (defaults to `gh-pages`), and a [fine-grained token](https://github.com/settings/tokens?type=beta) with **`Contents: write`** (and **`Pages: write`** to let Archie switch Pages on for you). The token is used once and never stored.
+
+You can also publish a portable **`.archie.zip`** (no host at all) and hand it to someone — the Viewer opens it in-browser.
+
+> [!TIP]
+> A published Pages site is **read-only**: visitors read and navigate, but can't author. For the best experience while building, run the Studio and Viewer locally; publish to share a public snapshot.
 
 ## Architecture
 
@@ -133,9 +202,9 @@ Archie is a pnpm monorepo. A three-layer rendering core (headless → vanilla DO
 ```mermaid
 graph TD
     subgraph packages
-        core["@render/core<br/>headless TS: WADM spine,<br/>IIIF, selectors, storage, publish"]
-        mount["@render/mount<br/>vanilla wiring: OSD +<br/>Annotorious + Wavesurfer"]
-        svelte["@render/svelte<br/>thin Svelte adapter"]
+        core["@render/core<br/>headless TS: annotation spine,<br/>IIIF, selectors, storage, publish"]
+        mount["@render/mount<br/>vanilla wiring: OSD +<br/>Annotorious + WaveSurfer"]
+        svelte["@render/svelte<br/>thin Svelte 5 adapter"]
     end
     subgraph apps
         studio["@archie/studio<br/>Vite SPA — authoring"]
@@ -144,49 +213,34 @@ graph TD
     core --> mount --> svelte
     svelte --> studio
     svelte --> viewer
-    studio -. "publish step builds" .-> viewer
+    studio -. "publish builds" .-> viewer
 ```
 
 | Workspace | Package | What it is |
 |---|---|---|
-| `packages/render-core` | `@render/core` | Pure TypeScript: WADM types, annotation spine, IIIF manifests, selectors, storage seam, publish, EXIF, linking, A/V. No DOM. |
-| `packages/render-mount` | `@render/mount` | Framework-free wiring of OpenSeadragon + Annotorious + Wavesurfer behind an imperative surface. |
+| `packages/render-core` | `@render/core` | Pure TypeScript: annotation spine, IIIF projection, selectors, storage seam, publish, EXIF, linking, A/V. No DOM. |
+| `packages/render-mount` | `@render/mount` | Framework-free wiring of OpenSeadragon + Annotorious + WaveSurfer behind an imperative surface. |
 | `packages/render-svelte` | `@render/svelte` | Thin Svelte 5 reactivity adapter over `@render/mount`. |
 | `apps/studio` | `@archie/studio` | Authoring SPA — library browser, canvas editor, A/V editor, merge review, publish dialog. |
-| `apps/viewer` | `@archie/viewer` | Published reader — Astro with Svelte islands, gallery landing, per-exhibit readers. |
+| `apps/viewer` | `@archie/viewer` | Published reader — Astro with Svelte islands, gallery landing, per-exhibit readers, portable-zip mode. |
 
 ### Where to start in the code
 
-- `packages/render-core/src/wadm/types.ts` — the W3C annotation types
-- `packages/render-core/src/model/model.ts` — Library, Exhibit, Object, Note domain model
-- `packages/render-core/src/spine/log.ts` — append-only annotation log
-- `packages/render-core/src/index.ts` — the barrel export (34 re-exports)
-- `apps/studio/src/store.ts` — the Studio's OPFS working store
+- **The data model:** `packages/render-core/src/wadm/types.ts` — the W3C annotation types every module speaks.
+- **The annotation spine (the core innovation, [ADR-0003](docs/adr/0003-annotation-spine-append-only-version-dag.md)):** `spine/log.ts` (append-only log), `spine/heads.ts` (multi-head projection), `spine/merge.ts` (three-way merge), `session/session.ts` (transactional CRUD).
+- **How it wires together:** `packages/render-core/src/index.ts` (barrel export), `fs/seam.ts` (three storage backends, one interface), `apps/studio/src/binding.ts` (the three-config persistence system), `publish/site.ts` (the publishing engine).
 
-Additional maps: [`docs/architecture/`](docs/architecture/) (subsystem components + contracts), [`docs/adr/`](docs/adr/) (ADRs 0001–0010), [`CONTEXT.md`](CONTEXT.md) (full domain glossary).
+**Additional maps:** [`docs/architecture/`](docs/architecture/), [`docs/adr/`](docs/adr/) (ADRs 0001–0010), [`docs/decisions/`](docs/decisions/) (Q-N decision records), and a generated knowledge graph in [`.understand-anything/`](.understand-anything/).
 
-## Core concepts
+## Status & roadmap
 
-Archie uses a precise vocabulary. One-sentence definitions below; full glossary in [`CONTEXT.md`](CONTEXT.md).
+**Tests:** ~420 across the workspace (≈375 `@render/core`, 18 `@render/mount`, 18 `@render/svelte`, plus Viewer tests). Run `pnpm test`.
 
-- **Library** — top-level container for one project; on disk a directory or zip; an IIIF `Collection`.
-- **Exhibit** — one published narrative artifact; an IIIF `Manifest`. Owns its objects, media, notes, and narrative.
-- **Object** — one media item inside an Exhibit (image / audio / video / embed); an IIIF `Canvas`.
-- **Note** — a single W3C WADM `Annotation`, targeting a library, exhibit, object, region, or time-range.
-- **Reading** — a named, mutually-exclusive interpretive pass (e.g. "cipher" vs "hoax"); an IIIF `AnnotationCollection`. The reader switches between readings to re-frame the canvas.
-- **Tag** — a lightweight ad-hoc label on a single Note for cross-cutting discovery; additive, per-note.
-- **Section** — one ordered unit of an exhibit's narrative; an IIIF `Range`.
-- **Studio** / **Viewer** — the authoring app / the read-only published site.
+**v1 — complete and dogfooded.** The data layer, both apps, and all major features are built and verified on the Voynich (Beinecke MS 408) demo and a real Bidar fieldwork project. Both apps build clean.
 
-## Status
+**Shipped:** image / audio / video annotation · Readings & Tags · IIIF rights & metadata · narrative section authoring · overview-as-canvas with drag-to-reorder · <kbd>Cmd</kbd> + <kbd>K</kbd> intra-library linking · EXIF display-master bake · three-config persistence (OPFS / folder / zip) · portable Viewer · playground-vs-project model · streaming-zip save and import downscale for large media.
 
-**v1 nearly complete.** The data layer, both apps, and all major features are built and dogfooded on Voynich (5-folio manuscript) and Bidar (25-region annotated map) exhibits. ~330 tests across all packages.
-
-**Shipped:** overview-as-canvas with drag-to-reorder, narrative section-authoring with camera framing, audio and video annotation, canvas-anchored note popover, <kbd>Cmd</kbd> + <kbd>K</kbd> intra-library linking, EXIF display-master bake, three-config persistence (OPFS / folder autosave / `.archie.zip`), playground-vs-project model, layout picker, identity prompt, portable Viewer zip mode.
-
-**Owed:** GH-Pages publish end-to-end verification, browser-regression pass on AV editor and persistence flows, Viewer IIIF Content-State arrival, grid slideshow sub-mode.
-
-Full phasing: [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md).
+**On the v1.1 frontier:** progressive marker reveal in narrative reading · reading modes (scrollytelling, compare, slideshow) · ellipse / freehand shapes · image-aware overlay contrast. The canonical remaining-work list is the deferred-work registry in [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md).
 
 ## Documentation
 
@@ -194,10 +248,11 @@ Full phasing: [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.m
 |---|---|
 | [`docs/guide/`](docs/guide/) | **Users** — a screenshot walkthrough from library to published site |
 | [`CONTEXT.md`](CONTEXT.md) | Domain language, locked design frames, full glossary |
+| [`docs/README.md`](docs/README.md) | Index to all design & architecture docs |
 | [`docs/architecture/overview.md`](docs/architecture/overview.md) | Architecture map (start here as a developer) |
-| [`docs/architecture/subsystems/`](docs/architecture/subsystems/) | Per-subsystem component + contract maps |
 | [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0010) |
-| [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md) | Phasing, sequencing, validation gates |
+| [`docs/decisions/`](docs/decisions/) | Citable decision records (Q-N) |
+| [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md) | Phasing, sequencing, validation gates, deferred work |
 
 ## Contributing
 
@@ -205,8 +260,10 @@ Pull requests are welcome. Before opening one:
 
 1. Run `pnpm typecheck` and `pnpm test` — both must pass.
 2. For new features, include tests. The suite lives alongside source (`*.test.ts`), not in a separate directory.
-3. Architecture decisions go in `docs/adr/` (new) or `docs/decisions/` (Q-N citation). Design discussion belongs in an issue before a PR.
-4. The rendering core (`@render/core`) is pure TypeScript with no DOM dependencies — keep it that way. Browser APIs belong in `@render/mount` or the apps.
+3. Keep `@render/core` pure TypeScript with no DOM dependencies — browser APIs belong in `@render/mount` or the apps.
+4. Architecture decisions go in [`docs/adr/`](docs/adr/) (new) or [`docs/decisions/`](docs/decisions/) (Q-N citation). Discuss in an issue before a PR.
+
+See [`docs/architecture/overview.md`](docs/architecture/overview.md) for the subsystem map and [`CONTEXT.md`](CONTEXT.md) for the domain language used throughout the codebase.
 
 ## License
 

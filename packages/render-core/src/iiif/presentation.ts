@@ -42,6 +42,8 @@ export interface IIIFContentResource {
   width?: number;
   height?: number;
   duration?: number;
+  /** IIIF Image API service descriptor (Image-type bodies only). */
+  service?: Array<{ id: string; type: string; profile?: string }>;
 }
 
 export interface IIIFPaintingAnnotation {
@@ -71,6 +73,8 @@ export interface IIIFCanvas extends IIIFRightsProps {
   items: IIIFAnnotationPage[];
   /** Where Archie attaches the heads annotation page (the notes viewers load). */
   annotations?: Array<{ id: string; type: "AnnotationPage" }>;
+  /** Sized thumbnail derivative (Image canvases only). */
+  thumbnail?: Array<{ id: string; type: "Image" }>;
 }
 
 /** A narrative Range (CONTEXT: Section). `start` is what the canvas shows when active. */

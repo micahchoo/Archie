@@ -1,14 +1,14 @@
 {
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "https://archie.demo/voynich/canvas/o5/annotations-cipher.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o5/annotations-cipher.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich/annotations/000000000RT07X87HJE9FSZB99/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000R602RKZBEV8PVQKTR/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://archie.demo/voynich/canvas/o5",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o5",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -39,8 +39,8 @@
         }
       ],
       "archie:reading": "cipher",
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000000RT07X87HJE9FSZB99.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000R602RKZBEV8PVQKTR.json"
     }
   ],
-  "partOf": "https://archie.demo/voynich/annotations/readings/cipher.json"
+  "partOf": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/readings/cipher.json"
 }

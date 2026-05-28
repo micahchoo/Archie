@@ -32,14 +32,21 @@ function bodyType(media: MediaType | undefined): IIIFContentResource["type"] {
 
 function toCanvas(manifestBase: string, obj: AObject, readingIds: string[] = []): IIIFCanvas {
   const canvasId = `${manifestBase}/canvas/${obj.id}`;
+  const mediaType = bodyType(obj.mediaType);
   const body: IIIFContentResource = {
     id: obj.source,
-    type: bodyType(obj.mediaType),
+    type: mediaType,
     ...(obj.format !== undefined ? { format: obj.format } : {}),
     ...(obj.width !== undefined ? { width: obj.width } : {}),
     ...(obj.height !== undefined ? { height: obj.height } : {}),
     ...(obj.duration !== undefined ? { duration: obj.duration } : {}),
   };
+  // IIIF Image API service descriptor — declared so standard viewers can resolve the image.
+  // Only for Image bodies whose source looks like a IIIF service base (not a blob:/data: URL
+  // or a plain image file). Default to ImageService2 — most existing services are v2.
+  if (mediaType === "Image" && /^https?:\/\//i.test(obj.source) && !/\.(jpe?g|png|webp|avif|gif|tiff?|svg)(\?.*)?$/i.test(obj.source)) {
+    body.service = [{ id: obj.source, type: "ImageService2", profile: "level2" }];
+  }
   return {
     id: canvasId,
     type: "Canvas",
@@ -56,6 +63,10 @@ function toCanvas(manifestBase: string, obj: AObject, readingIds: string[] = [])
         items: [{ id: `${canvasId}/painting/1`, type: "Annotation", motivation: "painting", body, target: canvasId }],
       },
     ],
+    // Sized thumbnail for gallery/overview — derived from the IIIF service base for Image bodies.
+    ...(mediaType === "Image" && /^https?:\/\//i.test(obj.source) && !/\.(jpe?g|png|webp|avif|gif|tiff?|svg)(\?.*)?$/i.test(obj.source)
+      ? { thumbnail: [{ id: `${obj.source.replace(/\/$/, "")}/full/240,/0/default.jpg`, type: "Image" as const }] }
+      : {}),
     // The base notes page + one page per Reading (ADR-0007) — the multi-AnnotationPage Canvas a
     // pure IIIF viewer (Mirador) can toggle. Reading pages carry partOf → the reading's collection.
     annotations: [
