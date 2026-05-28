@@ -80,4 +80,23 @@ describe("Phase-2 interop gate: consumer traversal collection -> manifest -> can
     expect(counts[canvasA]).toBe(2); // A1, A2
     expect(counts[canvasB]).toBe(1); // B1
   });
+
+  it("manifest embeds each canvas's heads INLINE (annotations[].items) — no second fetch / no CORS", async () => {
+    const reopened = ZipFilesystem.fromZip((await libraryToZip(library, () => buildLog(), { baseUrl: base })).zip);
+    const root = await reopened.root();
+    const collection = await fetchJson(root, `${base}collection.json`);
+    const manifest = await fetchJson(root, (collection.items as Array<{ id: string }>)[0]!.id);
+
+    const canvases = manifest.items as Array<{ id: string; annotations?: Array<{ id: string; items?: Array<{ target: { source: string } }> }> }>;
+    // A pure IIIF viewer reads items straight from the manifest — never dereferencing the page id
+    // (which points at a placeholder/host origin it may not be able to reach).
+    for (const canvas of canvases) {
+      const page = canvas.annotations?.[0];
+      expect(page?.items, `canvas ${canvas.id} must carry inline annotation items`).toBeDefined();
+      for (const it of page!.items!) expect(it.target.source).toBe(canvas.id);
+    }
+    const byId = Object.fromEntries(canvases.map((c) => [c.id, c.annotations![0]!.items!.length]));
+    expect(byId[canvasA]).toBe(2);
+    expect(byId[canvasB]).toBe(1);
+  });
 });

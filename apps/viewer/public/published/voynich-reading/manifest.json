@@ -84,19 +84,145 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o1/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/00000000013NQKW7RMZS5BVTH8/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:260,240,2400,3300"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.001Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The opening page: a single herbal plant rising the height of the leaf, with the manuscript's first lines of script flowing around it. A faded, erased inscription sits in the top margin — the earliest trace of an owner's hand.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/00000000013NQKW7RMZS5BVTH8.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o1/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000CBA50Q1353Y78903N/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1500,360,1200,520"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.012Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, this is the manuscript's enciphered incipit — the opening lines a cryptographer would attack first, since openings often carry a title or invocation whose plaintext is guessable. The professional codebreakers (Currier, the Friedmans, Tiltman) all began here and none recovered it.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "botanical",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "currier-hand-A",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "marginalia",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "provenance",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000CBA50Q1353Y78903N.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o1/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000DE144T6FT0KZDNPT5/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1500,360,1200,520"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.013Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, this paragraph is the first output of a Cardan grille passed over prefix/stem/suffix tables — front-loaded, fluent-looking, and meaningless; its “opening” feel is an artefact of being generated first, not of any title.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000DE144T6FT0KZDNPT5.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o1/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000EXMKTNP2YYF86KZBP/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1500,360,1200,520"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.014Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, these are the genuine first words of a natural-language preface in an invented alphabet; word-entropy here matches Latin/English (Landini), and the line behaves as a real text's opening would.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000EXMKTNP2YYF86KZBP.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -159,19 +285,135 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o2/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000002QGH1HV4Y8HS12S3B/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o2",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:240,260,2360,3260"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.002Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A herbal folio in the same plant-to-a-page grammar — one drawing, a block of text set beside it. This is the page sounded aloud in the recording that accompanies the manuscript.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000002QGH1HV4Y8HS12S3B.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o2/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000FPREQJMHRNGA9DVHY/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o2",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:300,1100,1100,620"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.015Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, this block is enciphered description of the plant beside it — a herbal entry locked under a substitution or steganographic scheme.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "botanical",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "currier-hand-A",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000FPREQJMHRNGA9DVHY.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o2/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000GCHREF4SY6DAV2W2Y/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o2",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:300,1100,1100,620"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.016Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, the block is filler with no relation to the drawing; the apparent “caption” adjacency is the same page-layout habit the forger imitated, not meaning.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000GCHREF4SY6DAV2W2Y.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o2/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000H0XFPCXZT4W6MBYQE/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o2",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:300,1100,1100,620"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.017Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, it is a plaintext herbal note whose statistics are “mostly compatible with natural languages and incompatible with random texts” (Amancio et al. 2013); Bax's method would attack the plant-name label first.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000H0XFPCXZT4W6MBYQE.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -234,19 +476,135 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o3/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/00000000039ZZGXGXD8ESHV0MQ/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o3",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:240,260,2380,3260"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.003Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A vivid herbal plant in strong colour, among the most often reproduced of the botanical pages. The paint sits over an earlier outline, laid on more crudely than the drawing beneath it.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/00000000039ZZGXGXD8ESHV0MQ.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o3/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000JTZB36H6Q0DYYVABV/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o3",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:200,260,2400,3200"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.018Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, drawing and text are a matched entry — the picture keys the cipher, the way a known herbal's illustration would hint at the enciphered plant-name.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "botanical",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "currier-hand-A",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000JTZB36H6Q0DYYVABV.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o3/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000KRE6W9954MMAZE369/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o3",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:200,260,2400,3200"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.019Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, the vivid later colour over an earlier outline is decoration added to sell the artefact; the text was generated independently of the plant, which is why no plant here is identifiable.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000KRE6W9954MMAZE369.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o3/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000MZT02QH7C7D1MKKVB/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o3",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:200,260,2400,3200"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.020Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, this is a real (possibly stylised or composite) plant with a genuine descriptive paragraph; unidentifiability reflects an unfamiliar regional flora, not absence of content.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000MZT02QH7C7D1MKKVB.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -309,19 +667,135 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o4/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/00000000047YHJYW6KR2EWQR62/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o4",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:240,260,2380,3260"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.004Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A striking, near-fantastical herbal drawing — a plant that does not match any growing thing with certainty. Its layered paint and ink reward close looking.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/00000000047YHJYW6KR2EWQR62.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o4/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000NVQTJVDNGNRJAHYDT/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o4",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:260,2900,2300,560"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.021Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, the “imaginary” plant is a deliberate cover image — the cipher's content need not match the picture, so an invented plant hides rather than reveals.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "botanical",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "currier-hand-A",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000NVQTJVDNGNRJAHYDT.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o4/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000PTES1979QN33SX2JV/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o4",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:260,2900,2300,560"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.022Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, the fantastical plant is exactly what a forger with no botanical source produces; image and text are both invented, independently.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000PTES1979QN33SX2JV.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o4/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000Q2CNHXSCCRAR3C6QX/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o4",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:260,2900,2300,560"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.023Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, the drawing is a schematic of a real plant and the caption names it; Bax's program reads such labels by matching glyph-clusters to known plant names.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000Q2CNHXSCCRAR3C6QX.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -384,19 +858,140 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o5/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000005R2GSVX08WRKVAAW2/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o5",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:300,240,4300,3250"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.005Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "An astronomical foldout: circular diagrams of Sun, Moon, and stars, wider than a standard leaf. Rings of small labelled words surround the central wheel.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000005R2GSVX08WRKVAAW2.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o5/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000REPPTDJ7ASWNB14Q5/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o5",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:3600,520,420,180"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.024Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, this one-word label is an enciphered star or month name — a short, high-value crib, which is why cryptanalysts targeted the labelled diagrams.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "astronomical-symbol",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "foldout",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "label-word",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000REPPTDJ7ASWNB14Q5.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o5/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000SAYN4PRQZXHW7A9SB/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o5",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:3600,520,420,180"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.025Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, the label is a short grille-drawn token with no referent; its placement on a star is mimicry of real astronomical diagrams, not naming.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000SAYN4PRQZXHW7A9SB.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o5/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000TZK9E0GJKYAYDT8PH/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o5",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:3600,520,420,180"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.026Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, the label is a real word — plausibly a star or zodiac-figure name — written abjad-style; Bax's 2014 decoding proposed exactly such proper-name readings of Voynichese labels.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000TZK9E0GJKYAYDT8PH.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -459,19 +1054,135 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o6/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000006CF8ATDF0CPEHHRKA/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o6",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:400,240,7100,3350"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.006Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A wide foldout star-chart: a dense cluster of stars, each tied to a small written label, spread across an unusually broad leaf.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000006CF8ATDF0CPEHHRKA.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o6/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000VGEKTHFZZ3KEGSX84/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o6",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:3400,1400,1000,1000"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.027Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, the cluster of small star-labels is a field of enciphered short tokens — exactly the high-value single-word cribs the codebreakers hunted across the labelled diagrams.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "astronomical-symbol",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "foldout",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000VGEKTHFZZ3KEGSX84.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o6/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000WWT3XNSZM87WXK2VX/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o6",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:3400,1400,1000,1000"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.028Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, the scattered labels are grille-drawn tokens sprinkled to mimic a real star-chart; their density sells the diagram without any of them naming a star.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000WWT3XNSZM87WXK2VX.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o6/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000XAR5QYPAEMJC75RJD/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o6",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:3400,1400,1000,1000"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.029Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, each label is a genuine star or constellation name in the invented alphabet, distributed across the cluster as a real celestial chart would name its points.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000XAR5QYPAEMJC75RJD.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -534,19 +1245,135 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o7/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/00000000077PWSP39XYTXJFD9Q/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o7",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:240,300,2360,3200"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.007Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A balneological page: small bathing figures moving through green networks of pipes, pools, and basins, with text running continuously between them.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/00000000077PWSP39XYTXJFD9Q.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o7/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000YHYH1DP1X5HA1THDN/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o7",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:300,900,2200,1900"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.030Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, the text threading the pools and tubes is enciphered — and on the balneological pages, in Currier's “Language B,” it may run under a different cipher system than the herbal.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "nymphs",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "currier-hand-B",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000YHYH1DP1X5HA1THDN.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o7/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000Z3MT2NY00N9C2R340/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o7",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:300,900,2200,1900"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.031Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, the writing among the pipes is meaningless filler; the statistical shift Currier found here is just a second grille table, not a second language.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000Z3MT2NY00N9C2R340.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o7/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000001075JCSH79H559D2N9/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o7",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:300,900,2200,1900"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.032Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, the text is real language in a genuinely distinct dialect or register (Currier “Language A” vs “B” = two real linguistic states), consistent with natural variation across a long manuscript.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001075JCSH79H559D2N9.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -609,19 +1436,140 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o8/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000008SVX9ZAHHHDKG3DTX/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o8",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:240,300,2300,3200"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.008Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The most reproduced of the bathing pages: nude figures connected by branching green tubes that carry liquid between basins — the signature imagery of this section.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000008SVX9ZAHHHDKG3DTX.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o8/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/00000000114SRJFS3N89D8NSN3/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o8",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1400,1600,360,150"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.033Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, the nymph-label is enciphered — a name or term for the figure or the fluid in the pipes — and the balneological pages, in Currier's “Language B,” may use a different cipher system than the herbal.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "nymphs",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "currier-hand-B",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "label-word",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/00000000114SRJFS3N89D8NSN3.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o8/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000012GXBNRTSJW1TA28TM/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o8",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1400,1600,360,150"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.034Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, the label is meaningless filler; the statistical difference Currier found between this section and the herbal is just a second grille table, not a second language.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000012GXBNRTSJW1TA28TM.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o8/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000013PFD690QCSPD760SE/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o8",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1400,1600,360,150"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.035Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, the label is a real word in a genuinely distinct dialect or register (Currier “Language A” vs “B” = two real linguistic states), consistent with natural-language variation across a long manuscript.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000013PFD690QCSPD760SE.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -684,19 +1632,140 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o9/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/00000000090QEMZBXR9RM3G4PZ/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o9",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:600,600,6700,6100"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.009Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The Rosettes — nine medallions joined by causeways and castle-like forms, the largest spread in the manuscript. A six-panel foldout that opens far beyond a single leaf.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/00000000090QEMZBXR9RM3G4PZ.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o9/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000014X3PDNDCWZJ5XH0AK/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o9",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:3500,3300,900,700"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.036Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [See the Rosettes alone, deep-zoomed.](https://archie.demo/voynich-rosettes/) (§H cross-link, 03 §5: repointed from the sunset bidar exhibit to the SINGLE Rosettes study — `archie:` in-body ref grammar from link.ts, rewritten to the published voynich-rosettes URL on the heads projection; resolves to the exhibit root.)",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "astronomical-symbol",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "foldout",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "label-word",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000014X3PDNDCWZJ5XH0AK.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o9/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000015WZCQ894C35GS4HZ4/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o9",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:3500,3300,900,700"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.037Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, the label is decorative gibberish; the causeways and castles are an impressive visual forgery, and the text laid over them carries no place-names because it carries nothing.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000015WZCQ894C35GS4HZ4.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o9/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000016WNASNE240GPKPKE7/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o9",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:3500,3300,900,700"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.038Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, the label names a real place or region; the abjad hypothesis is what motivates reading the Rosettes as an actual (if stylised) geographic or cosmographic diagram.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000016WNASNE240GPKPKE7.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -759,19 +1828,135 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o10/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000AZAWGX4WDSD9H937E/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o10",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:220,300,2260,3200"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.010Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A pharmaceutical page: rows of labelled containers set beside isolated roots and leaves — several of them tidier copies of plants from the opening herbal.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000AZAWGX4WDSD9H937E.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o10/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000017PZ61NNKQRKS6CEPP/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o10",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:320,820,360,150"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.039Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, the word beside the jar is an enciphered label — the name of a simple or preparation — the kind of short, contextful token cryptanalysts hoped would crack the system.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "apothecary",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "label-word",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000017PZ61NNKQRKS6CEPP.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o10/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/0000000018E5VGVCH18K45RFYG/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o10",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:320,820,360,150"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.040Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, the jar-label is a grille-drawn token placed to imitate an apothecary's inventory; the tidy rows sell a working reference that names nothing.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000018E5VGVCH18K45RFYG.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o10/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000001982PGTMA46Z632ETX/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o10",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:320,820,360,150"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.041Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, the label is a real word naming the container's contents in the invented alphabet — exactly the proper-name labels Bax's method reads first.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001982PGTMA46Z632ETX.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -834,19 +2019,135 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o11/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000000BHHAT59S9ZT0TAZZ0/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o11",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:200,240,2280,3200"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.011Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The manuscript's final page: short starred paragraphs and, set apart from the unknown script, a few lines in ordinary Latin written by a later hand.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000BHHAT59S9ZT0TAZZ0.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o11/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000001AFFQ2FYPXSWMQ1BTM/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o11",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:200,160,2300,420"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.042Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher reading, this Latin line is a later owner's attempted key or crib — someone who believed the book was enciphered and jotted a decryption hint.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "marginalia",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "provenance",
+                  "purpose": "tagging"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001AFFQ2FYPXSWMQ1BTM.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o11/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000001BR32P74NDCYEH6BKX/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o11",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:200,160,2300,420"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.043Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the grille reading, the Latin is a later reader's failed gloss: proof that even early owners could extract no meaning, so they annotated around the void.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001BR32P74NDCYEH6BKX.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o11/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000001C0RPETVTM08HDR74H/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o11",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:200,160,2300,420"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.044Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the abjad reading, the Latin hand is a later scribe glossing the abjad text — treating it as a real language worth translating, which presupposes it has content.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001C0RPETVTM08HDR74H.json"
+            }
+          ],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     },
@@ -895,19 +2196,119 @@
       "annotations": [
         {
           "id": "https://archie.demo/voynich-reading/canvas/o12/annotations.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000001D7PTE2756VRWPFAWN/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o12",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "t=0,30"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.045Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. [Read the manuscript through, page by page.](https://archie.demo/voynich-reading/) (03 §4 cross-link AV→the narrative walk; `archie:` ref resolves to the voynich-reading exhibit — the spoken/read metaphor matches the narrative spine. A note-precise `…/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001D7PTE2756VRWPFAWN.json"
+            },
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000001ESTRZA51048TYCCET/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o12",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "t=45,80"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.046Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A repeated cadence surfaces. Under the abjad reading this resembles a root-and-pattern morphology (Bax); under the grille reading it is the predictable repetition the prefix/stem/suffix tables force; under the cipher reading it is enciphered structure showing through.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001ESTRZA51048TYCCET.json"
+            },
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000001FCWW7ZWTN18SYJ9RA/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o12",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "t=120,160"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.047Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Here the “words” cluster like labels. Cryptanalysts attacked exactly such short tokens as cribs (cipher); Rugg's tables emit them just as readily (grille); Bax read them as proper names (abjad).",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001FCWW7ZWTN18SYJ9RA.json"
+            },
+            {
+              "id": "https://archie.demo/voynich-reading/annotations/000000001GNGTCKPSQM3KP4T2Z/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/voynich-reading/canvas/o12",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "t=250,296"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.048Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The reading ends without resolving. That the ear can't decide between language and noise is the manuscript's whole condition — undeciphered, even when sounded.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001GNGTCKPSQM3KP4T2Z.json"
+            }
+          ]
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o12/annotations-cipher.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o12/annotations-hoax.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
         },
         {
           "id": "https://archie.demo/voynich-reading/canvas/o12/annotations-abjad.json",
-          "type": "AnnotationPage"
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": "https://archie.demo/voynich-reading/annotations/readings/abjad.json"
         }
       ]
     }

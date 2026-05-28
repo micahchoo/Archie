@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000000KK50EXTB5YK3KH2MK/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000000KRE6W9954MMAZE369/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -25,7 +25,7 @@
       ],
       "motivation": "commenting",
       "archie:reading": "hoax",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000KK50EXTB5YK3KH2MK.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000KRE6W9954MMAZE369.json"
     }
   ],
   "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"
