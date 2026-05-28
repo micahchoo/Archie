@@ -2,6 +2,8 @@
 // Archie's projections emit: Collection (Library), Manifest (Exhibit), Canvas (Object) with a
 // painting AnnotationPage. Language maps use the `none` key (no declared language) in v1.
 
+import type { W3CAnnotation } from "../wadm/types.js";
+
 export const IIIF_PRESENTATION_CONTEXT = "https://iiif.io/api/presentation/3/context.json" as const;
 
 /** IIIF language map (e.g. `{ none: ["My Title"] }`). */
@@ -71,8 +73,14 @@ export interface IIIFCanvas extends IIIFRightsProps {
   duration?: number;
   /** Painting content (the image/AV). */
   items: IIIFAnnotationPage[];
-  /** Where Archie attaches the heads annotation page (the notes viewers load). */
-  annotations?: Array<{ id: string; type: "AnnotationPage" }>;
+  /**
+   * The heads annotation page(s) the notes load from — a base page + one per Reading (ADR-0007).
+   * `items` are embedded INLINE: a static site / portable `.archie.zip` has no server to dereference
+   * a bare `id`, so a pure IIIF viewer (Clover, Mirador) renders the notes with no second fetch and no
+   * CORS, regardless of the base IRI. A Reading page carries `partOf` → its AnnotationCollection. The
+   * standalone sidecar file at each `id` is still written, as the citation / PROV dereference target.
+   */
+  annotations?: Array<{ id: string; type: "AnnotationPage"; partOf?: string; items?: W3CAnnotation[] }>;
   /** Sized thumbnail derivative (Image canvases only). */
   thumbnail?: Array<{ id: string; type: "Image" }>;
 }

@@ -11,7 +11,7 @@
 import type { Filesystem, FsDirectory } from "../fs/seam.js";
 import { ZipFilesystem } from "../fs/zip.js";
 import type { Library } from "../model/model.js";
-import type { AnnotationLog, AnnotationRecord, W3CAnnotation } from "../wadm/types.js";
+import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CAnnotationPage } from "../wadm/types.js";
 import { buildLinkIndex, resolveLink, validateLink, rewriteArchieLinks, type LinkTarget } from "../link/link.js";
 import { toCollection } from "../iiif/collection.js";
 import { toExhibitsJson, type ExhibitsJson } from "../iiif/exhibits.js";
@@ -143,7 +143,12 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
       );
       manifestExhibit = { ...exhibit, objects };
     }
-    await writeJson(exDir, "manifest.json", toManifest(manifestExhibit, { baseUrl }));
+    // Build the manifest, then EMBED each canvas's heads items inline into its annotations entries
+    // (below) before writing it — a pure IIIF viewer / portable zip can't dereference a bare reference
+    // off a placeholder or blob: origin. Index the references by id so the per-canvas loop can inject.
+    const manifest = toManifest(manifestExhibit, { baseUrl });
+    const annRefById = new Map<string, { id: string; type: "AnnotationPage"; partOf?: string; items?: W3CAnnotation[] }>();
+    for (const c of manifest.items) for (const ap of c.annotations ?? []) annRefById.set(ap.id, ap);
 
     // Opt-in: publish preserved ORIGINALS for citation (CONTEXT §89.1). Written beside the tree at
     // {slug}/assets-original/{name}; NOT referenced by any canvas (the display master is) — a citation
@@ -205,15 +210,28 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
       const pageId = (r: string | undefined) => `${canvasId}/${fileFor(r)}`;
       const opts = { historyBase: historyBaseAbs };
       const partition = new Map(headsPagesByReading(projected, ids, pageId, collId, opts).map((p) => [p.reading, p.page]));
+      // Embed the page's items into the manifest's matching annotations entry (so a pure IIIF viewer
+      // renders inline, no fetch/CORS) AND write the standalone sidecar file (citation/PROV target).
+      const inline = (page: W3CAnnotationPage) => {
+        const ref = annRefById.get(page.id);
+        if (!ref) return;
+        ref.items = page.items;
+        if (typeof page.partOf === "string") ref.partOf = page.partOf;
+      };
       // Base page — always written (the manifest lists it unconditionally).
-      await writeJson(objDir, "annotations.json", partition.get(undefined) ?? headsPageFromRecords([], pageId(undefined), ids, opts));
+      const basePage = partition.get(undefined) ?? headsPageFromRecords([], pageId(undefined), ids, opts);
+      inline(basePage);
+      await writeJson(objDir, "annotations.json", basePage);
       // One page per REGISTRY reading — empty (with partOf) if this canvas has no notes for it,
-      // so every `Canvas.annotations` reference the manifest lists resolves to a real file.
+      // so every `Canvas.annotations` entry the manifest lists has real (possibly empty) inline items.
       for (const r of readings) {
         const page = partition.get(r.id) ?? Object.assign(headsPageFromRecords([], pageId(r.id), ids, opts), { partOf: collId(r.id) });
+        inline(page);
         await writeJson(objDir, fileFor(r.id), page);
       }
     }
+    // The manifest now carries inline annotation items — write it after the per-canvas pages embed.
+    await writeJson(exDir, "manifest.json", manifest);
   }
   return { brokenLinks };
 }
