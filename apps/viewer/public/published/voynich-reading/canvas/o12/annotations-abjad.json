@@ -1,5 +1,5 @@
 {
-  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://archie.demo/voynich-reading/canvas/o12/annotations-abjad.json",
   "type": "AnnotationPage",
   "items": [],

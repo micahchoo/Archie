@@ -1,0 +1,45 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/000000000FG4C5X0S579C068KM.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/000000000FG4C5X0S579C068KM/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o2",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:300,1100,1100,620"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.015Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the cipher reading, this block is enciphered description of the plant beside it — a herbal entry locked under a substitution or steganographic scheme.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "botanical",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "currier-hand-A",
+          "purpose": "tagging"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000000FG4C5X0S579C068KM",
+      "archie:rev": "000000000F8Y8HYGM1WW8Q0GV7",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "cipher"
+    }
+  ]
+}

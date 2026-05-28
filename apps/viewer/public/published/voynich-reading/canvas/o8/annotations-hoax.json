@@ -1,10 +1,10 @@
 {
-  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://archie.demo/voynich-reading/canvas/o8/annotations-hoax.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-reading/annotations/00000000126N5GZCQKVDVJBJNB/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/00000000129BCGTV7G1HDWXCHZ/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -25,7 +25,7 @@
       ],
       "motivation": "commenting",
       "archie:reading": "hoax",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/00000000126N5GZCQKVDVJBJNB.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/00000000129BCGTV7G1HDWXCHZ.json"
     }
   ],
   "partOf": "https://archie.demo/voynich-reading/annotations/readings/hoax.json"

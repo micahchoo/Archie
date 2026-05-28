@@ -18,7 +18,7 @@ describe("toCollection (Library -> IIIF Collection)", () => {
   it("builds a Collection referencing each Exhibit's manifest, in order", () => {
     const c = toCollection(lib, { baseUrl: base });
     expect(c.type).toBe("Collection");
-    expect(c["@context"]).toBe("http://iiif.io/api/presentation/3/context.json");
+    expect(c["@context"]).toBe("https://iiif.io/api/presentation/3/context.json");
     expect(c.label).toEqual({ none: ["My Library"] });
     expect(c.items.map((i) => i.id)).toEqual([`${base}a/manifest.json`, `${base}b/manifest.json`]);
     expect(c.items[0]!.thumbnail?.[0]?.id).toBe("https://img/a-cover.jpg");

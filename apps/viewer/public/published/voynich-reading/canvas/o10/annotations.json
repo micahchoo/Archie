@@ -1,10 +1,10 @@
 {
-  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://archie.demo/voynich-reading/canvas/o10/annotations.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000000AAY24MCYCTFJ0DS5M/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000000AHY72TCG46RAW4711/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -24,7 +24,7 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000AAY24MCYCTFJ0DS5M.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000000AHY72TCG46RAW4711.json"
     }
   ]
 }

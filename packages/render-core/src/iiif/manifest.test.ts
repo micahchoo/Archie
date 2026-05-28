@@ -20,7 +20,7 @@ const imgExhibit: Exhibit = {
 describe("toManifest (IIIF P3)", () => {
   it("builds a Manifest with the P3 context, slug-based id, and language-mapped label", () => {
     const m = toManifest(imgExhibit, { baseUrl: base });
-    expect(m["@context"]).toBe("http://iiif.io/api/presentation/3/context.json");
+    expect(m["@context"]).toBe("https://iiif.io/api/presentation/3/context.json");
     expect(m.id).toBe(`${base}renaissance/manifest.json`);
     expect(m.type).toBe("Manifest");
     expect(m.label).toEqual({ none: ["Renaissance Portraits"] });
