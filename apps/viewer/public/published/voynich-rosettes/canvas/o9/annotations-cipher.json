@@ -1,10 +1,10 @@
 {
-  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-cipher.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-rosettes/annotations/0000000002XANDN5BR4FKW5E82/v1",
+      "id": "https://archie.demo/voynich-rosettes/annotations/000000000230FCY5AXWR8YV1J8/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -40,7 +40,7 @@
       ],
       "motivation": "commenting",
       "archie:reading": "cipher",
-      "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000002XANDN5BR4FKW5E82.json"
+      "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/000000000230FCY5AXWR8YV1J8.json"
     }
   ],
   "partOf": "https://archie.demo/voynich-rosettes/annotations/readings/cipher.json"

@@ -15,7 +15,7 @@ import { mintLogicalId, mintRevId, asClientId } from "./brand.js";
 
 describe("WADM constants (Q-3)", () => {
   it("pins the canonical WADM @context IRI", () => {
-    expect(WADM_CONTEXT).toBe("http://www.w3.org/ns/anno.jsonld");
+    expect(WADM_CONTEXT).toBe("https://www.w3.org/ns/anno.jsonld");
   });
   it("pins the archie/prov extension keys (the head link-outs)", () => {
     expect(ARCHIE_HAS_HISTORY).toBe("archie:hasHistory");

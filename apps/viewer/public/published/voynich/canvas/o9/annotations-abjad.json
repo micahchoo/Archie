@@ -1,10 +1,10 @@
 {
-  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://archie.demo/voynich/canvas/o9/annotations-abjad.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich/annotations/00000000162BMA4NBN1SP9ZYGZ/v1",
+      "id": "https://archie.demo/voynich/annotations/0000000016GPKKD71BQQAKAK0K/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -25,7 +25,7 @@
       ],
       "motivation": "commenting",
       "archie:reading": "abjad",
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/00000000162BMA4NBN1SP9ZYGZ.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/0000000016GPKKD71BQQAKAK0K.json"
     }
   ],
   "partOf": "https://archie.demo/voynich/annotations/readings/abjad.json"

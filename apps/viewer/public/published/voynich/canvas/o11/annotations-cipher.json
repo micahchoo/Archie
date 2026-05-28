@@ -1,10 +1,10 @@
 {
-  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://archie.demo/voynich/canvas/o11/annotations-cipher.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich/annotations/000000001AJ7KSC556DH3BP39N/v1",
+      "id": "https://archie.demo/voynich/annotations/000000001ARHEPCMTJA5XK9KZ5/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -35,7 +35,7 @@
       ],
       "motivation": "commenting",
       "archie:reading": "cipher",
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001AJ7KSC556DH3BP39N.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001ARHEPCMTJA5XK9KZ5.json"
     }
   ],
   "partOf": "https://archie.demo/voynich/annotations/readings/cipher.json"

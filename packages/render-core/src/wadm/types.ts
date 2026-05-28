@@ -13,7 +13,7 @@
 import type { LogicalId, RevId, ClientId } from "./brand.js";
 
 /** Canonical WADM JSON-LD context IRI. Never mix contexts on one resource (Q-3). */
-export const WADM_CONTEXT = "http://www.w3.org/ns/anno.jsonld" as const;
+export const WADM_CONTEXT = "https://www.w3.org/ns/anno.jsonld" as const;
 
 /** Head link-out to the per-logicalId history page. Pure WADM consumers ignore it. */
 export const ARCHIE_HAS_HISTORY = "archie:hasHistory" as const;

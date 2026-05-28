@@ -2,7 +2,7 @@
 // Archie's projections emit: Collection (Library), Manifest (Exhibit), Canvas (Object) with a
 // painting AnnotationPage. Language maps use the `none` key (no declared language) in v1.
 
-export const IIIF_PRESENTATION_CONTEXT = "http://iiif.io/api/presentation/3/context.json" as const;
+export const IIIF_PRESENTATION_CONTEXT = "https://iiif.io/api/presentation/3/context.json" as const;
 
 /** IIIF language map (e.g. `{ none: ["My Title"] }`). */
 export type LangMap = Record<string, string[]>;
