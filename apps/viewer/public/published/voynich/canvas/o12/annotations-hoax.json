@@ -3,5 +3,10 @@
   "id": "https://archie.demo/voynich/canvas/o12/annotations-hoax.json",
   "type": "AnnotationPage",
   "items": [],
-  "partOf": "https://archie.demo/voynich/annotations/readings/hoax.json"
+  "partOf": [
+    {
+      "id": "https://archie.demo/voynich/annotations/readings/hoax.json",
+      "type": "AnnotationCollection"
+    }
+  ]
 }

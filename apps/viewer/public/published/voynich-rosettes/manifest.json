@@ -87,7 +87,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/0000000001VJYA1J51D476W7T1/v1",
+              "id": "https://archie.demo/voynich-rosettes/annotations/0000000001VPW8H6TSE16PDXRF/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -107,16 +107,21 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000001VJYA1J51D476W7T1.json"
+              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000001VPW8H6TSE16PDXRF.json"
             }
-          ]
+          ],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
         },
         {
           "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-cipher.json",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/0000000002WR7MTWV16XZVBNFM/v1",
+              "id": "https://archie.demo/voynich-rosettes/annotations/0000000002BA5YF52E8P1K4VD1/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -152,17 +157,32 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000002WR7MTWV16XZVBNFM.json"
+              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000002BA5YF52E8P1K4VD1.json"
             }
           ],
-          "partOf": "https://archie.demo/voynich-rosettes/annotations/readings/cipher.json"
+          "partOf": [
+            {
+              "id": "https://archie.demo/voynich-rosettes/annotations/readings/cipher.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Cipher reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The glyphs encode a real language through a cipher or steganographic scheme — the working assumption of the professional cryptanalysts (Currier, the Friedmans, Tiltman) who studied the manuscript."
+            ]
+          }
         },
         {
           "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-hoax.json",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/00000000037JGKPZ9WVND17SSG/v1",
+              "id": "https://archie.demo/voynich-rosettes/annotations/0000000003E62MN3S1MW932JT8/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -183,17 +203,32 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/00000000037JGKPZ9WVND17SSG.json"
+              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000003E62MN3S1MW932JT8.json"
             }
           ],
-          "partOf": "https://archie.demo/voynich-rosettes/annotations/readings/hoax.json"
+          "partOf": [
+            {
+              "id": "https://archie.demo/voynich-rosettes/annotations/readings/hoax.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Hoax reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The glyphs carry no content: Voynich-like text can be generated mechanically from prefix/stem/suffix tables drawn through a Cardan grille (Rugg 2004; Gaskell & Bowern 2022)."
+            ]
+          }
         },
         {
           "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-abjad.json",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/0000000004KRRYRB9JMT3NNAYK/v1",
+              "id": "https://archie.demo/voynich-rosettes/annotations/0000000004G4HRP7EZM3B1B48Y/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -214,10 +249,25 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000004KRRYRB9JMT3NNAYK.json"
+              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000004G4HRP7EZM3B1B48Y.json"
             }
           ],
-          "partOf": "https://archie.demo/voynich-rosettes/annotations/readings/abjad.json"
+          "partOf": [
+            {
+              "id": "https://archie.demo/voynich-rosettes/annotations/readings/abjad.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Natural-language reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The glyphs are a real natural language written plaintext in an invented alphabet — statistically compatible with natural language (Amancio et al. 2013), the basis of Bax's 2014 partial abjad-style reading."
+            ]
+          }
         }
       ]
     }

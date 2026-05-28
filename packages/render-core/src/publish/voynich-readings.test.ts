@@ -75,8 +75,8 @@ describe("Phase 5 — the Voynich publishes as a genuinely-plural Readings exhib
     expect(target(cipher.items[0])).toBe("xywh=pixel:300,1200,520,180");
     expect(target(hoax.items[0])).toBe(target(cipher.items[0]));
     expect(target(abjad.items[0])).toBe(target(cipher.items[0]));
-    expect(cipher.partOf).toBe(`${BASE}voynich/annotations/readings/cipher.json`);
-    expect(abjad.partOf).toBe(`${BASE}voynich/annotations/readings/abjad.json`);
+    expect(cipher.partOf).toEqual([{ id: `${BASE}voynich/annotations/readings/cipher.json`, type: "AnnotationCollection" }]);
+    expect(abjad.partOf).toEqual([{ id: `${BASE}voynich/annotations/readings/abjad.json`, type: "AnnotationCollection" }]);
   });
 
   it("base holds the uncontested fact + the apparatus note; apparatus rides a Tag, not a Reading", async () => {

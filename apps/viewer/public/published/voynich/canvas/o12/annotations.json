@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich/annotations/000000001DMG13QYGVFGZ0ZNC9/v1",
+      "id": "https://archie.demo/voynich/annotations/000000001DSEVJM6ABC6MWBN3E/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -24,10 +24,10 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001DMG13QYGVFGZ0ZNC9.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001DSEVJM6ABC6MWBN3E.json"
     },
     {
-      "id": "https://archie.demo/voynich/annotations/000000001E4RES4C7FX9RRRGHX/v1",
+      "id": "https://archie.demo/voynich/annotations/000000001E5V2AHX6PD8GDAJ53/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -47,10 +47,10 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001E4RES4C7FX9RRRGHX.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001E5V2AHX6PD8GDAJ53.json"
     },
     {
-      "id": "https://archie.demo/voynich/annotations/000000001FF03TT88FRSBWZB4B/v1",
+      "id": "https://archie.demo/voynich/annotations/000000001FT3N245V1RFRHM4XZ/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -70,10 +70,10 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001FF03TT88FRSBWZB4B.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001FT3N245V1RFRHM4XZ.json"
     },
     {
-      "id": "https://archie.demo/voynich/annotations/000000001GRK0KP7G8BYMKP7W1/v1",
+      "id": "https://archie.demo/voynich/annotations/000000001GTS6B6WEAT4E4ABA8/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -93,7 +93,7 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001GRK0KP7G8BYMKP7W1.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000001GTS6B6WEAT4E4ABA8.json"
     }
   ]
 }

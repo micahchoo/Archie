@@ -80,7 +80,7 @@ export interface IIIFCanvas extends IIIFRightsProps {
    * CORS, regardless of the base IRI. A Reading page carries `partOf` → its AnnotationCollection. The
    * standalone sidecar file at each `id` is still written, as the citation / PROV dereference target.
    */
-  annotations?: Array<{ id: string; type: "AnnotationPage"; partOf?: string; items?: W3CAnnotation[] }>;
+  annotations?: Array<{ id: string; type: "AnnotationPage"; label?: LangMap; summary?: LangMap; partOf?: Array<{ id: string; type: "AnnotationCollection" }>; items?: W3CAnnotation[] }>;
   /** Sized thumbnail derivative (Image canvases only). */
   thumbnail?: Array<{ id: string; type: "Image" }>;
 }

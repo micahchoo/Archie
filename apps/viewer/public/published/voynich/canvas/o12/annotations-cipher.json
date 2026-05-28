@@ -3,5 +3,10 @@
   "id": "https://archie.demo/voynich/canvas/o12/annotations-cipher.json",
   "type": "AnnotationPage",
   "items": [],
-  "partOf": "https://archie.demo/voynich/annotations/readings/cipher.json"
+  "partOf": [
+    {
+      "id": "https://archie.demo/voynich/annotations/readings/cipher.json",
+      "type": "AnnotationCollection"
+    }
+  ]
 }

@@ -1,0 +1,34 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/annotations/history/000000001FAXDBW5HM43NMXDY1.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/000000001FAXDBW5HM43NMXDY1/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o12",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=120,160"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.047Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Here the “words” cluster like labels. Cryptanalysts attacked exactly such short tokens as cribs (cipher); Rugg's tables emit them just as readily (grille); Bax read them as proper names (abjad).",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000001FAXDBW5HM43NMXDY1",
+      "archie:rev": "000000001FC8CSB7DTG35XS5JJ",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

@@ -232,14 +232,22 @@ describe("publishLibrary — Readings emit per-reading AnnotationPages + collect
       `${rCanvas}/annotations-cipher.json`,
       `${rCanvas}/annotations-hoax.json`,
     ]);
+    // Pages are embedded inline (items) and named inline (label) so a pure IIIF viewer renders +
+    // labels the toggles and groups by partOf id WITHOUT fetching any sidecar / AnnotationCollection.
+    const refs = manifest.items[0].annotations as Array<{ label?: { none?: string[] }; items?: unknown[]; partOf?: Array<{ id: string; type: string }> }>;
+    const baseRef = refs[0]!, cipherRef = refs[1]!;
+    expect(baseRef.label?.none?.[0]).toBe("Base");
+    expect(cipherRef.label?.none?.[0]).toBe("Cipher");
+    expect(cipherRef.items).toHaveLength(1);
+    expect(cipherRef.partOf).toEqual([{ id: `${rbase}v/annotations/readings/cipher.json`, type: "AnnotationCollection" }]);
 
     const cipher = await readJson(fs, "v", "canvas", "o1", "annotations-cipher.json");
     expect(cipher.items).toHaveLength(1);
-    expect(cipher.partOf).toBe(`${rbase}v/annotations/readings/cipher.json`);
+    expect(cipher.partOf).toEqual([{ id: `${rbase}v/annotations/readings/cipher.json`, type: "AnnotationCollection" }]);
 
     const hoax = await readJson(fs, "v", "canvas", "o1", "annotations-hoax.json");
     expect(hoax.items).toHaveLength(0); // empty page so the manifest ref resolves
-    expect(hoax.partOf).toBe(`${rbase}v/annotations/readings/hoax.json`);
+    expect(hoax.partOf).toEqual([{ id: `${rbase}v/annotations/readings/hoax.json`, type: "AnnotationCollection" }]);
 
     const base = await readJson(fs, "v", "canvas", "o1", "annotations.json");
     expect(base.items).toHaveLength(0); // the only note went to the cipher reading

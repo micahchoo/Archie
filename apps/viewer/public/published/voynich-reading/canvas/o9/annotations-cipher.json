@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-reading/annotations/0000000014X3PDNDCWZJ5XH0AK/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/0000000014GMDRP7ST91HH02KB/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -40,8 +40,13 @@
       ],
       "motivation": "commenting",
       "archie:reading": "cipher",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000014X3PDNDCWZJ5XH0AK.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/0000000014GMDRP7ST91HH02KB.json"
     }
   ],
-  "partOf": "https://archie.demo/voynich-reading/annotations/readings/cipher.json"
+  "partOf": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/readings/cipher.json",
+      "type": "AnnotationCollection"
+    }
+  ]
 }

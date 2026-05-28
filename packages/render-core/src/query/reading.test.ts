@@ -148,7 +148,7 @@ describe("headsPagesByReading — partition a canvas into per-Reading Annotation
     const out = headsPagesByReading(heads, ids, pageId, coll);
     expect(out.map((o) => o.reading)).toEqual([undefined, "cipher", "hoax"]);
     expect(out[0]!.page.partOf).toBeUndefined(); // base page has no partOf
-    expect(out[1]!.page.partOf).toBe("coll/cipher");
+    expect(out[1]!.page.partOf).toEqual([{ id: "coll/cipher", type: "AnnotationCollection" }]);
     expect(out[1]!.page.items).toHaveLength(2); // two cipher notes
     expect(out[0]!.page.items).toHaveLength(1); // one base note
   });
