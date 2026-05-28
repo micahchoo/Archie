@@ -12,8 +12,8 @@ the empty canvas to pan, scroll to zoom — the same gestures your visitors use.
 To work on one object up close, **click its plate**. That opens the editor, where
 the annotating happens (the next two pages).
 
-> An exhibit with a single object — like the Bidar map or the field recording —
-> skips the overview and opens straight into the editor. The overview only
-> appears when there is an order to arrange.
+> An exhibit with a single object — like **The Rosettes** — skips the overview and
+> opens straight into the editor. The overview only appears when there is an order
+> to arrange.
 
 → Next: [Annotate an image](03-annotate-an-image.md)

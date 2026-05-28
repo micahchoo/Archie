@@ -6,7 +6,7 @@ Index to the design and architecture docs. Start with [`../CONTEXT.md`](../CONTE
 
 | Doc | What it is |
 |-----|------------|
-| [`../CONTEXT.md`](../CONTEXT.md) | Domain language, locked frames, full glossary (Library / Exhibit / Object / Note / Layer / Section / …) |
+| [`../CONTEXT.md`](../CONTEXT.md) | Domain language, locked frames, full glossary (Library / Exhibit / Object / Note / Reading / Tag / Section / …) |
 | [`IMPLEMENTATION-STRATEGY.md`](IMPLEMENTATION-STRATEGY.md) | How the build is sequenced — phases 0–3, ordering principles, validation gates |
 | [`../HANDOFF.md`](../HANDOFF.md) | The current-state through-line (what's done / in-progress / next) |
 
@@ -20,6 +20,12 @@ Read these before reversing a decision — each records the rationale and the al
 | [0002](adr/0002-rendering-and-framework.md) | Three-layer render (`@render/{core,mount,svelte}`) + Svelte/Astro |
 | [0003](adr/0003-annotation-spine-append-only-version-dag.md) | Annotation spine: append-only log + version-parent DAG |
 | [0004](adr/0004-no-wasm-vips-tiling.md) | No WASM-vips tiling — OSD handles deep-zoom |
+| [0005](adr/0005-narrative-section-model.md) | Narrative sections: reading beats (object + camera + prose) as IIIF Ranges |
+| [0006](adr/0006-edit-at-locus-spatiotemporal-selectors.md) | Edit at the locus; selector dimensionality matches the medium |
+| [0007](adr/0007-readings-as-annotationpages.md) | Readings (formerly Layers) are IIIF AnnotationPages grouped by AnnotationCollection |
+| [0008](adr/0008-viewer-one-shell-dual-mode.md) | One Viewer shell, two data-source modes (hosted tree / portable zip) |
+| [0009](adr/0009-canonical-hosted-instance-for-src.md) | A canonical hosted instance as the source of record |
+| [0010](adr/0010-portable-viewer-read-seam.md) | Portable Viewer read seam — open a published `.archie.zip` in-browser |
 
 ## Decision records (Q-N)
 

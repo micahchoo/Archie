@@ -5,11 +5,13 @@ this is where you start a new one.
 
 ![The Archie Studio library: three example exhibits and a "new exhibit" card](../screenshots/auto/studio-library.desktop.png)
 
-Archie ships with three exhibits to explore, each marked **Example**:
+Archie ships with **The Archie Library** — three exhibits to explore, each marked
+**Example**. They are the Voynich manuscript (Beinecke MS 408) read three ways, one
+per layout:
 
-- **Voynich manuscript** — five deep-zoom folios (a Grid exhibit).
-- **Techno-Futures from Bidar** — a single annotated map.
-- **A Field Recording from Bidar** — an audio object.
+- **The Rosettes** — a single deep-zoom folio (a Single exhibit).
+- **The Whole Manuscript** — all the folios side by side, with a sounded page (a Grid exhibit).
+- **Reading the Unreadable** — a prose walk through the manuscript (a Narrative exhibit).
 
 Open an example to look around — but it is a template, so your changes there
 are not saved. To make one your own, use **Keep a copy**; your own exhibits

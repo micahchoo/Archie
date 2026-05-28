@@ -9,9 +9,10 @@ Here is a finished exhibit, published and live — the Voynich manuscript:
 
 ![A published Archie exhibit: the Voynich manuscript, a gallery of five folios](../screenshots/auto/viewer-voynich.desktop.png)
 
-Five folios, each a deep-zoom image. A visitor opens one, zooms in, and reads
-your notes anchored to the regions you marked. The whole page is static HTML —
-it works offline, loads fast, and never phones home.
+A grid of deep-zoom folios. A visitor opens one, zooms in, and reads your notes
+anchored to the regions you marked — and can switch between competing *readings*
+of the same marks. The whole page is static HTML — it works offline, loads fast,
+and never phones home.
 
 The rest of this guide shows how you build that, from your library to the
 published site. Everything you see here you authored in the **Studio**; what your
