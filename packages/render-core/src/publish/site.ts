@@ -17,7 +17,7 @@ import { toCollection } from "../iiif/collection.js";
 import { toExhibitsJson, type ExhibitsJson } from "../iiif/exhibits.js";
 import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest } from "../iiif/manifest.js";
 import { rightsFromIIIF } from "../iiif/rights.js";
-import type { IIIFManifest } from "../iiif/presentation.js";
+import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.js";
 import type { Exhibit, AObject, Section, RightsFields } from "../model/model.js";
 import { readAnnotations } from "../spine/persist.js";
 import { toHistory } from "../spine/serialize.js";
@@ -147,7 +147,7 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // (below) before writing it — a pure IIIF viewer / portable zip can't dereference a bare reference
     // off a placeholder or blob: origin. Index the references by id so the per-canvas loop can inject.
     const manifest = toManifest(manifestExhibit, { baseUrl });
-    const annRefById = new Map<string, { id: string; type: "AnnotationPage"; partOf?: string; items?: W3CAnnotation[] }>();
+    const annRefById = new Map<string, { id: string; type: "AnnotationPage"; label?: LangMap; summary?: LangMap; partOf?: Array<{ id: string; type: "AnnotationCollection" }>; items?: W3CAnnotation[] }>();
     for (const c of manifest.items) for (const ap of c.annotations ?? []) annRefById.set(ap.id, ap);
 
     // Opt-in: publish preserved ORIGINALS for citation (CONTEXT §89.1). Written beside the tree at
@@ -216,17 +216,22 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
         const ref = annRefById.get(page.id);
         if (!ref) return;
         ref.items = page.items;
-        if (typeof page.partOf === "string") ref.partOf = page.partOf;
+        if (Array.isArray(page.partOf)) ref.partOf = page.partOf as Array<{ id: string; type: "AnnotationCollection" }>;
       };
       // Base page — always written (the manifest lists it unconditionally).
       const basePage = partition.get(undefined) ?? headsPageFromRecords([], pageId(undefined), ids, opts);
       inline(basePage);
+      if (readings.length > 0) { const baseRef = annRefById.get(basePage.id); if (baseRef) baseRef.label = langMap("Base"); }
       await writeJson(objDir, "annotations.json", basePage);
       // One page per REGISTRY reading — empty (with partOf) if this canvas has no notes for it,
       // so every `Canvas.annotations` entry the manifest lists has real (possibly empty) inline items.
+      // Name the page inline (label/summary from the Reading) so a viewer can label the toggle and
+      // group by `partOf` WITHOUT dereferencing the AnnotationCollection at a placeholder/host origin.
       for (const r of readings) {
-        const page = partition.get(r.id) ?? Object.assign(headsPageFromRecords([], pageId(r.id), ids, opts), { partOf: collId(r.id) });
+        const page = partition.get(r.id) ?? Object.assign(headsPageFromRecords([], pageId(r.id), ids, opts), { partOf: [{ id: collId(r.id), type: "AnnotationCollection" }] });
         inline(page);
+        const ref = annRefById.get(page.id);
+        if (ref) { ref.label = langMap(r.name); if (r.description) ref.summary = langMap(r.description); }
         await writeJson(objDir, fileFor(r.id), page);
       }
     }

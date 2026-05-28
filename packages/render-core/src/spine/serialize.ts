@@ -174,7 +174,9 @@ export function headsPagesByReading(
   const keys: (string | undefined)[] = groups.has(undefined) ? [undefined, ...defined] : defined;
   return keys.map((reading) => {
     const page = headsPageFromRecords(groups.get(reading)!, pageId(reading), ids, opts);
-    if (reading !== undefined) (page as { partOf?: unknown }).partOf = collectionId(reading);
+    // IIIF P3 models partOf as an ARRAY of {id,type} objects (a bare string crashes IIIF parsers
+    // that `.map()` over it, e.g. Clover) — link the reading page to its AnnotationCollection.
+    if (reading !== undefined) (page as { partOf?: unknown }).partOf = [{ id: collectionId(reading), type: "AnnotationCollection" }];
     return { reading, page };
   });
 }
