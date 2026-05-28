@@ -1,77 +1,17 @@
 {
   "version": "1.0.0",
-  "gitCommitHash": "6c8009a44613c2bf0341970ee54c865b6d65b2fc",
-  "generatedAt": "2026-05-26T04:34:46.626Z",
+  "gitCommitHash": "85584df12dd0ebfa361be015253596a798f299cf",
+  "generatedAt": "2026-05-28T03:54:18.380Z",
   "files": {
-    ".claude/.deps-index/pending.json": {
-      "filePath": ".claude/.deps-index/pending.json",
-      "contentHash": "1ec166356f0bbc8e69eaeb1c227b14b40be137c5012cb0a110d108d2616c85bf",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 43,
-      "hasStructuralAnalysis": true
-    },
-    ".claude/.deps-index/resolved.json": {
-      "filePath": ".claude/.deps-index/resolved.json",
-      "contentHash": "4d3b513df3810e3eb256b2a44f91fc24b25d028eee9835338278245f48a1fbe1",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 95,
-      "hasStructuralAnalysis": true
-    },
     ".claude/.skill-invocation-log": {
       "filePath": ".claude/.skill-invocation-log",
-      "contentHash": "7224c7ea5fc47fb4fcb584917ba13d8424352006359b3f35425c7f8d22e39229",
+      "contentHash": "5221dd8afe1fc12ad3ffef704aa4cfcf514846ab5742e0a2b560211e6ffdfe95",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 8,
+      "totalLines": 11,
       "hasStructuralAnalysis": false
-    },
-    ".claude/rules/deps-index.md": {
-      "filePath": ".claude/rules/deps-index.md",
-      "contentHash": "f07ac73053316ccb5e79f8d4e2f6b4d8bc250b098928af30c4aadfbbb038ba6e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    ".claude/settings.json": {
-      "filePath": ".claude/settings.json",
-      "contentHash": "43fd9292d8554aea3381e56d82032711f710bf8de2cec4c06ef2966351c70934",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 6,
-      "hasStructuralAnalysis": true
-    },
-    ".claude/skills/librarian/SKILL.md": {
-      "filePath": ".claude/skills/librarian/SKILL.md",
-      "contentHash": "0f42e7e1265b634fa36b1734d5a3e38beed025c209abda4b3513b836f07c06d9",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 194,
-      "hasStructuralAnalysis": true
-    },
-    ".claude/SUGGESTED_SKILLS.md": {
-      "filePath": ".claude/SUGGESTED_SKILLS.md",
-      "contentHash": "60b18666270fabf37f494c0149f80bd59766d72a40125f305d8cc903a8e3f488",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 21,
-      "hasStructuralAnalysis": true
     },
     ".gitattributes": {
       "filePath": ".gitattributes",
@@ -82,16 +22,6 @@
       "exports": [],
       "totalLines": 5,
       "hasStructuralAnalysis": false
-    },
-    ".interface-design/system.md": {
-      "filePath": ".interface-design/system.md",
-      "contentHash": "dd75fca48acc1c33b81c00ce21cb115393ac62e2e332e658b46d6ee99497e813",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 199,
-      "hasStructuralAnalysis": true
     },
     ".mulch/decisions/archie-av.q-counter": {
       "filePath": ".mulch/decisions/archie-av.q-counter",
@@ -185,7 +115,17 @@
     },
     ".mulch/expertise/infrastructure.jsonl": {
       "filePath": ".mulch/expertise/infrastructure.jsonl",
-      "contentHash": "a1f839e2de3738c9f354abc9a8e09d247595e28e6e75b70fc3b7ff508b37164e",
+      "contentHash": "60bcb9a79a89f3adab762a9da50a8faa1239af3191c8916e8fbb57415be8376d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 13,
+      "hasStructuralAnalysis": false
+    },
+    ".mulch/expertise/meta.jsonl": {
+      "filePath": ".mulch/expertise/meta.jsonl",
+      "contentHash": "5425f6687756fa49d07f538d3c69b871878a635b0ddc6594a45e37a80fc04c75",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -193,54 +133,14 @@
       "totalLines": 12,
       "hasStructuralAnalysis": false
     },
-    ".mulch/expertise/meta.jsonl": {
-      "filePath": ".mulch/expertise/meta.jsonl",
-      "contentHash": "06fdcd6569e2378716a018c57398b3351b3a60893da24272ddcfcbc3f6d34ca4",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 11,
-      "hasStructuralAnalysis": false
-    },
-    ".mulch/mulch.config.yaml": {
-      "filePath": ".mulch/mulch.config.yaml",
-      "contentHash": "41812ebfda10761f1711c5e9b396d640d5946fba980b970a2b5263a88ecc4910",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 16,
-      "hasStructuralAnalysis": true
-    },
-    ".mulch/README.md": {
-      "filePath": ".mulch/README.md",
-      "contentHash": "7d7562c9ef651a42873a60fed4cc928e1a7b45ba8879ff51e489399c03eec786",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 22,
-      "hasStructuralAnalysis": true
-    },
-    ".seeds/config.yaml": {
-      "filePath": ".seeds/config.yaml",
-      "contentHash": "c935ee9ca801587a0820c193fda75c51bf397a0bf63d9f90a1c9ff3f9a6b5e4b",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 3,
-      "hasStructuralAnalysis": true
-    },
     ".seeds/issues.jsonl": {
       "filePath": ".seeds/issues.jsonl",
-      "contentHash": "457634d29278f6ecbe9b1a8963abe0c094c165c66551a75b6c41adb39d31de19",
+      "contentHash": "fce44c12ffb3ebf4a23f84142fb5d01042ea05c6c943c23ab95a0c2b6d1a86cc",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 28,
+      "totalLines": 29,
       "hasStructuralAnalysis": false
     },
     ".seeds/templates.jsonl": {
@@ -263,46 +163,6 @@
       "totalLines": 24,
       "hasStructuralAnalysis": false
     },
-    ".understand-anything/domain-graph.json": {
-      "filePath": ".understand-anything/domain-graph.json",
-      "contentHash": "5ceb7f04ef4c9af0b85c86c431d5d52912bf0d35819e56ac6fdb2447477a1df6",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 1376,
-      "hasStructuralAnalysis": true
-    },
-    ".understand-anything/fingerprints.json": {
-      "filePath": ".understand-anything/fingerprints.json",
-      "contentHash": "42033b644481bdb3bd76610b3f62fafb0e8a06ce3c3cd2f443388b326a5c9f8c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 2892,
-      "hasStructuralAnalysis": true
-    },
-    ".understand-anything/knowledge-graph.json": {
-      "filePath": ".understand-anything/knowledge-graph.json",
-      "contentHash": "c25b74129263a47a2b76c53af295689fbf350467afed995d391001328031c323",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 11073,
-      "hasStructuralAnalysis": true
-    },
-    ".understand-anything/meta.json": {
-      "filePath": ".understand-anything/meta.json",
-      "contentHash": "45d9c8806c50cc67455307f770df2b8e26aa2f5e06aad95d9dcc92e9d5988219",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 7,
-      "hasStructuralAnalysis": true
-    },
     "apps/studio/.gitkeep": {
       "filePath": "apps/studio/.gitkeep",
       "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
@@ -313,95 +173,72 @@
       "totalLines": 1,
       "hasStructuralAnalysis": false
     },
-    "apps/studio/index.html": {
-      "filePath": "apps/studio/index.html",
-      "contentHash": "546d2112a848a057d94993cf35049b63cbd68c605f59eb442fd13431f0af918c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 19,
-      "hasStructuralAnalysis": false
-    },
-    "apps/studio/package.json": {
-      "filePath": "apps/studio/package.json",
-      "contentHash": "0b8cd65c7197bcd562afccd15d7ebbd049b7268073c0999055f21337855051d0",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 24,
-      "hasStructuralAnalysis": true
-    },
-    "apps/studio/README.md": {
-      "filePath": "apps/studio/README.md",
-      "contentHash": "c0daa0c1370f6fb7dc61b8951aa956581661365f300f0575656f10c48be23dc5",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 40,
-      "hasStructuralAnalysis": true
-    },
     "apps/studio/src/App.svelte": {
       "filePath": "apps/studio/src/App.svelte",
-      "contentHash": "59356c02d94e05072271d3dc61257e21fb31e7381707fff83d5b77444980eb21",
+      "contentHash": "e1ca9246c76559a64172ff55c111464257d775814680b60ddf5c477784a625c0",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 1319,
+      "totalLines": 1695,
       "hasStructuralAnalysis": false
     },
     "apps/studio/src/AvEditor.svelte": {
       "filePath": "apps/studio/src/AvEditor.svelte",
-      "contentHash": "2ff7dec0cf7eaa205cb7df31f1e478acd8f8ce70f2851792de205e47de124f7c",
+      "contentHash": "c295b6a447629a5ed780627a488c572eeac2a58a05effc1c51d5d960a0ec8624",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 128,
+      "totalLines": 412,
       "hasStructuralAnalysis": false
     },
     "apps/studio/src/bake.ts": {
       "filePath": "apps/studio/src/bake.ts",
-      "contentHash": "b1efec673d2b8e929accbaa8c636f2f9cf1eff22b1ac67d3ceb07afbe56a0566",
+      "contentHash": "61d7dacf1d013bf93165dc22ae9947c7f93a2a6e57d337620dfc8ba7cda4a7e3",
       "functions": [
         {
           "name": "bakeDisplayMaster",
           "params": [
-            "file"
+            "file",
+            "opts"
           ],
           "returnType": "Promise<BakedMaster>",
           "exported": true,
-          "lineCount": 16
+          "lineCount": 19
+        },
+        {
+          "name": "downscaleIfNeeded",
+          "params": [
+            "file",
+            "maxDim",
+            "mime"
+          ],
+          "returnType": "Promise<BakedMaster>",
+          "exported": true,
+          "lineCount": 21
         }
       ],
       "classes": [],
-      "imports": [],
-      "exports": [
-        "bakeDisplayMaster"
+      "imports": [
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "fitWithin",
+            "exceedsCap"
+          ]
+        }
       ],
-      "totalLines": 34,
-      "hasStructuralAnalysis": true
-    },
-    "apps/studio/src/bidar.ts": {
-      "filePath": "apps/studio/src/bidar.ts",
-      "contentHash": "ce51c86b8753798d2739cb3a59cb9d9ec4f69cc9887711cf4bb7b6602b0a6d9a",
-      "functions": [],
-      "classes": [],
-      "imports": [],
       "exports": [
-        "bidarTitle",
-        "bidarObject",
-        "bidarNotes"
+        "bakeDisplayMaster",
+        "downscaleIfNeeded"
       ],
-      "totalLines": 243,
+      "totalLines": 78,
       "hasStructuralAnalysis": true
     },
     "apps/studio/src/binding.ts": {
       "filePath": "apps/studio/src/binding.ts",
-      "contentHash": "1998f9e998e358dcef20aa4aec4f12a3a23a97d27d9efe9a8cc9da6d8fc80ec3",
+      "contentHash": "4af0bf5805a9ba52d6df6d1f2a2521f01287fb88477b5ecc8b5a43d66ca8f087",
       "functions": [
         {
           "name": "supportsFolderPicker",
@@ -426,6 +263,23 @@
           "returnType": "void",
           "exported": true,
           "lineCount": 12
+        },
+        {
+          "name": "supportsFileStreamSave",
+          "params": [],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "saveZipToDisk",
+          "params": [
+            "fs",
+            "filename"
+          ],
+          "returnType": "Promise<ZipSaveResult>",
+          "exported": true,
+          "lineCount": 27
         },
         {
           "name": "zipNameFor",
@@ -477,7 +331,8 @@
             "parseRecents",
             "serializeRecents",
             "Binding",
-            "RecentProject"
+            "RecentProject",
+            "ZipFilesystem"
           ]
         }
       ],
@@ -485,13 +340,15 @@
         "supportsFolderPicker",
         "pickFolder",
         "downloadZip",
+        "supportsFileStreamSave",
+        "saveZipToDisk",
         "zipNameFor",
         "loadRecents",
         "saveRecents",
         "loadLastBinding",
         "saveLastBinding"
       ],
-      "totalLines": 81,
+      "totalLines": 136,
       "hasStructuralAnalysis": true
     },
     "apps/studio/src/CmdK.svelte": {
@@ -504,14 +361,24 @@
       "totalLines": 161,
       "hasStructuralAnalysis": false
     },
-    "apps/studio/src/ExhibitOverview.svelte": {
-      "filePath": "apps/studio/src/ExhibitOverview.svelte",
-      "contentHash": "01ca81df928235f0c5abfdff83b4652eeb83b241d02961bcbfe60550371df285",
+    "apps/studio/src/DetailsEditor.svelte": {
+      "filePath": "apps/studio/src/DetailsEditor.svelte",
+      "contentHash": "3d288fce79251f4fee1c5e25fd7be23eff86ff18c4c756576d956763296364a6",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 290,
+      "totalLines": 60,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/ExhibitOverview.svelte": {
+      "filePath": "apps/studio/src/ExhibitOverview.svelte",
+      "contentHash": "8b54987a05c71d64c468b0aa43f281badbacced7dbb4d2bdde0d88cbf8df9068",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 315,
       "hasStructuralAnalysis": false
     },
     "apps/studio/src/handles-db.ts": {
@@ -625,12 +492,12 @@
     },
     "apps/studio/src/LibraryHome.svelte": {
       "filePath": "apps/studio/src/LibraryHome.svelte",
-      "contentHash": "ca900b2605fc0cb1a6bb5b5009e17454684d1a6841b2fc0df613684b5c742c65",
+      "contentHash": "91523c977fe4a0b59f107aa357e124ce87f80a8a4efe0aea87c17bb4c4013581",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 248,
+      "totalLines": 284,
       "hasStructuralAnalysis": false
     },
     "apps/studio/src/main.ts": {
@@ -672,16 +539,6 @@
       "totalLines": 13,
       "hasStructuralAnalysis": true
     },
-    "apps/studio/src/markers.css": {
-      "filePath": "apps/studio/src/markers.css",
-      "contentHash": "aa5df6914c627b32348a654a6bc7af9d498ecdff7f2f202f8bc71e2db96519c9",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 29,
-      "hasStructuralAnalysis": false
-    },
     "apps/studio/src/MergeReview.svelte": {
       "filePath": "apps/studio/src/MergeReview.svelte",
       "contentHash": "dc1544370f9d2a05f53334affb03feb8312c977b7d4021a289184e7d55ad7272",
@@ -694,27 +551,102 @@
     },
     "apps/studio/src/NarrativeEditor.svelte": {
       "filePath": "apps/studio/src/NarrativeEditor.svelte",
-      "contentHash": "180848d694db37d54bc205af1e69d762b48803748eed84701404ebdd38ff8836",
+      "contentHash": "0d1fc6ee4b1ecfc833ef323d5e90f97a43f87c81687422f3cce85eb78607ec05",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 191,
+      "totalLines": 220,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/PropsDrawer.svelte": {
+      "filePath": "apps/studio/src/PropsDrawer.svelte",
+      "contentHash": "a41706463b159d37abeaf3025ddeffe3825d787e4240f23462949ccf801f9d6e",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 44,
       "hasStructuralAnalysis": false
     },
     "apps/studio/src/Publish.svelte": {
       "filePath": "apps/studio/src/Publish.svelte",
-      "contentHash": "7b11218eaecec75d1a80ef3700d09d34dd431f5b5d52bd096e524472daab4d08",
+      "contentHash": "ff45662cd3f27bc99a39d51fa76bd92763d5c71d2710fd4435361ff3f9f7e351",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 170,
+      "totalLines": 198,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/PublishDialog.svelte": {
+      "filePath": "apps/studio/src/PublishDialog.svelte",
+      "contentHash": "218bae101af1a9dad2121d4d28587417f52a35d1db5ab8a3e921db4f5cc9cc13",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 163,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/RightsEditor.svelte": {
+      "filePath": "apps/studio/src/RightsEditor.svelte",
+      "contentHash": "bf6177c6c76b5419be5a875ff6868223425fa525b25764d461f7a95adc94e04b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 85,
+      "hasStructuralAnalysis": false
+    },
+    "apps/studio/src/shortcuts.ts": {
+      "filePath": "apps/studio/src/shortcuts.ts",
+      "contentHash": "ab337c0bdd0468527dad6abd3c05a9f1bb72aa438ea054e629c678a5b9e6cb1a",
+      "functions": [
+        {
+          "name": "matches",
+          "params": [
+            "e",
+            "keys"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 16
+        },
+        {
+          "name": "typingInField",
+          "params": [
+            "e"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 5
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "SHORTCUTS",
+        "SHORTCUT_GROUPS",
+        "matches",
+        "typingInField"
+      ],
+      "totalLines": 60,
+      "hasStructuralAnalysis": true
+    },
+    "apps/studio/src/ShortcutsHelp.svelte": {
+      "filePath": "apps/studio/src/ShortcutsHelp.svelte",
+      "contentHash": "fe7adefeb0cb0738cf2325e68a0f4230e7edb001bd41ffbdadb96817547e840b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 62,
       "hasStructuralAnalysis": false
     },
     "apps/studio/src/store.ts": {
       "filePath": "apps/studio/src/store.ts",
-      "contentHash": "a82244d245626833b528b9688ad9c983a85b3c5c571536edb41e1aa53bfe12eb",
+      "contentHash": "85fe5baf90012ea9b99981794756812574efad5552c008708b06eacb366963d0",
       "functions": [
         {
           "name": "openProjectDir",
@@ -793,6 +725,25 @@
           "lineCount": 3
         },
         {
+          "name": "mimeFromName",
+          "params": [
+            "name"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "assetSize",
+          "params": [
+            "slug",
+            "name"
+          ],
+          "returnType": "Promise<number>",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
           "name": "readAssetUrl",
           "params": [
             "slug",
@@ -800,7 +751,7 @@
           ],
           "returnType": "Promise<string | null>",
           "exported": true,
-          "lineCount": 10
+          "lineCount": 12
         },
         {
           "name": "clearExhibitAnnotations",
@@ -812,14 +763,14 @@
           "lineCount": 14
         },
         {
-          "name": "readAssetBytes",
+          "name": "readAssetBlob",
           "params": [
             "slug",
             "name"
           ],
-          "returnType": "Promise<ArrayBuffer | null>",
+          "returnType": "Promise<Blob | null>",
           "exported": true,
-          "lineCount": 10
+          "lineCount": 9
         },
         {
           "name": "readOriginalBytes",
@@ -841,7 +792,9 @@
             "FsDirectory",
             "OrientationTransform",
             "MediaType",
-            "Section"
+            "Section",
+            "Reading",
+            "RightsFields"
           ]
         }
       ],
@@ -851,37 +804,13 @@
         "saveLibraryMeta",
         "saveAssetFile",
         "saveOriginalFile",
+        "assetSize",
         "readAssetUrl",
         "clearExhibitAnnotations",
-        "readAssetBytes",
+        "readAssetBlob",
         "readOriginalBytes"
       ],
-      "totalLines": 191,
-      "hasStructuralAnalysis": true
-    },
-    "apps/studio/src/tokens.css": {
-      "filePath": "apps/studio/src/tokens.css",
-      "contentHash": "2fae9d61923d0244eef5fefe41edda1c2f8468444f48e9580aefaab0392556f6",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 69,
-      "hasStructuralAnalysis": false
-    },
-    "apps/studio/src/voynich.ts": {
-      "filePath": "apps/studio/src/voynich.ts",
-      "contentHash": "cbd1aa17fdaf27d7ae6e1665536adeca904fb61c4e1c8b5fdb03bfef71a5b475",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [
-        "voynichTitle",
-        "voynichCredits",
-        "voynichObjects",
-        "voynichNotes"
-      ],
-      "totalLines": 297,
+      "totalLines": 233,
       "hasStructuralAnalysis": true
     },
     "apps/studio/vite.config.ts": {
@@ -909,7 +838,7 @@
     },
     "apps/viewer/astro.config.mjs": {
       "filePath": "apps/viewer/astro.config.mjs",
-      "contentHash": "16f119512287712c9357222b86b90a172134ee24ec1636fb31ee50ceb2ecabf8",
+      "contentHash": "c376268dd25151cf3745f7e6d5617cb50e5b3f1d58a996704cf957c1f8e38e5d",
       "functions": [],
       "classes": [],
       "imports": [
@@ -927,796 +856,152 @@
         }
       ],
       "exports": [],
-      "totalLines": 9,
+      "totalLines": 16,
       "hasStructuralAnalysis": true
     },
-    "apps/viewer/package.json": {
-      "filePath": "apps/viewer/package.json",
-      "contentHash": "f6a9677285aa61dbfcca3d383b196edbbf7a91232370d06616f297b9df79a616",
+    "apps/viewer/scripts/gen-published.mts": {
+      "filePath": "apps/viewer/scripts/gen-published.mts",
+      "contentHash": "cc35781e7969518684bcde5609e1f422681eefdfc318697880f28f1aa61ad866",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 28,
-      "hasStructuralAnalysis": true
+      "totalLines": 50,
+      "hasStructuralAnalysis": false
     },
-    "apps/viewer/public/published/av/annotations/history/0000000001BB8Y2F4GWPA070HC.json": {
-      "filePath": "apps/viewer/public/published/av/annotations/history/0000000001BB8Y2F4GWPA070HC.json",
-      "contentHash": "fb015ee3ac44196a067a836add2a9bc39af5107d739183630465ce76d66ddcaa",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/av/annotations/history/0000000002QWSM9MMM6A2NGGF4.json": {
-      "filePath": "apps/viewer/public/published/av/annotations/history/0000000002QWSM9MMM6A2NGGF4.json",
-      "contentHash": "dd6700f1ab8e300ade4f2442907f2e9c6bc016fb435ff89e2a39f04c4e7fc37f",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/av/annotations/history/0000000003XJ97G8KDWNB1GDP5.json": {
-      "filePath": "apps/viewer/public/published/av/annotations/history/0000000003XJ97G8KDWNB1GDP5.json",
-      "contentHash": "1f5ad0512e5328d65cecc8f9c032ccf9da372ae049002b1d971141b432e94993",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/av/annotations/history/0000000004M6XTY36CDA78WT1F.json": {
-      "filePath": "apps/viewer/public/published/av/annotations/history/0000000004M6XTY36CDA78WT1F.json",
-      "contentHash": "c85f07dbf950c065c0cdc7b4729a2a17ea93a56f426280551cfa5d4de1aba74f",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/av/annotations/history/index.json": {
-      "filePath": "apps/viewer/public/published/av/annotations/history/index.json",
-      "contentHash": "b9601a3e2a1db58dce67141b660fb9504800ee963c01fe4e9244508f5e0e248c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 6,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/av/canvas/o1/annotations.json": {
-      "filePath": "apps/viewer/public/published/av/canvas/o1/annotations.json",
-      "contentHash": "e8e965288c423cb360fbc96479e2cc83624f3cb1881ae80bebef432c2d908b09",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 95,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/av/manifest.json": {
-      "filePath": "apps/viewer/public/published/av/manifest.json",
-      "contentHash": "8cd848b7ce1362cc727e53597474852ca8abf1e8d8f02cf6ee43d4eac243b526",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 51,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/00000000014CYQZ060Q7TK88MT.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/00000000014CYQZ060Q7TK88MT.json",
-      "contentHash": "621696c60411abefb5f02c5f0a1c1d873796b25f0d6e35f7ad9566a6cd6f5937",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/0000000002YB5FZZ75KCQN7QRZ.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000002YB5FZZ75KCQN7QRZ.json",
-      "contentHash": "4bf3883b47f47f7e794d6268da9f1ee44ee7d1f976882091fdc7a6e85efd518f",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/0000000003H9SM64Y64XQ2T4Z5.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000003H9SM64Y64XQ2T4Z5.json",
-      "contentHash": "9a3399155f8e181fb42d06b9c6255ce8445985381ac920ae76340b79f2658e89",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/0000000004QVXAPKEAEBY9P89Y.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000004QVXAPKEAEBY9P89Y.json",
-      "contentHash": "581c48c36bcb384c5acaedc3d4fc318b071d27a3deb8502797fba0a7bcc1ab6b",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/0000000005Y06S6DVK2392YXF2.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000005Y06S6DVK2392YXF2.json",
-      "contentHash": "89e2932c6f0c6971adb033d833cce9214a29036bdfbf4b52058784c21527f777",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/0000000006Z75GC0WTAR7TD9S2.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000006Z75GC0WTAR7TD9S2.json",
-      "contentHash": "710e2ac07c4d7adef25ca33e6efae2073b0dc767bd58c91a59c16256dd52548d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/0000000007HM9G9KJ7MK2Y5EVW.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000007HM9G9KJ7MK2Y5EVW.json",
-      "contentHash": "4de17f846c4824593ac58925f8df262203217b91acdf12a64c8d3fd05c6106a1",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/0000000008AE9M3GQM6A2GE5QW.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000008AE9M3GQM6A2GE5QW.json",
-      "contentHash": "ef3200e32715c13d251d1cf965eb2b26b95b52d7a70e1dd535288ea7c30e97df",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/0000000009R5X67F3KM4QD2EBP.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/0000000009R5X67F3KM4QD2EBP.json",
-      "contentHash": "c5385225e596c65463c609b9ec380b5be39bdf8a3e9490653d07fbeacf25a7a8",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000AM1M852F303PMD1QX.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000AM1M852F303PMD1QX.json",
-      "contentHash": "49f19d2a66da08ddc472832c8d008736e7875faf12a896fff5fb3d05e0c819bc",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000BHWEKP4D414SY0RGS.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000BHWEKP4D414SY0RGS.json",
-      "contentHash": "427cf6ef775a0e87f19cdbdde33cd57ce15b5989ef610d173f52c4ecf789553e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000CYN34XMRTHB9DJ6JV.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000CYN34XMRTHB9DJ6JV.json",
-      "contentHash": "c9a043ec8de581863dc65169512a4ebf2c9531baf9be1deff281c2a776259448",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000D4DR8AWT8WT2M6F2G.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000D4DR8AWT8WT2M6F2G.json",
-      "contentHash": "7c54dcf316a1c5e727468bc3d54ca5a5bc08c37827cdb4967a6091fb7f4542f0",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000EJG9Y72M6NDNPAAB2.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000EJG9Y72M6NDNPAAB2.json",
-      "contentHash": "56a3e8b4d6f257a26a1282abc10f3da4cc57cd94ac0ac0ef09dac6e843b40fba",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000FZQH297K1D5EREQJW.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000FZQH297K1D5EREQJW.json",
-      "contentHash": "a447afa023b4712e6005b2c3c00f3f8c6e181b644ef32a981a274eb5b037174c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000GJYKSCG31KTS80R6N.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000GJYKSCG31KTS80R6N.json",
-      "contentHash": "ff64b5a275f8ade1c9a3cc93d7d61458f1e3daf922b0cf5919c6b05275f9473f",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000HD4SWHP8PKY9W6M2Y.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000HD4SWHP8PKY9W6M2Y.json",
-      "contentHash": "89657830a48eaf62baa401a05bb6ae2f66e2554b21f11f416b4ab2580cd76c9f",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000JAFFK9K4H3QH7XPDD.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000JAFFK9K4H3QH7XPDD.json",
-      "contentHash": "b350d6bfe4dd5c3911cc684baa4d79569e9717bb162319794074a5f2f490610a",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000KANWR4RR2BHYB8SNC.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000KANWR4RR2BHYB8SNC.json",
-      "contentHash": "2ea2baee1a023719e01923389876c5a6469c957d9c81246ac5b8d57ce1c26157",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000MMP6TEN6H2WC0ZAW2.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000MMP6TEN6H2WC0ZAW2.json",
-      "contentHash": "2a85409eba8b3d3fda6cf40981b1645cae175373b1a53b32acebdc85df1ad8d0",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000NK8VS1GVN64T2KD91.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000NK8VS1GVN64T2KD91.json",
-      "contentHash": "f2ace0afac7d39b5fa4d786f38c46614d88806fad63df23f6233d1ee9b2f21fb",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000PY0FQ6EHNDDJF7G40.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000PY0FQ6EHNDDJF7G40.json",
-      "contentHash": "4bac737e768f685c011af05351fa78bd0d0c1ea909cb78a2bb9895a31740e7b3",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000QZ789FZ81RHZ4CB1H.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000QZ789FZ81RHZ4CB1H.json",
-      "contentHash": "36fed07687f47318ad530e76dfad0abe3ee16716b74f768ae184ae60a5fd84a4",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000R0M4CZSRNC8JN20E9.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000R0M4CZSRNC8JN20E9.json",
-      "contentHash": "1905963722037c09999a2d8385b2b2203bbae216fa2f712891b478e1287e5b3c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/000000000S3C9G458YAXDAW0PS.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/000000000S3C9G458YAXDAW0PS.json",
-      "contentHash": "37211e9afc4a160dd15b606ba2cbb6a28d6df83b1a5615fed33a54865eeb7025",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/annotations/history/index.json": {
-      "filePath": "apps/viewer/public/published/bidar/annotations/history/index.json",
-      "contentHash": "1d21788c9d2ce376a94e8d0ec0b812217c067c17e30e7ecea9c3dc5f3764edcf",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 27,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/canvas/o1/annotations.json": {
-      "filePath": "apps/viewer/public/published/bidar/canvas/o1/annotations.json",
-      "contentHash": "c0a790c0e4d3311d88066e8e45ce02733a40c8ce4cdeb9bbe04fdf7ffb43e190",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 557,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/bidar/manifest.json": {
-      "filePath": "apps/viewer/public/published/bidar/manifest.json",
-      "contentHash": "e8b524cebc90232b7bbfaa806f34b2b8589d5fb0d15e6985680e2fd10faefd78",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 656,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/collection.json": {
-      "filePath": "apps/viewer/public/published/collection.json",
-      "contentHash": "3e2a97ae4ef25030ce22f036e995c6a8546ce681a17ee371ce5cfb5a70fd04b3",
+    "apps/viewer/src/components/Credit.svelte": {
+      "filePath": "apps/viewer/src/components/Credit.svelte",
+      "contentHash": "a70dee7cffdcb591c076afd90c00051f68972b34ddd2c9923f0da3fd108693ef",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
       "totalLines": 56,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/exhibits.json": {
-      "filePath": "apps/viewer/public/published/exhibits.json",
-      "contentHash": "076f03a75200ad8b68b932e03249d4d60896d5e5a2ea774a75280a4d9cdd6f72",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 31,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/00000000014H7MXSRX1DT5PK64.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/00000000014H7MXSRX1DT5PK64.json",
-      "contentHash": "934886a08f4ea632e430b898b650278f79a94bafb853adb6e56bc24a6833358e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000227SA2A03KFYFXNYB.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000227SA2A03KFYFXNYB.json",
-      "contentHash": "80149ef4b569816f4ac2a75e3b630d8d527f97693b63d1555fb560048dcb0226",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/0000000003P50MZ62TJXHM1686.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/0000000003P50MZ62TJXHM1686.json",
-      "contentHash": "da546e2b7efac3678bdc9301a06b7f8d9e3ca23ae0287e344e3d9c5876b92aa0",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/00000000045G61Q8K2AQJFF9TM.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/00000000045G61Q8K2AQJFF9TM.json",
-      "contentHash": "4c224f8a066eaf3e920b02f12d80cf4ac55df2e133c2a676c4d98452e64b58b0",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/0000000005S7QJAPVRG5WHVHPC.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/0000000005S7QJAPVRG5WHVHPC.json",
-      "contentHash": "caec03504ac30b1d32463e3e5b6107c89c43283cd59437190b6e94a5447785af",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/0000000006QCAVFRW26XYF4NAK.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/0000000006QCAVFRW26XYF4NAK.json",
-      "contentHash": "ae10a7dcc4f9b56fe43b7f69cb7f084248d6a5b6e4be940ec361b88cb03583a6",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/00000000079MTJ1CSRRP0G7JKH.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/00000000079MTJ1CSRRP0G7JKH.json",
-      "contentHash": "6b7d4d318e106805b71012c7a289080a6a6bbd194ecf013b234ba84a328df4b9",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000857CQR3J2T8SFT6NC.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000857CQR3J2T8SFT6NC.json",
-      "contentHash": "f2bdf08faa5fd0b9e7931bebcc8bb91d4cb5d0e89d8ae2d5082ff2daf66bdd18",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/0000000009708F5S5ZV6E08ESE.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/0000000009708F5S5ZV6E08ESE.json",
-      "contentHash": "9b357ae7b0276125937d4d5bb6bff4fcdb30c600d7651ab529111d994292f91b",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000AYQK4G2CQE8ZHBA80.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000AYQK4G2CQE8ZHBA80.json",
-      "contentHash": "f90008859a224478833556531538e1576dcc221a3982c7840ee1a7333565370e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000BPF2791JD86NR4RH4.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000BPF2791JD86NR4RH4.json",
-      "contentHash": "bb705b59f75367976cb502a03a4e2844b5883a14b76179f023728c1a05a868f2",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000CD7RV70X11ACWYEBT.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000CD7RV70X11ACWYEBT.json",
-      "contentHash": "a773f819c25a7de235aad4cd13ab01b3f9be8c9f2b3f4d66fc94c51338b7a9bd",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000DVCSDQQXJB6V1TS7K.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000DVCSDQQXJB6V1TS7K.json",
-      "contentHash": "2c6a0505fc16d6111a3b96b20498bee6dc5231fd60b29d4ecd0f1f8c59d62a58",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000EQ8P7Q1GNC5HNBJEH.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000EQ8P7Q1GNC5HNBJEH.json",
-      "contentHash": "68552548f57e8be3303c82abfd41ec79455155abab1d9f61148622033ec5ee0a",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000F9SEBRPD87G4EG92S.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000F9SEBRPD87G4EG92S.json",
-      "contentHash": "5bd2bd21e6b0580cf0b153ff65d820f801b8552bc4722a843200e0ad2dfd2679",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000GJSGT3G0C92PCM8AW.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000GJSGT3G0C92PCM8AW.json",
-      "contentHash": "e3be346a913c2fdb87bbdbf6e4f6375b5ca6c5449258c46fbdcec1487312a835",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000HR9QJA0339YF8PT2T.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000HR9QJA0339YF8PT2T.json",
-      "contentHash": "78495ca07596beabe585cca907222a80f6822e7ac6ac5cd451e57724bfe36b68",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000J4JA1STRS9XA3CPDG.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000J4JA1STRS9XA3CPDG.json",
-      "contentHash": "67ea0fbfa83ac266e620331a26e4de358245bb2923338c74258fa0779765e70b",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000KTPK0WV8390FX771D.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000KTPK0WV8390FX771D.json",
-      "contentHash": "6dff48b70f433324a5335306e2b695efefbaccb1d3651e5ee0c9fca5df5dfd64",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000M9FTX87JQ1VDSBT5Y.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000M9FTX87JQ1VDSBT5Y.json",
-      "contentHash": "f2d700ea2f31cbd3d1b50373854f92c166e264d29e00c60134af2e3b7f622518",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000NM6VBJWNXGWE2Z4M8.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000NM6VBJWNXGWE2Z4M8.json",
-      "contentHash": "bb84a2e6c2d2e92b2e2dcb748330b10e5d45bc1f2e2e76410caa9930300c1d13",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000PHHESCJMA2RG6EZFQ.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000PHHESCJMA2RG6EZFQ.json",
-      "contentHash": "93442e2c94d2e2aebf29e36b0a1ca19b166a8a0c3500456180ad31fdc85b825e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000QA2BC10X74VZQ0XXX.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000QA2BC10X74VZQ0XXX.json",
-      "contentHash": "214f155b3fefc2aea36e202ebed2e8e43511b723b93b420ee0ba82d0e187901e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000RE9BMCZMHESB6FSMZ.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000RE9BMCZMHESB6FSMZ.json",
-      "contentHash": "a99a68d01eae09a921e85f613cfecc40cda26e1ba9c5d6c3db2a4463e9be3c27",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/000000000SFF7ZT384SXK5WMAD.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/000000000SFF7ZT384SXK5WMAD.json",
-      "contentHash": "496e06af25fc1f37919f61aed162169da0e8a4b5c7e5b76755a51fb99c8643b0",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 33,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/annotations/history/index.json": {
-      "filePath": "apps/viewer/public/published/voynich/annotations/history/index.json",
-      "contentHash": "41068e3099dfada1922382eadaa6c530b9b4448fd7754e296e64ed61e09a4f7a",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 27,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/canvas/o1/annotations.json": {
-      "filePath": "apps/viewer/public/published/voynich/canvas/o1/annotations.json",
-      "contentHash": "b1063b562e6b9597397f09ee994837a9da921e56248149e288ee6194b83fe88b",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 95,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/canvas/o2/annotations.json": {
-      "filePath": "apps/viewer/public/published/voynich/canvas/o2/annotations.json",
-      "contentHash": "8ed40b55ed03a0fc03e7fe99aef66e394328493125e1950ce3678f95a700b483",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 117,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/canvas/o3/annotations.json": {
-      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
-      "contentHash": "a80932012e52866cdd547def4f2e4b9636621eb4ae415d61c1a022281d18728e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 95,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/canvas/o4/annotations.json": {
-      "filePath": "apps/viewer/public/published/voynich/canvas/o4/annotations.json",
-      "contentHash": "6b6b0e79679f12f8603a598ec357149804606f4af68708dfbab46bb0a54ce7f7",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 183,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/canvas/o5/annotations.json": {
-      "filePath": "apps/viewer/public/published/voynich/canvas/o5/annotations.json",
-      "contentHash": "29e7c6717c47c1d32cdc7561409f134526473a58497113a1e7ea2996b10a3f02",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 95,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/public/published/voynich/manifest.json": {
-      "filePath": "apps/viewer/public/published/voynich/manifest.json",
-      "contentHash": "d4e6ea9751a016b84994fa753fd6ecd52f38e128d70c22018b050df012e5b688",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 202,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/README.md": {
-      "filePath": "apps/viewer/README.md",
-      "contentHash": "7bebdf563b3fd9d63ed483b4712bcebd0ac23cbd5ade0ff2a0881513de0418b7",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 44,
-      "hasStructuralAnalysis": true
-    },
-    "apps/viewer/scripts/gen-published.mts": {
-      "filePath": "apps/viewer/scripts/gen-published.mts",
-      "contentHash": "38d321b6e1c9ce76eca9d0b5b685d3d371731657d4872beef586759950bf07b3",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 28,
       "hasStructuralAnalysis": false
     },
-    "apps/viewer/src/bidar.ts": {
-      "filePath": "apps/viewer/src/bidar.ts",
-      "contentHash": "ce51c86b8753798d2739cb3a59cb9d9ec4f69cc9887711cf4bb7b6602b0a6d9a",
+    "apps/viewer/src/components/EmptyHall.svelte": {
+      "filePath": "apps/viewer/src/components/EmptyHall.svelte",
+      "contentHash": "3c4674b38ceb9f85c795fd2f26038bae3b1841bc9f8efcad5d4d1e2abf6e1872",
       "functions": [],
       "classes": [],
       "imports": [],
-      "exports": [
-        "bidarTitle",
-        "bidarObject",
-        "bidarNotes"
-      ],
-      "totalLines": 243,
-      "hasStructuralAnalysis": true
+      "exports": [],
+      "totalLines": 170,
+      "hasStructuralAnalysis": false
     },
     "apps/viewer/src/components/ExhibitView.svelte": {
       "filePath": "apps/viewer/src/components/ExhibitView.svelte",
-      "contentHash": "a65129754bd0d4fb74dc85124dd2d2b7bb42a9c9e7f4ee4e6a0a6eeccfa0767a",
+      "contentHash": "bfdafbe682f24b9f9373fe4bcbe560a4a9704a440fb7aaccea17d35adca5a2b9",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 138,
+      "totalLines": 195,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/components/Gallery.svelte": {
+      "filePath": "apps/viewer/src/components/Gallery.svelte",
+      "contentHash": "21a6ee0e6847c2d66ac28cf77287ab481943eec86b5489654fc4d5b98ccbfa83",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 61,
       "hasStructuralAnalysis": false
     },
     "apps/viewer/src/components/MediaPlayer.svelte": {
       "filePath": "apps/viewer/src/components/MediaPlayer.svelte",
-      "contentHash": "c1da7762273f1ab990b3a3d9ce826a20eb7e6b9b6b62dcb07dd4ef21104c2252",
+      "contentHash": "491ac940a8c0c5b02efb1b580a2e1f7cc77e65b074cbb4e788408ae93280257f",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 123,
+      "totalLines": 205,
       "hasStructuralAnalysis": false
     },
     "apps/viewer/src/components/NarrativeReader.svelte": {
       "filePath": "apps/viewer/src/components/NarrativeReader.svelte",
-      "contentHash": "5441b260eda4697f902f99d10108ea136360b0402119ef827997777f1b3eb645",
+      "contentHash": "d3674a5475f8f79cfbfc3a4941a0d74c1c6e994a0b6a8e37d3b3e2d601eb5803",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 125,
+      "totalLines": 204,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/components/NoteLightbox.svelte": {
+      "filePath": "apps/viewer/src/components/NoteLightbox.svelte",
+      "contentHash": "c462c878e114b52347f8389d64eb8f2797597dcba27566c5beb8c37322089367",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 112,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/components/NoteMedia.svelte": {
+      "filePath": "apps/viewer/src/components/NoteMedia.svelte",
+      "contentHash": "2eb1cfd56386d58b4442a55cade59c367ba49bb67a45bb3ba2f71df4168b2cf6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 64,
       "hasStructuralAnalysis": false
     },
     "apps/viewer/src/components/ObjectGrid.svelte": {
       "filePath": "apps/viewer/src/components/ObjectGrid.svelte",
-      "contentHash": "0d6c8b76e3bf53ab440fdce642c7c6f0915e4e5edc9ea92aa1bed779df7a230c",
+      "contentHash": "07d4a0c8cb159f8b2000203504fc06f25a073f43fb0d829e8f685874e5688b94",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 79,
+      "totalLines": 95,
       "hasStructuralAnalysis": false
     },
     "apps/viewer/src/components/Reader.svelte": {
       "filePath": "apps/viewer/src/components/Reader.svelte",
-      "contentHash": "48a366c823428c4f7c35ae716da7639e9b65090482ddf2750010b0126190ff2d",
+      "contentHash": "0999713670363246cd6067ce098a71fe7f3c6c24598e9436836b6a0fc50ee552",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 136,
+      "totalLines": 225,
       "hasStructuralAnalysis": false
     },
-    "apps/viewer/src/markers.css": {
-      "filePath": "apps/viewer/src/markers.css",
-      "contentHash": "aa5df6914c627b32348a654a6bc7af9d498ecdff7f2f202f8bc71e2db96519c9",
+    "apps/viewer/src/components/ReadingLegend.svelte": {
+      "filePath": "apps/viewer/src/components/ReadingLegend.svelte",
+      "contentHash": "ecd346096da37a1a55d8f78ff84077b959b5dccf7291154befbe6ed2a5771e62",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 68,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/components/ViewerShell.svelte": {
+      "filePath": "apps/viewer/src/components/ViewerShell.svelte",
+      "contentHash": "9ceda0ab6cb7daed891b70377270045d1444e195fbbee883d67e94bd53aca62c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 171,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/pages/index.astro": {
+      "filePath": "apps/viewer/src/pages/index.astro",
+      "contentHash": "151d786739e49bc270db554de49ab43907246663f8eb2dc5bd0de98fec08e249",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 30,
+      "hasStructuralAnalysis": false
+    },
+    "apps/viewer/src/pages/voynich-reading.astro": {
+      "filePath": "apps/viewer/src/pages/voynich-reading.astro",
+      "contentHash": "f049034528e06e25be52a051ecf1b4070dd3ca7e358143a80366f3c9adda3b2c",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -1724,34 +1009,14 @@
       "totalLines": 29,
       "hasStructuralAnalysis": false
     },
-    "apps/viewer/src/pages/av.astro": {
-      "filePath": "apps/viewer/src/pages/av.astro",
-      "contentHash": "8fcc20f8f7f52a1f2661beace0a832e18086a503bc843dd4244295d1ad55747c",
+    "apps/viewer/src/pages/voynich-rosettes.astro": {
+      "filePath": "apps/viewer/src/pages/voynich-rosettes.astro",
+      "contentHash": "d63f2b9119485786a58b836ba7c8a90468db78f4571e1af345b7ab49737dc23b",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 25,
-      "hasStructuralAnalysis": false
-    },
-    "apps/viewer/src/pages/bidar.astro": {
-      "filePath": "apps/viewer/src/pages/bidar.astro",
-      "contentHash": "1623665081a0033b46eafcd363ab75bb1843f85e7ec5c31c990044bd4db920e0",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 27,
-      "hasStructuralAnalysis": false
-    },
-    "apps/viewer/src/pages/index.astro": {
-      "filePath": "apps/viewer/src/pages/index.astro",
-      "contentHash": "759c165348eedcf4b1a6a3b66036e85af78db2935740fc97bf81fef56b22a70e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 84,
+      "totalLines": 28,
       "hasStructuralAnalysis": false
     },
     "apps/viewer/src/pages/voynich.astro": {
@@ -1764,10 +1029,159 @@
       "totalLines": 28,
       "hasStructuralAnalysis": false
     },
+    "apps/viewer/src/published-base.ts": {
+      "filePath": "apps/viewer/src/published-base.ts",
+      "contentHash": "3f3b708915c6ef7abbf2e6bac29eaa2772e9cf0eb1914b73c7ce906fb031681d",
+      "functions": [
+        {
+          "name": "canvasIdFor",
+          "params": [
+            "slug",
+            "objectId"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "BASE",
+        "canvasIdFor"
+      ],
+      "totalLines": 15,
+      "hasStructuralAnalysis": true
+    },
+    "apps/viewer/src/published.test.ts": {
+      "filePath": "apps/viewer/src/published.test.ts",
+      "contentHash": "340c49067b83290b1cebdbed64c76eb80d36da88653df32d9d9af9dd165d16e7",
+      "functions": [
+        {
+          "name": "buildArchiveBytes",
+          "params": [],
+          "returnType": "Promise<Uint8Array>",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "openZip",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect",
+            "afterEach",
+            "vi"
+          ]
+        },
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "ZipFilesystem",
+            "publishLibrary",
+            "appendNew",
+            "asClientId",
+            "Library",
+            "AnnotationLog"
+          ]
+        },
+        {
+          "source": "./published.js",
+          "specifiers": [
+            "openPortableLibrary",
+            "closePortableLibrary",
+            "isPortable",
+            "loadGallery",
+            "loadPublishedExhibit",
+            "modeFromProbe",
+            "probeViewerMode",
+            "openLibraryFromFile",
+            "openLibraryFromSrc"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 128,
+      "hasStructuralAnalysis": true
+    },
     "apps/viewer/src/published.ts": {
       "filePath": "apps/viewer/src/published.ts",
-      "contentHash": "58b623df7ff3bc0a2071d81d237ab78abc4e191445e9504c232a204f1cc99fe9",
+      "contentHash": "8acd6cc6c0b0d9a906156b53a084ac2a7eb2d3cdc9916da9e36d371a492ae4a1",
       "functions": [
+        {
+          "name": "openPortableLibrary",
+          "params": [
+            "fs"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "closePortableLibrary",
+          "params": [],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "isPortable",
+          "params": [],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "modeFromProbe",
+          "params": [
+            "p"
+          ],
+          "returnType": "ViewerMode",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "probeViewerMode",
+          "params": [],
+          "returnType": "Promise<ViewerMode>",
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "openLibraryFromFile",
+          "params": [
+            "file"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "openLibraryFromSrc",
+          "params": [
+            "url",
+            "maxBytes"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "loadGallery",
+          "params": [],
+          "returnType": "Promise<ExhibitsJson>",
+          "exported": true,
+          "lineCount": 4
+        },
         {
           "name": "fetchJson",
           "params": [
@@ -1778,13 +1192,22 @@
           "lineCount": 5
         },
         {
+          "name": "fetchJsonOptional",
+          "params": [
+            "path"
+          ],
+          "returnType": "Promise<T | null>",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
           "name": "loadPublishedExhibit",
           "params": [
             "slug"
           ],
           "returnType": "Promise<PublishedExhibit>",
           "exported": true,
-          "lineCount": 15
+          "lineCount": 38
         }
       ],
       "classes": [],
@@ -1793,42 +1216,49 @@
           "source": "@render/core",
           "specifiers": [
             "objectsFromManifest",
+            "canvasIdMap",
             "sectionsFromManifest",
-            "AObject",
+            "rightsFromIIIF",
+            "ZipFilesystem",
+            "loadPortableExhibit",
+            "loadPortableGallery",
+            "ExhibitsJson",
+            "Filesystem",
             "IIIFManifest",
-            "Section",
+            "PortableExhibit",
+            "Reading",
             "W3CAnnotation"
           ]
         }
       ],
       "exports": [
+        "openPortableLibrary",
+        "closePortableLibrary",
+        "isPortable",
+        "modeFromProbe",
+        "probeViewerMode",
+        "openLibraryFromFile",
+        "SRC_MAX_BYTES",
+        "openLibraryFromSrc",
+        "loadGallery",
         "loadPublishedExhibit"
       ],
-      "totalLines": 42,
+      "totalLines": 177,
       "hasStructuralAnalysis": true
     },
     "apps/viewer/src/sample-data.ts": {
       "filePath": "apps/viewer/src/sample-data.ts",
-      "contentHash": "c940ca642e6b0e19eb54ae52cb409cae5a575ac836435bcc75cb1b6c241ea579",
+      "contentHash": "47d126fc6c31ceed95890762efd06f4997c2d33150916bc28b4b3dcb38aa4332",
       "functions": [
         {
-          "name": "canvasIdFor",
+          "name": "buildVoynichLog",
           "params": [
             "slug",
-            "objectId"
-          ],
-          "exported": true,
-          "lineCount": 1
-        },
-        {
-          "name": "buildLog",
-          "params": [
-            "slug",
-            "notes"
+            "opts"
           ],
           "returnType": "AnnotationLog",
           "exported": false,
-          "lineCount": 17
+          "lineCount": 37
         },
         {
           "name": "getLog",
@@ -1838,15 +1268,6 @@
           "returnType": "AnnotationLog",
           "exported": true,
           "lineCount": 1
-        },
-        {
-          "name": "sectionsFor",
-          "params": [
-            "slug"
-          ],
-          "returnType": "Section[]",
-          "exported": true,
-          "lineCount": 2
         }
       ],
       "classes": [],
@@ -1856,7 +1277,6 @@
           "specifiers": [
             "appendNew",
             "asClientId",
-            "importTranscript",
             "AObject",
             "AnnotationLog",
             "Library",
@@ -1868,16 +1288,18 @@
           "specifiers": [
             "voynichObjects",
             "voynichNotes",
-            "voynichTitle",
+            "voynichReadings",
+            "voynichReadingNotes",
+            "voynichAvNotes",
+            "voynichSections",
             "voynichCredits"
           ]
         },
         {
-          "source": "./bidar.js",
+          "source": "./published-base.js",
           "specifiers": [
-            "bidarObject",
-            "bidarNotes",
-            "bidarTitle"
+            "BASE",
+            "canvasIdFor"
           ]
         }
       ],
@@ -1885,505 +1307,53 @@
         "BASE",
         "canvasIdFor",
         "library",
-        "getLog",
-        "sectionsFor"
+        "getLog"
       ],
-      "totalLines": 89,
+      "totalLines": 130,
       "hasStructuralAnalysis": true
-    },
-    "apps/viewer/src/tokens.css": {
-      "filePath": "apps/viewer/src/tokens.css",
-      "contentHash": "2fae9d61923d0244eef5fefe41edda1c2f8468444f48e9580aefaab0392556f6",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 69,
-      "hasStructuralAnalysis": false
     },
     "apps/viewer/src/voynich.ts": {
       "filePath": "apps/viewer/src/voynich.ts",
-      "contentHash": "cbd1aa17fdaf27d7ae6e1665536adeca904fb61c4e1c8b5fdb03bfef71a5b475",
-      "functions": [],
+      "contentHash": "ab2d555e787bd2e527dda3fd8f5923b3a6e963fb25e71ef4b430fd2d68c3abce",
+      "functions": [
+        {
+          "name": "iiif",
+          "params": [
+            "imageId"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "folio",
+          "params": [
+            "o"
+          ],
+          "returnType": "AObject",
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
       "classes": [],
-      "imports": [],
+      "imports": [
+        {
+          "source": "@render/core",
+          "specifiers": [
+            "AObject"
+          ]
+        }
+      ],
       "exports": [
         "voynichTitle",
         "voynichCredits",
         "voynichObjects",
-        "voynichNotes"
+        "voynichNotes",
+        "voynichReadings",
+        "voynichReadingNotes",
+        "voynichAvNotes",
+        "voynichSections"
       ],
-      "totalLines": 297,
-      "hasStructuralAnalysis": true
-    },
-    "CLAUDE.md": {
-      "filePath": "CLAUDE.md",
-      "contentHash": "22d22690f59a833f4bf44bb2ac864cc56ce8cfc8f20c4b37a9dedfe83c9773f5",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 63,
-      "hasStructuralAnalysis": true
-    },
-    "CONTEXT.md": {
-      "filePath": "CONTEXT.md",
-      "contentHash": "e88fdc7dd2f036f1cb3ec83b24a6265afde8a3343eea8cfb761253719e87004c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 180,
-      "hasStructuralAnalysis": true
-    },
-    "docs/adr/0001-objects-are-exhibit-nested.md": {
-      "filePath": "docs/adr/0001-objects-are-exhibit-nested.md",
-      "contentHash": "551e8ba22512b1f179e3f09bc8c211666019aba0973e59dffeba7bbc7588c182",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 24,
-      "hasStructuralAnalysis": true
-    },
-    "docs/adr/0002-rendering-and-framework.md": {
-      "filePath": "docs/adr/0002-rendering-and-framework.md",
-      "contentHash": "0aa6e4941e5bc3177ea80fef8f0628cfed8211504a94737834abfe96e7ac7e06",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 26,
-      "hasStructuralAnalysis": true
-    },
-    "docs/adr/0003-annotation-spine-append-only-version-dag.md": {
-      "filePath": "docs/adr/0003-annotation-spine-append-only-version-dag.md",
-      "contentHash": "4754e79431cb6675dd0d4d83d5197759a91cbfc9cf95759ac4ad5defc7ed9ed7",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 42,
-      "hasStructuralAnalysis": true
-    },
-    "docs/adr/0004-no-wasm-vips-tiling.md": {
-      "filePath": "docs/adr/0004-no-wasm-vips-tiling.md",
-      "contentHash": "3e24c7287d9c49ab91314c33f3fe610f057fd2597239f8d65700433c0c01809f",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 11,
-      "hasStructuralAnalysis": true
-    },
-    "docs/adr/0005-narrative-section-model.md": {
-      "filePath": "docs/adr/0005-narrative-section-model.md",
-      "contentHash": "1ae8afaf9eb2d11d837b09032b01f6b1d5a5c430c520f400949561ca85badcc4",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 18,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/_meta.json": {
-      "filePath": "docs/architecture/_meta.json",
-      "contentHash": "927e668801726dd3de00eec7c0b6f4ed7e3cef24186a6c997daa743de93a4836",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 46,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/cross-cutting/patterns.md": {
-      "filePath": "docs/architecture/cross-cutting/patterns.md",
-      "contentHash": "9783c35af86f856bfa5879d2a94200e8391e0136d7f959ff7c634371db82ae67",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 89,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/domain.md": {
-      "filePath": "docs/architecture/domain.md",
-      "contentHash": "43c0444ac74140aab325122a97c27cbbfb5edc8b88b2b2c87b1bf04a9b36533c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 64,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/ecosystem.md": {
-      "filePath": "docs/architecture/ecosystem.md",
-      "contentHash": "a89e87157f2db7e244397745d75c8e80e3bd45d9cea4ed567f2096856cad8b02",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 72,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/evolution.md": {
-      "filePath": "docs/architecture/evolution.md",
-      "contentHash": "d9f77d7bcfb875835394ea6510cbdbfdd878165cbea6f7ee90195c4134c6dc05",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 75,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/features.json": {
-      "filePath": "docs/architecture/features.json",
-      "contentHash": "16f84e08fa494dfe5a2b56f95b3bce8d742da4481ee01b8cf3c98b7c0531d4a0",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 41,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/infrastructure.md": {
-      "filePath": "docs/architecture/infrastructure.md",
-      "contentHash": "433902256177bb1c4fa32506f31c761e5ca0241fc95bae9eddf6c689188a77f3",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 87,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/overview.md": {
-      "filePath": "docs/architecture/overview.md",
-      "contentHash": "d8e915c859704ce5e28a1fe6d1643ab96354cb4083a925a794080fd4029a9776",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 102,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/risk-map.md": {
-      "filePath": "docs/architecture/risk-map.md",
-      "contentHash": "def949a7466d62bdf50355b1ce46e23087be0c2ded7fa7f0e6a00ea93e6d8d87",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 56,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems.md": {
-      "filePath": "docs/architecture/subsystems.md",
-      "contentHash": "9dd6a7b10d9c052824568ff6ca99ea76063a941c5c7c4d11ea64c77c6abeb6c6",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 100,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/annotation-spine/components.md": {
-      "filePath": "docs/architecture/subsystems/annotation-spine/components.md",
-      "contentHash": "bbd1d2fcfe5e3a7b6c5080bfc4b23d265ab0e27cb4e0711113f57ad1835ad060",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 92,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/annotation-spine/contracts.md": {
-      "filePath": "docs/architecture/subsystems/annotation-spine/contracts.md",
-      "contentHash": "16b698e6ad0667c5fd3b9501b9ca85e2f51cadf9612ab56925f92ea5b47aad6a",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 82,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/publish/components.md": {
-      "filePath": "docs/architecture/subsystems/publish/components.md",
-      "contentHash": "18be60c28e52b27909fb53eb10396ca11db6b3c79450a0cc0fb5a91af04508f7",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 62,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/publish/contracts.md": {
-      "filePath": "docs/architecture/subsystems/publish/contracts.md",
-      "contentHash": "48f4be48fa6fbdf00f8305d8216f265ffc591ae9abe988b5257c871e19dee637",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 73,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/rendering/components.md": {
-      "filePath": "docs/architecture/subsystems/rendering/components.md",
-      "contentHash": "1ac55d63336a008b48bc529543673ec68e15f36c437c4a5ac62c5a1ba849efb8",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 105,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/rendering/contracts.md": {
-      "filePath": "docs/architecture/subsystems/rendering/contracts.md",
-      "contentHash": "5c03e637d142f14364a1ae6d416122bbbd1c743f593c81dd0d28c427840a3569",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 57,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/storage/components.md": {
-      "filePath": "docs/architecture/subsystems/storage/components.md",
-      "contentHash": "b2698b4869ec41ab644837a595c5b53a19a2a021f79300dfcc4af5b280715f03",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 54,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/storage/contracts.md": {
-      "filePath": "docs/architecture/subsystems/storage/contracts.md",
-      "contentHash": "daf6314d6d7d5ae46cf780652b909903482f22ee6d46ffeffad92edfceea40d0",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 84,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/studio/components.md": {
-      "filePath": "docs/architecture/subsystems/studio/components.md",
-      "contentHash": "9f1338be2ef8470d806b1dc1e356e8706ebd75bf86efde26b7e543e51dd1ecb2",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 77,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/studio/contracts.md": {
-      "filePath": "docs/architecture/subsystems/studio/contracts.md",
-      "contentHash": "f0a60b4da5b83eb3aa6a4b079b83867a78f327d41e0bc5b90bb903f0a4da4011",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 83,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/viewer/components.md": {
-      "filePath": "docs/architecture/subsystems/viewer/components.md",
-      "contentHash": "abbabacf2e972a7eab5eed3bdf707d0b502576fda76f8ae9161cfbf7c1b0bbc1",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 83,
-      "hasStructuralAnalysis": true
-    },
-    "docs/architecture/subsystems/viewer/contracts.md": {
-      "filePath": "docs/architecture/subsystems/viewer/contracts.md",
-      "contentHash": "a7c4eed1f7363d0f2060b2d6fbc093c579a913220640f039101a1e959bc057da",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 87,
-      "hasStructuralAnalysis": true
-    },
-    "docs/bundle-size.json": {
-      "filePath": "docs/bundle-size.json",
-      "contentHash": "2e5930b053132bab2a9371dea33b1281dc7a917c0f5c5dfaab4be7f5dac77c00",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 23,
-      "hasStructuralAnalysis": true
-    },
-    "docs/decisions/archie-av.md": {
-      "filePath": "docs/decisions/archie-av.md",
-      "contentHash": "4c68c28b6f2cdaff513175437e448416a0aabae1c81410742904f1206766bc47",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 16,
-      "hasStructuralAnalysis": true
-    },
-    "docs/decisions/archie-linkability.md": {
-      "filePath": "docs/decisions/archie-linkability.md",
-      "contentHash": "5f75a5e3bc52f89a3c391a28e38cb8e3240fb552a7d6612697930c17e08196d1",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 15,
-      "hasStructuralAnalysis": true
-    },
-    "docs/decisions/archie-narrative.md": {
-      "filePath": "docs/decisions/archie-narrative.md",
-      "contentHash": "ffc1a9a585454ed61515a1b736d1f605ae67c77fbc64a93ec7da6d3dea96ae89",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 15,
-      "hasStructuralAnalysis": true
-    },
-    "docs/decisions/archie-persistence.md": {
-      "filePath": "docs/decisions/archie-persistence.md",
-      "contentHash": "f47b532482f9d99aedbdbb1a1682dbee1ab290bdd02733b690ba7d81f5a8d378",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 16,
-      "hasStructuralAnalysis": true
-    },
-    "docs/decisions/archie-ux.md": {
-      "filePath": "docs/decisions/archie-ux.md",
-      "contentHash": "e937727972fb88da6ccc77188b95fd81a055e7e7f3de65ed14425b83dd56de0e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 15,
-      "hasStructuralAnalysis": true
-    },
-    "docs/decisions/archie.md": {
-      "filePath": "docs/decisions/archie.md",
-      "contentHash": "4f2697bdb8f01b6b6790e772f4ac86f27e383aac301293f9e0a4442821e04b4c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 21,
-      "hasStructuralAnalysis": true
-    },
-    "docs/IMPLEMENTATION-STRATEGY.md": {
-      "filePath": "docs/IMPLEMENTATION-STRATEGY.md",
-      "contentHash": "a9a215bf0d831adc2b40ab03ed3885113d0576b92d950e8aa21275c5ff7165dd",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 306,
-      "hasStructuralAnalysis": true
-    },
-    "docs/plans/LARGE-MEDIA-MEMORY-CEILING.md": {
-      "filePath": "docs/plans/LARGE-MEDIA-MEMORY-CEILING.md",
-      "contentHash": "88d1f48daac58de883e54f6026cb94e9d0833f7f7768a4ef3770a90bd143f310",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 88,
-      "hasStructuralAnalysis": true
-    },
-    "docs/plans/PHASE-0.md": {
-      "filePath": "docs/plans/PHASE-0.md",
-      "contentHash": "2eddfd36e7b7637b387eb56b23fb43d85ab0a157f268830745320eed367b912a",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 122,
-      "hasStructuralAnalysis": true
-    },
-    "docs/plans/PHASE-1.md": {
-      "filePath": "docs/plans/PHASE-1.md",
-      "contentHash": "f92dcc00c6a1e8e9b03c4a027882bedb03288864459795d67fe4cdf524047f34",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 93,
-      "hasStructuralAnalysis": true
-    },
-    "docs/plans/PHASE-2.md": {
-      "filePath": "docs/plans/PHASE-2.md",
-      "contentHash": "e03ef57bb55cc5f4d5d653a17eeaa18c388fb7338d8e39b7ffa0400e6508256b",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 157,
-      "hasStructuralAnalysis": true
-    },
-    "docs/PRE-P3-UX-AUDIT.md": {
-      "filePath": "docs/PRE-P3-UX-AUDIT.md",
-      "contentHash": "b9643bbed6f216dba2b3f036b90ee5015c5783e1d3cee4a3f8af9cda1caa261b",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 112,
-      "hasStructuralAnalysis": true
-    },
-    "docs/README.md": {
-      "filePath": "docs/README.md",
-      "contentHash": "3a176d3eff012edd2f0d063a564999f4492b4cb7cda1a18d6a1075c50cedee17",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 51,
-      "hasStructuralAnalysis": true
-    },
-    "docs/spikes/0001-anvil-render-core-extraction.md": {
-      "filePath": "docs/spikes/0001-anvil-render-core-extraction.md",
-      "contentHash": "1fc9f5a9193b439ef20673d13c01610ccfd686bbbd1415059da89347de13057e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 86,
-      "hasStructuralAnalysis": true
-    },
-    "HANDOFF.md": {
-      "filePath": "HANDOFF.md",
-      "contentHash": "fddd10f1836ece4056b6e3b4caa3e1da8a85584e038ce0b8a14e04b26ad81901",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 1076,
-      "hasStructuralAnalysis": true
-    },
-    "package.json": {
-      "filePath": "package.json",
-      "contentHash": "64034e34549e896cd5c587b9d6a8fbeb02e9b882ab5213ea73614ed30608d906",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 17,
-      "hasStructuralAnalysis": true
-    },
-    "packages/render-core/package.json": {
-      "filePath": "packages/render-core/package.json",
-      "contentHash": "791fa33ed1048191851e7c122b19ca63aec88086f2aa59844172a01a4b29de3e",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 21,
+      "totalLines": 215,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/av/time.test.ts": {
@@ -3169,6 +2139,70 @@
       "totalLines": 41,
       "hasStructuralAnalysis": true
     },
+    "packages/render-core/src/fs/zip.streaming.test.ts": {
+      "filePath": "packages/render-core/src/fs/zip.streaming.test.ts",
+      "contentHash": "def927bbfb5cd81f9c4bcbf4f896b0c3974bf1c0b6a2a7298c1afcdc1b9ad957",
+      "functions": [
+        {
+          "name": "collector",
+          "params": [],
+          "exported": false,
+          "lineCount": 34
+        },
+        {
+          "name": "fsFromTree",
+          "params": [
+            "tree"
+          ],
+          "returnType": "Promise<ZipFilesystem>",
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "asComparable",
+          "params": [
+            "unzipped"
+          ],
+          "returnType": "Record<string, number[]>",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "enc",
+          "params": [
+            "s"
+          ],
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "fflate",
+          "specifiers": [
+            "unzipSync"
+          ]
+        },
+        {
+          "source": "./zip.js",
+          "specifiers": [
+            "ZipFilesystem"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 160,
+      "hasStructuralAnalysis": true
+    },
     "packages/render-core/src/fs/zip.test.ts": {
       "filePath": "packages/render-core/src/fs/zip.test.ts",
       "contentHash": "8810457aa446dfde3fee01dfb59e7d45c1a2dc0f9cdb4c2e8cd4462a8ce9a577",
@@ -3222,7 +2256,7 @@
     },
     "packages/render-core/src/fs/zip.ts": {
       "filePath": "packages/render-core/src/fs/zip.ts",
-      "contentHash": "de46c4a160e9ea34e1b86bcb107b1244b1c08aa15fd607df17ab0524aadeffa3",
+      "contentHash": "189f3eed163c0afe4811b553349676e741d38d01e2e03f8a35d28fb5d8d42043",
       "functions": [
         {
           "name": "join",
@@ -3275,13 +2309,14 @@
           "methods": [
             "root",
             "toZip",
+            "streamZip",
             "fromZip"
           ],
           "properties": [
             "store"
           ],
           "exported": true,
-          "lineCount": 19
+          "lineCount": 54
         }
       ],
       "imports": [
@@ -3290,7 +2325,9 @@
           "specifiers": [
             "zipSync",
             "unzipSync",
-            "strToU8"
+            "strToU8",
+            "Zip",
+            "ZipPassThrough"
           ]
         },
         {
@@ -3306,7 +2343,152 @@
       "exports": [
         "ZipFilesystem"
       ],
-      "totalLines": 115,
+      "totalLines": 157,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/geometry/downscale.test.ts": {
+      "filePath": "packages/render-core/src/geometry/downscale.test.ts",
+      "contentHash": "a9b5cb4738d167f615cf1358df258b4efcf640981a45ddc2384275abe426686b",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./downscale.js",
+          "specifiers": [
+            "fitWithin",
+            "exceedsCap"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 76,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/geometry/downscale.ts": {
+      "filePath": "packages/render-core/src/geometry/downscale.ts",
+      "contentHash": "3ab3fb6feef2a3474bc268d2e57786df058dfe2a5b27996694b336cb17ba8fab",
+      "functions": [
+        {
+          "name": "fitWithin",
+          "params": [
+            "width",
+            "height",
+            "maxDim"
+          ],
+          "returnType": "{ width: number; height: number }",
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "exceedsCap",
+          "params": [
+            "width",
+            "height",
+            "maxDim"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "MAX_MASTER_DIM",
+        "fitWithin",
+        "exceedsCap"
+      ],
+      "totalLines": 24,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/geometry/mediafragment.test.ts": {
+      "filePath": "packages/render-core/src/geometry/mediafragment.test.ts",
+      "contentHash": "0dba308cb3de3b6450eecbd9ff2b0a9c9d42bea5e31658ba56e7096cb8eac65d",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./mediafragment.js",
+          "specifiers": [
+            "parseMediaFragment",
+            "mediaFragmentValue"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 74,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/geometry/mediafragment.ts": {
+      "filePath": "packages/render-core/src/geometry/mediafragment.ts",
+      "contentHash": "e64a5ba41f1a47d9eea69b6799624b2948e4e40d7cdcbb82ff3f47ba697268dc",
+      "functions": [
+        {
+          "name": "parseXYWHUnit",
+          "params": [
+            "dim"
+          ],
+          "returnType": "{ box: Box; unit: FragmentUnit } | null",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "parseMediaFragment",
+          "params": [
+            "value"
+          ],
+          "returnType": "MediaFragment",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "mediaFragmentValue",
+          "params": [
+            "frag"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./selector.js",
+          "specifiers": [
+            "Box"
+          ]
+        },
+        {
+          "source": "../av/time.js",
+          "specifiers": [
+            "parseTimeFragment",
+            "timeFragmentValue",
+            "TimeRange"
+          ]
+        }
+      ],
+      "exports": [
+        "parseMediaFragment",
+        "mediaFragmentValue"
+      ],
+      "totalLines": 66,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/geometry/selector.test.ts": {
@@ -3436,9 +2618,41 @@
       "totalLines": 94,
       "hasStructuralAnalysis": true
     },
+    "packages/render-core/src/iiif/canvasid.test.ts": {
+      "filePath": "packages/render-core/src/iiif/canvasid.test.ts",
+      "contentHash": "aa3df2c10c26aaf1e2238c264ada03eb875cd5bbe962fc344315900d24c471e0",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./manifest.js",
+          "specifiers": [
+            "toManifest",
+            "canvasIdMap"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Exhibit"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
     "packages/render-core/src/iiif/collection.ts": {
       "filePath": "packages/render-core/src/iiif/collection.ts",
-      "contentHash": "2c435640339090e79947b32353bf1853f70583fff15788740b39cb8fffd5b48e",
+      "contentHash": "88511f33b9f3d708e96f45deb355ebd8e6a9b4c7387a51cfac22dde85c098e79",
       "functions": [
         {
           "name": "toCollection",
@@ -3448,7 +2662,7 @@
           ],
           "returnType": "IIIFCollection",
           "exported": true,
-          "lineCount": 17
+          "lineCount": 18
         }
       ],
       "classes": [],
@@ -3467,17 +2681,23 @@
             "IIIFCollection",
             "IIIFCollectionItem"
           ]
+        },
+        {
+          "source": "./rights.js",
+          "specifiers": [
+            "rightsProps"
+          ]
         }
       ],
       "exports": [
         "toCollection"
       ],
-      "totalLines": 28,
+      "totalLines": 30,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/iiif/exhibits.ts": {
       "filePath": "packages/render-core/src/iiif/exhibits.ts",
-      "contentHash": "ed25e71ef54557c75c9f15acd10eba0c9b5b7bd007da5921c5a9cd809f0c392c",
+      "contentHash": "6af3ec1964e0b5d126be9e2676691aa13536d3d9f4a3180cbeb2eae47cd75c1d",
       "functions": [
         {
           "name": "toExhibitsJson",
@@ -3486,12 +2706,21 @@
           ],
           "returnType": "ExhibitsJson",
           "exported": true,
-          "lineCount": 17
+          "lineCount": 19
         },
         {
           "name": "shouldRenderGallery",
           "params": [
             "library"
+          ],
+          "returnType": "boolean",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "shouldRenderGalleryFromJson",
+          "params": [
+            "ex"
           ],
           "returnType": "boolean",
           "exported": true,
@@ -3503,20 +2732,22 @@
         {
           "source": "../model/model.js",
           "specifiers": [
-            "Library"
+            "Library",
+            "RightsFields"
           ]
         }
       ],
       "exports": [
         "toExhibitsJson",
-        "shouldRenderGallery"
+        "shouldRenderGallery",
+        "shouldRenderGalleryFromJson"
       ],
-      "totalLines": 54,
+      "totalLines": 70,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/iiif/gallery.test.ts": {
       "filePath": "packages/render-core/src/iiif/gallery.test.ts",
-      "contentHash": "42412438277950eb4c51e8a393d36bc8ef63e6596538d3ade66d25246124387d",
+      "contentHash": "9101b8f9601e94fa19f55e6f5a7236bb3897cd480615e248b302dd21571e11bb",
       "functions": [],
       "classes": [],
       "imports": [
@@ -3538,7 +2769,8 @@
           "source": "./exhibits.js",
           "specifiers": [
             "toExhibitsJson",
-            "shouldRenderGallery"
+            "shouldRenderGallery",
+            "shouldRenderGalleryFromJson"
           ]
         },
         {
@@ -3549,7 +2781,7 @@
         }
       ],
       "exports": [],
-      "totalLines": 58,
+      "totalLines": 67,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/iiif/manifest.test.ts": {
@@ -3586,7 +2818,7 @@
     },
     "packages/render-core/src/iiif/manifest.ts": {
       "filePath": "packages/render-core/src/iiif/manifest.ts",
-      "contentHash": "c711293d3d43eecc24a68978f02bcb6ccd6c419d11436a0bba7991de717eef3c",
+      "contentHash": "c301e2101c44685987b143a466473722eb87c5dbf0762770f6fd6be172050777",
       "functions": [
         {
           "name": "unLang",
@@ -3610,11 +2842,12 @@
           "name": "toCanvas",
           "params": [
             "manifestBase",
-            "obj"
+            "obj",
+            "readingIds"
           ],
           "returnType": "IIIFCanvas",
           "exported": false,
-          "lineCount": 28
+          "lineCount": 34
         },
         {
           "name": "objIdFromCanvasId",
@@ -3635,13 +2868,22 @@
           "lineCount": 3
         },
         {
+          "name": "canvasIdMap",
+          "params": [
+            "manifest"
+          ],
+          "returnType": "Record<string, string>",
+          "exported": true,
+          "lineCount": 5
+        },
+        {
           "name": "objectsFromManifest",
           "params": [
             "manifest"
           ],
           "returnType": "AObject[]",
           "exported": true,
-          "lineCount": 16
+          "lineCount": 18
         },
         {
           "name": "toRanges",
@@ -3670,7 +2912,7 @@
           ],
           "returnType": "IIIFManifest",
           "exported": true,
-          "lineCount": 14
+          "lineCount": 15
         }
       ],
       "classes": [],
@@ -3695,20 +2937,28 @@
             "IIIFRange",
             "LangMap"
           ]
+        },
+        {
+          "source": "./rights.js",
+          "specifiers": [
+            "rightsProps",
+            "rightsFromIIIF"
+          ]
         }
       ],
       "exports": [
+        "canvasIdMap",
         "objectsFromManifest",
         "toRanges",
         "sectionsFromManifest",
         "toManifest"
       ],
-      "totalLines": 144,
+      "totalLines": 167,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/iiif/presentation.ts": {
       "filePath": "packages/render-core/src/iiif/presentation.ts",
-      "contentHash": "4bd026a5fa8692a4a87ce2faa70d710f720422531b95ffaa1e9ab4295cdb74b4",
+      "contentHash": "d0c8a71b391415a97ebbbb34af757e95a43038a70c014e581e44c2c0e92dae9c",
       "functions": [
         {
           "name": "langMap",
@@ -3726,12 +2976,12 @@
         "IIIF_PRESENTATION_CONTEXT",
         "langMap"
       ],
-      "totalLines": 88,
+      "totalLines": 118,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/iiif/resolve.test.ts": {
       "filePath": "packages/render-core/src/iiif/resolve.test.ts",
-      "contentHash": "f384b7a3796e09162b400025ed6e872a49c4c26acd042b53a0c80735fc364ff9",
+      "contentHash": "665b2ae91c29d31ebbc300f2d52569405710f371c53a34634e6dc7d0174685bb",
       "functions": [],
       "classes": [],
       "imports": [
@@ -3747,17 +2997,18 @@
           "source": "./resolve.js",
           "specifiers": [
             "resolveTileSource",
-            "isIiifImageInfo"
+            "isIiifImageInfo",
+            "thumbnailUrl"
           ]
         }
       ],
       "exports": [],
-      "totalLines": 43,
+      "totalLines": 75,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/iiif/resolve.ts": {
       "filePath": "packages/render-core/src/iiif/resolve.ts",
-      "contentHash": "b5448f03b09c810ba0d18aac0773ad6f96923c3b3c35d8b2cf7a864a9e08ef97",
+      "contentHash": "98a97af08187034e421ae9178d70967d0363fd3e705e3d149cf7dbdf95503d68",
       "functions": [
         {
           "name": "resolveTileSource",
@@ -3765,6 +3016,16 @@
             "source"
           ],
           "returnType": "TileSource",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "thumbnailUrl",
+          "params": [
+            "source",
+            "width"
+          ],
+          "returnType": "string",
           "exported": true,
           "lineCount": 10
         },
@@ -3782,9 +3043,145 @@
       "imports": [],
       "exports": [
         "resolveTileSource",
+        "thumbnailUrl",
         "isIiifImageInfo"
       ],
-      "totalLines": 35,
+      "totalLines": 59,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/iiif/rights.test.ts": {
+      "filePath": "packages/render-core/src/iiif/rights.test.ts",
+      "contentHash": "c20740719a7bba62b09ac52d5d2abeaf57743451b50f9b128e2f113580572f3f",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./rights.js",
+          "specifiers": [
+            "rightsProps",
+            "rightsFromIIIF",
+            "DEFAULT_ATTRIBUTION_LABEL"
+          ]
+        },
+        {
+          "source": "./collection.js",
+          "specifiers": [
+            "toCollection"
+          ]
+        },
+        {
+          "source": "./manifest.js",
+          "specifiers": [
+            "toManifest",
+            "objectsFromManifest"
+          ]
+        },
+        {
+          "source": "./exhibits.js",
+          "specifiers": [
+            "toExhibitsJson"
+          ]
+        },
+        {
+          "source": "../publish/site.js",
+          "specifiers": [
+            "publishLibrary",
+            "loadLibrary"
+          ]
+        },
+        {
+          "source": "../fs/memory.js",
+          "specifiers": [
+            "MemoryFilesystem"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library",
+            "Exhibit",
+            "AObject",
+            "RightsFields"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 191,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/iiif/rights.ts": {
+      "filePath": "packages/render-core/src/iiif/rights.ts",
+      "contentHash": "aa7529ba84dfeb3d6ca72be22d572201c3609924aad79db523a63716a9c33d40",
+      "functions": [
+        {
+          "name": "licenseLabel",
+          "params": [
+            "uri"
+          ],
+          "returnType": "string | undefined",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "rightsProps",
+          "params": [
+            "fields"
+          ],
+          "returnType": "IIIFRightsProps",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "unLang",
+          "params": [
+            "m"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 3
+        },
+        {
+          "name": "rightsFromIIIF",
+          "params": [
+            "res"
+          ],
+          "returnType": "RightsFields",
+          "exported": true,
+          "lineCount": 12
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "RightsFields"
+          ]
+        },
+        {
+          "source": "./presentation.js",
+          "specifiers": [
+            "langMap",
+            "IIIFRightsProps"
+          ]
+        }
+      ],
+      "exports": [
+        "DEFAULT_ATTRIBUTION_LABEL",
+        "LICENSES",
+        "licenseLabel",
+        "rightsProps",
+        "rightsFromIIIF"
+      ],
+      "totalLines": 86,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/index.test.ts": {
@@ -3814,19 +3211,19 @@
     },
     "packages/render-core/src/index.ts": {
       "filePath": "packages/render-core/src/index.ts",
-      "contentHash": "3618f8736569417bcb7c3a41228676752808cdfeb765f25bfcfd86ad12d9b1f6",
+      "contentHash": "80cff946fa36409fe3e47735440633f117f3ceddede8297d2f9c0f602558e9fe",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [
         "RENDER_CORE"
       ],
-      "totalLines": 61,
+      "totalLines": 69,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/link/link.test.ts": {
       "filePath": "packages/render-core/src/link/link.test.ts",
-      "contentHash": "6aeff4961378d568da8a9f36594a06f612effe4c83ce2feb296b2773713da6d9",
+      "contentHash": "5d349149c35aa3a658796549a6395cc7ad9bb4663af0ba4325f9f7992ad9337b",
       "functions": [],
       "classes": [],
       "imports": [
@@ -3870,12 +3267,12 @@
         }
       ],
       "exports": [],
-      "totalLines": 109,
+      "totalLines": 120,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/link/link.ts": {
       "filePath": "packages/render-core/src/link/link.ts",
-      "contentHash": "157b870e34cc1a2cd14c0286f46f5640f01085a0e8a9f0f5743e9316e840d008",
+      "contentHash": "f35bcc95a557da740e3a352ba839388c1e73e36205614c5cd1f67c4aeca6bbc9",
       "functions": [
         {
           "name": "buildLinkIndex",
@@ -3922,7 +3319,7 @@
           ],
           "returnType": "LinkTarget | null",
           "exported": true,
-          "lineCount": 24
+          "lineCount": 27
         },
         {
           "name": "rewriteArchieLinks",
@@ -3965,7 +3362,7 @@
         "parseLinkRef",
         "rewriteArchieLinks"
       ],
-      "totalLines": 149,
+      "totalLines": 152,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/migrate/migrate.test.ts": {
@@ -3998,8 +3395,17 @@
     },
     "packages/render-core/src/migrate/migrate.ts": {
       "filePath": "packages/render-core/src/migrate/migrate.ts",
-      "contentHash": "c9a4355ea3e33624a45c57e949149bae76ee65826f71033529643758b62a8f7b",
+      "contentHash": "44348f9a28df54cac8713cf54589599201c5ff5dec4ec87a1f8c9e9dd73c044c",
       "functions": [
+        {
+          "name": "foldLayersIntoTags",
+          "params": [
+            "record"
+          ],
+          "returnType": "AnnotationRecord",
+          "exported": true,
+          "lineCount": 17
+        },
         {
           "name": "versionOf",
           "params": [
@@ -4030,14 +3436,24 @@
         }
       ],
       "classes": [],
-      "imports": [],
+      "imports": [
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationRecord",
+            "W3CBody",
+            "W3CTextualBody"
+          ]
+        }
+      ],
       "exports": [
         "SCHEMA_VERSION",
+        "foldLayersIntoTags",
         "MIGRATIONS",
         "stamp",
         "migrate"
       ],
-      "totalLines": 57,
+      "totalLines": 84,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/model/layout.test.ts": {
@@ -4121,6 +3537,32 @@
       "totalLines": 25,
       "hasStructuralAnalysis": true
     },
+    "packages/render-core/src/model/library.test.ts": {
+      "filePath": "packages/render-core/src/model/library.test.ts",
+      "contentHash": "068fc8cdff2d752bfef9785e7c50a45909dab5e627210ebc4e24762f4574d76d",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./model.js",
+          "specifiers": [
+            "singleExhibitLibrary",
+            "Library"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 31,
+      "hasStructuralAnalysis": true
+    },
     "packages/render-core/src/model/model.test.ts": {
       "filePath": "packages/render-core/src/model/model.test.ts",
       "contentHash": "952447ff6458ff8d56c346a68601a7aadccbd48dca66475a3d0a86b35d7b9619",
@@ -4150,7 +3592,7 @@
     },
     "packages/render-core/src/model/model.ts": {
       "filePath": "packages/render-core/src/model/model.ts",
-      "contentHash": "46381e13f8bcf764cbb6c22d2dbd8781adf2581d20f7c4dc602fdc938c5a7f53",
+      "contentHash": "a74c2370fc1df4cc4050523d68b56efa68401d5aa4ba871f8efc8fa486eb1388",
       "functions": [
         {
           "name": "mediaTypeFromSource",
@@ -4180,6 +3622,26 @@
           "returnType": "boolean",
           "exported": true,
           "lineCount": 3
+        },
+        {
+          "name": "singleExhibitLibrary",
+          "params": [
+            "library",
+            "slug"
+          ],
+          "returnType": "Library",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "readingById",
+          "params": [
+            "exhibit",
+            "id"
+          ],
+          "returnType": "Reading | undefined",
+          "exported": true,
+          "lineCount": 3
         }
       ],
       "classes": [],
@@ -4187,14 +3649,16 @@
       "exports": [
         "mediaTypeFromSource",
         "readingFamily",
-        "isValidMode"
+        "isValidMode",
+        "singleExhibitLibrary",
+        "readingById"
       ],
-      "totalLines": 119,
+      "totalLines": 180,
       "hasStructuralAnalysis": true
     },
-    "packages/render-core/src/publish/ghpages.test.ts": {
-      "filePath": "packages/render-core/src/publish/ghpages.test.ts",
-      "contentHash": "c0ffd204bed3b849386bf3a0677134bed9eab924aff8819110f7be522e899f3e",
+    "packages/render-core/src/note/media.test.ts": {
+      "filePath": "packages/render-core/src/note/media.test.ts",
+      "contentHash": "469e1f87ba7e0eb6ea2a0242e4e1d0e8558d38a21d95ec2dbab6227c2fdd6cb8",
       "functions": [],
       "classes": [],
       "imports": [
@@ -4207,10 +3671,80 @@
           ]
         },
         {
+          "source": "./media.js",
+          "specifiers": [
+            "splitNoteMedia"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 53,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/note/media.ts": {
+      "filePath": "packages/render-core/src/note/media.ts",
+      "contentHash": "50e8b0639ebb17ef3c59cb3e2563761fcf55a991dd25839d76532f12dc02a9b0",
+      "functions": [
+        {
+          "name": "kindOf",
+          "params": [
+            "url"
+          ],
+          "returnType": "NoteMediaKind | null",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "isSafeMediaUrl",
+          "params": [
+            "url"
+          ],
+          "returnType": "boolean",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "splitNoteMedia",
+          "params": [
+            "markdown"
+          ],
+          "returnType": "NoteContent",
+          "exported": true,
+          "lineCount": 27
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "splitNoteMedia"
+      ],
+      "totalLines": 74,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/publish/ghpages.test.ts": {
+      "filePath": "packages/render-core/src/publish/ghpages.test.ts",
+      "contentHash": "d106bb0606e7e626ac36f313210c8cdb613fbd0f3f84afc1b90be8daa5a0d580",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect",
+            "vi",
+            "afterEach"
+          ]
+        },
+        {
           "source": "./ghpages.js",
           "specifiers": [
             "collectFiles",
-            "buildGitTree"
+            "buildGitTree",
+            "publishToGitHub",
+            "pagesUrlFor",
+            "GitHubPublishError"
           ]
         },
         {
@@ -4245,12 +3779,12 @@
         }
       ],
       "exports": [],
-      "totalLines": 64,
+      "totalLines": 160,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/publish/ghpages.ts": {
       "filePath": "packages/render-core/src/publish/ghpages.ts",
-      "contentHash": "3e1d3621a2eae0eda0340cd28ee778341d02325bd62e50cc5cf9aec73efa1c0b",
+      "contentHash": "2c3e1928adbff50136df0eeee1c2ea69008abcd9442cf7e1ce2cf1f57619793f",
       "functions": [
         {
           "name": "toBase64",
@@ -4281,17 +3815,81 @@
           "lineCount": 9
         },
         {
+          "name": "ghError",
+          "params": [
+            "res",
+            "what"
+          ],
+          "returnType": "Promise<GitHubPublishError>",
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "ghJson",
+          "params": [
+            "url",
+            "init",
+            "what"
+          ],
+          "returnType": "Promise<T>",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "mapWithConcurrency",
+          "params": [
+            "items",
+            "limit",
+            "fn"
+          ],
+          "returnType": "Promise<R[]>",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "pagesUrlFor",
+          "params": [
+            "owner",
+            "repo"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 4
+        },
+        {
           "name": "publishToGitHub",
           "params": [
             "files",
-            "target"
+            "target",
+            "onProgress"
           ],
-          "returnType": "Promise<{ commitUrl: string }>",
+          "returnType": "Promise<GitHubPublishResult>",
           "exported": true,
-          "lineCount": 31
+          "lineCount": 44
+        },
+        {
+          "name": "enablePages",
+          "params": [
+            "api",
+            "headers",
+            "branch"
+          ],
+          "returnType": "Promise<boolean>",
+          "exported": false,
+          "lineCount": 11
         }
       ],
-      "classes": [],
+      "classes": [
+        {
+          "name": "GitHubPublishError",
+          "methods": [
+            "constructor"
+          ],
+          "properties": [],
+          "exported": true,
+          "lineCount": 6
+        }
+      ],
       "imports": [
         {
           "source": "../fs/seam.js",
@@ -4303,9 +3901,11 @@
       "exports": [
         "collectFiles",
         "buildGitTree",
+        "GitHubPublishError",
+        "pagesUrlFor",
         "publishToGitHub"
       ],
-      "totalLines": 102,
+      "totalLines": 203,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/publish/interop.test.ts": {
@@ -4387,9 +3987,321 @@
       "totalLines": 84,
       "hasStructuralAnalysis": true
     },
+    "packages/render-core/src/publish/portable.test.ts": {
+      "filePath": "packages/render-core/src/publish/portable.test.ts",
+      "contentHash": "8294fffc0450e09ebbdabee3cdd3c98cf9ae2300cccfb9def31ae5c54a63a709",
+      "functions": [
+        {
+          "name": "buildLog",
+          "params": [],
+          "returnType": "AnnotationLog",
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "buildArchiveBytes",
+          "params": [],
+          "returnType": "Promise<Uint8Array>",
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "openArchive",
+          "params": [
+            "bytes"
+          ],
+          "exported": false,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "node:buffer",
+          "specifiers": [
+            "resolveObjectURL"
+          ]
+        },
+        {
+          "source": "../fs/zip.js",
+          "specifiers": [
+            "ZipFilesystem"
+          ]
+        },
+        {
+          "source": "./site.js",
+          "specifiers": [
+            "publishLibrary"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../iiif/resolve.js",
+          "specifiers": [
+            "thumbnailUrl"
+          ]
+        },
+        {
+          "source": "../note/media.js",
+          "specifiers": [
+            "splitNoteMedia"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog"
+          ]
+        },
+        {
+          "source": "./portable.js",
+          "specifiers": [
+            "loadPortableExhibit",
+            "loadPortableGallery"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 124,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/publish/portable.ts": {
+      "filePath": "packages/render-core/src/publish/portable.ts",
+      "contentHash": "01edfedfcf0595f5f2595cefaee7374916f49b85f980866a40a1b75ed04b84cf",
+      "functions": [
+        {
+          "name": "readJson",
+          "params": [
+            "dir",
+            "name"
+          ],
+          "returnType": "Promise<T>",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "readJsonOptional",
+          "params": [
+            "dir",
+            "name"
+          ],
+          "returnType": "Promise<T | null>",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "mintAssetBlob",
+          "params": [
+            "root",
+            "slug",
+            "name",
+            "mime",
+            "sink"
+          ],
+          "returnType": "Promise<string | null>",
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "guessMime",
+          "params": [
+            "name"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "rewriteAssetUrl",
+          "params": [
+            "root",
+            "slug",
+            "url",
+            "sink"
+          ],
+          "returnType": "Promise<string>",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "rewriteNoteBodyMedia",
+          "params": [
+            "root",
+            "slug",
+            "note",
+            "sink"
+          ],
+          "returnType": "Promise<W3CAnnotation>",
+          "exported": false,
+          "lineCount": 24
+        },
+        {
+          "name": "loadPortableExhibit",
+          "params": [
+            "fs",
+            "slug"
+          ],
+          "returnType": "Promise<PortableLoad>",
+          "exported": true,
+          "lineCount": 60
+        },
+        {
+          "name": "loadPortableGallery",
+          "params": [
+            "fs"
+          ],
+          "returnType": "Promise<ExhibitsJson>",
+          "exported": true,
+          "lineCount": 4
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../fs/seam.js",
+          "specifiers": [
+            "Filesystem",
+            "FsDirectory"
+          ]
+        },
+        {
+          "source": "../iiif/manifest.js",
+          "specifiers": [
+            "objectsFromManifest",
+            "canvasIdMap",
+            "sectionsFromManifest"
+          ]
+        },
+        {
+          "source": "../iiif/rights.js",
+          "specifiers": [
+            "rightsFromIIIF"
+          ]
+        },
+        {
+          "source": "../iiif/presentation.js",
+          "specifiers": [
+            "IIIFManifest"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "AObject",
+            "Section",
+            "Reading"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "W3CAnnotation"
+          ]
+        },
+        {
+          "source": "../iiif/exhibits.js",
+          "specifiers": [
+            "ExhibitsJson"
+          ]
+        },
+        {
+          "source": "./site.js",
+          "specifiers": [
+            "PublishedExhibitData"
+          ]
+        }
+      ],
+      "exports": [
+        "loadPortableExhibit",
+        "loadPortableGallery"
+      ],
+      "totalLines": 201,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/publish/preview.test.ts": {
+      "filePath": "packages/render-core/src/publish/preview.test.ts",
+      "contentHash": "0684d8414f46c046a14d83c6b6c346de590f34a18d561efdfa5042fe1f99078f",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "../fs/memory.js",
+          "specifiers": [
+            "MemoryFilesystem"
+          ]
+        },
+        {
+          "source": "./site.js",
+          "specifiers": [
+            "publishLibrary",
+            "readPublishedExhibit"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 59,
+      "hasStructuralAnalysis": true
+    },
     "packages/render-core/src/publish/site.test.ts": {
       "filePath": "packages/render-core/src/publish/site.test.ts",
-      "contentHash": "6675124055c43ddb74aea2acdd75271834845d4cfdf27f295f8a02d37e473cb4",
+      "contentHash": "ebb763106e7b1d074b76f4df235a691a586a18d603cf1840ad40f5358a401349",
       "functions": [
         {
           "name": "getLog",
@@ -4469,12 +4381,12 @@
         }
       ],
       "exports": [],
-      "totalLines": 187,
+      "totalLines": 253,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/publish/site.ts": {
       "filePath": "packages/render-core/src/publish/site.ts",
-      "contentHash": "cab647edc5eff86d7d4bc870c81c5270431ad856c2c04ee979d05e0643ed2174",
+      "contentHash": "2ed02db61e1c3135a3918876f8fbc0ba06d99f2a60c25260b9f22324d13c2171",
       "functions": [
         {
           "name": "rewriteHeadBodies",
@@ -4509,7 +4421,18 @@
           ],
           "returnType": "Promise<PublishResult>",
           "exported": true,
-          "lineCount": 90
+          "lineCount": 117
+        },
+        {
+          "name": "libraryToZipFs",
+          "params": [
+            "library",
+            "getLog",
+            "opts"
+          ],
+          "returnType": "Promise<{ fs: ZipFilesystem; brokenLinks: BrokenLink[] }>",
+          "exported": true,
+          "lineCount": 5
         },
         {
           "name": "libraryToZip",
@@ -4520,7 +4443,7 @@
           ],
           "returnType": "Promise<{ zip: Uint8Array; brokenLinks: BrokenLink[] }>",
           "exported": true,
-          "lineCount": 5
+          "lineCount": 4
         },
         {
           "name": "readJson",
@@ -4539,7 +4462,17 @@
           ],
           "returnType": "Promise<LoadedLibrary>",
           "exported": true,
-          "lineCount": 27
+          "lineCount": 31
+        },
+        {
+          "name": "readPublishedExhibit",
+          "params": [
+            "fs",
+            "slug"
+          ],
+          "returnType": "Promise<PublishedExhibitData>",
+          "exported": true,
+          "lineCount": 18
         }
       ],
       "classes": [],
@@ -4567,7 +4500,8 @@
           "source": "../wadm/types.js",
           "specifiers": [
             "AnnotationLog",
-            "AnnotationRecord"
+            "AnnotationRecord",
+            "W3CAnnotation"
           ]
         },
         {
@@ -4597,7 +4531,15 @@
           "source": "../iiif/manifest.js",
           "specifiers": [
             "toManifest",
-            "objectsFromManifest"
+            "objectsFromManifest",
+            "canvasIdMap",
+            "sectionsFromManifest"
+          ]
+        },
+        {
+          "source": "../iiif/rights.js",
+          "specifiers": [
+            "rightsFromIIIF"
           ]
         },
         {
@@ -4609,7 +4551,10 @@
         {
           "source": "../model/model.js",
           "specifiers": [
-            "Exhibit"
+            "Exhibit",
+            "AObject",
+            "Section",
+            "RightsFields"
           ]
         },
         {
@@ -4634,8 +4579,15 @@
           "source": "../spine/serialize.js",
           "specifiers": [
             "headsPageFromRecords",
+            "headsPagesByReading",
             "citationIdMap",
             "targetSource"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "WADM_CONTEXT"
           ]
         },
         {
@@ -4647,10 +4599,86 @@
       ],
       "exports": [
         "publishLibrary",
+        "libraryToZipFs",
         "libraryToZip",
-        "loadLibrary"
+        "loadLibrary",
+        "readPublishedExhibit"
       ],
-      "totalLines": 242,
+      "totalLines": 324,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/publish/voynich-readings.test.ts": {
+      "filePath": "packages/render-core/src/publish/voynich-readings.test.ts",
+      "contentHash": "f92d06f41b38dbe45266de8b4c914d504ccd7d1c984f3c607628bb7414212520",
+      "functions": [
+        {
+          "name": "region",
+          "params": [
+            "xywh"
+          ],
+          "returnType": "W3CSpecificResource",
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "buildLog",
+          "params": [],
+          "returnType": "AnnotationLog",
+          "exported": false,
+          "lineCount": 16
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./site.js",
+          "specifiers": [
+            "publishLibrary"
+          ]
+        },
+        {
+          "source": "../fs/memory.js",
+          "specifiers": [
+            "MemoryFilesystem"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Library",
+            "Exhibit"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationLog",
+            "W3CSpecificResource"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 108,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/query/filter.test.ts": {
@@ -4732,7 +4760,7 @@
     },
     "packages/render-core/src/query/filter.ts": {
       "filePath": "packages/render-core/src/query/filter.ts",
-      "contentHash": "bbc79ef5f856134ca035c6567b36a6a92f334f246393d8aba5ef94f126776b79",
+      "contentHash": "1c3a164791230bc7c5dc4002bc92da6578e11cdb4eb330998a4c96f82583dcd2",
       "functions": [
         {
           "name": "bodiesOf",
@@ -4760,6 +4788,43 @@
           "returnType": "string[]",
           "exported": true,
           "lineCount": 3
+        },
+        {
+          "name": "readingOf",
+          "params": [
+            "record"
+          ],
+          "returnType": "string | undefined",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "filterByReading",
+          "params": [
+            "records",
+            "readingId"
+          ],
+          "returnType": "AnnotationRecord[]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "baseNotes",
+          "params": [
+            "records"
+          ],
+          "returnType": "AnnotationRecord[]",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "allReadings",
+          "params": [
+            "records"
+          ],
+          "returnType": "string[]",
+          "exported": true,
+          "lineCount": 5
         },
         {
           "name": "filterByLayer",
@@ -4813,12 +4878,114 @@
       "exports": [
         "tagsOf",
         "layersOf",
+        "readingOf",
+        "filterByReading",
+        "baseNotes",
+        "allReadings",
         "filterByLayer",
         "filterByTag",
         "allLayers",
         "allTags"
       ],
-      "totalLines": 49,
+      "totalLines": 71,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/query/reading.test.ts": {
+      "filePath": "packages/render-core/src/query/reading.test.ts",
+      "contentHash": "7f4893882f822af0e5e13e7e8b25bcbc2949b3c32bac77db295b50126ef291cb",
+      "functions": [
+        {
+          "name": "note",
+          "params": [
+            "opts"
+          ],
+          "returnType": "AnnotationRecord",
+          "exported": false,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./filter.js",
+          "specifiers": [
+            "readingOf",
+            "filterByReading",
+            "allReadings",
+            "baseNotes",
+            "tagsOf"
+          ]
+        },
+        {
+          "source": "../migrate/migrate.js",
+          "specifiers": [
+            "foldLayersIntoTags"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "readingById"
+          ]
+        },
+        {
+          "source": "../model/model.js",
+          "specifiers": [
+            "Exhibit"
+          ]
+        },
+        {
+          "source": "../spine/log.js",
+          "specifiers": [
+            "appendNew",
+            "appendEdit"
+          ]
+        },
+        {
+          "source": "../spine/serialize.js",
+          "specifiers": [
+            "toHistory",
+            "toHeadsPage",
+            "headsPagesByReading",
+            "citationIdMap"
+          ]
+        },
+        {
+          "source": "../spine/deserialize.js",
+          "specifiers": [
+            "fromHistory"
+          ]
+        },
+        {
+          "source": "../spine/heads.js",
+          "specifiers": [
+            "projectHeads"
+          ]
+        },
+        {
+          "source": "../wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../wadm/types.js",
+          "specifiers": [
+            "AnnotationRecord",
+            "AnnotationLog"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 184,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/session/session.test.ts": {
@@ -4887,7 +5054,7 @@
     },
     "packages/render-core/src/session/session.ts": {
       "filePath": "packages/render-core/src/session/session.ts",
-      "contentHash": "da5382e3ba0bd17ae8272e18847149e7109fa8f0b4c86b12f2ac9ea87069e176",
+      "contentHash": "48adcbdf8d7de334bcb566cb24cba7adf8afdd7535d8f7edb8eb5d07715f90ba",
       "functions": [],
       "classes": [
         {
@@ -4911,7 +5078,7 @@
             "log"
           ],
           "exported": true,
-          "lineCount": 107
+          "lineCount": 110
         }
       ],
       "imports": [
@@ -4957,7 +5124,8 @@
         {
           "source": "../wadm/types.js",
           "specifiers": [
-            "ARCHIE_LAYERS"
+            "ARCHIE_LAYERS",
+            "ARCHIE_READING"
           ]
         },
         {
@@ -4989,7 +5157,7 @@
       "exports": [
         "AnnotationSession"
       ],
-      "totalLines": 139,
+      "totalLines": 148,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/spine/deserialize.test.ts": {
@@ -5066,7 +5234,7 @@
     },
     "packages/render-core/src/spine/deserialize.ts": {
       "filePath": "packages/render-core/src/spine/deserialize.ts",
-      "contentHash": "5b65773f94f1de722332f280e7cbff48193ffe527056cca394ad9d3e41adc850",
+      "contentHash": "c1ddeb0378c8bd597923507a6ceefe31d029dbecf700d369d78436c435ec6c43",
       "functions": [
         {
           "name": "asString",
@@ -5084,7 +5252,7 @@
           ],
           "returnType": "AnnotationRecord | null",
           "exported": true,
-          "lineCount": 32
+          "lineCount": 34
         },
         {
           "name": "fromHistoryPage",
@@ -5120,6 +5288,7 @@
           "specifiers": [
             "ARCHIE_LOGICAL_ID",
             "ARCHIE_LAYERS",
+            "ARCHIE_READING",
             "ARCHIE_REV",
             "ARCHIE_PARENT",
             "ARCHIE_MERGE_PARENTS",
@@ -5151,7 +5320,7 @@
         "fromHistoryPage",
         "fromHistory"
       ],
-      "totalLines": 78,
+      "totalLines": 81,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/spine/heads.test.ts": {
@@ -5385,7 +5554,7 @@
     },
     "packages/render-core/src/spine/log.ts": {
       "filePath": "packages/render-core/src/spine/log.ts",
-      "contentHash": "ff4567d70de8302597feeb1f56424f3ff269d9e77d485c72a08d39387c345986",
+      "contentHash": "3054de1118f763e1e760de741821cc21aab248ac2c6c4f1f752fce339ffe2bbb",
       "functions": [
         {
           "name": "isoOf",
@@ -5435,7 +5604,7 @@
           ],
           "returnType": "AppendResult",
           "exported": true,
-          "lineCount": 17
+          "lineCount": 18
         },
         {
           "name": "appendEdit",
@@ -5446,7 +5615,7 @@
           ],
           "returnType": "AppendResult",
           "exported": true,
-          "lineCount": 23
+          "lineCount": 25
         },
         {
           "name": "appendDelete",
@@ -5489,7 +5658,7 @@
         "appendEdit",
         "appendDelete"
       ],
-      "totalLines": 159,
+      "totalLines": 166,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/spine/merge.test.ts": {
@@ -5995,7 +6164,7 @@
     },
     "packages/render-core/src/spine/serialize.ts": {
       "filePath": "packages/render-core/src/spine/serialize.ts",
-      "contentHash": "9c405c6a298cbcce4e15709101b52fdbb2062b2eed764495e366cf08c5955abe",
+      "contentHash": "9614b460e2f078e6189ecccb9c9751b7b743501e0bfe614e7dd4394555d4fdc7",
       "functions": [
         {
           "name": "cmp",
@@ -6056,10 +6225,20 @@
           ],
           "returnType": "ArchieAnnotation",
           "exported": false,
-          "lineCount": 12
+          "lineCount": 13
         },
         {
           "name": "withLayers",
+          "params": [
+            "ann",
+            "record"
+          ],
+          "returnType": "ArchieAnnotation",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "withReading",
           "params": [
             "ann",
             "record"
@@ -6088,6 +6267,19 @@
           "returnType": "W3CAnnotationPage",
           "exported": true,
           "lineCount": 9
+        },
+        {
+          "name": "headsPagesByReading",
+          "params": [
+            "heads",
+            "ids",
+            "pageId",
+            "collectionId",
+            "opts"
+          ],
+          "returnType": "{ reading: string | undefined; page: W3CAnnotationPage }[]",
+          "exported": true,
+          "lineCount": 23
         },
         {
           "name": "toHeadsPage",
@@ -6148,6 +6340,7 @@
             "PROV_WAS_REVISION_OF",
             "ARCHIE_LOGICAL_ID",
             "ARCHIE_LAYERS",
+            "ARCHIE_READING",
             "ARCHIE_REV",
             "ARCHIE_PARENT",
             "ARCHIE_MERGE_PARENTS",
@@ -6167,11 +6360,68 @@
         "recordToAnnotation",
         "targetSource",
         "headsPageFromRecords",
+        "headsPagesByReading",
         "toHeadsPage",
         "citationIdMap",
         "toHistory"
       ],
-      "totalLines": 189,
+      "totalLines": 229,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/url/breadcrumb.test.ts": {
+      "filePath": "packages/render-core/src/url/breadcrumb.test.ts",
+      "contentHash": "5fbd212bb4aec7a1eacd5a6f9c08df406b9494e9e36d61063d3aa0435a8fbc67",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./breadcrumb.js",
+          "specifiers": [
+            "breadcrumbFor"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/url/breadcrumb.ts": {
+      "filePath": "packages/render-core/src/url/breadcrumb.ts",
+      "contentHash": "76c0fc2380f0d3a80b345c73e601e2201c412f4cb5456fda154d9c473dabd4c5",
+      "functions": [
+        {
+          "name": "breadcrumbFor",
+          "params": [
+            "route",
+            "ctx"
+          ],
+          "returnType": "Crumb[]",
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./route.js",
+          "specifiers": [
+            "routeToHash",
+            "ViewerRoute"
+          ]
+        }
+      ],
+      "exports": [
+        "breadcrumbFor"
+      ],
+      "totalLines": 39,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/url/deeplink.test.ts": {
@@ -6266,6 +6516,65 @@
         "parseNoteDeepLink"
       ],
       "totalLines": 91,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/url/route.test.ts": {
+      "filePath": "packages/render-core/src/url/route.test.ts",
+      "contentHash": "8efbbdfecbbd45a5605e50c495194ecc95abd4d79eb9d37e7633b4c6c4e35999",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "./route.js",
+          "specifiers": [
+            "parseRoute",
+            "routeToHash",
+            "ViewerRoute"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 100,
+      "hasStructuralAnalysis": true
+    },
+    "packages/render-core/src/url/route.ts": {
+      "filePath": "packages/render-core/src/url/route.ts",
+      "contentHash": "525a54281b9cd5bbb9829be1d0ad675e41ea5491ff728774b0ab2a64e8debb80",
+      "functions": [
+        {
+          "name": "parseRoute",
+          "params": [
+            "hash"
+          ],
+          "returnType": "ViewerRoute",
+          "exported": true,
+          "lineCount": 25
+        },
+        {
+          "name": "routeToHash",
+          "params": [
+            "route"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 15
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "parseRoute",
+        "routeToHash"
+      ],
+      "totalLines": 65,
       "hasStructuralAnalysis": true
     },
     "packages/render-core/src/wadm/brand.test.ts": {
@@ -6465,7 +6774,7 @@
     },
     "packages/render-core/src/wadm/types.ts": {
       "filePath": "packages/render-core/src/wadm/types.ts",
-      "contentHash": "cef7bf5ad1d16241467067918d6defe5f11ce43d58824b221502e5bbee1347c2",
+      "contentHash": "a2391d2baa1dc3bd549313edb5ad96f768125bcbfc5c110033041d32b9206091",
       "functions": [],
       "classes": [],
       "imports": [
@@ -6484,6 +6793,7 @@
         "PROV_WAS_REVISION_OF",
         "ARCHIE_LOGICAL_ID",
         "ARCHIE_LAYERS",
+        "ARCHIE_READING",
         "ARCHIE_REV",
         "ARCHIE_PARENT",
         "ARCHIE_MERGE_PARENTS",
@@ -6491,47 +6801,7 @@
         "ARCHIE_LAST_EDITOR",
         "ARCHIE_DELETED"
       ],
-      "totalLines": 167,
-      "hasStructuralAnalysis": true
-    },
-    "packages/render-core/test/fixtures/exif/manifest.json": {
-      "filePath": "packages/render-core/test/fixtures/exif/manifest.json",
-      "contentHash": "1d7a14d5274901d964fdc06ee7000ee5805fb7a73960699284039007b923a6e5",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 19,
-      "hasStructuralAnalysis": true
-    },
-    "packages/render-core/test/fixtures/exif/README.md": {
-      "filePath": "packages/render-core/test/fixtures/exif/README.md",
-      "contentHash": "bafacc559c1d8425a85e0d007e4bd1184303f0802cb985e147307a31eb1a68ac",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 26,
-      "hasStructuralAnalysis": true
-    },
-    "packages/render-core/tsconfig.json": {
-      "filePath": "packages/render-core/tsconfig.json",
-      "contentHash": "9222ec437c1c4b8378784ebceca444214102b64598ff2d611cb4f362d576990d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 9,
-      "hasStructuralAnalysis": true
-    },
-    "packages/render-mount/package.json": {
-      "filePath": "packages/render-mount/package.json",
-      "contentHash": "c289f0db6559d2047cdbfc9f19f31990f38c9897fe849667d0b051937e223652",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 25,
+      "totalLines": 175,
       "hasStructuralAnalysis": true
     },
     "packages/render-mount/src/fitbounds.test.ts": {
@@ -6708,7 +6978,7 @@
     },
     "packages/render-mount/src/index.ts": {
       "filePath": "packages/render-mount/src/index.ts",
-      "contentHash": "ee18439edf415c550a80caba91c423af2179d7b0e478053c0825b3e8a2d3aa12",
+      "contentHash": "37a22430fc1c7489210dca111f0fc72aabfa03aa6485d472384f1ce558b870fd",
       "functions": [
         {
           "name": "boundsForSelector",
@@ -6735,6 +7005,7 @@
         "MountSurface",
         "SelectionId",
         "DrawTool",
+        "MarkerStyle",
         "fitBoundsRect",
         "applyFitBounds",
         "FitOptions",
@@ -6749,7 +7020,7 @@
     },
     "packages/render-mount/src/mount.ts": {
       "filePath": "packages/render-mount/src/mount.ts",
-      "contentHash": "4303dbc36f4546acead2664f0c76592edfb6f6aa4a07056963586fd79ac4434b",
+      "contentHash": "2ef7bff8c1c26673e33ebd7a12655b5d665d1aa9eeb8a648ee1c83b8cf0e7d1d",
       "functions": [
         {
           "name": "selectorValue",
@@ -6768,7 +7039,7 @@
           ],
           "returnType": "Promise<MountSurface>",
           "exported": true,
-          "lineCount": 142
+          "lineCount": 172
         }
       ],
       "classes": [],
@@ -6804,7 +7075,8 @@
           "source": "@render/core",
           "specifiers": [
             "resolveTileSource",
-            "isDegenerateSelectorValue"
+            "isDegenerateSelectorValue",
+            "selectorBBox"
           ]
         },
         {
@@ -6833,12 +7105,12 @@
       "exports": [
         "createMount"
       ],
-      "totalLines": 191,
+      "totalLines": 221,
       "hasStructuralAnalysis": true
     },
     "packages/render-mount/src/surface.ts": {
       "filePath": "packages/render-mount/src/surface.ts",
-      "contentHash": "24b6e58fc12d5855c9ce587672ea8c10fd152bacf7dcf4cef00fab7d58e114f4",
+      "contentHash": "7d58d91c1c0c997e7246f6f1b3378f668e8450ea4a9346769d9cc808aad0ec95",
       "functions": [],
       "classes": [],
       "imports": [
@@ -6850,17 +7122,7 @@
         }
       ],
       "exports": [],
-      "totalLines": 39,
-      "hasStructuralAnalysis": true
-    },
-    "packages/render-mount/tsconfig.json": {
-      "filePath": "packages/render-mount/tsconfig.json",
-      "contentHash": "9222ec437c1c4b8378784ebceca444214102b64598ff2d611cb4f362d576990d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 9,
+      "totalLines": 59,
       "hasStructuralAnalysis": true
     },
     "packages/render-mount/vitest.config.ts": {
@@ -6880,24 +7142,14 @@
       "totalLines": 12,
       "hasStructuralAnalysis": true
     },
-    "packages/render-svelte/package.json": {
-      "filePath": "packages/render-svelte/package.json",
-      "contentHash": "3b16d0037e10910cc139f159f948765110db3c57531d273bced0b5c440e93341",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 30,
-      "hasStructuralAnalysis": true
-    },
     "packages/render-svelte/src/Canvas.svelte": {
       "filePath": "packages/render-svelte/src/Canvas.svelte",
-      "contentHash": "89aa54f4db4784fb1029933e06ae9c7974cb28b617d81e83cce438b508227012",
+      "contentHash": "ef67b0f7459402340d0b2f0b7e760f012c5cb3569ee15120640f324c4ccec427",
       "functions": [],
       "classes": [],
       "imports": [],
       "exports": [],
-      "totalLines": 108,
+      "totalLines": 130,
       "hasStructuralAnalysis": false
     },
     "packages/render-svelte/src/controller.test.ts": {
@@ -6997,7 +7249,7 @@
     },
     "packages/render-svelte/src/index.ts": {
       "filePath": "packages/render-svelte/src/index.ts",
-      "contentHash": "ec752910951ee4ed8f31027e4a4e04615717bb64efcf117258d74840f5166f35",
+      "contentHash": "a423b19a498f8159fa12a2f78ecc9f5e3742774f01f4625a5bab389eba7ea361",
       "functions": [],
       "classes": [],
       "imports": [],
@@ -7007,9 +7259,10 @@
         "CanvasController",
         "sanitizeHtml",
         "renderMarkdown",
-        "stripMarkdown"
+        "stripMarkdown",
+        "MarkerStyle"
       ],
-      "totalLines": 13,
+      "totalLines": 15,
       "hasStructuralAnalysis": true
     },
     "packages/render-svelte/src/sanitize.test.ts": {
@@ -7094,316 +7347,6 @@
       "totalLines": 36,
       "hasStructuralAnalysis": true
     },
-    "packages/render-svelte/tsconfig.json": {
-      "filePath": "packages/render-svelte/tsconfig.json",
-      "contentHash": "9222ec437c1c4b8378784ebceca444214102b64598ff2d611cb4f362d576990d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 9,
-      "hasStructuralAnalysis": true
-    },
-    "pnpm-workspace.yaml": {
-      "filePath": "pnpm-workspace.yaml",
-      "contentHash": "af261372097773546d4000a74b771c8c09c4114ca5e9dd715c95018b44e1fbe3",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 4,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_COVERAGE.md": {
-      "filePath": "Prior Art/_COVERAGE.md",
-      "contentHash": "1f01f3b89dfb463e552d6e07b4955cfce200a84656cc7841026b15c47f9ca0d5",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 164,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_DISPATCH-CONTEXT.md": {
-      "filePath": "Prior Art/_DISPATCH-CONTEXT.md",
-      "contentHash": "93f55e3c0ddda3009c05b6176774c3138dfef106179ab2c185a0262e7f87b6b6",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 93,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_FRAMING.md": {
-      "filePath": "Prior Art/_FRAMING.md",
-      "contentHash": "be9dbf8210e80562302671237f1888a9c1920c7f2c1c561f092c8d7ab4cb8f27",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 51,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_GAP-ANSWERS.md": {
-      "filePath": "Prior Art/_GAP-ANSWERS.md",
-      "contentHash": "e4bade185706914bf4565fc9ceb591643f2727dd71b1cb2ac62aa804336ae21f",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 64,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_GAPS.md": {
-      "filePath": "Prior Art/_GAPS.md",
-      "contentHash": "ea5e528347fe098c2efdc21dacb76935f6643ab433e71330e9b7dc7c8e6ac58c",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 100,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/_PAPADAM.md": {
-      "filePath": "Prior Art/_PAPADAM.md",
-      "contentHash": "745fec8c9d38d7cc85207c8210c2cc5c839e4b848813dc6d1acea7e3370da0d7",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 63,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/00-INDEX.md": {
-      "filePath": "Prior Art/00-INDEX.md",
-      "contentHash": "c81f1c1f6289e2c415967d1fe34244bdb56fd7d3e070920c16703b9778669d2b",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 137,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/01-deep-zoom-viewer.md": {
-      "filePath": "Prior Art/01-deep-zoom-viewer.md",
-      "contentHash": "3ec4b17626c42c451f2e1f7f25c3f4a890d052d2cdbb8815fdb3e1515726dd89",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 62,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/02-annotation-tools.md": {
-      "filePath": "Prior Art/02-annotation-tools.md",
-      "contentHash": "7ea96af0e298ae2fd402684a0a0667174d6356927ecd6a0ac4d550d8f8721e4d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 60,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/03-annotation-data-model.md": {
-      "filePath": "Prior Art/03-annotation-data-model.md",
-      "contentHash": "6b9189040f4722ac2d0ddf602d75d69bb3a33e11bdeb905fed7454c6b7152e22",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 76,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/04-multimedia-av.md": {
-      "filePath": "Prior Art/04-multimedia-av.md",
-      "contentHash": "363c83bd9851cb82adfa984c349f4dd4cf131d319e2e678ddf564d0ae278fe66",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 71,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/05-multi-object-collections.md": {
-      "filePath": "Prior Art/05-multi-object-collections.md",
-      "contentHash": "db24d42eb5c95bbc857b0cf30193af78f3ac2eba750e5869e1b91f090cc5eaa7",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 71,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/06-authoring-cms.md": {
-      "filePath": "Prior Art/06-authoring-cms.md",
-      "contentHash": "3dedfddf2e49c84c0b205c94ca1866cd388e261bd56a18c797ad934ef533773d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 76,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/07-published-read-ui.md": {
-      "filePath": "Prior Art/07-published-read-ui.md",
-      "contentHash": "40988e40224389780fd3c023417ea4fa8b91e0b92eea394d6cec9ad0227d8130",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 68,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/08-linkable-navigable.md": {
-      "filePath": "Prior Art/08-linkable-navigable.md",
-      "contentHash": "f8b03771bacc2321025841dfee8e881850b605ca7bf5ef10d7c9ea81b1592c3a",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 68,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/09-web-publishable-serverless.md": {
-      "filePath": "Prior Art/09-web-publishable-serverless.md",
-      "contentHash": "48013d646248e361730ac8cd66cfff43c3e5b315fd226989fadcb908e6ee285d",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 67,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/10-state-mutation-patterns.md": {
-      "filePath": "Prior Art/10-state-mutation-patterns.md",
-      "contentHash": "51f0cc4a8f6e809d43e8a5ede72ba8e9a946040d7eebf0ce290b144dab5f6781",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 83,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/11-20-NEW-AXES.md": {
-      "filePath": "Prior Art/11-20-NEW-AXES.md",
-      "contentHash": "115612c74a2ee8956762cc3b34698e4f5336c24b37b9a0a6ebfaa68d26b16a33",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 71,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/11-search-discovery.md": {
-      "filePath": "Prior Art/11-search-discovery.md",
-      "contentHash": "85aebfb9a6293e3ebedce57c7f278c3bd4ef45521c30f08d96bde792c1a09e86",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 65,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/12-accessibility.md": {
-      "filePath": "Prior Art/12-accessibility.md",
-      "contentHash": "2f91aa2e2e7256ac9ef10713f2e00c83bf89994171eefcbc4088e445c4126404",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 70,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/13-i18n-localization.md": {
-      "filePath": "Prior Art/13-i18n-localization.md",
-      "contentHash": "89d6413b6840736aed7037206bf3e2365b13bd9050db5465df05d5224e08ab11",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 62,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/14-import-interop.md": {
-      "filePath": "Prior Art/14-import-interop.md",
-      "contentHash": "3cb423ba013d6e1f7bd0b4fe6dc8d87986bc57cd4218bb18c55fc4acc1c6dbdf",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 72,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/15-provenance-citation.md": {
-      "filePath": "Prior Art/15-provenance-citation.md",
-      "contentHash": "e532b99515a1f5fd00a3d2abf19d1fd13dba823aa4789083dbbe3cc7b5a3e5a1",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 74,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/16-performance-ux.md": {
-      "filePath": "Prior Art/16-performance-ux.md",
-      "contentHash": "00b65e7cebe439dd35573c4e943561495a2f4110b1276f5943de03e6a0031c46",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 73,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/17-tile-generation.md": {
-      "filePath": "Prior Art/17-tile-generation.md",
-      "contentHash": "6b23ccc278564b509413426010fa337c60dd61c75ea4de58ed3fd6b270fe9866",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 69,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/18-embedding-ecosystem.md": {
-      "filePath": "Prior Art/18-embedding-ecosystem.md",
-      "contentHash": "00c9ddd2fbdef355e4e182fb467f530e6db37438204e764c26ad72a24ff85e83",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 59,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/19-ai-authoring.md": {
-      "filePath": "Prior Art/19-ai-authoring.md",
-      "contentHash": "9e23d7d3316e9bbcda10a84b457312d78e3ea9faeee19ddc9ca2d17e1ea56767",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 70,
-      "hasStructuralAnalysis": true
-    },
-    "Prior Art/20-security-sanitization.md": {
-      "filePath": "Prior Art/20-security-sanitization.md",
-      "contentHash": "dce3a2e4a69e9fa9ef0b96cb104303824c765453c0382608bf3876829d35c407",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 73,
-      "hasStructuralAnalysis": true
-    },
-    "README.md": {
-      "filePath": "README.md",
-      "contentHash": "48a43b692968586c5b31c691a9576d544d59b928e01fed7507ad32194eae4809",
-      "functions": [],
-      "classes": [],
-      "imports": [],
-      "exports": [],
-      "totalLines": 152,
-      "hasStructuralAnalysis": true
-    },
     "scripts/bundle-size.mjs": {
       "filePath": "scripts/bundle-size.mjs",
       "contentHash": "2ed38b2298fc21b94c8541492d4b86b7dc711125d62ccde8d8d4485a8434439f",
@@ -7462,6 +7405,102 @@
       "totalLines": 33,
       "hasStructuralAnalysis": true
     },
+    "scripts/capture-screenshots.mjs": {
+      "filePath": "scripts/capture-screenshots.mjs",
+      "contentHash": "b0dc75f8fb61e2b00dd6ef66cdfe17b787f9f4fa5ba6280f3e1e27fbcf6fed50",
+      "functions": [
+        {
+          "name": "record",
+          "params": [
+            "name",
+            "viewport",
+            "status",
+            "detail"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "settle",
+          "params": [
+            "page"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "shoot",
+          "params": [
+            "page",
+            "name",
+            "viewport"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "captureViewer",
+          "params": [
+            "browser",
+            "viewport"
+          ],
+          "exported": false,
+          "lineCount": 20
+        },
+        {
+          "name": "captureStudio",
+          "params": [
+            "browser",
+            "viewport"
+          ],
+          "exported": false,
+          "lineCount": 57
+        },
+        {
+          "name": "launch",
+          "params": [],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": false,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "playwright",
+          "specifiers": [
+            "chromium"
+          ]
+        },
+        {
+          "source": "node:fs/promises",
+          "specifiers": [
+            "mkdir",
+            "writeFile"
+          ]
+        },
+        {
+          "source": "node:url",
+          "specifiers": [
+            "fileURLToPath"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "path"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 171,
+      "hasStructuralAnalysis": true
+    },
     "scripts/import-bidar.mjs": {
       "filePath": "scripts/import-bidar.mjs",
       "contentHash": "fafe91205eda7da5d154d83c4e644c8df8960e74a9f1622249e7dfc1770cd70c",
@@ -7512,7 +7551,7 @@
     },
     "scripts/import-voynich.mjs": {
       "filePath": "scripts/import-voynich.mjs",
-      "contentHash": "bc7b1d4731274db61e8bd3dd53a6a222d666e5364fdac8554f1f66df0240b4f8",
+      "contentHash": "6d566bc35726e2969c53df201963491fa28e700d2b2cfe8ac16398f8a9fe95bc",
       "functions": [
         {
           "name": "pngDims",
@@ -7574,17 +7613,477 @@
         }
       ],
       "exports": [],
-      "totalLines": 98,
+      "totalLines": 105,
       "hasStructuralAnalysis": true
     },
-    "tsconfig.base.json": {
-      "filePath": "tsconfig.base.json",
-      "contentHash": "d948e3d4fdb98516d45475197dee8652a8559db713fa2b9e06d3e9bf3adf73c3",
+    "spikes/portable-viewer-seam/approach-p/portable.test.ts": {
+      "filePath": "spikes/portable-viewer-seam/approach-p/portable.test.ts",
+      "contentHash": "444311366d97ee0d5b4da51d9275416241cfe16ff379d192e5041650f7cbcb94",
       "functions": [],
       "classes": [],
-      "imports": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "node:buffer",
+          "specifiers": [
+            "resolveObjectURL"
+          ]
+        },
+        {
+          "source": "../fixture.js",
+          "specifiers": [
+            "buildArchiveBytes",
+            "openArchive",
+            "BASE",
+            "SLUG",
+            "PNG_BYTES",
+            "ASSET_NAME"
+          ]
+        },
+        {
+          "source": "./portable.js",
+          "specifiers": [
+            "loadPortableExhibit"
+          ]
+        },
+        {
+          "source": "../../../packages/render-core/src/fs/zip.js",
+          "specifiers": [
+            "ZipFilesystem"
+          ]
+        }
+      ],
       "exports": [],
-      "totalLines": 20,
+      "totalLines": 120,
+      "hasStructuralAnalysis": true
+    },
+    "spikes/portable-viewer-seam/approach-p/portable.ts": {
+      "filePath": "spikes/portable-viewer-seam/approach-p/portable.ts",
+      "contentHash": "af6b30fc3ee0742d2c3ea85159d7cf475968da2d4ace2cfbd7ae94be30013fd8",
+      "functions": [
+        {
+          "name": "readJson",
+          "params": [
+            "dir",
+            "name"
+          ],
+          "returnType": "Promise<T>",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "readJsonOptional",
+          "params": [
+            "dir",
+            "name"
+          ],
+          "returnType": "Promise<T | null>",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "mintAssetBlob",
+          "params": [
+            "root",
+            "slug",
+            "name",
+            "mime",
+            "sink"
+          ],
+          "returnType": "Promise<string | null>",
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "guessMime",
+          "params": [
+            "name"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "rewriteAssetUrl",
+          "params": [
+            "root",
+            "slug",
+            "url",
+            "sink"
+          ],
+          "returnType": "Promise<string>",
+          "exported": false,
+          "lineCount": 12
+        },
+        {
+          "name": "rewriteNoteBodyMedia",
+          "params": [
+            "root",
+            "slug",
+            "note",
+            "sink"
+          ],
+          "returnType": "Promise<W3CAnnotation>",
+          "exported": false,
+          "lineCount": 30
+        },
+        {
+          "name": "loadPortableExhibit",
+          "params": [
+            "fs",
+            "slug"
+          ],
+          "returnType": "Promise<PortableLoad>",
+          "exported": true,
+          "lineCount": 64
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../../../packages/render-core/src/fs/seam.js",
+          "specifiers": [
+            "Filesystem",
+            "FsDirectory"
+          ]
+        },
+        {
+          "source": "../../../packages/render-core/src/index.js",
+          "specifiers": [
+            "objectsFromManifest",
+            "canvasIdMap",
+            "sectionsFromManifest",
+            "rightsFromIIIF"
+          ]
+        },
+        {
+          "source": "../../../packages/render-core/src/index.js",
+          "specifiers": [
+            "AObject",
+            "IIIFManifest",
+            "Reading",
+            "Section",
+            "W3CAnnotation"
+          ]
+        }
+      ],
+      "exports": [
+        "loadPortableExhibit"
+      ],
+      "totalLines": 236,
+      "hasStructuralAnalysis": true
+    },
+    "spikes/portable-viewer-seam/approach-s/sw-bootstrap.ts": {
+      "filePath": "spikes/portable-viewer-seam/approach-s/sw-bootstrap.ts",
+      "contentHash": "857d18263f3a0b4b9e884daefd59bccc430ccf0b5be2e6cee1ac962c465ac44a",
+      "functions": [
+        {
+          "name": "bootstrapPage",
+          "params": [
+            "libraryId",
+            "zipBytes"
+          ],
+          "returnType": "Promise<void>",
+          "exported": true,
+          "lineCount": 13
+        },
+        {
+          "name": "installServiceWorker",
+          "params": [
+            "registry"
+          ],
+          "returnType": "void",
+          "exported": true,
+          "lineCount": 8
+        }
+      ],
+      "classes": [
+        {
+          "name": "MutableRegistry",
+          "methods": [
+            "get",
+            "register",
+            "unregister"
+          ],
+          "properties": [
+            "map"
+          ],
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "imports": [
+        {
+          "source": "./sw-handler.js",
+          "specifiers": [
+            "LibraryRegistry"
+          ]
+        },
+        {
+          "source": "../../../packages/render-core/src/fs/zip.js",
+          "specifiers": [
+            "ZipFilesystem"
+          ]
+        }
+      ],
+      "exports": [
+        "MutableRegistry",
+        "bootstrapPage",
+        "installServiceWorker"
+      ],
+      "totalLines": 72,
+      "hasStructuralAnalysis": true
+    },
+    "spikes/portable-viewer-seam/approach-s/sw-handler.test.ts": {
+      "filePath": "spikes/portable-viewer-seam/approach-s/sw-handler.test.ts",
+      "contentHash": "f41f13d66f612385643703b2084243ef1af9f4ce80aa6aa09d41faa135688a8b",
+      "functions": [
+        {
+          "name": "registryWithLibrary",
+          "params": [
+            "libId"
+          ],
+          "returnType": "Promise<MutableRegistry>",
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "req",
+          "params": [
+            "path"
+          ],
+          "returnType": "Request",
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest",
+          "specifiers": [
+            "describe",
+            "it",
+            "expect"
+          ]
+        },
+        {
+          "source": "../fixture.js",
+          "specifiers": [
+            "buildArchiveBytes",
+            "buildArchiveBytesAlt",
+            "BASE",
+            "SLUG",
+            "PNG_BYTES"
+          ]
+        },
+        {
+          "source": "./sw-handler.js",
+          "specifiers": [
+            "handleArchiveFetch",
+            "parsePublishedUrl",
+            "cacheKeyFor",
+            "LibraryRegistry"
+          ]
+        },
+        {
+          "source": "./sw-bootstrap.js",
+          "specifiers": [
+            "MutableRegistry"
+          ]
+        },
+        {
+          "source": "../../../packages/render-core/src/fs/seam.js",
+          "specifiers": [
+            "Filesystem"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 124,
+      "hasStructuralAnalysis": true
+    },
+    "spikes/portable-viewer-seam/approach-s/sw-handler.ts": {
+      "filePath": "spikes/portable-viewer-seam/approach-s/sw-handler.ts",
+      "contentHash": "3a95ee2f8a99ea943e3008d6270489a7ea68b1c7e2cbaad13553d33a360883ed",
+      "functions": [
+        {
+          "name": "contentTypeFor",
+          "params": [
+            "path"
+          ],
+          "returnType": "string",
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "parsePublishedUrl",
+          "params": [
+            "url",
+            "baseUrl"
+          ],
+          "returnType": "{ libraryId: string; relPath: string } | undefined",
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "cacheKeyFor",
+          "params": [
+            "libraryId",
+            "relPath"
+          ],
+          "returnType": "string",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "readFileBytes",
+          "params": [
+            "fs",
+            "relPath"
+          ],
+          "returnType": "Promise<ArrayBuffer>",
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "handleArchiveFetch",
+          "params": [
+            "req",
+            "opts"
+          ],
+          "returnType": "Promise<Response | undefined>",
+          "exported": true,
+          "lineCount": 27
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../../../packages/render-core/src/fs/seam.js",
+          "specifiers": [
+            "Filesystem",
+            "FsDirectory"
+          ]
+        }
+      ],
+      "exports": [
+        "parsePublishedUrl",
+        "cacheKeyFor",
+        "handleArchiveFetch"
+      ],
+      "totalLines": 119,
+      "hasStructuralAnalysis": true
+    },
+    "spikes/portable-viewer-seam/fixture.ts": {
+      "filePath": "spikes/portable-viewer-seam/fixture.ts",
+      "contentHash": "b35db6af763f070feb2f81aa701376af6fb4640b13b9e631653af7c7339d79e2",
+      "functions": [
+        {
+          "name": "buildLog",
+          "params": [],
+          "returnType": "AnnotationLog",
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "buildArchiveBytes",
+          "params": [],
+          "returnType": "Promise<Uint8Array>",
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "openArchive",
+          "params": [
+            "bytes"
+          ],
+          "returnType": "ZipFilesystem",
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "buildArchiveBytesAlt",
+          "params": [],
+          "returnType": "Promise<Uint8Array>",
+          "exported": true,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "../../packages/render-core/src/fs/zip.js",
+          "specifiers": [
+            "ZipFilesystem"
+          ]
+        },
+        {
+          "source": "../../packages/render-core/src/publish/site.js",
+          "specifiers": [
+            "publishLibrary"
+          ]
+        },
+        {
+          "source": "../../packages/render-core/src/spine/log.js",
+          "specifiers": [
+            "appendNew"
+          ]
+        },
+        {
+          "source": "../../packages/render-core/src/wadm/brand.js",
+          "specifiers": [
+            "asClientId"
+          ]
+        },
+        {
+          "source": "../../packages/render-core/src/model/model.js",
+          "specifiers": [
+            "Library"
+          ]
+        },
+        {
+          "source": "../../packages/render-core/src/wadm/types.js",
+          "specifiers": [
+            "AnnotationLog"
+          ]
+        }
+      ],
+      "exports": [
+        "BASE",
+        "SLUG",
+        "PNG_BYTES",
+        "ASSET_NAME",
+        "library",
+        "buildArchiveBytes",
+        "openArchive",
+        "buildArchiveBytesAlt"
+      ],
+      "totalLines": 108,
+      "hasStructuralAnalysis": true
+    },
+    "spikes/portable-viewer-seam/vitest.config.ts": {
+      "filePath": "spikes/portable-viewer-seam/vitest.config.ts",
+      "contentHash": "1f45b4a8eeb877d780cd0d3a307badc46bb60a042505f2011c836d02590cb0d8",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vitest/config",
+          "specifiers": [
+            "defineConfig"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 12,
       "hasStructuralAnalysis": true
     }
   }
