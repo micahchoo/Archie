@@ -3,9 +3,12 @@
 A walkthrough for putting your media online as an annotated, self-contained
 website. No server, no database, no account.
 
-We follow one arc, start to finish, using the three exhibits Archie ships with —
-the **Voynich manuscript** (a set of deep-zoom images), the **Bidar map**, and a
-**field recording** (audio). Open them in the Studio as you read.
+We follow one arc, start to finish, using **The Archie Library** — the demo Archie
+ships with. It reframes the Voynich manuscript (Beinecke MS 408) as a contested
+object: the same undeciphered marks read three ways across three exhibits — **The
+Rosettes** (a single deep-zoom folio), **The Whole Manuscript** (a grid, with a
+sounded page), and **Reading the Unreadable** (a narrative). Open them in the
+Studio as you read.
 
 | # | Page | You'll learn to… |
 |---|---|---|

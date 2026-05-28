@@ -13,7 +13,7 @@ to move the camera from one object to the next across the spine. A handy
 shortcut: **add a section from a note** seeds a section's framing and prose from a
 note you already wrote.
 
-Three layers, kept distinct, give an exhibit its depth:
+Three distinct tools, kept apart, give an exhibit its depth:
 
 - **Sections** — the ordered spine (how the visitor *moves*).
 - **Readings** — competing interpretations of an object (which one they *see*).
