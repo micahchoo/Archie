@@ -1,0 +1,35 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/annotations/history/00000000126N5GZCQKVDVJBJNB.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/00000000126N5GZCQKVDVJBJNB/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o8",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1400,1600,360,150"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.034Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the grille reading, the label is meaningless filler; the statistical difference Currier found between this section and the herbal is just a second grille table, not a second language.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "00000000126N5GZCQKVDVJBJNB",
+      "archie:rev": "0000000012N3KGCMCVJR860XSW",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "hoax"
+    }
+  ]
+}

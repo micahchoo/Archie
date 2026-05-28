@@ -38,7 +38,7 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
     const [x, y, w, h] = n.region;
     ({ log } = appendNew(log, {
       target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `xywh=pixel:${x},${y},${w},${h}` } },
-      body: addBody(n.comment), lastEditor: author, now: ++now,
+      body: addBody(n.comment), motivation: "commenting", lastEditor: author, now: ++now,
     }));
   }
   // §D — the per-region reading/tag notes (cipher/hoax/abjad on the same xywh), filtered by object id.
@@ -46,7 +46,7 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
     if (!keep(n.objectId)) continue;
     ({ log } = appendNew(log, {
       target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `xywh=pixel:${n.xywh}` } },
-      body: addBody(n.comment, n.tags), lastEditor: author, now: ++now, ...(n.reading ? { reading: n.reading } : {}),
+      body: addBody(n.comment, n.tags), motivation: "commenting", lastEditor: author, now: ++now, ...(n.reading ? { reading: n.reading } : {}),
     }));
   }
   // §E — AV-1…4 reading-bearing notes on the o12 sound canvas, appended AFTER the §D reading notes.
@@ -55,7 +55,7 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
     for (const a of voynichAvNotes) {
       ({ log } = appendNew(log, {
         target: { type: "SpecificResource", source: canvasIdFor(slug, "o12"), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `t=${a.t}` } },
-        body: addBody(a.comment, a.tags), lastEditor: author, now: ++now, ...(a.reading ? { reading: a.reading } : {}),
+        body: addBody(a.comment, a.tags), motivation: "commenting", lastEditor: author, now: ++now, ...(a.reading ? { reading: a.reading } : {}),
       }));
     }
   }

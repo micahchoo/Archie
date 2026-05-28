@@ -1,6 +1,6 @@
 {
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/readings/cipher.json",
+  "id": "https://archie.demo/voynich-reading/annotations/readings/cipher.json",
   "type": "AnnotationCollection",
   "label": {
     "en": [

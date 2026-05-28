@@ -1,14 +1,14 @@
 {
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o5/annotations-hoax.json",
+  "id": "https://archie.demo/voynich/canvas/o5/annotations-hoax.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000SEXAJ53MZTZ318DXC/v1",
+      "id": "https://archie.demo/voynich/annotations/000000000ST7A7XMMK65T78PEY/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o5",
+        "source": "https://archie.demo/voynich/canvas/o5",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -23,9 +23,10 @@
           "purpose": "commenting"
         }
       ],
+      "motivation": "commenting",
       "archie:reading": "hoax",
-      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000SEXAJ53MZTZ318DXC.json"
+      "archie:hasHistory": "https://archie.demo/voynich/annotations/history/000000000ST7A7XMMK65T78PEY.json"
     }
   ],
-  "partOf": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/readings/hoax.json"
+  "partOf": "https://archie.demo/voynich/annotations/readings/hoax.json"
 }

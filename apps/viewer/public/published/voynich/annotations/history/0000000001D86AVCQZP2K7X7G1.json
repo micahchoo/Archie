@@ -1,0 +1,34 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/0000000001D86AVCQZP2K7X7G1.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/0000000001D86AVCQZP2K7X7G1/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:260,240,2400,3300"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.001Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The opening page: a single herbal plant rising the height of the leaf, with the manuscript's first lines of script flowing around it. A faded, erased inscription sits in the top margin — the earliest trace of an owner's hand.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "0000000001D86AVCQZP2K7X7G1",
+      "archie:rev": "0000000001RM0V4GZA4K2ENB3F",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "@context": "http://iiif.io/api/presentation/3/context.json",
-  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/manifest.json",
+  "id": "https://archie.demo/voynich-reading/manifest.json",
   "type": "Manifest",
   "label": {
     "none": [
@@ -26,7 +26,7 @@
   },
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1",
+      "id": "https://archie.demo/voynich-reading/canvas/o1",
       "type": "Canvas",
       "label": {
         "none": [
@@ -50,11 +50,11 @@
       "height": 3766,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o1/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o1/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -70,7 +70,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1"
+              "target": "https://archie.demo/voynich-reading/canvas/o1"
             }
           ]
         }
@@ -83,25 +83,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o1/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o1/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o1/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o1/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o2",
+      "id": "https://archie.demo/voynich-reading/canvas/o2",
       "type": "Canvas",
       "label": {
         "none": [
@@ -125,11 +125,11 @@
       "height": 3781,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o2/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o2/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o2/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o2/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -145,7 +145,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o2"
+              "target": "https://archie.demo/voynich-reading/canvas/o2"
             }
           ]
         }
@@ -158,25 +158,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o2/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o2/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o2/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o2/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o2/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o2/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o2/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o2/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o3",
+      "id": "https://archie.demo/voynich-reading/canvas/o3",
       "type": "Canvas",
       "label": {
         "none": [
@@ -200,11 +200,11 @@
       "height": 3769,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o3/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o3/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o3/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o3/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -220,7 +220,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o3"
+              "target": "https://archie.demo/voynich-reading/canvas/o3"
             }
           ]
         }
@@ -233,25 +233,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o3/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o3/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o3/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o3/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o3/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o3/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o3/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o3/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o4",
+      "id": "https://archie.demo/voynich-reading/canvas/o4",
       "type": "Canvas",
       "label": {
         "none": [
@@ -275,11 +275,11 @@
       "height": 3769,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o4/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o4/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o4/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o4/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -295,7 +295,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o4"
+              "target": "https://archie.demo/voynich-reading/canvas/o4"
             }
           ]
         }
@@ -308,25 +308,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o4/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o4/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o4/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o4/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o4/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o4/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o4/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o4/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5",
+      "id": "https://archie.demo/voynich-reading/canvas/o5",
       "type": "Canvas",
       "label": {
         "none": [
@@ -350,11 +350,11 @@
       "height": 3738,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o5/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o5/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -370,7 +370,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5"
+              "target": "https://archie.demo/voynich-reading/canvas/o5"
             }
           ]
         }
@@ -383,25 +383,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o5/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o5/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o5/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o5/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o6",
+      "id": "https://archie.demo/voynich-reading/canvas/o6",
       "type": "Canvas",
       "label": {
         "none": [
@@ -425,11 +425,11 @@
       "height": 3828,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o6/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o6/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o6/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o6/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -445,7 +445,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o6"
+              "target": "https://archie.demo/voynich-reading/canvas/o6"
             }
           ]
         }
@@ -458,25 +458,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o6/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o6/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o6/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o6/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o6/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o6/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o6/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o6/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o7",
+      "id": "https://archie.demo/voynich-reading/canvas/o7",
       "type": "Canvas",
       "label": {
         "none": [
@@ -500,11 +500,11 @@
       "height": 3759,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o7/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o7/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o7/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o7/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -520,7 +520,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o7"
+              "target": "https://archie.demo/voynich-reading/canvas/o7"
             }
           ]
         }
@@ -533,25 +533,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o7/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o7/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o7/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o7/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o7/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o7/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o7/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o7/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8",
+      "id": "https://archie.demo/voynich-reading/canvas/o8",
       "type": "Canvas",
       "label": {
         "none": [
@@ -575,11 +575,11 @@
       "height": 3761,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o8/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o8/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -595,7 +595,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8"
+              "target": "https://archie.demo/voynich-reading/canvas/o8"
             }
           ]
         }
@@ -608,25 +608,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o8/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o8/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o8/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o8/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9",
+      "id": "https://archie.demo/voynich-reading/canvas/o9",
       "type": "Canvas",
       "label": {
         "none": [
@@ -650,11 +650,11 @@
       "height": 7268,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o9/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o9/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -670,7 +670,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9"
+              "target": "https://archie.demo/voynich-reading/canvas/o9"
             }
           ]
         }
@@ -683,25 +683,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o9/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o9/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o9/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o9/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10",
+      "id": "https://archie.demo/voynich-reading/canvas/o10",
       "type": "Canvas",
       "label": {
         "none": [
@@ -725,11 +725,11 @@
       "height": 3765,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o10/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o10/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -745,7 +745,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10"
+              "target": "https://archie.demo/voynich-reading/canvas/o10"
             }
           ]
         }
@@ -758,25 +758,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o10/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o10/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o10/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o10/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11",
+      "id": "https://archie.demo/voynich-reading/canvas/o11",
       "type": "Canvas",
       "label": {
         "none": [
@@ -800,11 +800,11 @@
       "height": 3697,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o11/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o11/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -820,7 +820,7 @@
                   }
                 ]
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11"
+              "target": "https://archie.demo/voynich-reading/canvas/o11"
             }
           ]
         }
@@ -833,25 +833,25 @@
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o11/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o11/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o11/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o11/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12",
+      "id": "https://archie.demo/voynich-reading/canvas/o12",
       "type": "Canvas",
       "label": {
         "none": [
@@ -874,11 +874,11 @@
       "duration": 296,
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12/page/1",
+          "id": "https://archie.demo/voynich-reading/canvas/o12/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12/painting/1",
+              "id": "https://archie.demo/voynich-reading/canvas/o12/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -887,26 +887,26 @@
                 "format": "audio/mpeg",
                 "duration": 296
               },
-              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12"
+              "target": "https://archie.demo/voynich-reading/canvas/o12"
             }
           ]
         }
       ],
       "annotations": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12/annotations.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o12/annotations.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12/annotations-cipher.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o12/annotations-cipher.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12/annotations-hoax.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o12/annotations-hoax.json",
           "type": "AnnotationPage"
         },
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12/annotations-abjad.json",
+          "id": "https://archie.demo/voynich-reading/canvas/o12/annotations-abjad.json",
           "type": "AnnotationPage"
         }
       ]
@@ -914,7 +914,7 @@
   ],
   "structures": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/range/s1",
+      "id": "https://archie.demo/voynich-reading/range/s1",
       "type": "Range",
       "label": {
         "none": [
@@ -928,17 +928,17 @@
       },
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1",
+          "id": "https://archie.demo/voynich-reading/canvas/o1",
           "type": "Canvas"
         }
       ],
       "start": {
-        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1#xywh=pixel:200,200,2600,3400",
+        "id": "https://archie.demo/voynich-reading/canvas/o1#xywh=pixel:200,200,2600,3400",
         "type": "Canvas"
       }
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/range/s2",
+      "id": "https://archie.demo/voynich-reading/range/s2",
       "type": "Range",
       "label": {
         "none": [
@@ -952,17 +952,17 @@
       },
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5",
+          "id": "https://archie.demo/voynich-reading/canvas/o5",
           "type": "Canvas"
         }
       ],
       "start": {
-        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5#xywh=pixel:400,300,4000,3100",
+        "id": "https://archie.demo/voynich-reading/canvas/o5#xywh=pixel:400,300,4000,3100",
         "type": "Canvas"
       }
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/range/s3",
+      "id": "https://archie.demo/voynich-reading/range/s3",
       "type": "Range",
       "label": {
         "none": [
@@ -976,17 +976,17 @@
       },
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8",
+          "id": "https://archie.demo/voynich-reading/canvas/o8",
           "type": "Canvas"
         }
       ],
       "start": {
-        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8#xywh=pixel:200,400,2400,3000",
+        "id": "https://archie.demo/voynich-reading/canvas/o8#xywh=pixel:200,400,2400,3000",
         "type": "Canvas"
       }
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/range/s4",
+      "id": "https://archie.demo/voynich-reading/range/s4",
       "type": "Range",
       "label": {
         "none": [
@@ -1000,17 +1000,17 @@
       },
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9",
+          "id": "https://archie.demo/voynich-reading/canvas/o9",
           "type": "Canvas"
         }
       ],
       "start": {
-        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9#xywh=pixel:2600,2400,2800,2600",
+        "id": "https://archie.demo/voynich-reading/canvas/o9#xywh=pixel:2600,2400,2800,2600",
         "type": "Canvas"
       }
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/range/s5",
+      "id": "https://archie.demo/voynich-reading/range/s5",
       "type": "Range",
       "label": {
         "none": [
@@ -1024,17 +1024,17 @@
       },
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10",
+          "id": "https://archie.demo/voynich-reading/canvas/o10",
           "type": "Canvas"
         }
       ],
       "start": {
-        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10#xywh=pixel:200,400,2300,3000",
+        "id": "https://archie.demo/voynich-reading/canvas/o10#xywh=pixel:200,400,2300,3000",
         "type": "Canvas"
       }
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/range/s6",
+      "id": "https://archie.demo/voynich-reading/range/s6",
       "type": "Range",
       "label": {
         "none": [
@@ -1048,12 +1048,12 @@
       },
       "items": [
         {
-          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11",
+          "id": "https://archie.demo/voynich-reading/canvas/o11",
           "type": "Canvas"
         }
       ],
       "start": {
-        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11#xywh=pixel:200,160,2300,420",
+        "id": "https://archie.demo/voynich-reading/canvas/o11#xywh=pixel:200,160,2300,420",
         "type": "Canvas"
       }
     }
