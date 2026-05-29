@@ -28,6 +28,7 @@
     summary,
     ontitle,
     onsummary,
+    onremove,
   }: {
     title: string;
     layout: LayoutType;
@@ -48,10 +49,21 @@
     summary?: string;
     ontitle: (v: string) => void;
     onsummary: (v: string) => void;
+    /** Remove this exhibit from the library (Archie-3f4c) — threaded to the DetailsEditor's remove guard. */
+    onremove?: () => void;
   } = $props();
 
   let rightsOpen = $state(false);
   const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
+
+  // Reading intent per layout (Archie-1f0e): name what the VISITOR experiences, not the feature.
+  // Voice mirrors LayoutPicker's stance sentences (curator voice).
+  const LAYOUT_NAME: Record<LayoutType, string> = { single: "Single", grid: "Grid", narrative: "Narrative" };
+  const LAYOUT_INTENT: Record<LayoutType, string> = {
+    single: "one object, full attention",
+    grid: "a wall of objects to scan",
+    narrative: "a guided sequence with prose",
+  };
 
   let mode = $state<"canvas" | "list">("canvas"); // 1a spatial canvas ↔ 1b plain list
   let viewport = $state<HTMLDivElement | null>(null);
@@ -101,8 +113,9 @@
   // independent of the pan/zoom CSS transform and works identically in canvas + list modes. Emits the new
   // id order; App reorders the canonical objects[] array. Future: section grouping reuses this primitive.
   const END = "__end__";
+  const START = "__start__"; // leading drop target — insert BEFORE the first object (position 0)
   let dragId = $state<string | null>(null);
-  let overId = $state<string | null>(null); // drop target — insert BEFORE it; END = append
+  let overId = $state<string | null>(null); // drop target — insert BEFORE it; END = append; START = prepend
   function onPlateDragStart(e: DragEvent, id: string) {
     dragId = id;
     if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", id); }
@@ -121,6 +134,15 @@
     dragId = null; overId = null;
     onreorder(ids);
   }
+  // Prepend to position 0. Dedicated path so it survives the dragged item BEING first (where
+  // commitReorder(objects[0].id) would indexOf its own filtered-out id → -1 → wrongly append to end).
+  function commitToStart() {
+    if (!dragId) { overId = null; return; }
+    const ids = objects.map((o) => o.id).filter((id) => id !== dragId);
+    ids.unshift(dragId);
+    dragId = null; overId = null;
+    onreorder(ids);
+  }
   function onDragEnd() { dragId = null; overId = null; }
 </script>
 
@@ -131,9 +153,10 @@
     <div class="titles">
       <p class="eyebrow">Exhibit · {objects.length} {objects.length === 1 ? "object" : "objects"} · reading order</p>
       <h1>{title}</h1>
+      <p class="intent">{LAYOUT_INTENT[layout]}</p>
     </div>
     <span class="spacer"></span>
-    <button class="chip layout" onclick={onsetlayout} title="How visitors read this exhibit (reading intent)">▦ {layout}</button>
+    <button class="chip layout" onclick={onsetlayout} title="How visitors read this exhibit (reading intent)">▦ Exhibit layout · {LAYOUT_NAME[layout]}</button>
     <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for this exhibit">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     <div class="viewtoggle" role="group" aria-label="Overview mode">
       <button class:on={mode === "canvas"} onclick={() => (mode = "canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>
@@ -142,7 +165,7 @@
   </header>
 
   <PropsDrawer open={rightsOpen} title="Exhibit details" onclose={() => (rightsOpen = false)}>
-    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} />
+    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onremove} />
   </PropsDrawer>
 
   {#if mode === "canvas"}
@@ -158,6 +181,13 @@
       aria-label="Exhibit canvas — drag to pan, scroll to zoom"
     >
       <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z});`}>
+        <!-- Leading drop zone: the ONLY way to express "insert before the first object" (Archie-1933).
+             Inert unless a drag is active and the dragged plate isn't already first. -->
+        <div class="dropstart" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
+          ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
+          ondrop={(e) => { e.preventDefault(); commitToStart(); }}
+          ondragleave={() => { if (overId === START) overId = null; }}
+          role="presentation" aria-hidden="true"></div>
         {#each objects as o, i (o.id)}
           {@const thumb = thumbFor(o)}
           <button class="plate" class:dragging={dragId === o.id} class:over={overId === o.id}
@@ -210,6 +240,11 @@
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
     <p class="list-hint">Drag a row by its ⠿ handle to set the reading order.</p>
     <ul class="list">
+      <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
+        ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
+        ondrop={(e) => { e.preventDefault(); commitToStart(); }}
+        ondragleave={() => { if (overId === START) overId = null; }}
+        aria-hidden="true"></li>
       {#each objects as o, i (o.id)}
         <li class:dragging={dragId === o.id} class:over={overId === o.id}
           ondragover={(e) => onPlateDragOver(e, o.id)}
@@ -234,19 +269,20 @@
   /* The exhibit at the overview scale — plates on the dark light-table (system.md). */
   /* The overview occupies the middle ~80vh band, FULL WIDTH — the canvas is fully available, not a framed
      window. Vertically centred by .overview-stage (App). */
-  .overview { display: flex; flex-direction: column; height: 80vh; width: 100%; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); }
+  .overview { display: flex; flex-direction: column; height: 92vh; min-height: 36rem; width: 100%; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); }
 
   header { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-canvas); }
   .back { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-1) var(--space-3); background: transparent; color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); }
-  .back:hover { color: var(--accent); border-color: var(--accent); }
-  .titles .eyebrow { margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .back:hover { color: var(--accent-2); border-color: var(--accent-2); }
+  .titles .eyebrow { margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-2); }
   .titles h1 { margin: 2px 0 0; font-family: var(--font-display); font-weight: 600; font-size: 1.9rem; line-height: 1.05; color: var(--ink-canvas-primary); }
+  .titles .intent { margin: 4px 0 0; font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); }
   .spacer { flex: 1; }
   .chip { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
   .chip.rights { display: inline-flex; align-items: center; gap: var(--space-1); }
-  .chip.rights.set { border-color: var(--accent); }
-  .chip.rights .dot { color: var(--accent); font-size: 0.55rem; }
-  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  .chip.rights.set { border-color: var(--accent-2); }
+  .chip.rights .dot { color: var(--accent-2); font-size: 0.55rem; }
+  .chip:hover { border-color: var(--accent-2); color: var(--accent-2); }
   .viewtoggle { display: inline-flex; border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); overflow: hidden; }
   .viewtoggle button { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-1) var(--space-3); background: transparent; color: var(--ink-canvas-secondary); border: none; }
   .viewtoggle button.on { background: var(--accent); color: var(--ink-on-accent); }
@@ -263,12 +299,12 @@
   /* Gesture legend — names the two non-obvious gestures, prominently, top-centre. */
   .canvas-legend { position: absolute; top: var(--space-4); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); background: rgba(30,29,25,0.85); border: 1px solid var(--border-canvas-emphasis); border-radius: 999px; pointer-events: none; }
   .canvas-legend .g { display: inline-flex; align-items: center; gap: var(--space-1); }
-  .canvas-legend .ico { color: var(--accent); font-size: 0.95rem; }
+  .canvas-legend .ico { color: var(--accent-2); font-size: 0.95rem; }
   .canvas-legend .dot { color: var(--ink-canvas-muted); }
 
   .plate { display: flex; flex-direction: column; gap: var(--space-2); width: 13rem; cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-md); transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease; }
-  .plate:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-  .plate .order { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent); }
+  .plate:hover { border-color: var(--accent-2); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+  .plate .order { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent-2); }
   .frame { position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-canvas-overlay); display: flex; align-items: center; justify-content: center; }
   .frame .img { position: absolute; inset: 0; background-size: cover; background-position: center; }
   .frame.av { background: var(--surface-canvas-overlay); }
@@ -282,14 +318,19 @@
   .plate[draggable="true"]:active { cursor: grabbing; }
   /* Drag-to-reorder feedback (canvas): dragged plate dims; drop target shows an insert-before bar. */
   .plate.dragging { opacity: 0.4; }
-  .plate.over { border-color: var(--accent); box-shadow: -4px 0 0 var(--accent); }
-  .plate.add.over { border-color: var(--accent); border-style: solid; color: var(--accent); }
-  .canvas-legend .lead { color: var(--accent); }
+  .plate.over { border-color: var(--accent-2); box-shadow: -4px 0 0 var(--accent-2); }
+  .plate.add.over { border-color: var(--accent-2); border-style: solid; color: var(--accent-2); }
+  .canvas-legend .lead { color: var(--accent-2); }
+  /* Leading "insert before first" drop zone (canvas): a thin column that only takes space while armed;
+     shows the same accent insert bar as a plate's .over state. */
+  .dropstart { width: 0; align-self: stretch; border-radius: var(--radius-md); transition: width 120ms ease; }
+  .dropstart.armed { width: 1.5rem; border: 1px dashed var(--border-canvas-emphasis); }
+  .dropstart.over { border-color: var(--accent-2); border-style: solid; box-shadow: 4px 0 0 var(--accent-2); }
 
   .zoomctl { position: absolute; bottom: var(--space-5); right: var(--space-5); display: flex; gap: 1px; background: var(--border-canvas); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); overflow: hidden; }
   .zoomctl button { font-family: var(--font-ui); font-size: 1.05rem; cursor: pointer; min-width: 2.25rem; padding: var(--space-2) var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: none; }
   .zoomctl .fit { font-size: var(--text-ui-sm); }
-  .zoomctl button:hover { color: var(--accent); }
+  .zoomctl button:hover { color: var(--accent-2); }
   .zoomctl .pct { display: inline-flex; align-items: center; justify-content: center; min-width: 3rem; font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); }
   .hint { position: absolute; bottom: var(--space-5); left: var(--space-6); margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); pointer-events: none; }
 
@@ -298,14 +339,18 @@
   .list { list-style: none; margin: 0; padding: var(--space-4) var(--space-6) var(--space-6); overflow-y: auto; flex: 1; max-width: 48rem; }
   .list li { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
   .list li.dragging { opacity: 0.4; }
-  .list li.over { box-shadow: 0 -3px 0 var(--accent); } /* insert-before line */
+  .list li.over { box-shadow: 0 -3px 0 var(--accent-2); } /* insert-before line */
+  /* Leading "insert before first" drop zone (list): collapsed until a drag is active. */
+  .list li.dropstart-row { height: 0; margin: 0; padding: 0; border-radius: var(--radius-sm); transition: height 120ms ease; }
+  .list li.dropstart-row.armed { height: var(--space-4); }
+  .list li.dropstart-row.over { box-shadow: 0 3px 0 var(--accent-2); }
   .list .grip { cursor: grab; user-select: none; color: var(--ink-canvas-muted); font-size: 1.15rem; padding: 0 var(--space-2); background: none; border: none; line-height: 1; }
-  .list .grip:hover { color: var(--accent); }
+  .list .grip:hover { color: var(--accent-2); }
   .list .grip:active { cursor: grabbing; }
   .list li button { display: flex; flex: 1; align-items: center; gap: var(--space-4); text-align: left; cursor: pointer; padding: var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); color: inherit; }
-  .list li button:hover { border-color: var(--accent); }
-  .list li.end.over button { border-color: var(--accent); border-style: solid; color: var(--accent); }
-  .li-order { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent); min-width: 1.5rem; }
+  .list li button:hover { border-color: var(--accent-2); }
+  .list li.end.over button { border-color: var(--accent-2); border-style: solid; color: var(--accent-2); }
+  .li-order { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent-2); min-width: 1.5rem; }
   .li-thumb { width: 3rem; height: 2.25rem; border-radius: var(--radius-sm); background: var(--surface-canvas-overlay) center/cover; display: flex; align-items: center; justify-content: center; }
   .li-thumb .glyph { color: var(--ink-canvas-muted); }
   .li-lbl { flex: 1; font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; color: var(--ink-canvas-primary); }

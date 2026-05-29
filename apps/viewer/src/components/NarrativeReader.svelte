@@ -11,7 +11,7 @@
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import { renderMarkdown, type MarkerStyle } from "@render/svelte";
-  import { splitNoteMedia, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type W3CBody, type Section } from "@render/core";
+  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
 
   let {
     objects = [],
@@ -66,8 +66,7 @@
     if (!activeObject) return [] as W3CAnnotation[];
     const base = annotationsByObject[activeObject.id] ?? [];
     if (activeReading === null) return base;
-    const r = readingAnnotationsByObject[activeObject.id]?.[activeReading] ?? [];
-    return r.length ? [...base, ...r] : base;
+    return overlay(base, readingAnnotationsByObject[activeObject.id]?.[activeReading]);
   });
   const activeStyleOf = $derived(activeObject ? styleFor?.(activeObject.id) : undefined);
   const multiObject = $derived(new Set(sections.map((s) => s.objectId)).size > 1);
@@ -76,9 +75,6 @@
 
   // Note popup on marker click (CONTEXT §123 "Both: annomea popup/drawer on marker click"). Narrative
   // was missing this entirely — a clicked marker selected but showed nothing, so notes never surfaced.
-  const bodies = (it: W3CAnnotation): W3CBody[] => (Array.isArray(it.body) ? it.body : it.body ? [it.body] : []);
-  const commentOf = (it: W3CAnnotation) => { const b = bodies(it).find((x) => { const p = (x as { purpose?: string }).purpose; return p === undefined || p === "commenting"; }); return (b as { value?: string } | undefined)?.value ?? "(untitled)"; };
-  const tagsOf = (it: W3CAnnotation) => bodies(it).filter((x) => (x as { purpose?: string }).purpose === "tagging").map((x) => (x as { value?: string }).value ?? "");
   const current = $derived(activeNotes.find((it) => it.id === selected));
   const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
   let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);

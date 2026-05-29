@@ -19,6 +19,15 @@ export interface MarkerStyle {
   strokeWidth?: number;
 }
 
+/** A canvas-wide coverage border (7e1f) — frames the WHOLE media (image/OSD only) when a single mark
+ *  covers the object. Distinct from per-shape MarkerStyle: Annotorious styles individual shapes; this
+ *  is a NEW overlay mechanism over the OSD container. `onActivate` fires when a corner hit-target is
+ *  clicked (the centre stays unobstructed for normal pan/zoom). */
+export interface FrameOverlay {
+  colour: string;
+  onActivate: () => void;
+}
+
 export interface MountSurface {
   /** Load (replace) the WADM annotations rendered on the surface — e.g. a canvas heads page. */
   setAnnotations(annotations: W3CAnnotation[]): void;
@@ -33,6 +42,10 @@ export interface MountSurface {
   fitRegion(fragment: string): void;
   /** Programmatically select a target, or clear selection with null. */
   setSelected(id: SelectionId | null): void;
+  /** Draw (or replace) a canvas-wide coverage border framing the WHOLE media, with 4 clickable corner
+   *  hit-targets (the centre stays unobstructed). Clicking any corner → `frame.onActivate()`. Pass null
+   *  to clear; re-calling replaces the current frame. Image/OSD only (AV deferred — 7e1f). */
+  setFrame(frame: FrameOverlay | null): void;
   /** Toggle drawing mode (off = pan/select). */
   setDrawingEnabled(enabled: boolean): void;
   /** Pick the active drawing tool (rect or polygon — the v1 vocab). */

@@ -14,16 +14,15 @@
 // Provenance of this code: promoted from spikes/portable-viewer-seam/approach-p (ADR-0010 donor).
 
 import type { Filesystem, FsDirectory } from "../fs/seam.js";
-import { objectsFromManifest, canvasIdMap, sectionsFromManifest } from "../iiif/manifest.js";
-import { rightsFromIIIF } from "../iiif/rights.js";
-import type { IIIFManifest } from "../iiif/presentation.js";
-import type { AObject, Section, Reading } from "../model/model.js";
+import type { Reading } from "../model/model.js";
 import type { W3CAnnotation } from "../wadm/types.js";
 import type { ExhibitsJson } from "../iiif/exhibits.js";
 import type { PublishedExhibitData } from "./site.js";
+import { readExhibitTree, fsJsonSource, type NoteTransform } from "./read.js";
 
-/** A portably-read exhibit: the preview/HTTP `PublishedExhibitData` PLUS the Readings registry that
- *  `readPublishedExhibit` omits (the legend needs it) — structurally what the Viewer consumes. */
+/** A portably-read exhibit: the preview/HTTP `PublishedExhibitData` PLUS the Readings registry (the
+ *  legend needs it) — structurally what the Viewer consumes. As of the ADR-0007 read↔write fix,
+ *  `readPublishedExhibit` also returns this superset; `loadPortableExhibit` adds only the blob rewrite. */
 export interface PortableExhibit extends PublishedExhibitData {
   readings: Reading[];
   readingAnnotationsByObject: Record<string, Record<string, W3CAnnotation[]>>;
@@ -43,14 +42,6 @@ const ASSET_SEG = "/assets/";
 async function readJson<T>(dir: FsDirectory, name: string): Promise<T> {
   const file = await dir.getFile(name);
   return JSON.parse(new TextDecoder().decode(await file.readable())) as T;
-}
-
-async function readJsonOptional<T>(dir: FsDirectory, name: string): Promise<T | null> {
-  try {
-    return await readJson<T>(dir, name);
-  } catch {
-    return null; // missing file (e.g. readings.json on a base-only exhibit) → null, like fetchJsonOptional
-  }
 }
 
 /**
@@ -128,60 +119,22 @@ async function rewriteNoteBodyMedia(root: FsDirectory, slug: string, note: W3CAn
 
 /**
  * Read ONE published exhibit from the opened Filesystem, resolving embedded media to blob URLs.
- * Mirrors the Viewer's HTTP `loadPublishedExhibit`, INCLUDING the readings registry that
- * `readPublishedExhibit` omits — so the portable path is data-complete for the legend.
+ * Mirrors the Viewer's HTTP `loadPublishedExhibit`, including the readings registry — so the
+ * portable path is data-complete for the legend. Adds only the blob rewrite over `readPublishedExhibit`.
  */
 export async function loadPortableExhibit(fs: Filesystem, slug: string): Promise<PortableLoad> {
   const root = await fs.root();
-  const exDir = await root.getDirectory(slug);
-  const manifest = await readJson<IIIFManifest>(exDir, "manifest.json");
-  const objects = objectsFromManifest(manifest);
   const blobUrls: string[] = [];
-
-  const rewrittenObjects: AObject[] = await Promise.all(
-    objects.map(async (o) => {
+  // The blob-rewrite transform is fs-coupled (mintAssetBlob reads asset bytes off `root`): rewrite the
+  // object source, then each note body's `/assets/` tokens, minting into `blobUrls` for revoke().
+  const transform: NoteTransform = {
+    object: async (o) => {
       const src = await rewriteAssetUrl(root, slug, o.source, blobUrls);
       return src === o.source ? o : { ...o, source: src };
-    }),
-  );
-
-  const readings = (await readJsonOptional<Reading[]>(exDir, "readings.json")) ?? [];
-
-  const canvasDir = await exDir.getDirectory("canvas");
-  const annotationsByObject: Record<string, W3CAnnotation[]> = {};
-  const readingAnnotationsByObject: Record<string, Record<string, W3CAnnotation[]>> = {};
-  for (const obj of objects) {
-    const objDir = await canvasDir.getDirectory(obj.id);
-    const base = await readJson<{ items?: W3CAnnotation[] }>(objDir, "annotations.json");
-    annotationsByObject[obj.id] = await Promise.all((base.items ?? []).map((n) => rewriteNoteBodyMedia(root, slug, n, blobUrls)));
-    if (readings.length > 0) {
-      const perReading: Record<string, W3CAnnotation[]> = {};
-      for (const r of readings) {
-        const page = await readJsonOptional<{ items?: W3CAnnotation[] }>(objDir, `annotations-${r.id}.json`);
-        perReading[r.id] = await Promise.all((page?.items ?? []).map((n) => rewriteNoteBodyMedia(root, slug, n, blobUrls)));
-      }
-      readingAnnotationsByObject[obj.id] = perReading;
-    }
-  }
-
-  const title = manifest.label?.none?.[0] ?? slug;
-  const summary = (manifest as { summary?: { none?: string[] } }).summary?.none?.[0];
-  const sections = sectionsFromManifest(manifest);
-  const canvasIdByObject = canvasIdMap(manifest);
-
-  const exhibit: PortableExhibit = {
-    slug,
-    title,
-    objects: rewrittenObjects,
-    annotationsByObject,
-    readings,
-    readingAnnotationsByObject,
-    sections,
-    canvasIdByObject,
-    ...rightsFromIIIF(manifest),
-    ...(summary !== undefined ? { summary } : {}),
+    },
+    note: (n) => rewriteNoteBodyMedia(root, slug, n, blobUrls),
   };
-
+  const exhibit = await readExhibitTree(fsJsonSource(fs), slug, transform);
   return {
     exhibit,
     blobUrls,

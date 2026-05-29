@@ -12,6 +12,7 @@
     onfolder,
     onzip,
     ongithub,
+    ondownload,
   }: {
     open?: boolean;
     canFolder?: boolean;
@@ -21,6 +22,8 @@
     onfolder: () => Promise<string | null>;
     onzip: () => Promise<string>;
     ongithub: () => void;
+    /** Save the whole library as a portable .archie.zip — a copy to keep, re-open, or hand to someone. */
+    ondownload: () => void;
   } = $props();
 
   type Phase = "choose" | "local" | "working" | "done-folder" | "done-zip" | "error";
@@ -72,6 +75,10 @@
         <button class="choice" onclick={ongithub}>
           <span class="c-title">To GitHub Pages</span>
           <span class="c-desc">Publish to the web on a GitHub Pages branch — standalone, no server.</span>
+        </button>
+        <button class="choice" onclick={() => { onclose(); ondownload(); }}>
+          <span class="c-title">Save a copy</span>
+          <span class="c-desc">Pack the whole library into one <code>.archie.zip</code> to keep, re-open, or hand to a colleague.</span>
         </button>
       </div>
       <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>

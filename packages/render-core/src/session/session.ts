@@ -10,7 +10,8 @@ import { recordToAnnotation } from "../spine/serialize.js";
 import { writeAnnotations, readAnnotations } from "../spine/persist.js";
 import type { SerializeOptions } from "../spine/serialize.js";
 import type { FsDirectory } from "../fs/seam.js";
-import { ARCHIE_LAYERS, ARCHIE_READING } from "../wadm/types.js";
+import { ARCHIE_LAYERS, ARCHIE_READING, ARCHIE_EMPHASIS } from "../wadm/types.js";
+import type { Emphasis } from "../wadm/types.js";
 import { mergeLogs, headsOf, resolveConflict } from "../spine/merge.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CBody, W3CTarget } from "../wadm/types.js";
 import type { ClientId, LogicalId } from "../wadm/brand.js";
@@ -22,6 +23,8 @@ export interface NewNote {
   layers?: string[];
   /** The single Reading this note belongs to (ADR-0007), or undefined = base. */
   reading?: string;
+  /** Authored per-note emphasis (1489), or undefined = default `"normal"`. */
+  emphasis?: Emphasis;
   motivation?: string | string[];
 }
 
@@ -32,6 +35,8 @@ export interface NoteEdit {
   layers?: string[];
   /** Reading id; undefined here leaves it unchanged (carried forward). To CLEAR it, pass null. */
   reading?: string | null;
+  /** Emphasis; undefined here leaves it unchanged (carried forward). To CLEAR to `"normal"`, pass null. */
+  emphasis?: Emphasis | null;
   motivation?: string | string[];
 }
 
@@ -63,6 +68,7 @@ export class AnnotationSession {
       ...(input.body !== undefined ? { body: input.body } : {}),
       ...(input.layers !== undefined ? { layers: input.layers } : {}),
       ...(input.reading !== undefined ? { reading: input.reading } : {}),
+      ...(input.emphasis !== undefined ? { emphasis: input.emphasis } : {}),
       ...(input.motivation !== undefined ? { motivation: input.motivation } : {}),
     });
     this.log = log;
@@ -77,6 +83,7 @@ export class AnnotationSession {
       ...(changes.body !== undefined ? { body: changes.body } : {}),
       ...(changes.layers !== undefined ? { layers: changes.layers } : {}),
       ...(changes.reading !== undefined ? { reading: changes.reading } : {}),
+      ...(changes.emphasis !== undefined ? { emphasis: changes.emphasis } : {}),
       ...(changes.motivation !== undefined ? { motivation: changes.motivation } : {}),
     });
     this.log = log;
@@ -136,6 +143,7 @@ export class AnnotationSession {
       const ann = recordToAnnotation(record, record.logicalId);
       if (record.layers !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_LAYERS] = record.layers;
       if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
+      if (record.emphasis !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] = record.emphasis;
       return ann;
     });
   }

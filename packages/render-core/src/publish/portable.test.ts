@@ -13,6 +13,7 @@ import { appendNew } from "../spine/log.js";
 import { asClientId } from "../wadm/brand.js";
 import { thumbnailUrl } from "../iiif/resolve.js";
 import { splitNoteMedia } from "../note/media.js";
+import { bodiesOfAnnotation } from "../query/published.js";
 import type { Library } from "../model/model.js";
 import type { AnnotationLog } from "../wadm/types.js";
 import { loadPortableExhibit, loadPortableGallery } from "./portable.js";
@@ -93,11 +94,11 @@ describe("portable read seam (ADR-0010) over a ZipFilesystem", () => {
     const { exhibit, revoke } = await loadPortableExhibit(openArchive(await buildArchiveBytes()), SLUG);
     const notes = exhibit.annotationsByObject.o1!;
     const mediaNote = notes.find((n) => {
-      const v = (Array.isArray(n.body) ? n.body[0] : n.body) as { value?: string } | undefined;
+      const v = bodiesOfAnnotation(n)[0] as { value?: string } | undefined;
       return typeof v?.value === "string" && v.value.includes("blob:");
     });
     expect(mediaNote, "the note carrying /assets/ media must have a rewritten body").toBeDefined();
-    const value = ((Array.isArray(mediaNote!.body) ? mediaNote!.body[0] : mediaNote!.body) as { value: string }).value;
+    const value = (bodiesOfAnnotation(mediaNote!)[0] as { value: string }).value;
     expect(value.includes("/assets/")).toBe(false);
     expect(value.includes("blob:")).toBe(true);
     const parts = splitNoteMedia(value);

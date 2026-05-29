@@ -19,6 +19,8 @@ import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest } fr
 import { rightsFromIIIF } from "../iiif/rights.js";
 import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.js";
 import type { Exhibit, AObject, Section, RightsFields } from "../model/model.js";
+import type { PortableExhibit } from "./portable.js"; // type-only (erased) — the readings superset; type-cycle is harmless
+import { readExhibitTree, fsJsonSource } from "./read.js";
 import { readAnnotations } from "../spine/persist.js";
 import { toHistory } from "../spine/serialize.js";
 import { projectHeads } from "../spine/heads.js";
@@ -326,21 +328,7 @@ export interface PublishedExhibitData extends RightsFields {
  * the Viewer's HTTP loadPublishedExhibit, but over the Filesystem seam: Studio runs publishLibrary
  * into a MemoryFilesystem, then reads it back here — NO fetch, NO second app.
  */
-export async function readPublishedExhibit(fs: Filesystem, slug: string): Promise<PublishedExhibitData> {
-  const root = await fs.root();
-  const exDir = await root.getDirectory(slug);
-  const manifest = await readJson<IIIFManifest>(exDir, "manifest.json");
-  const objects = objectsFromManifest(manifest);
-  const canvasIdByObject = canvasIdMap(manifest);
-  const sections = sectionsFromManifest(manifest);
-  const canvasDir = await exDir.getDirectory("canvas");
-  const annotationsByObject: Record<string, W3CAnnotation[]> = {};
-  for (const obj of objects) {
-    const objDir = await canvasDir.getDirectory(obj.id);
-    const page = await readJson<{ items?: W3CAnnotation[] }>(objDir, "annotations.json");
-    annotationsByObject[obj.id] = page.items ?? [];
-  }
-  const title = manifest.label?.none?.[0] ?? slug;
-  const summary = (manifest as { summary?: { none?: string[] } }).summary?.none?.[0];
-  return { slug, title, objects, annotationsByObject, sections, canvasIdByObject, ...rightsFromIIIF(manifest), ...(summary !== undefined ? { summary } : {}) };
+export async function readPublishedExhibit(fs: Filesystem, slug: string): Promise<PortableExhibit> {
+  // Thin adapter over the shared reader (the domino); preview is the fs source, no transform.
+  return readExhibitTree(fsJsonSource(fs), slug);
 }

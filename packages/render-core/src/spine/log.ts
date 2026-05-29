@@ -9,7 +9,7 @@
 // disambiguation is the serialization layer's job (P0-6), not the log's.
 
 import { mintLogicalId, mintRevId, type LogicalId, type RevId, type ClientId } from "../wadm/brand.js";
-import type { AnnotationLog, AnnotationRecord, W3CBody, W3CTarget } from "../wadm/types.js";
+import type { AnnotationLog, AnnotationRecord, Emphasis, W3CBody, W3CTarget } from "../wadm/types.js";
 
 function isoOf(modifiedAt: string | undefined, now: number | undefined): string {
   if (modifiedAt !== undefined) return modifiedAt;
@@ -63,6 +63,8 @@ export interface NewNoteInput {
   layers?: string[];
   /** The single Reading this note belongs to (mutually exclusive — ADR-0007). */
   reading?: string;
+  /** Authored per-note emphasis (1489); omitted = default `"normal"`. Mirrors `reading`. */
+  emphasis?: Emphasis;
   lastEditor: ClientId;
   /** Explicit ISO datetime; otherwise derived from `now`/Date.now(). In-card tiebreaker only (Q-3). */
   modifiedAt?: string;
@@ -91,6 +93,7 @@ export function appendNew(log: AnnotationLog, input: NewNoteInput): AppendResult
     ...(input.motivation !== undefined ? { motivation: input.motivation } : {}),
     ...(input.layers !== undefined ? { layers: input.layers } : {}),
     ...(input.reading !== undefined ? { reading: input.reading } : {}),
+    ...(input.emphasis !== undefined ? { emphasis: input.emphasis } : {}),
   };
   return { log: append(log, record), record };
 }
@@ -103,6 +106,8 @@ export interface EditInput {
   layers?: string[];
   /** Reading id (ADR-0007); omitted = carry forward, `null` = clear to base, string = set. */
   reading?: string | null;
+  /** Emphasis (1489); omitted = carry forward, `null` = clear to default `"normal"`, value = set. */
+  emphasis?: Emphasis | null;
   lastEditor: ClientId;
   modifiedAt?: string;
   now?: number;
@@ -122,6 +127,7 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
   const motivation = input.motivation ?? head.motivation;
   const layers = input.layers ?? head.layers;
   const reading = input.reading === undefined ? head.reading : input.reading === null ? undefined : input.reading;
+  const emphasis = input.emphasis === undefined ? head.emphasis : input.emphasis === null ? undefined : input.emphasis;
   const record: AnnotationRecord = {
     logicalId,
     rev: mintRevId(input.now),
@@ -135,6 +141,7 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
     ...(motivation !== undefined ? { motivation } : {}),
     ...(layers !== undefined ? { layers } : {}),
     ...(reading !== undefined ? { reading } : {}),
+    ...(emphasis !== undefined ? { emphasis } : {}),
   };
   return { log: append(log, record), record };
 }
