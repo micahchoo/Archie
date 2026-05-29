@@ -6,9 +6,8 @@
 //    URLs — entered via `openPortableLibrary(fs)`. The read itself is core's `loadPortableExhibit`
 //    (ADR-0010 seam). Both sources return the SAME shapes, so ViewerShell/ExhibitView are source-agnostic.
 import {
-  objectsFromManifest, canvasIdMap, sectionsFromManifest, rightsFromIIIF,
-  ZipFilesystem, loadPortableExhibit, loadPortableGallery,
-  type ExhibitsJson, type Filesystem, type IIIFManifest, type PortableExhibit, type Reading, type W3CAnnotation,
+  ZipFilesystem, loadPortableExhibit, loadPortableGallery, readExhibitTree,
+  type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit,
 } from "@render/core";
 
 const PUBLISHED = `${import.meta.env.BASE_URL}published`;
@@ -136,6 +135,9 @@ async function fetchJsonOptional<T>(path: string): Promise<T | null> {
   return (await res.json()) as T;
 }
 
+/** HTTP byte source for the shared reader — GETs tree-relative paths under `${PUBLISHED}`. */
+const httpSource: JsonSource = { get: fetchJson, getOptional: fetchJsonOptional };
+
 export async function loadPublishedExhibit(slug: string): Promise<PublishedExhibit> {
   // Portable: read the opened zip via the core seam; free the previous exhibit's blob URLs before
   // minting the next (the revoke lifecycle — browser-verify owed for RAM peak, ADR-0010).
@@ -145,32 +147,6 @@ export async function loadPublishedExhibit(slug: string): Promise<PublishedExhib
     portableRevoke = revoke;
     return exhibit;
   }
-
-  // Hosted: the real deployed-consumer path.
-  const manifest = await fetchJson<IIIFManifest>(`${slug}/manifest.json`);
-  const objects = objectsFromManifest(manifest);
-
-  // The Readings registry (ADR-0007) — absent on a base-only exhibit.
-  const readings = (await fetchJsonOptional<Reading[]>(`${slug}/readings.json`)) ?? [];
-
-  const annotationsByObject: Record<string, W3CAnnotation[]> = {};
-  const readingAnnotationsByObject: Record<string, Record<string, W3CAnnotation[]>> = {};
-  for (const obj of objects) {
-    const base = await fetchJson<{ items?: W3CAnnotation[] }>(`${slug}/canvas/${obj.id}/annotations.json`);
-    annotationsByObject[obj.id] = base.items ?? [];
-    if (readings.length > 0) {
-      const perReading: Record<string, W3CAnnotation[]> = {};
-      for (const r of readings) {
-        const page = await fetchJsonOptional<{ items?: W3CAnnotation[] }>(`${slug}/canvas/${obj.id}/annotations-${r.id}.json`);
-        perReading[r.id] = page?.items ?? [];
-      }
-      readingAnnotationsByObject[obj.id] = perReading;
-    }
-  }
-
-  const title = manifest.label?.none?.[0] ?? slug;
-  const summary = (manifest as { summary?: { none?: string[] } }).summary?.none?.[0];
-  const sections = sectionsFromManifest(manifest); // round-trip the narrative spine from the published Ranges
-  const canvasIdByObject = canvasIdMap(manifest); // canvas IRIs as baked at publish (not a fixed BASE)
-  return { slug, title, objects, annotationsByObject, readings, readingAnnotationsByObject, sections, canvasIdByObject, ...rightsFromIIIF(manifest), ...(summary !== undefined ? { summary } : {}) };
+  // Hosted: the real deployed-consumer path — the shared reader (the domino) over the HTTP source.
+  return readExhibitTree(httpSource, slug);
 }

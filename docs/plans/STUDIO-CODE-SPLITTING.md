@@ -7,7 +7,7 @@ below, lowest-risk first, verifying the chunk-size delta + a smoke of each surfa
 
 ## What's in the chunk (from the perf scout)
 - **OSD + Annotorious** — static `import` in `render-mount/src/mount.ts:13-16`; no `manualChunks` in `apps/studio/vite.config.ts`. Dominant weight.
-- **All view components** static-imported in `App.svelte:8-18` (LibraryHome, ExhibitOverview, NarrativeEditor, MergeReview, Publish/PublishDialog, ShortcutsHelp). Mutually-exclusive surfaces, eagerly parsed.
+- **All view components** static-imported in `App.svelte:8-18` (LibraryHome, ExhibitOverview, NarrativeEditor, DetailsEditor, Publish/PublishDialog, ShortcutsHelp). Mutually-exclusive surfaces, eagerly parsed. (NOTE: `MergeReview` is **not** imported here — it's the unwired merge-UI prototype tracked as risk-map R1; not part of this chunk until it's wired in.)
 - **AvEditor** shell static (WaveSurfer inside is already lazy).
 - **voynich/bidar fixtures** static, only used on first run.
 
@@ -21,7 +21,7 @@ it last, alone, with its own verify. Each phase must leave the app fully working
 ### Phase 1 — leaf view components (safest, biggest easy win)
 Lazy-load the mutually-exclusive overlay/surface components via Svelte dynamic `import()` (an `{#await import()}`
 or a small async-component helper), gated by their existing open/`{#if}` flags:
-- `MergeReview`, `PublishDialog`/`Publish`, `ShortcutsHelp`, `NarrativeEditor`, `LayoutPicker` (already `{#if}`-gated).
+- `PublishDialog`/`Publish`, `ShortcutsHelp`, `NarrativeEditor`, `LayoutPicker` (already `{#if}`-gated). (`MergeReview` excluded — not yet wired into `App.svelte`; lazy-load it when the merge UI lands, R1.)
 - Acceptance: each opens correctly on first invocation; main chunk shrinks; no eager import of these in the entry graph (check the build's chunk list).
 - Risk: low — these have no imperative cross-state; a load flash is acceptable (add a tiny "…" fallback).
 

@@ -24,6 +24,7 @@ import {
   ARCHIE_LOGICAL_ID,
   ARCHIE_LAYERS,
   ARCHIE_READING,
+  ARCHIE_EMPHASIS,
   ARCHIE_REV,
   ARCHIE_PARENT,
   ARCHIE_MERGE_PARENTS,
@@ -111,6 +112,7 @@ function withDagMeta(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnn
   if (record.deleted) a[ARCHIE_DELETED] = true;
   if (record.layers !== undefined) a[ARCHIE_LAYERS] = record.layers;
   if (record.reading !== undefined) a[ARCHIE_READING] = record.reading;
+  if (record.emphasis !== undefined) a[ARCHIE_EMPHASIS] = record.emphasis;
   return ann;
 }
 
@@ -123,6 +125,13 @@ function withLayers(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnno
 /** Put the single Reading membership on a head annotation (Archie viewer filters; pure ignores) — ADR-0007. */
 function withReading(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
   if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
+  return ann;
+}
+
+/** Put authored per-note emphasis on a head annotation (1489) — emitted ONLY when set, so notes with
+ *  no authored emphasis stay byte-identical (the viewer's `emphasisOf` reads absence as `"normal"`). */
+function withEmphasis(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
+  if (record.emphasis !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] = record.emphasis;
   return ann;
 }
 
@@ -140,7 +149,7 @@ export function targetSource(record: AnnotationRecord): string {
 export function headsPageFromRecords(heads: AnnotationRecord[], pageId: string, ids: Map<RevId, string>, opts: SerializeOptions = {}): W3CAnnotationPage {
   const historyBase = opts.historyBase ?? "annotations/history/";
   const items: W3CAnnotation[] = heads.map((head) => {
-    const ann = withReading(withLayers(withProvLink(recordToAnnotation(head, ids.get(head.rev)!), head.parent, ids), head), head);
+    const ann = withEmphasis(withReading(withLayers(withProvLink(recordToAnnotation(head, ids.get(head.rev)!), head.parent, ids), head), head), head);
     ann[ARCHIE_HAS_HISTORY] = `${historyBase}${head.logicalId}.json`;
     return ann;
   });

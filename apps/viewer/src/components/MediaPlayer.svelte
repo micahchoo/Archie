@@ -7,7 +7,7 @@
   // Two read surfaces share that one `activeIdx`: the sequential transcript SPINE (right) and a
   // temporal MAP — a marker strip under the media showing WHERE on the recording each note falls
   // (read-only mirror of the Studio annotation timeline; HANDOFF "AV affordance pareto-hybrid").
-  import { parseMediaFragment, activeNoteIndex, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
+  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
   import Credit from "./Credit.svelte";
 
   let {
@@ -29,10 +29,6 @@
   // value (voynich.ts o12 = 296s) so the strip can lay out before the file's metadata arrives.
   const dur = $derived(mediaDuration || object.duration || 0);
 
-  const bodyText = (a: W3CAnnotation): string => {
-    const b = Array.isArray(a.body) ? a.body[0] : a.body;
-    return (b as { value?: string } | undefined)?.value ?? "";
-  };
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
   interface Cue { id: string; text: string; range: TimeRange; box?: { x: number; y: number; w: number; h: number }; }
@@ -43,7 +39,7 @@
     for (const a of annotations) {
       const v = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
       const f = v ? parseMediaFragment(v) : {};
-      if (f.time) out.push({ id: a.id, text: bodyText(a), range: f.time, ...(f.box ? { box: f.box } : {}) });
+      if (f.time) out.push({ id: a.id, text: transcriptTextOf(a), range: f.time, ...(f.box ? { box: f.box } : {}) });
     }
     return out.sort((x, y) => x.range.start - y.range.start);
   });

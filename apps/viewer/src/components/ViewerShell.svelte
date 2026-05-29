@@ -19,6 +19,12 @@
   let errorMsg = $state("");
   let openError = $state(""); // shown in the empty hall when an open attempt fails
 
+  // Object-nav carousel snapshot lifted up from ExhibitView (dba2): the center zone of the persistent top
+  // bar. `selectedObjectId` stays owned by ExhibitView; this only reflects it + calls back to navigate.
+  // null whenever the carousel shouldn't show (gallery, grid overview, AV, narrative, single object).
+  type CarouselNav = { siblings: { id: string; label: string }[]; currentId: string; navigate: (id: string) => void };
+  let carousel = $state<CarouselNav | null>(null);
+
   function sync() {
     route = parseRoute(location.hash);
   }
@@ -106,23 +112,52 @@
       exhibitTitle: gallery.exhibits.find((e) => e.slug === slug)?.title,
     });
   });
+
+  // Leaving an exhibit (back to gallery / empty hall) leaves the lifted carousel stale — clear it so the
+  // bar's center zone empties. ExhibitView also emits null on teardown, but this guards the route-change
+  // case where its effect may not have re-run yet.
+  $effect(() => {
+    if (route.view !== "exhibit") carousel = null;
+  });
+
+  // The three-zone bar shows whenever a library is loaded (same gate as the old open-another chrome).
+  const showBar = $derived(phase === "ready");
+  // Center-zone carousel geometry (was the in-Reader carousel's derived idx/prev/next, lifted up).
+  const cIdx = $derived(carousel ? carousel.siblings.findIndex((s) => s.id === carousel!.currentId) : -1);
+  const cPrev = $derived(carousel && cIdx > 0 ? carousel.siblings[cIdx - 1] : undefined);
+  const cNext = $derived(carousel && cIdx >= 0 && cIdx < carousel.siblings.length - 1 ? carousel.siblings[cIdx + 1] : undefined);
 </script>
 
-<!-- "Open another library" escape, in persistent chrome so a single-exhibit collapse can't trap the
-     reader. Shown whenever a library is loaded — hosted OR portable (reversed 2026-05-27 from the
-     original portable-only rule, per user override; see ADR-0008). In hosted mode it drops to the
-     empty hall, from which a `.archie.zip` can be opened. -->
-{#if phase === "ready"}
-  <button class="open-another" onclick={openAnother}>Open another library</button>
-{/if}
-
-{#if showCrumbs}
-  <nav class="crumbs" aria-label="Breadcrumb">
-    {#each crumbs as c, i (c.hash)}
-      {#if i > 0}<span class="sep">›</span>{/if}
-      <a href={c.hash}>{c.label}</a>
-    {/each}
-  </nav>
+<!-- The persistent top bar (dba2): ONE thin three-zone bar over the dark table — left = breadcrumb /
+     "Back to Exhibit", center = object carousel (lifted out of Reader so it no longer occludes the image
+     top-center), right = "Open another library" (quiet escape so a single-exhibit collapse can't trap the
+     reader; shown whenever a library is loaded — hosted OR portable, reversed 2026-05-27 per ADR-0008). The
+     chrome recedes — the image is the star. -->
+{#if showBar}
+  <div class="topbar">
+    <div class="zone left">
+      {#if showCrumbs}
+        <nav class="crumbs" aria-label="Breadcrumb">
+          {#each crumbs as c, i (c.hash)}
+            {#if i > 0}<span class="sep">›</span>{/if}
+            <a href={c.hash}>{c.label}</a>
+          {/each}
+        </nav>
+      {/if}
+    </div>
+    <div class="zone center">
+      {#if carousel}
+        <nav class="carousel" aria-label="Objects in this exhibit">
+          <button class="cnav" disabled={!cPrev} onclick={() => { if (cPrev) carousel?.navigate(cPrev.id); }} title={cPrev ? `Previous: ${cPrev.label}` : "No previous object"}>‹</button>
+          <span class="cpos">{cIdx >= 0 ? cIdx + 1 : "–"} / {carousel.siblings.length}</span>
+          <button class="cnav" disabled={!cNext} onclick={() => { if (cNext) carousel?.navigate(cNext.id); }} title={cNext ? `Next: ${cNext.label}` : "No next object"}>›</button>
+        </nav>
+      {/if}
+    </div>
+    <div class="zone right">
+      <button class="open-another" onclick={openAnother}>Open another library</button>
+    </div>
+  </div>
 {/if}
 
 {#if phase === "probing"}
@@ -133,27 +168,55 @@
   <div class="state error"><span class="warn">⚠</span><span>{errorMsg}</span></div>
 {:else if route.view === "exhibit"}
   {#key `${route.slug}/${route.noteId ?? ""}`}
-    <ExhibitView slug={route.slug} noteId={route.noteId} />
+    <ExhibitView slug={route.slug} noteId={route.noteId} onnav={(n) => (carousel = n)} />
   {/key}
 {:else if gallery}
   <Gallery {gallery} />
 {/if}
 
 <style>
-  /* Breadcrumb — understated, top-left over the dark table; the way back up (CONTEXT §125). */
-  .crumbs {
-    position: fixed; z-index: 35; top: var(--space-3); left: var(--space-4);
-    display: flex; align-items: center; gap: var(--space-2);
-    font-family: var(--font-ui), sans-serif; font-size: 0.78rem;
+  /* Persistent top bar (dba2) — ONE thin three-zone bar over the dark table; chrome recedes, the image is
+     the star. Transparent so it floats over the canvas without a hard band; the carousel pill carries its
+     own surface. left | center | right via a 3-column grid so the carousel stays truly centered. */
+  .topbar {
+    position: fixed; z-index: 35; top: 0; left: 0; right: 0;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    padding: var(--space-3) var(--space-4); gap: var(--space-3);
+    pointer-events: none; /* the bar's gaps don't steal canvas clicks — zones re-enable below */
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm);
   }
+  .topbar .zone { display: flex; align-items: center; pointer-events: auto; }
+  .topbar .left { justify-self: start; }
+  .topbar .center { justify-self: center; }
+  .topbar .right { justify-self: end; }
+  .topbar .zone:empty { pointer-events: none; }
+
+  /* Breadcrumb — understated; the way back up (CONTEXT §125). */
+  .crumbs { display: flex; align-items: center; gap: var(--space-2); }
   .crumbs a { color: var(--ink-canvas-secondary); text-decoration: none; }
   .crumbs a:hover { color: var(--accent); }
   .crumbs .sep { color: var(--ink-canvas-muted); }
 
-  /* Portable swap-to-change — quiet, top-right (escape-out, not a primary action; CONTEXT §134). */
+  /* Object carousel — ‹ prev · i/n · next › thin glyph form (dba2: lean, no thumbs/labels, so it
+     doesn't fight crumbs + open-another for width). Forest-green hover; quiet overlay pill. */
+  .carousel {
+    display: flex; align-items: center; gap: var(--space-1);
+    padding: 2px var(--space-2);
+    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
+    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-md);
+  }
+  .carousel .cnav {
+    display: flex; align-items: center; justify-content: center; min-width: 1.25rem;
+    background: none; border: none; color: var(--ink-canvas-secondary); cursor: pointer; font: inherit;
+    font-size: 1.05rem; line-height: 1;
+  }
+  .carousel .cnav:hover:not(:disabled) { color: var(--accent); }
+  .carousel .cnav:disabled { opacity: 0.3; cursor: default; }
+  .carousel .cpos { color: var(--ink-canvas-muted); font-variant-numeric: tabular-nums; padding: 0 var(--space-1); }
+
+  /* Portable swap-to-change — quiet escape, not a primary action (CONTEXT §134). */
   .open-another {
-    position: fixed; z-index: 35; top: var(--space-3); right: var(--space-4);
-    font-family: var(--font-ui), sans-serif; font-size: 0.78rem; cursor: pointer;
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); cursor: pointer;
     background: none; border: none; padding: 0; color: var(--ink-canvas-secondary);
   }
   .open-another:hover { color: var(--accent); }

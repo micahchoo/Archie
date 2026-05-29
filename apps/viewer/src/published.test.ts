@@ -51,7 +51,7 @@ describe("published.ts hosted/portable seam (PV-2a)", () => {
     const ex = await loadPublishedExhibit(SLUG);
     expect(ex.title).toBe("Voynich");
     expect(ex.objects[0]!.source.startsWith("blob:")).toBe(true); // embedded media resolved via the core seam
-    expect(Array.isArray(ex.readings)).toBe(true); // the readings field core's readPublishedExhibit omits
+    expect(Array.isArray(ex.readings)).toBe(true); // the readings field (now also read by core's readPublishedExhibit, ADR-0007)
   });
 
   it("closePortableLibrary returns to hosted", async () => {

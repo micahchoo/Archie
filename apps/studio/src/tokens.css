@@ -31,6 +31,17 @@
   --accent-muted: rgba(58, 107, 76, 0.12);
   --ink-on-accent: #fff;
 
+  /* ── Accent (secondary) — golden amber (lamplight / gilt frame) ──
+     Contrast-rescue + secondary emphasis ONLY: use where forest green sits on a grey
+     surface and fails contrast (overlay #252420, muted inks). Never for active/selection
+     (that stays green). Distinct from --semantic-warning by hue + meaning. (system.md, 2026-05-29) */
+  --accent-2: #d6a23e;                          /* on canvas (dark) */
+  --accent-2-hover: #e3b65a;
+  --accent-2-muted: rgba(214, 162, 62, 0.14);
+  --accent-2-paper: #9a6f1e;                     /* on paper (light) */
+  --accent-2-paper-hover: #835d16;
+  --accent-2-paper-muted: rgba(154, 111, 30, 0.12);
+
   /* ── Semantic ── */
   --semantic-success: #5a8f4a;
   --semantic-warning: #c49b36;

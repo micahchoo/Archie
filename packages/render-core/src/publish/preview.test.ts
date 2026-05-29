@@ -30,6 +30,34 @@ describe("readPublishedExhibit (preview == publish, in-memory)", () => {
     expect(ex.objects.map((o) => o.id)).toEqual(["o1"]);
     expect(ex.canvasIdByObject).toEqual({ o1: canvasId }); // IRI from the manifest, not a fixed BASE
     expect(ex.annotationsByObject.o1?.length).toBe(1); // the head note, grouped under its canvas
+    expect(ex.readings).toEqual([]); // base-only exhibit → empty registry (ADR-0007)
+    expect(ex.readingAnnotationsByObject).toEqual({}); // …and no per-reading pages
+  });
+
+  // ADR-0007 read↔write symmetry: readPublishedExhibit reads back the Readings registry + per-reading
+  // pages that publishLibrary writes, mirroring loadPortableExhibit/the viewer (minus the blob rewrite).
+  it("surfaces the readings registry and per-reading pages (ADR-0007)", async () => {
+    const rdLib: Library = {
+      id: "L",
+      title: "Lib",
+      exhibits: [{
+        id: "e1",
+        slug: "rd",
+        title: "Readings",
+        objects: [{ id: "o1", source: "https://img/1.jpg", label: "one" }],
+        readings: [{ id: "cipher", name: "Cipher" }, { id: "hoax", name: "Hoax" }],
+      }],
+    };
+    const rdCanvas = `${base}rd/canvas/o1`;
+    let rdLog = appendNew([], { target: rdCanvas, body: { type: "TextualBody", value: "ciph" }, lastEditor: author, modifiedAt: "t", now: 1, reading: "cipher" }).log;
+    rdLog = appendNew(rdLog, { target: rdCanvas, body: { type: "TextualBody", value: "base" }, lastEditor: author, modifiedAt: "t", now: 2 }).log;
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, rdLib, (id) => (id === "e1" ? rdLog : []), { baseUrl: base });
+    const ex = await readPublishedExhibit(fs, "rd");
+    expect(ex.readings.map((r) => r.id)).toEqual(["cipher", "hoax"]); // registry surfaced
+    expect(ex.readingAnnotationsByObject.o1?.cipher?.length).toBe(1); // the reading-assigned note read back
+    expect(ex.readingAnnotationsByObject.o1?.hoax?.length).toBe(0); // empty per-reading page tolerated
+    expect(ex.annotationsByObject.o1?.length).toBe(1); // the reading-less note stays in the base page
   });
 
   // Bug repro: "notes don't show when a section is present" (narrative layout). Verify the narrative

@@ -7,8 +7,10 @@
   import { stripMarkdown } from "@render/svelte";
   import Publish from "./Publish.svelte";
   import PublishDialog from "./PublishDialog.svelte";
+  import ReadingHelp from "./ReadingHelp.svelte";
   import LibraryHome from "./LibraryHome.svelte";
   import CmdK from "./CmdK.svelte";
+  import MediaPicker, { type PickItem } from "./MediaPicker.svelte";
   import AvEditor from "./AvEditor.svelte";
 import LayoutPicker from "./LayoutPicker.svelte";
   import ExhibitOverview from "./ExhibitOverview.svelte";
@@ -23,11 +25,13 @@ import LayoutPicker from "./LayoutPicker.svelte";
     mediaTypeFromSource, timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
     MAX_MASTER_DIM,
     bindingLabel, recentFromBinding, addRecent, removeRecent,
-    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type GitHubTarget, type PublishProgress, type Binding, type RecentProject, type BrokenLink, type Section, type Reading, type RightsFields,
+    tagsOf, emphasisOf, emphasisModifiers,
+    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type GitHubTarget, type PublishProgress, type Binding, type RecentProject, type BrokenLink, type Section, type Reading, type RightsFields, type Emphasis,
   } from "@render/core";
-  import type { DrawTool } from "@render/mount";
+  import type { DrawTool, MarkerStyle } from "@render/mount";
   import { bakeDisplayMaster, downscaleIfNeeded } from "./bake.js";
-  import { openExhibitAnnotationsDir, loadLibraryMeta, saveLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, readAssetBlob, readOriginalBytes, assetSize, clearExhibitAnnotations, type ExhibitMeta, type LibraryMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
+  import { openExhibitAnnotationsDir, loadLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, readAssetBlob, readOriginalBytes, assetSize, clearExhibitAnnotations, type ExhibitMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
+  import { createLibraryStore } from "./library-meta.svelte.js";
   import { supportsFolderPicker, supportsFileStreamSave, pickFolder, saveZipToDisk, zipNameFor, loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
   import { putHandle, getHandle, deleteHandle, requestPermission } from "./handles-db.js";
   // Phase-4 A2 surgery: the Studio's duplicate voynich.ts was deleted; the ONE seed lives in the
@@ -41,6 +45,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const IDENTITY_KEY = "archie.displayName.v1";
   function loadIdentity(): string | null { try { return localStorage.getItem(IDENTITY_KEY); } catch { return null; } }
   function saveIdentity(name: string): void { try { localStorage.setItem(IDENTITY_KEY, name); } catch { /* storage off */ } }
+  // First-add teaching for "+ Reading" (ADR-0007): show the explainer once, then never re-nag.
+  // Dismissing OR proceeding both count as "seen" — the flag is about whether the curator has met the
+  // concept, not whether they acted on it. Global (the concept is the same across every exhibit).
+  const READING_HELP_KEY = "archie.readingHelpSeen.v1";
+  function readingHelpSeen(): boolean { try { return localStorage.getItem(READING_HELP_KEY) === "1"; } catch { return false; } }
+  function markReadingHelpSeen(): void { try { localStorage.setItem(READING_HELP_KEY, "1"); } catch { /* storage off */ } }
   let identity = $state<string | null>(loadIdentity());
   const author = $derived(asClientId(identity || "anonymous"));
   const srcOf = (t: unknown): string | undefined => (typeof t === "string" ? t : (t as { source?: string } | null)?.source);
@@ -64,7 +74,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   ];
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
-  let libraryMeta = $state<LibraryMeta>({ exhibits: DEFAULT_EXHIBITS });
+  const lib = createLibraryStore({ exhibits: DEFAULT_EXHIBITS }, { onAfterPersist: touchBinding });
   let view = $state<"library" | "overview" | "editor">("library");
   // Per-exhibit Playground/Project (CONTEXT §115, the coherent model): a bundled EXAMPLE is a template —
   // opening it is a playground (banner, nothing saved); a USER-CREATED exhibit is a project (saved, no
@@ -72,7 +82,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const templateSlugs = new Set(DEFAULT_EXHIBITS.map((d) => d.slug));
   const isTemplate = (slug: string) => templateSlugs.has(slug);
   let currentSlug = $state(DEFAULT_EXHIBITS[0]!.slug);
-  const currentExhibit = $derived(libraryMeta.exhibits.find((e) => e.slug === currentSlug) ?? libraryMeta.exhibits[0]);
+  const currentExhibit = $derived(lib.meta.exhibits.find((e) => e.slug === currentSlug) ?? lib.meta.exhibits[0]);
   const OBJECTS = $derived(currentExhibit?.objects ?? []);
   // Canvas IRI for an object of the CURRENT exhibit (matches publishLibrary's grammar per slug).
   const canvasIdOf = (objId: string) => `${BASE}${currentSlug}/canvas/${objId}`;
@@ -172,7 +182,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   let zipInputEl = $state<HTMLInputElement | null>(null); // hidden picker for "Open" on non-Chromium
   // The library STRUCTURE always persists (which exhibits exist is real; examples are bundled defaults
   // reconciled on boot). Only an EXAMPLE's annotations are ephemeral — gated in save() on isTemplate.
-  async function persistLibrary(): Promise<void> { await saveLibraryMeta(libraryMeta); touchBinding(); }
+  // persist lives in the library-meta store now (saveLibraryMeta + injected touchBinding).
   async function save() {
     if (!annDir || isTemplate(currentSlug)) return; // Examples are playgrounds — their notes aren't saved
     // Don't write empty heads/history pages for a note-less exhibit; library.json records existence.
@@ -204,11 +214,11 @@ import LayoutPicker from "./LayoutPicker.svelte";
         return p!;
       });
       const userExhibits = meta.exhibits.filter((e) => !templateSlugs.has(e.slug));
-      libraryMeta = { ...libraryMeta, exhibits: [...reconciled, ...userExhibits] };
+      lib.setMeta({ ...lib.meta, exhibits: [...reconciled, ...userExhibits] }); // set-only: persist stays conditional
       for (const slug of stale) await clearExhibitAnnotations(slug); // discard stale seed notes → reseed
-      if (stale.length) await persistLibrary();
+      if (stale.length) await lib.persist();
     } else {
-      await persistLibrary(); // first run — persist the defaults
+      await lib.persist(); // first run — persist the defaults
     }
     // Restore the active-binding DESCRIPTOR so the chip shows continuity ("bound to X"); the folder
     // handle's permission re-grants lazily on the next write. Boot counts as in-sync — the next edit
@@ -220,11 +230,11 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // Open an exhibit into the editor: load its per-exhibit annotation log (seed the sample if empty).
   async function openExhibit(slug: string) {
     currentSlug = slug;
-    const ex = libraryMeta.exhibits.find((e) => e.slug === slug);
+    const ex = lib.meta.exhibits.find((e) => e.slug === slug);
     currentObjectId = ex?.objects[0]?.id ?? "o1";
     selected = null;
     editing = null;
-    mode = "select";
+    creating = null;
     assetsReady = false;
     await resolveAssets(slug, ex?.objects ?? []); // OPFS /assets → blob: URLs (sets assetsReady)
     const seed = seededFor(slug);
@@ -246,9 +256,11 @@ import LayoutPicker from "./LayoutPicker.svelte";
       }
     }
     rev += 1;
-    // Land at the exhibit's OVERVIEW scale (invention #1) when there's more than one object to arrange,
-    // or it's a narrative; a single-object exhibit goes straight to its annotation surface.
-    view = ((ex?.objects.length ?? 0) > 1 || (ex?.layout ?? "grid") === "narrative") ? "overview" : "editor";
+    // Land at the exhibit's OVERVIEW scale (invention #1) UNLESS it's exactly one object (non-narrative),
+    // which goes straight to its annotation surface. An EMPTY (0-object) exhibit also lands at the overview
+    // — that's the only place to name it + add objects (the Details drawer lives there). MUST stay in sync
+    // with `hasOverview` below (same predicate).
+    view = ((ex?.objects.length ?? 0) !== 1 || (ex?.layout ?? "grid") === "narrative") ? "overview" : "editor";
   }
   async function backToLibrary() {
     clearTimeout(saveTimer);
@@ -261,11 +273,33 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // back to the overview KEEPS the resolved thumbnails (unlike backToLibrary, which frees them).
   function openObject(objId: string) { switchObject(objId); view = "editor"; }
   async function backToOverview() { await save(); view = "overview"; }
+
+  // --- Destructive removes (Archie-3f4c). Object → tombstone its notes (ADR-0003 append-only; recoverable
+  // via history, orphaned tombstones don't project), then drop the object. Exhibit → clear its annotation
+  // log, then drop it; the LAST exhibit leaves a truly-empty library (no DEFAULT_EXHIBITS reseed). ---
+  async function removeCurrentObject() {
+    const objId = currentObjectId;
+    const cid = canvasIdOf(objId);
+    for (const r of session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) session.deleteNote(r.logicalId as LogicalId);
+    bump();
+    const remaining = OBJECTS.filter((o) => o.id !== objId);
+    await lib.removeObject(currentSlug, objId);
+    if (remaining[0]) switchObject(remaining[0].id);
+    else { selected = null; editing = null; creating = null; await backToOverview(); } // last object → empty exhibit overview (valid post-e5c0)
+  }
+  async function removeCurrentExhibit() {
+    const slug = currentSlug;
+    clearTimeout(saveTimer);
+    await clearExhibitAnnotations(slug); // wipe its annotation log on disk (do NOT re-save it via backToLibrary)
+    await lib.removeExhibit(slug);
+    revokeAssetUrls();
+    assetsReady = false;
+    view = "library";
+  }
   // Persist the authored narrative spine (NarrativeEditor onchange) → ExhibitMeta.sections → publishes as
   // IIIF Ranges (buildFullLibrary → toRanges). Library STRUCTURE persists ungated (sections aren't notes).
   function setSections(sections: Section[]) {
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, sections } : e)) };
-    void persistLibrary();
+    lib.patchExhibit(currentSlug, { sections });
   }
   // --- narrative camera FRAMING (ADR-0005 + placement correction 2026-05-25) ---
   // A Section's camera (`start`) is set by FRAMING it on the editor canvas — the same gesture as a note's
@@ -278,11 +312,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
     const s = (currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
     if (!s) return;
     switchObject(s.objectId); // jump the rail to the section's object so you frame on the right canvas
-    framingSectionId = sectionId;
-    const mt = OBJECTS.find((o) => o.id === s.objectId)?.mediaType;
-    if (mt !== "sound" && mt !== "video") { tool = "rectangle"; mode = "draw"; } // arm the OSD box draw
+    creating = null; // framing and new-note are mutually exclusive gestures
+    framingSectionId = sectionId; // arms the OSD box draw via drawArmed (image objects); AV frames via "Set in"
   }
-  function cancelFraming() { framingSectionId = null; mode = "select"; }
+  function cancelFraming() { framingSectionId = null; }
   // Capture a framed camera onto the section (objectId = the object now in view, set when framing began).
   function setSectionStart(sectionId: string, start: string) {
     setSections((currentExhibit?.sections ?? []).map((s) => (s.id === sectionId ? { ...s, start, objectId: currentObjectId } : s)));
@@ -337,8 +370,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     const next: ObjectMeta[] = [];
     for (const id of orderedIds) { const o = byId.get(id); if (o) next.push(o); }
     for (const o of ex.objects) if (!orderedIds.includes(o.id)) next.push(o); // safety: keep any unlisted
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === ex.slug ? { ...e, objects: next } : e)) };
-    void persistLibrary();
+    lib.patchExhibit(ex.slug, { objects: next });
   }
 
   // "Keep a copy" (§115 conversion): fork the current EXAMPLE (playground) into a saved, user-owned
@@ -347,15 +379,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // in hand ⇒ nothing else to lose (§146 trap avoided by construction).
   let keeping = $state(false);
   async function keepCopy() {
-    const ex = libraryMeta.exhibits.find((e) => e.slug === currentSlug);
+    const ex = lib.meta.exhibits.find((e) => e.slug === currentSlug);
     if (!ex || !isTemplate(currentSlug)) return;
     keeping = true;
     const from = currentSlug;
     let slug = `${ex.slug}-copy`, n = 2;
-    while (libraryMeta.exhibits.some((e) => e.slug === slug)) slug = `${ex.slug}-copy-${n++}`;
+    while (lib.meta.exhibits.some((e) => e.slug === slug)) slug = `${ex.slug}-copy-${n++}`;
     const { seedVersion: _omit, ...rest } = ex; // a user copy is not a reconciled default
     const copy: ExhibitMeta = { ...rest, id: `ex-${slug}`, slug, title: `${ex.title} (copy)`, objects: ex.objects.map((o) => ({ ...o })) };
-    libraryMeta = { ...libraryMeta, exhibits: [...libraryMeta.exhibits, copy] };
+    lib.setMeta({ ...lib.meta, exhibits: [...lib.meta.exhibits, copy] });
     // Re-create the current head notes against the copy's canvas IRIs (fresh records — it's new content).
     const fromBase = `${BASE}${from}/canvas/`, toBase = `${BASE}${slug}/canvas/`;
     const carried = session.notes().filter((r) => !r.deleted).map((r) => {
@@ -364,7 +396,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
         ? { ...(r.target as object), source: toBase + src.slice(fromBase.length) } : r.target;
       return { target, body: r.body, motivation: r.motivation, layers: r.layers, reading: r.reading };
     });
-    await persistLibrary();
+    await lib.persist();
     await openExhibit(slug); // not a template → persists; seeds empty
     for (const c of carried) session.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.layers !== undefined ? { layers: c.layers } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}) });
     rev += 1;
@@ -375,9 +407,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
   async function newExhibit(title: string) {
     const base = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "exhibit";
     let slug = base, n = 2;
-    while (libraryMeta.exhibits.some((e) => e.slug === slug)) slug = `${base}-${n++}`;
-    libraryMeta = { ...libraryMeta, exhibits: [...libraryMeta.exhibits, { id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", layout: "grid", objects: [] }] };
-    await persistLibrary();
+    while (lib.meta.exhibits.some((e) => e.slug === slug)) slug = `${base}-${n++}`;
+    await lib.addExhibit({ id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", layout: "grid", objects: [] });
     await openExhibit(slug);
   }
   // Open a published .archie.zip as the project — the symmetric inverse of Download: read it via
@@ -403,12 +434,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // Replace the current OPFS project with a loaded library (the shared body of "Open zip" + "Open folder"):
   // clear outgoing annotation dirs (no orphans under reused slugs), write each imported log, swap the meta.
   async function replaceProjectFrom(loaded: Awaited<ReturnType<typeof loadLibrary>>) {
-    for (const e of libraryMeta.exhibits) await clearExhibitAnnotations(e.slug);
+    for (const e of lib.meta.exhibits) await clearExhibitAnnotations(e.slug);
     for (const e of loaded.library.exhibits) {
       const dir = await openExhibitAnnotationsDir(e.slug);
       if (dir) await new AnnotationSession(author, loaded.logs[e.slug] ?? []).save(dir, { baseUrl: BASE });
     }
-    libraryMeta = {
+    lib.setMeta({
       ...(loaded.library.title !== undefined ? { title: loaded.library.title } : {}),
       ...(loaded.library.summary !== undefined ? { summary: loaded.library.summary } : {}),
       ...rightsOf(loaded.library),
@@ -417,9 +448,9 @@ import LayoutPicker from "./LayoutPicker.svelte";
         ...rightsOf(e),
         objects: e.objects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.summary !== undefined ? { summary: o.summary } : {}), ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}), ...rightsOf(o) })),
       })),
-    };
-    await persistLibrary();
-    currentSlug = libraryMeta.exhibits[0]!.slug;
+    });
+    await lib.persist();
+    currentSlug = lib.meta.exhibits[0]!.slug;
     view = "library";
   }
 
@@ -450,9 +481,13 @@ import LayoutPicker from "./LayoutPicker.svelte";
   }
   // Append an object to the current exhibit + persist; for imported files, keep its blob: URL.
   async function appendObject(obj: ObjectMeta, blobUrl?: string) {
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, objects: [...e.objects, obj] } : e)) };
-    await persistLibrary();
+    // Register the blob URL BEFORE the awaited persist (Archie-9db6): lib.appendObject sync-mutates the
+    // store then awaits the OPFS write, and Svelte flushes the reactive graph during that await — so
+    // `current` flips to this object before the await resolves. Setting assetUrls first means
+    // `currentSource` resolves to the blob (not the raw /assets/ path) the instant Canvas mounts,
+    // closing the first-import OSD open-failed race.
     if (blobUrl) assetUrls = { ...assetUrls, [obj.id]: blobUrl };
+    await lib.appendObject(currentSlug, obj);
     currentObjectId = obj.id;
     addSource = "";
     addLabel = "";
@@ -463,7 +498,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   async function addObject(source: string, label: string) {
     const src = source.trim();
     if (!src) return;
-    const ex = libraryMeta.exhibits.find((e) => e.slug === currentSlug);
+    const ex = lib.meta.exhibits.find((e) => e.slug === currentSlug);
     if (!ex) return;
     const id = nextObjectId(ex);
     const mt = mediaTypeFromSource(src); // .mp3/.mp4/… → sound/video; else image (OSD)
@@ -476,7 +511,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // the upright master so the coord layer stays orientation-blind.
   async function addObjectFromFile(file: File) {
     if (!storeReady) return; // OPFS unavailable — don't create an object whose bytes can't persist
-    const ex = libraryMeta.exhibits.find((e) => e.slug === currentSlug);
+    const ex = lib.meta.exhibits.find((e) => e.slug === currentSlug);
     if (!ex) return;
     const id = nextObjectId(ex);
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -563,11 +598,26 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // otherwise the form would close after every change (P2-5). Cleared explicitly on delete/switch.
   let editing = $state<string | null>(null);
   $effect(() => { if (selected !== null) editing = selected; });
-  let mode = $state<"select" | "draw">("select");
-  let tool = $state<DrawTool>("rectangle");
+  // ADR-0011: creation is gesture-initiated, not a sticky tool mode. Selection is ambient (the canvas
+  // resting state). `creating` is the transient armed state for a NEW NOTE — null = not drawing; a chosen
+  // shape = "draw the next region, then disarm". Narrative camera framing (framingSectionId) shares the
+  // same draw path. The two are mutually exclusive. No persistent Select|Rect|Polygon palette anymore.
+  let creating = $state<DrawTool | null>(null);
+  const drawArmed = $derived(creating !== null || framingSectionId !== null); // canvas in draw mode while either gesture is live
+  const drawShape = $derived<DrawTool>(creating ?? "rectangle"); // framing always frames a box
   let readingFilter = $state("all"); // "all" | "base" | a reading id — scopes the list + new-note default (ADR-0007)
   let addingReading = $state(false); // shows the in-app new-reading input (AppNative, not an OS prompt)
+  let readingHelpOpen = $state(false); // first-add teaching modal (ADR-0007); gated by readingHelpSeen()
   let newReadingEl = $state<HTMLInputElement>();
+  // "+ Reading" click: teach the concept once (modal), then drop into the name input. Once seen, jump
+  // straight to the input — the existing flow, untouched. Proceed/dismiss both mark it seen (no re-nag).
+  function startAddReading() {
+    newReadingColour = null; // default to the next auto-cycled colour until the curator picks one
+    if (readingHelpSeen()) { addingReading = true; return; }
+    readingHelpOpen = true;
+  }
+  function readingHelpProceed() { markReadingHelpSeen(); readingHelpOpen = false; addingReading = true; }
+  function readingHelpClose() { markReadingHelpSeen(); readingHelpOpen = false; }
   // Which object of the exhibit the editor is showing. Switching resets transient view state.
   let currentObjectId = $state("o1");
   const current = $derived(OBJECTS.find((o) => o.id === currentObjectId) ?? OBJECTS[0]);
@@ -584,7 +634,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     currentObjectId = id;
     selected = null;
     editing = null;
-    mode = "select";
+    creating = null; // cancel any armed new-note gesture when changing objects
   }
   // Step to the previous/next object on the rail ([ / ] shortcuts).
   function stepObject(dir: -1 | 1) {
@@ -597,8 +647,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   function renameObject(objId: string, label: string) {
     const l = label.trim();
     if (!l) return;
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, objects: e.objects.map((o) => (o.id === objId ? { ...o, label: l } : o)) } : e)) };
-    void persistLibrary();
+    lib.patchObject(currentSlug, objId, { label: l });
   }
 
   // --- layout-picker (PROTOTYPE; CONTEXT §142): declare the exhibit's reading intent (single/grid/narrative).
@@ -606,8 +655,9 @@ import LayoutPicker from "./LayoutPicker.svelte";
   let layoutPickerOpen = $state(false);
   const currentLayout = $derived<LayoutType>(currentExhibit?.layout ?? "grid");
   const currentReadings = $derived<Reading[]>(currentExhibit?.readings ?? []);
-  // Whether this exhibit has an overview scale (invention #1): >1 object to arrange, or a narrative.
-  const hasOverview = $derived((currentExhibit?.objects.length ?? 0) > 1 || currentLayout === "narrative");
+  // Whether this exhibit has an overview scale (invention #1): NOT exactly one object (so: 0 to name/fill,
+  // or >1 to arrange), or a narrative. MUST stay in sync with openExhibit's routing predicate above.
+  const hasOverview = $derived((currentExhibit?.objects.length ?? 0) !== 1 || currentLayout === "narrative");
   // The current exhibit's notes, shaped for the NarrativeEditor's "add section from a Note" shortcut
   // (ADR-0005 mitigation): objectId from the target canvas, start = the selector fragment, lead = the prose.
   const narrativeNotes = $derived.by(() => {
@@ -619,24 +669,26 @@ import LayoutPicker from "./LayoutPicker.svelte";
     });
   });
   function setLayout(l: LayoutType) {
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, layout: l } : e)) };
-    void persistLibrary();
+    lib.patchExhibit(currentSlug, { layout: l });
     layoutPickerOpen = false;
   }
 
   // --- Readings (ADR-0007): the exhibit's curated interpretive passes. Persisted on ExhibitMeta,
   // published as a registry + per-reading AnnotationPages. A note belongs to ONE reading or none (base). ---
   function setReadings(readings: Reading[]) {
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, readings } : e)) };
-    void persistLibrary();
+    lib.patchExhibit(currentSlug, { readings });
   }
-  function addReading(name: string) {
+  // Reading colours (ADR-0007: colour identifies the reading; the viewer legend is a colour radio). The
+  // curator may PICK one (Archie-1489) — auto-cycled as the sensible default so naming-and-go still works.
+  const READING_PALETTE = ["#3a6b4c", "#a3553a", "#4c5d8a", "#8a6d3b", "#6b4c8a", "#3a7d8a"];
+  let newReadingColour = $state<string | null>(null); // null → use the auto-cycled default
+  function addReading(name: string, colour?: string) {
     const nm = name.trim();
     if (!nm) return;
     const id = nm.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `r${currentReadings.length + 1}`;
     if (currentReadings.some((r) => r.id === id)) { readingFilter = id; return; }
-    const palette = ["#3a6b4c", "#a3553a", "#4c5d8a", "#8a6d3b"];
-    setReadings([...currentReadings, { id, name: nm, colour: palette[currentReadings.length % palette.length]! }]);
+    const c = colour ?? READING_PALETTE[currentReadings.length % READING_PALETTE.length]!;
+    setReadings([...currentReadings, { id, name: nm, colour: c }]);
     readingFilter = id; // make the new reading active so the next-drawn notes default into it
   }
   function removeReading(id: string) {
@@ -648,9 +700,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
     session.editNote(editing as LogicalId, { reading });
     bump();
   }
+  // Per-note emphasis (Archie-1489): EMPHASIS ONLY — opacity/weight, never hue (hue = the reading, ADR-0007).
+  function setNoteEmphasis(emphasis: Emphasis) {
+    if (!editing) return;
+    session.editNote(editing as LogicalId, { emphasis });
+    bump();
+  }
   function commitNewReading(name: string) {
     const n = name.trim();
-    if (n) addReading(n);
+    if (n) addReading(n, newReadingColour ?? undefined);
     addingReading = false;
   }
   $effect(() => { if (addingReading) newReadingEl?.focus(); });
@@ -659,35 +717,29 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // Each replaces the level's rights fields with the editor's emitted next-state, then persists. ---
   function setObjectRights(next: RightsFields) {
     const objId = currentObjectId;
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, objects: e.objects.map((o) => (o.id === objId ? { ...o, rights: next.rights, requiredStatement: next.requiredStatement } : o)) } : e)) };
-    void persistLibrary();
+    lib.patchObject(currentSlug, objId, { rights: next.rights, requiredStatement: next.requiredStatement });
   }
   function setExhibitRights(next: RightsFields) {
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, rights: next.rights, requiredStatement: next.requiredStatement } : e)) };
-    void persistLibrary();
+    lib.patchExhibit(currentSlug, { rights: next.rights, requiredStatement: next.requiredStatement });
   }
   function setLibraryRights(next: RightsFields) {
-    libraryMeta = { ...libraryMeta, rights: next.rights, requiredStatement: next.requiredStatement };
-    void persistLibrary();
+    lib.patchLibrary({ rights: next.rights, requiredStatement: next.requiredStatement });
   }
 
   // --- Title + description editing (Phase 4): library/exhibit/object identity, editable wherever the
   // level's details surface lives. Object TITLE is the inline rail label (renameObject); object DESCRIPTION
   // (summary) is set here. Empty string clears (stripped at publish). ---
-  function setLibraryTitle(v: string) { libraryMeta = { ...libraryMeta, title: v }; void persistLibrary(); }
-  function setLibrarySummary(v: string) { libraryMeta = { ...libraryMeta, summary: v }; void persistLibrary(); }
+  function setLibraryTitle(v: string) { lib.patchLibrary({ title: v }); }
+  function setLibrarySummary(v: string) { lib.patchLibrary({ summary: v }); }
   function setExhibitTitle(v: string) {
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, title: v } : e)) };
-    void persistLibrary();
+    lib.patchExhibit(currentSlug, { title: v });
   }
   function setExhibitSummary(v: string) {
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, summary: v } : e)) };
-    void persistLibrary();
+    lib.patchExhibit(currentSlug, { summary: v });
   }
   function setObjectSummary(v: string) {
     const objId = currentObjectId;
-    libraryMeta = { ...libraryMeta, exhibits: libraryMeta.exhibits.map((e) => (e.slug === currentSlug ? { ...e, objects: e.objects.map((o) => (o.id === objId ? { ...o, summary: v } : o)) } : e)) };
-    void persistLibrary();
+    lib.patchObject(currentSlug, objId, { summary: v });
   }
 
   // Notes + working annotations are scoped to the CURRENT object's canvas (then the layer filter).
@@ -706,6 +758,18 @@ import LayoutPicker from "./LayoutPicker.svelte";
   );
   const sel = $derived(notes.find((r) => r.logicalId === editing));
   const noteCountOf = (objId: string) => allNotes.filter((r) => srcOf(r.target) === canvasIdOf(objId)).length;
+  // Live marker styling (Archie-1489) — mirrors the viewer's readingStyleOf so the curator authors against
+  // what a visitor sees. Colour = the note's reading (ADR-0007); reading-less notes get a neutral forest-
+  // green default (so base marks are visible). Per-note emphasis modulates opacity/weight ONLY, never hue.
+  const BASE_MARKER = "#3a6b4c"; // forest green — the base (reading-less) note default
+  function markerStyleOf(id: string): MarkerStyle | undefined {
+    const a = objAnnotations.find((x) => x.id === id);
+    if (!a) return undefined;
+    const rid = (a as Record<string, unknown>)["archie:reading"] as string | undefined;
+    const colour = (rid ? currentReadings.find((r) => r.id === rid)?.colour : undefined) ?? BASE_MARKER;
+    const m = emphasisModifiers(emphasisOf(a));
+    return { fill: colour, fillOpacity: Math.min(1, 0.18 * m.opacityMul), stroke: colour, strokeOpacity: Math.min(1, 0.95 * m.opacityMul), strokeWidth: 2 * m.strokeWidthMul };
+  }
 
   // --- canvas lifecycle ---
   function onCreate(a: W3CAnnotation) {
@@ -714,13 +778,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
       const frag = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
       if (frag) setSectionStart(framingSectionId, frag);
       framingSectionId = null;
-      mode = "select";
       return;
     }
     const id = session.createNote({ target: a.target, ...(readingFilter !== "all" && readingFilter !== "base" ? { reading: readingFilter } : {}) });
     bump();
     selected = id;
-    mode = "select";
+    creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
   }
   const onUpdate = (a: W3CAnnotation) => { session.editNote(a.id as LogicalId, { target: a.target }); bump(); };
   const onDelete = (id: string) => { session.deleteNote(id as LogicalId); bump(); if (selected === id) selected = null; if (editing === id) editing = null; };
@@ -753,7 +816,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // --- WADM form helpers ---
   const bodies = (r: AnnotationRecord): W3CBody[] => (Array.isArray(r.body) ? r.body : r.body ? [r.body] : []);
   const commentOf = (r: AnnotationRecord) => { const b = bodies(r).find((x) => { const p = (x as { purpose?: string }).purpose; return p === undefined || p === "commenting"; }); return (b as { value?: string } | undefined)?.value ?? ""; };
-  const tagsOf = (r: AnnotationRecord) => bodies(r).filter((x) => (x as { purpose?: string }).purpose === "tagging").map((x) => (x as { value?: string }).value ?? "");
+  // tagsOf now routes to @render/core's canonical filter.ts (Standard 6). NOTE: core's tagsOf drops
+  // empty/whitespace tag values; the prior local impl kept "" — empty tag chips no longer render.
 
   function applyForm(comment: string, tagsCsv: string) {
     if (!editing) return;
@@ -792,7 +856,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   async function buildCmdEntries(): Promise<CmdEntry[]> {
     const logsById = await loadAllLogs();
     const out: CmdEntry[] = [];
-    for (const ex of libraryMeta.exhibits) {
+    for (const ex of lib.meta.exhibits) {
       out.push({ id: `ex:${ex.slug}`, kind: "exhibit", exhibitSlug: ex.slug, exhibitTitle: ex.title, label: linkLabel(ex.title), ref: encodeLinkRef({ exhibitSlug: ex.slug }) });
       const heads = new Map<string, AnnotationRecord>();
       for (const r of logsById[ex.id] ?? []) heads.set(r.logicalId, r); // append-only → last wins
@@ -818,6 +882,28 @@ import LayoutPicker from "./LayoutPicker.svelte";
     pendingCiteInsert = null;
     cmdkOpen = false;
   }
+  // The VISUAL companion to ⌘K (Archie-ea50): same `pendingCiteInsert` target, eyes-first surface. Tiles
+  // are THIS exhibit's notes shown by their media (the resolvable + thumbnail-bearing set; cross-exhibit
+  // citing stays on ⌘K's text path). Picking inserts the same `[label](ref)` — one insertion, two doors.
+  let mediaPickerOpen = $state(false);
+  let mediaPickerItems = $state<PickItem[]>([]);
+  function requestVisualCite(insert: (md: string) => void) {
+    pendingCiteInsert = insert;
+    mediaPickerItems = allNotes
+      .filter((r) => !r.deleted)
+      .map((r) => {
+        const objId = (srcOf(r.target) ?? "").split("/canvas/")[1] ?? "";
+        const obj = OBJECTS.find((o) => o.id === objId);
+        return { id: r.logicalId, label: linkLabel(stripMarkdown(commentOf(r))), thumb: obj ? thumbSrc(obj) : "", sub: obj?.label ?? "" };
+      });
+    mediaPickerOpen = true;
+  }
+  function pickVisualCite(it: PickItem) {
+    const ref = encodeLinkRef({ exhibitSlug: currentSlug, noteLogicalId: it.id as LogicalId });
+    pendingCiteInsert?.(`[${it.label}](${ref})`);
+    pendingCiteInsert = null;
+    mediaPickerOpen = false;
+  }
   // The note-Comment cite target: splice at the cursor, persist via applyForm, restore focus past the link.
   async function citeIntoComment(md: string) {
     if (!sel) return;
@@ -841,7 +927,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
     if (matches(e, "⌘K") && view === "editor" && sel) { e.preventDefault(); void requestCite(citeIntoComment); return; }
     // Esc dismiss-ladder: palette (self-closes) → note popover → camera framing → overview → library.
     if (matches(e, "Esc")) {
-      if (cmdkOpen) return;
+      if (cmdkOpen || mediaPickerOpen) return; // those dialogs handle their own Esc
+      if (creating) { e.preventDefault(); creating = null; return; } // disarm a new-note gesture first
       if (framingSectionId) { e.preventDefault(); cancelFraming(); return; }
       if (sel) { e.preventDefault(); selected = null; editing = null; return; }
       if (view === "editor" && hasOverview) { e.preventDefault(); void backToOverview(); return; }
@@ -850,10 +937,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     }
     // Image-canvas shortcuts — bare letters, so skip while typing / on AV / while framing.
     if (typingInField(e) || view !== "editor" || isAvCurrent || framingSectionId) return;
-    if (matches(e, "V")) { e.preventDefault(); mode = "select"; }
-    else if (matches(e, "R")) { e.preventDefault(); mode = "draw"; tool = "rectangle"; }
-    else if (matches(e, "P")) { e.preventDefault(); mode = "draw"; tool = "polygon"; }
-    else if (matches(e, "⌫") && editing) { e.preventDefault(); onDelete(editing); }
+    if (matches(e, "⌫") && editing) { e.preventDefault(); onDelete(editing); }
     else if (matches(e, "[")) { e.preventDefault(); stepObject(-1); }
     else if (matches(e, "]")) { e.preventDefault(); stepObject(1); }
   }
@@ -864,12 +948,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
     // Exclude bundled EXAMPLE exhibits by default (CONTEXT §"Local view loop": "avoid the template
     // ones, or opt-in") — a template is a Playground example, not the author's content. Reuses the
     // existing isTemplate machinery; opt-in via includeTemplates for a populated demo publish.
-    const source = opts.includeTemplates ? libraryMeta.exhibits : libraryMeta.exhibits.filter((ex) => !isTemplate(ex.slug));
+    const source = opts.includeTemplates ? lib.meta.exhibits : lib.meta.exhibits.filter((ex) => !isTemplate(ex.slug));
     return {
       id: "demo",
-      title: libraryMeta.title ?? PROJECT_TITLE,
-      ...(libraryMeta.summary ? { summary: libraryMeta.summary } : {}),
-      ...rightsOf(libraryMeta),
+      title: lib.meta.title ?? PROJECT_TITLE,
+      ...(lib.meta.summary ? { summary: lib.meta.summary } : {}),
+      ...rightsOf(lib.meta),
       exhibits: source.map((ex) => ({
         id: ex.id, slug: ex.slug, title: ex.title,
         ...(ex.summary ? { summary: ex.summary } : {}),
@@ -891,7 +975,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // the current exhibit uses the live session (freshest, incl. unsaved); others load from their dir.
   async function loadAllLogs(): Promise<Record<string, AnnotationLog>> {
     const map: Record<string, AnnotationLog> = {};
-    for (const ex of libraryMeta.exhibits) {
+    for (const ex of lib.meta.exhibits) {
       if (ex.slug === currentSlug) { map[ex.id] = session.entries; continue; }
       const dir = await openExhibitAnnotationsDir(ex.slug);
       map[ex.id] = dir ? (await AnnotationSession.load(dir, author)).entries : [];
@@ -999,7 +1083,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const ZIP_WARN_BYTES = 250 * 1024 * 1024; // ~250 MB
   async function estimateLibraryBytes(): Promise<number> {
     let total = 0;
-    for (const ex of libraryMeta.exhibits) {
+    for (const ex of lib.meta.exhibits) {
       for (const o of ex.objects) {
         if (isAsset(o.source)) total += await assetSize(ex.slug, o.source.slice(ASSET_PREFIX.length));
       }
@@ -1148,7 +1232,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     <span class="wordmark">Archie</span><span class="sub">Studio</span>
   </header>
   <LibraryHome
-    exhibits={libraryMeta.exhibits}
+    exhibits={lib.meta.exhibits}
     onopen={openExhibit}
     oncreate={newExhibit}
     {isTemplate}
@@ -1164,10 +1248,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
     onclose={closeProject}
     onrecover={() => { closeProject(); void saveProject(); }}
     ondismisserror={() => (bindingError = null)}
-    rights={{ ...(libraryMeta.rights ? { rights: libraryMeta.rights } : {}), ...(libraryMeta.requiredStatement ? { requiredStatement: libraryMeta.requiredStatement } : {}) }}
+    rights={{ ...(lib.meta.rights ? { rights: lib.meta.rights } : {}), ...(lib.meta.requiredStatement ? { requiredStatement: lib.meta.requiredStatement } : {}) }}
     onrights={setLibraryRights}
-    libTitle={libraryMeta.title}
-    librarySummary={libraryMeta.summary}
+    libTitle={lib.meta.title}
+    librarySummary={lib.meta.summary}
     ontitle={setLibraryTitle}
     onsummary={setLibrarySummary}
   />
@@ -1189,6 +1273,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
       summary={currentExhibit.summary}
       ontitle={setExhibitTitle}
       onsummary={setExhibitSummary}
+      onremove={removeCurrentExhibit}
     />
   </div>
 {:else}
@@ -1198,15 +1283,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
          at the object level; the crumb names where you are). -->
     <span class="wordmark">{currentExhibit.title}</span>{#if current}<span class="crumb">› {current.label}</span>{/if}<span class="sub">Studio</span>
     <span class="spacer"></span>
-    {#if !isAvCurrent}
-      <!-- While framing a narrative camera the canvas is locked to the box draw, so the tool switches are
-           disabled (you can't switch to Polygon/Select mid-frame); Esc or the banner's Cancel exits. -->
-      <div class="tools" class:framing={framingSectionId !== null}>
-        <button class:on={mode === "select"} disabled={framingSectionId !== null} onclick={() => (mode = "select")}>Select</button>
-        <button class:on={mode === "draw" && tool === "rectangle"} disabled={framingSectionId !== null} onclick={() => { mode = "draw"; tool = "rectangle"; }}>▭ Rect</button>
-        <button class:on={mode === "draw" && tool === "polygon"} disabled={framingSectionId !== null} onclick={() => { mode = "draw"; tool = "polygon"; }}>⬠ Polygon</button>
-      </div>
-    {/if}
+    <!-- ADR-0011: no persistent tool palette. Selection is ambient; drawing arms only from a CREATE act
+         ("New note" in the notes pane, or narrative camera framing). -->
     <label>Reading
       <select bind:value={readingFilter}>
         <option value="all">All notes</option>
@@ -1215,19 +1293,29 @@ import LayoutPicker from "./LayoutPicker.svelte";
       </select>
     </label>
     {#if addingReading}
-      <input class="new-reading" type="text" placeholder="Name a reading — e.g. Cipher" bind:this={newReadingEl}
-        onkeydown={(e) => { if (e.key === "Enter") commitNewReading((e.currentTarget as HTMLInputElement).value); else if (e.key === "Escape") addingReading = false; }}
-        onblur={() => (addingReading = false)} />
+      <span class="new-reading-wrap">
+        <input class="new-reading" type="text" placeholder="Name a reading — e.g. Cipher" bind:this={newReadingEl}
+          onkeydown={(e) => { if (e.key === "Enter") commitNewReading((e.currentTarget as HTMLInputElement).value); else if (e.key === "Escape") addingReading = false; }}
+          onblur={() => (addingReading = false)} />
+        <!-- Pick the reading's colour (Archie-1489); auto-cycled default pre-selected. onmousedown+preventDefault
+             keeps focus in the name input so picking a swatch never triggers the blur-cancel. -->
+        <span class="swatches" role="group" aria-label="Reading colour">
+          {#each READING_PALETTE as c, i (c)}
+            <button type="button" class="swatch" class:on={newReadingColour === c || (newReadingColour === null && i === currentReadings.length % READING_PALETTE.length)}
+              style={`background:${c}`} title="Use this colour" aria-label={`Reading colour ${i + 1}`}
+              onmousedown={(e) => { e.preventDefault(); newReadingColour = c; }}></button>
+          {/each}
+        </span>
+      </span>
     {:else}
-      <button class="add-reading" onclick={() => (addingReading = true)} title="Add a way of reading this source — e.g. a Cipher reading vs a Hoax reading">+ Reading</button>
+      <button class="add-reading" onclick={startAddReading} title="Add a way of reading this source — e.g. a Cipher reading vs a Hoax reading">+ Reading</button>
     {/if}
     <button class="layout-trigger" onclick={() => (layoutPickerOpen = true)} title="How visitors read this exhibit (reading intent)">▦ {currentLayout}</button>
     {#if storeReady}
       <span class="savestate" class:dirty>{dirty ? "● Unsaved" : "Saved"}</span>
       <button onclick={() => void save()} disabled={!dirty}>Save</button>
     {/if}
-    <button onclick={download}>Download .archie.zip</button>
-    <button onclick={() => (publishDialogOpen = true)}>Publish…</button>
+    <button onclick={() => (publishDialogOpen = true)}>Publish & Share…</button>
     <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
   </header>
 
@@ -1296,11 +1384,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
       {@const comment = commentOf(sel)}
       {@const tags = tagsOf(sel).join(", ")}
       {@const reading = sel.reading ?? null}
+      {@const emphasis = sel.emphasis ?? "normal"}
       {@const trange = timeOf(sel)}
       <form class="wadm" onsubmit={(e) => { e.preventDefault(); }}>
         <h3>Edit note</h3>
         <label>
-          <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button></span>
+          <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button><button type="button" class="cite" onclick={() => requestVisualCite(citeIntoComment)} title="Cite a note by its image">▦ Browse</button></span>
           <textarea bind:this={commentEl} rows="3" value={comment} onchange={(e) => applyForm((e.currentTarget as HTMLTextAreaElement).value, tags)}></textarea>
         </label>
         {#if trange}
@@ -1315,6 +1404,13 @@ import LayoutPicker from "./LayoutPicker.svelte";
           <select value={reading ?? ""} onchange={(e) => setNoteReading((e.currentTarget as HTMLSelectElement).value || null)}>
             <option value="">— None (base) —</option>
             {#each currentReadings as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
+          </select>
+        </label>
+        <label>Emphasis
+          <select value={emphasis} onchange={(e) => setNoteEmphasis((e.currentTarget as HTMLSelectElement).value as Emphasis)} title="How much this mark stands out — its weight, not its colour (colour follows the reading)">
+            <option value="muted">Muted — recede</option>
+            <option value="normal">Normal</option>
+            <option value="strong">Strong — stand out</option>
           </select>
         </label>
         <div class="wadm-actions">
@@ -1354,8 +1450,24 @@ import LayoutPicker from "./LayoutPicker.svelte";
         />
       {/if}
       <h2 class="eyebrow">{notes.length} notes</h2>
+      {#if current && !isAvCurrent}
+        <!-- ADR-0011: drawing is armed only by creating a note. Choose a shape, draw the region on the
+             image, and the note is created at that locus — the canvas then returns to ambient selection. -->
+        {#if creating}
+          <div class="new-note armed" role="status">
+            <span class="nn-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the image</span>
+            <button type="button" class="nn-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
+          </div>
+        {:else}
+          <div class="new-note">
+            <span class="nn-lead">New note</span>
+            <button type="button" onclick={() => (creating = "rectangle")} title="Draw a rectangular region">▭ Box</button>
+            <button type="button" onclick={() => (creating = "polygon")} title="Trace an irregular outline">⬠ Outline</button>
+          </div>
+        {/if}
+      {/if}
       {#if notes.length === 0}
-        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Play it, then “Set in” → “Add note” to mark a moment." : readingFilter === "all" ? "No notes on this object yet. Pick ▭ Rect or ⬠ Polygon and draw to begin." : readingFilter === "base" ? "No base notes here — switch Reading to “All notes”, or draw one." : `No notes in the “${currentReadings.find((r) => r.id === readingFilter)?.name ?? readingFilter}” reading on this object.`}</p>
+        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Play it, then “Set in” → “Add note” to mark a moment." : readingFilter === "all" ? "No notes on this object yet. Start a note above — choose Box or Outline, then draw the region." : readingFilter === "base" ? "No base notes here — switch Reading to “All notes”, or start a new note." : `No notes in the “${currentReadings.find((r) => r.id === readingFilter)?.name ?? readingFilter}” reading on this object.`}</p>
       {/if}
       <ul>
         {#each notes as r (r.rev)}
@@ -1370,7 +1482,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
           </li>
         {/each}
       </ul>
-      <p class="hint">{isAvCurrent ? "Play it · “Set in” → “Add note” marks a moment (video: “+ Region on frame” adds a box) · click a note to seek + edit it in the popover." : "Draw a Rect/Polygon to add a note · click a marker to edit it right there · its editor follows it as you pan/zoom."}</p>
+      <p class="hint">{isAvCurrent ? "Play it · “Set in” → “Add note” marks a moment (video: “+ Region on frame” adds a box) · click a note to seek + edit it in the popover." : "Start a new note → choose a shape → draw the region · click a marker to edit it right there · its editor follows it as you pan/zoom."}</p>
 
       <!-- All notes (image / audio / video) edit in the marker popover anchored to their locus (in <main>);
            the sidebar is nav + the narrative spine only — no inline form (ADR-0006). -->
@@ -1387,6 +1499,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
             scope="object"
             onsummary={setObjectSummary}
             onrights={setObjectRights}
+            onremove={removeCurrentObject}
           />
         </details>
       {/if}
@@ -1409,7 +1522,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
         {/key}
       {:else if current && assetsReady}
         {#key canvasId}
-          <Canvas source={currentSource} {canvasId} {annotations} {tool} drawing={mode === "draw"} bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
+          <Canvas source={currentSource} {canvasId} {annotations} tool={drawShape} drawing={drawArmed} styleOf={markerStyleOf} bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
             onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
         {/key}
       {:else if current}
@@ -1418,7 +1531,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
         <div class="no-canvas">Add an object — drop an image here, or use “+ Object” on the rail.</div>
       {/if}
 
-      {#if sel && mode !== "draw"}
+      {#if sel && !drawArmed}
         <!-- The WADM form anchored to the selected marker (ADR-0006): an image's canvas marker OR an audio
              cue's waveform region (both stream their screen-rect via onmarkerrect → notePos). Offset off the
              marker, follows the surface, draggable by the grip; stopPropagation so dragging never pans OSD.
@@ -1439,9 +1552,11 @@ import LayoutPicker from "./LayoutPicker.svelte";
     onfolder={localPublishFolder}
     onzip={localPublishZip}
     ongithub={() => { publishDialogOpen = false; void openPublish(); }}
+    ondownload={() => void download()}
   />
   <Publish open={publishOpen} onclose={() => (publishOpen = false)} onpublish={publish} {brokenLinks} />
   <CmdK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />
+  <MediaPicker open={mediaPickerOpen} title="Cite a note by its image" items={mediaPickerItems} onpick={pickVisualCite} onclose={() => (mediaPickerOpen = false)} />
 {/if}
 {#if layoutPickerOpen}
   <!-- GLOBAL (outside the view branches): the layout picker is opened from BOTH the editor header AND the
@@ -1451,6 +1566,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
 {/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
 <ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
+<!-- GLOBAL: first-add teaching for readings (ADR-0007) — shown once, then remembered. -->
+<ReadingHelp open={readingHelpOpen} onproceed={readingHelpProceed} onclose={readingHelpClose} />
 </div>
 
 <style>
@@ -1471,25 +1588,28 @@ import LayoutPicker from "./LayoutPicker.svelte";
   /* Vertically centres the full-width ~80vh overview band (breathing room above/below; no frame). */
   .overview-stage { min-height: 100vh; display: flex; align-items: center; background: var(--surface-canvas); }
   .exhibit-back { background: none; border: none; cursor: pointer; padding: 0 var(--space-2) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-secondary); align-self: center; }
-  .exhibit-back:hover { color: var(--accent); }
+  .exhibit-back:hover { color: var(--accent-2); }
   .no-objects { font-family: var(--font-ui); font-size: 0.78rem; color: var(--ink-canvas-secondary); align-self: center; }
   .no-canvas { display: flex; align-items: center; justify-content: center; height: 100%; padding: var(--space-8); text-align: center; font-family: var(--font-body); font-size: 1.125rem; color: var(--ink-canvas-secondary); }
   header label { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-secondary); display: flex; align-items: center; gap: var(--space-2); }
 
-  .tools { display: flex; gap: var(--space-1); }
-  .tools button, header select, header > button {
+  header select, header > button {
     font-family: var(--font-ui); font-size: var(--text-ui-sm);
     padding: var(--space-1) var(--space-3);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-secondary);
     border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); cursor: pointer;
     transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
   }
-  .tools button:hover, header > button:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
-  .tools button.on { background: var(--accent); color: var(--ink-on-accent); border-color: var(--accent); }
+  header > button:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
   header > button { color: var(--ink-canvas-primary); }
   header > button:disabled { color: var(--ink-canvas-muted); border-color: var(--border-canvas); cursor: default; }
   .savestate { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-muted); }
-  .savestate.dirty { color: var(--accent); }
+  .savestate.dirty { color: var(--accent-2); }
+  /* Reading-colour picker (Archie-1489): colour dots beside the new-reading name input. */
+  .new-reading-wrap { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .swatches { display: inline-flex; gap: 4px; }
+  .swatch { width: 15px; height: 15px; border-radius: 50%; padding: 0; cursor: pointer; border: 1px solid var(--border-canvas-emphasis); transition: box-shadow 100ms ease; }
+  .swatch.on { box-shadow: 0 0 0 2px var(--surface-canvas), 0 0 0 3px var(--ink-canvas-primary); }
   /* Identity chip — your name in the shared history (invention #6); mono like other identifiers. */
   .you { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: 999px; padding: 1px var(--space-3); }
   /* The ? shortcuts button — a round, quiet affordance for the cheat-sheet. */
@@ -1506,9 +1626,16 @@ import LayoutPicker from "./LayoutPicker.svelte";
 
   /* Breadcrumb crumb — the object level of "Exhibit › Object" (the spine is exhibit-level, notes object-level). */
   .crumb { font-family: var(--font-display); font-size: 1.15rem; font-weight: 500; color: var(--ink-canvas-secondary); margin-left: var(--space-1); }
-  /* Tool switches are locked while framing a narrative camera (canvas is on the box draw). */
-  .tools button:disabled { opacity: 0.4; cursor: default; }
-  .tools.framing { opacity: 0.5; }
+  /* New-note affordance (ADR-0011): the create entry in the notes pane. Choose a shape → draw the
+     region. Paper surface (it lives in the sidebar). "Armed" state turns accent while drawing. */
+  .new-note { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
+  .new-note .nn-lead { font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-paper-secondary); }
+  .new-note > button { font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-1) var(--space-3); background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--border-paper); border-radius: var(--radius-sm); cursor: pointer; transition: color 120ms ease, border-color 120ms ease; }
+  .new-note > button:hover { color: var(--accent); border-color: var(--accent); }
+  .new-note.armed { gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--accent-muted); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
+  .new-note .nn-msg { flex: 1; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; color: var(--accent); }
+  .new-note .nn-cancel { font-family: var(--font-ui); font-size: var(--text-ui-sm); background: transparent; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); cursor: pointer; }
+  .new-note .nn-cancel:hover { color: var(--ink-paper-primary); border-color: var(--ink-paper-secondary); }
 
   /* Framing banner — the canvas is capturing a SECTION camera, not a note (accent = action, with the way out). */
   .framing-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); background: var(--accent-muted); border-bottom: 1px solid var(--border-canvas); border-left: 3px solid var(--accent); }
@@ -1543,7 +1670,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .obj.on .obj-thumb { border-color: rgba(255,255,255,0.35); }
   .obj-meta { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
   .obj-label { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 600; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .obj-count { font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent); }
+  .obj-count { font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent-2); }
   .obj.on .obj-count { color: rgba(255,255,255,0.85); }
 
   /* Add-object affordance on the rail */
@@ -1553,7 +1680,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-sm);
     font-family: var(--font-ui); font-size: var(--text-ui-sm); transition: color 120ms ease, border-color 120ms ease;
   }
-  .add-obj-toggle:hover { color: var(--accent); border-color: var(--accent); }
+  .add-obj-toggle:hover { color: var(--accent-2); border-color: var(--accent-2); }
   .add-obj { display: flex; align-items: center; gap: var(--space-2); }
   .add-obj input {
     font-family: var(--font-body); font-size: 0.875rem; padding: var(--space-1) var(--space-2);
@@ -1561,7 +1688,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); width: 14rem;
   }
   .add-obj input.lbl { width: 8rem; }
-  .add-obj input:focus { outline: none; border-color: var(--accent); }
+  .add-obj input:focus { outline: none; border-color: var(--accent-2); }
   .add-obj button { cursor: pointer; padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
   .add-obj button:disabled { background: var(--accent-muted); color: var(--ink-canvas-muted); border-color: transparent; cursor: default; }
   .add-obj .cancel { background: none; color: var(--ink-canvas-secondary); border-color: var(--border-canvas); }
@@ -1576,14 +1703,14 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .import-note-x:hover { color: var(--ink-canvas-primary); }
   /* File-pick button (hides the native input) + the "or" separator */
   .file-btn { display: inline-flex; align-items: center; cursor: pointer; padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
-  .file-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .file-btn:hover { border-color: var(--accent-2); color: var(--accent-2); }
   .file-btn input { display: none; }
   .add-obj .or { font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); }
 
   .body { display: flex; flex: 1; min-height: 0; }
   main { flex: 1; min-width: 0; background: var(--surface-canvas); position: relative; }
   /* Drag-and-drop import feedback over the light table */
-  main.drag-over { outline: 2px dashed var(--accent); outline-offset: -8px; }
+  main.drag-over { outline: 2px dashed var(--accent-2); outline-offset: -8px; }
 
   /* Marker-anchored note editor (ADR-0006) — a paper card floating over the dark canvas, positioned by
      Canvas's onmarkerrect (+14px off the marker, donor PADDING) and following it on pan/zoom. */

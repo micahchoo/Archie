@@ -6,9 +6,7 @@
 // (tsc can't resolve .svelte; the app's svelte toolchain handles it). The binding LOGIC lives
 // in createCanvasController (plain TS, tested).
 
-export const RENDER_SVELTE = "@render/svelte" as const;
-
 export { createCanvasController, type CanvasController } from "./controller.js";
 export { sanitizeHtml, renderMarkdown, stripMarkdown } from "./sanitize.js";
 // Re-export the marker-style type so adapter consumers (the viewer) needn't depend on @render/mount directly.
-export type { MarkerStyle } from "@render/mount";
+export type { MarkerStyle, FrameOverlay } from "@render/mount";

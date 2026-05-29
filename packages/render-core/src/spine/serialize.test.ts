@@ -1,8 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { appendNew, appendEdit, append } from "./log.js";
 import { toHeadsPage, toHistory, recordToAnnotation } from "./serialize.js";
+import { fromHistory } from "./deserialize.js";
 import { asClientId, mintRevId } from "../wadm/brand.js";
-import { ARCHIE_HAS_HISTORY, PROV_WAS_REVISION_OF, WADM_CONTEXT, type AnnotationRecord, type W3CSpecificResource } from "../wadm/types.js";
+import { emphasisOf } from "../query/published.js";
+import { ARCHIE_HAS_HISTORY, ARCHIE_EMPHASIS, PROV_WAS_REVISION_OF, WADM_CONTEXT, type AnnotationRecord, type W3CSpecificResource } from "../wadm/types.js";
 
 // History-sidecar serialization (ADR-0003 / Q-3): heads page (only current versions, with
 // the archie:hasHistory + prov:wasRevisionOf link-outs) + per-logicalId history pages +
@@ -101,5 +103,38 @@ describe("toHistory (Q-3)", () => {
     const [h1, h2] = page.items as unknown as Array<Record<string, unknown>>;
     expect(h1![PROV_WAS_REVISION_OF]).toBeUndefined(); // v1 has no parent
     expect(h2![PROV_WAS_REVISION_OF]).toBe(`${base}${v1.logicalId}/v1`);
+  });
+});
+
+// 1489: authored per-note emphasis serializes to archie:emphasis (mirror of archie:reading). The
+// load-bearing path is the PUBLISHED heads page the viewer loads (emphasisOf reads it); plus the
+// history reload round-trip. Absence must emit NO key so existing snapshots stay byte-identical.
+describe("emphasis (1489) — authored per-note emphasis round-trips; absence is byte-stable", () => {
+  it("reaches the PUBLISHED heads page — emphasisOf reads back 'strong'", () => {
+    const { record, log } = appendNew([], { target: rectTarget, body: { type: "TextualBody", value: "x" }, emphasis: "strong", lastEditor: alice, modifiedAt: t, now: 1 });
+    const page = toHeadsPage(log, "page1", opts);
+    const item = page.items.find((i) => (i as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] !== undefined)!;
+    expect((item as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS]).toBe("strong");
+    expect(emphasisOf(item)).toBe("strong");
+    expect(record.emphasis).toBe("strong");
+  });
+
+  it("survives the history reload round-trip (toHistory -> fromHistory preserves emphasis)", () => {
+    const { log } = appendNew([], { target: rectTarget, emphasis: "muted", lastEditor: alice, modifiedAt: t, now: 1 });
+    const { pages } = toHistory(log, opts);
+    const reloaded = fromHistory(Object.values(pages));
+    expect(reloaded[0]!.emphasis).toBe("muted");
+  });
+
+  it("emits NO archie:emphasis key for a note with no authored emphasis (byte-stable) — heads + history", () => {
+    const { log } = appendNew([], { target: rectTarget, body: { type: "TextualBody", value: "x" }, lastEditor: alice, modifiedAt: t, now: 1 });
+    const headItem = toHeadsPage(log, "page1", opts).items[0] as unknown as Record<string, unknown>;
+    expect(ARCHIE_EMPHASIS in headItem).toBe(false);
+    expect(emphasisOf(headItem as never)).toBe("normal"); // absence reads back as the default
+    const histItem = Object.values(toHistory(log, opts).pages)[0]!.items[0] as unknown as Record<string, unknown>;
+    expect(ARCHIE_EMPHASIS in histItem).toBe(false);
+    // the reloaded record carries no emphasis field at all
+    const reloaded = fromHistory(Object.values(toHistory(log, opts).pages));
+    expect("emphasis" in reloaded[0]!).toBe(false);
   });
 });

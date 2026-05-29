@@ -4,7 +4,7 @@
   // component only wires the surface to $state, drawing props, and lifecycle callbacks.
   // NOT in the tsc/test gate (real OSD render = browser verification).
   import { onMount, onDestroy } from "svelte";
-  import { createMount, type FitOptions, type MountSurface, type DrawTool, type MarkerStyle } from "@render/mount";
+  import { createMount, type FitOptions, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
   import type { W3CAnnotation } from "@render/core";
   import { createCanvasController, type CanvasController } from "./controller.js";
 
@@ -22,6 +22,7 @@
     ondelete,
     onmarkerrect,
     styleOf,
+    frame,
   }: {
     source: string;
     canvasId?: string;
@@ -42,6 +43,8 @@
     onmarkerrect?: (rect: { left: number; top: number; right: number; bottom: number } | null) => void;
     /** Per-marker style by annotation id — colours a marker by its Reading (ADR-0007). Undefined = default. */
     styleOf?: (id: string) => MarkerStyle | undefined;
+    /** A canvas-wide coverage border framing the whole object (7e1f). null clears; undefined = leave as-is. */
+    frame?: FrameOverlay | null;
   } = $props();
 
   // Emit the selected marker's current screen rect (OSD re-anchors natively, so this just re-reads).
@@ -61,6 +64,7 @@
       surface = await createMount(el, { source, ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}) });
       surface.setAnnotations(annotations);
       if (styleOf) surface.setStyle(styleOf);
+      if (frame !== undefined) surface.setFrame(frame);
       if (oncreate) surface.onCreate(oncreate);
       if (onupdate) surface.onUpdate(onupdate);
       if (ondelete) surface.onDelete(ondelete);
@@ -88,6 +92,8 @@
   // subscribes to the prop, so it never re-runs when the prop changes (Svelte 5 dep-tracking gotcha).
   $effect(() => { const a = annotations; if (surface) surface.setAnnotations(a); emitRect(); });
   $effect(() => { const sf = styleOf; if (surface) surface.setStyle(sf); });
+  // Coverage border (7e1f) — read `frame` first (dep-tracking gotcha); undefined = leave as-is, null clears.
+  $effect(() => { const fr = frame; if (surface && fr !== undefined) surface.setFrame(fr); });
   $effect(() => { const t = tool; if (surface) surface.setDrawingTool(t); });
   $effect(() => { const d = drawing; if (surface) surface.setDrawingEnabled(d); });
   $effect(() => { const s = selected; if (controller && s !== controller.selected) controller.select(s); emitRect(); });

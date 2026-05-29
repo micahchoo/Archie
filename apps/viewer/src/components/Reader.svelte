@@ -5,12 +5,13 @@
   // Object-parameterized (Phase-2 Grid): the parent (ExhibitView) supplies which object to read
   // and that object's projected annotations; `onback` returns to the exhibit's object grid.
   import Canvas from "@render/svelte/Canvas.svelte";
+  import type { FrameOverlay } from "@render/svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import NoteMedia from "./NoteMedia.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import Credit from "./Credit.svelte";
   import { renderMarkdown, stripMarkdown, type MarkerStyle } from "@render/svelte";
-  import { splitNoteMedia, thumbnailUrl, type NoteMediaItem, type RightsFields, type W3CAnnotation, type W3CBody, type Reading } from "@render/core";
+  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading } from "@render/core";
 
   let {
     object,
@@ -19,9 +20,7 @@
     activeReading = null,
     onreading,
     styleOf,
-    siblings = [],
-    currentId,
-    onnavigate,
+    frame = null,
     onback,
     rights,
     initialSelected = null,
@@ -36,18 +35,21 @@
     onreading?: (id: string | null) => void;
     /** Per-marker style by annotation id — colours a marker by its Reading. */
     styleOf?: (id: string) => MarkerStyle | undefined;
-    /** The exhibit's objects in reading order (for the prev/next carousel: id, label, thumbnail source). */
-    siblings?: { id: string; label: string; source: string }[];
-    currentId?: string;
-    onnavigate?: (id: string) => void;
+    /** 7e1f coverage border — the whole-object mark to frame the canvas with (ExhibitView decides
+     *  which mark + colour; this island wires onActivate to its own selection + suppresses the
+     *  framed mark's overlay rect so it isn't double-drawn). null = no frame. */
+    frame?: { markId: string; colour: string } | null;
     onback?: () => void;
     initialSelected?: string | null; // deep-link arrival: land selected on this note (→ fitBounds)
   } = $props();
+  // NOTE (dba2): the prev/next object carousel was lifted OUT of here into the persistent top bar
+  // (ViewerShell) so it stops occluding the image top-center and has one discoverable home. ExhibitView
+  // drives it from `selectedObjectId`; this island no longer owns sibling-nav props or markup.
 
   // A note's Reading colour (from the registry) — accents its list card + marker (ADR-0007).
   const readingColourOf = (it: W3CAnnotation): string | undefined => {
-    const rid = (it as unknown as Record<string, unknown>)["archie:reading"];
-    return typeof rid === "string" ? readings.find((r) => r.id === rid)?.colour : undefined;
+    const rid = readingIdOf(it);
+    return rid !== undefined ? readings.find((r) => r.id === rid)?.colour : undefined;
   };
 
   let selected = $state<string | null>(initialSelected);
@@ -60,9 +62,15 @@
     prevCanvas = c;
   });
 
-  const bodies = (it: W3CAnnotation): W3CBody[] => (Array.isArray(it.body) ? it.body : it.body ? [it.body] : []);
-  const commentOf = (it: W3CAnnotation) => { const b = bodies(it).find((x) => { const p = (x as { purpose?: string }).purpose; return p === undefined || p === "commenting"; }); return (b as { value?: string } | undefined)?.value ?? "(untitled)"; };
-  const tagsOf = (it: W3CAnnotation) => bodies(it).filter((x) => (x as { purpose?: string }).purpose === "tagging").map((x) => (x as { value?: string }).value ?? "");
+  // 7e1f: the canvas-wide frame overlay — its corners activate (select) the framed note, reusing the
+  // same `selected` path a marker click uses. The framed mark's own overlay rect is suppressed below
+  // (filtered out of the canvas annotations) so the whole-object border isn't double-drawn.
+  const canvasFrame = $derived<FrameOverlay | null>(
+    frame ? { colour: frame.colour, onActivate: () => (selected = frame.markId) } : null,
+  );
+  // The notes list + detail (`current`) keep the FULL array — only the canvas drops the framed rect.
+  const canvasAnnotations = $derived(frame ? annotations.filter((a) => a.id !== frame.markId) : annotations);
+
   const current = $derived(annotations.find((it) => it.id === selected));
   // Split the selected note into media (clickable tiles → lightbox) + prose (CONTEXT §"Local view loop").
   const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
@@ -74,24 +82,8 @@
     <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
          objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
     {#key object.canvasId}
-      <Canvas source={object.source} canvasId={object.canvasId} {annotations} {styleOf} bind:selected />
+      <Canvas source={object.source} canvasId={object.canvasId} annotations={canvasAnnotations} {styleOf} frame={canvasFrame} bind:selected />
     {/key}
-    {#if onnavigate && siblings.length > 1}
-      {@const idx = siblings.findIndex((s) => s.id === currentId)}
-      {@const prev = idx > 0 ? siblings[idx - 1] : undefined}
-      {@const next = idx >= 0 && idx < siblings.length - 1 ? siblings[idx + 1] : undefined}
-      <nav class="carousel" aria-label="Objects in this exhibit">
-        <button class="cnav" disabled={!prev} onclick={() => { if (prev) onnavigate(prev.id); }} title={prev ? `Previous: ${prev.label}` : "No previous object"}>
-          <span class="arr">‹</span>
-          {#if prev}<img class="cthumb" src={thumbnailUrl(prev.source, 120)} alt="" /><span class="lbl">{prev.label}</span>{/if}
-        </button>
-        <span class="cpos">{idx >= 0 ? idx + 1 : "–"} / {siblings.length}</span>
-        <button class="cnav" disabled={!next} onclick={() => { if (next) onnavigate(next.id); }} title={next ? `Next: ${next.label}` : "No next object"}>
-          {#if next}<span class="lbl">{next.label}</span><img class="cthumb" src={thumbnailUrl(next.source, 120)} alt="" />{/if}
-          <span class="arr">›</span>
-        </button>
-      </nav>
-    {/if}
   </main>
 
   {#if onreading && readings.length > 0}
@@ -100,11 +92,11 @@
 
   <aside class:detail={!!current}>
     {#if onback}
-      <button class="exhibit-back" onclick={() => onback?.()}>← All objects</button>
+      <button class="exhibit-back" onclick={() => onback?.()}>← Back to Exhibit</button>
     {/if}
     {#if current}
       <!-- detail state (annomea drawer): the selected note -->
-      <button class="back" onclick={() => (selected = null)}>← All notes</button>
+      <button class="back" onclick={() => (selected = null)}>← See all notes</button>
       <article>
         <!-- prose (media stripped) + the note's media as clickable tiles (image/audio/video) -->
         {#if noteParts.text}<div class="body">{@html renderMarkdown(noteParts.text)}</div>{/if}
@@ -144,26 +136,6 @@
      like catalog entries on warm paper (right); a forest-green popup echoes the selection. */
   .reader { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
   main { position: relative; flex: 1; min-width: 0; background: var(--surface-canvas); }
-
-  /* Prev/next object carousel — a canvas overlay, top-centered over the image (matches .popup/.legend). */
-  .carousel {
-    position: absolute; z-index: 20; top: var(--space-4); left: 50%; transform: translateX(-50%);
-    display: flex; align-items: center; gap: var(--space-2);
-    padding: 2px var(--space-2);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-md);
-    font-family: var(--font-ui), sans-serif; font-size: 0.78rem;
-  }
-  .carousel .cnav {
-    display: flex; align-items: center; gap: var(--space-1); max-width: 11rem;
-    background: none; border: none; color: var(--ink-canvas-secondary); cursor: pointer; font: inherit;
-  }
-  .carousel .cnav:hover:not(:disabled) { color: var(--accent); }
-  .carousel .cnav:disabled { opacity: 0.3; cursor: default; }
-  .carousel .arr { font-size: 1.05rem; line-height: 1; }
-  .carousel .cthumb { width: 26px; height: 26px; object-fit: cover; border-radius: var(--radius-sm); flex: none; box-shadow: 0 0 0 1px var(--border-canvas-emphasis); }
-  .carousel .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .carousel .cpos { color: var(--ink-canvas-muted, #6b6356); font-variant-numeric: tabular-nums; padding: 0 var(--space-1); }
 
   /* Reader panel — warm paper, catalog entries under lamplight */
   aside {
@@ -216,9 +188,9 @@
     position: absolute; left: var(--space-5); bottom: var(--space-5); max-width: 46%;
     padding: var(--space-3) var(--space-4);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent);
+    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent-2);
     border-radius: var(--radius-md);
     font-family: var(--font-body); font-size: 1rem; line-height: 1.4;
   }
-  .popup strong { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  .popup strong { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-2); }
 </style>

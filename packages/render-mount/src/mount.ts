@@ -17,7 +17,7 @@ import { mountPlugin } from "@annotorious/plugin-tools";
 import { resolveTileSource, isDegenerateSelectorValue, selectorBBox } from "@render/core";
 import { dispatchFitBounds, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import type { W3CSelector } from "@render/core";
-import type { MountSurface, SelectionId } from "./surface.js";
+import type { MountSurface, SelectionId, FrameOverlay } from "./surface.js";
 
 /** Plain fit (no sidebar reservation) — used when the adapter supplies no fit options. */
 const PLAIN_FIT: FitOptions = { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
@@ -145,6 +145,75 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     };
   };
 
+  // Coverage-border overlay (7e1f) — a single canvas-wide SVG appended over the OSD container. Held in
+  // a closure var so re-calling setFrame replaces it and null clears it. Annotorious is per-shape only,
+  // so this is a NEW mechanism (not a marker style). The SVG ignores pointer events except at the 4
+  // corner hit-targets, leaving the centre free for pan/zoom (donor legibility: stroke-over-stroke halo).
+  let frameEl: SVGSVGElement | null = null;
+  const clearFrame = (): void => {
+    frameEl?.remove();
+    frameEl = null;
+  };
+  const drawFrame = (frame: FrameOverlay): void => {
+    clearFrame();
+    const NS = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 100 100");
+    svg.setAttribute("preserveAspectRatio", "none");
+    Object.assign(svg.style, {
+      position: "absolute",
+      inset: "0",
+      width: "100%",
+      height: "100%",
+      pointerEvents: "none",
+      zIndex: "20",
+    } as Partial<CSSStyleDeclaration>);
+
+    // The border: a dark halo stroke under the colour stroke so it stays legible over any media
+    // (stroke-over-stroke, matching the marker drop-shadow note). vector-effect keeps width constant.
+    const inset = 1.2;
+    const side = 100 - inset * 2;
+    const halo = document.createElementNS(NS, "rect");
+    const border = document.createElementNS(NS, "rect");
+    for (const r of [halo, border]) {
+      r.setAttribute("x", String(inset));
+      r.setAttribute("y", String(inset));
+      r.setAttribute("width", String(side));
+      r.setAttribute("height", String(side));
+      r.setAttribute("fill", "none");
+      r.setAttribute("vector-effect", "non-scaling-stroke");
+    }
+    halo.setAttribute("stroke", "rgba(0,0,0,0.55)");
+    halo.setAttribute("stroke-width", "5");
+    border.setAttribute("stroke", frame.colour);
+    border.setAttribute("stroke-width", "3");
+    svg.append(halo, border);
+
+    // 4 corner hit-targets — clickable L-brackets, centre untouched. pointer-events:auto only here.
+    const arm = 14;
+    const corners: Array<[number, number, number, number]> = [
+      [inset, inset, 1, 1], // TL
+      [100 - inset, inset, -1, 1], // TR
+      [inset, 100 - inset, 1, -1], // BL
+      [100 - inset, 100 - inset, -1, -1], // BR
+    ];
+    for (const [cx, cy, sx, sy] of corners) {
+      const path = document.createElementNS(NS, "path");
+      path.setAttribute("d", `M ${cx} ${cy + sy * arm} L ${cx} ${cy} L ${cx + sx * arm} ${cy}`);
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", frame.colour);
+      path.setAttribute("stroke-width", "6");
+      path.setAttribute("vector-effect", "non-scaling-stroke");
+      path.setAttribute("stroke-linecap", "round");
+      path.style.pointerEvents = "stroke";
+      path.style.cursor = "pointer";
+      path.addEventListener("click", () => frame.onActivate());
+      svg.append(path);
+    }
+    viewer.element.appendChild(svg);
+    frameEl = svg;
+  };
+
   let disposed = false;
   return {
     setAnnotations(annotations) {
@@ -172,6 +241,10 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     setSelected(id: SelectionId | null) {
       if (id === null) annotator.cancelSelected();
       else annotator.setSelected(id);
+    },
+    setFrame(frame: FrameOverlay | null) {
+      if (frame === null) clearFrame();
+      else drawFrame(frame);
     },
     setDrawingEnabled(enabled: boolean) {
       annotator.setDrawingEnabled(enabled);
@@ -205,6 +278,7 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     destroy() {
       if (disposed) return;
       disposed = true;
+      clearFrame();
       selectL.clear();
       createL.clear();
       updateL.clear();

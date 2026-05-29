@@ -3,11 +3,11 @@
 // uses these to filter; pure WADM consumers show all (three-tier degradation).
 
 import type { AnnotationRecord, W3CBody } from "../wadm/types.js";
+import { bodyList } from "./body.js";
 
+// One shared body traversal (query/body.ts) — the published-shape accessors reuse it too.
 function bodiesOf(record: AnnotationRecord): W3CBody[] {
-  const b = record.body;
-  if (b === undefined) return [];
-  return Array.isArray(b) ? b : [b];
+  return bodyList(record);
 }
 
 /** Tag values on a Note (bodies with purpose:tagging). */

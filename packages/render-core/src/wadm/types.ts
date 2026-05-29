@@ -32,6 +32,10 @@ export const ARCHIE_LAYERS = "archie:layers" as const;
  *  serialized as the AnnotationPage the note lands in (`partOf` → the reading's AnnotationCollection).
  *  On heads + history (round-trip). A pure consumer ignores it (three-tier: Archie filters, pure shows all). */
 export const ARCHIE_READING = "archie:reading" as const;
+/** Per-note visual emphasis (1489). The ONLY per-note styling — colour stays reading-driven (ADR-0007).
+ *  On heads + history (round-trip), mirroring ARCHIE_READING. Emitted ONLY when authored (no default-serialize,
+ *  so existing snapshots stay byte-stable); absence reads back as `"normal"` via `emphasisOf`. */
+export const ARCHIE_EMPHASIS = "archie:emphasis" as const;
 export const ARCHIE_REV = "archie:rev" as const;
 export const ARCHIE_PARENT = "archie:parent" as const;
 /** Additional parents of a merge-resolution node (Q-7) — the other branch heads it reconciles. */
@@ -168,7 +172,13 @@ export interface AnnotationRecord {
   /** The single Reading this Note belongs to (mutually exclusive — ADR-0007), or undefined = base.
    *  A Reading is a curated interpretive pass; the id resolves against the Exhibit's reading registry. */
   reading?: string;
+  /** Authored per-note visual emphasis (1489), or undefined = default `"normal"`. Mirrors `reading`'s
+   *  optional shape; serialized to `archie:emphasis` only when set, so existing records stay byte-stable. */
+  emphasis?: Emphasis;
 }
+
+/** Per-note visual emphasis (1489) — the single source of truth (query/published.ts imports this). */
+export type Emphasis = "muted" | "normal" | "strong";
 
 /** The append-only annotation log — the authoritative source every projection reads. */
 export type AnnotationLog = readonly AnnotationRecord[];

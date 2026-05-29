@@ -8,6 +8,7 @@ import {
   ARCHIE_LOGICAL_ID,
   ARCHIE_LAYERS,
   ARCHIE_READING,
+  ARCHIE_EMPHASIS,
   ARCHIE_REV,
   ARCHIE_PARENT,
   ARCHIE_MERGE_PARENTS,
@@ -43,6 +44,8 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
   const layersRaw = a[ARCHIE_LAYERS];
   const layers = Array.isArray(layersRaw) && layersRaw.every((x) => typeof x === "string") ? (layersRaw as string[]) : undefined;
   const reading = asString(a[ARCHIE_READING]);
+  const emphRaw = a[ARCHIE_EMPHASIS];
+  const emphasis = emphRaw === "muted" || emphRaw === "normal" || emphRaw === "strong" ? emphRaw : undefined;
   const target = (Array.isArray(ann.target) ? ann.target[0] : ann.target) as W3CTarget;
   const record: AnnotationRecord = {
     logicalId: asLogicalId(logical),
@@ -58,6 +61,7 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
     ...(ann.motivation !== undefined ? { motivation: ann.motivation } : {}),
     ...(layers !== undefined ? { layers } : {}),
     ...(reading !== undefined ? { reading } : {}),
+    ...(emphasis !== undefined ? { emphasis } : {}),
   };
   return record;
 }

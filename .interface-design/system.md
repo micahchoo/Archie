@@ -16,7 +16,8 @@
 ## Palette
 
 **Foundation:** The study at dusk — dark canvas, warm paper, stone walls.
-**Accent:** Forest green — the scholar's ink, a precise cool green. Used singly: selection states, active-layer indicator, drawing tool cursor, link affordances, the "active" object in the rail.
+**Accent (primary):** Forest green — the scholar's ink, a precise cool green. Selection states, active-layer/reading indicator, drawing tool cursor, link affordances, the "active" object in the rail.
+**Accent (secondary):** Golden amber — the study's lamplight / gilt frame, the warm counter to the cool ink. A *deliberate two-accent system* (not accent sprawl): amber carries emphasis **only where forest green fails contrast** — green-on-grey is unreadable (e.g. accent text/icons on the dark grey overlay `#252420` or against the muted inks). It must never read as the green "active/selection" state, and it is **not** the `warning` semantic. Added 2026-05-29 from a human-smoke contrast finding (green on grey not readable).
 
 ```
 Canvas (dark light-table):
@@ -32,16 +33,28 @@ Paper (notes sidebar, forms, prose pane):
 
 Gallery wall: #ebdfce
 
-Accent — forest green:
+Accent (primary) — forest green:
   primary: #3a6b4c
   hover: #2d553d
   muted: rgba(58,107,76,0.12)
 
+Accent (secondary) — golden amber (lamplight / gilt frame):
+  on canvas (dark):  #d6a23e (primary), #e3b65a (hover), rgba(214,162,62,0.14) (muted)
+  on paper (light):  #9a6f1e (primary), #835d16 (hover), rgba(154,111,30,0.12) (muted)
+  ROLE: contrast rescue + secondary emphasis ONLY. Reach for it when forest green sits on a grey
+  surface (overlay #252420, muted inks) and the pair is unreadable. Never for active/selection
+  (that stays green). Distinct hue/role from `warning` below.
+
 Semantic:
   success: #5a8f4a
-  warning: #c49b36
+  warning: #c49b36 (caution — NOT an accent; close to amber by hue, separated by meaning + usage)
   error: #c44536 (vermillion — only for destructive/danger, never accent)
 ```
+
+> **Contrast rule (2026-05-29):** forest-green-on-grey is the known low-contrast failure. Any
+> green accent rendered on a grey/dark-grey surface must either move to a higher-contrast surface
+> or switch to the golden-amber secondary accent. Audit: legend swatches, active-object ring on the
+> dark rail, link affordances on the canvas overlay.
 
 ## Depth
 
@@ -200,3 +213,111 @@ Shown when the Viewer holds no library yet (a deployed shell with no baked tree,
 - Long annotation bodies: popup caps at `max-height: 78vh; overflow-y: auto`. Sidebar note cards clamp to 3 lines with `line-clamp`. Full body visible in the WADM form (sidebar) or drawer detail (Viewer).
 - "Lots of annotations" means the sidebar list needs to be fast-scannable: note count eyebrow, layer/tag chips in each card, search/filter planned for v1.1.
 - The Library-level Gallery and the published Gallery share one data source (`exhibits.json`) but render differently: Studio = dark table, Viewer = warm wall.
+
+---
+
+## Design Decisions — 2026-05-29 human-smoke
+
+Recorded design intent for findings filed as seeds issues. These are **design-system commitments**.
+Author all copy in **curator voice** (name the action + what it produces; no media-editing/dev jargon).
+
+> **BUILT 2026-05-29.** All six decided features below are implemented + gate-green (studio build +
+> 13 tests · viewer build + astro check 0/0/0 + 13 tests · render-core 435 / mount 17 / svelte 17).
+> ADR-0011 filed (gesture-initiated creation). Contracts: `docs/reviews/plans/CONTRACTS-smoke-build.md`.
+> **Carried-forward TODOs (not regressions — scoped deferrals):**
+> - **7e1f contrast (0045):** the whole-object frame draws over the near-black canvas `#181714` where
+>   forest-green is the established normal, so the amber-rescue was NOT applied (a raw WCAG check would
+>   wrongly flip *every* frame to amber). A surface-aware amber rescue is a TODO in viewer `frameColour`.
+> - **7e1f AV frame:** image/OSD only (the frame is an OSD-container overlay; AV is MediaPlayer, not OSD).
+>   AV coverage *detection* exists (`temporalCoverage`) but no AV frame render.
+> - **ea50 scope:** the visual MediaPicker cites THIS exhibit's notes by image (the resolvable +
+>   thumbnail-bearing set; `LinkTarget` resolves exhibits + notes only, not objects). ⌘K stays the
+>   cross-exhibit text path. The NarrativeEditor "from a note" `<select>` was left as-is (works), not
+>   re-skinned to tiles.
+> - **1489 reading-colour:** a swatch picker on reading *creation* (auto-cycle default); no edit-colour-
+>   after-creation surface yet. Runtime smoke owed on all (no browser here): emphasis modulation visible,
+>   coverage-frame click-targets, MediaPicker thumbnails, swatch pick.
+
+- **Annotation marker styling** (seeds `Archie-1489`). **Scope decided 2026-05-29 (grill): A+C, not B.**
+  - **Colour is reading-driven only** (ADR-0007: `colour` identifies a Reading; the viewer legend is a
+    radio that depends on colour = which-reading). The curator *picks* a reading's colour where readings
+    are created/edited (dovetails with the `Archie-455a` reading modal). **No per-note colour override** —
+    it was rejected because it creates two competing colour sources and breaks the legend contract.
+  - **Per-note styling is emphasis only** — opacity / stroke-weight, **never hue** — so a mark can be
+    pushed forward/back without lying about which reading it belongs to.
+  - **Base (reading-less) notes** get one neutral default style (forest-green ink) so they aren't invisible.
+  - Keep the stroke-over-stroke legibility treatment under any colour. Today's `readingStyleOf`
+    (`ExhibitView.svelte`, `fillOpacity 0.18 / strokeOpacity 0.95 / strokeWidth 2`) is the donor shape.
+- **Large-annotation affordance** (seeds `Archie-7e1f`). **Decided 2026-05-29 (grill): A+B.** When a mark
+  covers **>~75%** of the media (threshold tunable), the overlay rectangle becomes noise — instead draw an
+  **overarching border** framing the whole media, clickable from **any of the four corners** (corner
+  hit-targets; media center stays unobstructed). This is the gilt-frame metaphor literalised.
+  - **Detection is automatic** by default — computed from the selector geometry (image: bbox area ÷
+    canvas; AV: time-range ÷ duration with no spatial box). Self-corrects on resize; no data change for
+    the common case.
+  - **Plus an authored override** — a per-note "applies to the whole object" flag (small ADR-0006
+    annotation-level hint) for cases the geometry misses (e.g. a curator who *means* whole-media at 60%).
+  - Border inherits its **reading colour** (per the `Archie-1489` A+C decision), switching to the
+    **golden-amber secondary accent only if green fails contrast** on that media (per the `0045` rule).
+- **"Exhibit layout" control + per-layout copy** (seeds `Archie-1f0e`). The layout chip
+  (`ExhibitOverview.svelte`, currently "▦ {layout}") gets the explicit label **"Exhibit layout"**, and
+  each layout (single / grid / narrative) carries one line of curator copy naming its *reading intent*
+  ("one object, full attention" / "a wall of objects to scan" / "a guided sequence with prose"). Not
+  feature names — what the visitor experiences.
+- **"Add a reading" educational modal** (seeds `Archie-455a`). First use opens a teaching modal: what a
+  Reading **is** (an interpretive pass — ADR-0007), that a note sits in at most one reading or the
+  always-visible base, and that readings get colours (ties to marker styling above). Curator voice,
+  warm-paper surface, dismissible-and-remembered.
+- **Viewer top bar** (seeds `Archie-dba2`). **Decided 2026-05-29 (grill): A — one three-zone bar, carousel
+  moves IN.** A single thin persistent top bar (`ViewerShell` owns it; ADR-0008 one shell): **left** =
+  breadcrumb / "Back to Exhibit"; **center** = the object carousel (‹ prev · *i/n* · next ›); **right** =
+  "Open another library" (quiet chrome, per the Empty Hall note). The carousel **moves out of the canvas
+  overlay** (today it floats top-center over the image in `Reader.svelte`, matching `.popup`/`.legend`)
+  **into the bar** — one persistent home, more discoverable, and it stops occluding the image top-center.
+- **Remove from library / remove from exhibit** (seeds `Archie-3f4c`). **Decided 2026-05-29 (grill).**
+  Destructive remove buttons in the scoped `DetailsEditor` (+ new `onremove` prop): `scope="exhibit"` →
+  "Remove from library"; `scope="object"` → "Remove from exhibit".
+  - **Confirm = inline two-step** (NOT `window.confirm`): the button morphs in place to a vermillion
+    (`--error`) "Confirm — this can't be undone"; the second click is the guard. On-brand for the study.
+  - **Object removal tombstones its notes** via `session.deleteNote` (append-only, ADR-0003 — recoverable
+    through history; orphaned tombstones simply don't project). NOT a hard drop; `clearExhibitAnnotations`
+    is per-exhibit, too broad. Removing an exhibit = `clearExhibitAnnotations(slug)` + drop from `exhibits[]`.
+  - **Last-item edges:** removing the **last exhibit** → a **truly-empty library** ("no exhibits yet —
+    create one", rhyming with the Empty Hall); **do NOT reseed `DEFAULT_EXHIBITS`** (would resurrect demo
+    content after a deliberate wipe). Removing the **last object** → empty exhibit, already valid
+    post-`Archie-e5c0` (lands at the overview with the Add-object plate).
+- **Viewer breadcrumb relabels** (seeds `Archie-2cc1`). "All objects" → **"Back to Exhibit"**; "All
+  Notes" → **"See all notes"** — action-named, not category-named (curator voice).
+- **Exhibit-page canvas vertical rhythm** (seeds `Archie-48ee`). The exhibit-page pan/zoom canvas (and
+  the grid) read too narrow — give the canvas viewport more height. The image is the star (Intent §);
+  the canvas should dominate the exhibit page's vertical space, chrome staying thin.
+- **Creation model — drawing is note-initiated; selection is ambient** (seeds `Archie-6d65`).
+  **Decided 2026-05-29 (grill): B, made canonical.** Retires the persistent Select|Rect|Polygon tool
+  palette (an adopted-from-anvil toolbar). New model:
+  - **Selection is always on** — clicking a mark selects/inspects it; there is no "select tool" to pick.
+  - **Drawing is armed only by creating a note** — a "New note" affordance (the notes pane is the entry,
+    fork B) lets you choose the shape (rect / polygon), draw the region, and the note is created at that
+    locus (ADR-0006 edit-at-locus). There is **no other creation surface** that needs the draw tools.
+  - **Consequence:** the header tool palette + persistent `tool`/`mode` state is removed; the
+    "3-Action Routing" + "Layout Anatomy — Studio › Header (Tools)" sections **below are superseded** on
+    this point (Annotate = note-creation, not a sticky draw mode). **ADR-worthy** (retires an adopted
+    pattern; surprising to a future reader; real trade-off vs anvil's mode toolbar) — offered to the user.
+  - **Refined model (2026-05-29):** the **gesture is universal** — *choose-shape → draw* — and is the only
+    way drawing ever starts. It's initiated by an explicit CREATE act, of which there are two: **note
+    creation** and **narrative camera framing**. What the gesture *produces* differs (a note vs a section
+    camera, ADR-0005); the gesture and the absence of a sticky tool-mode are identical. So framing is **not**
+    an exception — same primitive, different product.
+  - **Caveats still to honor when building:**
+    2. **AV creation is a different gesture** (`AvEditor.svelte`: waveform-drag / video frame-box), never
+       rect/polygon — so the create-arms-drawing model is image-only; AV keeps its own surface.
+    3. `R`/`P` keyboard shortcuts (`App.svelte:860-1`) die with the palette — remove/repurpose.
+    4. Reshaping an existing mark depends on Annotorious select-mode edit handles
+       (`mount.ts setDrawingEnabled(false)`) — must survive palette removal (verify).
+- **Cite + media picker** (seeds `Archie-ea50`). **Decided 2026-05-29 (grill): A (two complementary
+  pickers, not one).** Research corrected the premise: "Cite" is the **⌘K text palette** (`CmdK.svelte`)
+  — fuzzy search over notes+exhibits, inserts a markdown link `[label](ref)` (`encodeLinkRef`) at the
+  caret, field-agnostic; "from a note" is a `<select>` (`NarrativeEditor.svelte:157`). Decision: **keep
+  the ⌘K text-cite** (fast keyboard fuzzy-cite is a distinct, good interaction — do not collapse it into a
+  grid) **and add a visual picker only where the user wants tiles** — scope = {exhibit **objects**, a
+  note's **media**}. The two pickers **share one result shape** (a chosen ref/media item) so downstream
+  insert logic is single-sourced. Do NOT retire ⌘K.

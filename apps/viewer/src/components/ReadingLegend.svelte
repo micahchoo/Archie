@@ -39,13 +39,13 @@
     position: absolute; z-index: 20; top: 3.25rem; left: var(--space-5); max-width: 17rem;
     padding: var(--space-3) var(--space-4);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent);
+    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent-2);
     border-radius: var(--radius-md);
     font-family: var(--font-ui), sans-serif;
   }
   .title {
     display: block; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--accent); margin-bottom: var(--space-2);
+    color: var(--accent-2); margin-bottom: var(--space-2);
   }
   .opts { display: flex; flex-direction: column; gap: 1px; }
   .opt {
