@@ -6,7 +6,11 @@ The portable Viewer (ADR-0008) consumes the loaded `Filesystem` via a **data-pro
 
 ## Evidence
 
-Spike at `spikes/portable-viewer-seam/` (quarantined; 16 vitest tests green, Node v24 + happy-dom).
+Spike was at `spikes/portable-viewer-seam/` (16 vitest tests green, Node v24 + happy-dom).
+**Retired 2026-05-29** once its `approach-p/portable.ts` + tests were promoted into
+`packages/render-core/src/publish/portable.ts` (provenance preserved in that file's header);
+the spike carried a vulnerable `happy-dom ^15` in its own out-of-workspace lockfile, so removing it
+also cleared the Dependabot critical/high alerts that originated only there.
 
 - **Service Worker (S) — rejected for v1.** Its media/deep-link win is real *only* if the SW reliably intercepts `/<repo>/published/*` on a GitHub **project** site (GH can't set `Service-Worker-Allowed`) AND wins a "SW active + page→worker zip handoff before the first fetch" race. Neither is node-verifiable; the failure mode is a blank exhibit on first paint. S replaces the absent server with a worker pretending to be one — more moving parts, fighting the locked "no server" frame.
 - **Data-provider (P) — chosen.** ~174 LOC of pure, fully node-tested data code; **zero component changes**, because the image sinks already pass `blob:`/`data:` through unchanged (`packages/render-core/src/iiif/resolve.ts:41`, verified) — so `ObjectGrid`/`Reader`/`MediaPlayer`/`NoteMedia` are untouched once URLs are rewritten. Blob URLs are origin-scoped per-load, so cache-isolation is free (S had to namespace by `libraryId` to prevent cross-library reads in its shared URL space).

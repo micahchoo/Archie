@@ -1,6 +1,11 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+# Security overrides (Dependabot) — force vulnerable dev/build-only transitive deps up to patched
+# versions. Patched versions already coexist in the tree, so this is a safe bump.
+overrides:
+  yaml@<2.8.3: '>=2.8.3'
+  esbuild@<0.25.0: '>=0.25.0'
 allowBuilds:
   esbuild: true
   sharp: true
