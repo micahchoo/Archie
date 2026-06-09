@@ -22,18 +22,43 @@
     onfolder: () => Promise<string | null>;
     onzip: () => Promise<string>;
     ongithub: () => void;
-    /** Save the whole library as a portable .archie.zip — a copy to keep, re-open, or hand to someone. */
-    ondownload: () => void;
+    /** Save the whole library as a portable .archie.zip — a copy to keep, re-open, or hand to someone.
+     *  Resolves true only if a save actually happened (false = size-guard declined / picker cancelled). */
+    ondownload: () => Promise<boolean>;
   } = $props();
 
-  type Phase = "choose" | "local" | "working" | "done-folder" | "done-zip" | "error";
+  type Phase = "choose" | "local" | "working" | "done-folder" | "done-zip" | "done-download" | "error";
   let phase = $state<Phase>("choose");
   let folderName = $state("");
   let zipName = $state("");
   let errorMsg = $state("");
 
+  // ?src= share path (contributor-broadening ④, Archie-fd32): the zero-GitHub publish — host the
+  // .archie.zip anywhere public, share one link into the canonical Viewer instance (ADR-0009).
+  // Cite-with-caveats by design: the durability warning below is load-bearing, don't drop it.
+  // MUST match the deploy target in scripts/build-gh-pages.sh (which carries the mirror comment) —
+  // drift silently breaks every minted link; a bash script can't import this constant.
+  const CANONICAL_VIEWER = "https://micahchoo.github.io/Archie/viewer/";
+  let zipUrl = $state("");
+  let copied = $state(false);
+  const shareLink = $derived.by(() => {
+    const u = zipUrl.trim();
+    if (!u) return "";
+    try {
+      const p = new URL(u);
+      if (p.protocol !== "https:" && p.protocol !== "http:") return ""; // a junk string composes a junk link
+    } catch { return ""; }
+    return `${CANONICAL_VIEWER}?src=${encodeURIComponent(u)}`;
+  });
+  const canCopy = typeof navigator !== "undefined" && !!navigator.clipboard;
+  function copyShareLink() {
+    navigator.clipboard.writeText(shareLink)
+      .then(() => { copied = true; setTimeout(() => (copied = false), 1500); })
+      .catch(() => { copied = false; }); // permission denied — the link is still selectable above
+  }
+
   // Reset to the chooser whenever the dialog (re)opens.
-  $effect(() => { if (open) { phase = "choose"; errorMsg = ""; } });
+  $effect(() => { if (open) { phase = "choose"; errorMsg = ""; zipUrl = ""; copied = false; } });
 
   async function chooseFolder() {
     phase = "working"; errorMsg = "";
@@ -60,6 +85,9 @@
       {#if phase === "choose"}
         <h2>Where to?</h2>
         <p class="lede">The same published site — choose where it goes.</p>
+      {:else if phase === "done-download"}
+        <h2>Save a copy</h2>
+        <p class="lede">A portable <code>.archie.zip</code> — and, if you host it, a shareable link.</p>
       {:else}
         <h2>Publish locally</h2>
         <p class="lede">Put the site in the one folder the Viewer reads, then open it — no GitHub.</p>
@@ -76,12 +104,34 @@
           <span class="c-title">To GitHub Pages</span>
           <span class="c-desc">Publish to the web on a GitHub Pages branch — standalone, no server.</span>
         </button>
-        <button class="choice" onclick={() => { onclose(); ondownload(); }}>
-          <span class="c-title">Save a copy</span>
-          <span class="c-desc">Pack the whole library into one <code>.archie.zip</code> to keep, re-open, or hand to a colleague.</span>
+        <!-- Stay on the chooser until the save actually happens (the OS picker is modal anyway) —
+             done-download must never claim a save the user cancelled. -->
+        <button class="choice" onclick={async () => { if (await ondownload().catch(() => false)) phase = "done-download"; }}>
+          <span class="c-title">Save a copy — or share a link</span>
+          <span class="c-desc">Pack the whole library into one <code>.archie.zip</code> to keep, re-open, hand to a colleague — or host it and share a link that opens in any browser.</span>
         </button>
       </div>
       <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>
+
+    {:else if phase === "done-download"}
+      <div class="result">
+        <p class="ok">Saved your <code>.archie.zip</code>.</p>
+        <p class="line">Keep it, re-open it here any time, or hand it to a colleague.</p>
+        <p class="line"><strong>Share it as a link (no install for the reader):</strong> upload the zip anywhere public — your site, a GitHub release, the Internet Archive — then paste its URL:</p>
+        <input class="share-url" type="url" placeholder="https://…/my-library.archie.zip" bind:value={zipUrl} aria-label="Public URL of the uploaded .archie.zip" />
+        {#if shareLink}
+          <pre class="cmd"><code>{shareLink}</code></pre>
+          {#if canCopy}
+            <div class="actions share-actions">
+              <button type="button" class="ghost" onclick={copyShareLink}>{copied ? "Copied ✓" : "Copy link"}</button>
+            </div>
+          {:else}
+            <p class="line muted">Select the link above to copy it.</p>
+          {/if}
+        {/if}
+        <p class="line muted">A <code>?src=</code> link works while both hosts stay up — the zip's and the Viewer's. For a durable, citable publication, publish the full site instead.</p>
+        <div class="actions"><button class="primary" onclick={close}>Done</button></div>
+      </div>
 
     {:else if phase === "done-folder"}
       <div class="result">
@@ -152,6 +202,14 @@
   .c-desc { font-family: var(--font-ui); font-size: 0.82rem; line-height: 1.45; color: var(--ink-paper-secondary); }
 
   .body, .result { display: flex; flex-direction: column; gap: var(--space-3); }
+  .share-url {
+    width: 100%; box-sizing: border-box; font-family: var(--font-mono); font-size: 0.8rem;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-paper-card); color: var(--ink-paper-primary);
+    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
+  }
+  .share-url:focus { outline: none; border-color: var(--accent); }
+  .share-actions { justify-content: flex-start; margin: 0; }
   .line { font-family: var(--font-ui); font-size: 0.85rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0; }
   .line.muted { color: var(--ink-paper-muted); font-size: 0.78rem; }
   code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-primary); }

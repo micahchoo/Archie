@@ -5,7 +5,6 @@
   import { onMount, tick } from "svelte";
   import { folderNameFrom, inferredMime, mediaFilesInOrder } from "./folder-import.js";
   import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
-  import { bidarObject, bidarNotes, bidarTitle } from "./bidar.js";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";
   import Publish from "./Publish.svelte";
@@ -74,11 +73,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
     { id: "ex-voynich", slug: "voynich", title: "The Whole Manuscript", layout: "grid", seedVersion: 2, readings: voynichReadings, objects: voynichObjMeta },
     // NARRATIVE — all + the sounded page, the 6-beat spine → narrative.
     { id: "ex-voynich-reading", slug: "voynich-reading", title: "Reading the Unreadable", layout: "narrative", seedVersion: 1, readings: voynichReadings, sections: voynichSections as Section[], objects: voynichObjMeta },
-    // MAP — the segment-diverse template (contributor-broadening ③, Archie-eaae): a community-mapping /
-    // StoryMap-shaped example so the first impression isn't "manuscripts only". Revives the real
-    // "Techno-Futures from Bidar" piece sunset in 3842e51 (then: voynich-only focus; superseded by the
-    // GOAL §5a researched backlog). seedVersion 3 > the sunset-era 2, so a stale persisted copy reseeds.
-    { id: "ex-bidar", slug: "bidar", title: bidarTitle, layout: "single", seedVersion: 3, objects: [{ id: bidarObject.id, source: bidarObject.source, label: bidarObject.label, width: bidarObject.width, height: bidarObject.height }] },
   ];
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
@@ -166,19 +160,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
     }
     return s;
   }
-  function seededBidar(): AnnotationSession {
-    const s = new AnnotationSession(author);
-    for (const n of bidarNotes) {
-      const [x, y, w, h] = n.region;
-      s.createNote({ target: rectSel(`${BASE}bidar/canvas/o1`, x, y, w, h), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
-    }
-    return s;
-  }
   const seededFor = (slug: string): (() => AnnotationSession) | null =>
     slug === "voynich-rosettes" ? () => seededVoynich("voynich-rosettes", { objectIds: new Set(["o9"]), includeAv: false })
     : slug === "voynich" ? () => seededVoynich("voynich", { includeAv: true })
     : slug === "voynich-reading" ? () => seededVoynich("voynich-reading", { includeAv: true })
-    : slug === "bidar" ? seededBidar
     : null;
   let session = $state(new AnnotationSession(author));
 
@@ -1092,11 +1077,19 @@ import LayoutPicker from "./LayoutPicker.svelte";
     // file handle on Chromium (showSaveFilePicker) so the archive never fully materializes; elsewhere
     // fall back to the eager in-memory zip + anchor download. The 2× size guard applies ONLY to that
     // eager path — streaming holds ≈1× (the Map), not the zip copy on top.
-    if (!supportsFileStreamSave() && !(await zipSizeOk())) return; // large-library guard (#1), eager path only
+    if (!supportsFileStreamSave() && !(await zipSizeOk())) return false; // large-library guard (#1), eager path only
     const logs = await loadAllLogs();
     const { fs, brokenLinks } = await libraryToZipFs(buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset: (slug, name) => readAssetBlob(slug, name) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
-    await saveZipToDisk(fs, zipNameFor(PROJECT_TITLE));
+    // Returns whether a save actually HAPPENED — the dialog's done-download phase must not claim a
+    // save the user cancelled in the picker (review: silent-failure family).
+    try {
+      await saveZipToDisk(fs, zipNameFor(PROJECT_TITLE));
+      return true;
+    } catch (e) {
+      if ((e as Error)?.name === "AbortError") return false; // picker cancelled — not an error
+      throw e;
+    }
   }
 
   // --- publish (GH-Pages) ---
@@ -1659,7 +1652,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     onfolder={localPublishFolder}
     onzip={localPublishZip}
     ongithub={() => { publishDialogOpen = false; void openPublish(); }}
-    ondownload={() => void download()}
+    ondownload={download}
   />
   <Publish open={publishOpen} onclose={() => (publishOpen = false)} onpublish={publish} {brokenLinks} />
   <CmdK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />

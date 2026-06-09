@@ -5,6 +5,8 @@ REPO="Archie"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/gh-pages-dist"
 
+# The Viewer deploy URL below must match CANONICAL_VIEWER in apps/studio/src/PublishDialog.svelte
+# (the ?src= share links Studio mints) — drift silently breaks every shared link.
 echo "=== Building Studio (Vite SPA) ==="
 cd "$ROOT/apps/studio"
 pnpm exec vite build --base="/$REPO/studio/"
