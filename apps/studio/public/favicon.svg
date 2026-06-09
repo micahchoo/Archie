@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Archie mark — curator's study at night (tokens.css): dark canvas tile,
+       paper-ink serif A, amber annotation marker (--accent-2). -->
+  <rect width="64" height="64" rx="12" fill="#181714"/>
+  <text x="31" y="47" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="44" font-weight="600" fill="#e8e4db">A</text>
+  <circle cx="47" cy="17" r="6" fill="#d6a23e"/>
+</svg>
