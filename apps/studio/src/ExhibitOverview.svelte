@@ -146,7 +146,7 @@
   function onDragEnd() { dragId = null; overId = null; }
 </script>
 
-<section class="overview">
+<main class="overview">
   <!-- Exhibit-scale header: where you are + the exhibit's reading-intent + the canvas/list switch. -->
   <header>
     <button class="back" onclick={onback}>← Exhibits</button>
@@ -263,7 +263,7 @@
       </li>
     </ul>
   {/if}
-</section>
+</main>
 
 <style>
   /* The exhibit at the overview scale — plates on the dark light-table (system.md). */

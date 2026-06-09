@@ -1281,7 +1281,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     <button class="exhibit-back" onclick={hasOverview ? backToOverview : backToLibrary}>← {hasOverview ? "Overview" : "Exhibits"}</button>
     <!-- Breadcrumb: Exhibit › Object — surfaces the two scales (the spine lives at the exhibit level, notes
          at the object level; the crumb names where you are). -->
-    <span class="wordmark">{currentExhibit.title}</span>{#if current}<span class="crumb">› {current.label}</span>{/if}<span class="sub">Studio</span>
+    <h1 class="wordmark">{currentExhibit.title}</h1>{#if current}<span class="crumb">› {current.label}</span>{/if}<span class="sub">Studio</span>
     <span class="spacer"></span>
     <!-- ADR-0011: no persistent tool palette. Selection is ambient; drawing arms only from a CREATE act
          ("New note" in the notes pane, or narrative camera framing). -->
@@ -1583,7 +1583,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     background: var(--surface-canvas-raised);
     border-bottom: 1px solid var(--border-canvas);
   }
-  .wordmark { font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; color: var(--ink-canvas-primary); letter-spacing: 0.01em; }
+  .wordmark { font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; color: var(--ink-canvas-primary); letter-spacing: 0.01em; margin: 0; }
   .sub { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
   .spacer { flex: 1; }
   /* Vertically centres the full-width ~80vh overview band (breathing room above/below; no frame). */
