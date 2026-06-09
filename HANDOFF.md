@@ -1426,3 +1426,43 @@ click a note in the list and the audio seeks to it → publish → it renders in
 ALSO: "⊕ Import VTT/SRT" → pick a .vtt/.srt file → its cues append as time notes in the list.
 _If "Set in" before the audio has loaded feels wrong (it marks in=0), the fix is a UI affordance: gate the
 "Set in" button on the `loadedmetadata` event — don't preempt it; only if verify finds it warranted._
+
+---
+
+## ▶ /goal LOOP RUN — 2026-06-09 (append-only section; loop continuity across compaction)
+
+**What:** one continuous `/goal` run (charter `docs/GOAL.md`, procedure `.claude/goals/goal.md`).
+After compaction: re-read both, then this section, continue the cycle loop.
+
+**Run state** (local `main`, 18 commits ahead of origin — NOT pushed; pushing is the user's call):
+- Phase 1 (look/feel/perf, cycles 1–12): typecheck 4→0 · axe 41→0 over 8 surfaces · console → 0 ·
+  tap targets 7→0 · FCP 232→84ms (self-hosted fonts, ADR-0012) · og/twitter meta · gates green throughout.
+- Phase 2 (researched backlog §5a, cycles 13–18): ①-A folder→exhibit (e2bb2be) · ② IIIF URL paste
+  (5e28add) · ③ Bidar template (8ceba79) **REVERTED BY USER** — their staged revert was absorbed
+  into a3d9150 (mixed commit; details in seed Archie-eaae) · ④ ?src= share path (a3d9150) ·
+  ⑤ JSON-LD (5cefba0) · ⑥-A CSV notes import (c314ebf). Dry streak: 0.
+
+**Next:** ⑥ remaining slices (xlsx via lazy exceljs, column mapping) · ⑦ WADM/Recogito/Hypothes.is
+import (donors: mirador AnnotationFactory crosswalk, cozy-iiif fetch-annotations — Prior Art/14) ·
+then ⑧–⑭. ③ is USER-GATED (user reverted it — template content is their call). Blocked on a
+canonical-origin decision: og:image (Archie-717d), sitemap (Archie-b4f2).
+
+**Hard-won protocol (don't relearn):**
+- Runner reality (GOAL §7 is stale): lockfile is pnpm-11-flavored. Use
+  `PATH=$HOME/.nvm/versions/node/v22.22.2/bin:$PATH npx --yes pnpm@11` for everything; astro needs
+  Node ≥22.12. pnpm@9 `--frozen-lockfile` PURGES node_modules then bails — never again.
+- A parallel human is active in this tree. Before EVERY commit: `git diff --cached --stat` —
+  pre-staged foreign changes ride into your commit (how a3d9150 got mixed). Leave their
+  uncommitted work (astro.config.mjs, viewer package.json, lockfile, .gitignore) untouched.
+- Any viewer build regenerates `apps/viewer/public/published/` with fresh ULIDs (Archie-dcde):
+  always `git checkout -- apps/viewer/public/published && git clean -fdq apps/viewer/public/published`.
+- Measurement harness in `/tmp/archie-a11y` (scan.mjs = axe+console+links on :4173 over
+  apps/viewer/dist; studio-scan/studio-deep/targets/perf; studio dev on :5173, HMR live).
+  Chromium via `executablePath: "/usr/bin/chromium-browser"` + `--no-sandbox`.
+- Hidden-input e2e: setInputFiles stalls on display:none — inject File via DataTransfer +
+  dispatchEvent(change) in page.evaluate.
+- Feature cycles: §5b mandatory — research → mulch `product-research` → build → code-review
+  (reviewer agent a63bd9989765c68c6; spawn fresh if gone) → fix → gate. The reviewer's
+  silent-failure hunts were right 5/5 rounds.
+- Bundle meter resolves any store esbuild (05fc417); 223.7KB gz (esbuild 0.27) ≡ the old 222.7
+  baseline (meter drift, not growth).
