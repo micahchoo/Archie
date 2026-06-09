@@ -15,6 +15,14 @@ const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL :
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href={base + "favicon.svg"} />
     <title>Voynich manuscript — Archie</title>
+    <!-- Shareability meta (GOAL §5: og-tags are table-stakes for exhibit publishers — mulch product-research).
+         og:image needs an absolute deploy origin — deferred (seed). -->
+    <meta name="description" content="A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page." />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Archie" />
+    <meta property="og:title" content="The Whole Manuscript" />
+    <meta property="og:description" content="A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page." />
+    <meta name="twitter:card" content="summary" />
     <link rel="stylesheet" href={base + "fonts/fonts.css"} />
   </head>
   <body style="margin: 0">

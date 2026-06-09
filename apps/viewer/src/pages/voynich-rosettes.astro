@@ -15,6 +15,14 @@ const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL :
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href={base + "favicon.svg"} />
     <title>The Rosettes — Archie</title>
+    <!-- Shareability meta (GOAL §5: og-tags are table-stakes for exhibit publishers — mulch product-research).
+         og:image needs an absolute deploy origin — deferred (seed). -->
+    <meta name="description" content="A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas." />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Archie" />
+    <meta property="og:title" content="The Rosettes" />
+    <meta property="og:description" content="A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas." />
+    <meta name="twitter:card" content="summary" />
     <link rel="stylesheet" href={base + "fonts/fonts.css"} />
   </head>
   <body style="margin: 0">
