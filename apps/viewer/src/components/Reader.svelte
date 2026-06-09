@@ -105,7 +105,8 @@
       </article>
     {:else}
       <!-- list state -->
-      <p class="object-label">{object.label}</p>
+      <!-- h1: the single-object page's top heading (axe page-has-heading-one); styling is class-keyed -->
+      <h1 class="object-label">{object.label}</h1>
       {#if object.summary}<p class="object-summary">{object.summary}</p>{/if}
       <p class="credit-row"><Credit {rights} tone="paper" /></p>
       <h2 class="eyebrow">Notes · {annotations.length}</h2>
@@ -180,7 +181,7 @@
   article .body :global(img) { display: block; max-width: 100%; max-height: 200px; height: auto; margin-top: var(--space-2); border-radius: var(--radius-sm); cursor: zoom-in; }
   .tags { margin-top: var(--space-4); display: flex; gap: var(--space-3); }
   .tag { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); }
-  .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-muted); line-height: 1.6; margin-top: var(--space-5); }
+  .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-5); }
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
 
   /* Popup — a forest-green callout over the light table */

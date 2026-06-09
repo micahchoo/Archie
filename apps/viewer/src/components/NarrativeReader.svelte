@@ -151,7 +151,7 @@
   }
   .eyebrow { color: var(--accent); }
   aside h1 { font-family: var(--font-display); font-weight: 600; font-size: 2rem; line-height: 1.1; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); }
-  .hint { font-family: var(--font-ui); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-muted); margin: 0 0 var(--space-5); }
+  .hint { font-family: var(--font-ui); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0 0 var(--space-5); }
 
   .sections { list-style: none; margin: 0; padding: 0; counter-reset: none; }
   .sections li { margin-bottom: var(--space-3); }
@@ -166,7 +166,7 @@
   .sections button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); }
   .sections button.active { border-left-color: var(--accent); background: var(--accent-muted); }
   .num { display: inline-block; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); margin-bottom: var(--space-2); }
-  .num .obj { color: var(--ink-paper-muted); }
+  .num .obj { color: var(--ink-paper-secondary); }
   .prose { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.55; color: var(--ink-paper-primary); }
   .prose :global(p) { margin: 0 0 var(--space-2); }
   .prose :global(p:last-child) { margin-bottom: 0; }

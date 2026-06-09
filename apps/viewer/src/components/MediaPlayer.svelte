@@ -179,7 +179,7 @@
   }
   .eyebrow { color: var(--accent); font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin: 0; }
   .vid-label { font-family: var(--font-display); font-weight: 600; font-size: 1.6rem; line-height: 1.1; margin: var(--space-2) 0 0; color: var(--ink-paper-primary); }
-  .hint { font-family: var(--font-ui); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-muted); margin: var(--space-3) 0 var(--space-5); }
+  .hint { font-family: var(--font-ui); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: var(--space-3) 0 var(--space-5); }
 
   .cues { list-style: none; margin: 0; padding: 0; }
   .cues li { margin-bottom: var(--space-2); }
