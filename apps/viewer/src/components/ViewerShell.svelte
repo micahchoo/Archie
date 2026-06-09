@@ -134,7 +134,7 @@
      reader; shown whenever a library is loaded — hosted OR portable, reversed 2026-05-27 per ADR-0008). The
      chrome recedes — the image is the star. -->
 {#if showBar}
-  <div class="topbar">
+  <div class="topbar" class:on-paper={route.view !== "exhibit"}>
     <div class="zone left">
       {#if showCrumbs}
         <nav class="crumbs" aria-label="Breadcrumb">
@@ -220,6 +220,12 @@
     background: none; border: none; padding: 0; color: var(--ink-canvas-secondary);
   }
   .open-another:hover { color: var(--accent); }
+
+  /* Over the gallery wall (light) the bar's canvas inks fail contrast (axe: 2.1) — swap the quiet
+     chrome to paper inks; the bar floats over BOTH surface families, so ink follows the backdrop. */
+  .topbar.on-paper .crumbs a { color: var(--ink-paper-secondary); }
+  .topbar.on-paper .crumbs .sep { color: var(--ink-paper-muted); }
+  .topbar.on-paper .open-another { color: var(--ink-paper-secondary); }
 
   .state {
     display: flex; align-items: center; justify-content: center; gap: 10px; height: 100vh;
