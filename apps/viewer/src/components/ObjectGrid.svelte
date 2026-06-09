@@ -67,7 +67,8 @@
      Cards elevate by warming (surface-shift, no shadows) per system.md depth strategy. */
   .overview { min-height: 100vh; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); padding: var(--space-12) var(--space-8); }
   header { max-width: 60rem; margin: 0 auto var(--space-10); }
-  .eyebrow { color: var(--accent); }
+  /* Amber, not green: forest green fails contrast on the dark table (tokens.css contrast-rescue rule). */
+  .eyebrow { color: var(--accent-2); }
   h1 { font-family: var(--font-display); font-weight: 600; font-size: 3rem; line-height: 1.05; margin: var(--space-2) 0 var(--space-3); color: var(--ink-canvas-primary); }
   .summary { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.5; color: var(--ink-canvas-secondary); margin: 0; max-width: 42rem; }
 
@@ -84,10 +85,10 @@
   /* The plate — the object glows whole on the dark table (contain, not cover: don't truncate a
      portrait or a wide landscape; show the work entire, lamplight around it). */
   .plate { display: block; width: 100%; aspect-ratio: 4 / 3; background-color: var(--surface-canvas); object-fit: contain; border-bottom: 1px solid var(--border-canvas); }
-  .plate-failed { display: flex; align-items: center; justify-content: center; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-style: italic; color: var(--ink-canvas-muted); }
+  .plate-failed { display: flex; align-items: center; justify-content: center; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-style: italic; color: var(--ink-canvas-secondary); }
   .caption { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-4) var(--space-5) var(--space-5); }
   .label { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-canvas-primary); }
-  .count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); }
+  .count { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-2); }
 
   /* Empty state on the dark table (orphan gate §39) */
   .empty { max-width: 60rem; margin: 0 auto; font-family: var(--font-body); font-size: 1.125rem; line-height: 1.5; color: var(--ink-canvas-secondary); padding: var(--space-6); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); }
