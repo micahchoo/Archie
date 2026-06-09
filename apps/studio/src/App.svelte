@@ -6,6 +6,7 @@
   import { folderNameFrom, inferredMime, mediaFilesInOrder } from "./folder-import.js";
   import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
   import { planCsvImport } from "./csv-import.js";
+  import { planWadmImport } from "./wadm-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";
   import Publish from "./Publish.svelte";
@@ -187,6 +188,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const bindingPlace = $derived(bindingLabel(binding));
   let zipInputEl = $state<HTMLInputElement | null>(null); // hidden picker for "Open" on non-Chromium
   let csvEl: HTMLInputElement | null = null; // hidden picker for the notes-CSV import (⑥)
+  let wadmEl: HTMLInputElement | null = null; // hidden picker for the WADM/JSON import (⑦)
   // The library STRUCTURE always persists (which exhibits exist is real; examples are bundled defaults
   // reconciled on boot). Only an EXAMPLE's annotations are ephemeral — gated in save() on isTemplate.
   // persist lives in the library-meta store now (saveLibraryMeta + injected touchBinding).
@@ -537,6 +539,33 @@ import LayoutPicker from "./LayoutPicker.svelte";
     const dupNote = dup > 0 ? ` ${dup} already imported.` : "";
     importNote = plan.skipped.length > 0
       ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `line ${s.row} — ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
+      : head + dupNote;
+  }
+  // W3C/WADM annotation import (contributor-broadening ⑦ slice A): an AnnotationPage from Archie's
+  // own publish, Recogito, or any standard WADM producer lands on this exhibit — re-anchored by the
+  // /canvas/<id> tail, selector + bodies verbatim, deduped like the CSV path.
+  async function importNotesWadm(file: File) {
+    let json: unknown;
+    try { json = JSON.parse(await file.text()); }
+    catch { importNote = `"${file.name}" isn't valid JSON.`; return; }
+    const plan = planWadmImport(json, { objectIds: new Set(OBJECTS.map((o) => o.id)) });
+    // Dedupe key spans target + ALL body values (tag-only annotations must not collapse together).
+    const keyFor = (target: unknown, body: unknown) => `${JSON.stringify(target)}|${JSON.stringify(body)}`;
+    const existing = new Set(session.entries.map((e) => keyFor(e.target, e.body ?? [])));
+    let imported = 0, dup = 0;
+    for (const n of plan.notes) {
+      const target = { type: "SpecificResource" as const, source: canvasIdOf(n.objectId), selector: n.selector };
+      const k = keyFor(target, n.body);
+      if (existing.has(k)) { dup++; continue; }
+      existing.add(k);
+      session.createNote({ target, body: n.body }); // typed by the planner's rebuild — no casts
+      imported++;
+    }
+    if (imported > 0) bump();
+    const head = `Imported ${imported} annotation${imported === 1 ? "" : "s"}.`;
+    const dupNote = dup > 0 ? ` ${dup} already imported.` : "";
+    importNote = plan.skipped.length > 0
+      ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `#${s.index} — ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
       : head + dupNote;
   }
   // Open a published .archie.zip as the project — the symmetric inverse of Download: read it via
@@ -1627,6 +1656,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
         <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Import notes from a CSV file"
           onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void importNotesCsv(f).catch((err) => window.alert(`CSV import failed: ${String(err)}`)); el.value = ""; }} />
       {/if}
+      <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
+      <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="A W3C AnnotationPage (or Annotation array) — targets matching this exhibit's /canvas/<id> land on their objects.">… or import W3C annotations (JSON)</button>
+      <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Import W3C annotations from a JSON file"
+        onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void importNotesWadm(f).catch((err) => window.alert(`Annotation import failed: ${String(err)}`)); el.value = ""; }} />
       <p class="hint">{isAvCurrent ? "Play it · “Set in” → “Add note” marks a moment (video: “+ Region on frame” adds a box) · click a note to seek + edit it in the popover." : "Start a new note → choose a shape → draw the region · click a marker to edit it right there · its editor follows it as you pan/zoom."}</p>
 
       <!-- All notes (image / audio / video) edit in the marker popover anchored to their locus (in <main>);
