@@ -4,6 +4,7 @@
   // layers in the WADM form → publish to .archie.zip. Logic lives in core; this is the thin shell.
   import { onMount, tick } from "svelte";
   import { folderNameFrom, inferredMime, mediaFilesInOrder } from "./folder-import.js";
+  import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";
   import Publish from "./Publish.svelte";
@@ -448,6 +449,42 @@ import LayoutPicker from "./LayoutPicker.svelte";
       importStatus = null;
     }
     if (failed > 0) importNote = `${failed} of ${plan.length} files couldn't be imported — the rest are in.`;
+  }
+  // IIIF manifest URL → exhibit (contributor-broadening ②, Archie-bc01): one paste bootstraps from
+  // any institutional IIIF collection. Parsing is the lifted cozy-iiif algorithm subset
+  // (iiif-import.ts); objects reference the REMOTE images (service base preferred — deep-zoomable),
+  // so nothing is downloaded: the manifest's dims ride along and no OPFS bytes are written.
+  async function newExhibitFromManifest(url: string) {
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    let json: unknown;
+    try {
+      const resp = await fetch(trimmed);
+      if (!resp.ok) { window.alert(`Couldn't fetch that URL (HTTP ${resp.status}).`); return; }
+      json = await resp.json();
+    } catch {
+      window.alert("Couldn't fetch that URL — check it's reachable (most IIIF servers allow cross-origin reads).");
+      return;
+    }
+    let plan: ManifestPlan;
+    try {
+      plan = manifestToExhibit(json, trimmed);
+    } catch (e) {
+      window.alert(e instanceof ManifestImportError ? e.message : `Couldn't read that manifest: ${String(e)}`);
+      return;
+    }
+    await newExhibit(plan.title);
+    try {
+      for (let i = 0; i < plan.objects.length; i++) {
+        const o = plan.objects[i]!;
+        importStatus = { name: o.label, index: i + 1, total: plan.objects.length };
+        const ex = lib.meta.exhibits.find((e) => e.slug === currentSlug);
+        if (!ex) break;
+        await appendObject({ id: nextObjectId(ex), ...o });
+      }
+    } finally {
+      importStatus = null;
+    }
   }
   // Open a published .archie.zip as the project — the symmetric inverse of Download: read it via
   // loadLibrary (publish↔load symmetry), then REPLACE the current OPFS project with its structure +
@@ -1274,6 +1311,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     onopen={openExhibit}
     oncreate={newExhibit}
     oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => window.alert(`Folder import failed: ${String(e)}`)); }}
+    oncreatefrommanifest={(url) => { newExhibitFromManifest(url).catch((e) => window.alert(`Manifest import failed: ${String(e)}`)); }}
     {isTemplate}
     {binding}
     {bindingDirty}
