@@ -25,6 +25,9 @@ const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL :
     <meta property="og:title" content="The Archie Library" />
     <meta property="og:description" content="A contested manuscript read more than one way — Beinecke MS 408, the same undeciphered marks read three ways across three exhibits." />
     <meta name="twitter:card" content="summary" />
+    <!-- schema.org JSON-LD (GOAL §5a ⑤): typed structured data so published exhibits are
+         machine-readable to search engines — same copy as the og tags. -->
+    <script type="application/ld+json" is:inline set:html={JSON.stringify({"@context": "https://schema.org", "@type": "CollectionPage", "name": "The Archie Library", "description": "A contested manuscript read more than one way — Beinecke MS 408, the same undeciphered marks read three ways across three exhibits."})} />
     <link rel="stylesheet" href={base + "fonts/fonts.css"} />
   </head>
   <body style="margin: 0; background: var(--surface-gallery)">
