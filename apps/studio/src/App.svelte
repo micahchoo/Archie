@@ -1588,7 +1588,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .spacer { flex: 1; }
   /* Vertically centres the full-width ~80vh overview band (breathing room above/below; no frame). */
   .overview-stage { min-height: 100vh; display: flex; align-items: center; background: var(--surface-canvas); }
-  .exhibit-back { background: none; border: none; cursor: pointer; padding: 0 var(--space-2) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-secondary); align-self: center; }
+  .exhibit-back { background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-2) var(--space-2) 0; /* 24px+ hit box (Fitts) */ font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-secondary); align-self: center; }
   .exhibit-back:hover { color: var(--accent-2); }
   .no-objects { font-family: var(--font-ui); font-size: 0.78rem; color: var(--ink-canvas-secondary); align-self: center; }
   .no-canvas { display: flex; align-items: center; justify-content: center; height: 100%; padding: var(--space-8); text-align: center; font-family: var(--font-body); font-size: 1.125rem; color: var(--ink-canvas-secondary); }
