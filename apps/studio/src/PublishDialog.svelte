@@ -56,6 +56,15 @@
       .then(() => { copied = true; setTimeout(() => (copied = false), 1500); })
       .catch(() => { copied = false; }); // permission denied — the link is still selectable above
   }
+  // Embed snippet (contributor-broadening ⑩ slice A): the same ?src= link as an <iframe>, for
+  // blogs / LMS pages / Omeka-style sites. The custom <archie-viewer> element is a later slice.
+  const embedSnippet = $derived(shareLink === "" ? "" : `<iframe src="${shareLink}" width="100%" height="600" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer" title="Archie exhibit"></iframe>`);
+  let copiedEmbed = $state(false);
+  function copyEmbed() {
+    navigator.clipboard.writeText(embedSnippet)
+      .then(() => { copiedEmbed = true; setTimeout(() => (copiedEmbed = false), 1500); })
+      .catch(() => { copiedEmbed = false; });
+  }
 
   // Reset to the chooser whenever the dialog (re)opens.
   $effect(() => { if (open) { phase = "choose"; errorMsg = ""; zipUrl = ""; copied = false; } });
@@ -121,12 +130,15 @@
         <input class="share-url" type="url" placeholder="https://…/my-library.archie.zip" bind:value={zipUrl} aria-label="Public URL of the uploaded .archie.zip" />
         {#if shareLink}
           <pre class="cmd"><code>{shareLink}</code></pre>
+          <p class="line">Or embed the exhibit in a blog, LMS page, or site <span class="muted">(some platforms strip iframes — paste into an HTML/embed block)</span>:</p>
+          <pre class="cmd"><code>{embedSnippet}</code></pre>
           {#if canCopy}
             <div class="actions share-actions">
               <button type="button" class="ghost" onclick={copyShareLink}>{copied ? "Copied ✓" : "Copy link"}</button>
+              <button type="button" class="ghost" onclick={copyEmbed}>{copiedEmbed ? "Copied ✓" : "Copy embed code"}</button>
             </div>
           {:else}
-            <p class="line muted">Select the link above to copy it.</p>
+            <p class="line muted">Select the link or embed code above to copy it.</p>
           {/if}
         {/if}
         <p class="line muted">A <code>?src=</code> link works while both hosts stay up — the zip's and the Viewer's. For a durable, citable publication, publish the full site instead.</p>
