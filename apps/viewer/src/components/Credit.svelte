@@ -37,7 +37,8 @@
   .credit.paper { color: var(--ink-paper-secondary); }
   .credit.canvas { color: var(--ink-canvas-secondary); }
   .line { font-style: italic; }
-  .info { cursor: pointer; border: none; background: transparent; padding: 0; font-size: 0.85rem; line-height: 1; color: inherit; opacity: 0.7; }
+  /* 24px hit box (WCAG 2.2 target-size / Fitts) — negative margin keeps the glyph optically 14px; 6px clears 24px with sub-pixel glyph widths. */
+  .info { cursor: pointer; border: none; background: transparent; padding: 6px; margin: -6px; font-size: 0.85rem; line-height: 1; color: inherit; opacity: 0.7; }
   .info:hover { opacity: 1; color: var(--accent); }
   /* The ⓘ panel — ReadingLegend's accent-stripe overlay idiom (authoring↔reading symmetry). */
   .panel {

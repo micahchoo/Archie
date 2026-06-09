@@ -217,7 +217,7 @@
   /* Portable swap-to-change — quiet escape, not a primary action (CONTEXT §134). */
   .open-another {
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); cursor: pointer;
-    background: none; border: none; padding: 0; color: var(--ink-canvas-secondary);
+    background: none; border: none; padding: var(--space-2) 0; color: var(--ink-canvas-secondary); /* 24px+ hit box (Fitts) — transparent, no visual shift */
   }
   .open-another:hover { color: var(--accent); }
 

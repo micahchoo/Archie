@@ -284,7 +284,7 @@
   .chip.rights .dot { color: var(--accent-2); font-size: 0.55rem; }
   .chip:hover { border-color: var(--accent-2); color: var(--accent-2); }
   .viewtoggle { display: inline-flex; border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); overflow: hidden; }
-  .viewtoggle button { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-1) var(--space-3); background: transparent; color: var(--ink-canvas-secondary); border: none; }
+  .viewtoggle button { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: 6px var(--space-3); background: transparent; color: var(--ink-canvas-secondary); border: none; } /* 6px v-pad -> 25px hit box (Fitts) */
   .viewtoggle button.on { background: var(--accent); color: var(--ink-on-accent); }
 
   /* The canvas: a clipped viewport holding the pan/zoomed tableau. grab cursor signals "this is a space". */
