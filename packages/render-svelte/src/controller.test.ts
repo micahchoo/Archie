@@ -13,10 +13,15 @@ function mockSurface() {
   const noop = (): (() => void) => () => {};
   const surface: MountSurface = {
     setAnnotations: vi.fn(),
+    setStyle: vi.fn(),
     setSelected,
     fitBounds,
+    fitRegion: vi.fn(),
+    setFrame: vi.fn(),
     setDrawingEnabled: vi.fn(),
     setDrawingTool: vi.fn(),
+    markerScreenRect: vi.fn(() => null),
+    onViewportChange: noop,
     destroy,
     onSelect: (cb) => {
       emit = cb;
