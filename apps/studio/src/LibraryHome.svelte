@@ -17,6 +17,7 @@
     exhibits,
     onopen,
     oncreate,
+    oncreatefromfolder,
     isTemplate,
     binding,
     bindingDirty,
@@ -40,6 +41,8 @@
     exhibits: ExhibitMeta[];
     onopen: (slug: string) => void;
     oncreate: (title: string) => void;
+    /** A whole image folder becomes a new exhibit (contributor-broadening ① — Archie-e1d6). */
+    oncreatefromfolder: (files: File[]) => void;
     /** Is this exhibit a bundled example (a template — playground, not saved)? Marks it in the grid. */
     isTemplate: (slug: string) => boolean;
     /** Where this library's canonical bytes live (unbound / folder / file). */
@@ -79,6 +82,9 @@
     oncreate(t);
     newTitle = "";
   }
+
+  // The hidden directory input behind "… or import an image folder".
+  let dirEl: HTMLInputElement | null = null;
 
   // A human "x ago" for a recent project's last-opened stamp.
   function ago(ms: number): string {
@@ -177,6 +183,17 @@
         <span class="plus">+</span>
         <input bind:value={newTitle} placeholder="New exhibit title…" aria-label="New exhibit title" />
         <button type="submit" disabled={newTitle.trim() === ""}>Create</button>
+        <!-- Folder → exhibit in one gesture: the folder names the exhibit, its images become the
+             objects (reading order). webkitdirectory over showDirectoryPicker: cross-browser + testable. -->
+        <button type="button" class="from-folder" onclick={() => dirEl?.click()}>… or import an image folder</button>
+        <input
+          bind:this={dirEl}
+          type="file"
+          webkitdirectory
+          style="display:none"
+          aria-label="Import a folder of images as a new exhibit"
+          onchange={(e) => { const el = e.currentTarget as HTMLInputElement; if (el.files?.length) oncreatefromfolder(Array.from(el.files)); el.value = ""; }}
+        />
       </form>
     </li>
   </ul>
@@ -282,4 +299,6 @@
     background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm);
   }
   .new button:disabled { background: var(--accent-muted); color: var(--ink-canvas-muted); border-color: transparent; cursor: default; }
+  .new .from-folder { background: none; border: none; padding: 6px 0; font-weight: 400; color: var(--ink-canvas-secondary); } /* 6px v-pad -> 24px+ hit box (Fitts) */
+  .new .from-folder:hover { color: var(--accent-2); }
 </style>

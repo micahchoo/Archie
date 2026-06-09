@@ -3,6 +3,7 @@
   // tested @render/core AnnotationSession: draw on the canvas → create note → edit body/tags/
   // layers in the WADM form → publish to .archie.zip. Logic lives in core; this is the thin shell.
   import { onMount, tick } from "svelte";
+  import { folderNameFrom, inferredMime, mediaFilesInOrder } from "./folder-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";
   import Publish from "./Publish.svelte";
@@ -410,6 +411,43 @@ import LayoutPicker from "./LayoutPicker.svelte";
     while (lib.meta.exhibits.some((e) => e.slug === slug)) slug = `${base}-${n++}`;
     await lib.addExhibit({ id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", layout: "grid", objects: [] });
     await openExhibit(slug);
+  }
+  // Folder → exhibit in one gesture (contributor-broadening ① sub-cycle A, Archie-e1d6): the folder
+  // names the exhibit; its media files become objects in reading order. Each file goes through the
+  // SAME ingest as a hand-picked one (addObjectFromFile: EXIF bake, OPFS, AV branch) — no second path.
+  async function newExhibitFromFolder(files: File[]) {
+    const picked = files.map((file) => ({ name: file.name, relativePath: file.webkitRelativePath || file.name, type: file.type, file }));
+    const plan = mediaFilesInOrder(picked);
+    if (plan.length === 0) {
+      window.alert("No images, audio, or video found in that folder.");
+      return;
+    }
+    await newExhibit(folderNameFrom(picked));
+    // storeReady is PER-EXHIBIT state — openExhibit (inside newExhibit) just set it for the new
+    // exhibit. Without it, addObjectFromFile would no-op per file = a titled, silently-empty
+    // exhibit; say so instead.
+    if (!storeReady) {
+      window.alert("Created the exhibit, but this browser can't persist imported files (private window, or storage unavailable) — no images were added.");
+      return;
+    }
+    let failed = 0;
+    try {
+      for (let i = 0; i < plan.length; i++) {
+        const p = plan[i]!;
+        importStatus = { name: p.name, index: i + 1, total: plan.length };
+        // Re-wrap typeless files (.tiff, .avif on some platforms) with the inferred MIME the plan
+        // admitted them under — addObjectFromFile branches on File.type.
+        const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
+        try {
+          await addObjectFromFile(file);
+        } catch {
+          failed++; // skip-and-tally: one corrupt scan must not abort the rest of the folder
+        }
+      }
+    } finally {
+      importStatus = null;
+    }
+    if (failed > 0) importNote = `${failed} of ${plan.length} files couldn't be imported — the rest are in.`;
   }
   // Open a published .archie.zip as the project — the symmetric inverse of Download: read it via
   // loadLibrary (publish↔load symmetry), then REPLACE the current OPFS project with its structure +
@@ -1235,6 +1273,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     exhibits={lib.meta.exhibits}
     onopen={openExhibit}
     oncreate={newExhibit}
+    oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => window.alert(`Folder import failed: ${String(e)}`)); }}
     {isTemplate}
     {binding}
     {bindingDirty}
