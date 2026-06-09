@@ -203,6 +203,29 @@ export async function clearExhibitAnnotations(slug: string): Promise<void> {
   }
 }
 
+/**
+ * Does an exhibit's OPFS annotations dir hold anything? Templates never save (the isTemplate gate
+ * in save()), so stored annotations mean a USER worked here — the boot reconcile must not clear
+ * them when a bundled-default slug is reclaimed (a sunset slug can spend time as a user exhibit).
+ */
+export async function exhibitHasAnnotations(slug: string): Promise<boolean> {
+  const storage = (navigator as Navigator & { storage?: OpfsRoot }).storage;
+  if (!storage?.getDirectory) return false;
+  try {
+    const root = await storage.getDirectory();
+    const project = await root.getDirectoryHandle(PROJECT, { create: false });
+    const ann = slug === SAMPLE_SLUG
+      ? await project.getDirectoryHandle("annotations", { create: false })
+      : await (await (await project.getDirectoryHandle("exhibits", { create: false }))
+          .getDirectoryHandle(slug, { create: false }))
+          .getDirectoryHandle("annotations", { create: false });
+    for await (const _ of (ann as unknown as { keys(): AsyncIterableIterator<string> }).keys()) return true;
+    return false;
+  } catch {
+    return false; // nothing stored for this exhibit
+  }
+}
+
 /** Resolve a stored asset to its OPFS File — a LAZY Blob, NOT read into the JS heap (the publish
  *  getAsset reader, LARGE-MEDIA-MEMORY-CEILING #5). Returning the File (not an ArrayBuffer) lets the
  *  FSA folder backend stream it straight to disk via `createWritable().write(blob)` so even one huge

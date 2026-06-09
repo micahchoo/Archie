@@ -5,6 +5,7 @@
   import { onMount, tick } from "svelte";
   import { folderNameFrom, inferredMime, mediaFilesInOrder } from "./folder-import.js";
   import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
+  import { bidarObject, bidarNotes, bidarTitle } from "./bidar.js";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";
   import Publish from "./Publish.svelte";
@@ -32,7 +33,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   } from "@render/core";
   import type { DrawTool, MarkerStyle } from "@render/mount";
   import { bakeDisplayMaster, downscaleIfNeeded } from "./bake.js";
-  import { openExhibitAnnotationsDir, loadLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, readAssetBlob, readOriginalBytes, assetSize, clearExhibitAnnotations, type ExhibitMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
+  import { openExhibitAnnotationsDir, loadLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, readAssetBlob, readOriginalBytes, assetSize, clearExhibitAnnotations, exhibitHasAnnotations, type ExhibitMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { supportsFolderPicker, supportsFileStreamSave, pickFolder, saveZipToDisk, zipNameFor, loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
   import { putHandle, getHandle, deleteHandle, requestPermission } from "./handles-db.js";
@@ -73,6 +74,11 @@ import LayoutPicker from "./LayoutPicker.svelte";
     { id: "ex-voynich", slug: "voynich", title: "The Whole Manuscript", layout: "grid", seedVersion: 2, readings: voynichReadings, objects: voynichObjMeta },
     // NARRATIVE — all + the sounded page, the 6-beat spine → narrative.
     { id: "ex-voynich-reading", slug: "voynich-reading", title: "Reading the Unreadable", layout: "narrative", seedVersion: 1, readings: voynichReadings, sections: voynichSections as Section[], objects: voynichObjMeta },
+    // MAP — the segment-diverse template (contributor-broadening ③, Archie-eaae): a community-mapping /
+    // StoryMap-shaped example so the first impression isn't "manuscripts only". Revives the real
+    // "Techno-Futures from Bidar" piece sunset in 3842e51 (then: voynich-only focus; superseded by the
+    // GOAL §5a researched backlog). seedVersion 3 > the sunset-era 2, so a stale persisted copy reseeds.
+    { id: "ex-bidar", slug: "bidar", title: bidarTitle, layout: "single", seedVersion: 3, objects: [{ id: bidarObject.id, source: bidarObject.source, label: bidarObject.label, width: bidarObject.width, height: bidarObject.height }] },
   ];
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
@@ -81,7 +87,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // Per-exhibit Playground/Project (CONTEXT §115, the coherent model): a bundled EXAMPLE is a template —
   // opening it is a playground (banner, nothing saved); a USER-CREATED exhibit is a project (saved, no
   // banner). One role per exhibit, one path in/out. "Keep a copy" forks an example into a saved exhibit.
-  const templateSlugs = new Set(DEFAULT_EXHIBITS.map((d) => d.slug));
+  // $state: the boot reconcile may RELEASE a slug back to the user (a reclaimed sunset slug that
+  // carries user annotations stays a user exhibit — see onMount), and save()'s isTemplate gate
+  // must see that release.
+  let templateSlugs = $state(new Set(DEFAULT_EXHIBITS.map((d) => d.slug)));
   const isTemplate = (slug: string) => templateSlugs.has(slug);
   let currentSlug = $state(DEFAULT_EXHIBITS[0]!.slug);
   const currentExhibit = $derived(lib.meta.exhibits.find((e) => e.slug === currentSlug) ?? lib.meta.exhibits[0]);
@@ -157,10 +166,19 @@ import LayoutPicker from "./LayoutPicker.svelte";
     }
     return s;
   }
+  function seededBidar(): AnnotationSession {
+    const s = new AnnotationSession(author);
+    for (const n of bidarNotes) {
+      const [x, y, w, h] = n.region;
+      s.createNote({ target: rectSel(`${BASE}bidar/canvas/o1`, x, y, w, h), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
+    }
+    return s;
+  }
   const seededFor = (slug: string): (() => AnnotationSession) | null =>
     slug === "voynich-rosettes" ? () => seededVoynich("voynich-rosettes", { objectIds: new Set(["o9"]), includeAv: false })
     : slug === "voynich" ? () => seededVoynich("voynich", { includeAv: true })
     : slug === "voynich-reading" ? () => seededVoynich("voynich-reading", { includeAv: true })
+    : slug === "bidar" ? seededBidar
     : null;
   let session = $state(new AnnotationSession(author));
 
@@ -210,12 +228,23 @@ import LayoutPicker from "./LayoutPicker.svelte";
         !p || p.objects.length !== d.objects.length || p.objects[0]?.source !== d.objects[0]?.source
         || (p.seedVersion ?? 0) !== (d.seedVersion ?? 0); // seed content bumped → reseed
       const stale: string[] = [];
-      const reconciled = DEFAULT_EXHIBITS.map((d) => {
+      const reconciled: ExhibitMeta[] = [];
+      for (const d of DEFAULT_EXHIBITS) {
         const p = meta.exhibits.find((e) => e.slug === d.slug);
-        if (isStale(d, p)) { stale.push(d.slug); return d; }
-        return p!;
-      });
-      const userExhibits = meta.exhibits.filter((e) => !templateSlugs.has(e.slug));
+        if (!isStale(d, p)) { reconciled.push(p!); continue; }
+        // A stale copy with STORED annotations is a user's work, not a stale seed: templates never
+        // save (the isTemplate gate), so notes can only exist if this slug spent time as a user
+        // exhibit (e.g. `bidar` during its sunset). Reclaiming it would silently destroy those
+        // notes — instead the user keeps the slug and the bundled template yields this boot.
+        if (p && (await exhibitHasAnnotations(d.slug))) {
+          templateSlugs = new Set([...templateSlugs].filter((s) => s !== d.slug));
+          reconciled.push(p);
+          continue;
+        }
+        stale.push(d.slug);
+        reconciled.push(d);
+      }
+      const userExhibits = meta.exhibits.filter((e) => !templateSlugs.has(e.slug) && !reconciled.some((r) => r.slug === e.slug));
       lib.setMeta({ ...lib.meta, exhibits: [...reconciled, ...userExhibits] }); // set-only: persist stays conditional
       for (const slug of stale) await clearExhibitAnnotations(slug); // discard stale seed notes → reseed
       if (stale.length) await lib.persist();
