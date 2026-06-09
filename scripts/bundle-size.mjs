@@ -1,10 +1,17 @@
 import { gzipSync } from "node:zlib";
-import { writeFileSync } from "node:fs";
+import { writeFileSync, readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 
-// esbuild is a transitive (vitest) dep, not hoisted — resolve it from the pnpm store.
+// esbuild is a transitive (vitest/vite) dep, not hoisted — resolve it from the pnpm store.
+// Version-agnostic: a hardcoded esbuild@X pin broke every time the lockfile re-resolved.
 const require = createRequire(import.meta.url);
-const esbuild = require(`${process.cwd()}/node_modules/.pnpm/esbuild@0.21.5/node_modules/esbuild`);
+const storeDir = `${process.cwd()}/node_modules/.pnpm`;
+const esbuildEntry = readdirSync(storeDir)
+  .filter((d) => /^esbuild@/.test(d))
+  .sort() // lexicographic is fine for picking deterministically; any vendored esbuild measures
+  .pop();
+if (!esbuildEntry) throw new Error("no esbuild in the pnpm store — run install first");
+const esbuild = require(`${storeDir}/${esbuildEntry}/node_modules/esbuild`);
 
 const root = process.cwd();
 
