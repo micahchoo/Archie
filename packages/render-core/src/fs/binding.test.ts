@@ -48,13 +48,13 @@ describe("addRecent — front-insert, dedupe by id, cap", () => {
     list = addRecent(list, r("b", 2));
     list = addRecent(list, r("a", 3)); // re-add a → moves to front, no dup
     expect(list.map((x) => x.id)).toEqual(["a", "b"]);
-    expect(list[0].lastOpened).toBe(3);
+    expect(list[0]?.lastOpened).toBe(3);
   });
   it("caps the list, dropping the oldest", () => {
     let list: RecentProject[] = [];
     for (let i = 0; i < RECENTS_CAP + 3; i++) list = addRecent(list, r(`p${i}`, i));
     expect(list).toHaveLength(RECENTS_CAP);
-    expect(list[0].id).toBe(`p${RECENTS_CAP + 2}`); // newest
+    expect(list[0]?.id).toBe(`p${RECENTS_CAP + 2}`); // newest
   });
 });
 
@@ -63,7 +63,7 @@ describe("touchRecent / removeRecent", () => {
     const list = [r("a", 1), r("b", 2)];
     const touched = touchRecent(list, "a", 9);
     expect(touched.map((x) => x.id)).toEqual(["a", "b"]);
-    expect(touched[0].lastOpened).toBe(9);
+    expect(touched[0]?.lastOpened).toBe(9);
     expect(touchRecent(list, "zzz", 9)).toBe(list); // unchanged reference
   });
   it("remove drops the entry", () => {
@@ -93,6 +93,6 @@ describe("parseRecents — tolerant of junk (the store is user-visible; never th
   });
   it("coerces a missing reopenable to false", () => {
     const raw = JSON.stringify([{ id: "f", name: "F", kind: "file", lastOpened: 1 }]);
-    expect(parseRecents(raw)[0].reopenable).toBe(false);
+    expect(parseRecents(raw)[0]?.reopenable).toBe(false);
   });
 });
