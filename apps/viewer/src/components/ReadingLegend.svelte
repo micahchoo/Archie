@@ -16,7 +16,8 @@
 </script>
 
 {#if readings.length > 0}
-  <div class="legend">
+  <!-- aside = complementary landmark (axe region rule: overlay content must live in a landmark) -->
+  <aside class="legend" aria-label="Readings">
     <span class="title">Readings</span>
     <div class="opts" role="radiogroup" aria-label="Readings of this source">
       <button type="button" role="radio" aria-checked={active === null} class="opt" class:on={active === null} onclick={() => onselect(null)}>
@@ -29,7 +30,7 @@
       {/each}
     </div>
     {#if activeDesc}<p class="desc">{activeDesc}</p>{/if}
-  </div>
+  </aside>
 {/if}
 
 <style>
