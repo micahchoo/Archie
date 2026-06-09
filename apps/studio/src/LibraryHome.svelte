@@ -18,6 +18,7 @@
     onopen,
     oncreate,
     oncreatefromfolder,
+    oncreatefrommanifest,
     isTemplate,
     binding,
     bindingDirty,
@@ -43,6 +44,8 @@
     oncreate: (title: string) => void;
     /** A whole image folder becomes a new exhibit (contributor-broadening ① — Archie-e1d6). */
     oncreatefromfolder: (files: File[]) => void;
+    /** A pasted IIIF manifest URL becomes a new exhibit (contributor-broadening ② — Archie-bc01). */
+    oncreatefrommanifest: (url: string) => void;
     /** Is this exhibit a bundled example (a template — playground, not saved)? Marks it in the grid. */
     isTemplate: (slug: string) => boolean;
     /** Where this library's canonical bytes live (unbound / folder / file). */
@@ -185,7 +188,10 @@
         <button type="submit" disabled={newTitle.trim() === ""}>Create</button>
         <!-- Folder → exhibit in one gesture: the folder names the exhibit, its images become the
              objects (reading order). webkitdirectory over showDirectoryPicker: cross-browser + testable. -->
-        <button type="button" class="from-folder" onclick={() => dirEl?.click()}>… or import an image folder</button>
+        <button type="button" class="alt-create" onclick={() => dirEl?.click()}>… or import an image folder</button>
+        <!-- One paste bootstraps from any institutional IIIF collection (50k+ manifests in the wild).
+             prompt() matches the app's alert/confirm chrome convention — a quiet escape, not a form. -->
+        <button type="button" class="alt-create" onclick={() => { const u = window.prompt("Paste a IIIF manifest URL (Presentation 2 or 3):"); if (u) oncreatefrommanifest(u); }}>… or paste a IIIF manifest URL</button>
         <input
           bind:this={dirEl}
           type="file"
@@ -299,6 +305,6 @@
     background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm);
   }
   .new button:disabled { background: var(--accent-muted); color: var(--ink-canvas-muted); border-color: transparent; cursor: default; }
-  .new .from-folder { background: none; border: none; padding: 6px 0; font-weight: 400; color: var(--ink-canvas-secondary); } /* 6px v-pad -> 24px+ hit box (Fitts) */
-  .new .from-folder:hover { color: var(--accent-2); }
+  .new .alt-create { background: none; border: none; padding: 6px 0; font-weight: 400; color: var(--ink-canvas-secondary); } /* 6px v-pad -> 24px+ hit box (Fitts) */
+  .new .alt-create:hover { color: var(--accent-2); }
 </style>
