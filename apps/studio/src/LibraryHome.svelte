@@ -186,7 +186,9 @@
   /* The curator's table — exhibits as plates under lamplight (system.md dark light-table side). */
   .library { min-height: 100vh; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); padding: var(--space-12) var(--space-8); }
   header { max-width: 60rem; margin: 0 auto var(--space-10); }
-  .eyebrow { color: var(--accent); }
+  /* Amber, not green: forest green fails contrast on the dark table (tokens.css contrast-rescue;
+     matches ExhibitOverview's eyebrow). */
+  .eyebrow { color: var(--accent-2); }
   .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
   .librights {
     flex: none; align-self: center; display: inline-flex; align-items: center; gap: var(--space-1);
@@ -256,7 +258,7 @@
   }
   .card:hover { background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); transform: translateY(-2px); }
   .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-canvas-primary); }
-  .meta { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); }
+  .meta { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-2); }
   /* Example (template) marker — amber, matching the in-editor playground banner (transient, not yours-yet). */
   .card.template { border-style: dashed; }
   .badge { align-self: flex-start; font-family: var(--font-ui); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--semantic-warning); border: 1px solid var(--semantic-warning); border-radius: 999px; padding: 1px var(--space-2); }
