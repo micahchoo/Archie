@@ -1476,7 +1476,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
               <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
               <div class="meta">
                 {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
-                {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour};color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{/if}
+                <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
+                {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{/if}
               </div>
             </button>
           </li>
@@ -1655,6 +1656,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     display: flex; gap: var(--space-2); align-items: stretch;
     padding: var(--space-2) var(--space-5);
     background: var(--surface-canvas-raised); border-bottom: 1px solid var(--border-canvas);
+    overflow-x: auto; /* many objects scroll the rail, not the page (12 plates pushed the page to ~2900px) */
   }
   /* Object tab — a thumbnail + label so you choose visually (P2-6), not by name alone. */
   .obj {
@@ -1767,7 +1769,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .meta { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
   .tag { font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); }
   .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); background: rgba(107,98,80,0.1); padding: 2px var(--space-2); border-radius: 999px; }
-  .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-muted); line-height: 1.6; margin-top: var(--space-4); }
+  .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-4); }
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
   /* Object-level rights disclosure — tucked at the foot of the object editor (rights grill Q6). */
   .rights-disc { margin-top: var(--space-4); border-top: 1px solid var(--border-paper); padding-top: var(--space-3); }
