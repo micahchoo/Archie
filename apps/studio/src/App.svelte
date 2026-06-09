@@ -5,6 +5,7 @@
   import { onMount, tick } from "svelte";
   import { folderNameFrom, inferredMime, mediaFilesInOrder } from "./folder-import.js";
   import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
+  import { planCsvImport } from "./csv-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";
   import Publish from "./Publish.svelte";
@@ -185,6 +186,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const PROJECT_TITLE = "Archie Library";
   const bindingPlace = $derived(bindingLabel(binding));
   let zipInputEl = $state<HTMLInputElement | null>(null); // hidden picker for "Open" on non-Chromium
+  let csvEl: HTMLInputElement | null = null; // hidden picker for the notes-CSV import (⑥)
   // The library STRUCTURE always persists (which exhibits exist is real; examples are bundled defaults
   // reconciled on boot). Only an EXAMPLE's annotations are ephemeral — gated in save() on isTemplate.
   // persist lives in the library-meta store now (saveLibraryMeta + injected touchBinding).
@@ -499,6 +501,43 @@ import LayoutPicker from "./LayoutPicker.svelte";
     } finally {
       importStatus = null;
     }
+  }
+  // CSV → notes bulk import (contributor-broadening ⑥ sub-cycle A, Archie-79c0): authors who live
+  // in Excel/Sheets annotate THERE (object,x,y,w,h,comment[,tags][,reading] — header-driven) and
+  // bulk-load the result through the SAME createNote path the seeds use. Skip-and-tally per row.
+  async function importNotesCsv(file: File) {
+    const plan = planCsvImport(await file.text(), {
+      objects: OBJECTS.map((o) => ({ id: o.id, label: o.label, ...(o.mediaType ? { mediaType: o.mediaType } : {}) })),
+      readings: currentReadings.map((r) => ({ id: r.id, name: r.name })),
+      currentObjectId,
+    });
+    // Fix-and-retry friendly: re-importing a corrected CSV must not double the rows that were
+    // already good — dedupe on target+comment against the live session.
+    const keyFor = (target: unknown, comment: string) => `${JSON.stringify(target)}|${comment}`;
+    const existing = new Set(session.entries.map((e) => keyFor(e.target, (Array.isArray(e.body) ? e.body : []).find((b) => b?.type === "TextualBody" && b.purpose !== "tagging")?.value ?? "")));
+    let imported = 0, dup = 0;
+    for (const n of plan.notes) {
+      const [x, y, w, h] = n.region;
+      const target = rectSel(canvasIdOf(n.objectId), x, y, w, h);
+      const k = keyFor(target, n.comment);
+      if (existing.has(k)) { dup++; continue; }
+      existing.add(k);
+      session.createNote({
+        target,
+        body: [
+          { type: "TextualBody", value: n.comment, purpose: "commenting" },
+          ...n.tags.map((t) => ({ type: "TextualBody" as const, value: t, purpose: "tagging" as const })),
+        ],
+        ...(n.reading ? { reading: n.reading } : {}),
+      });
+      imported++;
+    }
+    if (imported > 0) bump(); // rev + dirty + scheduleSave (a template stays playground-only per save()'s gate)
+    const head = `Imported ${imported} note${imported === 1 ? "" : "s"} from CSV.`;
+    const dupNote = dup > 0 ? ` ${dup} already imported.` : "";
+    importNote = plan.skipped.length > 0
+      ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `line ${s.row} — ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
+      : head + dupNote;
   }
   // Open a published .archie.zip as the project — the symmetric inverse of Download: read it via
   // loadLibrary (publish↔load symmetry), then REPLACE the current OPFS project with its structure +
@@ -1582,6 +1621,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
           </li>
         {/each}
       </ul>
+      {#if current && !isAvCurrent}
+        <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
+        <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Columns: object, x, y, w, h, comment — optional tags, reading. Header row required; object may be an id, a label, or blank for this object.">… or import notes from a CSV</button>
+        <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Import notes from a CSV file"
+          onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void importNotesCsv(f).catch((err) => window.alert(`CSV import failed: ${String(err)}`)); el.value = ""; }} />
+      {/if}
       <p class="hint">{isAvCurrent ? "Play it · “Set in” → “Add note” marks a moment (video: “+ Region on frame” adds a box) · click a note to seek + edit it in the popover." : "Start a new note → choose a shape → draw the region · click a marker to edit it right there · its editor follows it as you pan/zoom."}</p>
 
       <!-- All notes (image / audio / video) edit in the marker popover anchored to their locus (in <main>);
@@ -1869,6 +1914,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .tag { font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); }
   .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); background: rgba(107,98,80,0.1); padding: 2px var(--space-2); border-radius: 999px; }
   .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-4); }
+  .csv-import { align-self: flex-start; background: none; border: none; cursor: pointer; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); } /* 24px+ hit box */
+  .csv-import:hover { color: var(--accent); }
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
   /* Object-level rights disclosure — tucked at the foot of the object editor (rights grill Q6). */
   .rights-disc { margin-top: var(--space-4); border-top: 1px solid var(--border-paper); padding-top: var(--space-3); }
