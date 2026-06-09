@@ -23,6 +23,9 @@ const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL :
     <meta property="og:title" content="The Whole Manuscript" />
     <meta property="og:description" content="A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page." />
     <meta name="twitter:card" content="summary" />
+    <!-- schema.org JSON-LD (GOAL §5a ⑤): typed structured data so published exhibits are
+         machine-readable to search engines — same copy as the og tags. -->
+    <script type="application/ld+json" is:inline set:html={JSON.stringify({"@context": "https://schema.org", "@type": "ImageGallery", "name": "The Whole Manuscript", "description": "A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.", "about": {"@type": "CreativeWork", "name": "Voynich manuscript (Beinecke MS 408)"}, "license": "https://creativecommons.org/publicdomain/mark/1.0/"})} />
     <link rel="stylesheet" href={base + "fonts/fonts.css"} />
   </head>
   <body style="margin: 0">
