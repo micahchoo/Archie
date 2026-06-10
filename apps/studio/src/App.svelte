@@ -7,15 +7,13 @@
   import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
   import { planCsvImport } from "./csv-import.js";
   import { collabBreakdown, collabSummaryText } from "./collab.js";
-  import PropsDrawer from "./PropsDrawer.svelte";
-  import ReadingsEditor from "./ReadingsEditor.svelte";
+  import ReadingsModal from "./ReadingsModal.svelte";
   import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "../../viewer/src/atlas.js";
   import { planWadmImport } from "./wadm-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";
   import Publish from "./Publish.svelte";
   import PublishDialog from "./PublishDialog.svelte";
-  import ReadingHelp from "./ReadingHelp.svelte";
   import LibraryHome from "./LibraryHome.svelte";
   import CmdK from "./CmdK.svelte";
   import MediaPicker, { type PickItem } from "./MediaPicker.svelte";
@@ -54,12 +52,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const IDENTITY_KEY = "archie.displayName.v1";
   function loadIdentity(): string | null { try { return localStorage.getItem(IDENTITY_KEY); } catch { return null; } }
   function saveIdentity(name: string): void { try { localStorage.setItem(IDENTITY_KEY, name); } catch { /* storage off */ } }
-  // First-add teaching for "+ Reading" (ADR-0007): show the explainer once, then never re-nag.
-  // Dismissing OR proceeding both count as "seen" — the flag is about whether the curator has met the
-  // concept, not whether they acted on it. Global (the concept is the same across every exhibit).
-  const READING_HELP_KEY = "archie.readingHelpSeen.v1";
-  function readingHelpSeen(): boolean { try { return localStorage.getItem(READING_HELP_KEY) === "1"; } catch { return false; } }
-  function markReadingHelpSeen(): void { try { localStorage.setItem(READING_HELP_KEY, "1"); } catch { /* storage off */ } }
   let identity = $state<string | null>(loadIdentity());
   const author = $derived(asClientId(identity || "anonymous"));
   const srcOf = (t: unknown): string | undefined => (typeof t === "string" ? t : (t as { source?: string } | null)?.source);
@@ -813,16 +805,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const drawArmed = $derived(creating !== null || framingSectionId !== null); // canvas in draw mode while either gesture is live
   const drawShape = $derived<DrawTool>(creating ?? "rectangle"); // framing always frames a box
   let readingFilter = $state("all"); // "all" | "base" | a reading id — scopes the list + new-note default (ADR-0007)
-  let readingsOpen = $state(false); // the unified Readings drawer (name+colour+description in ONE place)
-  let readingHelpOpen = $state(false); // first-add teaching modal (ADR-0007); gated by readingHelpSeen()
-  // "+ Reading" click: teach the concept once (modal), then drop into the name input. Once seen, jump
-  // straight to the input — the existing flow, untouched. Proceed/dismiss both mark it seen (no re-nag).
-  function openReadings() {
-    if (readingHelpSeen()) { readingsOpen = true; return; }
-    readingHelpOpen = true; // first time: explain what a Reading IS, then open the drawer
-  }
-  function readingHelpProceed() { markReadingHelpSeen(); readingHelpOpen = false; readingsOpen = true; }
-  function readingHelpClose() { markReadingHelpSeen(); readingHelpOpen = false; }
+  // The unified Readings modal: name+colour+description in ONE place, the concept explained in its
+  // header. Replaces the ADR-0007 first-add gate (ReadingHelp + localStorage flag) — the teaching
+  // copy lives permanently in the modal, so there's nothing to remember or re-nag about.
+  let readingsOpen = $state(false);
   // Which object of the exhibit the editor is showing. Switching resets transient view state.
   let currentObjectId = $state("o1");
   const current = $derived(OBJECTS.find((o) => o.id === currentObjectId) ?? OBJECTS[0]);
@@ -1495,7 +1481,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
         {#each currentReadings as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
       </select>
     </label>
-    <button class="add-reading" onclick={openReadings} title="Name, colour, and describe the ways of reading this source — rival readings coexist, never merged">✎ Readings…</button>
+    <button class="add-reading" onclick={() => (readingsOpen = true)} title="Name, colour, and describe the ways of reading this source — rival readings coexist, never merged">✎ Readings…</button>
     <button class="layout-trigger" onclick={() => (layoutPickerOpen = true)} title="How visitors read this exhibit (reading intent)">▦ {currentLayout}</button>
     {#if storeReady}
       <span class="savestate" class:dirty>{dirty ? "● Unsaved" : "Saved"}</span>
@@ -1505,9 +1491,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
   </header>
 
-  <PropsDrawer open={readingsOpen} title="Readings" onclose={() => (readingsOpen = false)}>
-    <ReadingsEditor readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => (readingFilter = id)} />
-  </PropsDrawer>
+  <ReadingsModal open={readingsOpen} readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => (readingFilter = id)} onclose={() => (readingsOpen = false)} />
 
   {#if isTemplate(currentSlug)}
     <!-- Per-exhibit playground banner (§115): an EXAMPLE is a template — exploring it is honest play,
@@ -1767,8 +1751,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
 {/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
 <ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
-<!-- GLOBAL: first-add teaching for readings (ADR-0007) — shown once, then remembered. -->
-<ReadingHelp open={readingHelpOpen} onproceed={readingHelpProceed} onclose={readingHelpClose} />
 </div>
 
 <style>

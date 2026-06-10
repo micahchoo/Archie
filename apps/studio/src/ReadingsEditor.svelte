@@ -1,7 +1,8 @@
 <script lang="ts">
   // ONE place to author Readings (user: the inline-input + create-time-swatches + describe-prompt
-  // trio was fragmented). Lives in a PropsDrawer like the Exhibit/Library details editors.
-  // Renaming NEVER changes a reading's id — notes reference readings by id; ids mint once, on add.
+  // trio was fragmented). Hosted by ReadingsModal, whose header carries the explanatory copy —
+  // this component is just the rows. Renaming NEVER changes a reading's id — notes reference
+  // readings by id; ids mint once, on add.
   import type { Reading } from "@render/core";
 
   let { readings, palette, onchange, onadd }: {
@@ -39,7 +40,7 @@
 </script>
 
 {#if readings.length === 0}
-  <p class="empty">No readings yet. A reading is one way of interpreting this source — rival readings coexist, never merged.</p>
+  <p class="empty">No readings yet — name your first below.</p>
 {/if}
 {#each readings as r (r.id)}
   <section class="reading">
