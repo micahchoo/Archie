@@ -1442,10 +1442,16 @@ After compaction: re-read both, then this section, continue the cycle loop.
   into a3d9150 (mixed commit; details in seed Archie-eaae) · ④ ?src= share path (a3d9150) ·
   ⑤ JSON-LD (5cefba0) · ⑥-A CSV notes import (c314ebf). Dry streak: 0.
 
-**Next:** ⑥ remaining slices (xlsx via lazy exceljs, column mapping) · ⑦ WADM/Recogito/Hypothes.is
-import (donors: mirador AnnotationFactory crosswalk, cozy-iiif fetch-annotations — Prior Art/14) ·
-then ⑧–⑭. ③ is USER-GATED (user reverted it — template content is their call). Blocked on a
-canonical-origin decision: og:image (Archie-717d), sitemap (Archie-b4f2).
+**Worklist (grilled + locked 2026-06-09, all ~30 + post-Tier-2 items dispositioned — see seeds):**
+1. Canonical-wiring cycle (autonomous): archie.config.json -> PublishDialog + build-gh-pages.sh;
+   og:image = exhibit cover absolute (IIIF sized ~1200w) + brand-card fallback; sitemap.xml +
+   robots.txt; origin observability (UI host label + baked-origin mismatch badge). ADR-0013+amendment.
+2. Folder-depth cycle (autonomous): one-exhibit-per-subfolder + EXIF capture-date order (Archie-e1d6).
+3. Atlas template (HUMAN-GATED branch): 'Where Languages Go Silent', UNESCO Atlas (IA, CC BY-SA 4.0),
+   two Readings — Linguist's vs Community (Archie-eaae; shortlist /tmp/archie-a11y/ia-template-shortlist.md).
+4. ⑧ collaboration copy + summary panel (HUMAN-GATED branch; doubles as co-editing's approximation, Archie-59a8).
+PARKED (revive triggers in seeds): ⑨ ⑥-B ⑥-C ⑦-B ⑩-B ⑪ ⑭ · batch-zip-import (Archie-f1e2) ·
+volunteer-queue/discovery/DID (Archie-1908). Template content rule: never the author's personal work.
 
 **Hard-won protocol (don't relearn):**
 - Runner reality (GOAL §7 is stale): lockfile is pnpm-11-flavored. Use

@@ -1,0 +1,6 @@
+{
+  "$comment": "THE single source for the canonical deploy origin (ADR-0013 + amendment). Everything that mints absolute URLs consumes this — Studio share/embed UI, viewer og/sitemap emitters, scripts/build-gh-pages.sh (via node -p). SITE_BASE / PUBLISH_BASE env vars override per deploy context but DEFAULT from here. Changing domains = edit this file only.",
+  "canonicalOrigin": "https://micahchoo.github.io/Archie/",
+  "viewerPath": "viewer/",
+  "studioPath": "studio/"
+}

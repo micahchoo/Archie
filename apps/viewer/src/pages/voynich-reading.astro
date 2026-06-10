@@ -7,7 +7,9 @@ import "../tokens.css";
 import "@annotorious/openseadragon/annotorious-openseadragon.css";
 import "@annotorious/plugin-tools/annotorious-plugin-tools.css";
 import "../markers.css"; // A2 + stroke-over-stroke marker styling — must load AFTER Annotorious CSS
+import { ogImageFor } from "../og-image.js";
 const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + "/";
+const ogImage = ogImageFor("voynich-reading"); // exhibit cover, absolute (ADR-0013)
 ---
 
 <html lang="en">
@@ -23,7 +25,8 @@ const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL :
     <meta property="og:site_name" content="Archie" />
     <meta property="og:title" content="Reading the Unreadable" />
     <meta property="og:description" content="A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud." />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
     <!-- schema.org JSON-LD (GOAL §5a ⑤): typed structured data so published exhibits are
          machine-readable to search engines — same copy as the og tags. -->
     <script type="application/ld+json" is:inline set:html={JSON.stringify({"@context": "https://schema.org", "@type": "CreativeWork", "name": "Reading the Unreadable", "description": "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.", "about": {"@type": "CreativeWork", "name": "Voynich manuscript (Beinecke MS 408)"}, "license": "https://creativecommons.org/publicdomain/mark/1.0/"})} />
