@@ -1,0 +1,37 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/language-atlas/canvas/o1/annotations-linguist.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/00000000017TWY6ST5E7290FPY/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/language-atlas/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:170,310,280,220"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.001Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**Haida** (X̱aad Kíl) — a language isolate of Haida Gwaii, British Columbia. The 2010 atlas marks it *critically endangered*: fewer than 50 fluent speakers, nearly all elders. Two dialects, Massett and Skidegate, each with its own orthography.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:reading": "linguist",
+      "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000017TWY6ST5E7290FPY.json"
+    }
+  ],
+  "partOf": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+      "type": "AnnotationCollection"
+    }
+  ]
+}

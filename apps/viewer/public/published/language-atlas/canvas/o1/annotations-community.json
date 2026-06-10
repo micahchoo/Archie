@@ -1,0 +1,37 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/language-atlas/canvas/o1/annotations-community.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/00000000024CSS8WBETSWW0619/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/language-atlas/canvas/o1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:170,310,280,220"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.002Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "On Haida Gwaii the count of fluent elders is told person by person, name by name. Master–apprentice pairs now sit teenagers beside grandmothers for hours of Haida-only conversation — the dot on this map is also a kitchen table.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:reading": "community",
+      "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000024CSS8WBETSWW0619.json"
+    }
+  ],
+  "partOf": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+      "type": "AnnotationCollection"
+    }
+  ]
+}

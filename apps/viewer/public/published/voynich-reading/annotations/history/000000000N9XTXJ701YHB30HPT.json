@@ -1,0 +1,45 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/annotations/history/000000000N9XTXJ701YHB30HPT.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/000000000N9XTXJ701YHB30HPT/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o4",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:260,2900,2300,560"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.021Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the cipher reading, the “imaginary” plant is a deliberate cover image — the cipher's content need not match the picture, so an invented plant hides rather than reveals.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "botanical",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "currier-hand-A",
+          "purpose": "tagging"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000000N9XTXJ701YHB30HPT",
+      "archie:rev": "000000000NA8H5DW9C1XDAJQFR",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "cipher"
+    }
+  ]
+}

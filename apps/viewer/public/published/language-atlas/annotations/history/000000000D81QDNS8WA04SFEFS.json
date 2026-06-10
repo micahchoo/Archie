@@ -1,0 +1,35 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/language-atlas/annotations/history/000000000D81QDNS8WA04SFEFS.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/000000000D81QDNS8WA04SFEFS/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/language-atlas/canvas/o5",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1560,650,380,320"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.013Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**Tundra Yukaghir** — one of two survivors of the once-widespread Yukaghir family, lower Kolyma, Sakha Republic. The atlas counts speakers in the tens, marked *severely endangered*; nearly all are of the oldest generation.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000000D81QDNS8WA04SFEFS",
+      "archie:rev": "000000000DG4GY5V6X2SWEVMKN",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "linguist"
+    }
+  ]
+}

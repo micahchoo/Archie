@@ -7,6 +7,7 @@ import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voy
 // Single source of truth lives in the viewer-owned base module (not this demo file), so the shell
 // can import canvasIdFor without pulling in demo fixtures. Re-exported for gen-published.mts.
 import { BASE, canvasIdFor } from "./published-base.js";
+import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "./atlas.js";
 export { BASE, canvasIdFor };
 
 const author = asClientId("curator");
@@ -24,6 +25,25 @@ const author = asClientId("curator");
 // it owns its log/running-now LOCALLY and filters by object id, so the three logs never share state.
 // Append ORDER inside a log is load-bearing (appendNew needs a monotonic, distinct `now`, and the
 // published logical IDs depend on it): base notes → reading notes in array order → AV notes.
+
+// "Where Languages Go Silent" — the atlas template's published log (③+⑬, Archie-eaae). Same
+// append-order contract as buildVoynichLog: base notes after reading notes? NO — array order of
+// atlasNotes is load-bearing (appendNew needs monotonic distinct `now`).
+function buildAtlasLog(slug: string): AnnotationLog {
+  let log: AnnotationLog = [];
+  let now = 0;
+  for (const n of atlasNotes) {
+    const [x, y, w, h] = n.region;
+    ({ log } = appendNew(log, {
+      target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `xywh=pixel:${x},${y},${w},${h}` } },
+      body: [{ type: "TextualBody" as const, value: n.comment, purpose: "commenting" as const }],
+      motivation: "commenting", lastEditor: author, now: ++now,
+      ...(n.reading ? { reading: n.reading } : {}),
+    }));
+  }
+  return log;
+}
+
 function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeAv: boolean }): AnnotationLog {
   const keep = (objectId: string) => !opts.objectIds || opts.objectIds.has(objectId);
   let log: AnnotationLog = [];
@@ -121,9 +141,15 @@ export const library: Library = {
     // NARRATIVE — "Reading the Unreadable": all + the sounded page, the 6-beat voynichSections attached →
     // resolveLayout = narrative → NarrativeReader (the section spine + the readings-legend fix + AV notes).
     { id: "ex-voynich-reading", slug: "voynich-reading", title: "Reading the Unreadable", summary: "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: voynichObjs, layout: "narrative", sections: voynichSectionsTyped, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
+    // GRID — "Where Languages Go Silent" (③+⑬): UNESCO's endangered-languages atlas via the Internet
+    // Archive's IIIF (CC BY-SA 4.0 on every object). Two Readings (Linguist's/Community) carry the
+    // rival-interpretations differentiator beyond manuscripts. cover = a 400px IIIF derivative of the
+    // North America page.
+    { id: "ex-atlas", slug: "language-atlas", title: atlasTitle, summary: atlasSummary, cover: `${atlasObjects[0]!.source}/full/400,/0/default.jpg`, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })), layout: "grid", readings: atlasReadings, requiredStatement: atlasRights.requiredStatement },
   ],
 };
 
-const logsById: Record<string, AnnotationLog> = { "ex-voynich-rosettes": rosettesLog, "ex-voynich": voynichLog, "ex-voynich-reading": readingLog };
+const atlasLog = buildAtlasLog("language-atlas");
+const logsById: Record<string, AnnotationLog> = { "ex-voynich-rosettes": rosettesLog, "ex-voynich": voynichLog, "ex-voynich-reading": readingLog, "ex-atlas": atlasLog };
 /** Log lookup for publishLibrary, by exhibit id. */
 export const getLog = (exhibitId: string): AnnotationLog => logsById[exhibitId] ?? [];

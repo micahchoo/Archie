@@ -25,6 +25,13 @@
       "cover": "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg",
       "description": "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.",
       "order": 2
+    },
+    {
+      "slug": "language-atlas",
+      "title": "Where Languages Go Silent",
+      "cover": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0166.jp2/full/400,/0/default.jpg",
+      "description": "Eight map pages from UNESCO's Atlas of the World's Languages in Danger (2010) — every dot a language losing its speakers. The same dots read two ways: a linguist's census, and what the quiet means in the places it falls.",
+      "order": 3
     }
   ],
   "presentation": {},

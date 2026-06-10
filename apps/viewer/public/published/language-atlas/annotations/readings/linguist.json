@@ -1,0 +1,15 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+  "type": "AnnotationCollection",
+  "label": {
+    "en": [
+      "Linguist's reading"
+    ]
+  },
+  "summary": {
+    "en": [
+      "The census view: family, classification, speaker counts, vitality category — the data behind each dot."
+    ]
+  }
+}

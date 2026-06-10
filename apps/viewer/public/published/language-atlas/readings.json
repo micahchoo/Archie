@@ -1,0 +1,14 @@
+[
+  {
+    "id": "linguist",
+    "name": "Linguist's reading",
+    "description": "The census view: family, classification, speaker counts, vitality category — the data behind each dot.",
+    "colour": "#4c5d8a"
+  },
+  {
+    "id": "community",
+    "name": "Community reading",
+    "description": "What the silence means where it falls: who stopped speaking to whom, and what is being done about it.",
+    "colour": "#a3553a"
+  }
+]
