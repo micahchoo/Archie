@@ -127,7 +127,7 @@
     {:else if phase === "done-download"}
       <div class="result">
         <p class="ok">Saved your <code>.archie.zip</code>.</p>
-        <p class="line">Keep it, re-open it here any time, or hand it to a colleague.</p>
+        <p class="line">Keep it, re-open it here any time, or hand it to a colleague. <strong>Working with someone?</strong> They open your zip in their Studio, annotate their pass, and send it back — opening their copy here shows who added what.</p>
         <p class="line"><strong>Share it as a link (no install for the reader):</strong> upload the zip anywhere public — your site, a GitHub release, the Internet Archive — then paste its URL:</p>
         <input class="share-url" type="url" placeholder="https://…/my-library.archie.zip" bind:value={zipUrl} aria-label="Public URL of the uploaded .archie.zip" />
         {#if shareLink}
