@@ -3,7 +3,7 @@
   // tested @render/core AnnotationSession: draw on the canvas → create note → edit body/tags/
   // layers in the WADM form → publish to .archie.zip. Logic lives in core; this is the thin shell.
   import { onMount, tick } from "svelte";
-  import { folderNameFrom, inferredMime, mediaFilesInOrder } from "./folder-import.js";
+  import { inferredMime, planFolderImportGroups } from "./folder-import.js";
   import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
   import { planCsvImport } from "./csv-import.js";
   import { planWadmImport } from "./wadm-import.js";
@@ -31,6 +31,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     bindingLabel, recentFromBinding, addRecent, removeRecent,
     tagsOf, emphasisOf, emphasisModifiers,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type GitHubTarget, type PublishProgress, type Binding, type RecentProject, type BrokenLink, type Section, type Reading, type RightsFields, type Emphasis,
+    readExifCaptureDate,
   } from "@render/core";
   import type { DrawTool, MarkerStyle } from "@render/mount";
   import { bakeDisplayMaster, downscaleIfNeeded } from "./bake.js";
@@ -435,38 +436,61 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // names the exhibit; its media files become objects in reading order. Each file goes through the
   // SAME ingest as a hand-picked one (addObjectFromFile: EXIF bake, OPFS, AV branch) — no second path.
   async function newExhibitFromFolder(files: File[]) {
-    const picked = files.map((file) => ({ name: file.name, relativePath: file.webkitRelativePath || file.name, type: file.type, file }));
-    const plan = mediaFilesInOrder(picked);
-    if (plan.length === 0) {
+    // EXIF pre-pass (⑫): capture date per image so photo folders sort by SHOT time; only the
+    // first 128 KB is read (APP1 sits at the front), only for image-MIME files.
+    // Chunked at 8 (review r9): thousands of photos must not slice concurrently (memory/handles).
+    const picked: { name: string; relativePath: string; type: string; capturedAt: number | null; file: File }[] = [];
+    for (let i = 0; i < files.length; i += 8) {
+      picked.push(...(await Promise.all(files.slice(i, i + 8).map(async (file) => {
+        let capturedAt: number | null = null;
+        if (file.type.startsWith("image/")) {
+          try { capturedAt = readExifCaptureDate(await file.slice(0, 131072).arrayBuffer()); } catch { capturedAt = null; }
+        }
+        return { name: file.name, relativePath: file.webkitRelativePath || file.name, type: file.type, capturedAt, file };
+      }))));
+    }
+    // One exhibit per first-level subfolder (slice B, user-decided); loose files = a root exhibit.
+    const groups = planFolderImportGroups(picked);
+    if (groups.length === 0) {
       window.alert("No images, audio, or video found in that folder.");
       return;
     }
-    await newExhibit(folderNameFrom(picked));
-    // storeReady is PER-EXHIBIT state — openExhibit (inside newExhibit) just set it for the new
-    // exhibit. Without it, addObjectFromFile would no-op per file = a titled, silently-empty
-    // exhibit; say so instead.
-    if (!storeReady) {
-      window.alert("Created the exhibit, but this browser can't persist imported files (private window, or storage unavailable) — no images were added.");
-      return;
-    }
-    let failed = 0;
+    let failed = 0, imported = 0;
     try {
-      for (let i = 0; i < plan.length; i++) {
-        const p = plan[i]!;
-        importStatus = { name: p.name, index: i + 1, total: plan.length };
-        // Re-wrap typeless files (.tiff, .avif on some platforms) with the inferred MIME the plan
-        // admitted them under — addObjectFromFile branches on File.type.
-        const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
-        try {
-          await addObjectFromFile(file);
-        } catch {
-          failed++; // skip-and-tally: one corrupt scan must not abort the rest of the folder
+      for (const g of groups) {
+        await newExhibit(g.name);
+        // storeReady is PER-EXHIBIT state — openExhibit (inside newExhibit) just set it. Without
+        // it, addObjectFromFile would no-op per file = titled, silently-empty exhibits; stop loudly.
+        if (!storeReady) {
+          window.alert("Created the exhibit, but this browser can't persist imported files (private window, or storage unavailable) — import stopped.");
+          return;
+        }
+        for (let i = 0; i < g.files.length; i++) {
+          const p = g.files[i]!;
+          importStatus = { name: p.name, index: i + 1, total: g.files.length };
+          // Re-wrap typeless files (.tiff, .avif on some platforms) with the inferred MIME the
+          // plan admitted them under — addObjectFromFile branches on File.type.
+          const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
+          try {
+            await addObjectFromFile(file);
+            imported++;
+          } catch {
+            failed++; // skip-and-tally: one corrupt scan must not abort the rest of the folder
+          }
         }
       }
     } finally {
       importStatus = null;
     }
-    if (failed > 0) importNote = `${failed} of ${plan.length} files couldn't be imported — the rest are in.`;
+    const summary = `Imported ${imported} file${imported === 1 ? "" : "s"} into ${groups.length} exhibit${groups.length === 1 ? "" : "s"}.${failed > 0 ? ` ${failed} couldn't be imported.` : ""}`;
+    if (groups.length > 1) {
+      // Several new exhibits — land where they're all visible; the rail's importNote isn't
+      // rendered there, so the summary uses the app's dialog chrome.
+      await backToLibrary();
+      window.alert(summary);
+    } else if (failed > 0) {
+      importNote = summary;
+    }
   }
   // IIIF manifest URL → exhibit (contributor-broadening ②, Archie-bc01): one paste bootstraps from
   // any institutional IIIF collection. Parsing is the lifted cozy-iiif algorithm subset

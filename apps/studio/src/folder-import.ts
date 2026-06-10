@@ -10,6 +10,8 @@ export interface PickedFile {
   relativePath: string;
   /** MIME type if the browser knows it (File.type; often "" for unusual extensions). */
   type: string;
+  /** EXIF capture moment (epoch ms), when the caller pre-read it; null = read attempted, absent. */
+  capturedAt?: number | null;
 }
 
 // Extension → MIME for files the browser leaves untyped (.tiff on Linux, .avif, …). The plan and
@@ -55,4 +57,47 @@ export function mediaFilesInOrder<T extends PickedFile>(files: T[]): T[] {
   return files
     .filter((f) => !isHiddenPath(f.relativePath) && isImportableMedia(f))
     .sort((a, b) => a.relativePath.localeCompare(b.relativePath, undefined, { numeric: true, sensitivity: "base" }));
+}
+
+/** One exhibit's worth of a folder import (slice B, Archie-e1d6). */
+export interface FolderImportGroup<T extends PickedFile> {
+  name: string;
+  files: T[];
+}
+
+/** Group a picked folder into exhibits: ONE EXHIBIT PER FIRST-LEVEL SUBFOLDER ("each box is an
+ *  exhibit"); loose top-level files become an exhibit named for the root folder. Within a group,
+ *  files order by EXIF capture date when EVERY file carries one (photo folders sort by shot time —
+ *  ⑫), else by natural path order (numbered scans). */
+export function planFolderImportGroups<T extends PickedFile>(files: T[]): FolderImportGroup<T>[] {
+  const media = files.filter((f) => !isHiddenPath(f.relativePath) && isImportableMedia(f));
+  const byKey = new Map<string, T[]>();
+  for (const f of media) {
+    const segs = f.relativePath.split("/");
+    // [root, file] → loose (""); [root, sub, …] → first-level subfolder; bare names → loose.
+    const key = segs.length >= 3 ? segs[1]! : "";
+    if (!byKey.has(key)) byKey.set(key, []);
+    byKey.get(key)!.push(f);
+  }
+  const rootName = folderNameFrom(files);
+  const byPath = (a: T, b: T) => a.relativePath.localeCompare(b.relativePath, undefined, { numeric: true, sensitivity: "base" });
+  // The capture-date rule is scoped to IMAGES (review r9): a camera roll mixes JPG+MP4, and AV
+  // never carries capturedAt — it must not veto shot-time ordering. When every image is dated,
+  // images sort by shot time and AV appends after (path-ordered: a recording isn't a page in the
+  // photo sequence); any undated image -> the whole group falls back to predictable path order.
+  const order = (fs: T[]): T[] => {
+    const images = fs.filter((f) => inferredMime(f).startsWith("image/"));
+    const av = fs.filter((f) => !inferredMime(f).startsWith("image/"));
+    const imagesDated = images.length > 0 && images.every((f) => typeof f.capturedAt === "number");
+    if (!imagesDated) return [...fs].sort(byPath);
+    return [...[...images].sort((a, b) => (a.capturedAt! - b.capturedAt!) || byPath(a, b)), ...[...av].sort(byPath)];
+  };
+  const entries = [...byKey.entries()].sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }));
+  const subNames = new Set(entries.filter(([k]) => k !== "").map(([k]) => k.trim().toLowerCase()));
+  return entries.map(([key, fs]) => ({
+    // A loose-files group whose root name collides with a subfolder would mint two identically-
+    // titled exhibits (slugs dedupe; titles confuse) — suffix the loose one (review r9).
+    name: key === "" ? (subNames.has(rootName.trim().toLowerCase()) ? `${rootName} (loose files)` : rootName) : key,
+    files: order(fs),
+  }));
 }

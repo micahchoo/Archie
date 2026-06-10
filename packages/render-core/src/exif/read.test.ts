@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import { readExifOrientation } from "./read.js";
+import { readExifCaptureDate, readExifOrientation } from "./read.js";
 import { orientationTransform, normalizeDimensions, isOrientationNoop } from "./orientation.js";
 
 // EXIF orphan-gate consumer test (CONTEXT §89.1). The corpus spec lives in
@@ -76,5 +76,50 @@ describe("readExifOrientation — degrades to identity (1) on anything non-confo
   it("returns 1 for a truncated APP1 (length runs past EOF)", () => {
     const full = new Uint8Array(buildExifJpeg(6));
     expect(readExifOrientation(full.slice(0, full.length - 12).buffer)).toBe(1);
+  });
+});
+
+/** Synthesize a JPEG whose APP1 carries date tags: DateTimeOriginal in the Exif sub-IFD when
+ *  `inSubIfd`, else IFD0 DateTime. ASCII(20) values live at an offset from the TIFF start. */
+function buildExifJpegWithDate(date: string, opts: { inSubIfd?: boolean } = {}): ArrayBuffer {
+  const le = true;
+  const u16 = (n: number) => [n & 0xff, (n >> 8) & 0xff];
+  const u32 = (n: number) => [n & 0xff, (n >> 8) & 0xff, (n >> 16) & 0xff, (n >> 24) & 0xff];
+  const ascii = [...date].map((c) => c.charCodeAt(0)); ascii.push(0); // 20 bytes incl. NUL
+  const tiff: number[] = [0x49, 0x49, 0x2a, 0x00, ...u32(8)];
+  if (opts.inSubIfd) {
+    // IFD0: 1 entry (Exif-IFD pointer) → sub-IFD at 26; sub-IFD: 1 entry (0x9003) → ascii at 44
+    tiff.push(...u16(1), ...u16(0x8769), ...u16(4), ...u32(1), ...u32(26), ...u32(0));
+    tiff.push(...u16(1), ...u16(0x9003), ...u16(2), ...u32(20), ...u32(44), ...u32(0));
+  } else {
+    // IFD0: 1 entry (0x0132 DateTime) → ascii at 26
+    tiff.push(...u16(1), ...u16(0x0132), ...u16(2), ...u32(20), ...u32(26), ...u32(0));
+  }
+  tiff.push(...ascii);
+  const payload = [...EXIF_SIG, ...tiff];
+  const app1Len = payload.length + 2;
+  const bytes = [0xff, 0xd8, 0xff, 0xe1, (app1Len >> 8) & 0xff, app1Len & 0xff, ...payload, 0xff, 0xd9];
+  return new Uint8Array(bytes).buffer;
+}
+
+describe("readExifCaptureDate — capture moment for folder-import ordering (⑫)", () => {
+  it("reads DateTimeOriginal from the Exif sub-IFD", () => {
+    expect(readExifCaptureDate(buildExifJpegWithDate("2021:07:04 12:30:01", { inSubIfd: true })))
+      .toBe(Date.UTC(2021, 6, 4, 12, 30, 1));
+  });
+  it("falls back to IFD0 DateTime", () => {
+    expect(readExifCaptureDate(buildExifJpegWithDate("1999:01:02 03:04:05")))
+      .toBe(Date.UTC(1999, 0, 2, 3, 4, 5));
+  });
+  it("returns null for no-Exif JPEGs, non-JPEGs, and malformed dates", () => {
+    expect(readExifCaptureDate(new Uint8Array([0xff, 0xd8, 0xff, 0xd9]).buffer)).toBeNull();
+    expect(readExifCaptureDate(new Uint8Array([0, 1, 2, 3]).buffer)).toBeNull();
+    expect(readExifCaptureDate(buildExifJpegWithDate("not a date string!!"))).toBeNull();
+    expect(readExifCaptureDate(buildExifJpegWithDate("0000:00:00 00:00:00"))).toBeNull(); // unset camera clock
+  });
+  it("a date-less orientation-only JPEG yields null (and vice versa keeps orientation working)", () => {
+    const orientationOnly = buildExifJpeg(6);
+    expect(readExifCaptureDate(orientationOnly)).toBeNull();
+    expect(readExifOrientation(buildExifJpegWithDate("2021:07:04 12:30:01", { inSubIfd: true }))).toBe(1);
   });
 });
