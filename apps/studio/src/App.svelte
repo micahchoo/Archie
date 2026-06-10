@@ -6,6 +6,7 @@
   import { inferredMime, planFolderImportGroups } from "./folder-import.js";
   import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
   import { planCsvImport } from "./csv-import.js";
+  import { collabBreakdown, collabSummaryText } from "./collab.js";
   import { planWadmImport } from "./wadm-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";
@@ -185,6 +186,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   let bindingDirty = $state(false);   // unsaved-to-disk at the Library scale (distinct from per-exhibit `dirty`)
   let bindingBusy = $state(false);    // a Save/Open is in flight (guards overlap + disables chrome)
   let bindingError = $state<string | null>(null); // a bound location couldn't be reopened (lost-binding recovery)
+  let collabNote = $state<string | null>(null); // ⑧: who-wrote-what after opening a zip (dismissible)
   const PROJECT_TITLE = "Archie Library";
   const bindingPlace = $derived(bindingLabel(binding));
   let zipInputEl = $state<HTMLInputElement | null>(null); // hidden picker for "Open" on non-Chromium
@@ -611,6 +613,9 @@ import LayoutPicker from "./LayoutPicker.svelte";
     bindingError = null;
     bindingDirty = false;
     rememberBinding();
+    // ⑧ (Archie-59a8): the summary panel — who wrote what in the copy you just opened. This IS
+    // live co-editing's serverless approximation (the "N notes since your last import" indicator).
+    collabNote = collabSummaryText(file.name, collabBreakdown(loaded.logs, author));
   }
   // Replace the current OPFS project with a loaded library (the shared body of "Open zip" + "Open folder"):
   // clear outgoing annotation dirs (no orphans under reused slugs), write each imported log, swap the meta.
@@ -1417,6 +1422,14 @@ import LayoutPicker from "./LayoutPicker.svelte";
 
 <div class="app">
 {#if view === "library"}
+  {#if collabNote}
+    <!-- ⑧ collaboration summary (draft copy — human-gated): amber=transient, the playground
+         banner's tone family at library scale. -->
+    <div class="collab-note" role="status">
+      <span class="cn-msg">{collabNote}</span>
+      <button type="button" class="cn-x" onclick={() => (collabNote = null)} aria-label="Dismiss">✕</button>
+    </div>
+  {/if}
   <header>
     <span class="wordmark">Archie</span><span class="sub">Studio</span>
   </header>
@@ -1820,6 +1833,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
   /* Playground banner — honest ephemerality (§115). Amber tint = transient/attention; the keep button
      carries the action accent (green). */
   .playground-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); background: rgba(196, 155, 54, 0.1); border-bottom: 1px solid var(--border-canvas); border-left: 3px solid var(--semantic-warning); }
+
+  /* ⑧ collaboration summary — amber transient family (the playground banner's tone, library scale). */
+  .collab-note {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
+    margin: var(--space-4) var(--space-8) 0; padding: var(--space-3) var(--space-4);
+    background: rgba(214, 162, 62, 0.1); border: 1px solid var(--accent-2); border-radius: var(--radius-sm);
+  }
+  .cn-msg { font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); }
+  .cn-x { background: none; border: none; cursor: pointer; padding: 6px var(--space-2); font-size: 1rem; color: var(--ink-canvas-secondary); }
   .pg-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--semantic-warning); }
   .pg-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-canvas-secondary); }
   .pg-keep { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
