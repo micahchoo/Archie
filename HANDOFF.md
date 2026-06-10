@@ -1458,6 +1458,14 @@ branches the user reviews before merge (never auto-merge):
 PARKED (revive triggers in seeds): ⑨ ⑥-B ⑥-C ⑦-B ⑩-B ⑪ ⑭ · batch-zip-import (Archie-f1e2) ·
 volunteer-queue/discovery/DID (Archie-1908). Template content rule: never the author's personal work.
 
+### In flight (2026-06-10): unify Reading authoring (branch goal/readings-drawer)
+User: name/description/colour authoring is fragmented (inline header input + swatches at create
++ prompt for description). FIX: a ReadingsEditor.svelte in a PropsDrawer (the Exhibit/Library
+details idiom): list all readings, each = colour swatches + name input + description textarea +
+remove; add-row at bottom. Header keeps the filter select + ONE 'Readings…' button (replaces the
+'+ Reading' inline flow AND '✎ describe'). Wire via setReadings; palette passed as a prop.
+Previous fixes shipped: 789f751 (click-zoom + describe prompt), 70e27ac (atlas published+audited).
+
 ### User-reported fixes in flight (2026-06-10, branch goal/click-zoom-reading-desc)
 1. Clicking a marker ON the canvas doesn't zoom — by design in render-svelte's controller
    (controller.ts onSelect: user clicks must not re-drive setSelected; the no-feedback-loop

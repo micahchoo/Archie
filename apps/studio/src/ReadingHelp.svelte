@@ -38,7 +38,7 @@
       </ul>
       <div class="actions">
         <button type="button" class="ghost" onclick={onclose}>Not now</button>
-        <button type="button" class="primary" onclick={onproceed}>Name a reading…</button>
+        <button type="button" class="primary" onclick={onproceed}>Open Readings…</button>
       </div>
     </div>
   </div>
