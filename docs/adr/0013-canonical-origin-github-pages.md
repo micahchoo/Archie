@@ -21,6 +21,13 @@
      deployed Viewer compares `window.location.origin` against its built-in canonical origin and
      surfaces a mismatch (the "deployed elsewhere but forgot to update the config" drift case);
      the link-integrity sweep includes minted-origin URLs.
+- **Amendment (2026-06-09, grill):** the config source is a checked-in **`archie.config.json`**
+  at repo root (`canonicalOrigin`, `viewerPath`, `studioPath`); TS/Astro/Vite import it directly,
+  bash reads it via `node -p`. Existing `SITE_BASE`/`PUBLISH_BASE` env vars become deploy-time
+  OVERRIDES defaulting from it. Observability shape: the share/embed UI labels the minted host
+  from the config; canonical-instance builds bake the expected origin and the running Viewer
+  warns (console + quiet topbar badge) on `window.location.origin` mismatch — third-party
+  publishes bake no canonical flag and skip the check.
 - **Consequences:** og:image (Archie-717d), sitemap (Archie-b4f2), ⑪ Change Discovery, and
   ⑭ oEmbed are unblocked and must all consume the single config source — none may hardcode.
   Old unfurl caches and third-party embeds break on any future domain move (accepted, per the
