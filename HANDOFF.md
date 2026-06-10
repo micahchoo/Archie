@@ -1442,14 +1442,19 @@ After compaction: re-read both, then this section, continue the cycle loop.
   into a3d9150 (mixed commit; details in seed Archie-eaae) · ④ ?src= share path (a3d9150) ·
   ⑤ JSON-LD (5cefba0) · ⑥-A CSV notes import (c314ebf). Dry streak: 0.
 
-**Worklist (grilled + locked 2026-06-09, all ~30 + post-Tier-2 items dispositioned — see seeds):**
-1. Canonical-wiring cycle (autonomous): archie.config.json -> PublishDialog + build-gh-pages.sh;
-   og:image = exhibit cover absolute (IIIF sized ~1200w) + brand-card fallback; sitemap.xml +
-   robots.txt; origin observability (UI host label + baked-origin mismatch badge). ADR-0013+amendment.
-2. Folder-depth cycle (autonomous): one-exhibit-per-subfolder + EXIF capture-date order (Archie-e1d6).
-3. Atlas template (HUMAN-GATED branch): 'Where Languages Go Silent', UNESCO Atlas (IA, CC BY-SA 4.0),
-   two Readings — Linguist's vs Community (Archie-eaae; shortlist /tmp/archie-a11y/ia-template-shortlist.md).
-4. ⑧ collaboration copy + summary panel (HUMAN-GATED branch; doubles as co-editing's approximation, Archie-59a8).
+**Worklist state (2026-06-09 late):** canonical wiring SHIPPED (6d712ea — archie.config.json, og:image,
+sitemap/robots, drift badge; ADR-0013 closed Archie-717d/b4f2). Folder depth SHIPPED (20615c9 —
+one-exhibit-per-subfolder + EXIF shot-time order; Archie-e1d6 closed). REMAINING, both HUMAN-GATED
+branches the user reviews before merge (never auto-merge):
+3. Atlas template branch goal/atlas-template: 'Where Languages Go Silent' — IA identifier
+   atlas-of-the-worlds-languages-in-danger (CC BY-SA 4.0), manifest verified at
+   https://iiif.archive.org/iiif/atlas-of-the-worlds-languages-in-danger/manifest.json (222 canvases
+   2550x3301); pick 8-10 REGIONAL MAP pages; objects = IIIF service bases + dims; TWO READINGS
+   (Linguist's: classification/speaker data · Community: what the silence means locally); follow the
+   voynich.ts data-module + DEFAULT_EXHIBITS + seededFor pattern; rights fields carry CC BY-SA + IA
+   credit (Archie-eaae).
+4. ⑧ collaboration copy + summary panel, branch goal/collab-copy: pass-the-zip legibility + the
+   'N notes since your last import' panel (= live co-editing's serverless approximation, Archie-59a8).
 PARKED (revive triggers in seeds): ⑨ ⑥-B ⑥-C ⑦-B ⑩-B ⑪ ⑭ · batch-zip-import (Archie-f1e2) ·
 volunteer-queue/discovery/DID (Archie-1908). Template content rule: never the author's personal work.
 
