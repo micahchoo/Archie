@@ -7,6 +7,8 @@
   import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
   import { planCsvImport } from "./csv-import.js";
   import { collabBreakdown, collabSummaryText } from "./collab.js";
+  import PropsDrawer from "./PropsDrawer.svelte";
+  import ReadingsEditor from "./ReadingsEditor.svelte";
   import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "../../viewer/src/atlas.js";
   import { planWadmImport } from "./wadm-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
@@ -811,17 +813,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const drawArmed = $derived(creating !== null || framingSectionId !== null); // canvas in draw mode while either gesture is live
   const drawShape = $derived<DrawTool>(creating ?? "rectangle"); // framing always frames a box
   let readingFilter = $state("all"); // "all" | "base" | a reading id — scopes the list + new-note default (ADR-0007)
-  let addingReading = $state(false); // shows the in-app new-reading input (AppNative, not an OS prompt)
+  let readingsOpen = $state(false); // the unified Readings drawer (name+colour+description in ONE place)
   let readingHelpOpen = $state(false); // first-add teaching modal (ADR-0007); gated by readingHelpSeen()
-  let newReadingEl = $state<HTMLInputElement>();
   // "+ Reading" click: teach the concept once (modal), then drop into the name input. Once seen, jump
   // straight to the input — the existing flow, untouched. Proceed/dismiss both mark it seen (no re-nag).
-  function startAddReading() {
-    newReadingColour = null; // default to the next auto-cycled colour until the curator picks one
-    if (readingHelpSeen()) { addingReading = true; return; }
-    readingHelpOpen = true;
+  function openReadings() {
+    if (readingHelpSeen()) { readingsOpen = true; return; }
+    readingHelpOpen = true; // first time: explain what a Reading IS, then open the drawer
   }
-  function readingHelpProceed() { markReadingHelpSeen(); readingHelpOpen = false; addingReading = true; }
+  function readingHelpProceed() { markReadingHelpSeen(); readingHelpOpen = false; readingsOpen = true; }
   function readingHelpClose() { markReadingHelpSeen(); readingHelpOpen = false; }
   // Which object of the exhibit the editor is showing. Switching resets transient view state.
   let currentObjectId = $state("o1");
@@ -886,20 +886,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // Reading colours (ADR-0007: colour identifies the reading; the viewer legend is a colour radio). The
   // curator may PICK one (Archie-1489) — auto-cycled as the sensible default so naming-and-go still works.
   const READING_PALETTE = ["#3a6b4c", "#a3553a", "#4c5d8a", "#8a6d3b", "#6b4c8a", "#3a7d8a"];
-  let newReadingColour = $state<string | null>(null); // null → use the auto-cycled default
-  function addReading(name: string, colour?: string) {
-    const nm = name.trim();
-    if (!nm) return;
-    const id = nm.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || `r${currentReadings.length + 1}`;
-    if (currentReadings.some((r) => r.id === id)) { readingFilter = id; return; }
-    const c = colour ?? READING_PALETTE[currentReadings.length % READING_PALETTE.length]!;
-    setReadings([...currentReadings, { id, name: nm, colour: c }]);
-    readingFilter = id; // make the new reading active so the next-drawn notes default into it
-  }
-  function removeReading(id: string) {
-    setReadings(currentReadings.filter((r) => r.id !== id));
-    if (readingFilter === id) readingFilter = "all";
-  }
   function setNoteReading(reading: string | null) {
     if (!editing) return;
     session.editNote(editing as LogicalId, { reading });
@@ -911,25 +897,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
     session.editNote(editing as LogicalId, { emphasis });
     bump();
   }
-  // ⑬-adjacent (user report): the published legend SHOWS a reading's description, but nothing
-  // authored it. Minimal editor: prompt prefilled with the current text; empty clears it.
-  function editReadingDescription(id: string) {
-    const r = currentReadings.find((x) => x.id === id);
-    if (!r) return;
-    const next = window.prompt("Describe this reading — one or two sentences, shown under the reading's name in the published legend:", r.description ?? "");
-    if (next === null) return; // cancelled
-    setReadings(currentReadings.map((x) => {
-      if (x.id !== id) return x;
-      const { description: _drop, ...rest } = x;
-      return next.trim() ? { ...rest, description: next.trim() } : rest;
-    }));
-  }
-  function commitNewReading(name: string) {
-    const n = name.trim();
-    if (n) addReading(n, newReadingColour ?? undefined);
-    addingReading = false;
-  }
-  $effect(() => { if (addingReading) newReadingEl?.focus(); });
 
   // --- Rights & credit (rights grill Phase 2): the shared RightsEditor sets these at all three levels.
   // Each replaces the level's rights fields with the editor's emitted next-state, then persists. ---
@@ -1528,28 +1495,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
         {#each currentReadings as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
       </select>
     </label>
-    {#if readingFilter !== "all" && readingFilter !== "base"}
-      <button type="button" class="reading-desc" onclick={() => editReadingDescription(readingFilter)}
-        title="Describe this reading — shown under its name in the published legend">✎ describe</button>
-    {/if}
-    {#if addingReading}
-      <span class="new-reading-wrap">
-        <input class="new-reading" type="text" placeholder="Name a reading — e.g. Cipher" bind:this={newReadingEl}
-          onkeydown={(e) => { if (e.key === "Enter") commitNewReading((e.currentTarget as HTMLInputElement).value); else if (e.key === "Escape") addingReading = false; }}
-          onblur={() => (addingReading = false)} />
-        <!-- Pick the reading's colour (Archie-1489); auto-cycled default pre-selected. onmousedown+preventDefault
-             keeps focus in the name input so picking a swatch never triggers the blur-cancel. -->
-        <span class="swatches" role="group" aria-label="Reading colour">
-          {#each READING_PALETTE as c, i (c)}
-            <button type="button" class="swatch" class:on={newReadingColour === c || (newReadingColour === null && i === currentReadings.length % READING_PALETTE.length)}
-              style={`background:${c}`} title="Use this colour" aria-label={`Reading colour ${i + 1}`}
-              onmousedown={(e) => { e.preventDefault(); newReadingColour = c; }}></button>
-          {/each}
-        </span>
-      </span>
-    {:else}
-      <button class="add-reading" onclick={startAddReading} title="Add a way of reading this source — e.g. a Cipher reading vs a Hoax reading">+ Reading</button>
-    {/if}
+    <button class="add-reading" onclick={openReadings} title="Name, colour, and describe the ways of reading this source — rival readings coexist, never merged">✎ Readings…</button>
     <button class="layout-trigger" onclick={() => (layoutPickerOpen = true)} title="How visitors read this exhibit (reading intent)">▦ {currentLayout}</button>
     {#if storeReady}
       <span class="savestate" class:dirty>{dirty ? "● Unsaved" : "Saved"}</span>
@@ -1558,6 +1504,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
     <button onclick={() => (publishDialogOpen = true)}>Publish & Share…</button>
     <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
   </header>
+
+  <PropsDrawer open={readingsOpen} title="Readings" onclose={() => (readingsOpen = false)}>
+    <ReadingsEditor readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => (readingFilter = id)} />
+  </PropsDrawer>
 
   {#if isTemplate(currentSlug)}
     <!-- Per-exhibit playground banner (§115): an EXAMPLE is a template — exploring it is honest play,
@@ -1857,15 +1807,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .savestate { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .savestate.dirty { color: var(--accent-2); }
   /* Reading-colour picker (Archie-1489): colour dots beside the new-reading name input. */
-  .new-reading-wrap { display: inline-flex; align-items: center; gap: var(--space-2); }
-  .reading-desc {
-    background: none; border: none; cursor: pointer; padding: 6px var(--space-2);
-    font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary);
-  }
-  .reading-desc:hover { color: var(--accent-2); }
-  .swatches { display: inline-flex; gap: 4px; }
   .swatch { width: 15px; height: 15px; border-radius: 50%; padding: 0; cursor: pointer; border: 1px solid var(--border-canvas-emphasis); transition: box-shadow 100ms ease; }
-  .swatch.on { box-shadow: 0 0 0 2px var(--surface-canvas), 0 0 0 3px var(--ink-canvas-primary); }
   /* Identity chip — your name in the shared history (invention #6); mono like other identifiers. */
   .you { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: 999px; padding: 1px var(--space-3); }
   /* The ? shortcuts button — a round, quiet affordance for the cheat-sheet. */
