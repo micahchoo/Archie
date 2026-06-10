@@ -1,0 +1,37 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/language-atlas/canvas/o3/annotations-community.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/0000000008ENX4QN1HA0803R1G/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/language-atlas/canvas/o3",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:440,720,320,290"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.008Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Ubykh did not fade in place — it was carried out of the Caucasus in the deportations of 1864 and went silent in exile, a century and a half later and a thousand kilometres from Sochi. Some silences on this map begin with an army.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:reading": "community",
+      "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000008ENX4QN1HA0803R1G.json"
+    }
+  ],
+  "partOf": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+      "type": "AnnotationCollection"
+    }
+  ]
+}

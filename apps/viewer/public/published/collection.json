@@ -57,6 +57,21 @@
           "type": "Image"
         }
       ]
+    },
+    {
+      "id": "https://archie.demo/language-atlas/manifest.json",
+      "type": "Manifest",
+      "label": {
+        "none": [
+          "Where Languages Go Silent"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0166.jp2/full/400,/0/default.jpg",
+          "type": "Image"
+        }
+      ]
     }
   ]
 }

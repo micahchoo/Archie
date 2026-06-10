@@ -1,0 +1,15 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+  "type": "AnnotationCollection",
+  "label": {
+    "en": [
+      "Community reading"
+    ]
+  },
+  "summary": {
+    "en": [
+      "What the silence means where it falls: who stopped speaking to whom, and what is being done about it."
+    ]
+  }
+}

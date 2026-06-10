@@ -7,7 +7,7 @@
   import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
   import { planCsvImport } from "./csv-import.js";
   import { collabBreakdown, collabSummaryText } from "./collab.js";
-  import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "./atlas.js";
+  import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "../../viewer/src/atlas.js";
   import { planWadmImport } from "./wadm-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";

@@ -1,0 +1,1509 @@
+{
+  "@context": "https://iiif.io/api/presentation/3/context.json",
+  "id": "https://archie.demo/language-atlas/manifest.json",
+  "type": "Manifest",
+  "label": {
+    "none": [
+      "Where Languages Go Silent"
+    ]
+  },
+  "summary": {
+    "none": [
+      "Eight map pages from UNESCO's Atlas of the World's Languages in Danger (2010) — every dot a language losing its speakers. The same dots read two ways: a linguist's census, and what the quiet means in the places it falls."
+    ]
+  },
+  "requiredStatement": {
+    "label": {
+      "none": [
+        "Source"
+      ]
+    },
+    "value": {
+      "none": [
+        "UNESCO, Atlas of the World's Languages in Danger, 3rd edition (2010), ed. Christopher Moseley — digitized at the Internet Archive. CC BY-SA 4.0."
+      ]
+    }
+  },
+  "items": [
+    {
+      "id": "https://archie.demo/language-atlas/canvas/o1",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "North America"
+        ]
+      },
+      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Source"
+          ]
+        },
+        "value": {
+          "none": [
+            "UNESCO, Atlas of the World's Languages in Danger, 3rd edition (2010), ed. Christopher Moseley — digitized at the Internet Archive. CC BY-SA 4.0."
+          ]
+        }
+      },
+      "width": 2550,
+      "height": 3301,
+      "items": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o1/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/canvas/o1/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0166.jp2",
+                "type": "Image",
+                "width": 2550,
+                "height": 3301,
+                "service": [
+                  {
+                    "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0166.jp2",
+                    "type": "ImageService2",
+                    "profile": "level2"
+                  }
+                ]
+              },
+              "target": "https://archie.demo/language-atlas/canvas/o1"
+            }
+          ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0166.jp2/full/240,/0/default.jpg",
+          "type": "Image"
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o1/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000RNQQ28TEHFHJYTQW5/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:230,1300,540,180"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.024Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Every dot on these pages is a language; its colour is how close the talking is to stopping. Switch between the **Linguist's** and **Community** readings to hear the same dots two ways — or stay on *Base* to see only this note.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000RNQQ28TEHFHJYTQW5.json"
+            }
+          ],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o1/annotations-linguist.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/00000000017TWY6ST5E7290FPY/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:170,310,280,220"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.001Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "**Haida** (X̱aad Kíl) — a language isolate of Haida Gwaii, British Columbia. The 2010 atlas marks it *critically endangered*: fewer than 50 fluent speakers, nearly all elders. Two dialects, Massett and Skidegate, each with its own orthography.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "linguist",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000017TWY6ST5E7290FPY.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Linguist's reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The census view: family, classification, speaker counts, vitality category — the data behind each dot."
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o1/annotations-community.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/00000000024CSS8WBETSWW0619/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:170,310,280,220"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.002Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "On Haida Gwaii the count of fluent elders is told person by person, name by name. Master–apprentice pairs now sit teenagers beside grandmothers for hours of Haida-only conversation — the dot on this map is also a kitchen table.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "community",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000024CSS8WBETSWW0619.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Community reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "What the silence means where it falls: who stopped speaking to whom, and what is being done about it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/language-atlas/canvas/o2",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Western South America"
+        ]
+      },
+      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Source"
+          ]
+        },
+        "value": {
+          "none": [
+            "UNESCO, Atlas of the World's Languages in Danger, 3rd edition (2010), ed. Christopher Moseley — digitized at the Internet Archive. CC BY-SA 4.0."
+          ]
+        }
+      },
+      "width": 2550,
+      "height": 3301,
+      "items": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o2/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/canvas/o2/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0176.jp2",
+                "type": "Image",
+                "width": 2550,
+                "height": 3301,
+                "service": [
+                  {
+                    "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0176.jp2",
+                    "type": "ImageService2",
+                    "profile": "level2"
+                  }
+                ]
+              },
+              "target": "https://archie.demo/language-atlas/canvas/o2"
+            }
+          ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0176.jp2/full/240,/0/default.jpg",
+          "type": "Image"
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o2/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/00000000039R7WSQ6Z0VCP7P0Z/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o2",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:740,470,280,280"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.003Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The Andes–Amazon corridor is the densest stretch of dots in the whole atlas — dozens of small languages between the mountains and the river basin.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000039R7WSQ6Z0VCP7P0Z.json"
+            }
+          ],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o2/annotations-linguist.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/0000000004CECTA01H4HMMQSMS/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o2",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:740,470,280,280"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.004Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "**Chamicuro** — Arawakan, spoken at Pampa Hermosa on the Huallaga river, Peru. The atlas lists it *critically endangered*: by 2010, perhaps two elderly speakers remained, the rest of the community having shifted to Spanish.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "linguist",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000004CECTA01H4HMMQSMS.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Linguist's reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The census view: family, classification, speaker counts, vitality category — the data behind each dot."
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o2/annotations-community.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/0000000005394B34PJ20RJ6QT0/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o2",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:740,470,280,280"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.005Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A dictionary of Chamicuro exists because its last speakers wanted one — 'so the grandchildren can see what we sounded like.' The dot here is an act of deliberate remembering, not just a casualty count.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "community",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000005394B34PJ20RJ6QT0.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Community reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "What the silence means where it falls: who stopped speaking to whom, and what is being done about it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/language-atlas/canvas/o3",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "The Caucasus"
+        ]
+      },
+      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Source"
+          ]
+        },
+        "value": {
+          "none": [
+            "UNESCO, Atlas of the World's Languages in Danger, 3rd edition (2010), ed. Christopher Moseley — digitized at the Internet Archive. CC BY-SA 4.0."
+          ]
+        }
+      },
+      "width": 2550,
+      "height": 3301,
+      "items": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o3/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/canvas/o3/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0184.jp2",
+                "type": "Image",
+                "width": 2550,
+                "height": 3301,
+                "service": [
+                  {
+                    "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0184.jp2",
+                    "type": "ImageService2",
+                    "profile": "level2"
+                  }
+                ]
+              },
+              "target": "https://archie.demo/language-atlas/canvas/o3"
+            }
+          ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0184.jp2/full/240,/0/default.jpg",
+          "type": "Image"
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o3/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/0000000006BR3BZMWKJXDM1M3P/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o3",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:440,720,320,290"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.006Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The Caucasus packs more language families into one mountain range than most continents hold — and more red dots.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000006BR3BZMWKJXDM1M3P.json"
+            }
+          ],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o3/annotations-linguist.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/0000000007RN0NEN865ZJE2PAA/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o3",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:440,720,320,290"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.007Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "**Ubykh** — Northwest Caucasian, famed among linguists for its consonant inventory of around eighty against just two distinctive vowels. The atlas marks it *extinct*: the last fully competent speaker, Tevfik Esenç, died in 1992 in Turkey.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "linguist",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000007RN0NEN865ZJE2PAA.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Linguist's reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The census view: family, classification, speaker counts, vitality category — the data behind each dot."
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o3/annotations-community.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/0000000008ENX4QN1HA0803R1G/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o3",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:440,720,320,290"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.008Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Ubykh did not fade in place — it was carried out of the Caucasus in the deportations of 1864 and went silent in exile, a century and a half later and a thousand kilometres from Sochi. Some silences on this map begin with an army.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "community",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000008ENX4QN1HA0803R1G.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Community reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "What the silence means where it falls: who stopped speaking to whom, and what is being done about it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/language-atlas/canvas/o4",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Western Africa"
+        ]
+      },
+      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Source"
+          ]
+        },
+        "value": {
+          "none": [
+            "UNESCO, Atlas of the World's Languages in Danger, 3rd edition (2010), ed. Christopher Moseley — digitized at the Internet Archive. CC BY-SA 4.0."
+          ]
+        }
+      },
+      "width": 2550,
+      "height": 3301,
+      "items": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o4/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/canvas/o4/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0190.jp2",
+                "type": "Image",
+                "width": 2550,
+                "height": 3301,
+                "service": [
+                  {
+                    "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0190.jp2",
+                    "type": "ImageService2",
+                    "profile": "level2"
+                  }
+                ]
+              },
+              "target": "https://archie.demo/language-atlas/canvas/o4"
+            }
+          ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0190.jp2/full/240,/0/default.jpg",
+          "type": "Image"
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o4/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/0000000009B8RJDWXYHYA2NKQ6/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o4",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:300,540,280,250"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.009Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "On the West African coast, languages rarely die into silence — they dissolve into bigger neighbours, market tongue by market tongue.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000009B8RJDWXYHYA2NKQ6.json"
+            }
+          ],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o4/annotations-linguist.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000AN9NNPSNGMCXBCB08/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o4",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:300,540,280,250"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.010Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "**Mani** (Bullom So) — a Mel language of the Sierra Leone–Guinea coast, marked *critically endangered*. Documentation in the 2000s found most remaining speakers elderly, with daily life conducted in Soso and Temne.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "linguist",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000AN9NNPSNGMCXBCB08.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Linguist's reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The census view: family, classification, speaker counts, vitality category — the data behind each dot."
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o4/annotations-community.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000BR33NAA8ZZSP2PQSG/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o4",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:300,540,280,250"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.011Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Mani didn't lose its speakers — it lost its occasions. Markets, weddings, and prayers moved into bigger neighbouring languages one domain at a time, until Mani was what grandparents used when they didn't want to be overheard.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "community",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000BR33NAA8ZZSP2PQSG.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Community reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "What the silence means where it falls: who stopped speaking to whom, and what is being done about it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/language-atlas/canvas/o5",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Siberia"
+        ]
+      },
+      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Source"
+          ]
+        },
+        "value": {
+          "none": [
+            "UNESCO, Atlas of the World's Languages in Danger, 3rd edition (2010), ed. Christopher Moseley — digitized at the Internet Archive. CC BY-SA 4.0."
+          ]
+        }
+      },
+      "width": 2550,
+      "height": 3301,
+      "items": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o5/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/canvas/o5/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0196.jp2",
+                "type": "Image",
+                "width": 2550,
+                "height": 3301,
+                "service": [
+                  {
+                    "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0196.jp2",
+                    "type": "ImageService2",
+                    "profile": "level2"
+                  }
+                ]
+              },
+              "target": "https://archie.demo/language-atlas/canvas/o5"
+            }
+          ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0196.jp2/full/240,/0/default.jpg",
+          "type": "Image"
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o5/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000CMT3BVZB6Q3Q65G1Z/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o5",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1560,650,380,320"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.012Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Across Siberia the dots trace the rivers — each one a small language of herders or fishers ringed by Russian.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000CMT3BVZB6Q3Q65G1Z.json"
+            }
+          ],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o5/annotations-linguist.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000D81QDNS8WA04SFEFS/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o5",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1560,650,380,320"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.013Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "**Tundra Yukaghir** — one of two survivors of the once-widespread Yukaghir family, lower Kolyma, Sakha Republic. The atlas counts speakers in the tens, marked *severely endangered*; nearly all are of the oldest generation.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "linguist",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000D81QDNS8WA04SFEFS.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Linguist's reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The census view: family, classification, speaker counts, vitality category — the data behind each dot."
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o5/annotations-community.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000EZPE50C1KMMMGQA8G/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o5",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1560,650,380,320"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.014Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Transmission broke in the boarding-school decades, when children spent ten months a year away from the tundra and came home preferring Russian. The elders who herd reindeer in Yukaghir now teach it as a school subject — an hour a week.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "community",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000EZPE50C1KMMMGQA8G.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Community reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "What the silence means where it falls: who stopped speaking to whom, and what is being done about it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/language-atlas/canvas/o6",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "The Himalaya"
+        ]
+      },
+      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Source"
+          ]
+        },
+        "value": {
+          "none": [
+            "UNESCO, Atlas of the World's Languages in Danger, 3rd edition (2010), ed. Christopher Moseley — digitized at the Internet Archive. CC BY-SA 4.0."
+          ]
+        }
+      },
+      "width": 2550,
+      "height": 3301,
+      "items": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o6/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/canvas/o6/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0202.jp2",
+                "type": "Image",
+                "width": 2550,
+                "height": 3301,
+                "service": [
+                  {
+                    "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0202.jp2",
+                    "type": "ImageService2",
+                    "profile": "level2"
+                  }
+                ]
+              },
+              "target": "https://archie.demo/language-atlas/canvas/o6"
+            }
+          ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0202.jp2/full/240,/0/default.jpg",
+          "type": "Image"
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o6/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000FZBVES1Z7Z96ZG8BW/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o6",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:410,570,280,230"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.015Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Every Himalayan valley is its own speech island; the atlas marks the passes where the islands are sinking.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000FZBVES1Z7Z96ZG8BW.json"
+            }
+          ],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o6/annotations-linguist.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000GF8NSDPDK3QF44ZPT/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o6",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:410,570,280,230"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.016Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "**Dura** — Tibeto-Burman, Lamjung district, Nepal. The atlas marks it *extinct*: Soma Devi Dura, regarded as its last fluent speaker, died in 2008. What survives was recorded from her and from partial rememberers in the final years.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "linguist",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000GF8NSDPDK3QF44ZPT.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Linguist's reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The census view: family, classification, speaker counts, vitality category — the data behind each dot."
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o6/annotations-community.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000HPW1VVJYFT234QR3W/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o6",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:410,570,280,230"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.017Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The Dura community still exists — it is the language that went. Identity outlived speech: people who never learned Dura still gather its word-lists, because the name on the map is their own.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "community",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000HPW1VVJYFT234QR3W.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Community reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "What the silence means where it falls: who stopped speaking to whom, and what is being done about it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/language-atlas/canvas/o7",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "South-East Asia"
+        ]
+      },
+      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Source"
+          ]
+        },
+        "value": {
+          "none": [
+            "UNESCO, Atlas of the World's Languages in Danger, 3rd edition (2010), ed. Christopher Moseley — digitized at the Internet Archive. CC BY-SA 4.0."
+          ]
+        }
+      },
+      "width": 2550,
+      "height": 3301,
+      "items": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o7/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/canvas/o7/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0208.jp2",
+                "type": "Image",
+                "width": 2550,
+                "height": 3301,
+                "service": [
+                  {
+                    "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0208.jp2",
+                    "type": "ImageService2",
+                    "profile": "level2"
+                  }
+                ]
+              },
+              "target": "https://archie.demo/language-atlas/canvas/o7"
+            }
+          ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0208.jp2/full/240,/0/default.jpg",
+          "type": "Image"
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o7/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000JP0QYBK3C1KHK1PCY/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o7",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:810,580,300,280"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.018Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Mainland South-East Asia layers its languages by altitude — the endangered ones live uphill, away from the lowland national tongues.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000JP0QYBK3C1KHK1PCY.json"
+            }
+          ],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o7/annotations-linguist.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000K22SYXN15TNEG0HBA/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o7",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:810,580,300,280"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.019Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "**Arem** — Vietic (Austroasiatic), spoken on the Vietnam–Laos border by a few dozen people at most in 2010. Of interest to linguists for preserving sesquisyllabic word shapes that Vietnamese itself has lost.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "linguist",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000K22SYXN15TNEG0HBA.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Linguist's reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The census view: family, classification, speaker counts, vitality category — the data behind each dot."
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o7/annotations-community.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000MK1XVG5V8P5H331PH/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o7",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:810,580,300,280"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.020Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The Arem were resettled out of the limestone forests into mixed villages; the language of the caves and foraging routes had no work to do in the new economy. Two generations later, it survives mainly in what elders remember of the forest.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "community",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000MK1XVG5V8P5H331PH.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Community reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "What the silence means where it falls: who stopped speaking to whom, and what is being done about it."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://archie.demo/language-atlas/canvas/o8",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Australia"
+        ]
+      },
+      "rights": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Source"
+          ]
+        },
+        "value": {
+          "none": [
+            "UNESCO, Atlas of the World's Languages in Danger, 3rd edition (2010), ed. Christopher Moseley — digitized at the Internet Archive. CC BY-SA 4.0."
+          ]
+        }
+      },
+      "width": 2550,
+      "height": 3301,
+      "items": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o8/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/canvas/o8/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0214.jp2",
+                "type": "Image",
+                "width": 2550,
+                "height": 3301,
+                "service": [
+                  {
+                    "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0214.jp2",
+                    "type": "ImageService2",
+                    "profile": "level2"
+                  }
+                ]
+              },
+              "target": "https://archie.demo/language-atlas/canvas/o8"
+            }
+          ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0214.jp2/full/240,/0/default.jpg",
+          "type": "Image"
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o8/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000NY9FQA7VVYCFH9G8K/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o8",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:550,420,280,240"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.021Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Australia holds some of the world’s steepest language loss — and, in places like Broome, some of its most determined turnarounds.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000NY9FQA7VVYCFH9G8K.json"
+            }
+          ],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o8/annotations-linguist.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000PKA30Y9KYJDHZCT8N/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o8",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:550,420,280,240"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.022Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "**Yawuru** — Nyulnyulan family, the language of the Broome region, Western Australia. The 2010 atlas marks it *critically endangered*, with only a handful of elderly fluent speakers remaining.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "linguist",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000PKA30Y9KYJDHZCT8N.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Linguist's reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "The census view: family, classification, speaker counts, vitality category — the data behind each dot."
+            ]
+          }
+        },
+        {
+          "id": "https://archie.demo/language-atlas/canvas/o8/annotations-community.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/000000000Q4Y7RAXRV9TJSFJJ8/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://archie.demo/language-atlas/canvas/o8",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:550,420,280,240"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.023Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Broome answered the count another way: Yawuru became a compulsory subject in the town's schools, taught by the community itself. The dot marks both a near-silence and the town that decided not to let it finish.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:reading": "community",
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000Q4Y7RAXRV9TJSFJJ8.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://archie.demo/language-atlas/annotations/readings/community.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Community reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "What the silence means where it falls: who stopped speaking to whom, and what is being done about it."
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

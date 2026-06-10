@@ -1,0 +1,37 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/language-atlas/canvas/o7/annotations-linguist.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/000000000K22SYXN15TNEG0HBA/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/language-atlas/canvas/o7",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:810,580,300,280"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.019Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**Arem** — Vietic (Austroasiatic), spoken on the Vietnam–Laos border by a few dozen people at most in 2010. Of interest to linguists for preserving sesquisyllabic word shapes that Vietnamese itself has lost.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:reading": "linguist",
+      "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000K22SYXN15TNEG0HBA.json"
+    }
+  ],
+  "partOf": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+      "type": "AnnotationCollection"
+    }
+  ]
+}

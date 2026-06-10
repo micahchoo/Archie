@@ -1,0 +1,34 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/language-atlas/annotations/history/0000000009B8RJDWXYHYA2NKQ6.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/0000000009B8RJDWXYHYA2NKQ6/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/language-atlas/canvas/o4",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:300,540,280,250"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.009Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "On the West African coast, languages rarely die into silence — they dissolve into bigger neighbours, market tongue by market tongue.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "0000000009B8RJDWXYHYA2NKQ6",
+      "archie:rev": "0000000009JX9Y8MMYQPCBA5G4",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

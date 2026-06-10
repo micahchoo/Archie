@@ -1,0 +1,30 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/language-atlas/canvas/o6/annotations.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/000000000FZBVES1Z7Z96ZG8BW/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/language-atlas/canvas/o6",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:410,570,280,230"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.015Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Every Himalayan valley is its own speech island; the atlas marks the passes where the islands are sinking.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000FZBVES1Z7Z96ZG8BW.json"
+    }
+  ]
+}
