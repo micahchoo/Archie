@@ -8,7 +8,12 @@ import "../tokens.css";
 import "@annotorious/openseadragon/annotorious-openseadragon.css";
 import "@annotorious/plugin-tools/annotorious-plugin-tools.css";
 import "../markers.css"; // A2 + stroke-over-stroke marker styling — must load AFTER Annotorious CSS
+import { ogImageFor } from "../og-image.js";
 const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + "/";
+const ogImage = ogImageFor(null); // the gallery page wears the brand card (ADR-0013)
+// Canonical builds (build-gh-pages.sh sets PUBLIC_CANONICAL_ORIGIN) bake their expected origin
+// into the shell so a drifted deploy SURFACES (ADR-0013 observability rider).
+const expectedBase = process.env.PUBLIC_CANONICAL_ORIGIN; // frontmatter runs in Node at build — process.env is the reliable channel (carries origin+viewerPath, hence "base")
 ---
 
 <html lang="en">
@@ -24,7 +29,8 @@ const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL :
     <meta property="og:site_name" content="Archie" />
     <meta property="og:title" content="The Archie Library" />
     <meta property="og:description" content="A contested manuscript read more than one way — Beinecke MS 408, the same undeciphered marks read three ways across three exhibits." />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
     <!-- schema.org JSON-LD (GOAL §5a ⑤): typed structured data so published exhibits are
          machine-readable to search engines — same copy as the og tags. -->
     <script type="application/ld+json" is:inline set:html={JSON.stringify({"@context": "https://schema.org", "@type": "CollectionPage", "name": "The Archie Library", "description": "A contested manuscript read more than one way — Beinecke MS 408, the same undeciphered marks read three ways across three exhibits."})} />
@@ -32,6 +38,6 @@ const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL :
   </head>
   <body style="margin: 0; background: var(--surface-gallery)">
     <!-- client:only — OSD touches `document` at import, so the shell is browser-only (no SSR). -->
-    <ViewerShell client:only="svelte" />
+    <ViewerShell client:only="svelte" {expectedBase} />
   </body>
 </html>

@@ -120,6 +120,21 @@
     if (route.view !== "exhibit") carousel = null;
   });
 
+  // Origin-drift observability (ADR-0013): canonical builds bake the expected origin
+  // (PUBLIC_CANONICAL_ORIGIN, set only by build-gh-pages.sh); if this build serves from anywhere
+  // else, the config and the deploy have drifted — every minted ?src=/og/sitemap URL is breaking.
+  // Third-party publishes don't bake the var and never see this.
+  // Passed by index.astro's frontmatter (where build-time env exists) — Vite does not
+  // define-replace import.meta.env.PUBLIC_* inside client islands, so a prop carries it.
+  let { expectedBase }: { expectedBase?: string } = $props();
+  let originDrift = $state(false);
+  $effect(() => {
+    if (expectedBase && typeof window !== "undefined" && !window.location.href.startsWith(expectedBase)) {
+      originDrift = true;
+      console.warn(`Archie: this canonical build expects to serve at ${expectedBase} but is at ${window.location.href} — minted absolute URLs (share links, og:image, sitemap) are broken. Update archie.config.json and redeploy.`);
+    }
+  });
+
   // The three-zone bar shows whenever a library is loaded (same gate as the old open-another chrome).
   const showBar = $derived(phase === "ready");
   // Center-zone carousel geometry (was the in-Reader carousel's derived idx/prev/next, lifted up).
@@ -133,6 +148,12 @@
      top-center), right = "Open another library" (quiet escape so a single-exhibit collapse can't trap the
      reader; shown whenever a library is loaded — hosted OR portable, reversed 2026-05-27 per ADR-0008). The
      chrome recedes — the image is the star. -->
+<!-- Origin-drift badge renders UNGATED (review r8): the worst drift case — the old host gone,
+     the library failing to load — is exactly when it must still surface. -->
+{#if originDrift}
+  <span class="drift" title="This canonical build expects {expectedBase} — minted share/og/sitemap URLs are broken. Update archie.config.json and redeploy.">⚠ origin drift</span>
+{/if}
+
 {#if showBar}
   <div class="topbar" class:on-paper={route.view !== "exhibit"}>
     <div class="zone left">
@@ -215,7 +236,14 @@
   .carousel .cpos { color: var(--ink-canvas-muted); font-variant-numeric: tabular-nums; padding: 0 var(--space-1); }
 
   /* Portable swap-to-change — quiet escape, not a primary action (CONTEXT §134). */
-  .open-another {
+  .drift {
+    position: fixed; z-index: 60; top: var(--space-3); right: var(--space-3);
+    padding: 2px var(--space-2);
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 600;
+    color: var(--accent-2); border: 1px solid var(--accent-2); border-radius: var(--radius-sm);
+    background: var(--surface-canvas-overlay);
+  }
+    .open-another {
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); cursor: pointer;
     background: none; border: none; padding: var(--space-2) 0; color: var(--ink-canvas-secondary); /* 24px+ hit box (Fitts) — transparent, no visual shift */
   }

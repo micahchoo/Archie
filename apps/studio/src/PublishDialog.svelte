@@ -36,9 +36,11 @@
   // ?src= share path (contributor-broadening ④, Archie-fd32): the zero-GitHub publish — host the
   // .archie.zip anywhere public, share one link into the canonical Viewer instance (ADR-0009).
   // Cite-with-caveats by design: the durability warning below is load-bearing, don't drop it.
-  // MUST match the deploy target in scripts/build-gh-pages.sh (which carries the mirror comment) —
-  // drift silently breaks every minted link; a bash script can't import this constant.
-  const CANONICAL_VIEWER = "https://micahchoo.github.io/Archie/viewer/";
+  // ONE config source (ADR-0013 amendment): archie.config.json — build-gh-pages.sh reads the
+  // same file via node -p, so the minted links and the deploy can't drift apart.
+  import archieConfig from "../../../archie.config.json";
+  const CANONICAL_VIEWER = `${archieConfig.canonicalOrigin}${archieConfig.viewerPath}`;
+  const CANONICAL_HOST = new URL(CANONICAL_VIEWER).host;
   let zipUrl = $state("");
   let copied = $state(false);
   const shareLink = $derived.by(() => {
@@ -141,7 +143,7 @@
             <p class="line muted">Select the link or embed code above to copy it.</p>
           {/if}
         {/if}
-        <p class="line muted">A <code>?src=</code> link works while both hosts stay up — the zip's and the Viewer's. For a durable, citable publication, publish the full site instead.</p>
+        <p class="line muted">A <code>?src=</code> link works while both hosts stay up — the zip’s and <code>{CANONICAL_HOST}</code> (the Viewer). Moving either breaks shared links. For a durable, citable publication, publish the full site instead.</p>
         <div class="actions"><button class="primary" onclick={close}>Done</button></div>
       </div>
 

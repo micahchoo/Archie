@@ -5,15 +5,22 @@ REPO="Archie"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/gh-pages-dist"
 
-# The Viewer deploy URL below must match CANONICAL_VIEWER in apps/studio/src/PublishDialog.svelte
-# (the ?src= share links Studio mints) — drift silently breaks every shared link.
+# ONE config source (ADR-0013 amendment): the canonical origin comes from archie.config.json —
+# the same file Studio's share links and the viewer's og/sitemap emitters read. No drift possible.
+ORIGIN=$(node -p "require('$ROOT/archie.config.json').canonicalOrigin")
+VIEWER_PATH=$(node -p "require('$ROOT/archie.config.json').viewerPath")
+case "$ORIGIN" in
+  */$REPO/*) : ;;
+  *) echo "✗ archie.config.json canonicalOrigin ($ORIGIN) doesn't contain /$REPO/ — fix the config or REPO before deploying"; exit 1 ;;
+esac
+
 echo "=== Building Studio (Vite SPA) ==="
 cd "$ROOT/apps/studio"
 pnpm exec vite build --base="/$REPO/studio/"
 
 echo "=== Building Viewer (Astro static) ==="
 cd "$ROOT/apps/viewer"
-SITE_BASE="/$REPO/viewer/" PUBLISH_BASE="https://micahchoo.github.io/$REPO/viewer/published/" pnpm build
+SITE_BASE="/$REPO/viewer/" PUBLISH_BASE="${ORIGIN}${VIEWER_PATH}published/" PUBLIC_CANONICAL_ORIGIN="${ORIGIN}${VIEWER_PATH}" pnpm build
 
 echo "=== Assembling deploy directory ==="
 rm -rf "$OUT"
