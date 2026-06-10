@@ -1458,6 +1458,17 @@ branches the user reviews before merge (never auto-merge):
 PARKED (revive triggers in seeds): ⑨ ⑥-B ⑥-C ⑦-B ⑩-B ⑪ ⑭ · batch-zip-import (Archie-f1e2) ·
 volunteer-queue/discovery/DID (Archie-1908). Template content rule: never the author's personal work.
 
+### User-reported fixes in flight (2026-06-10, branch goal/click-zoom-reading-desc)
+1. Clicking a marker ON the canvas doesn't zoom — by design in render-svelte's controller
+   (controller.ts onSelect: user clicks must not re-drive setSelected; the no-feedback-loop
+   inversion). FIX: surface-originated select SHOULD still fitBounds (zoom is not the loop
+   hazard); likely gate by a prop so Studio's editing canvas can opt out if disruptive.
+   See controller.test.ts "user selection ON the surface flows IN".
+2. No UI to author a Reading's description (model + published ReadingLegend support it; Studio's
+   +Reading flow only takes name+colour). FIX: minimal prompt-based editor on the reading filter
+   (App.svelte header) writing through a library-meta reducer that updates exhibit.readings.
+Atlas shipped to the published Viewer + placements visually audited (70e27ac, live).
+
 **Hard-won protocol (don't relearn):**
 - Runner reality (GOAL §7 is stale): lockfile is pnpm-11-flavored. Use
   `PATH=$HOME/.nvm/versions/node/v22.22.2/bin:$PATH npx --yes pnpm@11` for everything; astro needs

@@ -16,7 +16,15 @@ export interface CanvasController {
   destroy(): void;
 }
 
-export function createCanvasController(surface: MountSurface): CanvasController {
+export interface ControllerOptions {
+  /** Zoom to a marker when the USER selects it on the surface (reader UX). setSelected is the
+   *  feedback-loop hazard the inversion guards against — fitBounds is not; it only moves the
+   *  camera. Off by default: an EDITING canvas (Studio) anchors a popover to the marker instead,
+   *  and zooming under it would be disruptive. */
+  zoomOnSurfaceSelect?: boolean;
+}
+
+export function createCanvasController(surface: MountSurface, opts: ControllerOptions = {}): CanvasController {
   let selected: SelectionId | null = null;
   const subs = new Set<(id: SelectionId | null) => void>();
   const notify = (id: SelectionId | null): void => {
@@ -28,6 +36,7 @@ export function createCanvasController(surface: MountSurface): CanvasController 
   const unsub = surface.onSelect((id) => {
     selected = id;
     notify(id);
+    if (opts.zoomOnSurfaceSelect && id !== null) surface.fitBounds(id);
   });
 
   return {

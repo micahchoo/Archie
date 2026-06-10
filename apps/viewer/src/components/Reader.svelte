@@ -82,7 +82,7 @@
     <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
          objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
     {#key object.canvasId}
-      <Canvas source={object.source} canvasId={object.canvasId} annotations={canvasAnnotations} {styleOf} frame={canvasFrame} bind:selected />
+      <Canvas source={object.source} canvasId={object.canvasId} annotations={canvasAnnotations} {styleOf} frame={canvasFrame} zoomOnSelect bind:selected />
     {/key}
   </main>
 

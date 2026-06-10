@@ -60,8 +60,10 @@ describe("createCanvasController — selection binding (the inversion)", () => {
     const c = createCanvasController(m.surface);
     m.userSelects("note-b");
     expect(c.selected).toBe("note-b");
-    // A user click must NOT re-drive the surface (no feedback loop).
+    // A user click must NOT re-drive the surface (no feedback loop), and without the reader
+    // option it must not move the camera either (Studio's editing default).
     expect(m.setSelected).not.toHaveBeenCalled();
+    expect(m.fitBounds).not.toHaveBeenCalled();
   });
 
   it("notifies onSelectChange subscribers for both programmatic and user selection", () => {
@@ -85,5 +87,21 @@ describe("createCanvasController — selection binding (the inversion)", () => {
     expect(m.destroy).toHaveBeenCalledOnce();
     m.userSelects("late"); // surface listener was unsubscribed
     expect(seen).toEqual([]);
+  });
+});
+
+describe("zoomOnSurfaceSelect (reader UX) — a marker click zooms, without the feedback loop", () => {
+  it("fitBounds fires on user selection, setSelected still does not", () => {
+    const m = mockSurface();
+    createCanvasController(m.surface, { zoomOnSurfaceSelect: true });
+    m.userSelects("note-z");
+    expect(m.fitBounds).toHaveBeenCalledWith("note-z");
+    expect(m.setSelected).not.toHaveBeenCalled();
+  });
+  it("deselect (null) never zooms", () => {
+    const m = mockSurface();
+    createCanvasController(m.surface, { zoomOnSurfaceSelect: true });
+    m.userSelects(null);
+    expect(m.fitBounds).not.toHaveBeenCalled();
   });
 });
