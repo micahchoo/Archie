@@ -911,6 +911,19 @@ import LayoutPicker from "./LayoutPicker.svelte";
     session.editNote(editing as LogicalId, { emphasis });
     bump();
   }
+  // ⑬-adjacent (user report): the published legend SHOWS a reading's description, but nothing
+  // authored it. Minimal editor: prompt prefilled with the current text; empty clears it.
+  function editReadingDescription(id: string) {
+    const r = currentReadings.find((x) => x.id === id);
+    if (!r) return;
+    const next = window.prompt("Describe this reading — one or two sentences, shown under the reading's name in the published legend:", r.description ?? "");
+    if (next === null) return; // cancelled
+    setReadings(currentReadings.map((x) => {
+      if (x.id !== id) return x;
+      const { description: _drop, ...rest } = x;
+      return next.trim() ? { ...rest, description: next.trim() } : rest;
+    }));
+  }
   function commitNewReading(name: string) {
     const n = name.trim();
     if (n) addReading(n, newReadingColour ?? undefined);
@@ -1515,6 +1528,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
         {#each currentReadings as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
       </select>
     </label>
+    {#if readingFilter !== "all" && readingFilter !== "base"}
+      <button type="button" class="reading-desc" onclick={() => editReadingDescription(readingFilter)}
+        title="Describe this reading — shown under its name in the published legend">✎ describe</button>
+    {/if}
     {#if addingReading}
       <span class="new-reading-wrap">
         <input class="new-reading" type="text" placeholder="Name a reading — e.g. Cipher" bind:this={newReadingEl}
@@ -1841,6 +1858,11 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .savestate.dirty { color: var(--accent-2); }
   /* Reading-colour picker (Archie-1489): colour dots beside the new-reading name input. */
   .new-reading-wrap { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .reading-desc {
+    background: none; border: none; cursor: pointer; padding: 6px var(--space-2);
+    font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary);
+  }
+  .reading-desc:hover { color: var(--accent-2); }
   .swatches { display: inline-flex; gap: 4px; }
   .swatch { width: 15px; height: 15px; border-radius: 50%; padding: 0; cursor: pointer; border: 1px solid var(--border-canvas-emphasis); transition: box-shadow 100ms ease; }
   .swatch.on { box-shadow: 0 0 0 2px var(--surface-canvas), 0 0 0 3px var(--ink-canvas-primary); }

@@ -9,6 +9,7 @@
   import { createCanvasController, type CanvasController } from "./controller.js";
 
   let {
+    zoomOnSelect = false,
     source,
     canvasId,
     annotations = [],
@@ -24,6 +25,8 @@
     styleOf,
     frame,
   }: {
+    /** Reader UX: clicking a marker on the canvas zooms to it (controller option). */
+    zoomOnSelect?: boolean;
     source: string;
     canvasId?: string;
     annotations?: W3CAnnotation[];
@@ -68,7 +71,7 @@
       if (oncreate) surface.onCreate(oncreate);
       if (onupdate) surface.onUpdate(onupdate);
       if (ondelete) surface.onDelete(ondelete);
-      controller = createCanvasController(surface);
+      controller = createCanvasController(surface, { zoomOnSurfaceSelect: zoomOnSelect });
       controller.onSelectChange((id) => {
         selected = id;
       });
