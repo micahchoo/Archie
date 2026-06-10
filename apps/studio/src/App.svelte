@@ -7,6 +7,7 @@
   import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
   import { planCsvImport } from "./csv-import.js";
   import { collabBreakdown, collabSummaryText } from "./collab.js";
+  import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "./atlas.js";
   import { planWadmImport } from "./wadm-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
   import { stripMarkdown } from "@render/svelte";
@@ -77,6 +78,11 @@ import LayoutPicker from "./LayoutPicker.svelte";
     { id: "ex-voynich", slug: "voynich", title: "The Whole Manuscript", layout: "grid", seedVersion: 2, readings: voynichReadings, objects: voynichObjMeta },
     // NARRATIVE — all + the sounded page, the 6-beat spine → narrative.
     { id: "ex-voynich-reading", slug: "voynich-reading", title: "Reading the Unreadable", layout: "narrative", seedVersion: 1, readings: voynichReadings, sections: voynichSections as Section[], objects: voynichObjMeta },
+    // MAP/CLASSROOM — the segment-diverse template (③+⑬, Archie-eaae; user-decided in the grill):
+    // UNESCO's endangered-languages atlas via the Internet Archive (CC BY-SA 4.0 — template-content
+    // rule: third-party rights-clean, never the author's personal work). Two Readings demonstrate
+    // the rival-interpretations differentiator in a non-manuscript register. DRAFT — human-gated.
+    { id: "ex-atlas", slug: "language-atlas", title: atlasTitle, summary: atlasSummary, layout: "grid", seedVersion: 1, readings: atlasReadings, ...atlasRights, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })) },
   ];
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
@@ -164,10 +170,23 @@ import LayoutPicker from "./LayoutPicker.svelte";
     }
     return s;
   }
+  function seededAtlas(): AnnotationSession {
+    const s = new AnnotationSession(author);
+    for (const n of atlasNotes) {
+      const [x, y, w, h] = n.region;
+      s.createNote({
+        target: rectSel(`${BASE}language-atlas/canvas/${n.objectId}`, x, y, w, h),
+        body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
+        ...(n.reading ? { reading: n.reading } : {}),
+      });
+    }
+    return s;
+  }
   const seededFor = (slug: string): (() => AnnotationSession) | null =>
     slug === "voynich-rosettes" ? () => seededVoynich("voynich-rosettes", { objectIds: new Set(["o9"]), includeAv: false })
     : slug === "voynich" ? () => seededVoynich("voynich", { includeAv: true })
     : slug === "voynich-reading" ? () => seededVoynich("voynich-reading", { includeAv: true })
+    : slug === "language-atlas" ? seededAtlas
     : null;
   let session = $state(new AnnotationSession(author));
 
