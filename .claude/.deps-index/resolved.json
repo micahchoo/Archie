@@ -111,5 +111,19 @@
     "ref": "main",
     "status": "added",
     "indexed_at": "2026-05-27T06:31:45Z"
+  },
+  {
+    "name": "snarkdown",
+    "url": "https://github.com/developit/snarkdown",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-06-09T22:04:43Z"
+  },
+  {
+    "name": "playwright",
+    "url": "https://github.com/microsoft/playwright",
+    "ref": "main",
+    "status": "added",
+    "indexed_at": "2026-06-11T22:47:03Z"
   }
 ]

@@ -24,6 +24,7 @@
     onback,
     rights,
     initialSelected = null,
+    onnotehover,
   }: {
     object: { source: string; canvasId: string; label: string; summary?: string };
     annotations?: W3CAnnotation[];
@@ -41,6 +42,9 @@
     frame?: { markId: string; colour: string } | null;
     onback?: () => void;
     initialSelected?: string | null; // deep-link arrival: land selected on this note (→ fitBounds)
+    /** Hovering a note in the list solos its mark on the canvas (the legend's hover affordance,
+     *  per-note). The host owns the state so the styleOf identity re-mints. null = hover ended. */
+    onnotehover?: (id: string | null) => void;
   } = $props();
   // NOTE (dba2): the prev/next object carousel was lifted OUT of here into the persistent top bar
   // (ViewerShell) so it stops occluding the image top-center and has one discoverable home. ExhibitView
@@ -53,6 +57,19 @@
   };
 
   let selected = $state<string | null>(initialSelected);
+
+  // Worklist 1.3 (arrival moment): on first paint — and again when the carousel lands on another
+  // object — the marks pulse twice, then settle to their quiet A2 weight. Answers "where do I
+  // start, what's here?" and gives touch readers (no hover-discovery) a way in.
+  let arrival = $state(false);
+  let pulseTimer: ReturnType<typeof setTimeout> | undefined;
+  function pulseMarks() {
+    clearTimeout(pulseTimer);
+    arrival = true;
+    pulseTimer = setTimeout(() => (arrival = false), 3400); // 2 × 1.6s breaths + settle
+  }
+  $effect(() => () => clearTimeout(pulseTimer)); // teardown on destroy
+
   // Reset selection when the object ACTUALLY changes (grid → different object) — but not on the
   // first run, so a deep-link's initialSelected survives mount.
   let prevCanvas: string | undefined;
@@ -60,6 +77,7 @@
     const c = object.canvasId;
     if (prevCanvas !== undefined && prevCanvas !== c) selected = null;
     prevCanvas = c;
+    pulseMarks(); // every landing (first paint or carousel switch) gets the reveal
   });
 
   // 7e1f: the canvas-wide frame overlay — its corners activate (select) the framed note, reusing the
@@ -78,11 +96,11 @@
 </script>
 
 <div class="reader">
-  <main>
+  <main class:arrival={arrival}>
     <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
          objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
     {#key object.canvasId}
-      <Canvas source={object.source} canvasId={object.canvasId} annotations={canvasAnnotations} {styleOf} frame={canvasFrame} zoomOnSelect bind:selected />
+      <Canvas source={object.source} canvasId={object.canvasId} annotations={canvasAnnotations} {styleOf} frame={canvasFrame} zoomOnSelect locator bind:selected />
     {/key}
   </main>
 
@@ -115,7 +133,7 @@
       {/if}
       <ul>
         {#each annotations as it (it.id)}
-          <li><button style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)}>{stripMarkdown(commentOf(it))}</button></li>
+          <li onmouseenter={() => onnotehover?.(it.id ?? null)} onmouseleave={() => onnotehover?.(null)}><button style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)}>{stripMarkdown(commentOf(it))}</button></li>
         {/each}
       </ul>
       <p class="hint">Click a note or a marker on the image. Markers re-anchor as you pan/zoom; selecting one zooms to it (the full nav contract).</p>
@@ -137,6 +155,16 @@
      like catalog entries on warm paper (right); a forest-green popup echoes the selection. */
   .reader { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
   main { position: relative; flex: 1; min-width: 0; background: var(--surface-canvas); }
+  /* Worklist 1.3: one-shot arrival reveal — every marker breathes twice, then settles to its quiet
+     A2 resting weight. The class drops off after the timer, so the animation can never recur mid-read. */
+  main.arrival :global(.a9s-annotationlayer .a9s-annotation) { animation: arrival-breathe 1.6s ease-in-out 2; }
+  @keyframes arrival-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    main.arrival :global(.a9s-annotationlayer .a9s-annotation) { animation: none; }
+  }
 
   /* Reader panel — warm paper, catalog entries under lamplight */
   aside {
@@ -147,13 +175,6 @@
   }
   aside h2 { color: var(--ink-paper-secondary); margin: 0 0 var(--space-4); }
   ul { list-style: none; margin: 0; padding: 0; }
-
-  /* Return to the exhibit's object grid (only shown for multi-object exhibits) */
-  .exhibit-back { background: none; border: none; cursor: pointer; padding: 0 0 var(--space-5); font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); }
-  .exhibit-back:hover { color: var(--accent); }
-  .object-label { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-paper-primary); margin: 0 0 var(--space-2); }
-  .object-summary { font-family: var(--font-body); font-size: 0.95rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0 0 var(--space-2); }
-  .credit-row { margin: 0 0 var(--space-3); }
 
   /* Note card (list state) — clamp the markdown-stripped lead to a few lines */
   li button {
@@ -166,6 +187,13 @@
     transition: background 120ms ease, border-color 120ms ease;
   }
   li button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); }
+
+  /* Return to the exhibit's object grid (only shown for multi-object exhibits) */
+  .exhibit-back { background: none; border: none; cursor: pointer; padding: 0 0 var(--space-5); font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  .exhibit-back:hover { color: var(--accent); }
+  .object-label { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-paper-primary); margin: 0 0 var(--space-2); }
+  .object-summary { font-family: var(--font-body); font-size: 0.95rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0 0 var(--space-2); }
+  .credit-row { margin: 0 0 var(--space-3); }
 
   /* Detail state (drawer) */
   .back { background: none; border: none; cursor: pointer; padding: 0 0 var(--space-4); font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }

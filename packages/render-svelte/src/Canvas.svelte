@@ -10,6 +10,7 @@
 
   let {
     zoomOnSelect = false,
+    locator = false,
     source,
     canvasId,
     annotations = [],
@@ -22,11 +23,15 @@
     onupdate,
     ondelete,
     onmarkerrect,
+    rectIds,
+    onmarkerrects,
     styleOf,
     frame,
   }: {
     /** Reader UX: clicking a marker on the canvas zooms to it (controller option). */
     zoomOnSelect?: boolean;
+    /** Worklist 1.1: show the locator mini-map (OSD navigator) — viewport-within-image. */
+    locator?: boolean;
     source: string;
     canvasId?: string;
     annotations?: W3CAnnotation[];
@@ -44,6 +49,11 @@
      *  geometry edit — so the host can anchor an editing popover to it (ADR-0006). Null when nothing is
      *  selected or the marker isn't resolvable (e.g. off-screen during an animation frame). */
     onmarkerrect?: (rect: { left: number; top: number; right: number; bottom: number } | null) => void;
+    /** Worklist 2.1 (marginalia): which markers to stream rects for (usually every listed note). */
+    rectIds?: string[];
+    /** Batched rect stream — ALL `rectIds` rects per viewport frame (rAF-throttled), the
+     *  MarginColumn's input. Unresolvable ids map to null. */
+    onmarkerrects?: (rects: Record<string, { left: number; top: number; right: number; bottom: number } | null>) => void;
     /** Per-marker style by annotation id — colours a marker by its Reading (ADR-0007). Undefined = default. */
     styleOf?: (id: string) => MarkerStyle | undefined;
     /** A canvas-wide coverage border framing the whole object (7e1f). null clears; undefined = leave as-is. */
@@ -53,6 +63,16 @@
   // Emit the selected marker's current screen rect (OSD re-anchors natively, so this just re-reads).
   function emitRect() {
     if (surface && onmarkerrect) onmarkerrect(selected != null ? surface.markerScreenRect(selected) : null);
+  }
+  // Batched stream for the marginalia column (worklist 2.1) — rAF-throttled so a pan emits at most
+  // one batched read per frame regardless of how often OSD fires update-viewport.
+  let rectsRaf = 0;
+  function emitRects() {
+    if (!surface || !onmarkerrects || !rectIds || rectsRaf) return;
+    rectsRaf = requestAnimationFrame(() => {
+      rectsRaf = 0;
+      if (surface && onmarkerrects && rectIds) onmarkerrects(surface.markerScreenRects(rectIds));
+    });
   }
 
   let el: HTMLDivElement;
@@ -64,7 +84,7 @@
 
   onMount(async () => {
     try {
-      surface = await createMount(el, { source, ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}) });
+      surface = await createMount(el, { source, ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}), ...(locator ? { locator } : {}) });
       surface.setAnnotations(annotations);
       if (styleOf) surface.setStyle(styleOf);
       if (frame !== undefined) surface.setFrame(frame);
@@ -81,8 +101,9 @@
       surface.setDrawingTool(tool);
       surface.setDrawingEnabled(drawing);
       // Follow the selected marker as the viewport moves (OSD-native re-anchor — donor pattern, no dep).
-      offViewport = surface.onViewportChange(emitRect);
+      offViewport = surface.onViewportChange(() => { emitRect(); emitRects(); });
       emitRect();
+      emitRects();
       status = "ready";
     } catch (e) {
       status = "error";
@@ -94,6 +115,7 @@
   // optional-chain short-circuits on the (async) initially-undefined surface and the effect never
   // subscribes to the prop, so it never re-runs when the prop changes (Svelte 5 dep-tracking gotcha).
   $effect(() => { const a = annotations; if (surface) surface.setAnnotations(a); emitRect(); });
+  $effect(() => { void rectIds; void annotations; if (surface) emitRects(); });
   $effect(() => { const sf = styleOf; if (surface) surface.setStyle(sf); });
   // Coverage border (7e1f) — read `frame` first (dep-tracking gotcha); undefined = leave as-is, null clears.
   $effect(() => { const fr = frame; if (surface && fr !== undefined) surface.setFrame(fr); });
@@ -103,7 +125,7 @@
   // A Section's camera target (not an annotation) → fit the region. Read `focus` first (dep-tracking gotcha).
   $effect(() => { const f = focus; if (f && surface) surface.fitRegion(f); });
 
-  onDestroy(() => { offViewport?.(); controller?.destroy(); });
+  onDestroy(() => { if (rectsRaf) cancelAnimationFrame(rectsRaf); offViewport?.(); controller?.destroy(); });
 </script>
 
 <div class="archie-canvas-wrap">
@@ -125,6 +147,17 @@
   /* Markers need a shadow to stay recognizable on LIGHT surfaces (light folios/paper) — the thin
      stroke alone vanishes against pale parchment. A subtle drop-shadow on the SVG shape group. */
   :global(.a9s-annotationlayer .a9s-annotation) { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55)); }
+  /* Worklist 1.1 (scale-aware marks): weight by zoom band — the mount stamps data-archie-zoom on
+     the canvas root. Screen-space channels only (opacity / drop-shadow); never stroke-width (it is
+     inline-set by the style expression in scaled coordinates). far = fit-width, marks need
+     PRESENCE to be findable; near = inside-a-mark territory, outlines recede off the pixels. */
+  :global([data-archie-zoom="far"] .a9s-annotationlayer .a9s-annotation) {
+    filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.35));
+  }
+  :global([data-archie-zoom="near"] .a9s-annotationlayer .a9s-annotation) {
+    opacity: 0.45;
+    transition: opacity 200ms ease;
+  }
   /* Loading / error states over the light table (system.md §Reader States). */
   .overlay {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px;

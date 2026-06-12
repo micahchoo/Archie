@@ -72,6 +72,18 @@ export function isDegenerateSelectorValue(value: string | undefined): boolean {
   return false;
 }
 
+/**
+ * Degenerate-TARGET guard at the log boundary (worklist 0.2): does any selector on this target
+ * carry empty/NaN geometry? A target with NO selector is fine (a whole-canvas / Library / Exhibit
+ * note). Used by AnnotationSession to refuse degenerate geometry BEFORE it enters the append-only
+ * log — the log is the one writer, so a record it holds must always be renderable.
+ */
+export function isDegenerateTarget(target: string | { selector?: { value?: unknown } | Array<{ value?: unknown }> } | undefined): boolean {
+  if (!target || typeof target === "string") return false; // a bare IRI target (Library/Exhibit note) has no geometry
+  const sels = Array.isArray(target.selector) ? target.selector : target.selector ? [target.selector] : [];
+  return sels.some((s) => isDegenerateSelectorValue(typeof s.value === "string" ? s.value : undefined));
+}
+
 export type ShapeLabel = "Rect" | "Polygon" | "Ellipse" | "Circle" | "Path" | "Line" | "SVG" | "?";
 
 /** Human-readable shape of a selector (anvil annotation-fields.ts:67). */

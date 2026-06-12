@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000001DYVMBVQWJ448032WE/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000001DT8G4M90W7BQCAD6B/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -24,10 +24,10 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001DYVMBVQWJ448032WE.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001DT8G4M90W7BQCAD6B.json"
     },
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000001E3E2Y25QDAK838MDV/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000001EK7PJA89RF6QE1ZEX/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -47,10 +47,10 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001E3E2Y25QDAK838MDV.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001EK7PJA89RF6QE1ZEX.json"
     },
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000001FC2RAFYTHZ3G86KHH/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000001F88RWJA9CQW280Q5Q/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -70,10 +70,10 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001FC2RAFYTHZ3G86KHH.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001F88RWJA9CQW280Q5Q.json"
     },
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000001G2R6VD2PSXK2Q5EEZ/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000001GY6P343X2VDYSRFAQ/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -93,7 +93,7 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001G2R6VD2PSXK2Q5EEZ.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001GY6P343X2VDYSRFAQ.json"
     }
   ]
 }

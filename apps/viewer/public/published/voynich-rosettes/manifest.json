@@ -87,7 +87,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/0000000001FD7MED3792FZV5MF/v1",
+              "id": "https://archie.demo/voynich-rosettes/annotations/0000000001CXG92M64ESJ0B8Z9/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -107,7 +107,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000001FD7MED3792FZV5MF.json"
+              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000001CXG92M64ESJ0B8Z9.json"
             }
           ],
           "label": {
@@ -121,7 +121,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/0000000002DFJEPJBEZH5CWJSD/v1",
+              "id": "https://archie.demo/voynich-rosettes/annotations/0000000002RDFFVZ2SSNTRKC21/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -157,7 +157,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000002DFJEPJBEZH5CWJSD.json"
+              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000002RDFFVZ2SSNTRKC21.json"
             }
           ],
           "partOf": [
@@ -182,7 +182,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/00000000031HY7PCHCT2R92050/v1",
+              "id": "https://archie.demo/voynich-rosettes/annotations/0000000003DGZRA3DJW7W2F9EP/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -203,7 +203,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/00000000031HY7PCHCT2R92050.json"
+              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000003DGZRA3DJW7W2F9EP.json"
             }
           ],
           "partOf": [
@@ -228,7 +228,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/0000000004DMRJYXDT9ZCBFS9F/v1",
+              "id": "https://archie.demo/voynich-rosettes/annotations/000000000457ZCWVSBWB9WA7FV/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -249,7 +249,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000004DMRJYXDT9ZCBFS9F.json"
+              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/000000000457ZCWVSBWB9WA7FV.json"
             }
           ],
           "partOf": [

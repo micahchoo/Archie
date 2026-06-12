@@ -1,0 +1,34 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/0000000004DF6GFAGHR5C9KZGP.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/0000000004DF6GFAGHR5C9KZGP/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o4",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:240,260,2380,3260"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.004Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A striking, near-fantastical herbal drawing — a plant that does not match any growing thing with certainty. Its layered paint and ink reward close looking.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "0000000004DF6GFAGHR5C9KZGP",
+      "archie:rev": "0000000004SVMWXK1WD99NDG84",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

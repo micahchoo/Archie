@@ -1,5 +1,6 @@
 import { gzipSync } from "node:zlib";
-import { writeFileSync, readdirSync } from "node:fs";
+import { writeFileSync, readdirSync, readFileSync, existsSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { createRequire } from "node:module";
 
 // esbuild is a transitive (vitest/vite) dep, not hoisted — resolve it from the pnpm store.
@@ -35,5 +36,49 @@ rows.push(await measureEntry("@render/core + fflate", `${root}/packages/render-c
 // The renderer floor: OSD + Annotorious (the 240KB-budget concern, BEFORE any Archie code).
 rows.push(await measureStdin("OSD + Annotorious + plugin-tools", `import "openseadragon"; import "@annotorious/openseadragon"; import "@annotorious/plugin-tools";`, `${root}/packages/render-mount`));
 
+// --- app-dist measurement + ratchet (worklist 4.3): the BUILT apps are the numbers that matter.
+// Baseline = a real measurement, never an aspirational figure (the 240KB budget was retired as
+// fiction — retrospective 2026-06-11). `--check` compares a fresh measurement against the stored
+// baseline and fails on growth > max(10%, 10KB) gz; the default mode re-measures + writes baseline.
+function distGzKB(dir) {
+  let total = 0;
+  const walk = (d) => {
+    for (const name of readdirSync(d)) {
+      const p = join(d, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (/\.(js|css)$/.test(name)) total += gzipSync(readFileSync(p)).length;
+    }
+  };
+  walk(dir);
+  return +(total / 1024).toFixed(1);
+}
+const appBundles = [];
+for (const [label, dist] of [["apps/studio dist (js+css gz)", `${root}/apps/studio/dist`], ["apps/viewer dist (js+css gz)", `${root}/apps/viewer/dist`]]) {
+  if (existsSync(dist)) appBundles.push({ label, gzKB: distGzKB(dist) });
+  else console.warn(`(skip ${label} — no dist; build first)`);
+}
+
+const CHECK = process.argv.includes("--check");
+if (CHECK) {
+  const baseline = JSON.parse(readFileSync(`${root}/docs/bundle-size.json`, "utf8"));
+  let failed = false;
+  for (const cur of appBundles) {
+    const base = (baseline.appBundles ?? []).find((b) => b.label === cur.label);
+    if (!base) { console.warn(`no baseline for "${cur.label}" — run without --check to set one`); continue; }
+    const allowed = Math.max(base.gzKB * 0.1, 10);
+    const delta = +(cur.gzKB - base.gzKB).toFixed(1);
+    const verdict = delta > allowed ? "FAIL" : "ok";
+    if (delta > allowed) failed = true;
+    console.log(`${verdict.padEnd(5)} ${cur.label.padEnd(32)} ${base.gzKB}KB → ${cur.gzKB}KB (Δ ${delta >= 0 ? "+" : ""}${delta}KB, allowed +${allowed.toFixed(1)}KB)`);
+  }
+  process.exit(failed ? 1 : 0);
+}
+
 for (const r of rows) console.log(`${r.label.padEnd(36)} ${String(r.minKB).padStart(8)}KB min  ${String(r.gzKB).padStart(8)}KB gz`);
-writeFileSync(`${root}/docs/bundle-size.json`, JSON.stringify({ measuredAt: new Date().toISOString(), budgetKB: 240, note: "gz = minified+gzipped. Renderer floor has no tree-shaking applied; real app bundle is the Phase-2 dogfood number (strategy §33).", rows }, null, 2) + "\n");
+for (const r of appBundles) console.log(`${r.label.padEnd(36)} ${"-".padStart(8)}        ${String(r.gzKB).padStart(8)}KB gz`);
+writeFileSync(`${root}/docs/bundle-size.json`, JSON.stringify({
+  measuredAt: new Date().toISOString(),
+  note: "gz = minified+gzipped. Renderer floor has no tree-shaking applied. appBundles = the built apps (the ratchet baseline; check with `node scripts/bundle-size.mjs --check`). No aspirational budget — the baseline IS a measurement (retro 2026-06-11).",
+  rows,
+  appBundles,
+}, null, 2) + "\n");

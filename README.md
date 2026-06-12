@@ -94,6 +94,10 @@ Archie has five domains that form the author's arc — from blank canvas to publ
 
 ## Quickstart
 
+**Easiest way (no command-line experience needed):** after cloning or downloading the repo, run the launcher for your system — `start.cmd` on Windows (double-click), `start.command` on macOS (double-click), `start.sh` on Linux. It checks your Node.js version, installs everything on first run, and offers a menu to start the Studio, the Viewer, or both — opening each in your browser when ready. The only prerequisite is [Node.js](https://nodejs.org) 22 or newer.
+
+**Manual way:**
+
 **Prerequisites:** Node.js 22 or newer (CI builds on Node 24) and pnpm 10.
 
 ```bash

@@ -55,6 +55,11 @@ export interface MountSurface {
    *  annotorious-svelte OpenSeadragonPopup.svelte:53-68). Null if the marker/viewport isn't resolvable.
    *  Recompute via onViewportChange — OSD re-anchors natively on pan/zoom, no positioning dep needed. */
   markerScreenRect(id: SelectionId): { left: number; top: number; right: number; bottom: number } | null;
+  /** Batched form of markerScreenRect (MARGINALIA-PLAN cut A): ALL requested markers' on-screen
+   *  rects in ONE pass over the annotation list + ONE container-offset read — the per-frame input
+   *  to the marginalia layout (worklist 2.1). Unresolvable ids map to null. Recompute via
+   *  onViewportChange, throttled to rAF by the consumer. */
+  markerScreenRects(ids: SelectionId[]): Record<string, { left: number; top: number; right: number; bottom: number } | null>;
   /** Subscribe to OSD pan/zoom (`update-viewport`) — fires each frame the viewport moves, so a popover can
    *  follow its marker (donor: OpenSeadragonPopup.svelte:70-81). Returns an unsubscribe fn. */
   onViewportChange(cb: () => void): () => void;

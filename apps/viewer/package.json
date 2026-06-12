@@ -19,7 +19,10 @@
     "@annotorious/openseadragon": "^3.8.2",
     "@annotorious/plugin-tools": "^1.6.0",
     "@render/core": "workspace:*",
-    "@render/svelte": "workspace:*"
+    "@render/svelte": "workspace:*",
+    "fflate": "^0.8.2",
+    "isomorphic-dompurify": "^2.16.0",
+    "snarkdown": "^2.0.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",

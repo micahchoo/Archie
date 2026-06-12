@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/language-atlas/annotations/000000000FZBVES1Z7Z96ZG8BW/v1",
+      "id": "https://archie.demo/language-atlas/annotations/000000000FKKZJT69NHXTAAKQC/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -24,7 +24,7 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000FZBVES1Z7Z96ZG8BW.json"
+      "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000FKKZJT69NHXTAAKQC.json"
     }
   ]
 }
