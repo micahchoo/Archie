@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000001DT8G4M90W7BQCAD6B/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000001DKSXRNKR02TMX11VZ/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -19,15 +19,15 @@
       "body": [
         {
           "type": "TextualBody",
-          "value": "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. [Read the manuscript through, page by page.](https://archie.demo/voynich-reading/) (03 §4 cross-link AV→the narrative walk; `archie:` ref resolves to the voynich-reading exhibit — the spoken/read metaphor matches the narrative spine. A note-precise `…/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)",
+          "value": "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. Read the manuscript through, page by page. (03 §4 cross-link AV→the narrative walk; `archie:` ref resolves to the voynich-reading exhibit — the spoken/read metaphor matches the narrative spine. A note-precise `…/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)",
           "purpose": "commenting"
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001DT8G4M90W7BQCAD6B.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001DKSXRNKR02TMX11VZ.json"
     },
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000001EK7PJA89RF6QE1ZEX/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000001EM5QNPFCQ5A2K3W6H/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -47,10 +47,10 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001EK7PJA89RF6QE1ZEX.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001EM5QNPFCQ5A2K3W6H.json"
     },
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000001F88RWJA9CQW280Q5Q/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000001FHXMQBYHST49K7EYG/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -70,10 +70,10 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001F88RWJA9CQW280Q5Q.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001FHXMQBYHST49K7EYG.json"
     },
     {
-      "id": "https://archie.demo/voynich-reading/annotations/000000001GY6P343X2VDYSRFAQ/v1",
+      "id": "https://archie.demo/voynich-reading/annotations/000000001G39GVAR3H0FA56RD5/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -93,7 +93,7 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001GY6P343X2VDYSRFAQ.json"
+      "archie:hasHistory": "https://archie.demo/voynich-reading/annotations/history/000000001G39GVAR3H0FA56RD5.json"
     }
   ]
 }

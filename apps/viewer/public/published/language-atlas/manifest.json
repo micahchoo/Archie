@@ -87,7 +87,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000RH291B0BKB5XERTZ1/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000R8Y311HDC71SWDHVT/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -107,7 +107,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000RH291B0BKB5XERTZ1.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000R8Y311HDC71SWDHVT.json"
             }
           ],
           "label": {
@@ -121,7 +121,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/0000000001DGBHPQM6MQXQBV1N/v1",
+              "id": "https://archie.demo/language-atlas/annotations/0000000001QA9HWMFBS3S6DTJ4/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -142,7 +142,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "linguist",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000001DGBHPQM6MQXQBV1N.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000001QA9HWMFBS3S6DTJ4.json"
             }
           ],
           "partOf": [
@@ -167,7 +167,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/0000000002QS4KNX208GHJDY7S/v1",
+              "id": "https://archie.demo/language-atlas/annotations/00000000021G31YS0Z2ZG6N1RX/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -188,7 +188,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "community",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000002QS4KNX208GHJDY7S.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000021G31YS0Z2ZG6N1RX.json"
             }
           ],
           "partOf": [
@@ -272,7 +272,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/0000000003SA5WXK4RMJBCBQ3B/v1",
+              "id": "https://archie.demo/language-atlas/annotations/0000000003EB0YAESVXD6MKPY6/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -292,7 +292,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000003SA5WXK4RMJBCBQ3B.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000003EB0YAESVXD6MKPY6.json"
             }
           ],
           "label": {
@@ -306,7 +306,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/00000000049WCFPF7ZMRHVGZY9/v1",
+              "id": "https://archie.demo/language-atlas/annotations/0000000004P0QSM9AM36QZM3JY/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -327,7 +327,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "linguist",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000049WCFPF7ZMRHVGZY9.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000004P0QSM9AM36QZM3JY.json"
             }
           ],
           "partOf": [
@@ -352,7 +352,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/0000000005A4W9SW5YK1YKEE8A/v1",
+              "id": "https://archie.demo/language-atlas/annotations/00000000056XKG648T6Z7TAAQX/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -373,7 +373,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "community",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000005A4W9SW5YK1YKEE8A.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000056XKG648T6Z7TAAQX.json"
             }
           ],
           "partOf": [
@@ -457,7 +457,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/0000000006Q34Z123K41J5QSKS/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000689W361NNJSBV1NNV/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -477,7 +477,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000006Q34Z123K41J5QSKS.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000689W361NNJSBV1NNV.json"
             }
           ],
           "label": {
@@ -491,7 +491,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/0000000007A0WAG7ER96FZ2Q0C/v1",
+              "id": "https://archie.demo/language-atlas/annotations/00000000073MHG0BGX4NK51FTH/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -512,7 +512,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "linguist",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000007A0WAG7ER96FZ2Q0C.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000073MHG0BGX4NK51FTH.json"
             }
           ],
           "partOf": [
@@ -537,7 +537,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/00000000082RNH6KHXQEMP6C56/v1",
+              "id": "https://archie.demo/language-atlas/annotations/0000000008DGND2JNBFKR1YW4B/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -558,7 +558,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "community",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000082RNH6KHXQEMP6C56.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000008DGND2JNBFKR1YW4B.json"
             }
           ],
           "partOf": [
@@ -642,7 +642,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/0000000009FQ89DGZVFXX3TPS4/v1",
+              "id": "https://archie.demo/language-atlas/annotations/00000000093KM2FAXA5WQDQ82Q/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -662,7 +662,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/0000000009FQ89DGZVFXX3TPS4.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/00000000093KM2FAXA5WQDQ82Q.json"
             }
           ],
           "label": {
@@ -676,7 +676,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000ADZ1CNW1MPMCPNKFK/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000AN029WSZ324T8AK3J/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -697,7 +697,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "linguist",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000ADZ1CNW1MPMCPNKFK.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000AN029WSZ324T8AK3J.json"
             }
           ],
           "partOf": [
@@ -722,7 +722,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000B4FBPEY7ZRJ2KHMDD/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000BTCT9T76FKBHTEJK4/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -743,7 +743,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "community",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000B4FBPEY7ZRJ2KHMDD.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000BTCT9T76FKBHTEJK4.json"
             }
           ],
           "partOf": [
@@ -827,7 +827,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000CQBB5051VKZNEQQNM/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000C36QGH1EA6FN8ZNXN/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -847,7 +847,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000CQBB5051VKZNEQQNM.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000C36QGH1EA6FN8ZNXN.json"
             }
           ],
           "label": {
@@ -861,7 +861,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000DJSBPASR78FWF96AB/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000D9Z2PS1FE0YRQNX28/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -882,7 +882,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "linguist",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000DJSBPASR78FWF96AB.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000D9Z2PS1FE0YRQNX28.json"
             }
           ],
           "partOf": [
@@ -907,7 +907,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000E4B8MH3TT3CSVSEGK/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000EHP928C5GZ7MJ1KGS/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -928,7 +928,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "community",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000E4B8MH3TT3CSVSEGK.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000EHP928C5GZ7MJ1KGS.json"
             }
           ],
           "partOf": [
@@ -1012,7 +1012,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000FKKZJT69NHXTAAKQC/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000FV4ZR6350WQCQE3BN/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1032,7 +1032,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000FKKZJT69NHXTAAKQC.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000FV4ZR6350WQCQE3BN.json"
             }
           ],
           "label": {
@@ -1046,7 +1046,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000G1Q02N3ZREZA8YA57/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000GK82XFVPQDZNMX4KC/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1067,7 +1067,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "linguist",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000G1Q02N3ZREZA8YA57.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000GK82XFVPQDZNMX4KC.json"
             }
           ],
           "partOf": [
@@ -1092,7 +1092,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000HBR803HK309VJAWHZ/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000HDQ0N6DX74Q43Q9SG/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1113,7 +1113,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "community",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000HBR803HK309VJAWHZ.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000HDQ0N6DX74Q43Q9SG.json"
             }
           ],
           "partOf": [
@@ -1197,7 +1197,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000JCY53D01GP8ZVQSB9/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000JTC0PHRKF5DWSN6JR/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1217,7 +1217,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000JCY53D01GP8ZVQSB9.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000JTC0PHRKF5DWSN6JR.json"
             }
           ],
           "label": {
@@ -1231,7 +1231,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000KYBWKXRVJPCWFMG6V/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000KRK6BRR71P6PX20V0/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1252,7 +1252,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "linguist",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000KYBWKXRVJPCWFMG6V.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000KRK6BRR71P6PX20V0.json"
             }
           ],
           "partOf": [
@@ -1277,7 +1277,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000MQ8XZ4EGMVA7PXJZ0/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000MG36QD4YX5V1YJ8HW/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1298,7 +1298,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "community",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000MQ8XZ4EGMVA7PXJZ0.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000MG36QD4YX5V1YJ8HW.json"
             }
           ],
           "partOf": [
@@ -1382,7 +1382,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000NS06726TZCWQZ6FEG/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000NXQ7R2V1N9674N2QK/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1402,7 +1402,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000NS06726TZCWQZ6FEG.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000NXQ7R2V1N9674N2QK.json"
             }
           ],
           "label": {
@@ -1416,7 +1416,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000P5JRNV4TBH85X6H9F/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000PZN8JWP0A1HSVXMJM/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1437,7 +1437,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "linguist",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000P5JRNV4TBH85X6H9F.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000PZN8JWP0A1HSVXMJM.json"
             }
           ],
           "partOf": [
@@ -1462,7 +1462,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/language-atlas/annotations/000000000QE6WDN9JHY0GP5PBG/v1",
+              "id": "https://archie.demo/language-atlas/annotations/000000000QRY7P4XVEGX7X1XCA/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1483,7 +1483,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "community",
-              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000QE6WDN9JHY0GP5PBG.json"
+              "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000QRY7P4XVEGX7X1XCA.json"
             }
           ],
           "partOf": [

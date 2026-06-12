@@ -12,6 +12,20 @@ export { BASE, canvasIdFor };
 
 const author = asClientId("curator");
 
+// Deterministic mint (ADR-0014 durable anchors): published logical ids must be IDENTICAL on every
+// regen — appendNew's default entropy is Math.random, which re-minted every note's anchor (and the
+// whole history sidecar) on each gen run and CI deploy, breaking citations and producing endless
+// git churn. Each log builder seeds its own sequence (mulberry32) so the bake is reproducible.
+function seededRng(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 // ADR-0007 — the Voynich reconceived as a genuinely-plural Readings exhibit: rival scholarly camps
 // read the SAME marks incompatibly (the demo's payoff). The authored content (readings, the per-region
 // reading/tag notes, the AV notes, the narrative sections) lives in the SHARED ./voynich.ts as the
@@ -32,12 +46,13 @@ const author = asClientId("curator");
 function buildAtlasLog(slug: string): AnnotationLog {
   let log: AnnotationLog = [];
   let now = 0;
+  const rng = seededRng(2); // per-builder seed — reproducible ids (ADR-0014 durable anchors)
   for (const n of atlasNotes) {
     const [x, y, w, h] = n.region;
     ({ log } = appendNew(log, {
       target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `xywh=pixel:${x},${y},${w},${h}` } },
       body: [{ type: "TextualBody" as const, value: n.comment, purpose: "commenting" as const }],
-      motivation: "commenting", lastEditor: author, now: ++now,
+      motivation: "commenting", lastEditor: author, now: ++now, rng,
       ...(n.reading ? { reading: n.reading } : {}),
     }));
   }
@@ -48,6 +63,7 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
   const keep = (objectId: string) => !opts.objectIds || opts.objectIds.has(objectId);
   let log: AnnotationLog = [];
   let now = 0; // running `now` — appendNew needs monotonic, distinct timestamps
+  const rng = seededRng(1); // per-builder seed — reproducible ids (ADR-0014 durable anchors)
   const addBody = (comment: string, tags?: string[]) => [
     { type: "TextualBody" as const, value: comment, purpose: "commenting" as const },
     ...(tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" as const })),
@@ -58,7 +74,7 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
     const [x, y, w, h] = n.region;
     ({ log } = appendNew(log, {
       target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `xywh=pixel:${x},${y},${w},${h}` } },
-      body: addBody(n.comment), motivation: "commenting", lastEditor: author, now: ++now,
+      body: addBody(n.comment), motivation: "commenting", lastEditor: author, now: ++now, rng,
     }));
   }
   // §D — the per-region reading/tag notes (cipher/hoax/abjad on the same xywh), filtered by object id.
@@ -66,7 +82,7 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
     if (!keep(n.objectId)) continue;
     ({ log } = appendNew(log, {
       target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `xywh=pixel:${n.xywh}` } },
-      body: addBody(n.comment, n.tags), motivation: "commenting", lastEditor: author, now: ++now, ...(n.reading ? { reading: n.reading } : {}),
+      body: addBody(n.comment, n.tags), motivation: "commenting", lastEditor: author, now: ++now, rng, ...(n.reading ? { reading: n.reading } : {}),
     }));
   }
   // §E — AV-1…4 reading-bearing notes on the o12 sound canvas, appended AFTER the §D reading notes.
@@ -75,7 +91,7 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
     for (const a of voynichAvNotes) {
       ({ log } = appendNew(log, {
         target: { type: "SpecificResource", source: canvasIdFor(slug, "o12"), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `t=${a.t}` } },
-        body: addBody(a.comment, a.tags), motivation: "commenting", lastEditor: author, now: ++now, ...(a.reading ? { reading: a.reading } : {}),
+        body: addBody(a.comment, a.tags), motivation: "commenting", lastEditor: author, now: ++now, rng, ...(a.reading ? { reading: a.reading } : {}),
       }));
     }
   }
