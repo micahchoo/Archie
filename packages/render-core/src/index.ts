@@ -20,6 +20,10 @@ export * from "./publish/ghpages.js";
 export * from "./publish/portable.js";
 // Working-store read seam (Q-3 archie-persistence): cold-read the Studio's working copy — the Viewer's live source.
 export * from "./publish/working.js";
+// Merge-preserving regen (Archie-9b93): regenerate owned exhibits, CARRY committed ones — index merge.
+export * from "./publish/merge.js";
+// The library landing page builder (ADR-0014) — the merge regen rebuilds it over the merged card set.
+export { libraryPageHtml } from "./publish/static-pages.js";
 
 // AV transcript adapter (CONTEXT AV): WebVTT/SRT -> supplementing time-range Notes (import-only v1).
 export * from "./av/transcript.js";
