@@ -10,7 +10,9 @@ const { createLibraryStore } = await import("./library-meta.svelte.js");
 type LibraryMeta = import("./store.js").LibraryMeta;
 
 const initial = (): LibraryMeta => ({ title: "L", exhibits: [{ id: "e1", slug: "a", title: "A", objects: [] }] });
-const flush = async () => { await Promise.resolve(); await Promise.resolve(); };
+// A macrotask drains ALL pending microtasks — persist now hops through the save queue (worklist 0.1),
+// so a fixed two-await flush undercounts.
+const flush = () => new Promise<void>((r) => setTimeout(r, 0));
 
 describe("library-meta store (rune wrapper)", () => {
   beforeEach(() => saveLibraryMeta.mockClear());
@@ -41,6 +43,15 @@ describe("library-meta store (rune wrapper)", () => {
     await lib.persist();
     expect(saveLibraryMeta).toHaveBeenCalledTimes(1);
     expect(onAfterPersist).toHaveBeenCalledTimes(1);
+  });
+
+  it("a FAILED write does not fire onAfterPersist (the binding chip must not claim sync)", async () => {
+    const onAfterPersist = vi.fn();
+    saveLibraryMeta.mockRejectedValueOnce(new Error("quota"));
+    const lib = createLibraryStore(initial(), { onAfterPersist });
+    await lib.persist();
+    expect(saveLibraryMeta).toHaveBeenCalledTimes(1);
+    expect(onAfterPersist).not.toHaveBeenCalled();
   });
 
   it("awaitable addExhibit appends and persists before resolving", async () => {

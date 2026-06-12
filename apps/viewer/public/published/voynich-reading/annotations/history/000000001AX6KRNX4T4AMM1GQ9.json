@@ -1,0 +1,45 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-reading/annotations/history/000000001AX6KRNX4T4AMM1GQ9.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-reading/annotations/000000001AX6KRNX4T4AMM1GQ9/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-reading/canvas/o11",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:200,160,2300,420"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.042Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the cipher reading, this Latin line is a later owner's attempted key or crib — someone who believed the book was enciphered and jotted a decryption hint.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "marginalia",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "provenance",
+          "purpose": "tagging"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000001AX6KRNX4T4AMM1GQ9",
+      "archie:rev": "000000001A68RQ5SHJS36RMBM6",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "cipher"
+    }
+  ]
+}

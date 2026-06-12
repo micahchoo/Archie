@@ -11,4 +11,5 @@ See `docs/methodology-dual-use.md` §2 for design rationale.
 | ID | Title | Recorded | Supersedes | Constraint summary |
 |----|-------|----------|------------|--------------------|
 | Q-1 | Intra-Library link refs: archie: in body, resolved on heads projection, raw in history | 2026-05-25 | - | The in-body link ref is an archie: URI encoding a LinkTarget (one source of truth = the markdown body, per ADR-0003 log->projection). It is rewritten to a real  |
+| Q-2 | Published artifact is self-describing: static per-exhibit HTML with per-note anchors (durable refs) | 2026-06-11 | - | P-1 grilled+user-gated 2026-06-11 (docs/decisions/PROPOSALS.md). publishLibrary emits index.html (library) + {slug}/index.html (full heads projection, all readi |
 <!-- DECISIONS_INDEX_END -->

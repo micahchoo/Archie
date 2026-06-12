@@ -1,0 +1,50 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/0000000014ZG0BZEWFZ5P15VKJ.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/0000000014ZG0BZEWFZ5P15VKJ/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o9",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:3500,3300,900,700"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.036Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [See the Rosettes alone, deep-zoomed.](archie:voynich-rosettes/) (§H cross-link, 03 §5: repointed from the sunset bidar exhibit to the SINGLE Rosettes study — `archie:` in-body ref grammar from link.ts, rewritten to the published voynich-rosettes URL on the heads projection; resolves to the exhibit root.)",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "astronomical-symbol",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "foldout",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "label-word",
+          "purpose": "tagging"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "0000000014ZG0BZEWFZ5P15VKJ",
+      "archie:rev": "00000000147Z65CF91N9W0CD9Y",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "cipher"
+    }
+  ]
+}

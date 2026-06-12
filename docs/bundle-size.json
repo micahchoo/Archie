@@ -1,22 +1,31 @@
 {
-  "measuredAt": "2026-06-09T22:12:10.957Z",
-  "budgetKB": 240,
-  "note": "gz = minified+gzipped. Renderer floor has no tree-shaking applied; real app bundle is the Phase-2 dogfood number (strategy §33).",
+  "measuredAt": "2026-06-11T20:39:20.658Z",
+  "note": "gz = minified+gzipped. Renderer floor has no tree-shaking applied. appBundles = the built apps (the ratchet baseline; check with `node scripts/bundle-size.mjs --check`). No aspirational budget — the baseline IS a measurement (retro 2026-06-11).",
   "rows": [
     {
       "label": "@render/core (fflate external)",
-      "minKB": 48.6,
-      "gzKB": 16.5
+      "minKB": 51.3,
+      "gzKB": 17.6
     },
     {
       "label": "@render/core + fflate",
-      "minKB": 62.7,
-      "gzKB": 23.2
+      "minKB": 65.3,
+      "gzKB": 24.4
     },
     {
       "label": "OSD + Annotorious + plugin-tools",
       "minKB": 790.4,
       "gzKB": 223.7
+    }
+  ],
+  "appBundles": [
+    {
+      "label": "apps/studio dist (js+css gz)",
+      "gzKB": 388.3
+    },
+    {
+      "label": "apps/viewer dist (js+css gz)",
+      "gzKB": 319.3
     }
   ]
 }

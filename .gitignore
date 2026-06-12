@@ -6,3 +6,14 @@ gh-pages-dist/
 .DS_Store
 coverage/
 .foxhound/
+
+# bidar example — removed from Studio examples, kept locally but untracked (2026-06-09)
+apps/studio/src/bidar.ts
+scripts/import-bidar.mjs
+docs/screenshots/auto/viewer-bidar.desktop.png
+
+# test-runner droppings at repo root (worklist 0.4 — keep the root clean)
+playwright-artifacts-*/
+playwright_chromiumdev_profile-*/
+node-compile-cache/
+v8-compile-cache-*/

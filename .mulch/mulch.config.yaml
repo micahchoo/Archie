@@ -5,6 +5,7 @@ domains:
   - meta
   - archie
   - architecture
+  - product-research
 governance:
   max_entries: 100
   warn_entries: 150

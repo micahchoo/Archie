@@ -8,7 +8,7 @@
   import { fade } from "svelte/transition";
   import {
     resolveLayout, overlay,
-    spatialCoverage, isWholeObject, wholeObjectFlagOf, emphasisOf, emphasisModifiers,
+    spatialCoverage, isWholeObject, wholeObjectFlagOf, emphasisOf, readingMarkerStyle,
     type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation, type W3CSelector,
   } from "@render/core";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
@@ -113,25 +113,21 @@
     for (const a of annotationsOf(objectId)) if (a.id) m[a.id] = a;
     return m;
   };
-  const clamp01 = (n: number): number => (n < 0 ? 0 : n > 1 ? 1 : n);
   // Forest-green neutral default for reading-less (base) marks (system.md §"Base notes") — same
   // stroke-over-stroke opacities as the reading style, so emphasis modulates a VISIBLE base mark.
   const ACCENT = "#3a6b4c";
+  // Per-note hover solo (the Reader list's hover → the mark lights up). Read INSIDE readingStyleOf
+  // so the template's `styleOf={readingStyleOf(...)}` expression depends on it and re-mints the
+  // closure identity on change — Canvas only re-applies styles when the prop identity changes
+  // (the Studio harness finding).
+  let hoverNote = $state<string | null>(null);
   const readingStyleOf = (objectId: string): ((id: string) => MarkerStyle | undefined) => {
     const colourBy = readingColourById(objectId);
     const annBy = annotationById(objectId);
-    return (id) => {
-      const colour = colourBy[id] ?? ACCENT; // reading colour, else neutral forest-green base
-      const ann = annBy[id];
-      const { opacityMul, strokeWidthMul } = emphasisModifiers(ann ? emphasisOf(ann) : "normal");
-      return {
-        fill: colour,
-        fillOpacity: clamp01(0.18 * opacityMul),
-        stroke: colour,
-        strokeOpacity: clamp01(0.95 * opacityMul),
-        strokeWidth: 2 * strokeWidthMul,
-      };
-    };
+    const hovered = hoverNote; // captured per mint — the read that re-mints identity
+    // ONE style source shared with Studio (render-core readingMarkerStyle). The Viewer stays
+    // exclusive-radio in v1 (archie-ux Q-2), so no comparing/solo state is passed here.
+    return (id) => readingMarkerStyle(colourBy[id] ?? ACCENT, annBy[id] ? emphasisOf(annBy[id]!) : "normal", { highlighted: hovered === id });
   };
 
   // 7e1f coverage border — single-object image Reader only. Pull the first selector off a target
@@ -231,6 +227,7 @@
       onback={isGrid ? () => (selectedObjectId = null) : undefined}
       rights={objectRightsOf(activeObject.id)}
       initialSelected={arrivedNote}
+      onnotehover={(id) => (hoverNote = id)}
     />
   {:else}
     <ObjectGrid

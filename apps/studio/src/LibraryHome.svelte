@@ -12,6 +12,7 @@
   import type { Binding, RecentProject, RightsFields } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
+  import { saveStatus } from "./save-queue.svelte.js";
 
   let {
     exhibits,
@@ -129,6 +130,10 @@
             {:else}{bindingDirty ? "Unsaved changes — Save (⌘S) to update the file." : "Saved as a file on your computer."}{/if}
           </p>
         {/if}
+        {#if saveStatus.health === "error"}
+          <!-- Worklist 0.1 (loud saves): a failed write is never silent — the queue's last error, verbatim. -->
+          <p class="save-error" role="alert">⚠ {saveStatus.error}</p>
+        {/if}
       </div>
       <div class="actions">
         <button class="primary" onclick={onsave} disabled={bindingBusy}>
@@ -238,6 +243,7 @@
   .place .name { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-canvas-primary); }
   .place .dot { font-family: var(--font-ui); font-size: 0.7rem; color: var(--semantic-warning); }
   .hint { margin: var(--space-1) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--ink-canvas-secondary); }
+  .save-error { margin: var(--space-1) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--semantic-error); }
 
   .actions { display: flex; align-items: center; gap: var(--space-2); }
   .actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); font-weight: 500; padding: var(--space-2) var(--space-4); cursor: pointer; border-radius: var(--radius-sm); transition: background 120ms ease, border-color 120ms ease, color 120ms ease; }

@@ -1,0 +1,45 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich/annotations/history/000000000JETSS4B26RP83FKZ5.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich/annotations/000000000JETSS4B26RP83FKZ5/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich/canvas/o3",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:200,260,2400,3200"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.018Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the cipher reading, drawing and text are a matched entry — the picture keys the cipher, the way a known herbal's illustration would hint at the enciphered plant-name.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "botanical",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "currier-hand-A",
+          "purpose": "tagging"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000000JETSS4B26RP83FKZ5",
+      "archie:rev": "000000000JEABR3QAMKFCNEABN",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "cipher"
+    }
+  ]
+}

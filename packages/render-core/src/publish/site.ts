@@ -21,6 +21,7 @@ import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.j
 import type { Exhibit, AObject, Section, RightsFields } from "../model/model.js";
 import type { PortableExhibit } from "./portable.js"; // type-only (erased) — the readings superset; type-cycle is harmless
 import { readExhibitTree, fsJsonSource } from "./read.js";
+import { libraryPageHtml, exhibitPageHtml, sitemapTxt } from "./static-pages.js";
 import { readAnnotations } from "../spine/persist.js";
 import { toHistory } from "../spine/serialize.js";
 import { projectHeads } from "../spine/heads.js";
@@ -44,6 +45,18 @@ export interface PublishOptions {
    * for citation. Opt-in — without it, originals stay in the working store and never ship. Keyed by (slug, name).
    */
   getOriginal?: (slug: string, name: string) => Promise<ArrayBuffer | Blob | null>;
+  /**
+   * The interactive Viewer's base URL (the canonical instance, ADR-0013) — when given, the static
+   * archival pages (ADR-0014) link each exhibit/note out to the live experience. App-supplied;
+   * core never hardcodes an origin.
+   */
+  viewerBase?: string;
+  /**
+   * Markdown → SAFE html for the static archival pages' note bodies (ADR-0014 / P-1 Q3): Studio
+   * injects the SAME snarkdown+DOMPurify pipeline the live Viewer uses, so static and live
+   * sanitization policy cannot drift. Default: entity-escape everything (the non-DOM floor).
+   */
+  renderBody?: (md: string) => string;
 }
 
 const ASSET_PREFIX = "/assets/";
@@ -94,6 +107,13 @@ async function writeJson(dir: FsDirectory, name: string, data: unknown): Promise
   const file = await dir.getFile(name, { create: true });
   const w = await file.writable();
   await w.write(JSON.stringify(data, null, 2));
+  await w.close();
+}
+
+async function writeText(dir: FsDirectory, name: string, text: string): Promise<void> {
+  const file = await dir.getFile(name, { create: true });
+  const w = await file.writable();
+  await w.write(text);
   await w.close();
 }
 
@@ -239,7 +259,17 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     }
     // The manifest now carries inline annotation items — write it after the per-canvas pages embed.
     await writeJson(exDir, "manifest.json", manifest);
+
+    // Static archival page (ADR-0014): the FULL heads projection's note texts with per-note
+    // anchors — the durable ref `{slug}/index.html#note-<logicalId>`. Bodies get the same
+    // archie:-link rewrite the JSON heads pages get; the throwaway sink keeps the brokenLinks
+    // advisory counts identical to the JSON path (canvas-matched refs already reported above).
+    const htmlRecords = heads.map((h) => rewriteHeadBodies(h, exhibit.slug, rw, []));
+    await writeText(exDir, "index.html", exhibitPageHtml(exhibit, htmlRecords, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}) }));
   }
+  // Library landing + sitemap (ADR-0014): the human/crawler entry the data repo never had.
+  await writeText(root, "index.html", libraryPageHtml(library, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}) }));
+  await writeText(root, "sitemap.txt", sitemapTxt(library, baseUrl));
   return { brokenLinks };
 }
 

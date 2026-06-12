@@ -8,12 +8,15 @@
 // binding seam stays on the App side for the next cut — the store owns persistence, not binding state.
 import { saveLibraryMeta, type LibraryMeta, type ExhibitMeta, type ObjectMeta } from "./store";
 import { patchLibraryIn, patchExhibitIn, patchObjectIn, appendObjectIn, addExhibitIn, removeExhibitIn, removeObjectIn } from "./library-meta-reducers";
+import { enqueueSave } from "./save-queue.svelte";
 
 export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?: () => void } = {}) {
   const s = $state<{ meta: LibraryMeta }>({ meta: initial });
+  // Routed through the save queue (worklist 0.1): writes to library.json serialize, and a failure
+  // lands in saveStatus instead of vanishing into the `void persist()` sites below.
   async function persist(): Promise<void> {
-    await saveLibraryMeta(s.meta);
-    opts.onAfterPersist?.();
+    if (await enqueueSave("library-meta", "Library details", () => saveLibraryMeta(s.meta)))
+      opts.onAfterPersist?.();
   }
   return {
     /** Live read path for `$derived`, child props, and the publish builders. */

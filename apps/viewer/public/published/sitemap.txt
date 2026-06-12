@@ -1,0 +1,5 @@
+https://archie.demo/index.html
+https://archie.demo/voynich-rosettes/index.html
+https://archie.demo/voynich/index.html
+https://archie.demo/voynich-reading/index.html
+https://archie.demo/language-atlas/index.html

@@ -249,3 +249,35 @@ Building package...
 
 Installed: astro@main (924.0 KB, 306 sections)
 2026-05-27T06:31:45Z | added @astrojs/check@main
+Cloning https://github.com/developit/snarkdown...
+Checking out main...
+Using: snarkdown@main
+✓ Reading from repository root
+✓ Found 1 markdown files
+Building package...
+✓ Built package: snarkdown@main
+✓ Saved to /home/micah/.context/packages/snarkdown@main.db
+
+Installed: snarkdown@main (32.0 KB, 3 sections)
+
+⚠️  Warning: Only 3 sections found (threshold: 50)
+   This repository may not contain substantial documentation.
+   Many projects keep docs in a separate repository.
+
+   🔍 Search for the docs repo: https://www.google.com/search?q=snarkdown%20documentation%20site%20github.com
+
+   Or try:
+   - Use --path to specify a different docs folder
+   - Check for a dedicated docs repo (e.g., snarkdown-docs, snarkdown.github.io)
+2026-06-09T22:04:44Z | added snarkdown@main
+Cloning https://github.com/microsoft/playwright...
+Checking out main...
+Using: playwright@main
+✓ Found docs at /docs
+✓ Found 179 markdown files
+Building package...
+✓ Built package: playwright@main
+✓ Saved to /home/micah/.context/packages/playwright@main.db
+
+Installed: playwright@main (4.4 MB, 2339 sections)
+2026-06-11T22:47:04Z | added playwright@main

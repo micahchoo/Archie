@@ -21,6 +21,7 @@ function mockSurface() {
     setDrawingEnabled: vi.fn(),
     setDrawingTool: vi.fn(),
     markerScreenRect: vi.fn(() => null),
+    markerScreenRects: vi.fn(() => ({})),
     onViewportChange: noop,
     destroy,
     onSelect: (cb) => {

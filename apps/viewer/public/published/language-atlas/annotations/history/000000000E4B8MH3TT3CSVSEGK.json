@@ -1,0 +1,35 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/language-atlas/annotations/history/000000000E4B8MH3TT3CSVSEGK.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/language-atlas/annotations/000000000E4B8MH3TT3CSVSEGK/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/language-atlas/canvas/o5",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1560,650,380,320"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.014Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Transmission broke in the boarding-school decades, when children spent ten months a year away from the tundra and came home preferring Russian. The elders who herd reindeer in Yukaghir now teach it as a school subject — an hour a week.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000000E4B8MH3TT3CSVSEGK",
+      "archie:rev": "000000000EDEQ4KZJGNS578KPA",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "community"
+    }
+  ]
+}

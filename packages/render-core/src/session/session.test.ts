@@ -18,6 +18,41 @@ const rect = (x: number, y: number, w: number, h: number): W3CSpecificResource =
   selector: { type: "FragmentSelector", value: `xywh=pixel:${x},${y},${w},${h}` },
 });
 
+describe("AnnotationSession — log-boundary degenerate guard (worklist 0.2)", () => {
+  const degenerateSvg = (): W3CSpecificResource => ({
+    type: "SpecificResource",
+    source: canvas,
+    selector: { type: "SvgSelector", value: '<svg><polygon points=""></polygon></svg>' },
+  });
+  const nanRect = (): W3CSpecificResource => ({
+    type: "SpecificResource",
+    source: canvas,
+    selector: { type: "FragmentSelector", value: "xywh=pixel:NaN,0,10,10" },
+  });
+
+  it("createNote refuses a degenerate target — the log never holds unrenderable geometry", () => {
+    const s = new AnnotationSession(alice);
+    expect(() => s.createNote({ target: degenerateSvg() })).toThrow(/degenerate/);
+    expect(() => s.createNote({ target: nanRect() })).toThrow(/degenerate/);
+    expect(s.entries).toHaveLength(0);
+  });
+
+  it("editNote refuses a degenerate replacement target (original head stays intact)", () => {
+    const s = new AnnotationSession(alice);
+    const id = s.createNote({ target: rect(0, 0, 10, 10) });
+    expect(() => s.editNote(id, { target: nanRect() })).toThrow(/degenerate/);
+    expect(s.notes()[0]!.version).toBe(1); // nothing appended
+  });
+
+  it("a selector-less target (whole-canvas / Exhibit / Library note) is NOT degenerate", () => {
+    const s = new AnnotationSession(alice);
+    const id = s.createNote({ target: { type: "SpecificResource", source: canvas } as W3CSpecificResource });
+    expect(s.notes()).toHaveLength(1);
+    s.editNote(id, { body: { type: "TextualBody", value: "curatorial prose" } }); // body-only edit untouched by the guard
+    expect(s.notes()[0]!.version).toBe(2);
+  });
+});
+
 describe("AnnotationSession — create / edit / delete", () => {
   it("createNote appends a note and returns its stable logicalId", () => {
     const s = new AnnotationSession(alice);

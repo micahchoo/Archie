@@ -8,7 +8,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./Canvas.svelte": "./src/Canvas.svelte"
+    "./Canvas.svelte": "./src/Canvas.svelte",
+    "./MarginColumn.svelte": "./src/MarginColumn.svelte"
   },
   "scripts": {
     "test": "vitest run",

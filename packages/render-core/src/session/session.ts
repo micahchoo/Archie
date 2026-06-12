@@ -5,6 +5,7 @@
 // Filesystem seam. The Svelte editor is a thin shell binding to this; the logic is here, tested.
 
 import { appendNew, appendEdit, appendDelete } from "../spine/log.js";
+import { isDegenerateTarget } from "../geometry/selector.js";
 import { projectHeads } from "../spine/heads.js";
 import { recordToAnnotation } from "../spine/serialize.js";
 import { writeAnnotations, readAnnotations } from "../spine/persist.js";
@@ -60,8 +61,13 @@ export class AnnotationSession {
     return this.log;
   }
 
-  /** Append a new note. Returns its stable logicalId (use it to select / open the form). */
+  /** Append a new note. Returns its stable logicalId (use it to select / open the form).
+   *  Throws on a degenerate target (empty/NaN geometry) — the log is the ONE writer of annotation
+   *  state (worklist 0.2), so it must never hold a record the canvas can't render. The mount's
+   *  gesture guard filters these before the app sees them; reaching this throw is an invariant
+   *  violation (a bad import path or a guard regression), not a user-facing flow. */
   createNote(input: NewNote): LogicalId {
+    if (isDegenerateTarget(input.target)) throw new Error("createNote: degenerate target selector (empty/NaN geometry) must not enter the log");
     const { log, record } = appendNew(this.log, {
       target: input.target,
       lastEditor: this.editor,
@@ -75,8 +81,10 @@ export class AnnotationSession {
     return record.logicalId;
   }
 
-  /** Append an edited version (carries unchanged fields forward). */
+  /** Append an edited version (carries unchanged fields forward).
+   *  Throws on a degenerate replacement target — same log-boundary invariant as createNote. */
   editNote(logicalId: LogicalId, changes: NoteEdit): void {
+    if (changes.target !== undefined && isDegenerateTarget(changes.target)) throw new Error("editNote: degenerate target selector (empty/NaN geometry) must not enter the log");
     const { log } = appendEdit(this.log, logicalId, {
       lastEditor: this.editor,
       ...(changes.target !== undefined ? { target: changes.target } : {}),
