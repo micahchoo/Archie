@@ -9,20 +9,15 @@ export default defineConfig({
   output: "static",
   base,
   integrations: [svelte()],
-  // SINGLE-ORIGIN DEV (Q-3): the Viewer is the FRONT DOOR (scripts/dev.sh runs it on :5173) and
-  // proxies /studio → the Studio's Vite on :5174. Direction matters: plain Vite namespaces every
-  // dev URL under its base (/studio/...), so one prefix rule captures all Studio traffic — Astro
-  // requests its internals at root-relative paths (/@vite, /@id, /src), which can't be prefix-
-  // proxied the other way. strictPort: a silent port bump would split the shared-OPFS origin or
-  // 502 the proxy; fail loudly instead.
+  // SINGLE-ORIGIN DEV (Q-3): in dev this server sits BEHIND the front-door proxy
+  // (scripts/dev-proxy.mjs on :5173) which routes /studio → Vite :5174 and everything else here.
+  // Do NOT try to make this server front via vite.server.proxy: Astro routes HTML NAVIGATIONS
+  // through its own router BEFORE vite's proxy middleware, so browser visits to a proxied path
+  // 404 while curl appears to work. strictPort: a silent port bump would 502 the front door;
+  // fail loudly instead.
   server: { port: 4321 },
   vite: {
-    server: {
-      strictPort: true,
-      proxy: {
-        "/studio": { target: "http://localhost:5174", ws: true },
-      },
-    },
+    server: { strictPort: true },
     // The Svelte islands import fflate (zip.ts) / isomorphic-dompurify + snarkdown
     // (sanitize.ts) by bare name through the linked @render/* workspace packages.
     // These are declared as direct viewer deps (so pnpm symlinks them into the app

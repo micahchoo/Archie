@@ -5,10 +5,9 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 //
 // SINGLE-ORIGIN DEV (Q-3 archie-persistence): dev mirrors the GH-Pages path layout — /studio/ and
 // /viewer/ on ONE origin — so the Viewer's live source reads the Studio's OPFS working store in dev
-// exactly as it does deployed. The VIEWER (Astro, scripts/dev.sh → :5173) is the front door and
-// proxies /studio → here (:5174): plain Vite namespaces ALL its dev URLs under `base`, so the
-// /studio prefix captures everything — whereas Astro requests its internals at root-relative paths
-// (/@vite, /@id, /src), which a prefix proxy can't catch. That asymmetry decides who fronts.
+// exactly as it does deployed. The front door is the STANDALONE proxy (scripts/dev-proxy.mjs on
+// :5173) routing /studio → here (:5174); plain Vite namespaces ALL its dev URLs under `base`, so
+// the prefix captures everything. Neither dev server can front the other (see dev-proxy.mjs).
 // The prod build is untouched (build-gh-pages.sh passes --base on the CLI, which overrides this).
 
 /** Send a bare-root visit (direct :5174 hit) to the app. */
