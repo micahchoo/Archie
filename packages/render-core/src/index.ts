@@ -18,6 +18,8 @@ export * from "./publish/site.js";
 export * from "./publish/ghpages.js";
 // Portable read seam (ADR-0010): read a published tree out of an opened `.archie.zip`, media → blob URLs.
 export * from "./publish/portable.js";
+// Working-store read seam (Q-3 archie-persistence): cold-read the Studio's working copy — the Viewer's live source.
+export * from "./publish/working.js";
 
 // AV transcript adapter (CONTEXT AV): WebVTT/SRT -> supplementing time-range Notes (import-only v1).
 export * from "./av/transcript.js";
@@ -25,6 +27,7 @@ export * from "./av/time.js";
 
 // Layer + tag filtering over Notes (CONTEXT Layers v1 / Tags). Archie filters; pure shows all.
 export * from "./query/filter.js";
+export * from "./query/marker-style.js";
 // Published-shape (W3CAnnotation) accessors — the canonical home for the viewer's body/reading/overlay reads.
 export * from "./query/published.js";
 // The source-parameterized published-tree reader (the domino) — site/portable/viewer adapt over it.
@@ -46,6 +49,7 @@ export * from "./model/layout.js";
 
 // CLEAN-LIFT pure modules (spike-0001): selector geometry, URL/deep-link, IIIF resolution.
 export * from "./geometry/selector.js";
+export * from "./geometry/marginalia.js";
 export * from "./geometry/mediafragment.js";
 export * from "./geometry/coverage.js";
 export * from "./geometry/downscale.js";

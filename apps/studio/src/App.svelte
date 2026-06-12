@@ -8,6 +8,7 @@
   import { planCsvImport } from "./csv-import.js";
   import { collabBreakdown, collabSummaryText } from "./collab.js";
   import ReadingsModal from "./ReadingsModal.svelte";
+  import ReadingsRail from "./ReadingsRail.svelte";
   import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "../../viewer/src/atlas.js";
   import { planWadmImport } from "./wadm-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
@@ -25,22 +26,24 @@ import LayoutPicker from "./LayoutPicker.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
   import { matches, typingInField } from "./shortcuts.js";
   import {
-    AnnotationSession, libraryToZipFs, asClientId, mintRevId, encodeLinkRef,
-    MemoryFilesystem, ZipFilesystem, FsaFilesystem, publishLibrary, loadLibrary, collectFiles, publishToGitHub,
+    AnnotationSession, asClientId, encodeLinkRef,
+    ZipFilesystem, loadLibrary,
     readExifOrientation, isOrientationNoop, orientationTransform,
     mediaTypeFromSource, timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
     MAX_MASTER_DIM,
-    bindingLabel, recentFromBinding, addRecent, removeRecent,
-    tagsOf, emphasisOf, emphasisModifiers,
-    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type GitHubTarget, type PublishProgress, type Binding, type RecentProject, type BrokenLink, type Section, type Reading, type RightsFields, type Emphasis,
+    tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary,
+    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type Section, type Reading, type RightsFields, type Emphasis,
     readExifCaptureDate,
   } from "@render/core";
   import type { DrawTool, MarkerStyle } from "@render/mount";
   import { bakeDisplayMaster, downscaleIfNeeded } from "./bake.js";
-  import { openExhibitAnnotationsDir, loadLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, readAssetBlob, readOriginalBytes, assetSize, clearExhibitAnnotations, exhibitHasAnnotations, type ExhibitMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
+  import { openExhibitAnnotationsDir, loadLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, type ExhibitMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
-  import { supportsFolderPicker, supportsFileStreamSave, pickFolder, saveZipToDisk, zipNameFor, loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
-  import { putHandle, getHandle, deleteHandle, requestPermission } from "./handles-db.js";
+  import { enqueueSave, saveStatus } from "./save-queue.svelte.js";
+  import { zipNameFor } from "./binding.js";
+  import { createBindingStore } from "./binding-store.svelte.js";
+  import { createPublishFlows } from "./publish-flows.svelte.js";
+  import { createReadingState } from "./reading-state.svelte.js";
   // Phase-4 A2 surgery: the Studio's duplicate voynich.ts was deleted; the ONE seed lives in the
   // Viewer (apps/viewer/src/voynich.ts) and both apps read it (single source of truth, §A).
   import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichSections } from "../../viewer/src/voynich.js";
@@ -51,7 +54,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // "" = skipped (Anonymous); else the chosen name. `author` derives from it for any NEW session.
   const IDENTITY_KEY = "archie.displayName.v1";
   function loadIdentity(): string | null { try { return localStorage.getItem(IDENTITY_KEY); } catch { return null; } }
-  function saveIdentity(name: string): void { try { localStorage.setItem(IDENTITY_KEY, name); } catch { /* storage off */ } }
   let identity = $state<string | null>(loadIdentity());
   const author = $derived(asClientId(identity || "anonymous"));
   const srcOf = (t: unknown): string | undefined => (typeof t === "string" ? t : (t as { source?: string } | null)?.source);
@@ -80,7 +82,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   ];
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
-  const lib = createLibraryStore({ exhibits: DEFAULT_EXHIBITS }, { onAfterPersist: touchBinding });
+  const lib = createLibraryStore({ exhibits: DEFAULT_EXHIBITS }, { onAfterPersist: () => bnd.touch() });
   let view = $state<"library" | "overview" | "editor">("library");
   // Per-exhibit Playground/Project (CONTEXT §115, the coherent model): a bundled EXAMPLE is a template —
   // opening it is a playground (banner, nothing saved); a USER-CREATED exhibit is a project (saved, no
@@ -97,8 +99,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const canvasIdOf = (objId: string) => `${BASE}${currentSlug}/canvas/${objId}`;
 
   // --- imported-image assets: stored in OPFS, source "/assets/{name}", resolved to blob: URLs ---
-  const ASSET_PREFIX = "/assets/";
-  const isAsset = (src: string | undefined): boolean => !!src && src.startsWith(ASSET_PREFIX);
+  // ASSET_PREFIX / isAsset live in store.ts now (one definition — App + publish flows share it).
   let assetUrls = $state<Record<string, string>>({}); // objId -> blob: URL (revoke on nav)
   let assetsReady = $state(false);
   function revokeAssetUrls() {
@@ -193,30 +194,30 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // --- Library binding (invention #3, CONTEXT three-configs persistence): WHERE this Library's canonical
   // bytes live. unbound = OPFS-only (this browser); folder = Chromium FSA autosave-in-place; file = a
   // .archie.zip on disk (Save downloads it). Capability picks folder-vs-file; the user sees only "where". ---
-  const canFolder = supportsFolderPicker();
-  let binding = $state<Binding>({ kind: "unbound" });
-  let recents = $state<RecentProject[]>([]);
-  let bindingDirty = $state(false);   // unsaved-to-disk at the Library scale (distinct from per-exhibit `dirty`)
-  let bindingBusy = $state(false);    // a Save/Open is in flight (guards overlap + disables chrome)
-  let bindingError = $state<string | null>(null); // a bound location couldn't be reopened (lost-binding recovery)
+  // Binding state machine lives in the binding store now (worklist 0.3 cut 1 — binding-store.svelte.ts);
+  // `bnd` is created below the publish primitives it depends on. The App keeps only zip-open chrome.
   let collabNote = $state<string | null>(null); // ⑧: who-wrote-what after opening a zip (dismissible)
   const PROJECT_TITLE = "Archie Library";
-  const bindingPlace = $derived(bindingLabel(binding));
   let zipInputEl = $state<HTMLInputElement | null>(null); // hidden picker for "Open" on non-Chromium
-  let csvEl: HTMLInputElement | null = null; // hidden picker for the notes-CSV import (⑥)
-  let wadmEl: HTMLInputElement | null = null; // hidden picker for the WADM/JSON import (⑦)
+  let csvEl = $state<HTMLInputElement | null>(null); // hidden picker for the notes-CSV import (⑥)
+  let wadmEl = $state<HTMLInputElement | null>(null); // hidden picker for the WADM/JSON import (⑦)
   // The library STRUCTURE always persists (which exhibits exist is real; examples are bundled defaults
   // reconciled on boot). Only an EXAMPLE's annotations are ephemeral — gated in save() on isTemplate.
-  // persist lives in the library-meta store now (saveLibraryMeta + injected touchBinding).
+  // persist lives in the library-meta store now (saveLibraryMeta + injected bnd.touch).
   async function save() {
     if (!annDir || isTemplate(currentSlug)) return; // Examples are playgrounds — their notes aren't saved
     // Don't write empty heads/history pages for a note-less exhibit; library.json records existence.
-    if (session.entries.length > 0) await session.save(annDir, { baseUrl: BASE });
+    // Routed through the save queue (worklist 0.1): writes to one exhibit's dir serialize even when
+    // the 800ms debounce overlaps a slow write, and a failure keeps `dirty` + lands in saveStatus.
+    if (session.entries.length > 0) {
+      const dir = annDir, sess = session;
+      if (!(await enqueueSave(`ann:${currentSlug}`, "Notes", () => sess.save(dir, { baseUrl: BASE })))) return;
+    }
     dirty = false;
-    void autosaveToFolder(); // a folder-bound Project mirrors the tree to disk in place (no-op otherwise)
+    void bnd.autosaveToFolder(); // a folder-bound Project mirrors the tree to disk in place (no-op otherwise)
   }
   function scheduleSave() {
-    touchBinding(); // an edit means the bound location is now behind (only counts once bound)
+    bnd.touch(); // an edit means the bound location is now behind (only counts once bound)
     if (!annDir) return;
     clearTimeout(saveTimer);
     saveTimer = setTimeout(() => void save(), 800);
@@ -226,7 +227,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // differs from the current code default — i.e. a fixture was re-imported), replace its structure and
   // clear its annotations so it reseeds. Unchanged defaults (+ user edits) + user exhibits are preserved.
   onMount(async () => {
-    recents = loadRecents();
     const meta = await loadLibraryMeta();
     if (meta && meta.exhibits.length > 0) {
       const isStale = (d: ExhibitMeta, p: ExhibitMeta | undefined): boolean =>
@@ -256,21 +256,24 @@ import LayoutPicker from "./LayoutPicker.svelte";
     } else {
       await lib.persist(); // first run — persist the defaults
     }
-    // Restore the active-binding DESCRIPTOR so the chip shows continuity ("bound to X"); the folder
-    // handle's permission re-grants lazily on the next write. Boot counts as in-sync — the next edit
-    // marks it unsaved-to-disk (we don't auto-reload from disk without a user gesture).
-    binding = loadLastBinding();
-    bindingDirty = false;
+    // Restore recents + the active-binding DESCRIPTOR so the chip shows continuity ("bound to X");
+    // the folder handle's permission re-grants lazily on the next write (binding store boot).
+    bnd.boot();
   });
 
   // Open an exhibit into the editor: load its per-exhibit annotation log (seed the sample if empty).
   async function openExhibit(slug: string) {
+    // Archie-788e: flush any pending debounced edit against the OUTGOING session/dir BEFORE the
+    // swap — otherwise a <800ms-old edit fires its timer after annDir changed (or is lost).
+    clearTimeout(saveTimer);
+    await save();
     currentSlug = slug;
     const ex = lib.meta.exhibits.find((e) => e.slug === slug);
     currentObjectId = ex?.objects[0]?.id ?? "o1";
     selected = null;
     editing = null;
     creating = null;
+    rdg.resetForExhibit(); // fresh exhibit = everything visible, pen on base (fixes the cross-exhibit leak)
     assetsReady = false;
     await resolveAssets(slug, ex?.objects ?? []); // OPFS /assets → blob: URLs (sets assetsReady)
     const seed = seededFor(slug);
@@ -622,10 +625,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     if (loaded.library.exhibits.length === 0) { window.alert("That archive has no exhibits."); return; }
     if (!window.confirm("Open this archive as your project? Your current project will be replaced.")) return;
     await replaceProjectFrom(loaded);
-    binding = { kind: "file", name: file.name }; // the zip you opened is now this Library's canonical file
-    bindingError = null;
-    bindingDirty = false;
-    rememberBinding();
+    bnd.bindToFile(file.name); // the zip you opened is now this Library's canonical file
     // ⑧ (Archie-59a8): the summary panel — who wrote what in the copy you just opened. This IS
     // live co-editing's serverless approximation (the "N notes since your last import" indicator).
     collabNote = collabSummaryText(file.name, collabBreakdown(loaded.logs, author));
@@ -633,6 +633,9 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // Replace the current OPFS project with a loaded library (the shared body of "Open zip" + "Open folder"):
   // clear outgoing annotation dirs (no orphans under reused slugs), write each imported log, swap the meta.
   async function replaceProjectFrom(loaded: Awaited<ReturnType<typeof loadLibrary>>) {
+    // Archie-788e: cancel a pending debounced save — the user confirmed replacement, and a timer
+    // firing mid-replace would write the OUTGOING session into the incoming project's dirs.
+    clearTimeout(saveTimer);
     for (const e of lib.meta.exhibits) await clearExhibitAnnotations(e.slug);
     for (const e of loaded.library.exhibits) {
       const dir = await openExhibitAnnotationsDir(e.slug);
@@ -804,7 +807,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
   let creating = $state<DrawTool | null>(null);
   const drawArmed = $derived(creating !== null || framingSectionId !== null); // canvas in draw mode while either gesture is live
   const drawShape = $derived<DrawTool>(creating ?? "rectangle"); // framing always frames a box
-  let readingFilter = $state("all"); // "all" | "base" | a reading id — scopes the list + new-note default (ADR-0007)
+  // P-2 (archie-ux Q-2): reading DISPLAY state — visible SET + active pen, never conflated.
+  // The rail (ReadingsRail, on the canvas) is the one home; the old dropdown is retired.
+  const rdg = createReadingState();
+  $effect(() => { rdg.reconcile(currentReadings); });
   // The unified Readings modal: name+colour+description in ONE place, the concept explained in its
   // header. Replaces the ADR-0007 first-add gate (ReadingHelp + localStorage flag) — the teaching
   // copy lives permanently in the modal, so there's nothing to remember or re-nag about.
@@ -846,6 +852,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
   let layoutPickerOpen = $state(false);
   const currentLayout = $derived<LayoutType>(currentExhibit?.layout ?? "grid");
   const currentReadings = $derived<Reading[]>(currentExhibit?.readings ?? []);
+  // (Marginalia cuts D+E reverted 2026-06-11 on user review — "does not look good". The ENGINE
+  // survives headless-tested for a future presentation redesign: core layoutMarginalia(+pinId),
+  // mount markerScreenRects, Canvas rectIds/onmarkerrects, render-svelte MarginColumn. See
+  // IMPROVEMENT-WORKLIST ledger + the marginalia-redesign seeds issue.)
   // Whether this exhibit has an overview scale (invention #1): NOT exactly one object (so: 0 to name/fill,
   // or >1 to arrange), or a narrative. MUST stay in sync with openExhibit's routing predicate above.
   const hasOverview = $derived((currentExhibit?.objects.length ?? 0) !== 1 || currentLayout === "narrative");
@@ -917,15 +927,11 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const allNotes = $derived((rev, session.notes()));
   const objNotes = $derived(allNotes.filter((r) => srcOf(r.target) === canvasId));
   const notes = $derived(
-    readingFilter === "all" ? objNotes : readingFilter === "base" ? objNotes.filter((r) => !r.reading) : objNotes.filter((r) => r.reading === readingFilter),
+    objNotes.filter((r) => rdg.noteVisible(r)), // visibility = the reading-state set (canvas + margin share it)
   );
   const objAnnotations = $derived<W3CAnnotation[]>((rev, session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId)));
   const annotations = $derived<W3CAnnotation[]>(
-    readingFilter === "all"
-      ? objAnnotations
-      : readingFilter === "base"
-        ? objAnnotations.filter((a) => !(a as Record<string, unknown>)["archie:reading"])
-        : objAnnotations.filter((a) => (a as Record<string, unknown>)["archie:reading"] === readingFilter),
+    objAnnotations.filter((a) => rdg.isVisible(((a as Record<string, unknown>)["archie:reading"] as string | undefined) ?? "base")),
   );
   const sel = $derived(notes.find((r) => r.logicalId === editing));
   const noteCountOf = (objId: string) => allNotes.filter((r) => srcOf(r.target) === canvasIdOf(objId)).length;
@@ -933,13 +939,33 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // what a visitor sees. Colour = the note's reading (ADR-0007); reading-less notes get a neutral forest-
   // green default (so base marks are visible). Per-note emphasis modulates opacity/weight ONLY, never hue.
   const BASE_MARKER = "#3a6b4c"; // forest green — the base (reading-less) note default
+  // Solo (rail-row hover, B4): the soloed reading's fill returns while comparing. null = none.
+  let soloReading = $state<string | null>(null);
+  // Per-NOTE solo: hovering a note in the list lights its mark on the canvas (the rail's hover
+  // affordance applied to annotations). null = none.
+  let hoverNote = $state<string | null>(null);
+  // Canvas re-applies styles only when the styleOf PROP IDENTITY changes ($effect dep) — a stable
+  // function would freeze the comparing/solo regime (browser-harness finding). This derived mints
+  // a fresh identity whenever the display state (visibility/solo/hover/readings/log) changes.
+  const styleOfLive = $derived.by(() => {
+    void rdg.comparing(currentReadings);
+    void soloReading;
+    void hoverNote;
+    void rev;
+    return (id: string) => markerStyleOf(id);
+  });
   function markerStyleOf(id: string): MarkerStyle | undefined {
     const a = objAnnotations.find((x) => x.id === id);
     if (!a) return undefined;
     const rid = (a as Record<string, unknown>)["archie:reading"] as string | undefined;
     const colour = (rid ? currentReadings.find((r) => r.id === rid)?.colour : undefined) ?? BASE_MARKER;
-    const m = emphasisModifiers(emphasisOf(a));
-    return { fill: colour, fillOpacity: Math.min(1, 0.18 * m.opacityMul), stroke: colour, strokeOpacity: Math.min(1, 0.95 * m.opacityMul), strokeWidth: 2 * m.strokeWidthMul };
+    // ONE style source for both apps (render-core readingMarkerStyle) carrying the comparing
+    // regime (archie-ux Q-2): 2+ readings visible → outline-only; solo-on-hover restores a fill.
+    return readingMarkerStyle(colour, emphasisOf(a), {
+      comparing: rdg.comparing(currentReadings),
+      soloed: soloReading !== null && (rid ?? "base") === soloReading,
+      highlighted: hoverNote === id, // the hovered list note's mark is momentarily the brightest thing
+    });
   }
 
   // --- canvas lifecycle ---
@@ -951,7 +977,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
       framingSectionId = null;
       return;
     }
-    const id = session.createNote({ target: a.target, ...(readingFilter !== "all" && readingFilter !== "base" ? { reading: readingFilter } : {}) });
+    const id = session.createNote({ target: a.target, ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
     bump();
     selected = id;
     creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
@@ -1117,25 +1143,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // collection.json + the Gallery list all exhibits). Each exhibit's notes live in its own log.
   function buildFullLibrary(opts: { includeTemplates?: boolean } = {}): Library {
     // Exclude bundled EXAMPLE exhibits by default (CONTEXT §"Local view loop": "avoid the template
-    // ones, or opt-in") — a template is a Playground example, not the author's content. Reuses the
-    // existing isTemplate machinery; opt-in via includeTemplates for a populated demo publish.
-    const source = opts.includeTemplates ? lib.meta.exhibits : lib.meta.exhibits.filter((ex) => !isTemplate(ex.slug));
-    return {
-      id: "demo",
-      title: lib.meta.title ?? PROJECT_TITLE,
-      ...(lib.meta.summary ? { summary: lib.meta.summary } : {}),
-      ...rightsOf(lib.meta),
-      exhibits: source.map((ex) => ({
-        id: ex.id, slug: ex.slug, title: ex.title,
-        ...(ex.summary ? { summary: ex.summary } : {}),
-        ...(ex.layout ? { layout: ex.layout } : {}),
-        ...(ex.mode ? { mode: ex.mode } : {}),
-        ...(ex.sections && ex.sections.length ? { sections: ex.sections } : {}),
-        ...(ex.readings && ex.readings.length ? { readings: ex.readings } : {}),
-        ...rightsOf(ex),
-        objects: ex.objects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.summary ? { summary: o.summary } : {}), ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}), ...(o.provenance?.originalName ? { originalName: o.provenance.originalName } : {}), ...rightsOf(o) })),
-      })),
-    };
+    // ones, or opt-in") — a template is a Playground example, not the author's content. The mapping
+    // itself is core's workingToLibrary (Q-3: one mapper with the Viewer's live source, no drift);
+    // the Studio passes its LIVE template set — a reclaimed sunset slug can be RELEASED back to the
+    // user (onMount reconcile), which seedVersion presence alone can't see.
+    return workingToLibrary(lib.meta, {
+      fallbackTitle: PROJECT_TITLE,
+      ...(opts.includeTemplates !== undefined ? { includeTemplates: opts.includeTemplates } : {}),
+      isTemplate: (ex: ExhibitMeta) => isTemplate(ex.slug),
+    });
   }
   /** Spread the present `RightsFields` (credit/license) off a store meta — used at every level in
    *  buildFullLibrary so library/exhibit/object project their authored rights (rights grill Phase 2). */
@@ -1154,250 +1170,33 @@ import LayoutPicker from "./LayoutPicker.svelte";
     return map;
   }
 
-  async function download() {
-    // A.1 (LARGE-MEDIA-MEMORY-CEILING #3): build the publish tree, then STREAM the zip straight to a
-    // file handle on Chromium (showSaveFilePicker) so the archive never fully materializes; elsewhere
-    // fall back to the eager in-memory zip + anchor download. The 2× size guard applies ONLY to that
-    // eager path — streaming holds ≈1× (the Map), not the zip copy on top.
-    if (!supportsFileStreamSave() && !(await zipSizeOk())) return false; // large-library guard (#1), eager path only
-    const logs = await loadAllLogs();
-    const { fs, brokenLinks } = await libraryToZipFs(buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset: (slug, name) => readAssetBlob(slug, name) });
-    if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
-    // Returns whether a save actually HAPPENED — the dialog's done-download phase must not claim a
-    // save the user cancelled in the picker (review: silent-failure family).
-    try {
-      await saveZipToDisk(fs, zipNameFor(PROJECT_TITLE));
-      return true;
-    } catch (e) {
-      if ((e as Error)?.name === "AbortError") return false; // picker cancelled — not an error
-      throw e;
-    }
-  }
-
-  // --- publish (GH-Pages) ---
-  let publishOpen = $state(false);
-  let brokenLinks = $state<BrokenLink[]>([]); // intra-Library links that degrade to plain text on publish (surfaced in the dialog)
-  let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish (no second projection)
-  // Project the Library into the static site tree (in a MemoryFilesystem). Same projection the zip uses
-  // — different sink. getAsset writes imported-image bytes in so collectFiles base64-encodes them for GH.
-  // withOriginals (opt-in, chosen in the dialog) re-projects with preserved source files included.
-  async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[] }> {
-    const logs = await loadAllLogs();
-    const fs = new MemoryFilesystem();
-    const { brokenLinks } = await publishLibrary(fs, buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
-    if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
-    return { fs, brokenLinks };
-  }
-  // Flatten the projected tree to the path→FileContent map the git-trees push consumes. A no-originals
-  // publish reuses the tree openPublish already built; an originals publish re-projects (rare, opt-in).
-  async function collectSiteFiles(withOriginals = false) {
-    const fs = withOriginals || !cachedSiteFs ? (await projectSite(withOriginals)).fs : cachedSiteFs;
-    return collectFiles(await fs.root());
-  }
-  // includeOriginals (opt-in from the Publish dialog) ships preserved originals to the public site for citation.
-  // onProgress (from the dialog) reports the upload/commit/Pages steps so the long push isn't opaque.
-  const publish = async (target: GitHubTarget, opts?: { includeOriginals?: boolean }, onProgress?: (p: PublishProgress) => void) =>
-    publishToGitHub(await collectSiteFiles(opts?.includeOriginals ?? false), target, onProgress);
-  // Size guard for the publish path — parity with download's zipSizeOk (publish has no streaming and
-  // uploads file-by-file, so a huge library risks GitHub rate limits). Same threshold; publish-specific steer.
-  async function publishSizeOk(): Promise<boolean> {
-    const bytes = await estimateLibraryBytes();
-    if (bytes < ZIP_WARN_BYTES) return true;
-    const mb = Math.round(bytes / (1024 * 1024));
-    return window.confirm(`This library is about ${mb} MB. Publishing uploads every file to GitHub one at a time, so a library this size may be slow or hit GitHub's rate limits.\n\nPublish anyway?`);
-  }
-  // Open the GitHub dialog immediately (no invisible gap), then project ONCE: caches the tree for the
-  // publish itself and surfaces broken intra-Library links so the author sees them before publishing.
-  async function openPublish() {
-    if (!(await publishSizeOk())) return; // size guard before the network push (its confirm IS the feedback)
-    brokenLinks = [];
-    cachedSiteFs = null;
-    publishOpen = true;
-    const { fs, brokenLinks: bl } = await projectSite(false);
-    cachedSiteFs = fs;
-    brokenLinks = bl;
-  }
-
-  // Unified Publish menu (CONTEXT §"Local view loop") — ONE entry, two destinations: Locally (preview
-  // in the Viewer) or GitHub Pages. The menu makes the host choice; each opens its flow dialog.
-  // Templates already excluded by buildFullLibrary; "publish = same tree → per-host adapter".
-  let publishDialogOpen = $state(false);
-  /** Local flow: pick a folder + write the published tree; returns the folder name (null = cancelled). */
-  async function localPublishFolder(): Promise<string | null> {
-    await save(); // flush current edits so the published tree is current
-    const handle = await pickFolder();
-    if (!handle) return null;
-    await writeToFolder(handle);
-    return handle.name;
-  }
-  /** Local flow (non-Chromium, no folder picker): save the project zip; returns its filename. */
-  async function localPublishZip(): Promise<string> {
-    await save();
-    await downloadProjectZip();
-    return binding.kind === "file" && binding.name ? binding.name : zipNameFor(PROJECT_TITLE);
-  }
-
-  // --- Library-binding actions (invention #3). The persistence PRIMITIVES are reused as-is
-  // (publishLibrary→folder · libraryToZip→download · loadLibrary←both) — the invention is the model +
-  // chrome, not new plumbing. Folder = autosave-in-place (Chromium); file = explicit Save downloads the zip. ---
-  const getAsset = (slug: string, name: string) => readAssetBlob(slug, name);
-  let folderHandle: FileSystemDirectoryHandle | null = null; // cached so autosave doesn't re-hit IndexedDB
-  let autosaving = false;
-  /** Mark the Library unsaved-to-disk (only meaningful once bound). */
-  function touchBinding() { if (binding.kind !== "unbound") bindingDirty = true; }
-  function rememberBinding() {
-    saveLastBinding(binding);
-    const rec = recentFromBinding(binding, Date.now());
-    if (rec) { recents = addRecent(recents, rec); saveRecents(recents); }
-  }
-  /** Write the whole published tree into a bound folder (the git / GH-Pages on-ramp). */
-  async function writeToFolder(handle: FileSystemDirectoryHandle) {
-    const logs = await loadAllLogs();
-    await publishLibrary(new FsaFilesystem(handle), buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset });
-  }
-  // --- large-library memory guard (LARGE-MEDIA-MEMORY-CEILING #1): the .archie.zip is built ENTIRELY in
-  // memory (~2× peak), so before a zip Save we sum the imported assets (metadata only — File.size, no byte
-  // read) and, over a threshold, warn + STEER to the streaming sink (folder) or the no-bundle path (URL).
-  // The folder sink streams to disk and isn't guarded; external-URL media is referenced, never summed. ---
-  const ZIP_WARN_BYTES = 250 * 1024 * 1024; // ~250 MB
-  async function estimateLibraryBytes(): Promise<number> {
-    let total = 0;
-    for (const ex of lib.meta.exhibits) {
-      for (const o of ex.objects) {
-        if (isAsset(o.source)) total += await assetSize(ex.slug, o.source.slice(ASSET_PREFIX.length));
-      }
-    }
-    return total;
-  }
-  /** True = ok to build the in-memory zip. Over the threshold, confirm + steer (folder / link-by-URL). */
-  async function zipSizeOk(): Promise<boolean> {
-    const bytes = await estimateLibraryBytes();
-    if (bytes < ZIP_WARN_BYTES) return true;
-    const mb = Math.round(bytes / (1024 * 1024));
-    const steer = canFolder
-      ? "On this browser, “Save to disk” → choose a folder writes straight to disk without holding the whole archive in memory — better for a library this size."
-      : "Tip: link large media by URL (paste a source URL in “+ Object”) so the archive references it instead of bundling the bytes.";
-    return window.confirm(`This library is about ${mb} MB. A single .archie.zip is built entirely in memory and may be slow or fail on a library this large.\n\n${steer}\n\nBuild the zip anyway?`);
-  }
-  /** Download the whole library as a .archie.zip (non-Chromium "the zip IS the file"). False = user declined. */
-  async function downloadProjectZip(): Promise<boolean> {
-    if (!supportsFileStreamSave() && !(await zipSizeOk())) return false; // size guard (#1), eager path only
-    const logs = await loadAllLogs();
-    const { fs } = await libraryToZipFs(buildFullLibrary(), (id) => logs[id] ?? [], { baseUrl: BASE, getAsset });
-    const name = binding.kind === "file" && binding.name ? binding.name : zipNameFor(PROJECT_TITLE);
-    const r = await saveZipToDisk(fs, name); // Chromium streams to disk (A.1); else eager download
-    return r.kind !== "cancelled"; // dismissed the picker → stay unsaved
-  }
-  /** Re-acquire a folder binding's handle + permission (needs a user gesture). Null + bindingError if lost. */
-  async function reacquireFolder(): Promise<FileSystemDirectoryHandle | null> {
-    if (binding.kind !== "folder") return null;
-    const handle = folderHandle ?? (binding.handleKey ? await getHandle(binding.handleKey) : null);
-    if (!handle) { bindingError = `Couldn't find "${binding.name}" — save as a new project to keep working.`; return null; }
-    if ((await requestPermission(handle)) !== "granted") { bindingError = `Access to "${binding.name}" was declined — grant it, or save as a new project.`; return null; }
-    folderHandle = handle;
-    return handle;
-  }
-  /** Save to the bound location; if unbound, establish a binding (Save As). ⌘S / the Library Save button. */
-  async function saveProject() {
-    if (bindingBusy) return;
-    bindingBusy = true; bindingError = null;
-    try {
-      await save(); // flush the current exhibit's edits to OPFS so the published tree is current
-      if (binding.kind === "unbound") {
-        if (canFolder) {
-          const handle = await pickFolder();
-          if (!handle) return;
-          folderHandle = handle;
-          binding = { kind: "folder", name: handle.name, handleKey: crypto.randomUUID() };
-          await putHandle(binding.handleKey!, handle);
-          await writeToFolder(handle);
-        } else {
-          binding = { kind: "file", name: zipNameFor(PROJECT_TITLE) };
-          if (!(await downloadProjectZip())) return; // declined the large-library zip → stay unsaved
-        }
-      } else if (binding.kind === "folder") {
-        const handle = await reacquireFolder();
-        if (!handle) return;
-        await writeToFolder(handle);
-      } else {
-        if (!(await downloadProjectZip())) return; // declined the large-library zip → stay unsaved
-      }
-      bindingDirty = false;
-      rememberBinding();
-    } finally { bindingBusy = false; }
-  }
-  /** Open a folder as the project (Chromium): pick → loadLibrary ← FsaFilesystem → replace OPFS project. */
-  async function openProjectFolder() {
-    if (bindingBusy) return;
-    const handle = await pickFolder();
-    if (!handle) return;
-    bindingBusy = true; bindingError = null;
-    try {
-      let loaded: Awaited<ReturnType<typeof loadLibrary>>;
-      try { loaded = await loadLibrary(new FsaFilesystem(handle)); }
-      catch { window.alert("That folder doesn't hold an Archie library (no collection.json)."); return; }
-      if (loaded.library.exhibits.length === 0) { window.alert("That folder has no exhibits."); return; }
-      if (!window.confirm("Open this folder as your project? Your current project will be replaced.")) return;
-      await replaceProjectFrom(loaded);
-      folderHandle = handle;
-      binding = { kind: "folder", name: handle.name, handleKey: crypto.randomUUID() };
-      await putHandle(binding.handleKey!, handle);
-      bindingDirty = false; rememberBinding();
-    } finally { bindingBusy = false; }
-  }
+  // The publish flows (worklist 0.3 cut 2): every Library→world path — the unified Publish menu's
+  // two destinations (local folder / GitHub Pages), the zip download, the site projection + cache,
+  // broken-links advisory, and the large-library size guards — lives in publish-flows.svelte.ts.
+  // Deps are function declarations above (hoisted) or deferred reads of `bnd` (created below;
+  // called only at action time, never during init).
+  const pub = createPublishFlows({
+    baseUrl: BASE,
+    flushExhibit: () => save(),
+    loadAllLogs,
+    buildFullLibrary: () => buildFullLibrary(),
+    exhibits: () => lib.meta.exhibits,
+    canFolder: () => bnd.canFolder,
+    currentZipName: () => (bnd.binding.kind === "file" && bnd.binding.name ? bnd.binding.name : zipNameFor(PROJECT_TITLE)),
+  });
+  // The binding store (worklist 0.3 cut 1): the three-configs state machine + its Save/Open/Close/
+  // autosave flows live in binding-store.svelte.ts; its disk sinks come from the publish flows.
+  const bnd = createBindingStore({
+    flushExhibit: () => save(),
+    writeToFolder: (h) => pub.writeToFolder(h),
+    downloadProjectZip: () => pub.downloadProjectZip(),
+    replaceProjectFrom,
+    zipName: () => zipNameFor(PROJECT_TITLE),
+  });
   /** The capability-routed Open (folder on Chromium, else the zip file picker). */
-  function openProject() { if (canFolder) void openProjectFolder(); else zipInputEl?.click(); }
-  /** Re-open a remembered project. Folder + reopenable → re-acquire its stored handle; else → the picker
-   *  (browser security forbids silent file re-open — recents are hints, the "Word-doc 2003" model). */
-  async function openRecent(r: RecentProject) {
-    if (bindingBusy) return;
-    if (!(r.kind === "folder" && r.reopenable)) { openProject(); return; }
-    bindingBusy = true; bindingError = null;
-    try {
-      const handle = await getHandle(r.id);
-      if (!handle || (await requestPermission(handle)) !== "granted") {
-        bindingError = `Couldn't reopen "${r.name}" — open it again to re-grant access.`; return;
-      }
-      let loaded: Awaited<ReturnType<typeof loadLibrary>>;
-      try { loaded = await loadLibrary(new FsaFilesystem(handle)); }
-      catch { bindingError = `"${r.name}" no longer holds an Archie library.`; return; }
-      if (!window.confirm(`Open "${r.name}"? Your current project will be replaced.`)) return;
-      await replaceProjectFrom(loaded);
-      folderHandle = handle;
-      binding = { kind: "folder", name: handle.name, handleKey: r.id };
-      bindingDirty = false; rememberBinding();
-    } finally { bindingBusy = false; }
-  }
-  function forgetRecent(r: RecentProject) {
-    recents = removeRecent(recents, r.id);
-    saveRecents(recents);
-    if (r.kind === "folder") void deleteHandle(r.id);
-  }
-  /** Detach from disk → back to this-browser-only. Keeps the OPFS working copy (Close ≠ delete). */
-  function closeProject() {
-    if (binding.kind === "folder" && binding.handleKey) void deleteHandle(binding.handleKey);
-    folderHandle = null;
-    binding = { kind: "unbound" };
-    bindingError = null; bindingDirty = false;
-    saveLastBinding(binding);
-  }
-  /** Folder autosave-in-place: mirror the tree to the bound folder after an OPFS save(). Fire-and-forget,
-   *  guarded against overlap; if permission isn't yet granted it leaves bindingDirty for the explicit Save. */
-  async function autosaveToFolder() {
-    if (binding.kind !== "folder" || autosaving) return;
-    autosaving = true;
-    try {
-      const handle = folderHandle ?? (binding.handleKey ? await getHandle(binding.handleKey) : null);
-      if (handle && (await requestPermission(handle)) === "granted") {
-        folderHandle = handle;
-        await writeToFolder(handle);
-        bindingDirty = false;
-      }
-    } catch { /* keep bindingDirty; explicit Save will surface the error */ }
-    finally { autosaving = false; }
-  }
+  function openProject() { if (bnd.canFolder) void bnd.openProjectFolder(); else zipInputEl?.click(); }
   function onBindingKey(e: KeyboardEvent) {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); void saveProject(); }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); void bnd.saveProject(); }
   }
 </script>
 
@@ -1425,18 +1224,18 @@ import LayoutPicker from "./LayoutPicker.svelte";
     oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => window.alert(`Folder import failed: ${String(e)}`)); }}
     oncreatefrommanifest={(url) => { newExhibitFromManifest(url).catch((e) => window.alert(`Manifest import failed: ${String(e)}`)); }}
     {isTemplate}
-    {binding}
-    {bindingDirty}
-    {bindingBusy}
-    {bindingError}
-    {recents}
-    onsave={saveProject}
+    binding={bnd.binding}
+    bindingDirty={bnd.dirty}
+    bindingBusy={bnd.busy}
+    bindingError={bnd.error}
+    recents={bnd.recents}
+    onsave={() => void bnd.saveProject()}
     onopenproject={openProject}
-    onopenrecent={openRecent}
-    onforgetrecent={forgetRecent}
-    onclose={closeProject}
-    onrecover={() => { closeProject(); void saveProject(); }}
-    ondismisserror={() => (bindingError = null)}
+    onopenrecent={(r) => void bnd.openRecent(r, openProject)}
+    onforgetrecent={(r) => bnd.forgetRecent(r)}
+    onclose={() => bnd.closeProject()}
+    onrecover={() => { bnd.closeProject(); void bnd.saveProject(); }}
+    ondismisserror={() => bnd.dismissError()}
     rights={{ ...(lib.meta.rights ? { rights: lib.meta.rights } : {}), ...(lib.meta.requiredStatement ? { requiredStatement: lib.meta.requiredStatement } : {}) }}
     onrights={setLibraryRights}
     libTitle={lib.meta.title}
@@ -1474,24 +1273,19 @@ import LayoutPicker from "./LayoutPicker.svelte";
     <span class="spacer"></span>
     <!-- ADR-0011: no persistent tool palette. Selection is ambient; drawing arms only from a CREATE act
          ("New note" in the notes pane, or narrative camera framing). -->
-    <label>Reading
-      <select bind:value={readingFilter}>
-        <option value="all">All notes</option>
-        <option value="base">Base only</option>
-        {#each currentReadings as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
-      </select>
-    </label>
-    <button class="add-reading" onclick={() => (readingsOpen = true)} title="Name, colour, and describe the ways of reading this source — rival readings coexist, never merged">✎ Readings…</button>
+    <!-- The reading dropdown is RETIRED (archie-ux Q-2, grill Q3): the RAIL on the canvas is the
+         one home for visibility + the pen; "Manage readings…" on the rail opens the modal. -->
     <button class="layout-trigger" onclick={() => (layoutPickerOpen = true)} title="How visitors read this exhibit (reading intent)">▦ {currentLayout}</button>
     {#if storeReady}
-      <span class="savestate" class:dirty>{dirty ? "● Unsaved" : "Saved"}</span>
+      <span class="savestate" class:dirty class:error={saveStatus.health === "error"} title={saveStatus.error ?? undefined}>
+        {saveStatus.health === "error" ? "⚠ Save failed" : dirty ? "● Unsaved" : "Saved"}</span>
       <button onclick={() => void save()} disabled={!dirty}>Save</button>
     {/if}
-    <button onclick={() => (publishDialogOpen = true)}>Publish & Share…</button>
+    <button onclick={() => pub.openDialog()}>Publish & Share…</button>
     <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
   </header>
 
-  <ReadingsModal open={readingsOpen} readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => (readingFilter = id)} onclose={() => (readingsOpen = false)} />
+  <ReadingsModal open={readingsOpen} readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => rdg.setActive(id)} onclose={() => (readingsOpen = false)} />
 
   {#if isTemplate(currentSlug)}
     <!-- Per-exhibit playground banner (§115): an EXAMPLE is a template — exploring it is honest play,
@@ -1547,6 +1341,14 @@ import LayoutPicker from "./LayoutPicker.svelte";
       <span class="fb-tag">Framing camera</span>
       <span class="fb-msg">{isAvCurrent ? "Use “Set in” on the recording to mark this section’s moment." : "Draw a box on the canvas to frame this section’s camera — it isn’t a note."}</span>
       <button class="fb-cancel" onclick={cancelFraming}>Cancel <kbd>Esc</kbd></button>
+    </div>
+  {:else if creating}
+    <!-- Worklist 1.2 (visible drawing mode): once armed, drag means DRAW where a second ago it meant
+         pan — the state must live somewhere besides the cursor. Same banner idiom as framing. -->
+    <div class="framing-banner" role="status">
+      <span class="fb-tag">Drawing a region</span>
+      <span class="fb-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the image — it becomes your note’s place. Drag pans again once you’ve drawn.</span>
+      <button class="fb-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
     </div>
   {/if}
 
@@ -1641,11 +1443,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
         {/if}
       {/if}
       {#if notes.length === 0}
-        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Play it, then “Set in” → “Add note” to mark a moment." : readingFilter === "all" ? "No notes on this object yet. Start a note above — choose Box or Outline, then draw the region." : readingFilter === "base" ? "No base notes here — switch Reading to “All notes”, or start a new note." : `No notes in the “${currentReadings.find((r) => r.id === readingFilter)?.name ?? readingFilter}” reading on this object.`}</p>
+        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Play it, then “Set in” → “Add note” to mark a moment." : objNotes.length > 0 ? "Notes here are hidden — show their readings in the rail on the canvas." : "No notes on this object yet. Start a note above — choose Box or Outline, then draw the region."}</p>
       {/if}
       <ul>
         {#each notes as r (r.rev)}
-          <li class:sel={editing === r.logicalId}>
+          <!-- Hovering a note solos its MARK on the canvas (the rail's hover affordance, per-note). -->
+          <li class:sel={editing === r.logicalId} onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}>
             <button onclick={() => (selected = r.logicalId)}>
               <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
               <div class="meta">
@@ -1691,6 +1494,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     </aside>
     <main
       bind:this={mainEl}
+      class:drawing={drawArmed}
       class:drag-over={dragOver}
       ondrop={onDrop}
       ondragover={(e) => { e.preventDefault(); dragOver = true; }}
@@ -1707,7 +1511,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
         {/key}
       {:else if current && assetsReady}
         {#key canvasId}
-          <Canvas source={currentSource} {canvasId} {annotations} tool={drawShape} drawing={drawArmed} styleOf={markerStyleOf} bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
+          <Canvas source={currentSource} {canvasId} {annotations} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
             onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
         {/key}
       {:else if current}
@@ -1727,19 +1531,29 @@ import LayoutPicker from "./LayoutPicker.svelte";
           {@render noteForm()}
         </div>
       {/if}
+
+      <!-- The readings RAIL (P-2 / archie-ux Q-2) — the permanent home: visibility set + the pen,
+           counts for THIS object, solo-on-hover, and the one "manage…" entry to the modal. -->
+      {#if current}
+        <ReadingsRail readings={currentReadings} {rdg}
+          countOf={(id) => objNotes.filter((r) => r.reading === id).length}
+          baseCount={objNotes.filter((r) => !r.reading).length}
+          onsolo={(k) => (soloReading = k)}
+          onmanage={() => (readingsOpen = true)} />
+      {/if}
     </main>
   </div>
 
   <PublishDialog
-    open={publishDialogOpen}
-    canFolder={canFolder}
-    onclose={() => (publishDialogOpen = false)}
-    onfolder={localPublishFolder}
-    onzip={localPublishZip}
-    ongithub={() => { publishDialogOpen = false; void openPublish(); }}
-    ondownload={download}
+    open={pub.dialogOpen}
+    canFolder={bnd.canFolder}
+    onclose={() => pub.closeDialog()}
+    onfolder={pub.localPublishFolder}
+    onzip={pub.localPublishZip}
+    ongithub={() => { pub.closeDialog(); void pub.openPublish(); }}
+    ondownload={pub.download}
   />
-  <Publish open={publishOpen} onclose={() => (publishOpen = false)} onpublish={publish} {brokenLinks} />
+  <Publish open={pub.publishOpen} onclose={() => pub.closePublish()} onpublish={pub.publish} brokenLinks={pub.brokenLinks} />
   <CmdK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />
   <MediaPicker open={mediaPickerOpen} title="Cite a note by its image" items={mediaPickerItems} onpick={pickVisualCite} onclose={() => (mediaPickerOpen = false)} />
 {/if}
@@ -1774,9 +1588,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .exhibit-back:hover { color: var(--accent-2); }
   .no-objects { font-family: var(--font-ui); font-size: 0.78rem; color: var(--ink-canvas-secondary); align-self: center; }
   .no-canvas { display: flex; align-items: center; justify-content: center; height: 100%; padding: var(--space-8); text-align: center; font-family: var(--font-body); font-size: 1.125rem; color: var(--ink-canvas-secondary); }
-  header label { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-secondary); display: flex; align-items: center; gap: var(--space-2); }
-
-  header select, header > button {
+  header > button {
     font-family: var(--font-ui); font-size: var(--text-ui-sm);
     padding: var(--space-1) var(--space-3);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-secondary);
@@ -1788,10 +1600,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
   header > button:disabled { color: var(--ink-canvas-muted); border-color: var(--border-canvas); cursor: default; }
   .savestate { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .savestate.dirty { color: var(--accent-2); }
-  /* Reading-colour picker (Archie-1489): colour dots beside the new-reading name input. */
-  .swatch { width: 15px; height: 15px; border-radius: 50%; padding: 0; cursor: pointer; border: 1px solid var(--border-canvas-emphasis); transition: box-shadow 100ms ease; }
-  /* Identity chip — your name in the shared history (invention #6); mono like other identifiers. */
-  .you { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: 999px; padding: 1px var(--space-3); }
+  .savestate.error { color: var(--semantic-error); }
+  /* (.swatch / .you rules removed — that UI moved into ReadingsModal/IdentityPrompt; the rules were dead.) */
   /* The ? shortcuts button — a round, quiet affordance for the cheat-sheet. */
   header > button.help-btn { border-radius: 999px; min-width: 1.9rem; padding: var(--space-1) 0; text-align: center; font-weight: 700; }
 
@@ -1899,6 +1709,9 @@ import LayoutPicker from "./LayoutPicker.svelte";
 
   .body { display: flex; flex: 1; min-height: 0; }
   main { flex: 1; min-width: 0; background: var(--surface-canvas); position: relative; }
+  /* Worklist 1.2: the armed canvas wears its mode — inset accent ring + crosshair, gone on disarm. */
+  main.drawing { cursor: crosshair; }
+  main.drawing::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 30; box-shadow: inset 0 0 0 3px var(--accent); }
   /* Drag-and-drop import feedback over the light table */
   main.drag-over { outline: 2px dashed var(--accent-2); outline-offset: -8px; }
 

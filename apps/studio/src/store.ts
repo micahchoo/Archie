@@ -7,7 +7,17 @@
 //   {PROJECT}/annotations/                       — the "sample" exhibit's annotations (LEGACY path,
 //                                                   kept so pre-multi-exhibit work isn't orphaned)
 //   {PROJECT}/exhibits/{slug}/annotations/       — every OTHER exhibit's annotations
-import { FsaFilesystem, type FsDirectory, type OrientationTransform, type MediaType, type Section, type Reading, type RightsFields } from "@render/core";
+import { FsaFilesystem, type FsDirectory, type WorkingLibraryMeta } from "@render/core";
+
+// The persisted working-store SHAPES live in core now (Q-3 archie-persistence: the Viewer's live
+// source reads the same format via loadWorkingLibrary). Re-exported under their original Studio
+// names so import sites stay stable; this module remains the WRITER of the layout.
+export type {
+  WorkingObjectProvenance as ObjectProvenance,
+  WorkingObjectMeta as ObjectMeta,
+  WorkingExhibitMeta as ExhibitMeta,
+  WorkingLibraryMeta as LibraryMeta,
+} from "@render/core";
 
 const PROJECT = "archie-demo-project";
 const SAMPLE_SLUG = "sample";
@@ -115,6 +125,11 @@ export async function saveLibraryMeta(meta: LibraryMeta): Promise<void> {
 // --- imported-image assets (binary; raw OPFS handles, NOT the JSON-oriented Filesystem seam) ---
 // Imported files persist at {PROJECT}/exhibits/{slug}/assets/{name}; an object stores
 // source "/assets/{name}" and resolves to a blob: URL at load time (see App.svelte assetUrls).
+
+/** The source prefix marking an object as an OPFS-imported asset (vs an external URL). */
+export const ASSET_PREFIX = "/assets/";
+/** Is this object source an imported OPFS asset? (One definition — App + publish flows share it.) */
+export const isAsset = (src: string | undefined): boolean => !!src && src.startsWith(ASSET_PREFIX);
 type OpfsRoot = { getDirectory?: () => Promise<FileSystemDirectoryHandle> };
 async function assetsDir(slug: string, create: boolean, sub = "assets"): Promise<FileSystemDirectoryHandle | null> {
   const storage = (navigator as Navigator & { storage?: OpfsRoot }).storage;
