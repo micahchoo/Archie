@@ -25,16 +25,21 @@ const APPS = {
   studio: {
     title: 'Studio (authoring)',
     filter: '@archie/studio',
-    expectedUrl: 'http://localhost:5173',
+    expectedUrl: 'http://localhost:5174/studio/',
     tag: '\x1b[35m[Studio]\x1b[0m',
   },
   viewer: {
     title: 'Viewer (reading)',
     filter: '@archie/viewer',
-    expectedUrl: 'http://localhost:4321',
+    expectedUrl: 'http://localhost:4321/',
     tag: '\x1b[36m[Viewer]\x1b[0m',
   },
 };
+
+// "both" runs the SINGLE-ORIGIN stack (Q-3): Studio + Viewer behind one front-door proxy at
+// FRONT_DOOR, mirroring the deployed layout. Same origin is what lets the Viewer show exhibits
+// you author in the Studio live (shared browser storage) — two separate ports cannot do that.
+const FRONT_DOOR = 'http://localhost:5173';
 
 main().catch((err) => {
   console.error(`\n  Something went wrong: ${err.message}\n`);
@@ -63,8 +68,21 @@ async function main() {
     return;
   }
 
-  const targets = choice === 'both' ? ['studio', 'viewer'] : [choice];
-  const children = targets.map((key) => startApp(pnpm, key));
+  const children = [];
+  if (choice === 'both') {
+    console.log('\n  Starting Studio + Viewer behind one front door (single origin) —');
+    console.log(`  exhibits you author in the Studio appear in the Viewer with a "Local" badge.`);
+    console.log(`    Studio: ${FRONT_DOOR}/studio/    Viewer: ${FRONT_DOOR}/viewer/`);
+    // Open the browser at the FRONT DOOR when the Studio is ready (not at the bare app ports —
+    // separate origins don't share the working store, the trap this stack exists to avoid).
+    children.push(startApp(pnpm, 'studio', { openUrl: `${FRONT_DOOR}/studio/` }));
+    // SITE_BASE makes Astro serve under /viewer/ so the front door's path routing lines up
+    // (scripts/dev.sh sets the same; without it the proxy 404s every /viewer/ request).
+    children.push(startApp(pnpm, 'viewer', { openUrl: null, env: { SITE_BASE: '/viewer/' } }));
+    children.push(startFrontDoor());
+  } else {
+    children.push(startApp(pnpm, choice));
+  }
 
   const shutdown = () => {
     console.log('\n  Stopping...');
@@ -88,7 +106,8 @@ function printHelp() {
 
     studio    start the Studio (authoring app)   -> ${APPS.studio.expectedUrl}
     viewer    start the Viewer (published site)  -> ${APPS.viewer.expectedUrl}
-    both      start both apps
+    both      start both behind ONE front door   -> ${FRONT_DOOR}/studio/ + ${FRONT_DOOR}/viewer/
+              (single origin: exhibits you author appear in the Viewer live, no publish step)
     install   install dependencies and exit
 
   With no argument, an interactive menu is shown.
@@ -144,15 +163,16 @@ function ensureInstalled(pnpm, force) {
   }
 }
 
-function startApp(pnpm, key) {
+function startApp(pnpm, key, opts = {}) {
   const app = APPS[key];
-  console.log(`\n  Starting ${app.title}... it will open in your browser when ready.`);
+  const willOpen = opts.openUrl !== null;
+  console.log(`\n  Starting ${app.title}...${willOpen ? ' it will open in your browser when ready.' : ''}`);
 
   const child = spawn(pnpm[0], [...pnpm.slice(1), '--filter', app.filter, 'dev'], {
     cwd: ROOT,
     shell: IS_WIN,
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, COREPACK_ENABLE_DOWNLOAD_PROMPT: '0' },
+    env: { ...process.env, COREPACK_ENABLE_DOWNLOAD_PROMPT: '0', ...(opts.env ?? {}) },
   });
 
   // Echo server output under a tag, and open the browser on the first
@@ -167,8 +187,13 @@ function startApp(pnpm, key) {
       const match = stripAnsi(text).match(/Local[:\s]+(https?:\/\/[\w.-]+:\d+\/?)/);
       if (match) {
         opened = true;
-        console.log(`\n  ${app.title} is ready: ${match[1]}\n`);
-        openBrowser(match[1]);
+        if (opts.openUrl !== null) {
+          const url = opts.openUrl ?? match[1];
+          console.log(`\n  ${app.title} is ready: ${url}\n`);
+          openBrowser(url);
+        } else {
+          console.log(`\n  ${app.title} is ready.\n`);
+        }
       }
     }
   };
@@ -181,6 +206,28 @@ function startApp(pnpm, key) {
     }
   });
 
+  return child;
+}
+
+// The single-origin front door (scripts/dev-proxy.mjs): /studio* → :5174, everything else → :4321.
+function startFrontDoor() {
+  const tag = '\x1b[33m[Door]\x1b[0m';
+  const child = spawn(process.execPath, [path.join(ROOT, 'scripts', 'dev-proxy.mjs')], {
+    cwd: ROOT,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  const onData = (data) => {
+    for (const line of data.toString().split('\n')) {
+      if (line.trim()) console.log(`  ${tag} ${line.trimEnd()}`);
+    }
+  };
+  child.stdout.on('data', onData);
+  child.stderr.on('data', onData);
+  child.on('exit', (code) => {
+    if (code !== null && code !== 0) {
+      console.error(`\n  Front door stopped unexpectedly (exit code ${code}).`);
+    }
+  });
   return child;
 }
 
@@ -216,7 +263,7 @@ function askChoice() {
 
     1) Start the Studio (create and edit exhibits)     ${APPS.studio.expectedUrl}
     2) Start the Viewer (browse the published site)    ${APPS.viewer.expectedUrl}
-    3) Start both
+    3) Start both — one address (${FRONT_DOOR}); what you author shows in the Viewer live
     4) Install dependencies only
     q) Quit
 `);
