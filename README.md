@@ -106,25 +106,39 @@ pnpm typecheck          # type-check every package + app
 pnpm test               # run the test suite (~420 tests)
 ```
 
-**Run the Studio (authoring):**
+**Run both apps (recommended):**
 
 ```bash
-pnpm --filter @archie/studio dev      # opens http://localhost:5173
+node scripts/start.mjs both           # or: bash scripts/dev.sh
 ```
 
-Pick or create an exhibit, draw a region, attach a note, publish.
+One front door at **http://localhost:5173** — the Studio at [`/studio/`](http://localhost:5173/studio/), the Viewer at [`/viewer/`](http://localhost:5173/viewer/), mirroring the deployed layout. Running both on **one origin** is what makes the live loop work (see [Author locally, see it live](#author-locally-see-it-live) below). Don't start the two dev servers separately if you want that loop — separate ports are separate origins, and the Viewer can't see the Studio's working store across origins.
 
-**Run the Viewer (reading):**
+**Run one app alone:**
 
 ```bash
-pnpm --filter @archie/viewer gen      # generate the published tree
-pnpm --filter @archie/viewer dev      # opens http://localhost:4321
+pnpm --filter @archie/studio dev      # Studio only → http://localhost:5174/studio/
+pnpm --filter @archie/viewer dev      # Viewer only → http://localhost:4321 (gen runs first)
 ```
 
-Target a single workspace with `--filter`, e.g. `pnpm --filter @render/core test`.
+Pick or create an exhibit, draw a region, attach a note. Target a single workspace with `--filter`, e.g. `pnpm --filter @render/core test`.
 
 > [!IMPORTANT]
 > The repo needs Node.js 22+. Older versions fail with a `node:sqlite` engine error inside pnpm. Switch first — e.g. `fnm use 24` or `nvm install 24 && nvm use 24`.
+
+## Author locally, see it live
+
+Clone the repo, create exhibits, and watch them appear in the Viewer — **no publish step, no import**:
+
+1. Start both apps behind the front door: `node scripts/start.mjs both` (menu option 3).
+2. Author in the **Studio** (http://localhost:5173/studio/) — create an exhibit, import an image folder, draw regions, write notes. Your work autosaves to the browser's private storage.
+3. Open (or reload) the **Viewer** (http://localhost:5173/viewer/) — your exhibit is in the hall, marked **Local**, alongside the bundled published exhibits.
+
+This works because the Studio and the Viewer are two apps over **one canonical store**: served from the same origin, the Viewer reads the Studio's working copy directly and projects it through the same pipeline a real publish uses. The same loop works on a deployed co-deploy (GitHub Pages serves `/studio/` and `/viewer/` from one origin too).
+
+The **Local** badge marks the boundary: *local* means only you can see it, in this browser. **Publish** is what makes an exhibit public and citable — it bakes the static tree (IIIF manifests, durable per-note anchors), which you commit and deploy. Committed exhibits in `apps/viewer/public/published/` survive regeneration: the generator rewrites only the bundled samples and carries everything else, so publishing your own exhibits into the tree and deploying them is safe.
+
+Caveats: the live loop reads the browser-private (OPFS) working store, so it covers unbound projects in v1 — a project bound to a folder or `.archie.zip` shows in the Viewer after a publish instead. New exhibits appear when the Viewer loads; reload the tab to pick up fresh edits.
 
 ## The bundled demo
 
