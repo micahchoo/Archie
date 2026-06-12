@@ -6,7 +6,8 @@
 //    URLs — entered via `openPortableLibrary(fs)`. The read itself is core's `loadPortableExhibit`
 //    (ADR-0010 seam). Both sources return the SAME shapes, so ViewerShell/ExhibitView are source-agnostic.
 import {
-  ZipFilesystem, loadPortableExhibit, loadPortableGallery, readExhibitTree,
+  ZipFilesystem, FsaFilesystem, MemoryFilesystem, loadPortableExhibit, loadPortableGallery, readExhibitTree,
+  loadWorkingLibrary, publishLibrary, asClientId,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit,
 } from "@render/core";
 
@@ -38,6 +39,54 @@ export function closePortableLibrary(): void {
 /** True when a `.archie.zip` is open (portable mode); hosted otherwise. */
 export function isPortable(): boolean {
   return portableFs !== null;
+}
+// ----------------------------------------------------------------------------------------------
+
+// --- live source (Q-3 archie-persistence): the same-origin Studio working store ----------------
+// One canonical store, two apps: the Studio WRITES the working store (OPFS); a Viewer served from
+// the SAME ORIGIN (the GH-Pages co-deploy / the single-origin dev proxy) READS it — an authored
+// exhibit appears here with NO publish step. The library is projected in-memory through the SAME
+// `publishLibrary` the durable publish uses, then read through the SAME portable seam (ADR-0010):
+// live mode is "portable mode over an in-memory projection of the working store". A cross-origin
+// deployment simply never finds the store — the probe quietly returns false and the Viewer behaves
+// exactly as before. Live is additive, never load-bearing.
+let liveFs: MemoryFilesystem | null = null;
+let liveSlugs: ReadonlySet<string> = new Set();
+let liveRevoke: (() => void) | null = null;
+
+/** Is this slug served from the live working store? Drives the Gallery's "Local" badge — local =
+ *  only you can see it, in this browser; PUBLISH is what puts it on the web (citable). */
+export function isLiveSlug(slug: string): boolean {
+  return liveSlugs.has(slug);
+}
+
+/**
+ * Probe the same-origin Studio working store (OPFS) and project it into an in-memory published
+ * tree. True = live exhibits joined the hall. Quiet no on every miss — no OPFS, no store, nothing
+ * authored (templates don't count), or a failed read — with one console line either way: the probe
+ * outcome must be observable, or "why isn't my exhibit here" is undebuggable (Q-3).
+ */
+export async function initLiveSource(): Promise<boolean> {
+  try {
+    const storage = (navigator as Navigator & { storage?: { getDirectory?: () => Promise<FileSystemDirectoryHandle> } }).storage;
+    if (!storage?.getDirectory) return false; // no OPFS on this browser — published sources only
+    const working = await loadWorkingLibrary(new FsaFilesystem(await storage.getDirectory()), { editor: asClientId("viewer-live") });
+    if (!working || working.library.exhibits.length === 0) {
+      console.info("Archie: no local working library here — showing published exhibits only");
+      return false;
+    }
+    const mem = new MemoryFilesystem();
+    await publishLibrary(mem, working.library, working.getLog, { baseUrl: `${PUBLISHED}/`, getAsset: working.getAsset });
+    liveFs = mem;
+    liveSlugs = new Set(working.library.exhibits.map((e) => e.slug));
+    console.info(`Archie: live source on — ${liveSlugs.size} local exhibit(s) read from this browser's Studio working store`);
+    return true;
+  } catch (e) {
+    console.warn("Archie: live-source probe failed — showing published exhibits only", e);
+    liveFs = null;
+    liveSlugs = new Set();
+    return false;
+  }
 }
 // ----------------------------------------------------------------------------------------------
 
@@ -116,10 +165,38 @@ export async function openLibraryFromSrc(url: string, maxBytes: number = SRC_MAX
 }
 // ----------------------------------------------------------------------------------------------
 
-/** The Library Gallery source — `exhibits.json`. Hosted: fetched. Portable: read from the zip. */
+/**
+ * Merge the live (working-store) gallery over the hosted one — live wins on a slug collision (the
+ * author's working copy fronts its published snapshot), and the live library's identity (the
+ * author's title/summary) fronts the hall. Pure — exported for tests.
+ */
+export function mergeGalleries(live: ExhibitsJson, hosted: ExhibitsJson | null): ExhibitsJson {
+  if (!hosted) return live;
+  const liveSet = new Set(live.exhibits.map((e) => e.slug));
+  return {
+    ...hosted,
+    library: live.library,
+    exhibits: [...live.exhibits, ...hosted.exhibits.filter((e) => !liveSet.has(e.slug))],
+  };
+}
+
+/** The Library Gallery source — `exhibits.json`. Hosted: fetched. Portable: read from the zip.
+ *  Live (Q-3): the working-store projection merges over hosted — and carries the hall alone when
+ *  no baked tree exists (a clone authoring locally before any publish). */
 export async function loadGallery(): Promise<ExhibitsJson> {
   if (portableFs) return loadPortableGallery(portableFs);
-  return fetchJson<ExhibitsJson>("exhibits.json");
+  let hosted: ExhibitsJson | null = null;
+  let hostedErr: unknown = null;
+  try {
+    hosted = await fetchJson<ExhibitsJson>("exhibits.json");
+  } catch (e) {
+    hostedErr = e; // only fatal when there's no live source to carry the hall
+  }
+  if (!liveFs) {
+    if (hosted) return hosted;
+    throw hostedErr;
+  }
+  return mergeGalleries(await loadPortableGallery(liveFs), hosted);
 }
 
 async function fetchJson<T>(path: string): Promise<T> {
@@ -145,6 +222,14 @@ export async function loadPublishedExhibit(slug: string): Promise<PublishedExhib
     portableRevoke?.();
     const { exhibit, revoke } = await loadPortableExhibit(portableFs, slug);
     portableRevoke = revoke;
+    return exhibit;
+  }
+  // Live (Q-3): a working-store exhibit reads through the SAME portable seam over the in-memory
+  // projection — blob lifecycle mirrors portable's (revoke the previous before minting the next).
+  if (liveFs && liveSlugs.has(slug)) {
+    liveRevoke?.();
+    const { exhibit, revoke } = await loadPortableExhibit(liveFs, slug);
+    liveRevoke = revoke;
     return exhibit;
   }
   // Hosted: the real deployed-consumer path — the shared reader (the domino) over the HTTP source.

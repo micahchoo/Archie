@@ -8,6 +8,7 @@
   import { parseRoute, breadcrumbFor, shouldRenderGalleryFromJson, type ViewerRoute, type ExhibitsJson } from "@render/core";
   import {
     loadGallery, probeViewerMode, openLibraryFromSrc, openLibraryFromFile, closePortableLibrary,
+    initLiveSource,
   } from "../published.js";
   import Gallery from "./Gallery.svelte";
   import ExhibitView from "./ExhibitView.svelte";
@@ -50,6 +51,9 @@
 
   async function boot() {
     route = parseRoute(location.hash);
+    // Live source (Q-3): probe the same-origin Studio working store BEFORE the gallery load so an
+    // authored exhibit appears with no publish step. Quiet no-op everywhere it can't apply.
+    await initLiveSource();
     // ?src= (ADR-0009): open the hosted zip first, then apply the rest of the route.
     if (route.src) {
       try {

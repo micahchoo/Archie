@@ -3,6 +3,7 @@
   // hardcoded stand-in array in index.astro). A uniform card grid on the warm gallery wall; cards
   // link via the hash router (#/<slug>) — the shell handles navigation, no page reload.
   import type { ExhibitsJson } from "@render/core";
+  import { isLiveSlug } from "../published.js";
   import Credit from "./Credit.svelte";
 
   let { gallery }: { gallery: ExhibitsJson } = $props();
@@ -28,7 +29,7 @@
           <a class="card" href={`#/${ex.slug}`}>
             <span class="cover" style={ex.cover ? `background-image:url(${ex.cover})` : ""}></span>
             <span class="caption">
-              <span class="title">{ex.title}</span>
+              <span class="title">{ex.title}{#if isLiveSlug(ex.slug)}<span class="local" title="Only you can see this — it lives in this browser's Studio working store. Publish puts it on the web.">Local</span>{/if}</span>
               {#if ex.description}<span class="desc">{ex.description}</span>{/if}
             </span>
           </a>
@@ -54,6 +55,12 @@
   .cover { display: block; aspect-ratio: 3 / 2; background-color: var(--surface-canvas); background-size: cover; background-position: center; border-bottom: 1px solid var(--border-paper); }
   .caption { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5) var(--space-5); }
   .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-paper-primary); }
+  /* Live working-store exhibit (Q-3) — "Local: only you can see this"; Publish is what makes it public. */
+  .local {
+    display: inline-block; vertical-align: middle; margin-left: var(--space-2); padding: 1px var(--space-2);
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.04em;
+    color: var(--accent); border: 1px solid var(--accent); border-radius: var(--radius-sm);
+  }
   .desc { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; color: var(--ink-paper-secondary); }
 
   .empty { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-8); border: 1px dashed var(--border-paper); border-radius: var(--radius-lg); }

@@ -3,10 +3,10 @@
 // resolved to blob URLs, and that the open/close/isPortable state machine behaves. The HOSTED branch
 // (HTTP fetch) is unchanged + exercised by the deployed app; not re-tested here (no server in-test).
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { ZipFilesystem, publishLibrary, appendNew, asClientId, type Library, type AnnotationLog } from "@render/core";
+import { ZipFilesystem, publishLibrary, appendNew, asClientId, type Library, type AnnotationLog, type ExhibitsJson } from "@render/core";
 import {
   openPortableLibrary, closePortableLibrary, isPortable, loadGallery, loadPublishedExhibit,
-  modeFromProbe, probeViewerMode, openLibraryFromFile, openLibraryFromSrc,
+  modeFromProbe, probeViewerMode, openLibraryFromFile, openLibraryFromSrc, mergeGalleries,
 } from "./published.js";
 
 const BASE = "https://u.gh.io/lib/";
@@ -123,5 +123,26 @@ describe("entry vectors (file + ?src=)", () => {
   it("openLibraryFromSrc throws on a non-OK response", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 403, headers: { get: () => null }, arrayBuffer: async () => new ArrayBuffer(0) } as unknown as Response)));
     await expect(openLibraryFromSrc("https://h/x.archie.zip")).rejects.toThrow(/403/);
+  });
+});
+
+// Live source (Q-3): the hall-merge invariants. The OPFS probe itself is browser-only
+// (BROWSER-VERIFY-OWED); the merge is the pure half.
+describe("mergeGalleries (live over hosted)", () => {
+  const card = (slug: string, order: number) => ({ slug, title: slug, order });
+  const live: ExhibitsJson = { library: { id: "demo", title: "My Library" }, exhibits: [card("mine", 0), card(SLUG, 1)], presentation: {} };
+  const hosted: ExhibitsJson = { library: { id: "L", title: "Samples" }, exhibits: [card(SLUG, 0), card("other", 1)], presentation: {} };
+
+  it("live alone carries the hall when no baked tree exists", () => {
+    expect(mergeGalleries(live, null)).toBe(live);
+  });
+
+  it("live wins a slug collision; hosted-only exhibits remain; the live library identity fronts", () => {
+    const merged = mergeGalleries(live, hosted);
+    expect(merged.library.title).toBe("My Library");
+    expect(merged.exhibits.map((e) => e.slug)).toEqual(["mine", SLUG, "other"]);
+    // The colliding slug is the LIVE entry (the author's working copy fronts its published snapshot).
+    expect(merged.exhibits.filter((e) => e.slug === SLUG)).toHaveLength(1);
+    expect(merged.exhibits.find((e) => e.slug === SLUG)!.order).toBe(1);
   });
 });
