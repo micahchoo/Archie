@@ -11,7 +11,7 @@
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import { renderMarkdown, type MarkerStyle } from "@render/svelte";
-  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
+  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
 
   let {
     objects = [],
@@ -77,6 +77,8 @@
   // was missing this entirely — a clicked marker selected but showed nothing, so notes never surfaced.
   const current = $derived(activeNotes.find((it) => it.id === selected));
   const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
+  // Geo readout (Q7): a Map note shows its centre lng/lat in the opened popup.
+  const geoCoord = $derived.by(() => { if (!current) return null; const g = geoOf(current); return g ? formatLngLat(geoCenter(g)) : null; });
   let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);
 </script>
 
@@ -128,6 +130,7 @@
       <button class="close" onclick={() => (selected = null)} aria-label="Close note">×</button>
       {#if noteParts.text}<div class="note-body">{@html renderMarkdown(noteParts.text)}</div>{/if}
       <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
+      {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">📍 {geoCoord}</p>{/if}
       {#if tagsOf(current).length}<div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>{/if}
     </div>
   {/if}
