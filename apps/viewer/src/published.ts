@@ -10,6 +10,7 @@ import {
   loadWorkingLibrary, publishLibrary, asClientId,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit,
 } from "@render/core";
+import { BASE } from "./published-base.js";
 
 const PUBLISHED = `${import.meta.env.BASE_URL}published`;
 
@@ -76,7 +77,11 @@ export async function initLiveSource(): Promise<boolean> {
       return false;
     }
     const mem = new MemoryFilesystem();
-    await publishLibrary(mem, working.library, working.getLog, { baseUrl: `${PUBLISHED}/`, getAsset: working.getAsset });
+    // baseUrl = BASE (the canonical IRI base the Studio writes annotation targets against), NOT the tree
+    // path `${PUBLISHED}/`: publishLibrary groups annotations by `targetSource(h) === ${baseUrl}{slug}/canvas/{id}`
+    // (site.ts), so a mismatched base silently drops EVERY live-source annotation (exposed by maps — only the
+    // live source carries them). baseUrl sets IRIs/identifiers only; the tree is read by relative path.
+    await publishLibrary(mem, working.library, working.getLog, { baseUrl: BASE, getAsset: working.getAsset });
     liveFs = mem;
     liveSlugs = new Set(working.library.exhibits.map((e) => e.slug));
     console.info(`Archie: live source on — ${liveSlugs.size} local exhibit(s) read from this browser's Studio working store`);
