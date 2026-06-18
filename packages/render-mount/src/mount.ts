@@ -14,7 +14,7 @@ import OpenSeadragon from "openseadragon";
 import { createOSDAnnotator, W3CImageFormat, UserSelectAction } from "@annotorious/openseadragon";
 import type { ImageAnnotation, W3CImageAnnotation } from "@annotorious/openseadragon";
 import { mountPlugin } from "@annotorious/plugin-tools";
-import { resolveTileSource, isDegenerateSelectorValue, selectorBBox } from "@render/core";
+import { resolveTileSource, isDegenerateSelectorValue, selectorBBox, regionPixelRect } from "@render/core";
 import { dispatchFitBounds, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
@@ -86,6 +86,33 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       reject(new Error(`OpenSeadragon failed to open image: ${e.message ?? "unknown"}`)),
     );
   });
+
+  // Bounded Map extent (ADR-0015, Option A): the tile source is the whole world; constrain the VIEWPORT to
+  // the authored region so the reader opens framed and can't pan/zoom out past `bounds`. World pixels are
+  // bounds-independent, so annotation pixel selectors never move when the extent changes. The tile-URL math
+  // stays the verified whole-world path (R8-free). [browser-verify-owed: OSD pan/zoom runtime behavior.]
+  if (ts.kind === "xyz" && ts.bounds) {
+    const r = regionPixelRect(ts); // region rectangle in WORLD image pixels
+    const region = viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(r.x, r.y, r.w, r.h));
+    viewer.viewport.fitBounds(region, true); // open framed on the region
+    const minZoom = viewer.viewport.getZoom(true); // the region-fit zoom = the floor for zooming out
+    // Soft constraint: once a gesture settles, floor the zoom and nudge the centre back so the view stays
+    // within the region. Each branch acts only when out of bounds, so the clamp converges (no event loop).
+    const clampToRegion = (): void => {
+      if (viewer.viewport.getZoom() < minZoom - 1e-9) {
+        viewer.viewport.zoomTo(minZoom, undefined, true); // can't zoom out past the framed region
+        return; // the next settle pass handles panning
+      }
+      const b = viewer.viewport.getBounds();
+      const c = viewer.viewport.getCenter();
+      let cx = c.x;
+      let cy = c.y;
+      if (b.width <= region.width) cx = Math.min(region.x + region.width - b.width / 2, Math.max(region.x + b.width / 2, c.x));
+      if (b.height <= region.height) cy = Math.min(region.y + region.height - b.height / 2, Math.max(region.y + b.height / 2, c.y));
+      if (Math.abs(c.x - cx) > 1e-9 || Math.abs(c.y - cy) > 1e-9) viewer.viewport.panTo(new OpenSeadragon.Point(cx, cy), true);
+    };
+    viewer.addHandler("animation-finish", clampToRegion);
+  }
 
   // Worklist 1.1 (scale-aware marks): stamp the coarse zoom band on the container so CSS can
   // weight markers by distance (far = fit-width presence, near = recede while inside a mark).
