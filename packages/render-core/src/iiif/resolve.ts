@@ -21,6 +21,10 @@ export interface XyzTileSource {
   maxZoom: number;
   /** Shallowest slippy zoom (default 0 = whole world in one tile). */
   minZoom?: number;
+  /** The Map extent (ADR-0015) — `[west, south, east, north]`, the bounded region the viewer frames to and
+   *  the unit that makes a basemap offline-bakeable. ABSENT = whole world (the spike default). Pixels stay
+   *  WORLD pixels (a function of tileSize+maxZoom, not bounds), so re-framing never moves a stored coordinate. */
+  bounds?: [west: number, south: number, east: number, north: number];
   /** Attribution the surface MUST display (e.g. "© OpenStreetMap contributors"). */
   attribution?: string;
 }
