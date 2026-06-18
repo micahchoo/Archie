@@ -102,11 +102,13 @@
 <section class="spine">
   <header>
     <p class="eyebrow">Exhibit narrative</p>
-    <p class="lede">A narrative is a sequence of sections — short passages you write, each shown with one media item. It runs through the whole exhibit and stays put as you switch between media items.</p>
+    <p class="lede">A section is one passage in this exhibit's narrative, shown with one media item. Sections flow in order, carrying the reader from one to the next — and stay put as you switch between media items.</p>
   </header>
 
   {#if objects.length === 0}
     <p class="empty">Add a media item to the exhibit first — every section is shown with one.</p>
+  {:else if sections.length === 0}
+    <p class="empty">No sections yet. Add one to begin the narrative — each is shown with one media item and the view you frame.</p>
   {/if}
 
   <ol class="cards">

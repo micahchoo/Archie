@@ -25,6 +25,7 @@
 
 <aside class="rail" aria-label="Readings rail" data-comparing={comparing}>
   <span class="title">Readings{#if comparing}<span class="cmp" title="Two or more readings are visible, so notes show as outlines and their colours stay distinct.">· comparing</span>{/if}</span>
+  <span class="gloss">Compare interpretations</span>
   <div class="rows">
     {#each [{ id: BASE, name: "General notes", colour: "var(--accent)" }, ...readings] as r (r.id)}
       <div class="row" data-reading={r.id}
@@ -56,8 +57,10 @@
     box-shadow: var(--shadow-lift-low);
     font-family: var(--font-body), sans-serif;
   }
-  .title { display: block; font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-2); opacity: 0.62; margin-bottom: var(--space-2); }
+  .title { display: block; font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-2); opacity: 0.62; margin-bottom: 2px; }
   .title .cmp { margin-left: var(--space-2); color: var(--ink-canvas-secondary); letter-spacing: 0.12em; }
+  /* One-line gloss under the eyebrow — what readings are FOR (compare interpretations). Mirrors the Viewer legend. */
+  .gloss { display: block; font-family: var(--font-body), sans-serif; font-size: var(--text-ui-xs, 0.7rem); color: var(--ink-canvas-secondary); margin-bottom: var(--space-2); }
   .rows { display: flex; flex-direction: column; gap: 2px; }
   .row { display: flex; align-items: center; gap: var(--space-2); padding: 3px var(--space-1); border-radius: var(--radius-sm); transition: background 0.16s ease; }
   .row:hover { background: var(--accent-2-muted); }

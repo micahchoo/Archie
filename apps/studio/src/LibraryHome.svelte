@@ -107,7 +107,7 @@
       <h1>{libTitle && libTitle.trim() ? libTitle : "Library"}</h1>
       <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     </div>
-    <p class="lede">Exhibits marked <span class="ex-word">Example</span> are ready-made samples to explore — changes you make to them aren't kept, so use “Keep a copy” to turn one into your own. Exhibits you create save as you work. Start a new one any time.</p>
+    <p class="lede">An exhibit is a collection of annotated media — images, audio, video, or maps you mark up with notes. Create one any time; your work saves as you go.</p>
 
     <PropsDrawer open={rightsOpen} title="Library details" onclose={() => (rightsOpen = false)}>
       <DetailsEditor title={libTitle ?? ""} summary={librarySummary ?? ""} rights={rights} scope="library" ontitle={ontitle} onsummary={onsummary} onrights={onrights} />
@@ -183,6 +183,7 @@
           {#if isTemplate(ex.slug)}<span class="badge">Example</span>{/if}
           <span class="title">{ex.title}</span>
           <span class="meta">{ex.objects.length} {ex.objects.length === 1 ? "media item" : "media items"} · /{ex.slug}</span>
+          {#if isTemplate(ex.slug)}<span class="ex-hint">Explore freely — changes aren't kept. Keep a copy to make it yours.</span>{/if}
         </button>
       </li>
     {/each}
@@ -296,7 +297,8 @@
   /* Example (template) marker — a soft warm dashed edge + quiet warning label (transient, not yours-yet). */
   .card.template { box-shadow: var(--shadow-lift-low), inset 0 0 0 1px var(--border-canvas-emphasis); }
   .badge { align-self: flex-start; font-family: var(--font-ui); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--semantic-warning); border: 1px solid var(--semantic-warning); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
-  .ex-word { color: var(--semantic-warning); font-weight: 600; }
+  /* Example hint — teaches the consequence of the badge (transient; fork to keep). Quiet body voice, demoted from the gallery lede. */
+  .ex-hint { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.5; color: var(--ink-canvas-secondary); }
 
   /* New-exhibit tile — a soft dashed plate awaiting a work (separated by tone, not a hard rectangle). */
   .new {
