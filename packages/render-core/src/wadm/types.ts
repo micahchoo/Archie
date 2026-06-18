@@ -36,6 +36,14 @@ export const ARCHIE_READING = "archie:reading" as const;
  *  On heads + history (round-trip), mirroring ARCHIE_READING. Emitted ONLY when authored (no default-serialize,
  *  so existing snapshots stay byte-stable); absence reads back as `"normal"` via `emphasisOf`. */
 export const ARCHIE_EMPHASIS = "archie:emphasis" as const;
+/** Durable geographic anchor for an annotation on a MAP surface (geo-annotation extension; DESIGN.md D2).
+ *  Rides alongside the pixel selector: the pixel selector is the render path every existing consumer reads
+ *  (fitBounds, markers, IIIF publish), while `archie:geo` is the source-of-truth lng/lat Archie re-projects
+ *  if the basemap baseline ever changes. Emitted ONLY when authored — byte-stable when absent, pure
+ *  WADM/IIIF consumers ignore it (three-tier interop, Q-3) — mirroring ARCHIE_EMPHASIS exactly. NB: in the
+ *  Phase-1 prototype the lng/lat readout is DERIVED from the pixel selector (the basemap baseline is fixed),
+ *  so this key is the schema reservation; durable serialization through the spine is Phase-1-proper plumbing. */
+export const ARCHIE_GEO = "archie:geo" as const;
 export const ARCHIE_REV = "archie:rev" as const;
 export const ARCHIE_PARENT = "archie:parent" as const;
 /** Additional parents of a merge-resolution node (Q-7) — the other branch heads it reconciles. */
@@ -179,6 +187,13 @@ export interface AnnotationRecord {
 
 /** Per-note visual emphasis (1489) — the single source of truth (query/published.ts imports this). */
 export type Emphasis = "muted" | "normal" | "strong";
+
+/** A geographic anchor for a map annotation (`archie:geo` value). v1/Phase-1: a point. bbox + polyline
+ *  are reserved for geo-regions (Phase 2) so the union does not churn when regions land. */
+export type GeoAnchor =
+  | { type: "point"; lng: number; lat: number }
+  | { type: "bbox"; west: number; south: number; east: number; north: number }
+  | { type: "polyline"; coordinates: Array<[number, number]> };
 
 /** The append-only annotation log — the authoritative source every projection reads. */
 export type AnnotationLog = readonly AnnotationRecord[];

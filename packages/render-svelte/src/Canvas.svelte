@@ -5,13 +5,14 @@
   // NOT in the tsc/test gate (real OSD render = browser verification).
   import { onMount, onDestroy } from "svelte";
   import { createMount, type FitOptions, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
-  import type { W3CAnnotation } from "@render/core";
+  import type { W3CAnnotation, TileSourceDescriptor } from "@render/core";
   import { createCanvasController, type CanvasController } from "./controller.js";
 
   let {
     zoomOnSelect = false,
     locator = false,
     source,
+    tileSource,
     canvasId,
     annotations = [],
     selected = $bindable<string | null>(null),
@@ -33,6 +34,9 @@
     /** Worklist 1.1: show the locator mini-map (OSD navigator) — viewport-within-image. */
     locator?: boolean;
     source: string;
+    /** A structured tile-source descriptor (geo-annotation extension) — when set, mounts a slippy-map
+     *  basemap surface instead of the `source` image/IIIF string. Annotations still target `canvasId`. */
+    tileSource?: TileSourceDescriptor;
     canvasId?: string;
     annotations?: W3CAnnotation[];
     selected?: string | null;
@@ -84,7 +88,7 @@
 
   onMount(async () => {
     try {
-      surface = await createMount(el, { source, ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}), ...(locator ? { locator } : {}) });
+      surface = await createMount(el, { source, ...(tileSource ? { tileSource } : {}), ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}), ...(locator ? { locator } : {}) });
       surface.setAnnotations(annotations);
       if (styleOf) surface.setStyle(styleOf);
       if (frame !== undefined) surface.setFrame(frame);
@@ -146,26 +150,29 @@
   .archie-canvas { width: 100%; height: 100%; }
   /* Markers need a shadow to stay recognizable on LIGHT surfaces (light folios/paper) — the thin
      stroke alone vanishes against pale parchment. A subtle drop-shadow on the SVG shape group. */
-  :global(.a9s-annotationlayer .a9s-annotation) { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55)); }
+  :global(.a9s-annotationlayer .a9s-annotation) { filter: drop-shadow(0 1px 2px rgba(59, 49, 56, 0.5)); }
   /* Worklist 1.1 (scale-aware marks): weight by zoom band — the mount stamps data-archie-zoom on
      the canvas root. Screen-space channels only (opacity / drop-shadow); never stroke-width (it is
      inline-set by the style expression in scaled coordinates). far = fit-width, marks need
      PRESENCE to be findable; near = inside-a-mark territory, outlines recede off the pixels. */
   :global([data-archie-zoom="far"] .a9s-annotationlayer .a9s-annotation) {
-    filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 8px rgba(255, 255, 255, 0.35));
+    filter: drop-shadow(0 0 3px rgba(59, 49, 56, 0.7)) drop-shadow(0 0 8px rgba(251, 246, 243, 0.4));
   }
   :global([data-archie-zoom="near"] .a9s-annotationlayer .a9s-annotation) {
     opacity: 0.45;
     transition: opacity 200ms ease;
   }
-  /* Loading / error states over the light table (system.md §Reader States). */
+  /* Loading / error states (Soft Static §Reader States). Quiet Spline-mono caption chrome —
+     wide tracking, uppercase, reduced opacity — over warm paper. Reads as a found label, not
+     announced arcade status. */
   .overlay {
     position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px;
-    background: var(--surface-canvas, #181714); color: var(--ink-canvas-secondary, #a09b8e);
-    font-family: var(--font-ui, system-ui), sans-serif; font-size: 0.875rem; letter-spacing: 0.02em;
+    background: var(--surface-canvas); color: var(--ink-canvas-secondary);
+    font-family: var(--font-ui); font-size: 0.8125rem; letter-spacing: 0.16em; text-transform: uppercase;
+    opacity: 0.62;
   }
-  .overlay.error { color: var(--accent, #c44536); }
+  .overlay.error { color: var(--semantic-error); opacity: 1; }
   .warn { font-size: 1.1rem; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent, #c44536); animation: pulse 1.1s ease-in-out infinite; }
+  .dot { width: 7px; height: 7px; border-radius: var(--radius-sm); background: var(--accent); animation: pulse 1.1s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
 </style>

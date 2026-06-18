@@ -3,6 +3,8 @@
 // (manifest/collection/exhibits.json) derive from. Exhibit-nested ownership (ADR-0001 / Q-1):
 // an Exhibit owns its Objects; there is no shared object pool.
 
+import type { TileSourceDescriptor } from "../iiif/resolve.js";
+
 /** Media kind of an Object (CONTEXT: image / audio / video). */
 export type MediaType = "image" | "sound" | "video";
 
@@ -79,6 +81,9 @@ export interface AObject extends RightsFields {
   summary?: string;
   /** Defaults to "image". */
   mediaType?: MediaType;
+  /** Geo-annotation extension (DESIGN.md): a slippy-map basemap descriptor. When set, the object mounts
+   *  as a bounded OSD pixel raster (a map) rather than an image/IIIF `source`. Absent for normal media. */
+  tileSource?: TileSourceDescriptor;
   /** Pixel dimensions — required by IIIF for image/video canvases when known. */
   width?: number;
   height?: number;
