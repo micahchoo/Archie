@@ -49,11 +49,11 @@
               <button class:active={o.type === current} onclick={() => onpick(o.type)}>
                 <span class="diagram" aria-hidden="true">
                   {#if o.type === "single"}
-                    <svg viewBox="0 0 64 44"><rect class="frame fill" x="10" y="6" width="44" height="32" rx="2" /></svg>
+                    <svg viewBox="0 0 64 44"><rect class="frame fill" x="10" y="6" width="44" height="32" /></svg>
                   {:else if o.type === "grid"}
-                    <svg viewBox="0 0 64 44"><rect class="frame fill" x="8" y="6" width="22" height="14" rx="2" /><rect class="frame" x="34" y="6" width="22" height="14" rx="2" /><rect class="frame" x="8" y="24" width="22" height="14" rx="2" /><rect class="frame fill" x="34" y="24" width="22" height="14" rx="2" /></svg>
+                    <svg viewBox="0 0 64 44"><rect class="frame fill" x="8" y="6" width="22" height="14" /><rect class="frame" x="34" y="6" width="22" height="14" /><rect class="frame" x="8" y="24" width="22" height="14" /><rect class="frame fill" x="34" y="24" width="22" height="14" /></svg>
                   {:else}
-                    <svg viewBox="0 0 64 44"><rect class="frame fill" x="6" y="6" width="30" height="32" rx="2" /><line class="rule" x1="42" y1="11" x2="58" y2="11" /><line class="rule" x1="42" y1="18" x2="58" y2="18" /><line class="rule accent" x1="42" y1="25" x2="54" y2="25" /><line class="rule" x1="42" y1="32" x2="58" y2="32" /></svg>
+                    <svg viewBox="0 0 64 44"><rect class="frame fill" x="6" y="6" width="30" height="32" /><line class="rule" x1="42" y1="11" x2="58" y2="11" /><line class="rule" x1="42" y1="18" x2="58" y2="18" /><line class="rule accent" x1="42" y1="25" x2="54" y2="25" /><line class="rule" x1="42" y1="32" x2="58" y2="32" /></svg>
                   {/if}
                 </span>
                 <span class="text">
@@ -76,55 +76,56 @@
 </div>
 
 <style>
-  /* Warm-paper editorial sheet over the dark header — choosing the form of a finished publication.
-     The active choice + its diagram region are inked forest-green (system.md §19 active state). */
-  .scrim { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: center; align-items: flex-start; padding-top: 10vh; background: rgba(12, 11, 9, 0.42); }
+  /* Soft Static intent sheet floating on a warm scrim — choosing the form of a finished publication.
+     The active choice + its diagram region carry a quiet accent-muted tint (active state). */
+  .scrim { position: fixed; inset: 0; z-index: 60; display: flex; justify-content: center; align-items: flex-start; padding-top: 10vh; background: rgba(59, 49, 56, 0.42); }
   .sheet {
     width: min(540px, 92vw); max-height: 80vh; overflow: auto; box-sizing: border-box;
-    background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-lg);
-    box-shadow: 0 8px 28px rgba(12, 11, 9, 0.38);
+    background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift-mid);
     padding: var(--space-5);
   }
   header { margin-bottom: var(--space-4); }
-  header h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; margin: 0 0 var(--space-2); color: var(--ink-paper-primary); }
-  header p { font-family: var(--font-ui); font-size: 0.82rem; line-height: 1.6; color: var(--ink-paper-muted); margin: 0; }
+  header h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 300; line-height: 1.2; margin: 0 0 var(--space-2); color: var(--ink-paper-primary); text-shadow: var(--shadow-text-haze); }
+  header p { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
 
   /* Each reading family is a group (the §43 reading-mode axis), so the choice reads as "what kind of
      reading" rather than a flat row of templates. */
   .group { margin-bottom: var(--space-5); }
   .group:last-of-type { margin-bottom: 0; }
   .fam { display: flex; align-items: baseline; gap: var(--space-2); margin: 0 0 var(--space-2); }
-  .fam-name { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+  .fam-name { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-paper-secondary); opacity: 0.62; }
   .fam-clause { font-family: var(--font-body); font-style: italic; font-size: 0.9rem; color: var(--ink-paper-muted); }
   /* The additive future, made legible: where v1.1 reading modes attach to THIS family. */
-  .future { margin: var(--space-2) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); line-height: 1.6; color: var(--ink-paper-muted); padding-left: var(--space-3); border-left: 1px solid var(--border-paper); }
+  .future { margin: var(--space-2) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); line-height: 1.6; color: var(--ink-paper-muted); padding-left: var(--space-3); border-left: 2px solid var(--accent-3-muted); }
 
   ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
   button {
     display: flex; align-items: center; gap: var(--space-4); width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-3) var(--space-4);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-left: 3px solid transparent; border-radius: var(--radius-md);
-    transition: background 120ms ease, border-color 120ms ease;
+    border: none; border-left: 3px solid transparent; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
+    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
-  button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); }
+  button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
   button.active { background: var(--accent-muted); border-left-color: var(--accent); }
 
   .diagram { flex-shrink: 0; width: 64px; height: 44px; }
   .diagram svg { width: 64px; height: 44px; }
-  .frame { fill: none; stroke: var(--ink-paper-muted); stroke-width: 1.5; }
-  .frame.fill { fill: rgba(107, 98, 80, 0.08); }
-  .rule { stroke: var(--ink-paper-muted); stroke-width: 1.5; stroke-linecap: round; }
-  button.active .frame { stroke: var(--accent); }
+  .frame { fill: none; stroke: var(--accent-3); stroke-width: 2; stroke-linejoin: round; }
+  .frame.fill { fill: var(--accent-3-muted); }
+  .rule { stroke: var(--ink-paper-muted); stroke-width: 2; stroke-linecap: round; }
+  button.active .frame { stroke: var(--clay-line); }
   button.active .frame.fill { fill: var(--accent-muted); }
   .rule.accent { stroke: var(--accent); }
 
   .text { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-  .name { font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; line-height: 1; display: flex; align-items: baseline; gap: var(--space-2); }
-  .now { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-paper-muted); }
-  .stance { font-family: var(--font-body); font-size: 1.02rem; font-weight: 600; line-height: 1.35; color: var(--ink-paper-primary); }
-  .consequence { font-family: var(--font-body); font-size: 0.92rem; line-height: 1.45; color: var(--ink-paper-secondary); }
+  .name { font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; line-height: 1.1; display: flex; align-items: baseline; gap: var(--space-2); }
+  .now { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); opacity: 0.8; }
+  .stance { font-family: var(--font-body); font-size: 1.02rem; font-weight: 600; line-height: 1.4; color: var(--ink-paper-primary); }
+  .consequence { font-family: var(--font-body); font-size: 0.92rem; line-height: 1.6; color: var(--ink-paper-secondary); }
 
-  .note { margin: var(--space-4) 0 0; padding: var(--space-3) var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); font-family: var(--font-ui); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-muted); }
+  .note { margin: var(--space-4) 0 0; padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-radius: var(--radius-md); box-shadow: var(--shadow-inset-fog); font-family: var(--font-body); font-size: 0.85rem; line-height: 1.6; color: var(--ink-paper-secondary); }
 </style>

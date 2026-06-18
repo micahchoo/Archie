@@ -67,18 +67,19 @@
   .field { display: flex; flex-direction: column; gap: var(--space-1); }
   .field-head {
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs, 0.7rem); font-weight: 500;
-    text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-paper-secondary);
+    text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-paper-muted, var(--ink-paper-secondary));
+    opacity: 0.6;
   }
   textarea, select {
     font-family: var(--font-body), serif; font-size: 0.85rem; color: var(--ink-paper-primary);
-    background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis);
+    background: var(--surface-paper-card); border: 1px solid var(--border-paper);
     border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box;
   }
   textarea { resize: vertical; min-height: 2.4rem; }
   select { font-family: var(--font-ui), sans-serif; cursor: pointer; }
   textarea:focus, select:focus { outline: none; border-color: var(--accent); }
   .hint {
-    margin: 0; font-family: var(--font-ui), sans-serif; font-size: 0.7rem; line-height: 1.4;
+    margin: 0; font-family: var(--font-body), serif; font-size: 0.75rem; line-height: 1.6;
     color: var(--ink-paper-muted, var(--ink-paper-secondary));
   }
 </style>

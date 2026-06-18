@@ -62,7 +62,7 @@
 </div>
 
 <style>
-  .lb-scrim { position: fixed; inset: 0; background: rgba(8,7,6,0.86); z-index: 60; }
+  .lb-scrim { position: fixed; inset: 0; background: rgba(59,49,56,0.82); backdrop-filter: blur(3px); z-index: 60; }
   .lb {
     position: fixed; z-index: 61; top: 50%; left: 50%; transform: translate(-50%, -50%);
     display: flex; flex-direction: column; gap: var(--space-4);
@@ -70,42 +70,47 @@
   }
   .lb-close {
     position: absolute; top: -2px; right: -2px; z-index: 62;
-    background: none; border: none; cursor: pointer; color: var(--ink-canvas-secondary, #a09b8e);
-    font-size: 2rem; line-height: 1;
+    background: none; border: none; cursor: pointer; color: var(--ink-canvas-secondary);
+    font-family: var(--font-ui, monospace); font-size: 2rem; line-height: 1;
   }
-  .lb-close:hover { color: var(--accent, #c44536); }
+  .lb-close:hover { color: var(--ink-canvas-primary); }
 
   .lb-stage { position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; flex: 1; }
-  .lb-stage img, .lb-stage video { max-width: 100%; max-height: 72vh; object-fit: contain; border-radius: var(--radius-sm); background: var(--surface-canvas, #181714); }
+  .lb-stage img, .lb-stage video { max-width: 100%; max-height: 72vh; object-fit: contain; border-radius: var(--radius-md); background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-mid); }
 
   .audio-stage { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); width: min(40rem, 80vw); }
-  .audio-stage .now { font-family: var(--font-ui, sans-serif); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent, #c44536); }
+  .audio-stage .now { font-family: var(--font-ui, monospace); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-canvas-secondary); opacity: 0.6; }
   .audio-stage audio { width: 100%; }
 
   .nav {
     position: absolute; top: 50%; transform: translateY(-50%); z-index: 62;
     width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
-    background: var(--surface-canvas-overlay, rgba(24,23,20,0.8)); color: var(--ink-canvas-primary, #ece7da);
-    border: 1px solid var(--border-canvas-emphasis, #3a362e); font-size: 1.5rem; line-height: 1;
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
+    border: 1px solid var(--border-canvas);
+    font-family: var(--font-ui, monospace); font-size: 1.5rem; line-height: 1;
+    box-shadow: var(--shadow-lift-low);
+    transition: color 160ms ease, box-shadow 160ms ease;
   }
-  .nav:hover { border-color: var(--accent, #c44536); color: var(--accent, #c44536); }
+  .nav:hover { color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-mid); }
   .nav.prev { left: var(--space-3); }
   .nav.next { right: var(--space-3); }
   .counter {
     position: absolute; bottom: var(--space-3); left: 50%; transform: translateX(-50%);
-    font-family: var(--font-mono, monospace); font-size: 0.72rem; color: var(--ink-canvas-secondary, #a09b8e);
-    background: var(--surface-canvas-overlay, rgba(24,23,20,0.8)); padding: 2px 10px; border-radius: var(--radius-sm);
+    font-family: var(--font-mono, monospace); font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--ink-canvas-secondary); opacity: 0.62;
+    background: var(--surface-canvas-raised); padding: 3px 12px; border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lift-low);
   }
 
   .lb-text {
     flex-shrink: 0; max-height: 24vh; overflow: auto;
-    font-family: var(--font-body, serif); font-size: 1.0625rem; line-height: 1.55; color: var(--ink-canvas-primary, #ece7da);
-    background: var(--surface-canvas-overlay, rgba(24,23,20,0.8)); border-left: 3px solid var(--accent, #c44536);
-    border-radius: var(--radius-sm); padding: var(--space-3) var(--space-4);
+    font-family: var(--font-body, serif); font-size: 1.0625rem; line-height: 1.65; color: var(--ink-canvas-primary);
+    background: var(--surface-canvas-raised); border-left: 3px solid var(--accent);
+    border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); padding: var(--space-3) var(--space-4);
   }
   .lb-text :global(p) { margin: 0 0 var(--space-2); }
   .lb-text :global(p:last-child) { margin-bottom: 0; }
-  .lb-text :global(a) { color: var(--accent, #c44536); }
+  .lb-text :global(a) { color: var(--accent-2); }
   .lb-text :global(strong) { font-weight: 700; }
   .lb-text :global(em) { font-style: italic; }
 </style>

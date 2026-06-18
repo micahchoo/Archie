@@ -1,79 +1,119 @@
-/* Archie design tokens — "a curator's study at night" (.interface-design/system.md).
-   Dark light-table canvas + warm paper panels + forest-green accent. */
+/* Archie design tokens — "Soft Static" reskin (hazy grain-soaked atmospheric system).
+   Blush→dusk gradient ground, soft-focus blur depth (NO hard shadow), warm ink, one rationed
+   signal-orange mark. Three voices: Fraunces (soft serif display) / Hanken Grotesk (body) /
+   Spline Sans Mono (quiet signal chrome). Semantic token NAMES preserved so component refs resolve.
+   NOTE: duplicated in apps/viewer/src/tokens.css — keep the two in sync. */
 
 :root {
-  /* ── Canvas (dark light-table side) ── */
-  --surface-canvas: #181714;
-  --surface-canvas-raised: #1e1d19;
-  --surface-canvas-overlay: #252420;
-  --ink-canvas-primary: #e8e4db;
-  --ink-canvas-secondary: #a09b8e;
-  --ink-canvas-muted: #5c584e;
-  --border-canvas: rgba(160, 155, 142, 0.15);
-  --border-canvas-emphasis: rgba(160, 155, 142, 0.3);
+  /* ── Palette (Soft Static) ── */
+  --blush: #F1E2DC;        --rose-fog: #E0C5CB;     --lilac-mist: #D9BFCB;
+  --glow-coral: #D5897C;   --ember: #C56456;        --mist-blue: #8593A8;
+  --deep-slate: #586883;   --signal-orange: #F0631C;--cord-blue: #5C6BBE;
+  --clay-line: #B86450;    --moss-shadow: #2D3E33;  --paper: #FBF6F3;  --ink: #3B3138;
 
-  /* ── Paper (reading / annotation side) ── */
-  --surface-paper: #f5f0e6;
-  --surface-paper-card: #fcf9f2;
-  --surface-paper-hover: #ede7d8;
-  --ink-paper-primary: #2c2618;
-  --ink-paper-secondary: #6b6250;
-  --ink-paper-muted: #a09880;
-  --border-paper: rgba(107, 98, 80, 0.15);
-  --border-paper-emphasis: rgba(107, 98, 80, 0.32);
+  /* ── Canvas (primary work surface — warm paper floating on the gradient ground) ── */
+  --surface-canvas: #FBF6F3;
+  --surface-canvas-raised: #FFFDFB;        /* lighter paper card — never pure white */
+  --surface-canvas-overlay: #F3E7E1;       /* blush-tinted overlay */
+  --ink-canvas-primary: #3B3138;           /* warm charcoal, never pure black */
+  --ink-canvas-secondary: rgba(59, 49, 56, 0.62);
+  --ink-canvas-muted: rgba(59, 49, 56, 0.45);
+  --border-canvas: rgba(59, 49, 56, 0.10);
+  --border-canvas-emphasis: rgba(59, 49, 56, 0.18);
 
-  /* ── Gallery wall ── */
-  --surface-gallery: #ebdfce;
+  /* ── Paper (reading / annotation side — same warm paper system) ── */
+  --surface-paper: #FBF6F3;
+  --surface-paper-card: #FFFDFB;
+  --surface-paper-hover: #F3E7E1;
+  --ink-paper-primary: #3B3138;
+  --ink-paper-secondary: rgba(59, 49, 56, 0.62);
+  --ink-paper-muted: rgba(59, 49, 56, 0.45);
+  --border-paper: rgba(59, 49, 56, 0.10);
+  --border-paper-emphasis: rgba(59, 49, 56, 0.18);
 
-  /* ── Accent — forest green (the scholar's ink) ── */
-  --accent: #3a6b4c;
-  --accent-hover: #2d553d;
-  --accent-muted: rgba(58, 107, 76, 0.12);
-  --ink-on-accent: #fff;
+  /* ── Gallery wall (= the gradient ground; flat blush fallback) ── */
+  --surface-gallery: #F1E2DC;
 
-  /* ── Accent (secondary) — golden amber (lamplight / gilt frame) ──
-     Contrast-rescue + secondary emphasis ONLY: use where forest green sits on a grey
-     surface and fails contrast (overlay #252420, muted inks). Never for active/selection
-     (that stays green). Distinct from --semantic-warning by hue + meaning. (system.md, 2026-05-29) */
-  --accent-2: #d6a23e;                          /* on canvas (dark) */
-  --accent-2-hover: #e3b65a;
-  --accent-2-muted: rgba(214, 162, 62, 0.14);
-  --accent-2-paper: #9a6f1e;                     /* on paper (light) */
-  --accent-2-paper-hover: #835d16;
-  --accent-2-paper-muted: rgba(154, 111, 30, 0.12);
+  /* ── Accent — signal-orange. RATIONED: primary action / active state only. ── */
+  --accent: #F0631C;
+  --accent-hover: #FF7A3C;
+  --accent-muted: rgba(240, 99, 28, 0.12);
+  --ink-on-accent: #FBF6F3;                /* warm paper text on orange */
 
-  /* ── Semantic ── */
-  --semantic-success: #5a8f4a;
-  --semantic-warning: #c49b36;
-  --semantic-error: #c44536;
+  /* ── Accent (secondary) — cord-blue (links, connectors) ── */
+  --accent-2: #5C6BBE;
+  --accent-2-hover: #6E7CCB;
+  --accent-2-muted: rgba(92, 107, 190, 0.12);
+  --accent-2-paper: #5C6BBE;
+  --accent-2-paper-hover: #4B59A8;
+  --accent-2-paper-muted: rgba(92, 107, 190, 0.12);
 
-  /* ── Typography ── */
-  --font-display: "Cormorant Garamond", Georgia, serif;
-  --font-body: "Crimson Text", Georgia, serif;
-  --font-ui: "Work Sans", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* ── Accent (tertiary) — clay (warm line-art, subtle highlights) ── */
+  --accent-3: #B86450;
+  --accent-3-hover: #C56456;
+  --accent-3-muted: rgba(184, 100, 80, 0.12);
+
+  /* ── Semantic — warm-harmonized so signals sit in the haze ── */
+  --semantic-success: #6E8B6A;
+  --semantic-warning: #C68A3E;
+  --semantic-error: #C0503C;
+
+  /* ── Typography (Soft Static three-voice stack — never cross the roles) ── */
+  --font-display: "Fraunces", Georgia, serif;          /* soft optical serif — display/hero/quotes */
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;/* calm humanist body + interactive text */
+  --font-ui: "Spline Sans Mono", ui-monospace, monospace; /* quiet signal chrome: eyebrows/captions/labels */
+  --font-mono: "Spline Sans Mono", ui-monospace, monospace;
 
   /* ── Type scale (UI) ── */
-  --text-ui-sm: 0.8125rem;   /* 13px — buttons, chrome labels */
-  --text-ui-xs: 0.7rem;      /* 11px — captions, eyebrow labels */
-  --text-ui-md: 0.75rem;     /* 12px — section headers, hints */
+  --text-ui-sm: 0.8125rem; --text-ui-xs: 0.7rem; --text-ui-md: 0.75rem;
 
-  /* ── Spacing (4px base) ── */
+  /* ── Spacing (8px base — loose, space-led) ── */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
 
-  /* ── Radius ── */
-  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px;
+  /* ── Radius — soft & generous (echoes the soft focus) ── */
+  --radius-sm: 10px; --radius-md: 16px; --radius-lg: 20px;
+
+  /* ── Soft blur shadows (wide, low-opacity, warm charcoal — never a hard offset) ── */
+  --shadow-lift-low: 0 24px 48px -24px rgba(59, 49, 56, 0.30);
+  --shadow-lift-mid: 0 40px 80px -32px rgba(59, 49, 56, 0.38);
+  --shadow-signal-glow: 0 18px 60px -12px rgba(240, 99, 28, 0.55);
+  --shadow-text-haze: 0 2px 24px rgba(59, 49, 56, 0.18);
+  --shadow-inset-fog: inset 0 0 120px 40px rgba(217, 191, 203, 0.45);
+
+  /* ── Gradients ── */
+  --ground-gradient: linear-gradient(180deg, #F1E2DC 0%, #E0C5CB 34%, #D9BFCB 50%, #8593A8 78%, #586883 100%);
+  --focal-bloom: radial-gradient(ellipse 38% 60% at 50% 38%, #C56456 0%, rgba(197,100,86,0.45) 30%, rgba(213,137,124,0.18) 55%, transparent 75%);
+  --signal-sheen: linear-gradient(155deg, #FF7A3C 0%, #F0631C 55%, #D24E12 100%);
+  --vignette: radial-gradient(ellipse 90% 90% at 50% 46%, transparent 55%, rgba(59, 49, 56, 0.22) 100%);
+
+  /* ── Legacy aliases: 8-Bit Orbit token names → Soft Static, so components still on the old
+       palette degrade to soft styling until the component pass rewrites them. ── */
+  --void: #586883; --deep-navy: #46566f;
+  --neon-cyan: #5C6BBE; --neon-pink: #B86450; --neon-yellow: #F0631C; --soft-lavender: #D9BFCB;
+  --pixel-unit: 4px; --grid-size: 40px; --border-pixel: 1px; --border-pixel-bold: 2px;
+  --bg-grid: none;
+  --shadow-pixel: var(--shadow-lift-low);
+  --shadow-pixel-strong: var(--shadow-lift-mid);
+  --shadow-pixel-cyan: var(--shadow-lift-low);
+  --shadow-pixel-yellow: var(--shadow-lift-mid);
+  --shadow-pixel-btn: var(--shadow-lift-low);
+  --shadow-pixel-btn-pink: var(--shadow-lift-low);
+  --shadow-pixel-btn-active: var(--shadow-lift-low);
+  --text-shadow-hero: none;
+  --text-shadow-stat: none;
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; font-family: var(--font-ui); color: var(--ink-paper-primary); }
+body { margin: 0; font-family: var(--font-body); color: var(--ink-canvas-primary); }
 
-/* Section-header treatment used across both apps: Work Sans, small, tracked, muted. */
+/* Eyebrow — Soft Static: a quiet tracked uppercase mono line. No box, no fill; low opacity so it
+   feels found, not announced. Shared across both apps. */
 .eyebrow {
   font-family: var(--font-ui);
   font-size: var(--text-ui-md);
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-weight: 400;
+  letter-spacing: 0.26em;
   text-transform: uppercase;
+  color: rgba(59, 49, 56, 0.55);
 }

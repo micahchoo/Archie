@@ -67,36 +67,39 @@
 <style>
   /* Paper-side panel content (the PropsDrawer surface) — mirrors DetailsEditor's quiet form idiom. */
   .empty { font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-paper-secondary); margin: 0 0 var(--space-3); }
-  .reading { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-paper); }
+  .reading { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-canvas); }
   .row { display: flex; align-items: center; gap: var(--space-2); }
-  .swatches { display: inline-flex; gap: 4px; }
+  .swatches { display: inline-flex; gap: 5px; }
   .swatch { width: 18px; height: 18px; padding: 0; border: 2px solid transparent; border-radius: 50%; cursor: pointer; }
-  .swatch.on { border-color: var(--ink-paper-primary); }
+  .swatch.on { border-color: var(--accent); box-shadow: var(--shadow-signal-glow); }
   .name {
-    flex: 1; font-family: var(--font-ui); font-size: 0.9rem; padding: var(--space-1) var(--space-2);
+    flex: 1; font-family: var(--font-body); font-size: 0.9rem; padding: var(--space-1) var(--space-2);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-radius: var(--radius-sm);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
   }
-  .name:focus { outline: none; border-color: var(--accent); }
-  .remove { background: none; border: none; cursor: pointer; padding: 6px var(--space-2); color: var(--ink-paper-muted); font-size: 0.9rem; }
+  .name:focus { outline: none; border-color: var(--accent-2); }
+  .remove { background: none; border: none; cursor: pointer; padding: 6px var(--space-2); color: var(--ink-paper-muted); font-family: var(--font-ui); font-size: 0.9rem; }
   .remove:hover { color: var(--semantic-error); }
   textarea {
     width: 100%; box-sizing: border-box; resize: vertical;
-    font-family: var(--font-body); font-size: 0.9rem; line-height: 1.45; padding: var(--space-2) var(--space-3);
+    font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; padding: var(--space-2) var(--space-3);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-radius: var(--radius-sm);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
   }
-  textarea:focus { outline: none; border-color: var(--accent); }
+  textarea:focus { outline: none; border-color: var(--accent-2); }
   .add { display: flex; gap: var(--space-2); padding-top: var(--space-3); }
   .add input {
-    flex: 1; font-family: var(--font-ui); font-size: 0.9rem; padding: var(--space-1) var(--space-2);
+    flex: 1; font-family: var(--font-body); font-size: 0.9rem; padding: var(--space-1) var(--space-2);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-radius: var(--radius-sm);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
   }
-  .add input:focus { outline: none; border-color: var(--accent); }
+  .add input:focus { outline: none; border-color: var(--accent-2); }
   .add button {
-    font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-1) var(--space-3); cursor: pointer;
-    background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm);
+    font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; letter-spacing: 0.08em;
+    padding: var(--space-1) var(--space-3); cursor: pointer;
+    background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-signal-glow); transition: box-shadow 160ms ease, background 160ms ease;
   }
-  .add button:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: transparent; cursor: default; }
+  .add button:hover:not(:disabled) { background: var(--accent-hover); }
+  .add button:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); box-shadow: none; cursor: default; }
 </style>

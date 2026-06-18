@@ -18,25 +18,27 @@
 {/if}
 
 <style>
-  .scrim { position: fixed; inset: 0; z-index: 40; background: rgba(20, 18, 14, 0.32); }
+  .scrim { position: fixed; inset: 0; z-index: 40; background: rgba(59, 49, 56, 0.42); backdrop-filter: blur(2px); }
   .drawer {
     position: fixed; z-index: 41; top: 0; right: 0; height: 100vh; width: min(380px, 92vw);
     display: flex; flex-direction: column;
-    background: var(--surface-paper); color: var(--ink-paper-primary);
-    border-left: 1px solid var(--border-paper-emphasis); box-shadow: -8px 0 24px rgba(20, 18, 14, 0.18);
-    animation: slide-in 0.18s ease;
+    background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg); box-shadow: var(--shadow-lift-mid);
+    animation: slide-in 0.22s ease;
   }
   @keyframes slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
   .drawer > header {
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
-    padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-paper);
+    padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-canvas);
   }
   .drawer > header h2 {
-    margin: 0; font-family: var(--font-display), serif; font-size: 1.1rem; font-weight: 600; color: var(--ink-paper-primary);
+    margin: 0; font-family: var(--font-display), serif; font-size: 1.25rem; font-weight: 400;
+    letter-spacing: 0; color: var(--ink-paper-primary);
   }
   .x {
     border: none; background: transparent; cursor: pointer; font-size: 1.3rem; line-height: 1;
-    color: var(--ink-paper-secondary); padding: 0 var(--space-1);
+    color: var(--ink-paper-secondary); padding: 0 var(--space-1); border-radius: var(--radius-sm);
+    font-family: var(--font-body), sans-serif; transition: color 0.18s ease;
   }
   .x:hover { color: var(--accent); }
   .body { padding: var(--space-5); overflow-y: auto; }

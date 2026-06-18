@@ -211,69 +211,73 @@
 </main>
 
 <style>
-  /* The curator's table — exhibits as plates under lamplight (system.md dark light-table side). */
+  /* The curator's table — exhibits as warm paper plates on the gradient ground (Soft Static). */
   .library { min-height: 100vh; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); padding: var(--space-12) var(--space-8); }
   header { max-width: 60rem; margin: 0 auto var(--space-10); }
-  /* Amber, not green: forest green fails contrast on the dark table (tokens.css contrast-rescue;
-     matches ExhibitOverview's eyebrow). */
-  .eyebrow { color: var(--accent-2); }
+  /* Eyebrow: the quiet tracked-mono signal-chrome (composes the global .eyebrow). */
+  .eyebrow { color: var(--ink-canvas-muted); }
   .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
   .librights {
     flex: none; align-self: center; display: inline-flex; align-items: center; gap: var(--space-1);
-    font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer;
+    font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer;
     padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas);
+    transition: border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
   }
-  .librights:hover { border-color: var(--accent); }
-  .librights.set { border-color: var(--accent); }
+  .librights:hover { border-color: var(--border-canvas-emphasis); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
+  .librights.set { border-color: var(--border-canvas-emphasis); }
   .librights .dot { color: var(--accent); font-size: 0.55rem; }
-  h1 { font-family: var(--font-display); font-weight: 600; font-size: 3rem; line-height: 1.05; margin: var(--space-2) 0 var(--space-3); color: var(--ink-canvas-primary); }
-  .lede { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.5; color: var(--ink-canvas-secondary); margin: 0; max-width: 42rem; }
+  h1 { font-family: var(--font-display); font-weight: 300; font-size: 3rem; line-height: 1.1; margin: var(--space-2) 0 var(--space-3); color: var(--ink-canvas-primary); text-shadow: var(--shadow-text-haze); }
+  .lede { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.6; color: var(--ink-canvas-secondary); margin: 0; max-width: 42rem; }
 
-  /* Project bar — the "where does this library live" label on the table's edge. Quiet, 1px, no shadow. */
+  /* Project bar — the "where does this library live" label, on warm paper, separated by tone + soft shadow. */
   .projectbar {
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;
     margin-top: var(--space-6); padding: var(--space-4) var(--space-5);
-    background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-md);
+    background: var(--surface-canvas-raised); border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
   }
-  .projectbar.bound { border-left: 3px solid var(--accent); } /* a bound library is anchored — the accent marks it */
+  .projectbar.bound { box-shadow: var(--shadow-lift-low), inset 3px 0 0 var(--accent-muted); } /* a bound library is anchored — a quiet accent edge marks it */
   .where { min-width: 16rem; }
-  .place { margin: 0; font-family: var(--font-ui); font-size: 0.95rem; color: var(--ink-canvas-primary); display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
-  .place .kind { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px var(--space-2); }
+  .place { margin: 0; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-canvas-primary); display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+  .place .kind { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
   .place .name { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-canvas-primary); }
   .place .dot { font-family: var(--font-ui); font-size: 0.7rem; color: var(--semantic-warning); }
-  .hint { margin: var(--space-1) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--ink-canvas-secondary); }
+  .hint { margin: var(--space-1) 0 0; font-family: var(--font-body); font-size: var(--text-ui-md, 0.75rem); color: var(--ink-canvas-secondary); }
   .save-error { margin: var(--space-1) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--semantic-error); }
 
-  .actions { display: flex; align-items: center; gap: var(--space-2); }
-  .actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); font-weight: 500; padding: var(--space-2) var(--space-4); cursor: pointer; border-radius: var(--radius-sm); transition: background 120ms ease, border-color 120ms ease, color 120ms ease; }
+  .actions { display: flex; align-items: center; gap: var(--space-3); }
+  .actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); font-weight: 600; letter-spacing: 0.02em; padding: var(--space-2) var(--space-4); cursor: pointer; border-radius: var(--radius-sm); transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease; }
   .actions button:disabled { opacity: 0.5; cursor: default; }
-  .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
-  .primary:hover:not(:disabled) { background: var(--accent-hover, #2d553d); }
-  .ghost { background: transparent; color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); }
-  .ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-  .ghost.subtle { color: var(--ink-canvas-secondary); border-color: transparent; }
-  .ghost.subtle:hover:not(:disabled) { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
+  /* Primary CTA — the ONE rationed signal: signal-orange fill, soft rounded, warm glow. Save is the focal action. */
+  .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid transparent; box-shadow: var(--shadow-signal-glow); }
+  .primary:hover:not(:disabled) { background: var(--accent-hover); box-shadow: var(--shadow-signal-glow), var(--shadow-lift-low); }
+  /* Secondary actions — quiet soft-btn: warm paper, soft border, ink text. No orange. */
+  .ghost { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); }
+  .ghost:hover:not(:disabled) { background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
+  .ghost.subtle { color: var(--ink-canvas-secondary); border-color: var(--border-canvas); }
+  .ghost.subtle:hover:not(:disabled) { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); }
 
-  /* Lost-binding recovery — amber warning (a missing folder is recoverable, not destructive → not vermillion). */
-  .binding-error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: rgba(196,155,54,0.1); border: 1px solid var(--semantic-warning); border-radius: var(--radius-sm); }
-  .binding-error .msg { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); color: var(--ink-canvas-primary); }
+  /* Lost-binding recovery — warm warning (a missing folder is recoverable, not destructive). */
+  .binding-error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low), inset 3px 0 0 var(--semantic-warning); }
+  .binding-error .msg { font-family: var(--font-body); font-size: var(--text-ui-sm, 0.8125rem); color: var(--ink-canvas-primary); }
   .err-actions { display: flex; align-items: center; gap: var(--space-2); }
-  .err-actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); padding: var(--space-1) var(--space-3); cursor: pointer; background: transparent; color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); }
-  .err-actions button:hover { border-color: var(--accent); color: var(--accent); }
-  .err-actions .x { border: none; font-size: 1rem; color: var(--ink-canvas-muted); padding: 0 var(--space-2); }
+  .err-actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); letter-spacing: 0.02em; padding: var(--space-1) var(--space-3); cursor: pointer; background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: background 160ms ease, box-shadow 160ms ease; }
+  .err-actions button:hover { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  .err-actions .x { border: none; background: none; font-size: 1rem; color: var(--ink-canvas-muted); padding: 0 var(--space-2); }
+  .err-actions .x:hover { background: none; box-shadow: none; color: var(--ink-canvas-primary); }
 
   /* Recent libraries — the session-surviving re-open list (CONTEXT mitigation: "metadata, not content"). */
   .recents { margin-top: var(--space-5); }
-  .r-eyebrow { margin: 0 0 var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .r-eyebrow { margin: 0 0 var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .recents ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .recents li { display: flex; align-items: stretch; }
-  .recent { display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
-  .recent:hover:not(:disabled) { border-color: var(--accent); }
+  .recent { display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-sm) 0 0 var(--radius-sm); box-shadow: var(--shadow-lift-low); transition: background 160ms ease, box-shadow 160ms ease; }
+  .recent:hover:not(:disabled) { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-mid); }
   .recent:disabled { opacity: 0.5; cursor: default; }
-  .r-name { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-canvas-primary); }
-  .r-meta { font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); color: var(--ink-canvas-secondary); }
-  .forget { cursor: pointer; padding: 0 var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-canvas-muted); border: 1px solid var(--border-canvas); border-left: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .r-name { font-family: var(--font-body); font-size: 0.8rem; color: var(--ink-canvas-primary); }
+  .r-meta { font-family: var(--font-mono); font-size: var(--text-ui-xs, 0.7rem); color: var(--ink-canvas-secondary); }
+  .forget { cursor: pointer; padding: 0 var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-canvas-muted); border: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; box-shadow: var(--shadow-lift-low); transition: color 160ms ease; }
   .forget:hover { color: var(--semantic-error); }
 
   .grid { list-style: none; margin: 0 auto; padding: 0; max-width: 60rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-5); }
@@ -282,35 +286,40 @@
     display: flex; flex-direction: column; gap: var(--space-2); width: 100%; min-height: 7.5rem; cursor: pointer; text-align: left;
     padding: var(--space-5);
     background: var(--surface-canvas-raised); color: inherit;
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-lg);
-    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
+    transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
   }
-  .card:hover { background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); transform: translateY(-2px); }
-  .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-canvas-primary); }
-  .meta { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-2); }
-  /* Example (template) marker — amber, matching the in-editor playground banner (transient, not yours-yet). */
-  .card.template { border-style: dashed; }
-  .badge { align-self: flex-start; font-family: var(--font-ui); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--semantic-warning); border: 1px solid var(--semantic-warning); border-radius: 999px; padding: 1px var(--space-2); }
+  .card:hover { background: var(--surface-canvas-overlay); transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
+  .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); }
+  .meta { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
+  /* Example (template) marker — a soft warm dashed edge + quiet warning label (transient, not yours-yet). */
+  .card.template { box-shadow: var(--shadow-lift-low), inset 0 0 0 1px var(--border-canvas-emphasis); }
+  .badge { align-self: flex-start; font-family: var(--font-ui); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--semantic-warning); border: 1px solid var(--semantic-warning); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
   .ex-word { color: var(--semantic-warning); font-weight: 600; }
 
-  /* New-exhibit tile — a dashed plate awaiting a work. */
+  /* New-exhibit tile — a soft dashed plate awaiting a work (separated by tone, not a hard rectangle). */
   .new {
     display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; min-height: 7.5rem; box-sizing: border-box;
     padding: var(--space-5);
-    background: none; border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-lg);
+    background: none; border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md);
   }
-  .plus { font-family: var(--font-display); font-size: 1.6rem; line-height: 1; color: var(--ink-canvas-muted); }
+  .plus { font-family: var(--font-display); font-weight: 300; font-size: 1.6rem; line-height: 1; color: var(--ink-canvas-muted); }
   .new input {
     width: 100%; box-sizing: border-box; font-family: var(--font-body); font-size: 1rem; padding: var(--space-2) var(--space-3);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
     border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
+    transition: border-color 160ms ease, box-shadow 160ms ease;
   }
-  .new input:focus { outline: none; border-color: var(--accent); }
+  .new input:focus { outline: none; border-color: var(--border-canvas-emphasis); box-shadow: var(--shadow-inset-fog); }
+  /* Create — quiet soft-btn: warm paper, soft border, ink text. Signal-orange is rationed to Save (the focal action). */
   .new button {
-    font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-2) var(--space-4); cursor: pointer;
-    background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm);
+    font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.02em; padding: var(--space-2) var(--space-4); cursor: pointer;
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm);
+    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
   }
-  .new button:disabled { background: var(--accent-muted); color: var(--ink-canvas-muted); border-color: transparent; cursor: default; }
-  .new .alt-create { background: none; border: none; padding: 6px 0; font-weight: 400; color: var(--ink-canvas-secondary); } /* 6px v-pad -> 24px+ hit box (Fitts) */
-  .new .alt-create:hover { color: var(--accent-2); }
+  .new button:hover:not(:disabled) { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  .new button:disabled { background: none; color: var(--ink-canvas-muted); border-color: var(--border-canvas); box-shadow: none; cursor: default; }
+  .new .alt-create { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.14em; background: none; border: none; box-shadow: none; padding: 6px 0; font-weight: 400; color: var(--ink-canvas-secondary); } /* 6px v-pad -> 24px+ hit box (Fitts) */
+  .new .alt-create:hover { background: none; box-shadow: none; color: var(--accent-2); }
 </style>

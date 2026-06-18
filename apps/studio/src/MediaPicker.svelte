@@ -76,35 +76,35 @@
 {/if}
 
 <style>
-  /* Mirrors CmdK's warm-paper drawer over the dimmed dark table — the two pickers are siblings. */
+  /* Mirrors CmdK's warm-paper drawer over the soft gallery ground — the two pickers are siblings. */
   .scrim {
     position: fixed; inset: 0; z-index: 60; display: flex; justify-content: center; align-items: flex-start;
-    padding-top: 10vh; background: rgba(12, 11, 9, 0.42);
+    padding-top: 10vh; background: rgba(59, 49, 56, 0.42);
   }
   .panel {
     width: min(680px, 92vw); max-height: 74vh; display: flex; flex-direction: column; outline: none;
-    background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-lg);
-    box-shadow: 0 8px 28px rgba(12, 11, 9, 0.38); overflow: hidden;
+    background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift-mid); overflow: hidden;
   }
-  .head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-paper); }
-  .head .seal { font-family: var(--font-body); font-size: 1.2rem; color: var(--accent); }
-  .head input { flex: 1; border: none; background: none; outline: none; font-family: var(--font-ui); font-size: 1.0625rem; color: var(--ink-paper-primary); }
+  .head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-canvas); }
+  .head .seal { font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; color: var(--accent); }
+  .head input { flex: 1; border: none; background: none; outline: none; font-family: var(--font-body); font-size: 1.0625rem; color: var(--ink-paper-primary); }
   .head input::placeholder { color: var(--ink-paper-muted); }
-  kbd { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-paper-secondary); background: var(--surface-paper-hover); border: 1px solid var(--border-paper); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
+  kbd { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-paper-secondary); text-transform: uppercase; letter-spacing: 0.14em; background: var(--surface-paper-hover); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
 
   .grid { list-style: none; margin: 0; padding: var(--space-3); display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: var(--space-3); overflow-y: auto; }
   .grid button {
     display: flex; flex-direction: column; gap: var(--space-1); width: 100%; cursor: pointer; text-align: left;
-    padding: var(--space-2); background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-radius: var(--radius-md); transition: border-color 100ms ease, box-shadow 100ms ease;
+    padding: var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-md); transition: box-shadow 160ms ease, border-color 160ms ease;
   }
-  .grid button:hover { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .grid button:hover { border-color: var(--border-canvas-emphasis); box-shadow: var(--shadow-lift-low); }
   .thumb { display: block; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); background-color: var(--surface-paper-hover); background-size: cover; background-position: center; }
   .thumb.plate { display: flex; align-items: center; justify-content: center; }
   .plate-glyph { font-size: 1.6rem; color: var(--ink-paper-muted); }
   .tile-label { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tile-sub { font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-paper-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .empty { padding: var(--space-5); font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-paper-secondary); }
-  .hint { margin: 0; padding: var(--space-2) var(--space-5) var(--space-3); border-top: 1px solid var(--border-paper); font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-paper-muted); }
+  .tile-sub { font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-paper-muted); opacity: 0.62; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .empty { padding: var(--space-5); font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
+  .hint { margin: 0; padding: var(--space-2) var(--space-5) var(--space-3); border-top: 1px solid var(--border-canvas); font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-paper-muted); }
 </style>

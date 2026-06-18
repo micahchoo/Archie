@@ -55,7 +55,7 @@
 </script>
 
 {#if open}
-  <!-- Faint scrim over the dark table; the drawer itself is warm paper. Click-away closes. -->
+  <!-- Soft warm scrim over the gallery ground; the drawer itself is warm paper. Click-away closes. -->
   <div class="scrim" role="presentation" onclick={() => onclose()}>
     <div class="drawer" role="dialog" aria-label="Cite a note or exhibit" onclick={(e) => e.stopPropagation()}>
       <div class="search">
@@ -97,34 +97,35 @@
 {/if}
 
 <style>
-  /* The catalog drawer floats over the dark light-table on warm paper — part of writing the note,
-     not a foreign command bar. Forest-green active row mirrors the sidebar note cards (§108). */
+  /* The catalog drawer floats over the gallery ground on warm paper — part of writing the note,
+     not a foreign command bar. A quiet accent-muted tint marks the active row (no loud fill). */
   .scrim {
     position: fixed; inset: 0; z-index: 60;
     display: flex; justify-content: center; align-items: flex-start;
     padding-top: 12vh;
-    background: rgba(12, 11, 9, 0.42); /* the dark table, dimmed — no harsh black modal veil */
+    background: rgba(59, 49, 56, 0.42); /* warm charcoal haze, soft veil */
   }
   .drawer {
     width: min(560px, 92vw); max-height: 70vh; display: flex; flex-direction: column;
-    background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-lg);
-    box-shadow: 0 8px 28px rgba(12, 11, 9, 0.38); /* one soft float-shadow, Depth §51 */
+    background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift-mid); /* soft warm lift, no hard offset */
     overflow: hidden;
   }
 
   /* Search row — the manuscript margin where you note a reference */
-  .search { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-paper); }
-  .search .seal { font-family: var(--font-body); font-size: 1.2rem; color: var(--accent); }
+  .search { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-canvas); }
+  .search .seal { font-family: var(--font-display); font-weight: 400; font-size: 1.2rem; color: var(--accent); }
   .search input {
     flex: 1; border: none; background: none; outline: none;
-    font-family: var(--font-ui); font-size: 1.0625rem; color: var(--ink-paper-primary);
+    font-family: var(--font-body); font-size: 1.0625rem; color: var(--ink-paper-primary);
   }
   .search input::placeholder { color: var(--ink-paper-muted); }
 
   kbd {
     font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-paper-secondary);
-    background: var(--surface-paper-hover); border: 1px solid var(--border-paper); border-radius: var(--radius-sm);
+    text-transform: uppercase; letter-spacing: 0.14em;
+    background: var(--surface-paper-hover); border-radius: var(--radius-sm);
     padding: 1px var(--space-2);
   }
 
@@ -134,14 +135,14 @@
     display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: var(--space-3);
     width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-2) var(--space-3); margin-bottom: 2px;
-    background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid transparent; border-left: 3px solid transparent; border-radius: var(--radius-md);
-    transition: background 100ms ease, border-color 100ms ease;
+    background: transparent; color: var(--ink-paper-primary);
+    border: none; border-left: 2px solid transparent; border-radius: var(--radius-sm);
+    transition: background 140ms ease, border-color 140ms ease;
   }
   .results button.active { background: var(--accent-muted); border-left-color: var(--accent); }
   .kind {
-    font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.04em;
-    color: var(--accent); text-transform: uppercase;
+    font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.14em;
+    color: var(--accent); text-transform: uppercase; opacity: 0.62;
   }
   .kind.exhibit { color: var(--ink-paper-secondary); }
   .label {
@@ -149,11 +150,11 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .where { font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-paper-muted); white-space: nowrap; }
-  .empty { padding: var(--space-5); font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-paper-secondary); }
+  .empty { padding: var(--space-5); font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
 
   .hint {
     margin: 0; padding: var(--space-2) var(--space-5) var(--space-3);
-    border-top: 1px solid var(--border-paper);
+    border-top: 1px solid var(--border-canvas);
     font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-paper-muted);
   }
   .hint kbd { margin: 0 1px; }

@@ -32,7 +32,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
     mediaTypeFromSource, timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
     MAX_MASTER_DIM,
     tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary,
-    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type Section, type Reading, type RightsFields, type Emphasis,
+    parseFragmentXYWH, lngLatToPixel, pixelToLngLat, formatLngLat,
+    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
     readExifCaptureDate,
   } from "@render/core";
   import type { DrawTool, MarkerStyle } from "@render/mount";
@@ -63,6 +64,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // §B object set: 11 IIIF-direct images + 1 sound (o12). Spread width/height/mediaType/duration
   // conditionally — o12 (sound) carries no dims, and exactOptionalPropertyTypes forbids `width: undefined`.
   const voynichObjMeta = voynichObjects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}) }));
+  // Geo-annotation prototype (DESIGN.md): a slippy-map basemap as a first-class Archie surface. OSM raster
+  // XYZ tiles fetched LIVE (Phase 1; offline/baked tiles = Phase 3 / D1). maxZoom 6 = world→continent, light
+  // to demo. Attribution is REQUIRED by the OSM tile usage policy (surfaced as a credit on the canvas).
+  const GEO_TEMPLATE = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+  const geoBasemap: TileSourceDescriptor = { kind: "xyz", template: GEO_TEMPLATE, tileSize: 256, minZoom: 0, maxZoom: 6, attribution: "© OpenStreetMap contributors" };
+  const geoRights: RightsFields = { rights: "https://opendatacommons.org/licenses/odbl/", requiredStatement: { label: "Basemap", value: "© OpenStreetMap contributors, ODbL." } };
   const DEFAULT_EXHIBITS: ExhibitMeta[] = [
     // THE THREE-LAYOUT EXERCISE — one shared seed (../../viewer/src/voynich.ts), three exhibits, each a
     // different Archie layout. The authored readings/sections come from the SHARED voynich.ts (§G / ADR-0007).
@@ -79,6 +86,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
     // rule: third-party rights-clean, never the author's personal work). Two Readings demonstrate
     // the rival-interpretations differentiator in a non-manuscript register. DRAFT — human-gated.
     { id: "ex-atlas", slug: "language-atlas", title: atlasTitle, summary: atlasSummary, layout: "grid", seedVersion: 1, readings: atlasReadings, ...atlasRights, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })) },
+    // GEO MAP — the geo-annotation prototype (DESIGN.md). One slippy-map basemap object, geo-annotated with
+    // pins anchored to lng/lat. Hand-seeded descriptor (no map-import UI yet — Phase 2 / D7). DRAFT: this is
+    // the prototype the UI/UX grilling stress-tests.
+    { id: "ex-geo", slug: "geo-map", title: "World map (geo-annotation prototype)", summary: "Drop pins on a live map — each anchored to a longitude/latitude that stays put as you zoom and pan. A prototype of Archie's geo-annotation extension.", layout: "single", seedVersion: 1, ...geoRights, objects: [{ id: "m1", source: GEO_TEMPLATE, label: "World basemap", tileSource: geoBasemap, ...geoRights }] },
   ];
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
@@ -177,11 +188,33 @@ import LayoutPicker from "./LayoutPicker.svelte";
     }
     return s;
   }
+  // Seed the geo-map prototype with a few city pins so the exhibit isn't empty and the lng/lat readout is
+  // immediately visible. Pins are ordinary pixel-selector notes placed at lngLatToPixel(city) — the map
+  // surface keeps them geo-anchored; the readout derives lng/lat back from the pixel centre (geometry/geo).
+  function seededGeo(): AnnotationSession {
+    const s = new AnnotationSession(author);
+    const cities = [
+      { name: "London", lng: -0.1276, lat: 51.5074 },
+      { name: "New York", lng: -74.006, lat: 40.7128 },
+      { name: "Tokyo", lng: 139.6917, lat: 35.6895 },
+      { name: "Nairobi", lng: 36.8219, lat: -1.2921 },
+    ];
+    const W = 140; // image-px hit box at the full extent — a visible dot at the world-fit zoom
+    for (const c of cities) {
+      const p = lngLatToPixel({ lng: c.lng, lat: c.lat }, geoBasemap);
+      s.createNote({
+        target: rectSel(`${BASE}geo-map/canvas/m1`, Math.round(p.x - W / 2), Math.round(p.y - W / 2), W, W),
+        body: [{ type: "TextualBody", value: c.name, purpose: "commenting" }],
+      });
+    }
+    return s;
+  }
   const seededFor = (slug: string): (() => AnnotationSession) | null =>
     slug === "voynich-rosettes" ? () => seededVoynich("voynich-rosettes", { objectIds: new Set(["o9"]), includeAv: false })
     : slug === "voynich" ? () => seededVoynich("voynich", { includeAv: true })
     : slug === "voynich-reading" ? () => seededVoynich("voynich-reading", { includeAv: true })
     : slug === "language-atlas" ? seededAtlas
+    : slug === "geo-map" ? seededGeo
     : null;
   let session = $state(new AnnotationSession(author));
 
@@ -821,6 +854,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const canvasId = $derived(canvasIdOf(currentObjectId));
   // AV objects (sound/video) get the temporal AvEditor instead of the OSD Canvas (draw tools too).
   const isAvCurrent = $derived(current?.mediaType === "sound" || current?.mediaType === "video");
+  // Map objects (geo-annotation): a tileSource descriptor mounts a slippy-map basemap on the same OSD
+  // Canvas. The pin tool + lng/lat readout are gated on this.
+  const currentTileSource = $derived(current?.tileSource);
+  const isMapCurrent = $derived(!!current?.tileSource);
   // The image URL the Canvas mounts: imported (/assets) objects resolve to their blob: URL.
   const currentSource = $derived(current ? (isAsset(current.source) ? (assetUrls[current.id] ?? current.source) : current.source) : "");
   // Resolved image URL for an object's rail thumbnail (asset → blob: URL; else a RENDERABLE derivative —
@@ -1025,6 +1062,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
   }
   // AV note time range (for the WADM form's conditional time fieldset). Null for image (xywh) notes.
   const selectorValue = (r: AnnotationRecord): string => ((r.target as { selector?: { value?: string } } | undefined)?.selector?.value) ?? "";
+  // Geo readout (geo-annotation): derive a pin's lng/lat from its pixel position on the current basemap
+  // (the pixel selector is the source of truth on a fixed basemap; lng/lat is a pure derivation — DESIGN.md D2).
+  function geoLabelOf(r: AnnotationRecord): string | null {
+    const ts = currentTileSource;
+    if (!ts) return null;
+    const box = parseFragmentXYWH(selectorValue(r));
+    if (!box) return null;
+    return formatLngLat(pixelToLngLat({ x: box.x + box.w / 2, y: box.y + box.h / 2 }, ts));
+  }
   const timeOf = (r: AnnotationRecord) => parseTimeFragment(selectorValue(r));
   function applyTime(start: number, end: number) {
     if (!editing) return;
@@ -1281,7 +1327,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
         {saveStatus.health === "error" ? "⚠ Save failed" : dirty ? "● Unsaved" : "Saved"}</span>
       <button onclick={() => void save()} disabled={!dirty}>Save</button>
     {/if}
-    <button onclick={() => pub.openDialog()}>Publish & Share…</button>
+    <button class="publish-signal" onclick={() => pub.openDialog()}>Publish & Share…</button>
     <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
   </header>
 
@@ -1347,7 +1393,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
          pan — the state must live somewhere besides the cursor. Same banner idiom as framing. -->
     <div class="framing-banner" role="status">
       <span class="fb-tag">Drawing a region</span>
-      <span class="fb-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the image — it becomes your note’s place. Drag pans again once you’ve drawn.</span>
+      <span class="fb-msg">{creating === "pin" ? "Click the map to drop a geo-anchored pin — its longitude/latitude is read from where you click." : `Draw the ${creating === "rectangle" ? "box" : "outline"} on the image — it becomes your note’s place. Drag pans again once you’ve drawn.`}</span>
       <button class="fb-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
     </div>
   {/if}
@@ -1431,12 +1477,16 @@ import LayoutPicker from "./LayoutPicker.svelte";
              image, and the note is created at that locus — the canvas then returns to ambient selection. -->
         {#if creating}
           <div class="new-note armed" role="status">
-            <span class="nn-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the image</span>
+            <span class="nn-msg">{creating === "pin" ? "Click the map to drop a pin" : `Draw the ${creating === "rectangle" ? "box" : "outline"} on the image`}</span>
             <button type="button" class="nn-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
           </div>
         {:else}
           <div class="new-note">
             <span class="nn-lead">New note</span>
+            {#if isMapCurrent}
+              <!-- Geo-annotation (DESIGN.md): a pin is a single click on the map, anchored to lng/lat. -->
+              <button type="button" onclick={() => (creating = "pin")} title="Click the map to drop a geo-anchored pin">📍 Pin</button>
+            {/if}
             <button type="button" onclick={() => (creating = "rectangle")} title="Draw a rectangular region">▭ Box</button>
             <button type="button" onclick={() => (creating = "polygon")} title="Trace an irregular outline">⬠ Outline</button>
           </div>
@@ -1452,6 +1502,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
             <button onclick={() => (selected = r.logicalId)}>
               <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
               <div class="meta">
+                {#if isMapCurrent}{@const g = geoLabelOf(r)}{#if g}<span class="geo" title="Longitude / latitude — derived from the pin's position on the basemap">📍 {g}</span>{/if}{/if}
                 {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
                 <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
                 {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{/if}
@@ -1511,9 +1562,13 @@ import LayoutPicker from "./LayoutPicker.svelte";
         {/key}
       {:else if current && assetsReady}
         {#key canvasId}
-          <Canvas source={currentSource} {canvasId} {annotations} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
+          <Canvas source={currentSource} tileSource={currentTileSource} {canvasId} {annotations} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
             onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
         {/key}
+        {#if isMapCurrent && currentTileSource?.attribution}
+          <!-- Basemap attribution (REQUIRED by the tile provider's terms — DESIGN.md D6). -->
+          <div class="map-attribution">{currentTileSource.attribution}</div>
+        {/if}
       {:else if current}
         <div class="no-canvas">Loading…</div>
       {:else}
@@ -1568,165 +1623,182 @@ import LayoutPicker from "./LayoutPicker.svelte";
 </div>
 
 <style>
-  /* "Curator's study at night": the header + canvas are the dark light table; the notes
-     sidebar is a warm-paper notebook; forest green is the scholar's-ink accent. */
+  /* Soft Static: the header + canvas float on the warm gradient ground; the notes sidebar is a
+     warm-paper notebook; signal-orange is rationed to the one publish action. */
   .app { display: flex; flex-direction: column; height: 100vh; background: var(--surface-canvas); }
 
-  /* Header — the light table's frame */
+  /* Header — a soft warm-paper band, separated by tone + a whisper-soft border (no hard frame) */
   header {
     display: flex; align-items: baseline; gap: var(--space-3);
     padding: var(--space-3) var(--space-5);
     background: var(--surface-canvas-raised);
     border-bottom: 1px solid var(--border-canvas);
   }
-  .wordmark { font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; color: var(--ink-canvas-primary); letter-spacing: 0.01em; margin: 0; }
-  .sub { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
+  /* Wordmark / title → Fraunces, low weight, sentence case (no uppercase, no text-shadow) */
+  .wordmark { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; color: var(--ink-canvas-primary); letter-spacing: 0; margin: 0; }
+  h1.wordmark { font-weight: 300; color: var(--ink-canvas-primary); text-shadow: var(--shadow-text-haze); }
+  .sub { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .spacer { flex: 1; }
   /* Vertically centres the full-width ~80vh overview band (breathing room above/below; no frame). */
   .overview-stage { min-height: 100vh; display: flex; align-items: center; background: var(--surface-canvas); }
-  .exhibit-back { background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-2) var(--space-2) 0; /* 24px+ hit box (Fitts) */ font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-secondary); align-self: center; }
+  .exhibit-back { background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-2) var(--space-2) 0; /* 24px+ hit box (Fitts) */ font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-canvas-secondary); align-self: center; transition: color 160ms ease; }
   .exhibit-back:hover { color: var(--accent-2); }
   .no-objects { font-family: var(--font-ui); font-size: 0.78rem; color: var(--ink-canvas-secondary); align-self: center; }
-  .no-canvas { display: flex; align-items: center; justify-content: center; height: 100%; padding: var(--space-8); text-align: center; font-family: var(--font-body); font-size: 1.125rem; color: var(--ink-canvas-secondary); }
+  .no-canvas { display: flex; align-items: center; justify-content: center; height: 100%; padding: var(--space-8); text-align: center; font-family: var(--font-body); font-size: 1.125rem; line-height: 1.6; color: var(--ink-canvas-secondary); }
+  /* Header buttons → quiet .soft-btn idiom (warm paper, soft border, ink text). The ONE signal
+     (publish) is promoted separately below — every other header action stays quiet. */
   header > button {
-    font-family: var(--font-ui); font-size: var(--text-ui-sm);
+    font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.06em;
     padding: var(--space-1) var(--space-3);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-secondary);
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); cursor: pointer;
-    transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
+    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); cursor: pointer;
+    transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
   }
-  header > button:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
-  header > button { color: var(--ink-canvas-primary); }
-  header > button:disabled { color: var(--ink-canvas-muted); border-color: var(--border-canvas); cursor: default; }
-  .savestate { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  header > button:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  header > button:disabled { color: var(--ink-canvas-muted); border-color: var(--border-canvas); background: var(--surface-canvas-raised); box-shadow: none; cursor: default; }
+  /* The ONE rationed signal on the editor surface: Publish & Share. */
+  header > button.publish-signal { background: var(--accent); color: var(--ink-on-accent); border: none; box-shadow: var(--shadow-signal-glow); }
+  header > button.publish-signal:hover { background: var(--accent-hover); color: var(--ink-on-accent); box-shadow: var(--shadow-signal-glow); }
+  .savestate { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .savestate.dirty { color: var(--accent-2); }
   .savestate.error { color: var(--semantic-error); }
   /* (.swatch / .you rules removed — that UI moved into ReadingsModal/IdentityPrompt; the rules were dead.) */
   /* The ? shortcuts button — a round, quiet affordance for the cheat-sheet. */
-  header > button.help-btn { border-radius: 999px; min-width: 1.9rem; padding: var(--space-1) 0; text-align: center; font-weight: 700; }
+  header > button.help-btn { border-radius: 50%; min-width: 1.9rem; padding: var(--space-1) 0; text-align: center; font-weight: 400; }
 
-  /* Playground banner — honest ephemerality (§115). Amber tint = transient/attention; the keep button
-     carries the action accent (green). */
-  .playground-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); background: rgba(196, 155, 54, 0.1); border-bottom: 1px solid var(--border-canvas); border-left: 3px solid var(--semantic-warning); }
+  /* Playground banner — honest ephemerality (§115). Warm clay-tinted card; the keep action stays a
+     quiet .soft-btn (signal-orange is rationed to Publish, not spent here). */
+  .playground-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); margin: var(--space-3) var(--space-5) 0; background: var(--accent-3-muted); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
 
-  /* ⑧ collaboration summary — amber transient family (the playground banner's tone, library scale). */
+  /* ⑧ collaboration summary — warm transient card (the playground banner's tone, library scale). */
   .collab-note {
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
     margin: var(--space-4) var(--space-8) 0; padding: var(--space-3) var(--space-4);
-    background: rgba(214, 162, 62, 0.1); border: 1px solid var(--accent-2); border-radius: var(--radius-sm);
+    background: var(--accent-3-muted); border: none; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
   }
-  .cn-msg { font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); }
+  .cn-msg { font-family: var(--font-body); font-size: var(--text-ui-sm); line-height: 1.6; color: var(--ink-canvas-primary); }
   .cn-x { background: none; border: none; cursor: pointer; padding: 6px var(--space-2); font-size: 1rem; color: var(--ink-canvas-secondary); }
-  .pg-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--semantic-warning); }
-  .pg-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-canvas-secondary); }
-  .pg-keep { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
-  .pg-keep:hover { background: var(--accent-hover); }
-  .pg-keep:disabled { opacity: 0.6; cursor: default; }
+  .cn-x:hover { color: var(--ink-canvas-primary); }
+  .pg-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .pg-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-canvas-secondary); }
+  .pg-keep { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.06em; padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: background 160ms ease, box-shadow 160ms ease; }
+  .pg-keep:hover { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  .pg-keep:disabled { opacity: 0.6; cursor: default; box-shadow: none; }
 
   /* Breadcrumb crumb — the object level of "Exhibit › Object" (the spine is exhibit-level, notes object-level). */
-  .crumb { font-family: var(--font-display); font-size: 1.15rem; font-weight: 500; color: var(--ink-canvas-secondary); margin-left: var(--space-1); }
+  .crumb { font-family: var(--font-display); font-size: 1.2rem; font-weight: 300; color: var(--ink-canvas-secondary); margin-left: var(--space-1); }
   /* New-note affordance (ADR-0011): the create entry in the notes pane. Choose a shape → draw the
      region. Paper surface (it lives in the sidebar). "Armed" state turns accent while drawing. */
   .new-note { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
-  .new-note .nn-lead { font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-paper-secondary); }
-  .new-note > button { font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-1) var(--space-3); background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--border-paper); border-radius: var(--radius-sm); cursor: pointer; transition: color 120ms ease, border-color 120ms ease; }
-  .new-note > button:hover { color: var(--accent); border-color: var(--accent); }
-  .new-note.armed { gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--accent-muted); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
-  .new-note .nn-msg { flex: 1; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; color: var(--accent); }
-  .new-note .nn-cancel { font-family: var(--font-ui); font-size: var(--text-ui-sm); background: transparent; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); cursor: pointer; }
-  .new-note .nn-cancel:hover { color: var(--ink-paper-primary); border-color: var(--ink-paper-secondary); }
+  .new-note .nn-lead { font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  .new-note > button { font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease; }
+  .new-note > button:hover { color: var(--ink-paper-primary); background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-low); }
+  .new-note.armed { gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--accent-muted); border: none; border-radius: var(--radius-sm); }
+  .new-note .nn-msg { flex: 1; font-family: var(--font-body); font-size: var(--text-ui-sm); color: var(--ink-paper-primary); }
+  .new-note .nn-cancel { font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; background: var(--surface-paper-card); color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); cursor: pointer; transition: color 160ms ease, box-shadow 160ms ease; }
+  .new-note .nn-cancel:hover { color: var(--ink-paper-primary); box-shadow: var(--shadow-lift-low); }
 
-  /* Framing banner — the canvas is capturing a SECTION camera, not a note (accent = action, with the way out). */
-  .framing-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); background: var(--accent-muted); border-bottom: 1px solid var(--border-canvas); border-left: 3px solid var(--accent); }
-  .framing-banner .fb-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-  .framing-banner .fb-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-canvas-primary); }
-  .framing-banner .fb-cancel { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: var(--space-2); }
+  /* Framing banner — the canvas is capturing a SECTION camera, not a note. A quiet accent-muted card;
+     the active signal is a soft left dot of accent, not a hard bar. */
+  .framing-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-5); margin: var(--space-3) var(--space-5) 0; background: var(--accent-muted); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  .framing-banner .fb-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 400; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+  .framing-banner .fb-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-canvas-primary); }
+  .framing-banner .fb-cancel { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: var(--space-2); transition: box-shadow 160ms ease; }
   .framing-banner .fb-cancel kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-canvas-muted); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
-  .framing-banner .fb-cancel:hover { border-color: var(--accent); color: var(--accent); }
+  .framing-banner .fb-cancel:hover { box-shadow: var(--shadow-lift-low); color: var(--ink-canvas-primary); }
 
   /* Scope separator — the line between exhibit-level (spine, above) and object-level (notes, below). */
   .scope-sep { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
   .scope-sep::after { content: ""; flex: 1; height: 1px; background: var(--border-paper); }
-  .scope-sep span { font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  .scope-sep span { font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 400; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-paper-muted); }
 
-  /* Object rail — the exhibit's works laid along the table edge; the active one marked in forest green. */
+  /* Object rail — the exhibit's works laid along the table edge; the active one marked by a quiet
+     accent tint + soft lift (not a loud orange fill — the signal is rationed to Publish). */
   .objects {
     display: flex; gap: var(--space-2); align-items: stretch;
-    padding: var(--space-2) var(--space-5);
+    padding: var(--space-3) var(--space-5);
     background: var(--surface-canvas-raised); border-bottom: 1px solid var(--border-canvas);
     overflow-x: auto; /* many objects scroll the rail, not the page (12 plates pushed the page to ~2900px) */
   }
   /* Object tab — a thumbnail + label so you choose visually (P2-6), not by name alone. */
   .obj {
     display: flex; align-items: center; gap: var(--space-2); cursor: pointer; text-align: left; max-width: 16rem;
-    padding: var(--space-1) var(--space-2);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-secondary);
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
-    transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+    padding: var(--space-2);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
+    border: none; border-radius: var(--radius-sm);
+    transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
   }
-  .obj:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
-  .obj.on { background: var(--accent); color: var(--ink-on-accent); border-color: var(--accent); }
-  .obj-thumb { flex-shrink: 0; width: 40px; height: 32px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; border: 1px solid var(--border-canvas); }
-  .obj.on .obj-thumb { border-color: rgba(255,255,255,0.35); }
+  .obj:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  .obj.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
+  .obj-thumb { flex-shrink: 0; width: 40px; height: 32px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; box-shadow: var(--shadow-inset-fog); }
   .obj-meta { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-  .obj-label { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 600; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .obj-count { font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent-2); }
-  .obj.on .obj-count { color: rgba(255,255,255,0.85); }
+  .obj-label { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 400; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .obj-count { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-muted); }
+  .obj.on .obj-count { color: var(--accent); }
 
   /* Add-object affordance on the rail */
   .add-obj-toggle {
-    align-self: center; cursor: pointer; padding: var(--space-1) var(--space-3);
+    align-self: center; cursor: pointer; padding: var(--space-2) var(--space-3);
     background: none; color: var(--ink-canvas-secondary);
     border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-sm);
-    font-family: var(--font-ui); font-size: var(--text-ui-sm); transition: color 120ms ease, border-color 120ms ease;
+    font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
   }
-  .add-obj-toggle:hover { color: var(--accent-2); border-color: var(--accent-2); }
+  .add-obj-toggle:hover { color: var(--accent-2); border-color: var(--accent-2); background: var(--surface-canvas-overlay); }
   .add-obj { display: flex; align-items: center; gap: var(--space-2); }
   .add-obj input {
-    font-family: var(--font-body); font-size: 0.875rem; padding: var(--space-1) var(--space-2);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); width: 14rem;
+    font-family: var(--font-body); font-size: 0.875rem; padding: var(--space-2) var(--space-3);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
+    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); width: 14rem;
   }
   .add-obj input.lbl { width: 8rem; }
   .add-obj input:focus { outline: none; border-color: var(--accent-2); }
-  .add-obj button { cursor: pointer; padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
-  .add-obj button:disabled { background: var(--accent-muted); color: var(--ink-canvas-muted); border-color: transparent; cursor: default; }
-  .add-obj .cancel { background: none; color: var(--ink-canvas-secondary); border-color: var(--border-canvas); }
+  .add-obj button { cursor: pointer; padding: var(--space-2) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: background 160ms ease, box-shadow 160ms ease; }
+  .add-obj button:hover { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  .add-obj button:disabled { background: var(--surface-canvas-raised); color: var(--ink-canvas-muted); box-shadow: none; cursor: default; }
+  .add-obj .cancel { background: none; color: var(--ink-canvas-secondary); }
   .add-obj .cancel:hover { color: var(--ink-canvas-primary); }
-  /* Import feedback on the rail (AV ingest/upload UX): understated, over the dark light-table. The
-     spinner is the scholar's-ink accent; the note is a quiet warning-toned line you can dismiss. */
+  /* Import feedback on the rail (AV ingest/upload UX): understated, floating on the warm ground. The
+     spinner is the accent; the note is a quiet soft card you can dismiss. */
   .import-status { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); white-space: nowrap; }
   .import-spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent-muted); border-top-color: var(--accent); animation: import-spin 0.7s linear infinite; }
   @keyframes import-spin { to { transform: rotate(360deg); } }
-  .import-note { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 30rem; font-family: var(--font-ui); font-size: var(--text-ui-sm); line-height: 1.4; color: var(--ink-canvas-secondary); padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-left: 3px solid var(--semantic-warning); border-radius: var(--radius-sm); white-space: normal; }
+  .import-note { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 30rem; font-family: var(--font-body); font-size: var(--text-ui-sm); line-height: 1.5; color: var(--ink-canvas-secondary); padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low); white-space: normal; }
   .import-note-x { flex-shrink: 0; cursor: pointer; background: none; border: none; color: var(--ink-canvas-muted); font-size: var(--text-ui-xs); padding: 0 var(--space-1); }
   .import-note-x:hover { color: var(--ink-canvas-primary); }
   /* File-pick button (hides the native input) + the "or" separator */
-  .file-btn { display: inline-flex; align-items: center; cursor: pointer; padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
-  .file-btn:hover { border-color: var(--accent-2); color: var(--accent-2); }
+  .file-btn { display: inline-flex; align-items: center; cursor: pointer; padding: var(--space-2) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: color 160ms ease, box-shadow 160ms ease; }
+  .file-btn:hover { color: var(--accent-2); box-shadow: var(--shadow-lift-low); }
   .file-btn input { display: none; }
-  .add-obj .or { font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); }
+  .add-obj .or { font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-muted); }
 
   .body { display: flex; flex: 1; min-height: 0; }
   main { flex: 1; min-width: 0; background: var(--surface-canvas); position: relative; }
-  /* Worklist 1.2: the armed canvas wears its mode — inset accent ring + crosshair, gone on disarm. */
+  /* The armed canvas wears its mode — soft inset accent ring + crosshair, gone on disarm. */
+  /* Geo-annotation: basemap attribution credit (REQUIRED by the tile provider — DESIGN.md D6). Bottom-left
+     so it clears the bottom-right OSD locator mini-map. Warm charcoal scrim keeps it legible over map tiles. */
+  .map-attribution {
+    position: absolute; left: var(--space-2); bottom: var(--space-2); z-index: 25; pointer-events: none;
+    font-family: var(--font-ui, system-ui), sans-serif; font-size: 0.7rem; letter-spacing: 0.02em; color: var(--paper);
+    background: rgba(59, 49, 56, 0.55); padding: 3px var(--space-2); border-radius: var(--radius-sm);
+  }
   main.drawing { cursor: crosshair; }
-  main.drawing::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 30; box-shadow: inset 0 0 0 3px var(--accent); }
-  /* Drag-and-drop import feedback over the light table */
-  main.drag-over { outline: 2px dashed var(--accent-2); outline-offset: -8px; }
+  main.drawing::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 30; border-radius: var(--radius-md); box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-inset-fog); }
+  /* Drag-and-drop import feedback over the canvas */
+  main.drag-over { outline: 2px dashed var(--accent-2); outline-offset: -8px; border-radius: var(--radius-md); }
 
-  /* Marker-anchored note editor (ADR-0006) — a paper card floating over the dark canvas, positioned by
+  /* Marker-anchored note editor (ADR-0006) — a warm-paper card floating over the canvas, positioned by
      Canvas's onmarkerrect (+14px off the marker, donor PADDING) and following it on pan/zoom. */
   .note-popover {
     position: fixed; z-index: 50; width: 320px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px);
     overflow-y: auto; box-sizing: border-box;
     background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-md);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    border: none; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-mid);
   }
   .np-grip {
     display: block; width: 100%; cursor: grab; text-align: center; user-select: none;
-    padding: 2px 0; font-size: 0.8rem; line-height: 1.4; color: var(--ink-paper-muted);
+    padding: 4px 0; font-size: 0.8rem; line-height: 1.4; color: var(--ink-paper-muted);
     background: var(--surface-paper-hover); border: none; border-bottom: 1px solid var(--border-paper);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
   }
@@ -1743,43 +1815,47 @@ import LayoutPicker from "./LayoutPicker.svelte";
     border-left: 1px solid var(--border-canvas);
   }
   aside h2 { color: var(--ink-paper-secondary); margin: 0 0 var(--space-4); }
-  /* Editable object label — reads as a title, reveals as an input on hover/focus */
+  /* Editable object label — reads as a Fraunces title, reveals as an input on hover/focus */
   .object-title {
     display: block; width: 100%; box-sizing: border-box; margin: 0 0 var(--space-1);
-    font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-paper-primary);
+    font-family: var(--font-display); font-size: 1.7rem; font-weight: 300; line-height: 1.15; color: var(--ink-paper-primary);
     background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
-    padding: var(--space-1) 0;
-    transition: background 120ms ease, border-color 120ms ease;
+    padding: var(--space-1) var(--space-2);
+    transition: background 160ms ease, box-shadow 160ms ease;
   }
-  .object-title:hover { border-color: var(--border-paper); }
-  .object-title:focus { outline: none; background: var(--surface-paper-card); border-color: var(--accent); }
+  .object-title:hover { background: var(--surface-paper-hover); }
+  .object-title:focus { outline: none; background: var(--surface-paper-card); box-shadow: var(--shadow-lift-low); }
   ul { list-style: none; margin: 0; padding: 0; }
 
-  /* Annotation note card */
+  /* Annotation note card — warm paper, soft rounded, separated by tone + shadow (no hard border) */
   li button {
     display: block; width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-3) var(--space-4); margin-bottom: var(--space-2);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-left: 3px solid transparent;
+    border: none; border-left: 2px solid transparent;
     border-radius: var(--radius-md);
-    transition: background 120ms ease, border-color 120ms ease;
+    box-shadow: var(--shadow-lift-low);
+    transition: background 160ms ease, box-shadow 160ms ease;
   }
-  li button:hover { background: var(--surface-paper-hover); }
-  li.sel button { border-color: var(--border-paper); border-left-color: var(--accent); background: var(--accent-muted); }
-  .comment { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+  li button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
+  /* Selected = a quiet signal: a soft accent left-edge + faint tint, never a loud fill. */
+  li.sel button { border-left-color: var(--accent); background: var(--accent-muted); }
+  .comment { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
   .meta { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
-  .tag { font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); }
-  .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); background: rgba(107,98,80,0.1); padding: 2px var(--space-2); border-radius: 999px; }
-  .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-4); }
-  .csv-import { align-self: flex-start; background: none; border: none; cursor: pointer; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); } /* 24px+ hit box */
-  .csv-import:hover { color: var(--accent); }
-  .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
+  .tag { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-2); }
+  /* Geo-annotation: the pin's lng/lat readout in the note list (derived from its basemap position). */
+  .geo { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.02em; color: var(--ink-paper-secondary); }
+  .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); border: 1px solid var(--border-paper); padding: 2px var(--space-2); border-radius: var(--radius-sm); }
+  .hint { font-family: var(--font-body); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-4); }
+  .csv-import { align-self: flex-start; background: none; border: none; cursor: pointer; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); transition: color 160ms ease; } /* 24px+ hit box */
+  .csv-import:hover { color: var(--accent-2); }
+  .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
   /* Object-level rights disclosure — tucked at the foot of the object editor (rights grill Q6). */
   .rights-disc { margin-top: var(--space-4); border-top: 1px solid var(--border-paper); padding-top: var(--space-3); }
   .rights-disc > summary {
     cursor: pointer; list-style: none; display: flex; align-items: center; gap: var(--space-2);
-    font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 500;
-    text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-paper-secondary);
+    font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 400;
+    text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-paper-secondary);
   }
   .rights-disc > summary::-webkit-details-marker { display: none; }
   .rights-disc > summary::before { content: "▸"; color: var(--ink-paper-muted); transition: transform 0.15s; }
@@ -1787,26 +1863,26 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .rights-disc > summary .dot { color: var(--accent); font-size: 0.6rem; }
   .rights-disc > :global(.rights) { margin-top: var(--space-3); }
 
-  /* WADM form — editing on paper */
+  /* WADM form — editing on paper. Labels are quiet mono eyebrows; the one focal action (Save) is the signal. */
   .wadm { margin-top: var(--space-5); border-top: 1px solid var(--border-paper); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
-  .wadm h3 { margin: 0; font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; color: var(--ink-paper-primary); }
-  .wadm label { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); }
-  /* Comment field header: label + the ⌘K "Cite" link affordance (forest-green, system.md §19). */
+  .wadm h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 400; letter-spacing: 0; color: var(--ink-paper-primary); }
+  .wadm label { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  /* Comment field header: label + the ⌘K "Cite" link affordance (cord-blue link tone). */
   .wadm .field-head { display: flex; align-items: center; justify-content: space-between; }
   .wadm .cite {
     display: inline-flex; align-items: center; gap: var(--space-1); cursor: pointer;
     background: none; border: none; padding: 0;
-    font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.03em; text-transform: none;
-    color: var(--accent);
+    font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.03em; text-transform: none;
+    color: var(--accent-2);
   }
-  .wadm .cite:hover { color: var(--accent-hover); }
+  .wadm .cite:hover { color: var(--accent-2-hover); }
   .wadm .cite kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-paper-muted); background: var(--surface-paper-hover); border: 1px solid var(--border-paper); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
   .wadm textarea, .wadm input:not([type]) {
     font-family: var(--font-body); font-size: 1rem; padding: var(--space-2) var(--space-3);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
   }
-  .wadm textarea:focus, .wadm input:focus { outline: none; border-color: var(--accent); }
+  .wadm textarea:focus, .wadm input:focus { outline: none; border-color: var(--accent-2); }
   .wadm fieldset { border: 1px solid var(--border-paper); border-radius: var(--radius-sm); display: flex; gap: var(--space-4); padding: var(--space-2) var(--space-3); }
   /* AV time fieldset — start/end mm:ss inputs (the time note's geometry) */
   .wadm .time .t { flex-direction: column; gap: var(--space-1); }
@@ -1815,12 +1891,14 @@ import LayoutPicker from "./LayoutPicker.svelte";
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
   }
-  .wadm .time input:focus { outline: none; border-color: var(--accent); }
-  .wadm legend { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-paper-muted); padding: 0 var(--space-1); }
-  .del { align-self: flex-start; font-family: var(--font-ui); font-size: 0.8rem; padding: var(--space-1) var(--space-3); background: none; color: var(--accent); border: 1px solid var(--accent-muted); border-radius: var(--radius-sm); cursor: pointer; }
-  .del:hover { background: var(--accent-muted); border-color: var(--accent); }
+  .wadm .time input:focus { outline: none; border-color: var(--accent-2); }
+  .wadm legend { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); padding: 0 var(--space-1); }
+  /* Delete = a quiet destructive-toned soft button (not orange — the signal is reserved for Save). */
+  .del { align-self: flex-start; font-family: var(--font-ui); font-size: 0.8rem; letter-spacing: 0.04em; padding: var(--space-2) var(--space-3); background: var(--surface-paper-card); color: var(--semantic-error); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); cursor: pointer; transition: box-shadow 160ms ease; }
+  .del:hover { box-shadow: var(--shadow-lift-low); }
   /* Note-editor action row — Save (commit + close the popover) beside Delete. */
   .wadm-actions { display: flex; align-items: center; gap: var(--space-3); }
-  .save { cursor: pointer; font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
-  .save:hover { background: var(--accent-hover); }
+  /* Save = the ONE focal action in this popover → the orange signal. */
+  .save { cursor: pointer; font-family: var(--font-ui); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.04em; padding: var(--space-2) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-signal-glow); transition: background 160ms ease; }
+  .save:hover { background: var(--accent-hover); box-shadow: var(--shadow-signal-glow); }
 </style>

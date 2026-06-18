@@ -55,26 +55,41 @@
 {/if}
 
 <style>
-  /* Summary panel — one calm line answering "am I done?" on warm paper, forest-green accent. */
+  /* Summary panel — one calm line answering "am I done?" on warm paper, soft lift, a quiet signal edge. */
   .summary {
     display: flex; align-items: center; gap: var(--space-4);
     margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4);
-    background: var(--surface-paper-card); border: 1px solid var(--border-paper);
-    border-left: 3px solid var(--accent); border-radius: var(--radius-md);
+    background: var(--surface-canvas-raised); border-radius: var(--radius-md);
+    border-left: 3px solid var(--accent-muted);
+    box-shadow: var(--shadow-lift-low);
   }
-  .msg { font-family: var(--font-body); font-size: 1rem; line-height: 1.4; color: var(--ink-paper-primary); }
+  .msg { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-paper-primary); }
   .actions { margin-left: auto; display: flex; gap: var(--space-2); flex-shrink: 0; }
-  .actions button { font-family: var(--font-ui); font-size: 0.75rem; font-weight: 500; padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); cursor: pointer; }
-  .actions .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
-  .actions .ghost { background: none; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper); }
+  .actions button { font-size: 0.875rem; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer; }
+  /* Primary CTA — the one rationed signal action: accent fill, paper ink, soft glow. */
+  .actions .primary {
+    font-family: var(--font-body); font-weight: 600; letter-spacing: 0.01em;
+    background: var(--accent); color: var(--ink-on-accent);
+    border: none; box-shadow: var(--shadow-signal-glow);
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+  }
+  .actions .primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-lift-mid); }
+  /* Later / secondary — quiet soft button: warm paper, soft border, ink text. */
+  .actions .ghost {
+    font-family: var(--font-body); font-weight: 500; letter-spacing: 0.01em;
+    background: var(--surface-canvas-raised); color: var(--ink-paper-secondary);
+    border: 1px solid var(--border-canvas);
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .actions .ghost:hover { background: var(--surface-paper-hover); color: var(--ink-paper-primary); }
 
-  /* Conflict card — the WADM-form variant: both sides, pick one. */
-  .card { margin-bottom: var(--space-4); padding: var(--space-4); background: var(--surface-paper-card); border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: var(--space-2); }
-  .card .eyebrow { color: var(--accent); margin: 0; }
-  .card h3 { margin: 0; font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; color: var(--ink-paper-primary); }
-  .lead { margin: 0 0 var(--space-2); font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-paper-secondary); }
-  .side { text-align: left; cursor: pointer; padding: var(--space-3); border: 1px solid var(--border-paper); border-left: 3px solid transparent; border-radius: var(--radius-sm); background: var(--surface-paper-card); display: flex; flex-direction: column; gap: var(--space-1); }
-  .side:hover { border-left-color: var(--accent); background: var(--surface-paper-hover); }
-  .who { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
-  .text { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; color: var(--ink-paper-primary); }
+  /* Conflict card — the WADM-form variant: both sides, pick one. Warm paper, rounded, soft lift. */
+  .card { margin-bottom: var(--space-4); padding: var(--space-4); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); display: flex; flex-direction: column; gap: var(--space-2); }
+  .card .eyebrow { margin: 0; }
+  .card h3 { margin: 0; font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.3; color: var(--ink-paper-primary); }
+  .lead { margin: 0 0 var(--space-2); font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
+  .side { text-align: left; cursor: pointer; padding: var(--space-3); border: 1px solid var(--border-canvas); border-left: 3px solid transparent; border-radius: var(--radius-sm); background: var(--surface-paper); display: flex; flex-direction: column; gap: var(--space-1); transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
+  .side:hover { border-left-color: var(--accent); background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-low); }
+  .who { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  .text { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-primary); }
 </style>

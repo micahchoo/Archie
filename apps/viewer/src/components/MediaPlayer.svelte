@@ -141,35 +141,36 @@
 </div>
 
 <style>
-  /* Listening station: dark media surface (left) + warm-paper transcript spine (right); the active
-     line is inked forest-green — the NarrativeReader idiom, applied to time instead of space. */
+  /* Listening station: warm paper media ground (left) + warm paper transcript spine (right); the active
+     line is a quiet signal — the NarrativeReader idiom, applied to time instead of space. */
   .player { display: flex; height: 100vh; background: var(--surface-canvas); }
   main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface-canvas); }
   .media-region { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: var(--space-8); }
 
-  /* Temporal map: the recording's full length as a strip, each note a mark at its moment (read-only
-     mirror of the Studio .vtimeline — same tokens). A time axis, not a scrubber overlay: its width is
-     the media column, not the rendered frame, so a letterboxed video still maps marks honestly. */
-  .timeline { flex-shrink: 0; padding: var(--space-2) var(--space-6) var(--space-4); background: var(--surface-canvas-raised); border-top: 1px solid var(--border-canvas); }
-  .tl-label { display: block; margin-bottom: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-canvas-muted); }
-  .tl-track { position: relative; height: 1.5rem; background: var(--surface-canvas-overlay); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; }
-  .tl-mark { position: absolute; top: 2px; bottom: 2px; min-width: 3px; box-sizing: border-box; padding: 0; cursor: pointer; background: rgba(58, 107, 76, 0.35); border: 1px solid var(--accent); border-radius: 2px; transition: background 120ms ease; }
-  .tl-mark:hover, .tl-mark.active { background: var(--accent); }
-  .tl-mark:focus-visible { outline: 2px solid var(--ink-canvas-primary); outline-offset: 1px; z-index: 2; }
-  .tl-cursor { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink-canvas-primary); pointer-events: none; }
+  /* Temporal map: the recording's full length as a soft strip, each note a mark at its moment. A time
+     axis, not a scrubber overlay: its width is the media column, not the rendered frame, so a
+     letterboxed video still maps marks honestly. The note now playing is the one rationed signal. */
+  .timeline { flex-shrink: 0; padding: var(--space-3) var(--space-6) var(--space-5); background: transparent; }
+  .tl-label { display: block; margin-bottom: var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .tl-track { position: relative; height: 1.5rem; background: var(--surface-canvas-overlay); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-inset-fog); cursor: pointer; overflow: hidden; }
+  .tl-mark { position: absolute; top: 4px; bottom: 4px; min-width: 3px; box-sizing: border-box; padding: 0; cursor: pointer; background: var(--accent-3-muted); border: none; border-radius: var(--radius-sm); transition: background 160ms ease, box-shadow 160ms ease; }
+  .tl-mark:hover { background: var(--accent-3); }
+  .tl-mark.active { background: var(--accent); box-shadow: var(--shadow-signal-glow); }
+  .tl-mark:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; z-index: 2; }
+  .tl-cursor { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink-canvas-secondary); pointer-events: none; }
 
   .audio-stage { display: flex; flex-direction: column; align-items: center; gap: var(--space-4); max-width: 32rem; text-align: center; }
-  .audio-stage .now { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
-  .audio-stage h1 { font-family: var(--font-display); font-weight: 600; font-size: 2rem; line-height: 1.1; margin: 0; color: var(--ink-canvas-primary); }
+  .audio-stage .now { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .audio-stage h1 { font-family: var(--font-display); font-weight: 300; font-size: 2.4rem; line-height: 1.15; margin: 0; color: var(--ink-canvas-primary); text-shadow: var(--shadow-text-haze); }
   .audio-stage audio { width: 100%; margin-top: var(--space-2); }
-  /* Broken-media fallback (empty/error gate): a missing/undecodable recording, on the dark table. */
-  .media-failed { max-width: 32rem; font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-canvas-secondary); text-align: center; padding: var(--space-6); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); }
+  /* Broken-media fallback (empty/error gate): a missing/undecodable recording, on warm paper. */
+  .media-failed { max-width: 32rem; font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-canvas-secondary); text-align: center; padding: var(--space-6); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
   /* The wrap hugs the rendered video so the overlay aligns with the frame (boxes are % of the frame). */
   .video-wrap { position: relative; display: inline-block; max-width: 100%; max-height: 100%; line-height: 0; }
-  .video-wrap video { display: block; max-width: 100%; max-height: 84vh; }
+  .video-wrap video { display: block; max-width: 100%; max-height: 84vh; border-radius: var(--radius-md); }
   .box-overlay { position: absolute; inset: 0; pointer-events: none; }
-  .rbox { position: absolute; box-sizing: border-box; border: 2px solid var(--accent); background: rgba(58, 107, 76, 0.1); border-radius: 2px; }
-  .rbox.active { box-shadow: 0 0 0 2px rgba(58, 107, 76, 0.45); background: rgba(58, 107, 76, 0.18); }
+  .rbox { position: absolute; box-sizing: border-box; border: 1.5px solid var(--accent-3); background: var(--accent-3-muted); border-radius: var(--radius-sm); }
+  .rbox.active { border-color: var(--accent); background: var(--accent-muted); box-shadow: var(--shadow-signal-glow); }
 
   aside {
     width: 420px; flex-shrink: 0; overflow: auto; box-sizing: border-box;
@@ -177,9 +178,10 @@
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
   }
-  .eyebrow { color: var(--accent); font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; margin: 0; }
-  .vid-label { font-family: var(--font-display); font-weight: 600; font-size: 1.6rem; line-height: 1.1; margin: var(--space-2) 0 0; color: var(--ink-paper-primary); }
-  .hint { font-family: var(--font-ui); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: var(--space-3) 0 var(--space-5); }
+  /* Quiet tracked-mono eyebrow via global .eyebrow; kept self-margin only. */
+  .eyebrow { margin: 0; }
+  .vid-label { font-family: var(--font-display); font-weight: 400; font-size: 1.7rem; line-height: 1.15; margin: var(--space-2) 0 0; color: var(--ink-paper-primary); }
+  .hint { font-family: var(--font-body); font-size: 0.86rem; line-height: 1.6; letter-spacing: 0; color: var(--ink-paper-secondary); margin: var(--space-3) 0 var(--space-5); }
 
   .cues { list-style: none; margin: 0; padding: 0; }
   .cues li { margin-bottom: var(--space-2); }
@@ -188,13 +190,14 @@
     width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-3) var(--space-4) var(--space-3) var(--space-4);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-left: 3px solid transparent;
-    border-radius: var(--radius-md);
-    transition: background 120ms ease, border-color 120ms ease;
+    border: none; border-left: 3px solid transparent;
+    border-radius: var(--radius-sm);
+    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
-  .cues button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); }
+  .cues button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-low); }
   .cues button.active { border-left-color: var(--accent); background: var(--accent-muted); }
-  .t { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); }
-  .line { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.5; color: var(--ink-paper-primary); }
-  .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
+  .t { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--ink-paper-muted); }
+  .cues button.active .t { color: var(--accent); }
+  .line { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-primary); }
+  .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); background: var(--surface-paper-card); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-inset-fog); }
 </style>
