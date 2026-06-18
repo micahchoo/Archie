@@ -116,8 +116,21 @@
   .margin-card { position: absolute; left: 16px; right: 0; transition: top 120ms ease-out; }
   .margin-card.focused { z-index: 2; }
   .leader { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-  .leader line { stroke: currentColor; stroke-width: 1; opacity: 0.5; }
-  .gutter { position: absolute; left: 16px; right: 0; z-index: 3; font: inherit; font-size: 0.72rem; padding: 2px 8px; cursor: pointer; opacity: 0.8; background: transparent; border: 1px dashed currentColor; border-radius: 4px; color: inherit; }
+  /* Hairline leader: a warm cord-blue connector from the mark to the attended card (a quiet line,
+     not the rationed signal-orange — that stays reserved for the one focal action). */
+  .leader line { stroke: var(--accent-2); stroke-width: 1.5; opacity: 0.5; }
+  /* "N more ↑/↓" gutter affordances → quiet Spline-mono soft buttons (secondary treatment): warm
+     paper, soft border, ink text, rounded. Not orange — these are not the focal action. */
+  .gutter {
+    position: absolute; left: 16px; right: 0; z-index: 3;
+    font-family: var(--font-ui); font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase;
+    padding: 4px 10px; cursor: pointer;
+    background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
+    color: var(--ink-canvas-secondary);
+    box-shadow: var(--shadow-lift-low);
+    transition: background 160ms ease, color 160ms ease;
+  }
+  .gutter:hover { background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); }
   .gutter.up { top: 0; }
   .gutter.down { bottom: 0; }
   .margin-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; max-height: 100%; }
