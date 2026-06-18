@@ -1,79 +1,134 @@
-/* Archie design tokens — "a curator's study at night" (.interface-design/system.md).
-   Dark light-table canvas + warm paper panels + forest-green accent. */
+/* Archie design tokens — "8-Bit Orbit" reskin (template: zarazhangrui/beautiful-html-templates,
+   templates/8-bit-orbit). Pixel-art neon arcade on a deep navy void: square corners, hard zero-blur
+   offset shadows, neon cyan/pink/yellow trio, three-voice type (Tektur / Chakra Petch / Space Mono).
+   Semantic token NAMES are preserved so every component reference resolves; only values changed.
+   NOTE: duplicated in apps/viewer/src/tokens.css — keep the two in sync. */
 
 :root {
-  /* ── Canvas (dark light-table side) ── */
-  --surface-canvas: #181714;
-  --surface-canvas-raised: #1e1d19;
-  --surface-canvas-overlay: #252420;
-  --ink-canvas-primary: #e8e4db;
-  --ink-canvas-secondary: #a09b8e;
-  --ink-canvas-muted: #5c584e;
-  --border-canvas: rgba(160, 155, 142, 0.15);
-  --border-canvas-emphasis: rgba(160, 155, 142, 0.3);
+  /* ── Palette (8-Bit Orbit raw colors) ── */
+  --void: #0A0E27;
+  --deep-navy: #0F1B3D;
+  --neon-cyan: #5EDCF4;
+  --neon-pink: #F0A6CA;
+  --neon-yellow: #F4D03F;
+  --soft-lavender: #E2D5F2;
 
-  /* ── Paper (reading / annotation side) ── */
-  --surface-paper: #f5f0e6;
-  --surface-paper-card: #fcf9f2;
-  --surface-paper-hover: #ede7d8;
-  --ink-paper-primary: #2c2618;
-  --ink-paper-secondary: #6b6250;
-  --ink-paper-muted: #a09880;
-  --border-paper: rgba(107, 98, 80, 0.15);
-  --border-paper-emphasis: rgba(107, 98, 80, 0.32);
+  /* ── Canvas (primary work surface = the void) ── */
+  --surface-canvas: #0A0E27;
+  --surface-canvas-raised: #0F1B3D;
+  --surface-canvas-overlay: #16244d;
+  --ink-canvas-primary: rgba(255, 255, 255, 0.92);
+  --ink-canvas-secondary: rgba(255, 255, 255, 0.7);   /* softened white body (template default) */
+  --ink-canvas-muted: rgba(226, 213, 242, 0.5);
+  --border-canvas: rgba(94, 220, 244, 0.2);
+  --border-canvas-emphasis: rgba(94, 220, 244, 0.42);
 
-  /* ── Gallery wall ── */
-  --surface-gallery: #ebdfce;
+  /* ── Paper (reading / annotation side — a RAISED navy "screen", not warm paper) ── */
+  --surface-paper: #0F1B3D;
+  --surface-paper-card: #16244d;
+  --surface-paper-hover: #1c2c57;
+  --ink-paper-primary: rgba(255, 255, 255, 0.92);
+  --ink-paper-secondary: rgba(255, 255, 255, 0.7);
+  --ink-paper-muted: rgba(226, 213, 242, 0.5);
+  --border-paper: rgba(94, 220, 244, 0.18);
+  --border-paper-emphasis: rgba(94, 220, 244, 0.4);
 
-  /* ── Accent — forest green (the scholar's ink) ── */
-  --accent: #3a6b4c;
-  --accent-hover: #2d553d;
-  --accent-muted: rgba(58, 107, 76, 0.12);
-  --ink-on-accent: #fff;
+  /* ── Gallery wall (= the void) ── */
+  --surface-gallery: #0A0E27;
 
-  /* ── Accent (secondary) — golden amber (lamplight / gilt frame) ──
-     Contrast-rescue + secondary emphasis ONLY: use where forest green sits on a grey
-     surface and fails contrast (overlay #252420, muted inks). Never for active/selection
-     (that stays green). Distinct from --semantic-warning by hue + meaning. (system.md, 2026-05-29) */
-  --accent-2: #d6a23e;                          /* on canvas (dark) */
-  --accent-2-hover: #e3b65a;
-  --accent-2-muted: rgba(214, 162, 62, 0.14);
-  --accent-2-paper: #9a6f1e;                     /* on paper (light) */
-  --accent-2-paper-hover: #835d16;
-  --accent-2-paper-muted: rgba(154, 111, 30, 0.12);
+  /* ── Accent — neon cyan (the system's primary glow) ── */
+  --accent: #5EDCF4;
+  --accent-hover: #8be8fa;
+  --accent-muted: rgba(94, 220, 244, 0.14);
+  --ink-on-accent: #0F1B3D;                            /* navy text on cyan fills */
 
-  /* ── Semantic ── */
-  --semantic-success: #5a8f4a;
-  --semantic-warning: #c49b36;
-  --semantic-error: #c44536;
+  /* ── Accent (secondary) — neon pink. Paper is navy now, so paper variants are the same neon. ── */
+  --accent-2: #F0A6CA;
+  --accent-2-hover: #f6c2dc;
+  --accent-2-muted: rgba(240, 166, 202, 0.16);
+  --accent-2-paper: #F0A6CA;
+  --accent-2-paper-hover: #f6c2dc;
+  --accent-2-paper-muted: rgba(240, 166, 202, 0.16);
 
-  /* ── Typography ── */
-  --font-display: "Cormorant Garamond", Georgia, serif;
-  --font-body: "Crimson Text", Georgia, serif;
-  --font-ui: "Work Sans", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  /* ── Accent (tertiary) — neon yellow (shadow halos, featured tier, alert chrome) ── */
+  --accent-3: #F4D03F;
+  --accent-3-hover: #f7dc6b;
+  --accent-3-muted: rgba(244, 208, 63, 0.16);
+
+  /* ── Semantic — arcade game-state signals. Functional, not decorative chrome, so the template's
+       "no fourth neon" rule (which governs the decorative palette) does not constrain these. ── */
+  --semantic-success: #7CF49B;
+  --semantic-warning: #F4D03F;
+  --semantic-error: #FF5277;
+
+  /* ── Typography (8-Bit Orbit three-voice stack — never cross the roles) ── */
+  --font-display: "Tektur", system-ui, sans-serif;     /* chunky pixel-grid display / headlines */
+  --font-body: "Chakra Petch", system-ui, sans-serif;  /* humanist body / prose */
+  --font-ui: "Space Mono", ui-monospace, monospace;    /* HUD: labels, chrome, eyebrows, captions */
+  --font-mono: "Space Mono", ui-monospace, monospace;
 
   /* ── Type scale (UI) ── */
-  --text-ui-sm: 0.8125rem;   /* 13px — buttons, chrome labels */
-  --text-ui-xs: 0.7rem;      /* 11px — captions, eyebrow labels */
-  --text-ui-md: 0.75rem;     /* 12px — section headers, hints */
+  --text-ui-sm: 0.8125rem;   /* 13px */
+  --text-ui-xs: 0.7rem;      /* 11px */
+  --text-ui-md: 0.75rem;     /* 12px — label-pill size */
 
-  /* ── Spacing (4px base) ── */
+  /* ── Spacing (4px pixel unit — already on the grid) ── */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
 
-  /* ── Radius ── */
-  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px;
+  /* ── Radius — ZERO. Pixel art has no round corners. (kept as tokens so references resolve) ── */
+  --radius-sm: 0; --radius-md: 0; --radius-lg: 0;
+
+  /* ── Pixel system ── */
+  --pixel-unit: 4px;
+  --grid-size: 40px;
+  --border-pixel: 2px;
+  --border-pixel-bold: 4px;
+
+  /* ── Hard offset shadows (zero blur, locked to the 4px grid; a blurred shadow exists nowhere) ── */
+  --shadow-pixel: 4px 4px 0 0 var(--void);
+  --shadow-pixel-strong: 6px 6px 0 0 var(--void);
+  --shadow-pixel-cyan: 6px 6px 0 0 rgba(94, 220, 244, 0.3);
+  --shadow-pixel-yellow: 8px 8px 0 0 var(--neon-yellow);
+  /* six-step pixel-button cascade — navy bevel then yellow halo */
+  --shadow-pixel-btn:
+    4px 0 0 0 var(--deep-navy), 0 4px 0 0 var(--deep-navy), 4px 4px 0 0 var(--deep-navy),
+    8px 4px 0 0 var(--neon-yellow), 4px 8px 0 0 var(--neon-yellow), 8px 8px 0 0 var(--neon-yellow);
+  --shadow-pixel-btn-pink:
+    4px 0 0 0 var(--deep-navy), 0 4px 0 0 var(--deep-navy), 4px 4px 0 0 var(--deep-navy),
+    8px 4px 0 0 var(--neon-cyan), 4px 8px 0 0 var(--neon-cyan), 8px 8px 0 0 var(--neon-cyan);
+  --shadow-pixel-btn-active: 4px 4px 0 0 var(--neon-yellow);
+
+  /* ── Tektur display text-shadow treatments ── */
+  --text-shadow-hero: 4px 4px 0 var(--neon-yellow), 8px 8px 0 var(--deep-navy);
+  --text-shadow-stat: 3px 3px 0 var(--deep-navy);
+
+  /* ── Atmosphere: 40px cyan etched grid wallpaper ── */
+  --bg-grid:
+    linear-gradient(rgba(94, 220, 244, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(94, 220, 244, 0.07) 1px, transparent 1px);
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; font-family: var(--font-ui); color: var(--ink-paper-primary); }
 
-/* Section-header treatment used across both apps: Work Sans, small, tracked, muted. */
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink-canvas-primary);
+  background-color: var(--void);
+}
+
+/* Label-pill — the 8-Bit Orbit universal section eyebrow: navy fill, neon-yellow Space Mono,
+   0.2em tracking, uppercase, square. Shared across both apps (was the tracked-caps eyebrow). */
 .eyebrow {
+  display: inline-block;
   font-family: var(--font-ui);
   font-size: var(--text-ui-md);
-  font-weight: 600;
-  letter-spacing: 0.08em;
+  font-weight: 700;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
+  color: var(--neon-yellow);
+  background: var(--deep-navy);
+  padding: 6px 14px;
+  border-radius: 0;
 }

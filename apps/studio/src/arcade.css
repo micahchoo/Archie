@@ -1,0 +1,103 @@
+/* 8-Bit Orbit atmosphere + pixel-component layer (template: zarazhangrui/beautiful-html-templates,
+   templates/8-bit-orbit). The always-on identity stack — 40px cyan etched grid + grain + CRT
+   scanlines + corner vignette — plus the reusable pixel primitives (label-pill, pixel-btn,
+   pixel-card, corner brackets) and global pixel chrome for form controls / scrollbars / selection.
+   "A surface without the overlay stack looks like a wireframe." MUST load LAST (after markers.css).
+   NOTE: duplicated in apps/viewer/src/arcade.css — keep the two in sync. */
+
+/* ── Ground: deep void + 40px cyan etched grid (fixed so it reads as a CRT wallpaper) ── */
+html {
+  background-color: var(--void);
+  background-image: var(--bg-grid);
+  background-size: var(--grid-size) var(--grid-size);
+  background-attachment: fixed;
+}
+/* Body is transparent so the html grid shows through every app surface. Crosshair cursor is the
+   deck-wide arcade signal; restore sane cursors only where interaction genuinely needs them. */
+body { background: transparent; cursor: crosshair; }
+input, textarea, select, [contenteditable] { cursor: text; }
+button, a, [role="button"], summary, label, select { cursor: pointer; }
+
+/* ── Atmospheric overlays — fixed, non-interactive, painted above all content (template z 49-51).
+   pointer-events:none lets every click/drag pass through to the app underneath. ── */
+html::after, body::before, body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none;
+}
+html::after {                                   /* CRT vignette glow — darkens the corners */
+  z-index: 9996;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(10, 14, 39, 0.5) 100%);
+}
+body::before {                                  /* fractal-noise grain */
+  z-index: 9997; opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+body::after {                                   /* CRT scanlines */
+  z-index: 9998; mix-blend-mode: multiply;
+  background: repeating-linear-gradient(0deg,
+    transparent 0, transparent 2px, rgba(10, 14, 39, 0.04) 2px, rgba(10, 14, 39, 0.04) 4px);
+}
+
+::selection { background: var(--neon-cyan); color: var(--deep-navy); }
+
+/* ── Global pixel chrome: every form control is a square navy screen with a cyan edge ── */
+input, textarea, select {
+  background: var(--surface-canvas-overlay);
+  color: var(--ink-canvas-primary);
+  border: var(--border-pixel) solid var(--border-canvas);
+  border-radius: 0;
+  font-family: var(--font-ui);
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 0 2px var(--accent-muted);
+}
+input::placeholder, textarea::placeholder { color: var(--ink-canvas-muted); }
+
+/* ── Scrollbars ── */
+* { scrollbar-color: var(--neon-cyan) var(--deep-navy); scrollbar-width: thin; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--deep-navy); }
+::-webkit-scrollbar-thumb { background: var(--neon-cyan); border: 2px solid var(--deep-navy); }
+
+/* ── Pixel utility primitives (the component pass applies these where appropriate) ── */
+.label-pill {
+  display: inline-block; font-family: var(--font-ui); font-size: 12px; font-weight: 700;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--neon-yellow); background: var(--deep-navy); padding: 6px 14px;
+}
+.label-pill--cyan { color: var(--neon-cyan); }
+.label-pill--pink { color: var(--neon-pink); }
+
+.pixel-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--font-display); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--deep-navy); background: var(--neon-cyan);
+  border: none; border-radius: 0; padding: 14px 32px;
+  box-shadow: var(--shadow-pixel-btn);
+  transition: transform 80ms steps(2, end), box-shadow 80ms steps(2, end);
+}
+.pixel-btn:hover { transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
+.pixel-btn:active { transform: translate(4px, 4px); box-shadow: none; }
+.pixel-btn--pink { background: var(--neon-pink); box-shadow: var(--shadow-pixel-btn-pink); }
+
+.pixel-card {
+  background: var(--surface-canvas-raised);
+  border: var(--border-pixel) solid var(--border-canvas);
+  border-radius: 0;
+  box-shadow: var(--shadow-pixel);
+}
+
+/* L-shaped corner brackets at opposite corners — the signature "implied frame" (no full outline). */
+.pixel-bracket { position: relative; }
+.pixel-bracket::before, .pixel-bracket::after {
+  content: ""; position: absolute; width: 16px; height: 16px;
+  border: var(--border-pixel-bold) solid var(--neon-cyan); pointer-events: none;
+}
+.pixel-bracket::before { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+.pixel-bracket::after { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+/* Honor reduced-motion (the reskin is static, but keep the contract for interaction transitions). */
+@media (prefers-reduced-motion: reduce) {
+  .pixel-btn { transition: none; }
+}
