@@ -8,7 +8,7 @@ describe("folderNameFrom — the picked folder names the exhibit", () => {
     expect(folderNameFrom([f("Voynich Scans/page-1.jpg")])).toBe("Voynich Scans");
   });
   it("falls back when the list is empty", () => {
-    expect(folderNameFrom([])).toBe("Imported folder");
+    expect(folderNameFrom([])).toBe("Untitled exhibit");
   });
   it("a slashless path (bare filename) titles the exhibit without the extension", () => {
     expect(folderNameFrom([f("photo.jpg")])).toBe("photo");

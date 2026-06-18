@@ -64,7 +64,7 @@
       phase = "done";
       token = ""; // drop the secret the instant we're done with it
     } catch (e) {
-      errorMsg = e instanceof Error ? e.message : "Publish failed — check the repo name and token scope.";
+      errorMsg = e instanceof Error ? e.message : "Couldn't publish. Check the repository name and that your token has Contents and Pages write access.";
       phase = "error";
       token = ""; // never retain the secret across an error either
     }
@@ -84,31 +84,31 @@
     <header>
       <p class="eyebrow">Publish</p>
       <h2>Connect to GitHub</h2>
-      <p class="lede">Publish this whole library — every exhibit — to a GitHub Pages branch. Your token is used once to publish and is never stored.</p>
+      <p class="lede">Publish your whole library, every exhibit, to a GitHub Pages branch. Your token is used once to publish and is never stored.</p>
     </header>
 
     {#if phase === "done"}
       <div class="result">
-        <p class="ok">Published.</p>
+        <p class="ok">Published to GitHub Pages.</p>
         <p class="line">Commit · <a href={commitUrl} target="_blank" rel="noopener">{commitUrl}</a></p>
         {#if pagesEnabled}
           <p class="line">Pages · <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a> <span class="muted">(may take a minute to go live)</span></p>
         {:else}
-          <p class="line">Pushed to the <code>{branch}</code> branch. To serve it on the web, turn on GitHub Pages for this repo:</p>
-          <p class="line"><a href={pagesSettingsUrl} target="_blank" rel="noopener">Settings → Pages</a> → <em>Deploy from a branch</em> → <code>{branch}</code>. It then appears at <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a>.</p>
+          <p class="line">Your files are on the <code>{branch}</code> branch. One step left to put them on the web: turn on GitHub Pages for this repository.</p>
+          <p class="line">Open <a href={pagesSettingsUrl} target="_blank" rel="noopener">Settings, then Pages</a>, choose <em>Deploy from a branch</em>, and pick the <code>{branch}</code> branch. Your site then appears at <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a>.</p>
         {/if}
-        <p class="line muted">For editing and the fullest experience, run the apps locally — a published Pages site is read-only.</p>
+        <p class="line muted">A published Pages site is read-only. To keep editing, open your library in Studio.</p>
         <button class="primary" onclick={close}>Done</button>
       </div>
     {:else}
       <form onsubmit={(e) => { e.preventDefault(); if (canPublish) void publish(); }}>
         {#if brokenLinks.length > 0}
           <div class="broken" role="status">
-            <p class="b-head">⚠ {brokenLinks.length} cited {brokenLinks.length === 1 ? "link" : "links"} will publish as plain text</p>
-            <p class="b-sub">A note or exhibit a link points to isn't in this library, so the link can't resolve. Publishing continues — the link's words stay, the link drops.</p>
+            <p class="b-head">{brokenLinks.length} cited {brokenLinks.length === 1 ? "link" : "links"} will publish as plain text</p>
+            <p class="b-sub">These links point to a note or exhibit that isn't in this library, so they have nowhere to go. Publishing continues — the words stay readable, just without the link.</p>
             <ul>
               {#each brokenLinks.slice(0, 5) as b}
-                <li>in <code>/{b.exhibitSlug}</code>{#if tgt(b).exhibitSlug} → <code>/{tgt(b).exhibitSlug}</code>{/if}{#if tgt(b).noteLogicalId} · note <code>{(tgt(b).noteLogicalId ?? "").slice(0, 8)}</code>{/if}</li>
+                <li>in <code>/{b.exhibitSlug}</code>{#if tgt(b).exhibitSlug} → <code>/{tgt(b).exhibitSlug}</code>{/if}{#if tgt(b).noteLogicalId} · a cited note{/if}</li>
               {/each}
               {#if brokenLinks.length > 5}<li class="more">…and {brokenLinks.length - 5} more</li>{/if}
             </ul>
@@ -118,16 +118,16 @@
           <label>Owner<input bind:value={owner} placeholder="your-username" autocomplete="off" /></label>
           <label>Repository<input bind:value={repo} placeholder="my-exhibit" autocomplete="off" /></label>
         </div>
-        {#if nameError}<p class="err">⚠ {nameError}</p>{/if}
+        {#if nameError}<p class="err">{nameError}</p>{/if}
         <label>Branch<input bind:value={branch} placeholder="gh-pages" autocomplete="off" /></label>
         <p class="note">Publishing <strong>replaces everything</strong> on this branch with the current library — use a branch you keep for the published site (<code>gh-pages</code> by default).</p>
-        <label>Access token (fine-grained PAT · Contents + Pages, write)
+        <label>Access token (fine-grained, with Contents and Pages write access)
           <input type="password" bind:value={token} placeholder="github_pat_…" autocomplete="off" />
         </label>
         <label class="cb"><input type="checkbox" bind:checked={includeOriginals} /><span class="cb-text">Include source originals for citation <span class="cb-sub">— preserved un-edited uploads, published beside the exhibit</span></span></label>
-        <p class="note">The token never leaves this browser except in the publish request to GitHub, and is dropped the moment publishing finishes. Archie does not store it. <strong>Pages</strong> write-access lets Archie turn on GitHub Pages for you; without it the push still works and you enable Pages by hand.</p>
+        <p class="note">Your token stays in this browser — it's sent only to GitHub to publish, then dropped the moment it's done. Archie never stores it. Giving the token <strong>Pages</strong> write access lets Archie switch on your live site for you; without it, publishing still works and you flip the switch yourself (we'll show you where).</p>
         {#if phase === "publishing"}<p class="note" role="status">{progressText} <span class="muted">Keep this tab open.</span></p>{/if}
-        {#if phase === "error"}<p class="err">⚠ {errorMsg}</p>{/if}
+        {#if phase === "error"}<p class="err">{errorMsg}</p>{/if}
         <div class="actions">
           <button type="button" class="ghost" onclick={close}>Cancel</button>
           <button type="submit" class="primary" disabled={!canPublish}>{phase === "publishing" ? "Publishing…" : "Publish"}</button>

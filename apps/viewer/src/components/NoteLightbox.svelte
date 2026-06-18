@@ -46,7 +46,7 @@
         <video src={cur.url} controls autoplay></video>
       {:else}
         <div class="audio-stage">
-          <span class="now">♪ Audio</span>
+          <span class="now">Audio</span>
           <audio src={cur.url} controls autoplay></audio>
         </div>
       {/if}

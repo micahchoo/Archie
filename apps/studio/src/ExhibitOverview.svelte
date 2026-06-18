@@ -60,9 +60,9 @@
   // Voice mirrors LayoutPicker's stance sentences (curator voice).
   const LAYOUT_NAME: Record<LayoutType, string> = { single: "Single", grid: "Grid", narrative: "Narrative" };
   const LAYOUT_INTENT: Record<LayoutType, string> = {
-    single: "one object, full attention",
-    grid: "a wall of objects to scan",
-    narrative: "a guided sequence with prose",
+    single: "one media item, full attention",
+    grid: "a wall of media to browse",
+    narrative: "a guided sequence led by your writing",
   };
 
   let mode = $state<"canvas" | "list">("canvas"); // 1a spatial canvas ↔ 1b plain list
@@ -151,12 +151,12 @@
   <header>
     <button class="back" onclick={onback}>← Exhibits</button>
     <div class="titles">
-      <p class="eyebrow">Exhibit · {objects.length} {objects.length === 1 ? "object" : "objects"} · reading order</p>
+      <p class="eyebrow">Exhibit · {objects.length} {objects.length === 1 ? "media item" : "media items"} · reading order</p>
       <h1>{title}</h1>
       <p class="intent">{LAYOUT_INTENT[layout]}</p>
     </div>
     <span class="spacer"></span>
-    <button class="chip layout" onclick={onsetlayout} title="How visitors read this exhibit (reading intent)">▦ Exhibit layout · {LAYOUT_NAME[layout]}</button>
+    <button class="chip layout" onclick={onsetlayout} title="Choose how visitors move through this exhibit">▦ Exhibit layout · {LAYOUT_NAME[layout]}</button>
     <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for this exhibit">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     <div class="viewtoggle" role="group" aria-label="Overview mode">
       <button class:on={mode === "canvas"} onclick={() => (mode = "canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>
@@ -213,7 +213,7 @@
           ondragleave={() => { if (overId === END) overId = null; }}
           onpointerdown={(e) => e.stopPropagation()} onclick={onaddobject}>
           <span class="frame add-frame"><span class="glyph">{dragId ? "↧" : "+"}</span></span>
-          <span class="caption"><span class="lbl">{dragId ? "Move to end" : "Add object"}</span></span>
+          <span class="caption"><span class="lbl">{dragId ? "Move to end" : "Add media"}</span></span>
         </button>
       </div>
 
@@ -221,7 +221,7 @@
            frame, and the zoom cluster shows the live % — together signalling "this is a movable canvas". -->
       <div class="edges" aria-hidden="true"></div>
       <div class="canvas-legend" aria-hidden="true">
-        <span class="g lead"><span class="ico">⇅</span> Drag a plate to set reading order</span>
+        <span class="g lead"><span class="ico">⇅</span> Drag a media item to set the order visitors see it in</span>
         <span class="dot">·</span>
         <span class="g"><span class="ico">✥</span> Drag the canvas to pan</span>
         <span class="dot">·</span>
@@ -233,12 +233,12 @@
         <button class="fit" onclick={fit} title="Reset to 100%">Fit</button>
         <button onclick={() => nudgeZoom(1.2)} aria-label="Zoom in">+</button>
       </div>
-      <p class="hint">Click a plate to annotate it up close</p>
+      <p class="hint">Click a media item to open it and add notes</p>
     </div>
   {:else}
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
-    <p class="list-hint">Drag a row by its ⠿ handle to set the reading order.</p>
+    <p class="list-hint">Drag a row by its ⠿ handle to set the order visitors see it in.</p>
     <ul class="list">
       <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
@@ -259,7 +259,7 @@
         </li>
       {/each}
       <li class="end" class:over={overId === END} ondragover={(e) => { if (dragId) { e.preventDefault(); overId = END; } }} ondrop={(e) => { e.preventDefault(); commitReorder(null); }} ondragleave={() => { if (overId === END) overId = null; }}>
-        <button class="li-add" onclick={onaddobject}>{dragId ? "↧ Move to end" : "+ Add object"}</button>
+        <button class="li-add" onclick={onaddobject}>{dragId ? "↧ Move to end" : "+ Add media"}</button>
       </li>
     </ul>
   {/if}

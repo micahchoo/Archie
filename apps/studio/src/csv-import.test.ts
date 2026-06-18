@@ -51,7 +51,7 @@ describe("planCsvImport — the dialect", () => {
     const plan = planCsvImport(csv, CTX);
     expect(plan.notes).toHaveLength(1);
     expect(plan.skipped.map((s) => s.row)).toEqual([2, 3, 4]); // spreadsheet line numbers (header = 1)
-    expect(plan.skipped[0]!.reason).toMatch(/unknown object/);
+    expect(plan.skipped[0]!.reason).toMatch(/no media item named/);
   });
   it("a blank coordinate cell skips — Number('') must not place a note at the origin", () => {
     const plan = planCsvImport("object,x,y,w,h,comment\no1,,10,30,40,blank x", CTX);
@@ -61,16 +61,16 @@ describe("planCsvImport — the dialect", () => {
   it("rows targeting an AV object skip — regions are image-only", () => {
     const plan = planCsvImport("object,x,y,w,h,comment\nKryptogramm,1,2,3,4,no rects on sound", CTX);
     expect(plan.notes).toEqual([]);
-    expect(plan.skipped[0]!.reason).toMatch(/AV object/);
+    expect(plan.skipped[0]!.reason).toMatch(/can't take a region/);
   });
   it("an unknown reading skips the row (don't silently drop the layer)", () => {
     const plan = planCsvImport("object,x,y,w,h,comment,reading\no1,1,2,3,4,n,Hoax", CTX);
     expect(plan.notes).toEqual([]);
-    expect(plan.skipped[0]!.reason).toMatch(/unknown reading/);
+    expect(plan.skipped[0]!.reason).toMatch(/no reading named/);
   });
   it("a missing required column fails up front with guidance", () => {
     const plan = planCsvImport("x,y,w,h,comment\n1,2,3,4,n", CTX);
     expect(plan.notes).toEqual([]);
-    expect(plan.skipped[0]!.reason).toMatch(/missing column.*object/);
+    expect(plan.skipped[0]!.reason).toMatch(/Missing columns.*object/);
   });
 });

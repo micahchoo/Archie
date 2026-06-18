@@ -74,7 +74,7 @@
         }
       }
     } catch (e) {
-      errorMsg = e instanceof Error ? e.message : "Could not load the exhibit.";
+      errorMsg = e instanceof Error ? e.message : "Couldn’t load this exhibit. Reload to try again.";
       status = "error";
     }
   });
@@ -196,7 +196,7 @@
 {#if status === "loading"}
   <div class="state"><span class="dot"></span><span>Loading the exhibit…</span></div>
 {:else if status === "error"}
-  <div class="state error"><span class="warn">⚠</span><span>{errorMsg}</span></div>
+  <div class="state error"><span class="warn" aria-hidden="true">⚠</span><span>{errorMsg}</span></div>
 {:else if data && layout}
   {#if isAV && activeData}
     <MediaPlayer object={activeData} annotations={annotationsOf(activeData.id)} rights={objectRightsOf(activeData.id)} />
@@ -243,7 +243,7 @@
   <!-- Cold-arrival chrome (§124): orient a link-follower, then fade. Transparent, no gate. -->
   {#if chromeVisible}
     <button class="arrival" transition:fade={{ duration: 400 }} onclick={() => (chromeVisible = false)}>
-      <span class="seal">↪</span>
+      <span class="seal" aria-hidden="true">↪</span>
       <span class="msg">You followed a link to this note</span>
       <span class="dismiss">Dismiss</span>
     </button>

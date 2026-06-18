@@ -111,7 +111,7 @@
       status = "ready";
     } catch (e) {
       status = "error";
-      errorMsg = e instanceof Error ? e.message : "Could not load the image";
+      errorMsg = e instanceof Error ? e.message : "Couldn't load this media item.";
     }
   });
 
@@ -137,7 +137,7 @@
   {#if status !== "ready"}
     <div class="overlay" class:error={status === "error"}>
       {#if status === "loading"}
-        <span class="dot"></span><span>Loading the object…</span>
+        <span class="dot"></span><span>Loading…</span>
       {:else}
         <span class="warn">⚠</span><span>{errorMsg}</span>
       {/if}

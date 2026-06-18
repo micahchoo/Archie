@@ -50,11 +50,11 @@
     <p class="eyebrow">Archie</p>
     <h1>Open a library</h1>
     {#if cold}
-      <p class="cold" role="status">You followed a link into a library that isn’t open here. Open its <code>.archie.zip</code> file to follow the link.</p>
+      <p class="cold" role="status">That link points to an exhibit in a library that isn’t open here yet. Open the library file you were given to pick up where the link leads.</p>
     {/if}
-    <p class="lede">Open the library’s <code>.archie.zip</code> file to read its exhibits — drag it onto the page, or choose it below.</p>
-    <button class="primary signal-tile" onclick={pick}>Open a library…</button>
-    {#if error}<p class="err" role="alert">⚠ {error}</p>{/if}
+    <p class="lede">Drop a library file here, or choose one with the button, to start reading its exhibits. Library files end in <code>.archie.zip</code>.</p>
+    <button class="primary signal-tile" onclick={pick}>Choose a file…</button>
+    {#if error}<p class="err" role="alert">{error}</p>{/if}
     <input bind:this={fileInput} type="file" accept=".zip" onchange={onChange} hidden />
   </div>
 

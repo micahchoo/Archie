@@ -78,7 +78,7 @@
       <!-- The media on the dark light-table — same surface as the image canvas, so sound/image read
            as one kind of object. Controls are the native scrubber (read-only consumer). -->
       {#if mediaError}
-        <p class="media-failed">This recording couldn’t be loaded — the file may be missing or in a format this browser can’t play.</p>
+        <p class="media-failed">This recording couldn’t be loaded. The file may be missing, or its format isn’t supported by this browser.</p>
       {:else if isVideo}
         <div class="video-wrap">
           <!-- svelte-ignore a11y_media_has_caption -->
@@ -119,9 +119,9 @@
   </main>
 
   <aside>
-    <p class="eyebrow">Transcript · {cues.length} lines</p>
+    <p class="eyebrow">Transcript · {cues.length} {cues.length === 1 ? "line" : "lines"}</p>
     {#if isVideo}<h1 class="vid-label">{object.label}</h1>{/if}
-    <p class="hint">Read down the transcript — the recording travels to each line. The line now playing is inked.</p>
+    <p class="hint">Select any line to jump there in the recording. As it plays, the line being spoken lights up.</p>
     <p class="credit-row"><Credit {rights} tone="paper" /></p>
     {#if cues.length === 0}
       <p class="empty">No transcript for this recording.</p>

@@ -22,7 +22,7 @@
 {#if has}
   <div class="credit {tone}" bind:this={el}>
     {#if creditValue}<span class="line">{creditValue}</span>{/if}
-    <button class="info" onclick={() => (open = !open)} aria-expanded={open} aria-label="About and rights" title="About & rights">ⓘ</button>
+    <button class="info" onclick={() => (open = !open)} aria-expanded={open} aria-label="About & rights" title="About & rights">ⓘ</button>
     {#if open}
       <div class="panel">
         {#if creditValue}<p><span class="k">{creditLabel}</span><span class="v">{creditValue}</span></p>{/if}

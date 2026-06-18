@@ -110,7 +110,7 @@
   <aside>
     <p class="eyebrow">Narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}</p>
     <h1>{title}</h1>
-    <p class="hint">Read down the spine — the canvas travels to each section's focus{multiObject ? ", moving between objects" : ""}.</p>
+    <p class="hint">Read down the page, or jump to any section. The image follows along, zooming to what each section is about{multiObject ? ", and switching between items as you go" : ""}.</p>
     <p class="credit-row"><Credit {rights} tone="paper" /></p>
     <ol class="sections">
       {#each sections as s, i (s.id)}
@@ -130,7 +130,7 @@
       <button class="close" onclick={() => (selected = null)} aria-label="Close note">×</button>
       {#if noteParts.text}<div class="note-body">{@html renderMarkdown(noteParts.text)}</div>{/if}
       <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
-      {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">📍 {geoCoord}</p>{/if}
+      {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">{geoCoord}</p>{/if}
       {#if tagsOf(current).length}<div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>{/if}
     </div>
   {/if}

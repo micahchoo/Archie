@@ -91,7 +91,7 @@
         {/if}
       </ul>
 
-      <p class="hint"><kbd>↑↓</kbd> move · <kbd>↵</kbd> cite · the reference auto-resolves to its published URL when you publish</p>
+      <p class="hint"><kbd>↑↓</kbd> move · <kbd>↵</kbd> cite · the link points to the right place once you publish</p>
     </div>
   </div>
 {/if}

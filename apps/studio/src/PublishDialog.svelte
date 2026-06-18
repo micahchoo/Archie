@@ -94,8 +94,8 @@
     <header>
       <p class="eyebrow">Publish</p>
       {#if phase === "choose"}
-        <h2>Where to?</h2>
-        <p class="lede">The same published site — choose where it goes.</p>
+        <h2>Where should this go?</h2>
+        <p class="lede">Archie builds the same finished site each way — pick where to put it.</p>
       {:else if phase === "done-download"}
         <h2>Save a copy</h2>
         <p class="lede">A portable <code>.archie.zip</code> — and, if you host it, a shareable link.</p>
@@ -127,7 +127,7 @@
     {:else if phase === "done-download"}
       <div class="result">
         <p class="ok">Saved your <code>.archie.zip</code>.</p>
-        <p class="line">Keep it, re-open it here any time, or hand it to a colleague. <strong>Working with someone?</strong> They open your zip in their Studio, annotate their pass, and send it back — opening their copy here shows who added what.</p>
+        <p class="line">Keep it, re-open it here any time, or hand it to a colleague. <strong>Working with someone?</strong> They open your zip in their Studio, add their own notes, and send the file back — when you open their copy here, Archie shows who added what.</p>
         <p class="line"><strong>Share it as a link (no install for the reader):</strong> upload the zip anywhere public — your site, a GitHub release, the Internet Archive — then paste its URL:</p>
         <input class="share-url" type="url" placeholder="https://…/my-library.archie.zip" bind:value={zipUrl} aria-label="Public URL of the uploaded .archie.zip" />
         {#if shareLink}
@@ -136,14 +136,14 @@
           <pre class="cmd"><code>{embedSnippet}</code></pre>
           {#if canCopy}
             <div class="actions share-actions">
-              <button type="button" class="ghost" onclick={copyShareLink}>{copied ? "Copied ✓" : "Copy link"}</button>
-              <button type="button" class="ghost" onclick={copyEmbed}>{copiedEmbed ? "Copied ✓" : "Copy embed code"}</button>
+              <button type="button" class="ghost" onclick={copyShareLink}>{copied ? "Copied" : "Copy link"}</button>
+              <button type="button" class="ghost" onclick={copyEmbed}>{copiedEmbed ? "Copied" : "Copy embed code"}</button>
             </div>
           {:else}
             <p class="line muted">Select the link or embed code above to copy it.</p>
           {/if}
         {/if}
-        <p class="line muted">A <code>?src=</code> link works while both hosts stay up — the zip’s and <code>{CANONICAL_HOST}</code> (the Viewer). Moving either breaks shared links. For a durable, citable publication, publish the full site instead.</p>
+        <p class="line muted">This link depends on two things staying online: the place you uploaded the zip, and the Archie viewer at <code>{CANONICAL_HOST}</code>. If either moves or goes away, the link stops working — so it's best for sharing a draft, not for a permanent citation. To publish something that stands on its own, use "To GitHub Pages" instead.</p>
         <div class="actions"><button class="primary" onclick={close}>Done</button></div>
       </div>
 
@@ -152,7 +152,7 @@
         <p class="ok">Published locally.</p>
         <p class="line">Wrote the site into <code>{folderName}</code>. Start the Viewer and open it:</p>
         <pre class="cmd"><code>pnpm --filter @archie/viewer dev</code></pre>
-        <p class="line muted">Then visit <code>http://localhost:4321</code>. Re-publish any time — the write is idempotent.</p>
+        <p class="line muted">Then visit <code>http://localhost:4321</code>. Re-publish any time — it safely replaces what's there.</p>
         <div class="actions"><button class="primary" onclick={close}>Done</button></div>
       </div>
 
@@ -171,11 +171,11 @@
       <!-- phase: local | working | error -->
       <div class="body">
         {#if canFolder}
-          <p class="line">Choose the folder the Viewer reads — the one fixed target:</p>
+          <p class="line">Choose the folder the Viewer reads from:</p>
           <pre class="cmd"><code>{viewerTree}</code></pre>
-          <p class="line muted">Pick it once; re-publish any time (stale files are cleaned).</p>
+          <p class="line muted">Pick it once, then re-publish any time — Archie clears out old files for you.</p>
         {:else}
-          <p class="line">Your browser can't pick a folder, so this saves a <code>.archie.zip</code>. You'll then unzip it into the Viewer's one fixed folder — instructions next.</p>
+          <p class="line">Your browser can't pick a folder, so this saves a <code>.archie.zip</code> instead. You'll then unzip it into the folder the Viewer reads from — instructions next.</p>
         {/if}
         {#if phase === "error"}<p class="err">⚠ {errorMsg}</p>{/if}
         <div class="actions">

@@ -31,7 +31,7 @@
 
 <main class="overview">
   <header>
-    <p class="eyebrow">Exhibit · {objects.length} objects</p>
+    <p class="eyebrow">Exhibit · {objects.length} {objects.length === 1 ? "item" : "items"}</p>
     <h1>{title}</h1>
     {#if summary}<p class="summary">{summary}</p>{/if}
     <p class="credit-row"><Credit {rights} tone="canvas" /></p>
@@ -39,21 +39,21 @@
 
   {#if objects.length === 0}
     <!-- empty state (orphan gate §39) — an exhibit with no objects yet -->
-    <p class="empty">No objects in this exhibit yet.</p>
+    <p class="empty">Nothing in this exhibit yet.</p>
   {:else}
     <ul class="grid">
       {#each objects as obj (obj.id)}
         <li>
           <button class="object" onclick={() => onselect(obj.id)}>
             {#if failed.has(obj.id)}
-              <span class="plate plate-failed">couldn’t load this image</span>
+              <span class="plate plate-failed">Couldn’t load this media item.</span>
             {:else}
               <!-- A bare IIIF service base isn't an image; thumbnailUrl derives a sized JPEG (else passes through). -->
               <img class="plate" src={thumbnailUrl(obj.source, 480)} alt="" loading="lazy" onerror={() => markFailed(obj.id)} />
             {/if}
             <span class="caption">
               <span class="label">{obj.label}</span>
-              <span class="count">{countOf(obj.id)} notes</span>
+              <span class="count">{countOf(obj.id)} {countOf(obj.id) === 1 ? "note" : "notes"}</span>
             </span>
           </button>
         </li>

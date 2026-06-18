@@ -33,10 +33,10 @@
 {#if conflicts.length > 0}
   {#if !reviewing}
     <div class="summary" role="status">
-      <span class="msg"><strong>Synced {synced} {synced === 1 ? "note" : "notes"} from a colleague.</strong> {conflicts.length} {conflicts.length === 1 ? "needs" : "need"} your decision.</span>
+      <span class="msg"><strong>Added {synced} {synced === 1 ? "note" : "notes"} from a colleague's copy.</strong> {conflicts.length} {conflicts.length === 1 ? "needs" : "need"} your decision.</span>
       <span class="actions">
         <button class="primary" onclick={() => (reviewing = true)}>Review</button>
-        <button class="ghost" onclick={() => (synced = 0)}>Later</button>
+        <button class="ghost" onclick={() => (synced = 0)}>Not now</button>
       </span>
     </div>
   {:else if current}

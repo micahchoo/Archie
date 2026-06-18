@@ -59,7 +59,7 @@
       try {
         await openLibraryFromSrc(route.src);
       } catch (e) {
-        openError = e instanceof Error ? e.message : "Couldn’t open that library.";
+        openError = e instanceof Error ? e.message : "That library couldn’t be opened. Make sure it’s an Archie .archie.zip file.";
         phase = "empty";
         return;
       }
@@ -69,7 +69,7 @@
     const mode = await probeViewerMode();
     if (mode === "portable") phase = "empty";
     else {
-      errorMsg = "Could not reach the library.";
+      errorMsg = "Couldn’t reach the library. Check your connection and reload.";
       phase = "error";
     }
   }
@@ -84,7 +84,7 @@
     }
     if (!(await loadAndShow())) {
       closePortableLibrary();
-      openError = "That library couldn’t be read.";
+      openError = "That library couldn’t be opened. Make sure it’s an Archie .archie.zip file.";
     }
   }
 
@@ -155,7 +155,7 @@
 <!-- Origin-drift badge renders UNGATED (review r8): the worst drift case — the old host gone,
      the library failing to load — is exactly when it must still surface. -->
 {#if originDrift}
-  <span class="drift" title="This canonical build expects {expectedBase} — minted share/og/sitemap URLs are broken. Update archie.config.json and redeploy.">⚠ origin drift</span>
+  <span class="drift" title="This site is loading from a different web address than the one it was published for, so share links and link previews won’t work. The exhibits still read fine here; whoever published this site can fix the links by publishing again from its current address.">Site address mismatch</span>
 {/if}
 
 {#if showBar}
@@ -172,10 +172,10 @@
     </div>
     <div class="zone center">
       {#if carousel}
-        <nav class="carousel" aria-label="Objects in this exhibit">
-          <button class="cnav" disabled={!cPrev} onclick={() => { if (cPrev) carousel?.navigate(cPrev.id); }} title={cPrev ? `Previous: ${cPrev.label}` : "No previous object"}>‹</button>
+        <nav class="carousel" aria-label="Media in this exhibit">
+          <button class="cnav" disabled={!cPrev} onclick={() => { if (cPrev) carousel?.navigate(cPrev.id); }} title={cPrev ? `Previous: ${cPrev.label}` : "This is the first item"}>‹</button>
           <span class="cpos">{cIdx >= 0 ? cIdx + 1 : "–"} / {carousel.siblings.length}</span>
-          <button class="cnav" disabled={!cNext} onclick={() => { if (cNext) carousel?.navigate(cNext.id); }} title={cNext ? `Next: ${cNext.label}` : "No next object"}>›</button>
+          <button class="cnav" disabled={!cNext} onclick={() => { if (cNext) carousel?.navigate(cNext.id); }} title={cNext ? `Next: ${cNext.label}` : "This is the last item"}>›</button>
         </nav>
       {/if}
     </div>
@@ -186,11 +186,11 @@
 {/if}
 
 {#if phase === "probing"}
-  <div class="state"><span class="dot"></span><span>Opening…</span></div>
+  <div class="state"><span class="dot"></span><span>Opening the library…</span></div>
 {:else if phase === "empty"}
   <EmptyHall onfile={handleFile} cold={coldArrival} error={openError} />
 {:else if phase === "error"}
-  <div class="state error"><span class="warn">⚠</span><span>{errorMsg}</span></div>
+  <div class="state error"><span class="warn" aria-hidden="true">⚠</span><span>{errorMsg}</span></div>
 {:else if route.view === "exhibit"}
   {#key `${route.slug}/${route.noteId ?? ""}`}
     <ExhibitView slug={route.slug} noteId={route.noteId} onnav={(n) => (carousel = n)} />

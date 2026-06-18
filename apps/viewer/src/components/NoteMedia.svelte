@@ -20,7 +20,7 @@
     {#each media as m, i (m.url + i)}
       <button class="tile {m.kind}" onclick={() => onopen(i)} aria-label={`Open ${m.kind}`}>
         {#if failed.has(i)}
-          <span class="tile-failed">couldn’t load</span>
+          <span class="tile-failed">Couldn’t load</span>
         {:else if m.kind === "image"}
           <img src={m.url} alt="" loading="lazy" onerror={() => markFailed(i)} />
         {:else if m.kind === "video"}

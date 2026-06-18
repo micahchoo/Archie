@@ -77,7 +77,7 @@
     {/if}
     {#if layout.above.length > 0}
       <button type="button" class="gutter up" onclick={() => onselect?.(layout.above[layout.above.length - 1]!)}>
-        {layout.above.length} more ↑
+        <span aria-hidden="true">↑</span> {layout.above.length} above
       </button>
     {/if}
     <div class="cards" role="list">
@@ -98,7 +98,7 @@
     </div>
     {#if layout.below.length > 0}
       <button type="button" class="gutter down" onclick={() => onselect?.(layout.below[0]!)}>
-        {layout.below.length} more ↓
+        <span aria-hidden="true">↓</span> {layout.below.length} below
       </button>
     {/if}
   {:else}

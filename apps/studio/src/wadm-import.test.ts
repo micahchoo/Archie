@@ -19,7 +19,7 @@ describe("annotationsIn — tolerant of the shapes in the wild", () => {
   it("legacy sc:AnnotationList is REFUSED honestly, not half-parsed (on/resource grammar)", () => {
     const plan = planWadmImport({ "@type": "sc:AnnotationList", resources: [anno("x")] }, CTX);
     expect(plan.notes).toEqual([]);
-    expect(plan.skipped[0]!.reason).toMatch(/legacy/);
+    expect(plan.skipped[0]!.reason).toMatch(/older annotation format/);
   });
 });
 
@@ -44,7 +44,7 @@ describe("planWadmImport", () => {
   it("skips annotations whose canvas doesn't match an object here — never misplace scholarship", () => {
     const plan = planWadmImport([anno("https://pub.org/lib/canvas/o9")], CTX);
     expect(plan.notes).toEqual([]);
-    expect(plan.skipped[0]!.reason).toMatch(/doesn't match an object here/);
+    expect(plan.skipped[0]!.reason).toMatch(/isn't in this exhibit/);
   });
   it("a string target with a fragment becomes a FragmentSelector; string bodies become TextualBody", () => {
     const plan = planWadmImport([{ type: "Annotation", target: "https://pub.org/lib/canvas/o2#xywh=5,6,7,8", body: "plain comment" }], CTX);
@@ -60,19 +60,19 @@ describe("planWadmImport", () => {
     const plan = planWadmImport([noSel, noBody], CTX);
     expect(plan.notes).toEqual([]);
     expect(plan.skipped.map((s) => s.reason)).toEqual([
-      expect.stringMatching(/no selector/),
-      expect.stringMatching(/no usable TextualBody/),
+      expect.stringMatching(/region is missing or unreadable/),
+      expect.stringMatching(/no usable note text/),
     ]);
   });
   it("non-annotation JSON fails up front with guidance", () => {
-    expect(planWadmImport({ hello: 1 }, CTX).skipped[0]!.reason).toMatch(/AnnotationPage/);
+    expect(planWadmImport({ hello: 1 }, CTX).skipped[0]!.reason).toMatch(/No notes found/);
   });
   it("REBUILDS selectors and bodies — foreign fields and unsafe SVG never cross into the session", () => {
-    expect(sanitizeSelector({ type: "SvgSelector", value: '<svg onload="alert(1)"><polygon points="0,0 1,1"/></svg>' })).toEqual({ err: "unsupported or unsafe SvgSelector" });
-    expect(sanitizeSelector({ type: "SvgSelector", value: "<svg><script>x</script></svg>" })).toEqual({ err: "unsupported or unsafe SvgSelector" });
+    expect(sanitizeSelector({ type: "SvgSelector", value: '<svg onload="alert(1)"><polygon points="0,0 1,1"/></svg>' })).toEqual({ err: "unsupported or unsafe region shape" });
+    expect(sanitizeSelector({ type: "SvgSelector", value: "<svg><script>x</script></svg>" })).toEqual({ err: "unsupported or unsafe region shape" });
     expect(sanitizeSelector({ type: "FragmentSelector", value: "xywh=pixel:1,2,3,4", evil: "x" }))
       .toEqual({ ok: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: "xywh=pixel:1,2,3,4" } });
-    expect(sanitizeSelector({ type: "FragmentSelector", value: "xpointer(//div)" })).toEqual({ err: 'unsupported fragment "xpointer(//div)"' });
+    expect(sanitizeSelector({ type: "FragmentSelector", value: "xpointer(//div)" })).toEqual({ err: "unsupported region shape" });
     const plan = planWadmImport([anno("https://p.org/canvas/o1", { body: [{ type: "TextualBody", value: "keep", purpose: "commenting", format: "text/html", id: "x" }] })], CTX);
     expect(plan.notes[0]!.body).toEqual([{ type: "TextualBody", value: "keep", purpose: "commenting" }]);
   });

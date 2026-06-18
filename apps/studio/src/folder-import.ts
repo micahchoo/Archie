@@ -48,7 +48,7 @@ export function isHiddenPath(relativePath: string): boolean {
 export function folderNameFrom(files: PickedFile[]): string {
   const first = files[0]?.relativePath ?? "";
   const root = first.includes("/") ? (first.split("/")[0] ?? "") : first.replace(/\.[^.]+$/, "");
-  return root.trim() || "Imported folder";
+  return root.trim() || "Untitled exhibit";
 }
 
 /** The import plan: visible media files, natural-sorted by relative path so numbered page scans

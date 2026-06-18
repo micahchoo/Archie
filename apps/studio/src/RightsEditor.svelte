@@ -59,7 +59,7 @@
     </select>
   </label>
 
-  <p class="hint">Shown to anyone who views or reuses this {scope}. A pure IIIF viewer displays the credit too.</p>
+  <p class="hint">Shown to anyone who views or reuses this {scope}.</p>
 </div>
 
 <style>

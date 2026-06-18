@@ -32,7 +32,7 @@ export function collabBreakdown(logs: Record<string, AnnotationLog>, you: Client
  *  collaborative to say (no notes by anyone else). */
 export function collabSummaryText(name: string, b: CollabBreakdown): string | null {
   if (b.others.length === 0) return null;
-  const who = b.others.map((o) => `${o.count} note${o.count === 1 ? "" : "s"} by ${o.editor}`).join(", ");
+  const who = b.others.map((o) => `${o.count} note${o.count === 1 ? "" : "s"} by ${o.editor === "unknown" ? "a collaborator" : o.editor}`).join(", ");
   const yours = b.yours > 0 ? ` alongside ${b.yours} of yours` : "";
   return `Opened “${name}” — it carries ${who}${yours}. Annotate your pass and send the zip back to keep the exchange going.`;
 }
