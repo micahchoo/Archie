@@ -3,6 +3,27 @@
 // to the Archie heads AnnotationPage where the notes for that canvas load.
 
 import type { AObject, Exhibit, MediaType, Section } from "../model/model.js";
+import type { TileSourceDescriptor } from "./resolve.js";
+
+/** Object/Canvas extension key carrying a Map's tile-source descriptor (geo-annotation; ADR-0015). Emitted
+ *  only when present (byte-stable when absent); pure IIIF viewers ignore it, Archie reads it to mount the map. */
+const ARCHIE_TILE_SOURCE = "archie:tileSource" as const;
+
+/** Validate a parsed archie:tileSource back into a descriptor; undefined if malformed (skip, not throw). */
+function asTileSourceDescriptor(v: unknown): TileSourceDescriptor | undefined {
+  if (typeof v !== "object" || v === null) return undefined;
+  const d = v as Record<string, unknown>;
+  if (d.kind !== "xyz" || typeof d.template !== "string" || typeof d.maxZoom !== "number") return undefined;
+  return {
+    kind: "xyz",
+    template: d.template,
+    maxZoom: d.maxZoom,
+    ...(typeof d.tileSize === "number" ? { tileSize: d.tileSize } : {}),
+    ...(typeof d.minZoom === "number" ? { minZoom: d.minZoom } : {}),
+    ...(Array.isArray(d.bounds) && d.bounds.length === 4 && d.bounds.every((n) => typeof n === "number") ? { bounds: d.bounds as [number, number, number, number] } : {}),
+    ...(typeof d.attribution === "string" ? { attribution: d.attribution } : {}),
+  };
+}
 import {
   IIIF_PRESENTATION_CONTEXT,
   langMap,
@@ -47,7 +68,7 @@ function toCanvas(manifestBase: string, obj: AObject, readingIds: string[] = [])
   if (mediaType === "Image" && /^https?:\/\//i.test(obj.source) && !/\.(jpe?g|png|webp|avif|gif|tiff?|svg)(\?.*)?$/i.test(obj.source)) {
     body.service = [{ id: obj.source, type: "ImageService2", profile: "level2" }];
   }
-  return {
+  const canvas: IIIFCanvas = {
     id: canvasId,
     type: "Canvas",
     label: langMap(obj.label),
@@ -74,6 +95,9 @@ function toCanvas(manifestBase: string, obj: AObject, readingIds: string[] = [])
       ...readingIds.map((r) => ({ id: `${canvasId}/annotations-${r}.json`, type: "AnnotationPage" as const })),
     ],
   };
+  // Map descriptor (geo-annotation, ADR-0015) — emit only when present, byte-stable when absent.
+  if (obj.tileSource) (canvas as unknown as Record<string, unknown>)[ARCHIE_TILE_SOURCE] = obj.tileSource;
+  return canvas;
 }
 
 function objIdFromCanvasId(canvasId: string): string {
@@ -102,6 +126,7 @@ export function canvasIdMap(manifest: IIIFManifest): Record<string, string> {
 export function objectsFromManifest(manifest: IIIFManifest): AObject[] {
   return manifest.items.map((canvas) => {
     const body = canvas.items[0]?.items[0]?.body;
+    const tileSource = asTileSourceDescriptor((canvas as unknown as Record<string, unknown>)[ARCHIE_TILE_SOURCE]);
     const obj: AObject = {
       id: objIdFromCanvasId(canvas.id),
       source: body?.id ?? "",
@@ -112,6 +137,7 @@ export function objectsFromManifest(manifest: IIIFManifest): AObject[] {
       ...(canvas.height !== undefined ? { height: canvas.height } : {}),
       ...(canvas.duration !== undefined ? { duration: canvas.duration } : {}),
       ...(body?.format !== undefined ? { format: body.format } : {}),
+      ...(tileSource !== undefined ? { tileSource } : {}), // Map descriptor round-trip (ADR-0015)
       ...rightsFromIIIF(canvas), // round-trip the per-object credit/license (ADR rights & metadata)
     };
     return obj;
