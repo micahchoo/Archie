@@ -879,7 +879,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const currentSource = $derived(current ? (isAsset(current.source) ? (assetUrls[current.id] ?? current.source) : current.source) : "");
   // Resolved image URL for an object's rail thumbnail (asset → blob: URL; else a RENDERABLE derivative —
   // a bare IIIF service base isn't an image, so thumbnailUrl derives a sized JPEG; plain files pass through).
-  const thumbSrc = (o: { id: string; source: string }): string => (isAsset(o.source) ? (assetUrls[o.id] ?? "") : thumbnailUrl(o.source, 240));
+  const thumbSrc = (o: { id: string; source: string; tileSource?: TileSourceDescriptor }): string => (
+    o.tileSource ? thumbnailUrl(o.tileSource, 240) // a Map → its z0 world tile (thumbnailUrl handles the descriptor)
+    : isAsset(o.source) ? (assetUrls[o.id] ?? "") : thumbnailUrl(o.source, 240)
+  );
   function switchObject(id: string) {
     if (id === currentObjectId) return;
     currentObjectId = id;
