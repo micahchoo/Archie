@@ -20,7 +20,7 @@ import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
 import { xyzTileSource } from "./xyz.js";
 import type { W3CSelector, TileSourceDescriptor } from "@render/core";
-import type { MountSurface, SelectionId, FrameOverlay, DrawTool } from "./surface.js";
+import type { MountSurface, SelectionId, FrameOverlay } from "./surface.js";
 
 /** Plain fit (no sidebar reservation) — used when the adapter supplies no fit options. */
 const PLAIN_FIT: FitOptions = { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
@@ -154,28 +154,6 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
   });
   if (opts.onSelect) selectL.add(opts.onSelect);
 
-  // Pin gesture (geo-annotation; DESIGN.md T7). annotorious has no POINT shape, so a pin is a tiny rect
-  // synthesized from ONE canvas click — active only while the tool is 'pin' AND drawing is enabled. The
-  // hit-rect is sized to ~PIN_SCREEN_PX at the click zoom so the marker is visible on drop (constant-screen
-  // glyph polish = T8). The click converts screen → image px (the space annotorious anchors in), so the pin
-  // stays put across zoom/pan for free; the app derives lng/lat from the pixel centre (geometry/geo).
-  let drawTool: DrawTool = "rectangle";
-  let drawingOn = opts.drawingEnabled ?? false;
-  const pinArmed = (): boolean => drawingOn && drawTool === "pin";
-  const PIN_SCREEN_PX = 24;
-  viewer.addHandler("canvas-click", (e) => {
-    const ev = e as { quick?: boolean; position?: { x: number; y: number }; preventDefaultAction?: boolean };
-    if (!pinArmed() || ev.quick === false || !ev.position) return;
-    ev.preventDefaultAction = true; // a pin click must not also zoom/recenter the viewport
-    const img = viewer.viewport.viewerElementToImageCoordinates(new OpenSeadragon.Point(ev.position.x, ev.position.y));
-    const w = Math.max(1, viewer.viewport.deltaPointsFromPixels(new OpenSeadragon.Point(PIN_SCREEN_PX, 0)).x);
-    const s = Math.round(w);
-    const value = `xywh=pixel:${Math.round(img.x - w / 2)},${Math.round(img.y - w / 2)},${s},${s}`;
-    // Synthesize the W3C annotation the create-listeners expect; the app's onCreate reads target, not id.
-    const synth = { id: `pin-${crypto.randomUUID()}`, type: "Annotation", target: { source: sourceIRI, selector: { type: "FragmentSelector", value } } };
-    for (const l of createL) l(synth as never);
-  });
-
   const subscribe = <T>(set: Set<T>, cb: T): (() => void) => {
     set.add(cb);
     return () => {
@@ -307,15 +285,10 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       else drawFrame(frame);
     },
     setDrawingEnabled(enabled: boolean) {
-      drawingOn = enabled;
-      // A pin is our own canvas-click gesture, not an annotorious draw tool — keep annotorious OFF for it.
-      annotator.setDrawingEnabled(enabled && drawTool !== "pin");
+      annotator.setDrawingEnabled(enabled);
     },
     setDrawingTool(tool) {
-      drawTool = tool;
-      // annotorious only knows rect/polygon; 'pin' is handled by the canvas-click gesture above.
-      if (tool !== "pin") annotator.setDrawingTool(tool);
-      annotator.setDrawingEnabled(drawingOn && tool !== "pin");
+      annotator.setDrawingTool(tool);
     },
     markerScreenRect(id) {
       // Compute from the PUBLIC annotation list + core geometry (NOT Annotorious internals — that store

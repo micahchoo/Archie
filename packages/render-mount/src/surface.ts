@@ -7,10 +7,9 @@ import type { W3CAnnotation } from "@render/core";
 /** A live selection target on the mounted surface (note logicalId or version id). */
 export type SelectionId = string;
 
-/** The drawing tools. rect + polygon are the v1 annotorious-native shapes (Q-1); `pin` is the
- *  geo-annotation single-click gesture (DESIGN.md T7) — annotorious has no POINT shape, so the mount
- *  synthesizes a tiny rect from one canvas click. A pin is only meaningful on a map surface. */
-export type DrawTool = "rectangle" | "polygon" | "pin";
+/** The v1 drawing tools (the rect + polygon shape vocab — Q-1). Geo-annotations reuse these on a Map
+ *  surface (Box/Outline + geo-truth); there is NO point/pin tool (2026-06-18 grilling, Q4). */
+export type DrawTool = "rectangle" | "polygon";
 
 /** Per-marker draw style (maps to Annotorious DrawingStyle) — used to colour a marker by its Reading (ADR-0007). */
 export interface MarkerStyle {
@@ -50,7 +49,7 @@ export interface MountSurface {
   setFrame(frame: FrameOverlay | null): void;
   /** Toggle drawing mode (off = pan/select). */
   setDrawingEnabled(enabled: boolean): void;
-  /** Pick the active drawing tool (rect/polygon = annotorious draw; `pin` = single-click geo-pin gesture). */
+  /** Pick the active drawing tool (rect or polygon — the v1 vocab). */
   setDrawingTool(tool: DrawTool): void;
   /** On-screen rect (in viewer-element pixels) of an annotation's marker, for anchoring an editing popover
    *  to it (ADR-0006). Uses Annotorious geometry bounds → OSD `imageToViewerElementCoordinates` (donor:

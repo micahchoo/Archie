@@ -1393,7 +1393,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
          pan — the state must live somewhere besides the cursor. Same banner idiom as framing. -->
     <div class="framing-banner" role="status">
       <span class="fb-tag">Drawing a region</span>
-      <span class="fb-msg">{creating === "pin" ? "Click the map to drop a geo-anchored pin — its longitude/latitude is read from where you click." : `Draw the ${creating === "rectangle" ? "box" : "outline"} on the image — it becomes your note’s place. Drag pans again once you’ve drawn.`}</span>
+      <span class="fb-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"} — it becomes your note’s place{isMapCurrent ? ", anchored to its longitude/latitude" : ""}. Drag pans again once you’ve drawn.</span>
       <button class="fb-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
     </div>
   {/if}
@@ -1477,18 +1477,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
              image, and the note is created at that locus — the canvas then returns to ambient selection. -->
         {#if creating}
           <div class="new-note armed" role="status">
-            <span class="nn-msg">{creating === "pin" ? "Click the map to drop a pin" : `Draw the ${creating === "rectangle" ? "box" : "outline"} on the image`}</span>
+            <span class="nn-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"}</span>
             <button type="button" class="nn-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
           </div>
         {:else}
           <div class="new-note">
             <span class="nn-lead">New note</span>
-            {#if isMapCurrent}
-              <!-- Geo-annotation (DESIGN.md): a pin is a single click on the map, anchored to lng/lat. -->
-              <button type="button" onclick={() => (creating = "pin")} title="Click the map to drop a geo-anchored pin">📍 Pin</button>
-            {/if}
-            <button type="button" onclick={() => (creating = "rectangle")} title="Draw a rectangular region">▭ Box</button>
-            <button type="button" onclick={() => (creating = "polygon")} title="Trace an irregular outline">⬠ Outline</button>
+            <!-- Geo-annotations reuse Box/Outline on a Map (no pin tool — 2026-06-18 grilling Q4); geo-truth is captured on draw. -->
+            <button type="button" onclick={() => (creating = "rectangle")} title={isMapCurrent ? "Draw a rectangular region on the map" : "Draw a rectangular region"}>▭ Box</button>
+            <button type="button" onclick={() => (creating = "polygon")} title={isMapCurrent ? "Trace an irregular region on the map" : "Trace an irregular outline"}>⬠ Outline</button>
           </div>
         {/if}
       {/if}
@@ -1502,7 +1499,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
             <button onclick={() => (selected = r.logicalId)}>
               <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
               <div class="meta">
-                {#if isMapCurrent}{@const g = geoLabelOf(r)}{#if g}<span class="geo" title="Longitude / latitude — derived from the pin's position on the basemap">📍 {g}</span>{/if}{/if}
+                {#if isMapCurrent}{@const g = geoLabelOf(r)}{#if g}<span class="geo" title="Longitude / latitude — the region's centre on the basemap">📍 {g}</span>{/if}{/if}
                 {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
                 <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
                 {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{/if}
