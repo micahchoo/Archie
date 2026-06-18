@@ -40,25 +40,27 @@
     position: absolute; z-index: 20; top: 3.25rem; left: var(--space-5); max-width: 17rem;
     padding: var(--space-3) var(--space-4);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent-2);
-    border-radius: var(--radius-md);
-    font-family: var(--font-ui), sans-serif;
+    border: var(--border-pixel) solid var(--border-canvas-emphasis); border-left: var(--border-pixel-bold) solid var(--accent-2);
+    border-radius: 0;
+    box-shadow: var(--shadow-pixel);
+    font-family: var(--font-ui), monospace;
   }
   .title {
-    display: block; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    display: block; font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
     color: var(--accent-2); margin-bottom: var(--space-2);
   }
   .opts { display: flex; flex-direction: column; gap: 1px; }
   .opt {
     display: flex; align-items: center; gap: var(--space-2); text-align: left;
-    padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2); border-radius: 0;
     background: transparent; border: none; color: var(--ink-canvas-secondary); cursor: pointer;
     font: inherit; font-size: 0.9rem; transition: color 120ms ease, background 120ms ease;
   }
   .opt:hover { color: var(--ink-canvas-primary); }
   .opt.on { color: var(--ink-canvas-primary); font-weight: 600; background: rgba(255, 255, 255, 0.06); }
-  .sw { flex: none; width: 11px; height: 11px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35); }
-  .sw.base { background: var(--ink-canvas-muted, #6b6356); border-radius: 50%; }
+  .sw { flex: none; width: 11px; height: 11px; border-radius: 0; box-shadow: inset 0 0 0 var(--border-pixel) rgba(0, 0, 0, 0.35); }
+  .sw.base { background: var(--ink-canvas-muted); border-radius: 0; }
   .nm { white-space: nowrap; }
   .desc {
     margin: var(--space-2) 0 0; padding-top: var(--space-2);

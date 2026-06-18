@@ -40,24 +40,24 @@
   .strip { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); }
   .tile {
     position: relative; cursor: zoom-in; padding: 0; overflow: hidden;
-    width: 132px; height: 92px; border-radius: var(--radius-sm);
-    background: var(--surface-canvas); border: 1px solid var(--border-paper);
-    transition: border-color 120ms ease, transform 120ms ease;
+    width: 132px; height: 92px; border-radius: 0;
+    background: var(--surface-canvas); border: var(--border-pixel, 2px) solid var(--border-canvas-emphasis);
+    transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   }
-  .tile:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .tile:hover { border-color: var(--accent); transform: translate(-2px, -2px); box-shadow: var(--shadow-pixel-cyan); }
   .tile img, .tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
   /* Broken-media fallback: a quiet label instead of the browser's broken-image glyph. */
-  .tile-failed { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); font-style: italic; }
+  .tile-failed { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-canvas-muted); }
 
-  /* Audio waveform motif — forest-green bars on the dark light-table (matches the av-cover SVG). */
+  /* Audio waveform motif — neon-cyan pixel bars on the navy light-table (matches the av-cover SVG). */
   .tile.audio { display: flex; align-items: center; justify-content: center; }
   .wave { display: flex; align-items: center; gap: 3px; height: 46px; }
-  .wave span { width: 3px; border-radius: 2px; background: var(--accent); display: block; }
+  .wave span { width: 3px; border-radius: 0; background: var(--accent); display: block; }
 
   .badge {
     position: absolute; bottom: 5px; right: 6px;
-    font-size: 0.72rem; line-height: 1; padding: 3px 6px; border-radius: var(--radius-sm);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis);
+    font-family: var(--font-ui, monospace); font-size: 0.72rem; line-height: 1; padding: 3px 6px; border-radius: 0;
+    background: var(--surface-canvas-overlay); color: var(--accent);
+    border: var(--border-pixel, 2px) solid var(--border-canvas-emphasis);
   }
 </style>

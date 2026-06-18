@@ -67,36 +67,39 @@
 <style>
   /* Paper-side panel content (the PropsDrawer surface) — mirrors DetailsEditor's quiet form idiom. */
   .empty { font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-paper-secondary); margin: 0 0 var(--space-3); }
-  .reading { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) 0; border-bottom: 1px solid var(--border-paper); }
+  .reading { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) 0; border-bottom: var(--border-pixel) solid var(--border-paper); }
   .row { display: flex; align-items: center; gap: var(--space-2); }
   .swatches { display: inline-flex; gap: 4px; }
-  .swatch { width: 18px; height: 18px; padding: 0; border: 2px solid transparent; border-radius: 50%; cursor: pointer; }
-  .swatch.on { border-color: var(--ink-paper-primary); }
+  .swatch { width: 18px; height: 18px; padding: 0; border: var(--border-pixel) solid transparent; border-radius: 0; cursor: pointer; }
+  .swatch.on { border-color: var(--accent); }
   .name {
     flex: 1; font-family: var(--font-ui); font-size: 0.9rem; padding: var(--space-1) var(--space-2);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-radius: var(--radius-sm);
+    border: var(--border-pixel) solid var(--border-paper); border-radius: 0;
   }
   .name:focus { outline: none; border-color: var(--accent); }
-  .remove { background: none; border: none; cursor: pointer; padding: 6px var(--space-2); color: var(--ink-paper-muted); font-size: 0.9rem; }
+  .remove { background: none; border: none; cursor: pointer; padding: 6px var(--space-2); color: var(--ink-paper-muted); font-family: var(--font-ui); font-size: 0.9rem; }
   .remove:hover { color: var(--semantic-error); }
   textarea {
     width: 100%; box-sizing: border-box; resize: vertical;
-    font-family: var(--font-body); font-size: 0.9rem; line-height: 1.45; padding: var(--space-2) var(--space-3);
+    font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; padding: var(--space-2) var(--space-3);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-radius: var(--radius-sm);
+    border: var(--border-pixel) solid var(--border-paper); border-radius: 0;
   }
   textarea:focus { outline: none; border-color: var(--accent); }
   .add { display: flex; gap: var(--space-2); padding-top: var(--space-3); }
   .add input {
     flex: 1; font-family: var(--font-ui); font-size: 0.9rem; padding: var(--space-1) var(--space-2);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-radius: var(--radius-sm);
+    border: var(--border-pixel) solid var(--border-paper); border-radius: 0;
   }
   .add input:focus { outline: none; border-color: var(--accent); }
   .add button {
-    font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-1) var(--space-3); cursor: pointer;
-    background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm);
+    font-family: var(--font-display); font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: var(--space-1) var(--space-3); cursor: pointer;
+    background: var(--accent); color: var(--ink-on-accent); border: var(--border-pixel) solid var(--accent); border-radius: 0;
+    box-shadow: var(--shadow-pixel-btn);
   }
-  .add button:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: transparent; cursor: default; }
+  .add button:hover:not(:disabled) { transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
+  .add button:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: transparent; box-shadow: none; cursor: default; }
 </style>

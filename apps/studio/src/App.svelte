@@ -1579,75 +1579,77 @@ import LayoutPicker from "./LayoutPicker.svelte";
     background: var(--surface-canvas-raised);
     border-bottom: 1px solid var(--border-canvas);
   }
-  .wordmark { font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; color: var(--ink-canvas-primary); letter-spacing: 0.01em; margin: 0; }
-  .sub { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
+  .wordmark { font-family: var(--font-display); font-size: 1.4rem; font-weight: 800; color: var(--ink-canvas-primary); letter-spacing: 0.04em; text-transform: uppercase; margin: 0; }
+  h1.wordmark { color: var(--neon-cyan); text-shadow: var(--text-shadow-hero); }
+  .sub { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--neon-yellow); }
   .spacer { flex: 1; }
   /* Vertically centres the full-width ~80vh overview band (breathing room above/below; no frame). */
   .overview-stage { min-height: 100vh; display: flex; align-items: center; background: var(--surface-canvas); }
-  .exhibit-back { background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-2) var(--space-2) 0; /* 24px+ hit box (Fitts) */ font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-secondary); align-self: center; }
+  .exhibit-back { background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-2) var(--space-2) 0; /* 24px+ hit box (Fitts) */ font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-canvas-secondary); align-self: center; }
   .exhibit-back:hover { color: var(--accent-2); }
   .no-objects { font-family: var(--font-ui); font-size: 0.78rem; color: var(--ink-canvas-secondary); align-self: center; }
   .no-canvas { display: flex; align-items: center; justify-content: center; height: 100%; padding: var(--space-8); text-align: center; font-family: var(--font-body); font-size: 1.125rem; color: var(--ink-canvas-secondary); }
   header > button {
-    font-family: var(--font-ui); font-size: var(--text-ui-sm);
+    font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.08em;
     padding: var(--space-1) var(--space-3);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-secondary);
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); cursor: pointer;
+    border: var(--border-pixel) solid var(--border-canvas-emphasis); border-radius: 0; cursor: pointer;
     transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
   }
-  header > button:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
+  header > button:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-muted); }
   header > button { color: var(--ink-canvas-primary); }
-  header > button:disabled { color: var(--ink-canvas-muted); border-color: var(--border-canvas); cursor: default; }
-  .savestate { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  header > button:disabled { color: var(--ink-canvas-muted); border-color: var(--border-canvas); background: var(--surface-canvas-overlay); cursor: default; }
+  .savestate { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .savestate.dirty { color: var(--accent-2); }
   .savestate.error { color: var(--semantic-error); }
   /* (.swatch / .you rules removed — that UI moved into ReadingsModal/IdentityPrompt; the rules were dead.) */
   /* The ? shortcuts button — a round, quiet affordance for the cheat-sheet. */
-  header > button.help-btn { border-radius: 999px; min-width: 1.9rem; padding: var(--space-1) 0; text-align: center; font-weight: 700; }
+  header > button.help-btn { border-radius: 0; min-width: 1.9rem; padding: var(--space-1) 0; text-align: center; font-weight: 700; }
 
   /* Playground banner — honest ephemerality (§115). Amber tint = transient/attention; the keep button
      carries the action accent (green). */
-  .playground-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); background: rgba(196, 155, 54, 0.1); border-bottom: 1px solid var(--border-canvas); border-left: 3px solid var(--semantic-warning); }
+  .playground-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); background: var(--accent-3-muted); border-bottom: 1px solid var(--border-canvas); border-left: var(--border-pixel-bold) solid var(--semantic-warning); }
 
   /* ⑧ collaboration summary — amber transient family (the playground banner's tone, library scale). */
   .collab-note {
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-4);
     margin: var(--space-4) var(--space-8) 0; padding: var(--space-3) var(--space-4);
-    background: rgba(214, 162, 62, 0.1); border: 1px solid var(--accent-2); border-radius: var(--radius-sm);
+    background: var(--accent-3-muted); border: var(--border-pixel) solid var(--accent-3); border-radius: 0;
+    box-shadow: var(--shadow-pixel);
   }
   .cn-msg { font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); }
   .cn-x { background: none; border: none; cursor: pointer; padding: 6px var(--space-2); font-size: 1rem; color: var(--ink-canvas-secondary); }
-  .pg-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--semantic-warning); }
-  .pg-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-canvas-secondary); }
-  .pg-keep { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
-  .pg-keep:hover { background: var(--accent-hover); }
-  .pg-keep:disabled { opacity: 0.6; cursor: default; }
+  .pg-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--semantic-warning); }
+  .pg-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-canvas-secondary); }
+  .pg-keep { cursor: pointer; font-family: var(--font-display); font-size: var(--text-ui-sm); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: var(--border-pixel) solid var(--accent); border-radius: 0; box-shadow: var(--shadow-pixel-btn); transition: transform 80ms ease, box-shadow 80ms ease; }
+  .pg-keep:hover { background: var(--accent-hover); transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
+  .pg-keep:disabled { opacity: 0.6; cursor: default; transform: none; box-shadow: var(--shadow-pixel-btn); }
 
   /* Breadcrumb crumb — the object level of "Exhibit › Object" (the spine is exhibit-level, notes object-level). */
-  .crumb { font-family: var(--font-display); font-size: 1.15rem; font-weight: 500; color: var(--ink-canvas-secondary); margin-left: var(--space-1); }
+  .crumb { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; color: var(--ink-canvas-secondary); margin-left: var(--space-1); }
   /* New-note affordance (ADR-0011): the create entry in the notes pane. Choose a shape → draw the
      region. Paper surface (it lives in the sidebar). "Armed" state turns accent while drawing. */
   .new-note { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
-  .new-note .nn-lead { font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-paper-secondary); }
-  .new-note > button { font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-1) var(--space-3); background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--border-paper); border-radius: var(--radius-sm); cursor: pointer; transition: color 120ms ease, border-color 120ms ease; }
-  .new-note > button:hover { color: var(--accent); border-color: var(--accent); }
-  .new-note.armed { gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--accent-muted); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
+  .new-note .nn-lead { font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  .new-note > button { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.06em; padding: var(--space-1) var(--space-3); background: transparent; color: var(--accent); border: var(--border-pixel) solid var(--accent); border-radius: 0; cursor: pointer; transition: color 120ms ease, border-color 120ms ease, background 120ms ease; }
+  .new-note > button:hover { color: var(--ink-on-accent); border-color: var(--accent); background: var(--accent); }
+  .new-note.armed { gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--accent-muted); border: var(--border-pixel) solid var(--accent); border-radius: 0; }
   .new-note .nn-msg { flex: 1; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; color: var(--accent); }
-  .new-note .nn-cancel { font-family: var(--font-ui); font-size: var(--text-ui-sm); background: transparent; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); cursor: pointer; }
+  .new-note .nn-cancel { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.06em; background: transparent; color: var(--ink-paper-secondary); border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: 0; padding: var(--space-1) var(--space-2); cursor: pointer; }
   .new-note .nn-cancel:hover { color: var(--ink-paper-primary); border-color: var(--ink-paper-secondary); }
 
   /* Framing banner — the canvas is capturing a SECTION camera, not a note (accent = action, with the way out). */
-  .framing-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); background: var(--accent-muted); border-bottom: 1px solid var(--border-canvas); border-left: 3px solid var(--accent); }
-  .framing-banner .fb-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
-  .framing-banner .fb-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-canvas-primary); }
-  .framing-banner .fb-cancel { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: var(--space-2); }
-  .framing-banner .fb-cancel kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-canvas-muted); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
+  .framing-banner { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-5); background: var(--accent-muted); border-bottom: 1px solid var(--border-canvas); border-left: var(--border-pixel-bold) solid var(--accent); }
+  .framing-banner .fb-tag { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); }
+  .framing-banner .fb-msg { flex: 1; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-canvas-primary); }
+  .framing-banner .fb-cancel { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: var(--border-pixel) solid var(--border-canvas-emphasis); border-radius: 0; display: inline-flex; align-items: center; gap: var(--space-2); }
+  .framing-banner .fb-cancel kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-canvas-muted); border: 1px solid var(--border-canvas); border-radius: 0; padding: 0 var(--space-1); }
   .framing-banner .fb-cancel:hover { border-color: var(--accent); color: var(--accent); }
 
   /* Scope separator — the line between exhibit-level (spine, above) and object-level (notes, below). */
   .scope-sep { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
   .scope-sep::after { content: ""; flex: 1; height: 1px; background: var(--border-paper); }
-  .scope-sep span { font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  .scope-sep span { font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-paper-muted); }
 
   /* Object rail — the exhibit's works laid along the table edge; the active one marked in forest green. */
   .objects {
@@ -1661,51 +1663,51 @@ import LayoutPicker from "./LayoutPicker.svelte";
     display: flex; align-items: center; gap: var(--space-2); cursor: pointer; text-align: left; max-width: 16rem;
     padding: var(--space-1) var(--space-2);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-secondary);
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
+    border: var(--border-pixel) solid var(--border-canvas); border-radius: 0;
     transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
   }
   .obj:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
-  .obj.on { background: var(--accent); color: var(--ink-on-accent); border-color: var(--accent); }
-  .obj-thumb { flex-shrink: 0; width: 40px; height: 32px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; border: 1px solid var(--border-canvas); }
-  .obj.on .obj-thumb { border-color: rgba(255,255,255,0.35); }
+  .obj.on { background: var(--accent); color: var(--ink-on-accent); border-color: var(--accent); box-shadow: var(--shadow-pixel); }
+  .obj-thumb { flex-shrink: 0; width: 40px; height: 32px; border-radius: 0; background-color: var(--surface-canvas); background-size: cover; background-position: center; border: var(--border-pixel) solid var(--border-canvas); }
+  .obj.on .obj-thumb { border-color: var(--ink-on-accent); }
   .obj-meta { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-  .obj-label { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 600; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .obj-count { font-family: var(--font-mono); font-size: 0.6rem; color: var(--accent-2); }
-  .obj.on .obj-count { color: rgba(255,255,255,0.85); }
+  .obj-label { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 700; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .obj-count { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-2); }
+  .obj.on .obj-count { color: var(--ink-on-accent); }
 
   /* Add-object affordance on the rail */
   .add-obj-toggle {
     align-self: center; cursor: pointer; padding: var(--space-1) var(--space-3);
     background: none; color: var(--ink-canvas-secondary);
-    border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-sm);
-    font-family: var(--font-ui); font-size: var(--text-ui-sm); transition: color 120ms ease, border-color 120ms ease;
+    border: var(--border-pixel) dashed var(--border-canvas-emphasis); border-radius: 0;
+    font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.06em; transition: color 120ms ease, border-color 120ms ease;
   }
   .add-obj-toggle:hover { color: var(--accent-2); border-color: var(--accent-2); }
   .add-obj { display: flex; align-items: center; gap: var(--space-2); }
   .add-obj input {
     font-family: var(--font-body); font-size: 0.875rem; padding: var(--space-1) var(--space-2);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); width: 14rem;
+    border: var(--border-pixel) solid var(--border-canvas); border-radius: 0; width: 14rem;
   }
   .add-obj input.lbl { width: 8rem; }
   .add-obj input:focus { outline: none; border-color: var(--accent-2); }
-  .add-obj button { cursor: pointer; padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
-  .add-obj button:disabled { background: var(--accent-muted); color: var(--ink-canvas-muted); border-color: transparent; cursor: default; }
+  .add-obj button { cursor: pointer; padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.06em; background: var(--accent); color: var(--ink-on-accent); border: var(--border-pixel) solid var(--accent); border-radius: 0; }
+  .add-obj button:disabled { background: var(--accent-muted); color: var(--ink-canvas-muted); border-color: var(--accent-muted); cursor: default; }
   .add-obj .cancel { background: none; color: var(--ink-canvas-secondary); border-color: var(--border-canvas); }
   .add-obj .cancel:hover { color: var(--ink-canvas-primary); }
   /* Import feedback on the rail (AV ingest/upload UX): understated, over the dark light-table. The
      spinner is the scholar's-ink accent; the note is a quiet warning-toned line you can dismiss. */
   .import-status { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); white-space: nowrap; }
-  .import-spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent-muted); border-top-color: var(--accent); animation: import-spin 0.7s linear infinite; }
+  .import-spinner { width: 12px; height: 12px; border-radius: 0; border: var(--border-pixel) solid var(--accent-muted); border-top-color: var(--accent); animation: import-spin 0.7s linear infinite; }
   @keyframes import-spin { to { transform: rotate(360deg); } }
-  .import-note { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 30rem; font-family: var(--font-ui); font-size: var(--text-ui-sm); line-height: 1.4; color: var(--ink-canvas-secondary); padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-left: 3px solid var(--semantic-warning); border-radius: var(--radius-sm); white-space: normal; }
+  .import-note { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 30rem; font-family: var(--font-ui); font-size: var(--text-ui-sm); line-height: 1.4; color: var(--ink-canvas-secondary); padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); border: var(--border-pixel) solid var(--border-canvas); border-left: var(--border-pixel-bold) solid var(--semantic-warning); border-radius: 0; white-space: normal; }
   .import-note-x { flex-shrink: 0; cursor: pointer; background: none; border: none; color: var(--ink-canvas-muted); font-size: var(--text-ui-xs); padding: 0 var(--space-1); }
   .import-note-x:hover { color: var(--ink-canvas-primary); }
   /* File-pick button (hides the native input) + the "or" separator */
-  .file-btn { display: inline-flex; align-items: center; cursor: pointer; padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
+  .file-btn { display: inline-flex; align-items: center; cursor: pointer; padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); border: var(--border-pixel) solid var(--border-canvas); border-radius: 0; }
   .file-btn:hover { border-color: var(--accent-2); color: var(--accent-2); }
   .file-btn input { display: none; }
-  .add-obj .or { font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); }
+  .add-obj .or { font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-canvas-muted); }
 
   .body { display: flex; flex: 1; min-height: 0; }
   main { flex: 1; min-width: 0; background: var(--surface-canvas); position: relative; }
@@ -1721,14 +1723,14 @@ import LayoutPicker from "./LayoutPicker.svelte";
     position: fixed; z-index: 50; width: 320px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px);
     overflow-y: auto; box-sizing: border-box;
     background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-md);
-    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: 0;
+    box-shadow: var(--shadow-pixel-strong);
   }
   .np-grip {
     display: block; width: 100%; cursor: grab; text-align: center; user-select: none;
     padding: 2px 0; font-size: 0.8rem; line-height: 1.4; color: var(--ink-paper-muted);
-    background: var(--surface-paper-hover); border: none; border-bottom: 1px solid var(--border-paper);
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: var(--surface-paper-hover); border: none; border-bottom: var(--border-pixel) solid var(--border-paper);
+    border-radius: 0;
   }
   .np-grip:hover { color: var(--accent); }
   .np-grip:active { cursor: grabbing; }
@@ -1746,8 +1748,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
   /* Editable object label — reads as a title, reveals as an input on hover/focus */
   .object-title {
     display: block; width: 100%; box-sizing: border-box; margin: 0 0 var(--space-1);
-    font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-paper-primary);
-    background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
+    font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; line-height: 1.1; color: var(--ink-paper-primary);
+    background: transparent; border: var(--border-pixel) solid transparent; border-radius: 0;
     padding: var(--space-1) 0;
     transition: background 120ms ease, border-color 120ms ease;
   }
@@ -1760,26 +1762,26 @@ import LayoutPicker from "./LayoutPicker.svelte";
     display: block; width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-3) var(--space-4); margin-bottom: var(--space-2);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-left: 3px solid transparent;
-    border-radius: var(--radius-md);
+    border: var(--border-pixel) solid var(--border-paper); border-left: var(--border-pixel-bold) solid transparent;
+    border-radius: 0;
     transition: background 120ms ease, border-color 120ms ease;
   }
   li button:hover { background: var(--surface-paper-hover); }
   li.sel button { border-color: var(--border-paper); border-left-color: var(--accent); background: var(--accent-muted); }
-  .comment { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+  .comment { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
   .meta { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
-  .tag { font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); }
-  .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); background: rgba(107,98,80,0.1); padding: 2px var(--space-2); border-radius: 999px; }
+  .tag { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); }
+  .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); border: var(--border-pixel) solid var(--border-paper); padding: 2px var(--space-2); border-radius: 0; }
   .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-4); }
   .csv-import { align-self: flex-start; background: none; border: none; cursor: pointer; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); } /* 24px+ hit box */
   .csv-import:hover { color: var(--accent); }
-  .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
+  .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); border: var(--border-pixel) dashed var(--border-paper-emphasis); border-radius: 0; }
   /* Object-level rights disclosure — tucked at the foot of the object editor (rights grill Q6). */
   .rights-disc { margin-top: var(--space-4); border-top: 1px solid var(--border-paper); padding-top: var(--space-3); }
   .rights-disc > summary {
     cursor: pointer; list-style: none; display: flex; align-items: center; gap: var(--space-2);
     font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 500;
-    text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-paper-secondary);
+    text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-paper-secondary);
   }
   .rights-disc > summary::-webkit-details-marker { display: none; }
   .rights-disc > summary::before { content: "▸"; color: var(--ink-paper-muted); transition: transform 0.15s; }
@@ -1789,8 +1791,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
 
   /* WADM form — editing on paper */
   .wadm { margin-top: var(--space-5); border-top: 1px solid var(--border-paper); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
-  .wadm h3 { margin: 0; font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; color: var(--ink-paper-primary); }
-  .wadm label { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  .wadm h3 { margin: 0; font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-paper-primary); }
+  .wadm label { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-paper-secondary); }
   /* Comment field header: label + the ⌘K "Cite" link affordance (forest-green, system.md §19). */
   .wadm .field-head { display: flex; align-items: center; justify-content: space-between; }
   .wadm .cite {
@@ -1800,27 +1802,27 @@ import LayoutPicker from "./LayoutPicker.svelte";
     color: var(--accent);
   }
   .wadm .cite:hover { color: var(--accent-hover); }
-  .wadm .cite kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-paper-muted); background: var(--surface-paper-hover); border: 1px solid var(--border-paper); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
+  .wadm .cite kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-paper-muted); background: var(--surface-paper-hover); border: 1px solid var(--border-paper); border-radius: 0; padding: 0 var(--space-1); }
   .wadm textarea, .wadm input:not([type]) {
     font-family: var(--font-body); font-size: 1rem; padding: var(--space-2) var(--space-3);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
+    border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: 0;
   }
   .wadm textarea:focus, .wadm input:focus { outline: none; border-color: var(--accent); }
-  .wadm fieldset { border: 1px solid var(--border-paper); border-radius: var(--radius-sm); display: flex; gap: var(--space-4); padding: var(--space-2) var(--space-3); }
+  .wadm fieldset { border: var(--border-pixel) solid var(--border-paper); border-radius: 0; display: flex; gap: var(--space-4); padding: var(--space-2) var(--space-3); }
   /* AV time fieldset — start/end mm:ss inputs (the time note's geometry) */
   .wadm .time .t { flex-direction: column; gap: var(--space-1); }
   .wadm .time input {
     width: 6rem; font-family: var(--font-mono); font-size: 0.9rem; padding: var(--space-1) var(--space-2);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
+    border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: 0;
   }
   .wadm .time input:focus { outline: none; border-color: var(--accent); }
-  .wadm legend { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-paper-muted); padding: 0 var(--space-1); }
-  .del { align-self: flex-start; font-family: var(--font-ui); font-size: 0.8rem; padding: var(--space-1) var(--space-3); background: none; color: var(--accent); border: 1px solid var(--accent-muted); border-radius: var(--radius-sm); cursor: pointer; }
+  .wadm legend { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-paper-muted); padding: 0 var(--space-1); }
+  .del { align-self: flex-start; font-family: var(--font-ui); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; padding: var(--space-1) var(--space-3); background: none; color: var(--accent); border: var(--border-pixel) solid var(--accent-muted); border-radius: 0; cursor: pointer; }
   .del:hover { background: var(--accent-muted); border-color: var(--accent); }
   /* Note-editor action row — Save (commit + close the popover) beside Delete. */
   .wadm-actions { display: flex; align-items: center; gap: var(--space-3); }
-  .save { cursor: pointer; font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
-  .save:hover { background: var(--accent-hover); }
+  .save { cursor: pointer; font-family: var(--font-display); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: var(--border-pixel) solid var(--accent); border-radius: 0; box-shadow: var(--shadow-pixel-btn); transition: transform 80ms ease, box-shadow 80ms ease; }
+  .save:hover { background: var(--accent-hover); transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
 </style>

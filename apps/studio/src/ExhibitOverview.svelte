@@ -271,89 +271,90 @@
      window. Vertically centred by .overview-stage (App). */
   .overview { display: flex; flex-direction: column; height: 92vh; min-height: 36rem; width: 100%; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); }
 
-  header { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-canvas); }
-  .back { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-1) var(--space-3); background: transparent; color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); }
-  .back:hover { color: var(--accent-2); border-color: var(--accent-2); }
-  .titles .eyebrow { margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-2); }
-  .titles h1 { margin: 2px 0 0; font-family: var(--font-display); font-weight: 600; font-size: 1.9rem; line-height: 1.05; color: var(--ink-canvas-primary); }
-  .titles .intent { margin: 4px 0 0; font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); }
+  header { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-bottom: var(--border-pixel) solid var(--border-canvas-emphasis); }
+  .back { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; padding: var(--space-1) var(--space-3); background: transparent; color: var(--accent); border: var(--border-pixel) solid var(--accent); border-radius: 0; }
+  .back:hover { color: var(--ink-on-accent); background: var(--accent-muted); border-color: var(--accent); }
+  .titles .eyebrow { margin: 0; }
+  .titles h1 { margin: 2px 0 0; font-family: var(--font-display); font-weight: 800; font-size: 1.9rem; line-height: 1.05; color: var(--ink-canvas-primary); text-shadow: var(--text-shadow-hero); }
+  .titles .intent { margin: 4px 0 0; font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-secondary); }
   .spacer { flex: 1; }
-  .chip { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
+  .chip { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: var(--border-pixel) solid var(--border-canvas-emphasis); border-radius: 0; }
   .chip.rights { display: inline-flex; align-items: center; gap: var(--space-1); }
   .chip.rights.set { border-color: var(--accent-2); }
   .chip.rights .dot { color: var(--accent-2); font-size: 0.55rem; }
   .chip:hover { border-color: var(--accent-2); color: var(--accent-2); }
-  .viewtoggle { display: inline-flex; border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); overflow: hidden; }
-  .viewtoggle button { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: 6px var(--space-3); background: transparent; color: var(--ink-canvas-secondary); border: none; } /* 6px v-pad -> 25px hit box (Fitts) */
+  .viewtoggle { display: inline-flex; border: var(--border-pixel) solid var(--border-canvas-emphasis); border-radius: 0; overflow: hidden; }
+  .viewtoggle button { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer; padding: 6px var(--space-3); background: transparent; color: var(--ink-canvas-secondary); border: none; } /* 6px v-pad -> 25px hit box (Fitts) */
   .viewtoggle button.on { background: var(--accent); color: var(--ink-on-accent); }
 
   /* The canvas: a clipped viewport holding the pan/zoomed tableau. grab cursor signals "this is a space". */
   .viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; cursor: grab; touch-action: none; background:
-    radial-gradient(circle at 1px 1px, rgba(160,155,142,0.08) 1px, transparent 0) 0 0 / 28px 28px; } /* faint dot-grid = a surface, not a page */
+    radial-gradient(circle at 1px 1px, var(--border-canvas-emphasis) 1px, transparent 0) 0 0 / var(--grid-size) var(--grid-size); } /* neon dot-grid = a pixel surface, not a page */
   .viewport:active { cursor: grabbing; }
   /* Plates centred in the viewport (few objects sit in the middle, not jammed top-left); pan/zoom transforms the whole. */
   .tableau { display: flex; flex-wrap: wrap; gap: var(--space-6); justify-content: center; align-content: center; min-width: 100%; min-height: 100%; box-sizing: border-box; padding: var(--space-10); transform-origin: 0 0; }
 
   /* Edge vignette — the frame reads as a window onto a larger surface, not a bounded page. */
-  .edges { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 64px 10px rgba(20,19,16,0.5); }
+  .edges { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 64px 10px var(--void); }
   /* Gesture legend — names the two non-obvious gestures, prominently, top-centre. */
-  .canvas-legend { position: absolute; top: var(--space-4); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); background: rgba(30,29,25,0.85); border: 1px solid var(--border-canvas-emphasis); border-radius: 999px; pointer-events: none; }
+  .canvas-legend { position: absolute; top: var(--space-4); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: var(--border-pixel) solid var(--border-canvas-emphasis); border-radius: 0; box-shadow: var(--shadow-pixel); pointer-events: none; }
   .canvas-legend .g { display: inline-flex; align-items: center; gap: var(--space-1); }
   .canvas-legend .ico { color: var(--accent-2); font-size: 0.95rem; }
   .canvas-legend .dot { color: var(--ink-canvas-muted); }
 
-  .plate { display: flex; flex-direction: column; gap: var(--space-2); width: 13rem; cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-md); transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease; }
-  .plate:hover { border-color: var(--accent-2); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
-  .plate .order { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent-2); }
-  .frame { position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-canvas-overlay); display: flex; align-items: center; justify-content: center; }
+  .plate { display: flex; flex-direction: column; gap: var(--space-2); width: 13rem; cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border: var(--border-pixel) solid var(--border-canvas-emphasis); border-radius: 0; box-shadow: var(--shadow-pixel); transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease; }
+  .plate:hover { border-color: var(--accent); transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-cyan); }
+  .plate .order { font-family: var(--font-mono); font-size: var(--text-ui-xs); text-transform: uppercase; color: var(--accent-3); }
+  .frame { position: relative; aspect-ratio: 4 / 3; border-radius: 0; overflow: hidden; background: var(--surface-canvas-overlay); border: var(--border-pixel) solid var(--border-canvas); display: flex; align-items: center; justify-content: center; }
   .frame .img { position: absolute; inset: 0; background-size: cover; background-position: center; }
   .frame.av { background: var(--surface-canvas-overlay); }
-  .frame .glyph { font-size: 2rem; color: var(--ink-canvas-muted); }
+  .frame .glyph { font-size: 2rem; color: var(--accent-2); }
   .caption { display: flex; flex-direction: column; gap: 2px; }
-  .caption .lbl { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; line-height: 1.1; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .caption .cnt { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-canvas-secondary); }
+  .caption .lbl { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; line-height: 1.1; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .caption .cnt { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-secondary); }
   .plate.add { border-style: dashed; justify-content: center; }
-  .add-frame { border: 1px dashed var(--border-canvas-emphasis); }
+  .add-frame { border: var(--border-pixel) dashed var(--border-canvas-emphasis); }
   .plate[draggable="true"] { cursor: grab; }
   .plate[draggable="true"]:active { cursor: grabbing; }
   /* Drag-to-reorder feedback (canvas): dragged plate dims; drop target shows an insert-before bar. */
   .plate.dragging { opacity: 0.4; }
-  .plate.over { border-color: var(--accent-2); box-shadow: -4px 0 0 var(--accent-2); }
-  .plate.add.over { border-color: var(--accent-2); border-style: solid; color: var(--accent-2); }
-  .canvas-legend .lead { color: var(--accent-2); }
+  .plate.over { border-color: var(--accent); box-shadow: -4px 0 0 var(--accent); }
+  .plate.add.over { border-color: var(--accent); border-style: solid; color: var(--accent); }
+  .canvas-legend .lead { color: var(--accent-3); }
   /* Leading "insert before first" drop zone (canvas): a thin column that only takes space while armed;
      shows the same accent insert bar as a plate's .over state. */
-  .dropstart { width: 0; align-self: stretch; border-radius: var(--radius-md); transition: width 120ms ease; }
-  .dropstart.armed { width: 1.5rem; border: 1px dashed var(--border-canvas-emphasis); }
-  .dropstart.over { border-color: var(--accent-2); border-style: solid; box-shadow: 4px 0 0 var(--accent-2); }
+  .dropstart { width: 0; align-self: stretch; border-radius: 0; transition: width 120ms ease; }
+  .dropstart.armed { width: 1.5rem; border: var(--border-pixel) dashed var(--border-canvas-emphasis); }
+  .dropstart.over { border-color: var(--accent); border-style: solid; box-shadow: 4px 0 0 var(--accent); }
 
-  .zoomctl { position: absolute; bottom: var(--space-5); right: var(--space-5); display: flex; gap: 1px; background: var(--border-canvas); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); overflow: hidden; }
-  .zoomctl button { font-family: var(--font-ui); font-size: 1.05rem; cursor: pointer; min-width: 2.25rem; padding: var(--space-2) var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: none; }
-  .zoomctl .fit { font-size: var(--text-ui-sm); }
-  .zoomctl button:hover { color: var(--accent-2); }
-  .zoomctl .pct { display: inline-flex; align-items: center; justify-content: center; min-width: 3rem; font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); }
-  .hint { position: absolute; bottom: var(--space-5); left: var(--space-6); margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); pointer-events: none; }
+  .zoomctl { position: absolute; bottom: var(--space-5); right: var(--space-5); display: flex; gap: var(--border-pixel); background: var(--border-canvas-emphasis); border: var(--border-pixel) solid var(--border-canvas-emphasis); border-radius: 0; box-shadow: var(--shadow-pixel); overflow: hidden; }
+  .zoomctl button { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; cursor: pointer; min-width: 2.25rem; padding: var(--space-2) var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: none; }
+  .zoomctl .fit { font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 0.1em; font-size: var(--text-ui-sm); }
+  .zoomctl button:hover { color: var(--ink-on-accent); background: var(--accent); }
+  .zoomctl .pct { display: inline-flex; align-items: center; justify-content: center; min-width: 3rem; font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent); background: var(--surface-canvas-raised); }
+  .hint { position: absolute; bottom: var(--space-5); left: var(--space-6); margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-muted); pointer-events: none; }
 
   /* 1b list fallback. */
-  .list-hint { max-width: 48rem; margin: var(--space-6) auto 0; padding: 0 var(--space-6); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); }
+  .list-hint { max-width: 48rem; margin: var(--space-6) auto 0; padding: 0 var(--space-6); font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-secondary); }
   .list { list-style: none; margin: 0; padding: var(--space-4) var(--space-6) var(--space-6); overflow-y: auto; flex: 1; max-width: 48rem; }
   .list li { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
   .list li.dragging { opacity: 0.4; }
-  .list li.over { box-shadow: 0 -3px 0 var(--accent-2); } /* insert-before line */
+  .list li.over { box-shadow: 0 -3px 0 var(--accent); } /* insert-before line */
   /* Leading "insert before first" drop zone (list): collapsed until a drag is active. */
-  .list li.dropstart-row { height: 0; margin: 0; padding: 0; border-radius: var(--radius-sm); transition: height 120ms ease; }
+  .list li.dropstart-row { height: 0; margin: 0; padding: 0; border-radius: 0; transition: height 120ms ease; }
   .list li.dropstart-row.armed { height: var(--space-4); }
-  .list li.dropstart-row.over { box-shadow: 0 3px 0 var(--accent-2); }
+  .list li.dropstart-row.over { box-shadow: 0 3px 0 var(--accent); }
   .list .grip { cursor: grab; user-select: none; color: var(--ink-canvas-muted); font-size: 1.15rem; padding: 0 var(--space-2); background: none; border: none; line-height: 1; }
-  .list .grip:hover { color: var(--accent-2); }
+  .list .grip:hover { color: var(--accent); }
   .list .grip:active { cursor: grabbing; }
-  .list li button { display: flex; flex: 1; align-items: center; gap: var(--space-4); text-align: left; cursor: pointer; padding: var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); color: inherit; }
-  .list li button:hover { border-color: var(--accent-2); }
-  .list li.end.over button { border-color: var(--accent-2); border-style: solid; color: var(--accent-2); }
-  .li-order { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent-2); min-width: 1.5rem; }
-  .li-thumb { width: 3rem; height: 2.25rem; border-radius: var(--radius-sm); background: var(--surface-canvas-overlay) center/cover; display: flex; align-items: center; justify-content: center; }
-  .li-thumb .glyph { color: var(--ink-canvas-muted); }
-  .li-lbl { flex: 1; font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; color: var(--ink-canvas-primary); }
-  .li-cnt { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-canvas-secondary); }
-  .li-add { font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); background: none; border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-sm); padding: var(--space-3); cursor: pointer; width: 100%; }
+  .list li button { display: flex; flex: 1; align-items: center; gap: var(--space-4); text-align: left; cursor: pointer; padding: var(--space-3); background: var(--surface-canvas-raised); border: var(--border-pixel) solid var(--border-canvas-emphasis); border-radius: 0; box-shadow: var(--shadow-pixel); color: inherit; transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease; }
+  .list li button:hover { border-color: var(--accent); transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-cyan); }
+  .list li.end.over button { border-color: var(--accent); border-style: solid; color: var(--accent); }
+  .li-order { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent-3); min-width: 1.5rem; }
+  .li-thumb { width: 3rem; height: 2.25rem; border-radius: 0; border: var(--border-pixel) solid var(--border-canvas); background: var(--surface-canvas-overlay) center/cover; display: flex; align-items: center; justify-content: center; }
+  .li-thumb .glyph { color: var(--accent-2); }
+  .li-lbl { flex: 1; font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; color: var(--ink-canvas-primary); }
+  .li-cnt { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-secondary); }
+  .li-add { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); background: none; border: var(--border-pixel) dashed var(--accent); border-radius: 0; padding: var(--space-3); cursor: pointer; width: 100%; }
+  .li-add:hover { background: var(--accent-muted); color: var(--ink-on-accent); }
 </style>

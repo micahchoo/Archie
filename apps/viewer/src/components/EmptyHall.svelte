@@ -53,7 +53,7 @@
       <p class="cold" role="status">You followed a link into a library that isn’t open here. Open its <code>.archie.zip</code> file to follow the link.</p>
     {/if}
     <p class="lede">Open the library’s <code>.archie.zip</code> file to read its exhibits — drag it onto the page, or choose it below.</p>
-    <button class="primary" onclick={pick}>Open a library…</button>
+    <button class="primary pixel-btn" onclick={pick}>Open a library…</button>
     {#if error}<p class="err" role="alert">⚠ {error}</p>{/if}
     <input bind:this={fileInput} type="file" accept=".zip" onchange={onChange} hidden />
   </div>
@@ -64,8 +64,8 @@
 </main>
 
 <style>
-  /* The vacant gallery wall — warm stone (system.md §Surfaces: Gallery). One framed invitation,
-     centered. Forest-green accent on the single action. Shallow depth: a dashed empty frame. */
+  /* The vacant gallery void (8-Bit Orbit §Surfaces: Gallery = void). One framed invitation,
+     centered. Neon-cyan accent on the single action. Shallow depth: a dashed cyan square frame. */
   .hall {
     min-height: 100vh;
     display: grid;
@@ -82,38 +82,36 @@
     text-align: center;
     gap: var(--space-3);
     padding: var(--space-10) var(--space-8);
-    border: 1.5px dashed var(--border-paper-emphasis);
+    border: var(--border-pixel) dashed var(--border-canvas-emphasis);
     border-radius: var(--radius-lg);
   }
+  /* .eyebrow is the global navy label-pill (square, neon-yellow Space Mono). Keep tracking local. */
   .eyebrow {
-    margin: 0;
-    font-family: var(--font-ui), sans-serif;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--accent);
+    letter-spacing: 0.2em;
   }
   h1 {
     margin: var(--space-1) 0 var(--space-1);
-    font-family: var(--font-display), Georgia, serif;
-    font-weight: 600;
+    font-family: var(--font-display), sans-serif;
+    font-weight: 800;
     font-size: 2.75rem;
     line-height: 1.05;
-    color: var(--ink-paper-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--ink-canvas-primary);
+    text-shadow: var(--text-shadow-hero);
   }
   .lede {
     margin: 0 0 var(--space-2);
-    font-family: var(--font-body), Georgia, serif;
+    font-family: var(--font-body), sans-serif;
     font-size: 1.15rem;
-    line-height: 1.5;
-    color: var(--ink-paper-secondary);
+    line-height: 1.6;
+    color: var(--ink-canvas-secondary);
   }
   /* The file the recipient holds, named so they know what to open (curatorial clarity, not jargon). */
   .lede code, .cold code {
     font-family: var(--font-mono), ui-monospace, monospace;
     font-size: 0.92em;
-    color: var(--ink-paper-primary);
+    color: var(--accent);
   }
   .cold {
     margin: 0;
@@ -121,49 +119,45 @@
     font-family: var(--font-ui), sans-serif;
     font-size: 0.8rem;
     line-height: 1.5;
-    color: var(--ink-paper-primary);
-    background: rgba(196, 155, 54, 0.12);
-    border: 1px solid var(--semantic-warning);
+    color: var(--ink-canvas-primary);
+    background: var(--accent-3-muted);
+    border: var(--border-pixel) solid var(--semantic-warning);
     border-radius: var(--radius-sm);
   }
+  /* Primary CTA composes the global .pixel-btn (Tektur, uppercase, hard cascade shadow, square).
+     The local rules below only set sizing — never override .pixel-btn's color/shadow/transform. */
   button.primary {
-    font-family: var(--font-ui), sans-serif;
     font-size: 0.8125rem;
-    font-weight: 500;
     padding: var(--space-2) var(--space-5);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    color: var(--ink-on-accent);
-    background: var(--accent);
-    border: 1px solid var(--accent);
-    transition: background 120ms ease, border-color 120ms ease;
-  }
-  button.primary:hover {
-    background: var(--accent-hover);
-    border-color: var(--accent-hover);
   }
   .err {
     margin: 0;
     font-family: var(--font-ui), sans-serif;
     font-size: 0.8rem;
-    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--semantic-error);
   }
-  /* Drag anywhere: the whole window is the drop target — the wall lifts with an accent wash. */
+  /* Drag anywhere: the whole window is the drop target — the void lifts with a neon-cyan wash. */
   .wash {
     position: fixed;
     inset: 0;
     display: grid;
     place-items: center;
     background: var(--accent-muted);
-    border: 2px dashed var(--accent);
+    border: var(--border-pixel-bold) dashed var(--accent);
     pointer-events: none;
   }
   .wash span {
     padding: var(--space-2) var(--space-4);
     font-family: var(--font-ui), sans-serif;
     font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
     color: var(--accent);
-    background: var(--surface-paper);
+    background: var(--surface-paper-card);
+    border: var(--border-pixel) solid var(--border-canvas-emphasis);
     border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-pixel);
   }
 </style>

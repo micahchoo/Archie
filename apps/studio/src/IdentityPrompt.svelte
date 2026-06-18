@@ -37,32 +37,35 @@
 {/if}
 
 <style>
-  /* Warm-paper dialog over the dark studio — the study's lamplit page (mirrors Publish.svelte). */
-  .scrim { position: fixed; inset: 0; background: rgba(12,11,9,0.62); z-index: 40; }
+  /* Raised-navy dialog over the void — 8-Bit Orbit pixel card (mirrors Publish.svelte). */
+  .scrim { position: fixed; inset: 0; background: rgba(10, 14, 39, 0.72); z-index: 40; }
   .dialog {
     position: fixed; z-index: 41; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: min(30rem, calc(100vw - var(--space-8))); box-sizing: border-box;
     background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-lg);
+    border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-pixel-strong);
     padding: var(--space-6);
   }
   header { margin-bottom: var(--space-5); }
-  .eyebrow { color: var(--accent); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
-  h2 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.12; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); }
-  .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; color: var(--ink-paper-secondary); margin: 0; }
+  /* .eyebrow is the global navy label-pill (square, neon-yellow Space Mono) */
+  h2 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; line-height: 1.12; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); }
+  .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
 
   form { display: flex; flex-direction: column; gap: var(--space-4); }
   input {
     font-family: var(--font-body); font-size: 1.1rem; padding: var(--space-3) var(--space-3);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
+    border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
   }
   input:focus { outline: none; border-color: var(--accent); }
   .actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
-  button { font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer; transition: background 120ms ease, border-color 120ms ease, color 120ms ease; }
-  .ghost { background: none; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); }
-  .ghost:hover { color: var(--ink-paper-primary); border-color: var(--ink-paper-secondary); }
-  .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
-  .primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
-  .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: transparent; cursor: default; }
+  button { font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer; transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 80ms ease, box-shadow 80ms ease; }
+  /* Secondary/ghost — square, transparent, 2px cyan border, Space Mono uppercase */
+  .ghost { background: none; color: var(--accent); border: var(--border-pixel) solid var(--accent); font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 0.1em; }
+  .ghost:hover { background: var(--accent-muted); color: var(--accent); border-color: var(--accent); }
+  /* Primary CTA — pixel-btn treatment (Tektur, uppercase, hard cascade shadow) */
+  .primary { background: var(--accent); color: var(--ink-on-accent); border: var(--border-pixel) solid var(--accent); font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.08em; box-shadow: var(--shadow-pixel-btn); }
+  .primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
+  .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: transparent; cursor: default; box-shadow: none; }
 </style>

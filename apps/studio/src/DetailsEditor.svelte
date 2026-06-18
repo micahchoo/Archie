@@ -67,12 +67,12 @@
   .field { display: flex; flex-direction: column; gap: var(--space-1); }
   .field-head {
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs, 0.7rem); font-weight: 500;
-    text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-paper-secondary);
+    text-transform: uppercase; letter-spacing: 0.16em; color: var(--accent-3);
   }
   input, textarea {
     font-family: var(--font-body), serif; font-size: 0.85rem; color: var(--ink-paper-primary);
-    background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis);
-    border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box;
+    background: var(--surface-paper-card); border: var(--border-pixel) solid var(--border-paper-emphasis);
+    border-radius: 0; padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box;
   }
   textarea { resize: vertical; }
   input:focus, textarea:focus { outline: none; border-color: var(--accent); }
@@ -81,9 +81,10 @@
   .danger { margin-top: var(--space-1); }
   .remove {
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm, 0.8125rem);
+    text-transform: uppercase; letter-spacing: 0.08em;
     padding: var(--space-1) var(--space-3); cursor: pointer; width: 100%;
     background: transparent; color: var(--semantic-error);
-    border: 1px solid var(--semantic-error); border-radius: var(--radius-sm);
+    border: var(--border-pixel) solid var(--semantic-error); border-radius: 0;
     transition: background 120ms ease, color 120ms ease;
   }
   .remove:hover { background: var(--semantic-error); color: var(--ink-on-accent); }

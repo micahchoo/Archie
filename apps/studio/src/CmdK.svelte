@@ -103,19 +103,19 @@
     position: fixed; inset: 0; z-index: 60;
     display: flex; justify-content: center; align-items: flex-start;
     padding-top: 12vh;
-    background: rgba(12, 11, 9, 0.42); /* the dark table, dimmed — no harsh black modal veil */
+    background: rgba(10, 14, 39, 0.72); /* the void, dimmed — flat pixel veil */
   }
   .drawer {
     width: min(560px, 92vw); max-height: 70vh; display: flex; flex-direction: column;
     background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-lg);
-    box-shadow: 0 8px 28px rgba(12, 11, 9, 0.38); /* one soft float-shadow, Depth §51 */
+    border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: 0;
+    box-shadow: var(--shadow-pixel-strong); /* hard zero-blur pixel float */
     overflow: hidden;
   }
 
   /* Search row — the manuscript margin where you note a reference */
-  .search { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-paper); }
-  .search .seal { font-family: var(--font-body); font-size: 1.2rem; color: var(--accent); }
+  .search { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-4) var(--space-5); border-bottom: var(--border-pixel) solid var(--border-paper); }
+  .search .seal { font-family: var(--font-display); font-size: 1.2rem; color: var(--accent); }
   .search input {
     flex: 1; border: none; background: none; outline: none;
     font-family: var(--font-ui); font-size: 1.0625rem; color: var(--ink-paper-primary);
@@ -124,7 +124,8 @@
 
   kbd {
     font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-paper-secondary);
-    background: var(--surface-paper-hover); border: 1px solid var(--border-paper); border-radius: var(--radius-sm);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    background: var(--surface-paper-hover); border: var(--border-pixel) solid var(--border-paper); border-radius: 0;
     padding: 1px var(--space-2);
   }
 
@@ -135,12 +136,12 @@
     width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-2) var(--space-3); margin-bottom: 2px;
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid transparent; border-left: 3px solid transparent; border-radius: var(--radius-md);
+    border: var(--border-pixel) solid transparent; border-left: var(--border-pixel-bold) solid transparent; border-radius: 0;
     transition: background 100ms ease, border-color 100ms ease;
   }
   .results button.active { background: var(--accent-muted); border-left-color: var(--accent); }
   .kind {
-    font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.04em;
+    font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.12em;
     color: var(--accent); text-transform: uppercase;
   }
   .kind.exhibit { color: var(--ink-paper-secondary); }
@@ -153,7 +154,7 @@
 
   .hint {
     margin: 0; padding: var(--space-2) var(--space-5) var(--space-3);
-    border-top: 1px solid var(--border-paper);
+    border-top: var(--border-pixel) solid var(--border-paper);
     font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-paper-muted);
   }
   .hint kbd { margin: 0 1px; }

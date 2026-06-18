@@ -38,24 +38,25 @@
 {/if}
 
 <style>
-  .scrim { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: var(--space-6); background: rgba(20, 19, 16, 0.62); }
+  .scrim { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: var(--space-6); background: rgba(10, 14, 39, 0.72); }
   .sheet {
     width: min(40rem, 100%); max-height: 86vh; overflow-y: auto; box-sizing: border-box;
     background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-md);
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5); padding: var(--space-6);
+    border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: var(--radius-md);
+    box-shadow: var(--shadow-pixel-strong); padding: var(--space-6);
   }
   header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-4); }
-  header h2 { margin: 0; font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; color: var(--ink-paper-primary); }
+  header h2 { margin: 0; font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--ink-paper-primary); }
   .close { cursor: pointer; background: none; border: none; font-size: 1rem; color: var(--ink-paper-muted); padding: 0 var(--space-1); }
   .close:hover { color: var(--accent); }
 
   .groups { display: grid; grid-template-columns: 1fr; gap: var(--space-5); }
-  section h3 { margin: 0 0 var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+  section h3 { margin: 0 0 var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
   dl { margin: 0; display: flex; flex-direction: column; gap: var(--space-2); }
   .row { display: flex; align-items: baseline; gap: var(--space-4); }
   dt { flex-shrink: 0; min-width: 5.5rem; display: flex; gap: var(--space-1); }
-  dd { margin: 0; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.4; color: var(--ink-paper-secondary); }
-  kbd { font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.4; color: var(--ink-paper-primary); background: var(--surface-paper-hover); border: 1px solid var(--border-paper-emphasis); border-bottom-width: 2px; border-radius: var(--radius-sm); padding: 1px var(--space-2); }
-  .foot { margin: var(--space-5) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-paper-muted); }
+  dd { margin: 0; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
+  /* Square Space Mono navy key caps — pixel chips */
+  kbd { font-family: var(--font-mono); font-size: 0.72rem; line-height: 1.4; color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); border: var(--border-pixel) solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); padding: 1px var(--space-2); text-transform: uppercase; }
+  .foot { margin: var(--space-5) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-paper-muted); }
 </style>

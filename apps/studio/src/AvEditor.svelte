@@ -149,7 +149,7 @@
     wsRegions.clearRegions();
     for (const a of annotations) {
       const r = rangeOf(a);
-      if (r) wsRegions.addRegion({ id: a.id, start: r.start, end: r.end ?? r.start + 0.1, drag: false, resize: false, color: "rgba(58,107,76,0.18)" });
+      if (r) wsRegions.addRegion({ id: a.id, start: r.start, end: r.end ?? r.start + 0.1, drag: false, resize: false, color: "rgba(94,220,244,0.18)" });
     }
     addingRegions = false;
   }
@@ -196,13 +196,13 @@
         container: waveformEl,
         url: source,
         height: 96,
-        waveColor: "#8a8475",
-        progressColor: "#3a6b4c",
-        cursorColor: "#3a6b4c",
+        waveColor: "#5a6b9a",
+        progressColor: "#5EDCF4",
+        cursorColor: "#F0A6CA",
         cursorWidth: 2,
         barWidth: 2,
         barGap: 1,
-        barRadius: 2,
+        barRadius: 0,
         normalize: true,
         plugins: [regions],
       });
@@ -211,7 +211,7 @@
       instance.on("ready", () => {
         wsReady = true;
         renderRegions();
-        disableDrag = regions.enableDragSelection({ color: "rgba(58,107,76,0.25)" });
+        disableDrag = regions.enableDragSelection({ color: "rgba(94,220,244,0.25)" });
         emitRegionRect();
       });
       instance.on("error", (err: unknown) => { wsError = err instanceof Error ? err.message : String(err); });
@@ -353,59 +353,60 @@
 </div>
 
 <style>
-  /* Listening-and-transcribing desk: the recording on the dark light-table, a forest-green marking bar. */
+  /* Listening-and-transcribing desk: the recording on the navy void light-table, a neon marking bar. */
   .av { display: flex; flex-direction: column; height: 100%; background: var(--surface-canvas); }
   .stage, .video-wrap { flex: 1; min-height: 0; }
   .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-8); text-align: center; }
-  .stage .now { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-2); /* amber on dark (contrast-rescue) */ }
-  .stage h1 { font-family: var(--font-display); font-weight: 600; font-size: 2rem; line-height: 1.1; margin: 0; color: var(--ink-canvas-primary); }
+  .stage .now { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent-3); }
+  .stage h1 { font-family: var(--font-display); font-weight: 800; font-size: 2rem; line-height: 1.1; margin: 0; color: var(--neon-cyan); text-shadow: var(--text-shadow-hero); }
 
   /* Video + its frame-draw overlay (the overlay sits exactly over the video box). */
   .video-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
   .video-wrap video { width: 100%; height: 100%; object-fit: contain; background: #000; }
   .frame-overlay { position: absolute; inset: 0; pointer-events: none; }
   .frame-overlay.drawing { pointer-events: auto; cursor: crosshair; }
-  .frame-box { position: absolute; box-sizing: border-box; border: 2px solid var(--accent); background: rgba(58, 107, 76, 0.12); pointer-events: none; }
-  .frame-box.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-  .frame-box.draft { border-style: dashed; }
+  .frame-box { position: absolute; box-sizing: border-box; border: var(--border-pixel) solid var(--accent); background: rgba(94, 220, 244, 0.12); pointer-events: none; }
+  .frame-box.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .frame-box.draft { border-style: dashed; border-color: var(--accent-2); }
   /* Capture-mode signal (videojs affordance): a clear "you're marking now" state on the video. */
-  .video-wrap.capturing { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .capture-hint { position: absolute; top: var(--space-3); left: 50%; transform: translateX(-50%); pointer-events: none; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.03em; color: var(--ink-on-accent); background: var(--accent); padding: var(--space-1) var(--space-3); border-radius: 999px; }
+  .video-wrap.capturing { outline: var(--border-pixel) solid var(--accent); outline-offset: -2px; }
+  .capture-hint { position: absolute; top: var(--space-3); left: 50%; transform: translateX(-50%); pointer-events: none; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-on-accent); background: var(--accent); padding: var(--space-1) var(--space-3); border-radius: 0; box-shadow: var(--shadow-pixel); }
 
   /* Annotation timeline — each timed note is a range bar (videojs affordance); the video's temporal map. */
-  .vtimeline { position: relative; padding: var(--space-2) var(--space-5); background: var(--surface-canvas-raised); border-top: 1px solid var(--border-canvas); }
-  .vtimeline:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .vt-track { position: relative; height: 1.5rem; background: var(--surface-canvas-overlay); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; }
-  .vt-bar { position: absolute; top: 2px; bottom: 2px; min-width: 3px; box-sizing: border-box; padding: 0 var(--space-1); cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--font-ui); font-size: 0.6rem; line-height: calc(1.5rem - 4px); text-align: left; color: var(--ink-canvas-primary); background: rgba(58, 107, 76, 0.35); border: 1px solid var(--accent); border-radius: 2px; }
+  .vtimeline { position: relative; padding: var(--space-2) var(--space-5); background: var(--surface-canvas-raised); border-top: var(--border-pixel) solid var(--border-canvas); }
+  .vtimeline:focus-visible { outline: var(--border-pixel) solid var(--accent); outline-offset: -2px; }
+  .vt-track { position: relative; height: 1.5rem; background: var(--surface-canvas-overlay); border: var(--border-pixel) solid var(--border-canvas); border-radius: 0; cursor: pointer; overflow: hidden; }
+  .vt-bar { position: absolute; top: 2px; bottom: 2px; min-width: 3px; box-sizing: border-box; padding: 0 var(--space-1); cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--font-ui); font-size: 0.6rem; letter-spacing: 0.04em; line-height: calc(1.5rem - 4px); text-align: left; color: var(--ink-canvas-primary); background: rgba(94, 220, 244, 0.3); border: var(--border-pixel) solid var(--accent); border-radius: 0; }
   .vt-bar:hover, .vt-bar.active { background: var(--accent); color: var(--ink-on-accent); }
-  .vt-bar.sel { box-shadow: 0 0 0 2px var(--ink-canvas-primary); z-index: 2; }
-  .vt-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink-canvas-primary); pointer-events: none; }
-  .vt-empty { display: block; margin-top: var(--space-1); font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); }
+  .vt-bar.sel { box-shadow: 0 0 0 2px var(--accent-3); z-index: 2; }
+  .vt-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent-2); pointer-events: none; }
+  .vt-empty { display: block; margin-top: var(--space-1); font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-canvas-muted); }
 
-  .wave { width: min(48rem, 92%); margin-top: var(--space-2); min-height: 96px; }
+  .wave { width: min(48rem, 92%); margin-top: var(--space-2); min-height: 96px; border: var(--border-pixel) solid var(--border-canvas); background: var(--surface-canvas-raised); box-shadow: var(--shadow-pixel); }
   .transport { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; justify-content: center; }
-  .transport .play { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
-  .transport .play:hover { background: var(--accent-hover); }
-  .transport .wave-hint { font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary); }
+  .transport .play { cursor: pointer; font-family: var(--font-display); font-weight: 700; font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.08em; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: var(--border-pixel) solid var(--accent); border-radius: 0; box-shadow: var(--shadow-pixel-btn); }
+  .transport .play:hover { background: var(--accent-hover); transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
+  .transport .wave-hint { font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.04em; color: var(--ink-canvas-secondary); }
 
   .markbar {
     display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
     padding: var(--space-3) var(--space-5);
-    background: var(--surface-canvas-raised); border-top: 1px solid var(--border-canvas);
+    background: var(--surface-canvas-raised); border-top: var(--border-pixel) solid var(--border-canvas);
   }
-  .now-lbl { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
-  .clock { font-family: var(--font-mono); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); min-width: 3.5rem; }
-  .chip { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent); background: var(--accent-muted); border: 1px solid var(--accent); border-radius: 999px; padding: 2px var(--space-2) 2px var(--space-3); }
+  .now-lbl { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
+  .clock { font-family: var(--font-mono); font-size: var(--text-ui-sm); color: var(--neon-cyan); min-width: 3.5rem; }
+  .chip { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-mono); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); background: var(--accent-muted); border: var(--border-pixel) solid var(--accent); border-radius: 0; padding: 2px var(--space-2) 2px var(--space-3); }
   .chip .x { background: none; border: none; cursor: pointer; color: var(--accent); font-size: 0.7rem; padding: 0; }
-  .markbar button { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); }
-  .markbar .mark { background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); }
-  .markbar .mark:hover { border-color: var(--accent); color: var(--accent); }
-  .markbar .add { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
-  .markbar .region-toggle { background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px dashed var(--border-canvas-emphasis); }
+  .markbar button { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-1) var(--space-3); border-radius: 0; }
+  .markbar .mark { background: var(--surface-canvas-overlay); color: var(--accent); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; border: var(--border-pixel) solid var(--accent); }
+  .markbar .mark:hover { background: var(--accent-muted); }
+  .markbar .add { background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-display); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; border: var(--border-pixel) solid var(--accent); box-shadow: var(--shadow-pixel-btn); }
+  .markbar .add:hover { background: var(--accent-hover); transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
+  .markbar .region-toggle { background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: var(--border-pixel) dashed var(--border-canvas-emphasis); }
   .markbar .region-toggle:hover { border-color: var(--accent); color: var(--accent); }
   .markbar .region-toggle.on { background: var(--accent); color: var(--ink-on-accent); border-style: solid; border-color: var(--accent); }
-  .markbar .import { display: inline-flex; align-items: center; cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-canvas-secondary); background: var(--surface-canvas-overlay); border: 1px dashed var(--border-canvas-emphasis); }
+  .markbar .import { display: inline-flex; align-items: center; cursor: pointer; font-family: var(--font-mono); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.08em; padding: var(--space-1) var(--space-3); border-radius: 0; color: var(--ink-canvas-secondary); background: var(--surface-canvas-overlay); border: var(--border-pixel) dashed var(--border-canvas-emphasis); }
   .markbar .import:hover { color: var(--accent); border-color: var(--accent); }
   .markbar .import input { display: none; }
-  .markbar .active { font-family: var(--font-body); font-size: 0.9rem; color: var(--ink-canvas-secondary); margin-left: auto; max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .markbar .active { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-canvas-secondary); margin-left: auto; max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>

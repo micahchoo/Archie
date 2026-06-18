@@ -18,12 +18,12 @@
 {/if}
 
 <style>
-  .scrim { position: fixed; inset: 0; z-index: 40; background: rgba(20, 18, 14, 0.32); }
+  .scrim { position: fixed; inset: 0; z-index: 40; background: color-mix(in srgb, var(--void) 60%, transparent); }
   .drawer {
     position: fixed; z-index: 41; top: 0; right: 0; height: 100vh; width: min(380px, 92vw);
     display: flex; flex-direction: column;
     background: var(--surface-paper); color: var(--ink-paper-primary);
-    border-left: 1px solid var(--border-paper-emphasis); box-shadow: -8px 0 24px rgba(20, 18, 14, 0.18);
+    border-left: var(--border-pixel-bold) solid var(--border-paper-emphasis); box-shadow: var(--shadow-pixel-strong);
     animation: slide-in 0.18s ease;
   }
   @keyframes slide-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
@@ -32,11 +32,13 @@
     padding: var(--space-4) var(--space-5); border-bottom: 1px solid var(--border-paper);
   }
   .drawer > header h2 {
-    margin: 0; font-family: var(--font-display), serif; font-size: 1.1rem; font-weight: 600; color: var(--ink-paper-primary);
+    margin: 0; font-family: var(--font-display), sans-serif; font-size: 1.1rem; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-paper-primary);
   }
   .x {
     border: none; background: transparent; cursor: pointer; font-size: 1.3rem; line-height: 1;
-    color: var(--ink-paper-secondary); padding: 0 var(--space-1);
+    color: var(--ink-paper-secondary); padding: 0 var(--space-1); border-radius: 0;
+    font-family: var(--font-display), sans-serif;
   }
   .x:hover { color: var(--accent); }
   .body { padding: var(--space-5); overflow-y: auto; }

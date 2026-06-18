@@ -251,28 +251,33 @@
 {/if}
 
 <style>
-  /* Load / error states over the dark light table (system.md §Reader States). */
+  /* Load / error states over the dark void (8-Bit Orbit §Reader States). Space Mono chrome, uppercase. */
   .state {
-    display: flex; align-items: center; justify-content: center; gap: 10px; height: 100vh;
+    display: flex; align-items: center; justify-content: center; gap: var(--space-3); height: 100vh;
     background: var(--surface-canvas); color: var(--ink-canvas-secondary);
-    font-family: var(--font-ui), sans-serif; font-size: 0.9375rem; letter-spacing: 0.02em;
+    font-family: var(--font-ui), sans-serif; font-size: 0.8125rem; letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
-  .state.error { color: var(--accent-2); }
+  .state.error { color: var(--semantic-error); }
   .warn { font-size: 1.1rem; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.1s ease-in-out infinite; }
+  /* Square pixel cell, not a round dot. */
+  .dot { width: 8px; height: 8px; border-radius: 0; background: var(--accent); animation: pulse 1.1s steps(2, end) infinite; }
   @keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
 
-  /* Cold-arrival chrome — a wax-sealed note over the dark table; understated, fades, not a gate. */
+  /* Cold-arrival chrome — a pixel toast over the dark void; understated, fades, not a gate. */
   .arrival {
     position: fixed; z-index: 30; top: var(--space-5); left: 50%; transform: translateX(-50%);
     display: flex; align-items: center; gap: var(--space-3); cursor: pointer;
     padding: var(--space-2) var(--space-4);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent-2);
-    border-radius: var(--radius-md);
-    font-family: var(--font-ui), sans-serif; font-size: 0.85rem;
+    border: var(--border-pixel) solid var(--border-canvas-emphasis);
+    border-left: var(--border-pixel-bold) solid var(--accent-2);
+    border-radius: 0;
+    box-shadow: var(--shadow-pixel);
+    font-family: var(--font-ui), sans-serif; font-size: 0.75rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
   }
   .arrival .seal { color: var(--accent-2); font-size: 1rem; }
-  .arrival .dismiss { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
+  .arrival .dismiss { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
   .arrival:hover .dismiss { color: var(--accent-2); }
 </style>

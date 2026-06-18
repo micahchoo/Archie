@@ -223,12 +223,14 @@
   .crumbs .sep { color: var(--ink-canvas-muted); }
 
   /* Object carousel — ‹ prev · i/n · next › thin glyph form (dba2: lean, no thumbs/labels, so it
-     doesn't fight crumbs + open-another for width). Forest-green hover; quiet overlay pill. */
+     doesn't fight crumbs + open-another for width). Cyan hover; square overlay chip with a hard pixel
+     shadow so the one floating surface reads as an arcade panel, not a soft pill. */
   .carousel {
     display: flex; align-items: center; gap: var(--space-1);
     padding: 2px var(--space-2);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-md);
+    border: var(--border-pixel) solid var(--border-canvas-emphasis); border-radius: 0;
+    box-shadow: var(--shadow-pixel);
   }
   .carousel .cnav {
     display: flex; align-items: center; justify-content: center; min-width: 1.25rem;
@@ -237,18 +239,24 @@
   }
   .carousel .cnav:hover:not(:disabled) { color: var(--accent); }
   .carousel .cnav:disabled { opacity: 0.3; cursor: default; }
-  .carousel .cpos { color: var(--ink-canvas-muted); font-variant-numeric: tabular-nums; padding: 0 var(--space-1); }
+  .carousel .cpos {
+    color: var(--ink-canvas-muted); font-family: var(--font-mono), monospace;
+    font-variant-numeric: tabular-nums; padding: 0 var(--space-1); letter-spacing: 0.1em;
+  }
 
-  /* Portable swap-to-change — quiet escape, not a primary action (CONTEXT §134). */
+  /* Origin-drift badge — a broken-config alert; square semantic-error panel with a hard pixel
+     shadow + uppercase Space Mono tracking so it reads as a loud arcade alert (CONTEXT §134). */
   .drift {
     position: fixed; z-index: 60; top: var(--space-3); right: var(--space-3);
     padding: 2px var(--space-2);
-    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 600;
-    color: var(--accent-2); border: 1px solid var(--accent-2); border-radius: var(--radius-sm);
-    background: var(--surface-canvas-overlay);
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--semantic-error); border: var(--border-pixel) solid var(--semantic-error); border-radius: 0;
+    background: var(--surface-canvas-overlay); box-shadow: var(--shadow-pixel);
   }
     .open-another {
-    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); cursor: pointer;
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.12em;
     background: none; border: none; padding: var(--space-2) 0; color: var(--ink-canvas-secondary); /* 24px+ hit box (Fitts) — transparent, no visual shift */
   }
   .open-another:hover { color: var(--accent); }
@@ -262,10 +270,11 @@
   .state {
     display: flex; align-items: center; justify-content: center; gap: 10px; height: 100vh;
     background: var(--surface-canvas); color: var(--ink-canvas-secondary);
-    font-family: var(--font-ui), sans-serif; font-size: 0.9375rem; letter-spacing: 0.02em;
+    font-family: var(--font-ui), sans-serif; font-size: 0.9375rem; text-transform: uppercase; letter-spacing: 0.12em;
   }
-  .state.error { color: var(--accent); }
+  .state.error { color: var(--semantic-error); }
   .warn { font-size: 1.1rem; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.1s ease-in-out infinite; }
+  /* Square pixel block, not a round dot — pixels have no round corners. */
+  .dot { width: 8px; height: 8px; border-radius: 0; background: var(--accent); animation: pulse 1.1s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
 </style>

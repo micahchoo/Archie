@@ -26,7 +26,7 @@
 <aside class="rail" aria-label="Readings rail" data-comparing={comparing}>
   <span class="title">Readings{#if comparing}<span class="cmp" title="Two or more readings visible — marks show as outlines so colours never blend">· comparing</span>{/if}</span>
   <div class="rows">
-    {#each [{ id: BASE, name: "Base", colour: "#3a6b4c" }, ...readings] as r (r.id)}
+    {#each [{ id: BASE, name: "Base", colour: "var(--accent)" }, ...readings] as r (r.id)}
       <div class="row" data-reading={r.id}
         onmouseenter={() => onsolo(r.id)} onmouseleave={() => onsolo(null)} role="group" aria-label={r.name}>
         <input type="checkbox" class="vis" title={`Show “${r.name}” notes (canvas and margin)`}
@@ -52,24 +52,25 @@
     position: absolute; z-index: 20; top: var(--space-4); right: var(--space-5); min-width: 13rem; max-width: 17rem;
     padding: var(--space-3) var(--space-4);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent-2);
-    border-radius: var(--radius-md);
+    border: var(--border-pixel) solid var(--border-canvas-emphasis); border-left: var(--border-pixel-bold) solid var(--accent-2);
+    border-radius: 0;
+    box-shadow: var(--shadow-pixel);
     font-family: var(--font-ui), sans-serif;
   }
-  .title { display: block; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-2); margin-bottom: var(--space-2); }
-  .title .cmp { margin-left: var(--space-2); color: var(--ink-canvas-secondary); letter-spacing: 0.04em; }
+  .title { display: block; font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-2); margin-bottom: var(--space-2); }
+  .title .cmp { margin-left: var(--space-2); color: var(--ink-canvas-secondary); letter-spacing: 0.1em; }
   .rows { display: flex; flex-direction: column; gap: 2px; }
-  .row { display: flex; align-items: center; gap: var(--space-2); padding: 2px var(--space-1); border-radius: var(--radius-sm); }
+  .row { display: flex; align-items: center; gap: var(--space-2); padding: 2px var(--space-1); border-radius: 0; }
   .row:hover { background: var(--accent-2-muted); }
   .vis { margin: 0; accent-color: var(--accent-2); cursor: pointer; }
-  .sw { width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--border-canvas-emphasis); flex: none; }
+  .sw { width: 11px; height: 11px; border-radius: 0; border: var(--border-pixel) solid var(--border-canvas-emphasis); flex: none; }
   .nm { flex: 1; font-size: var(--text-ui-sm, 0.8rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ct { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); }
   .pen { display: inline-flex; align-items: center; cursor: pointer; color: var(--ink-canvas-muted); }
   .pen input { position: absolute; opacity: 0; pointer-events: none; }
-  .pen span { padding: 0 var(--space-1); border-radius: var(--radius-sm); }
+  .pen span { padding: 0 var(--space-1); border-radius: 0; }
   .pen input:checked + span { color: var(--accent-2); background: var(--accent-2-muted); }
   .pen:hover span { color: var(--accent-2); }
-  .manage { margin-top: var(--space-2); width: 100%; cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-xs); padding: var(--space-1) var(--space-2); background: none; color: var(--ink-canvas-secondary); border: 1px dashed var(--border-canvas); border-radius: var(--radius-sm); }
+  .manage { margin-top: var(--space-2); width: 100%; cursor: pointer; font-family: var(--font-ui), monospace; font-size: var(--text-ui-xs); letter-spacing: 0.12em; text-transform: uppercase; padding: var(--space-1) var(--space-2); background: none; color: var(--ink-canvas-secondary); border: var(--border-pixel) dashed var(--border-canvas); border-radius: 0; }
   .manage:hover { color: var(--accent-2); border-color: var(--accent-2); }
 </style>

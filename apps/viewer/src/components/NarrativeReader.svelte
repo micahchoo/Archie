@@ -137,9 +137,9 @@
 </div>
 
 <style>
-  /* Prose-led reading (system.md §Exhibit Reader, narrative): the canvas on the dark light-table (left);
-     the prose spine reads like a field journal on warm paper (right); the active section is inked
-     forest-green. */
+  /* Prose-led reading (8-Bit Orbit, narrative): the canvas on the deep-navy void (left); the prose
+     spine reads as a field journal on raised navy (right); section nav chrome is Space Mono, the
+     active section is inked neon-cyan. Square corners, hard pixel shadows. */
   .narrative { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
   main { flex: 1; min-width: 0; background: var(--surface-canvas); }
 
@@ -147,10 +147,10 @@
     width: 420px; flex-shrink: 0; overflow: auto; box-sizing: border-box;
     padding: var(--space-6) var(--space-5);
     background: var(--surface-paper); color: var(--ink-paper-primary);
-    border-left: 1px solid var(--border-canvas);
+    border-left: var(--border-pixel) solid var(--border-canvas-emphasis);
   }
   .eyebrow { color: var(--accent); }
-  aside h1 { font-family: var(--font-display); font-weight: 600; font-size: 2rem; line-height: 1.1; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); }
+  aside h1 { font-family: var(--font-display); font-weight: 800; font-size: 2rem; line-height: 1.1; letter-spacing: 0.02em; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); text-shadow: var(--text-shadow-hero); }
   .hint { font-family: var(--font-ui); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0 0 var(--space-5); }
 
   .sections { list-style: none; margin: 0; padding: 0; counter-reset: none; }
@@ -159,41 +159,42 @@
     display: block; width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-3) var(--space-4) var(--space-3) var(--space-5);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-left: 3px solid transparent;
-    border-radius: var(--radius-md);
-    transition: background 120ms ease, border-color 120ms ease;
+    border: var(--border-pixel) solid var(--border-paper); border-left: var(--border-pixel-bold) solid transparent;
+    border-radius: 0;
+    transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
   }
   .sections button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); }
-  .sections button.active { border-left-color: var(--accent); background: var(--accent-muted); }
-  .num { display: inline-block; font-family: var(--font-mono); font-size: 0.7rem; color: var(--accent); margin-bottom: var(--space-2); }
-  .num .obj { color: var(--ink-paper-secondary); }
-  .prose { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.55; color: var(--ink-paper-primary); }
+  .sections button.active { border-color: var(--border-canvas-emphasis); border-left-color: var(--accent); background: var(--accent-muted); box-shadow: var(--shadow-pixel-cyan); }
+  .num { display: inline-block; font-family: var(--font-ui); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); margin-bottom: var(--space-2); }
+  .num .obj { color: var(--ink-paper-secondary); letter-spacing: 0.1em; }
+  .prose { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-primary); }
   .prose :global(p) { margin: 0 0 var(--space-2); }
   .prose :global(p:last-child) { margin-bottom: 0; }
   .prose :global(strong) { font-weight: 700; }
   .prose :global(em) { font-style: italic; }
   .prose :global(a) { color: var(--accent); }
-  .prose :global(img) { max-width: 100%; height: auto; border-radius: var(--radius-sm); margin-top: var(--space-2); }
+  .prose :global(img) { max-width: 100%; height: auto; border-radius: 0; margin-top: var(--space-2); }
   .prose :global(audio) { width: 100%; margin-top: var(--space-2); }
 
-  /* Note popup — a forest-green callout over the light table (annomea popup; mirrors Reader's). */
+  /* Note popup — a neon-cyan callout floating over the void (annomea popup; mirrors Reader's). */
   .note-pop {
     position: absolute; left: var(--space-5); bottom: var(--space-5); z-index: 5; max-width: min(44ch, 46%);
     padding: var(--space-4) var(--space-6) var(--space-4) var(--space-5);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent);
-    border-radius: var(--radius-md);
+    border: var(--border-pixel) solid var(--border-canvas-emphasis); border-left: var(--border-pixel-bold) solid var(--accent);
+    border-radius: 0;
+    box-shadow: var(--shadow-pixel);
   }
   .note-pop .close { position: absolute; top: 4px; right: 8px; background: none; border: none; cursor: pointer; color: var(--ink-canvas-secondary); font-size: 1.2rem; line-height: 1; }
   .note-pop .close:hover { color: var(--accent); }
-  .note-body { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-canvas-primary); }
+  .note-body { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-canvas-primary); }
   .note-body :global(p) { margin: 0 0 var(--space-2); }
   .note-body :global(p:last-child) { margin-bottom: 0; }
   .note-body :global(strong) { font-weight: 700; }
   .note-body :global(em) { font-style: italic; }
   .note-body :global(a) { color: var(--accent); }
   /* Note images render as thumbnails — click opens the lightbox. */
-  .note-body :global(img) { display: block; max-width: 100%; max-height: 180px; height: auto; margin-top: var(--space-2); border-radius: var(--radius-sm); cursor: zoom-in; }
+  .note-body :global(img) { display: block; max-width: 100%; max-height: 180px; height: auto; margin-top: var(--space-2); border-radius: 0; cursor: zoom-in; }
   .note-pop .tags { margin-top: var(--space-3); display: flex; gap: var(--space-3); }
-  .note-pop .tag { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); }
+  .note-pop .tag { font-family: var(--font-ui); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); }
 </style>

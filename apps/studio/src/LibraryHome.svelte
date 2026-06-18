@@ -220,60 +220,63 @@
   .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
   .librights {
     flex: none; align-self: center; display: inline-flex; align-items: center; gap: var(--space-1);
-    font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer;
-    padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas);
+    font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.1em; cursor: pointer;
+    padding: var(--space-1) var(--space-3); border-radius: 0;
+    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: var(--border-pixel) solid var(--border-canvas);
   }
   .librights:hover { border-color: var(--accent); }
   .librights.set { border-color: var(--accent); }
   .librights .dot { color: var(--accent); font-size: 0.55rem; }
-  h1 { font-family: var(--font-display); font-weight: 600; font-size: 3rem; line-height: 1.05; margin: var(--space-2) 0 var(--space-3); color: var(--ink-canvas-primary); }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 3rem; line-height: 1.05; margin: var(--space-2) 0 var(--space-3); color: var(--neon-cyan); text-shadow: var(--text-shadow-hero); }
   .lede { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.5; color: var(--ink-canvas-secondary); margin: 0; max-width: 42rem; }
 
   /* Project bar — the "where does this library live" label on the table's edge. Quiet, 1px, no shadow. */
   .projectbar {
     display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;
     margin-top: var(--space-6); padding: var(--space-4) var(--space-5);
-    background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-md);
+    background: var(--surface-canvas-raised); border: var(--border-pixel) solid var(--border-canvas); border-radius: 0;
+    box-shadow: var(--shadow-pixel);
   }
-  .projectbar.bound { border-left: 3px solid var(--accent); } /* a bound library is anchored — the accent marks it */
+  .projectbar.bound { border-left: var(--border-pixel-bold) solid var(--accent); } /* a bound library is anchored — the accent marks it */
   .where { min-width: 16rem; }
   .place { margin: 0; font-family: var(--font-ui); font-size: 0.95rem; color: var(--ink-canvas-primary); display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
-  .place .kind { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 1px var(--space-2); }
+  .place .kind { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); border: var(--border-pixel) solid var(--accent); border-radius: 0; padding: 1px var(--space-2); }
   .place .name { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-canvas-primary); }
   .place .dot { font-family: var(--font-ui); font-size: 0.7rem; color: var(--semantic-warning); }
   .hint { margin: var(--space-1) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--ink-canvas-secondary); }
   .save-error { margin: var(--space-1) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--semantic-error); }
 
-  .actions { display: flex; align-items: center; gap: var(--space-2); }
-  .actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); font-weight: 500; padding: var(--space-2) var(--space-4); cursor: pointer; border-radius: var(--radius-sm); transition: background 120ms ease, border-color 120ms ease, color 120ms ease; }
+  .actions { display: flex; align-items: center; gap: var(--space-3); }
+  .actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: var(--space-2) var(--space-4); cursor: pointer; border-radius: 0; transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 80ms ease, box-shadow 80ms ease; }
   .actions button:disabled { opacity: 0.5; cursor: default; }
-  .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
-  .primary:hover:not(:disabled) { background: var(--accent-hover, #2d553d); }
-  .ghost { background: transparent; color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); }
-  .ghost:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-  .ghost.subtle { color: var(--ink-canvas-secondary); border-color: transparent; }
-  .ghost.subtle:hover:not(:disabled) { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
+  /* Primary CTA — pixel-btn: Tektur on cyan, hard cascade shadow, press-down on hover. */
+  .primary { font-family: var(--font-display); background: var(--accent); color: var(--ink-on-accent); border: var(--border-pixel) solid var(--accent); box-shadow: var(--shadow-pixel-btn); }
+  .primary:hover:not(:disabled) { background: var(--accent-hover); transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
+  /* Secondary/ghost — square, transparent, 2px cyan border, Space Mono. */
+  .ghost { font-family: var(--font-mono); background: transparent; color: var(--accent); border: var(--border-pixel) solid var(--accent); }
+  .ghost:hover:not(:disabled) { background: var(--accent-muted); color: var(--accent); }
+  .ghost.subtle { color: var(--ink-canvas-secondary); border-color: var(--border-canvas); }
+  .ghost.subtle:hover:not(:disabled) { color: var(--ink-canvas-primary); background: transparent; border-color: var(--border-canvas-emphasis); }
 
   /* Lost-binding recovery — amber warning (a missing folder is recoverable, not destructive → not vermillion). */
-  .binding-error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: rgba(196,155,54,0.1); border: 1px solid var(--semantic-warning); border-radius: var(--radius-sm); }
+  .binding-error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--accent-3-muted, var(--surface-canvas-overlay)); border: var(--border-pixel) solid var(--semantic-warning); border-radius: 0; box-shadow: var(--shadow-pixel); }
   .binding-error .msg { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); color: var(--ink-canvas-primary); }
   .err-actions { display: flex; align-items: center; gap: var(--space-2); }
-  .err-actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); padding: var(--space-1) var(--space-3); cursor: pointer; background: transparent; color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); }
-  .err-actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .err-actions button { font-family: var(--font-mono); font-size: var(--text-ui-sm, 0.8125rem); text-transform: uppercase; letter-spacing: 0.08em; padding: var(--space-1) var(--space-3); cursor: pointer; background: transparent; color: var(--accent); border: var(--border-pixel) solid var(--accent); border-radius: 0; }
+  .err-actions button:hover { background: var(--accent-muted); color: var(--accent); }
   .err-actions .x { border: none; font-size: 1rem; color: var(--ink-canvas-muted); padding: 0 var(--space-2); }
 
   /* Recent libraries — the session-surviving re-open list (CONTEXT mitigation: "metadata, not content"). */
   .recents { margin-top: var(--space-5); }
-  .r-eyebrow { margin: 0 0 var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .r-eyebrow { margin: 0 0 var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .recents ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .recents li { display: flex; align-items: stretch; }
-  .recent { display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+  .recent { display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border: var(--border-pixel) solid var(--border-canvas); border-radius: 0; }
   .recent:hover:not(:disabled) { border-color: var(--accent); }
   .recent:disabled { opacity: 0.5; cursor: default; }
   .r-name { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-canvas-primary); }
   .r-meta { font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); color: var(--ink-canvas-secondary); }
-  .forget { cursor: pointer; padding: 0 var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-canvas-muted); border: 1px solid var(--border-canvas); border-left: none; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+  .forget { cursor: pointer; padding: 0 var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-canvas-muted); border: var(--border-pixel) solid var(--border-canvas); border-left: none; border-radius: 0; }
   .forget:hover { color: var(--semantic-error); }
 
   .grid { list-style: none; margin: 0 auto; padding: 0; max-width: 60rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-5); }
@@ -282,35 +285,40 @@
     display: flex; flex-direction: column; gap: var(--space-2); width: 100%; min-height: 7.5rem; cursor: pointer; text-align: left;
     padding: var(--space-5);
     background: var(--surface-canvas-raised); color: inherit;
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-lg);
-    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+    border: var(--border-pixel) solid var(--border-canvas); border-radius: 0;
+    box-shadow: var(--shadow-pixel);
+    transition: background 160ms ease, border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
   }
-  .card:hover { background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); transform: translateY(-2px); }
-  .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-canvas-primary); }
-  .meta { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent-2); }
+  .card:hover { background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); transform: translate(-2px, -2px); box-shadow: var(--shadow-pixel-strong); }
+  .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 700; line-height: 1.1; color: var(--ink-canvas-primary); }
+  .meta { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-2); }
   /* Example (template) marker — amber, matching the in-editor playground banner (transient, not yours-yet). */
   .card.template { border-style: dashed; }
-  .badge { align-self: flex-start; font-family: var(--font-ui); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--semantic-warning); border: 1px solid var(--semantic-warning); border-radius: 999px; padding: 1px var(--space-2); }
+  .badge { align-self: flex-start; font-family: var(--font-ui); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--semantic-warning); border: var(--border-pixel) solid var(--semantic-warning); border-radius: 0; padding: 1px var(--space-2); }
   .ex-word { color: var(--semantic-warning); font-weight: 600; }
 
   /* New-exhibit tile — a dashed plate awaiting a work. */
   .new {
     display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; min-height: 7.5rem; box-sizing: border-box;
     padding: var(--space-5);
-    background: none; border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-lg);
+    background: none; border: var(--border-pixel) dashed var(--border-canvas-emphasis); border-radius: 0;
   }
   .plus { font-family: var(--font-display); font-size: 1.6rem; line-height: 1; color: var(--ink-canvas-muted); }
   .new input {
     width: 100%; box-sizing: border-box; font-family: var(--font-body); font-size: 1rem; padding: var(--space-2) var(--space-3);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
+    border: var(--border-pixel) solid var(--border-canvas); border-radius: 0;
   }
   .new input:focus { outline: none; border-color: var(--accent); }
+  /* Create — pixel-btn: Tektur on cyan, hard cascade shadow, press-down on hover. */
   .new button {
-    font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-2) var(--space-4); cursor: pointer;
-    background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm);
+    font-family: var(--font-display); font-size: 0.8125rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: var(--space-2) var(--space-4); cursor: pointer;
+    background: var(--accent); color: var(--ink-on-accent); border: var(--border-pixel) solid var(--accent); border-radius: 0;
+    box-shadow: var(--shadow-pixel-btn);
+    transition: background 120ms ease, transform 80ms ease, box-shadow 80ms ease;
   }
-  .new button:disabled { background: var(--accent-muted); color: var(--ink-canvas-muted); border-color: transparent; cursor: default; }
-  .new .alt-create { background: none; border: none; padding: 6px 0; font-weight: 400; color: var(--ink-canvas-secondary); } /* 6px v-pad -> 24px+ hit box (Fitts) */
-  .new .alt-create:hover { color: var(--accent-2); }
+  .new button:hover:not(:disabled) { background: var(--accent-hover); transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
+  .new button:disabled { background: var(--accent-muted); color: var(--ink-canvas-muted); border-color: var(--accent-muted); box-shadow: none; cursor: default; }
+  .new .alt-create { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; background: none; border: none; box-shadow: none; padding: 6px 0; font-weight: 400; color: var(--ink-canvas-secondary); } /* 6px v-pad -> 24px+ hit box (Fitts) */
+  .new .alt-create:hover { background: none; transform: none; box-shadow: none; color: var(--accent-2); }
 </style>

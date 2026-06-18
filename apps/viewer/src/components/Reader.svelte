@@ -151,8 +151,8 @@
 </div>
 
 <style>
-  /* The published reading experience: objects glow on the dark light table (left); notes read
-     like catalog entries on warm paper (right); a forest-green popup echoes the selection. */
+  /* The published reading experience: objects glow on the dark arcade void (left); notes read
+     like catalog entries on raised navy (right); a neon popup echoes the selection. */
   .reader { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
   main { position: relative; flex: 1; min-width: 0; background: var(--surface-canvas); }
   /* Worklist 1.3: one-shot arrival reveal — every marker breathes twice, then settles to its quiet
@@ -166,37 +166,41 @@
     main.arrival :global(.a9s-annotationlayer .a9s-annotation) { animation: none; }
   }
 
-  /* Reader panel — warm paper, catalog entries under lamplight */
+  /* Reader panel — raised navy, catalog entries on the arcade slab */
   aside {
     width: 352px; flex-shrink: 0; overflow: auto; box-sizing: border-box;
     padding: var(--space-6) var(--space-5);
     background: var(--surface-paper); color: var(--ink-paper-primary);
-    border-left: 1px solid var(--border-canvas);
+    border-left: var(--border-pixel) solid var(--border-canvas-emphasis);
   }
-  aside h2 { color: var(--ink-paper-secondary); margin: 0 0 var(--space-4); }
+  /* The only h2 is the `.eyebrow` — let the global navy label-pill (yellow Space Mono) own its
+     colour/type; just give it bottom rhythm here. */
+  aside h2 { margin: 0 0 var(--space-4); }
   ul { list-style: none; margin: 0; padding: 0; }
 
   /* Note card (list state) — clamp the markdown-stripped lead to a few lines */
   li button {
     display: block; width: 100%; text-align: left; cursor: pointer;
-    padding: var(--space-3) var(--space-4); margin-bottom: var(--space-2);
+    padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper); border-left: 3px solid transparent;
+    border: var(--border-pixel) solid var(--border-paper); border-left: var(--border-pixel-bold) solid transparent;
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-pixel);
     font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45;
-    transition: background 120ms ease, border-color 120ms ease;
+    transition: background 120ms ease, border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   }
-  li button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); }
+  li button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); transform: translate(2px, 2px); box-shadow: none; }
 
-  /* Return to the exhibit's object grid (only shown for multi-object exhibits) */
-  .exhibit-back { background: none; border: none; cursor: pointer; padding: 0 0 var(--space-5); font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); }
-  .exhibit-back:hover { color: var(--accent); }
-  .object-label { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-paper-primary); margin: 0 0 var(--space-2); }
-  .object-summary { font-family: var(--font-body); font-size: 0.95rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0 0 var(--space-2); }
+  /* Return to the exhibit's object grid (only shown for multi-object exhibits) — ghost pixel button */
+  .exhibit-back { display: inline-block; margin-bottom: var(--space-5); cursor: pointer; padding: var(--space-2) var(--space-3); background: transparent; border: var(--border-pixel) solid var(--accent); border-radius: var(--radius-sm); font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); transition: background 120ms ease; }
+  .exhibit-back:hover { background: var(--accent-muted); color: var(--accent-hover); }
+  .object-label { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; line-height: 1.1; color: var(--ink-paper-primary); margin: 0 0 var(--space-2); }
+  .object-summary { font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0 0 var(--space-2); }
   .credit-row { margin: 0 0 var(--space-3); }
 
-  /* Detail state (drawer) */
-  .back { background: none; border: none; cursor: pointer; padding: 0 0 var(--space-4); font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); }
+  /* Detail state (drawer) — ghost pixel button */
+  .back { display: inline-block; margin-bottom: var(--space-4); cursor: pointer; padding: var(--space-2) var(--space-3); background: transparent; border: var(--border-pixel) solid var(--accent); border-radius: var(--radius-sm); font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); transition: background 120ms ease; }
+  .back:hover { background: var(--accent-muted); color: var(--accent-hover); }
   article .body { font-family: var(--font-body); font-size: 1.1875rem; line-height: 1.6; color: var(--ink-paper-primary); }
   /* rendered-markdown children (sanitized HTML, so :global) */
   article .body :global(p) { margin: 0 0 var(--space-3); }
@@ -206,20 +210,21 @@
   article .body :global(a) { color: var(--accent); }
   article .body :global(ul), article .body :global(ol) { margin: 0 0 var(--space-3); padding-left: var(--space-5); }
   /* Note images render as thumbnails (not full-bleed) — click to open the lightbox. */
-  article .body :global(img) { display: block; max-width: 100%; max-height: 200px; height: auto; margin-top: var(--space-2); border-radius: var(--radius-sm); cursor: zoom-in; }
-  .tags { margin-top: var(--space-4); display: flex; gap: var(--space-3); }
-  .tag { font-family: var(--font-mono); font-size: 0.72rem; color: var(--accent); }
+  article .body :global(img) { display: block; max-width: 100%; max-height: 200px; height: auto; margin-top: var(--space-2); border: var(--border-pixel) solid var(--border-paper); border-radius: var(--radius-sm); box-shadow: var(--shadow-pixel); cursor: zoom-in; }
+  .tags { margin-top: var(--space-4); display: flex; flex-wrap: wrap; gap: var(--space-3); }
+  .tag { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-on-accent); background: var(--accent); padding: 2px var(--space-2); border-radius: var(--radius-sm); }
   .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-5); }
-  .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
+  .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); border: var(--border-pixel) dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
 
-  /* Popup — a forest-green callout over the light table */
+  /* Popup — a neon-pink callout floating over the arcade void */
   .popup {
     position: absolute; left: var(--space-5); bottom: var(--space-5); max-width: 46%;
     padding: var(--space-3) var(--space-4);
     background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent-2);
+    border: var(--border-pixel) solid var(--accent-2); border-left: var(--border-pixel-bold) solid var(--accent-2);
     border-radius: var(--radius-md);
+    box-shadow: var(--shadow-pixel-strong);
     font-family: var(--font-body); font-size: 1rem; line-height: 1.4;
   }
-  .popup strong { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-2); }
+  .popup strong { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-2); }
 </style>

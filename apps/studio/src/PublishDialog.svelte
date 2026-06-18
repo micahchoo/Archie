@@ -90,7 +90,7 @@
 
 {#if open}
   <div class="scrim" role="presentation" onclick={close}></div>
-  <div class="dialog" role="dialog" aria-modal="true" aria-label="Publish">
+  <div class="dialog pixel-bracket" role="dialog" aria-modal="true" aria-label="Publish">
     <header>
       <p class="eyebrow">Publish</p>
       {#if phase === "choose"}
@@ -192,27 +192,29 @@
 {/if}
 
 <style>
-  .scrim { position: fixed; inset: 0; background: rgba(12,11,9,0.62); z-index: 40; }
+  .scrim { position: fixed; inset: 0; background: rgba(10,14,39,0.78); z-index: 40; }
   .dialog {
     position: fixed; z-index: 41; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: min(34rem, calc(100vw - var(--space-8))); box-sizing: border-box;
     background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-lg); padding: var(--space-6);
+    border: var(--border-pixel-bold) solid var(--border-paper-emphasis); border-radius: 0;
+    box-shadow: var(--shadow-pixel-strong); padding: var(--space-6);
   }
   header { margin-bottom: var(--space-5); }
   .eyebrow { color: var(--accent); }
-  h2 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; line-height: 1.1; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); }
-  .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; color: var(--ink-paper-secondary); margin: 0; }
+  h2 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 800; line-height: 1.1; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); text-shadow: var(--text-shadow-hero); }
+  .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
 
   .choices { display: flex; flex-direction: column; gap: var(--space-3); }
   .choice {
     display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer;
     padding: var(--space-4) var(--space-5);
-    background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-md);
-    transition: background 120ms ease, border-color 120ms ease;
+    background: var(--surface-paper-card); border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: 0;
+    box-shadow: var(--shadow-pixel);
+    transition: background 120ms ease, border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
   }
-  .choice:hover { background: var(--surface-paper-hover); border-color: var(--accent); }
-  .c-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; color: var(--ink-paper-primary); }
+  .choice:hover { background: var(--surface-paper-hover); border-color: var(--accent); transform: translate(2px, 2px); box-shadow: none; }
+  .c-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 700; color: var(--ink-paper-primary); }
   .c-desc { font-family: var(--font-ui); font-size: 0.82rem; line-height: 1.45; color: var(--ink-paper-secondary); }
 
   .body, .result { display: flex; flex-direction: column; gap: var(--space-3); }
@@ -220,22 +222,36 @@
     width: 100%; box-sizing: border-box; font-family: var(--font-mono); font-size: 0.8rem;
     padding: var(--space-2) var(--space-3);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
+    border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: 0;
   }
   .share-url:focus { outline: none; border-color: var(--accent); }
   .share-actions { justify-content: flex-start; margin: 0; }
   .line { font-family: var(--font-ui); font-size: 0.85rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0; }
   .line.muted { color: var(--ink-paper-muted); font-size: 0.78rem; }
   code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-primary); }
-  .cmd { margin: 0; padding: var(--space-3) var(--space-4); background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-primary); white-space: pre-wrap; word-break: break-all; }
-  .ok { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; color: var(--semantic-success); margin: 0; }
-  .err { font-family: var(--font-ui); font-size: 0.8rem; line-height: 1.5; color: var(--accent); margin: 0; }
+  .cmd { margin: 0; padding: var(--space-3) var(--space-4); background: var(--surface-paper-card); border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: 0; box-shadow: var(--shadow-pixel); font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-primary); white-space: pre-wrap; word-break: break-all; }
+  .ok { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--semantic-success); margin: 0; }
+  .err { font-family: var(--font-ui); font-size: 0.8rem; line-height: 1.5; color: var(--semantic-error); margin: 0; }
 
   .actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-4); }
-  button { font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer; }
-  .ghost { background: none; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); }
-  .ghost:hover { color: var(--ink-paper-primary); border-color: var(--ink-paper-secondary); }
-  .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
-  .primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
-  .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: transparent; cursor: default; }
+  /* Primary CTA → pixel-btn (Tektur, uppercase, hard cascade shadow, navy ink on cyan). */
+  .primary {
+    font-family: var(--font-display); font-size: 0.8125rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: var(--space-2) var(--space-4); border-radius: 0; cursor: pointer;
+    background: var(--accent); color: var(--ink-on-accent); border: var(--border-pixel) solid var(--accent);
+    box-shadow: var(--shadow-pixel-btn);
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  }
+  .primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
+  .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: var(--accent-muted); box-shadow: none; transform: none; cursor: default; }
+  /* Ghost/secondary → square, transparent, 2px cyan border, Space Mono uppercase. */
+  .ghost {
+    font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    padding: var(--space-2) var(--space-4); border-radius: 0; cursor: pointer;
+    background: none; color: var(--accent); border: var(--border-pixel) solid var(--accent);
+    transition: background 120ms ease, color 120ms ease;
+  }
+  .ghost:hover { background: var(--accent-muted); color: var(--accent-hover); }
 </style>

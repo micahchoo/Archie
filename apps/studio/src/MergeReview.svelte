@@ -55,26 +55,38 @@
 {/if}
 
 <style>
-  /* Summary panel — one calm line answering "am I done?" on warm paper, forest-green accent. */
+  /* Summary panel — one calm line answering "am I done?" on raised navy, hard pixel shadow. */
   .summary {
     display: flex; align-items: center; gap: var(--space-4);
     margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4);
-    background: var(--surface-paper-card); border: 1px solid var(--border-paper);
-    border-left: 3px solid var(--accent); border-radius: var(--radius-md);
+    background: var(--surface-paper-card); border: var(--border-pixel) solid var(--border-paper-emphasis);
+    border-left: var(--border-pixel-bold) solid var(--accent); border-radius: 0;
+    box-shadow: var(--shadow-pixel);
   }
   .msg { font-family: var(--font-body); font-size: 1rem; line-height: 1.4; color: var(--ink-paper-primary); }
   .actions { margin-left: auto; display: flex; gap: var(--space-2); flex-shrink: 0; }
-  .actions button { font-family: var(--font-ui); font-size: 0.75rem; font-weight: 500; padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); cursor: pointer; }
-  .actions .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
-  .actions .ghost { background: none; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper); }
+  .actions button { font-size: 0.75rem; padding: var(--space-2) var(--space-3); border-radius: 0; cursor: pointer; text-transform: uppercase; }
+  /* Primary CTA — pixel-btn: Tektur, accent fill, navy text, cascade shadow, press-down hover. */
+  .actions .primary {
+    font-family: var(--font-display); font-weight: 700; letter-spacing: 0.08em;
+    background: var(--accent); color: var(--ink-on-accent);
+    border: var(--border-pixel) solid var(--accent); box-shadow: var(--shadow-pixel-btn);
+  }
+  .actions .primary:hover { transform: translate(2px, 2px); box-shadow: var(--shadow-pixel-btn-active); }
+  /* Ghost / secondary — square, transparent, 2px cyan border, Space Mono uppercase. */
+  .actions .ghost {
+    font-family: var(--font-ui); font-weight: 500; letter-spacing: 0.1em;
+    background: none; color: var(--accent); border: var(--border-pixel) solid var(--accent);
+  }
+  .actions .ghost:hover { background: var(--accent-muted); }
 
-  /* Conflict card — the WADM-form variant: both sides, pick one. */
-  .card { margin-bottom: var(--space-4); padding: var(--space-4); background: var(--surface-paper-card); border: 1px solid var(--border-paper); border-radius: var(--radius-md); display: flex; flex-direction: column; gap: var(--space-2); }
-  .card .eyebrow { color: var(--accent); margin: 0; }
-  .card h3 { margin: 0; font-family: var(--font-display); font-size: 1.35rem; font-weight: 600; color: var(--ink-paper-primary); }
-  .lead { margin: 0 0 var(--space-2); font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-paper-secondary); }
-  .side { text-align: left; cursor: pointer; padding: var(--space-3); border: 1px solid var(--border-paper); border-left: 3px solid transparent; border-radius: var(--radius-sm); background: var(--surface-paper-card); display: flex; flex-direction: column; gap: var(--space-1); }
-  .side:hover { border-left-color: var(--accent); background: var(--surface-paper-hover); }
-  .who { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent); }
-  .text { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; color: var(--ink-paper-primary); }
+  /* Conflict card — the WADM-form variant: both sides, pick one. Square + hard pixel shadow. */
+  .card { margin-bottom: var(--space-4); padding: var(--space-4); background: var(--surface-paper-card); border: var(--border-pixel) solid var(--border-paper-emphasis); border-radius: 0; box-shadow: var(--shadow-pixel); display: flex; flex-direction: column; gap: var(--space-2); }
+  .card .eyebrow { margin: 0; }
+  .card h3 { margin: 0; font-family: var(--font-display); font-size: 1.35rem; font-weight: 800; color: var(--ink-paper-primary); }
+  .lead { margin: 0 0 var(--space-2); font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
+  .side { text-align: left; cursor: pointer; padding: var(--space-3); border: var(--border-pixel) solid var(--border-paper); border-left: var(--border-pixel-bold) solid transparent; border-radius: 0; background: var(--surface-paper); display: flex; flex-direction: column; gap: var(--space-1); }
+  .side:hover { border-left-color: var(--accent); background: var(--surface-paper-hover); box-shadow: var(--shadow-pixel); }
+  .who { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+  .text { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-primary); }
 </style>
