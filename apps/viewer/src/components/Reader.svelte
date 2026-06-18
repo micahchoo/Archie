@@ -11,7 +11,7 @@
   import ReadingLegend from "./ReadingLegend.svelte";
   import Credit from "./Credit.svelte";
   import { renderMarkdown, stripMarkdown, type MarkerStyle } from "@render/svelte";
-  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
+  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
 
   let {
     object,
@@ -92,6 +92,8 @@
   const current = $derived(annotations.find((it) => it.id === selected));
   // Split the selected note into media (clickable tiles → lightbox) + prose (CONTEXT §"Local view loop").
   const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
+  // Geo readout (Q7): a Map note shows its centre lng/lat in the opened note — supplementary, not chrome.
+  const geoCoord = $derived.by(() => { if (!current) return null; const g = geoOf(current); return g ? formatLngLat(geoCenter(g)) : null; });
   let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);
 </script>
 
@@ -119,6 +121,7 @@
         <!-- prose (media stripped) + the note's media as clickable tiles (image/audio/video) -->
         {#if noteParts.text}<div class="body">{@html renderMarkdown(noteParts.text)}</div>{/if}
         <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
+        {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">📍 {geoCoord}</p>{/if}
         <div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>
       </article>
     {:else}

@@ -10,6 +10,7 @@
 // coordinate-sync atlasdraw needed MapLibre for, already shipped here in pixel space).
 
 import type { TileSourceDescriptor } from "../iiif/resolve.js";
+import type { GeoAnchor } from "../wadm/types.js";
 
 export interface LngLat {
   lng: number;
@@ -109,6 +110,15 @@ export function tileRangeForBounds(
     maxX: clamp(Math.floor((br.x - 1e-6) / ts)), // −ε so an exact right/bottom edge doesn't spill a tile
     maxY: clamp(Math.floor((br.y - 1e-6) / ts)),
   };
+}
+
+/** The centre lng/lat of a geo anchor — bbox midpoint or polygon vertex mean. The one coordinate a
+ *  readout shows for a region (Q5/Q7); used in Studio (note list) and the Viewer (opened note). */
+export function geoCenter(g: GeoAnchor): LngLat {
+  if (g.type === "bbox") return { lng: (g.west + g.east) / 2, lat: (g.south + g.north) / 2 };
+  const cs = g.coordinates;
+  const n = cs.length || 1;
+  return { lng: cs.reduce((s, c) => s + c[0], 0) / n, lat: cs.reduce((s, c) => s + c[1], 0) / n };
 }
 
 /** Format a lng/lat for a UI readout, e.g. `51.5074°, -0.1276°` (lat first, the geographic convention). */
