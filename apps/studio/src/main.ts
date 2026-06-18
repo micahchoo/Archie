@@ -2,6 +2,7 @@ import "./tokens.css";
 import "@annotorious/openseadragon/annotorious-openseadragon.css";
 import "@annotorious/plugin-tools/annotorious-plugin-tools.css";
 import "./markers.css"; // A2 + stroke-over-stroke marker styling — must load AFTER Annotorious CSS
+import "./atmosphere.css"; // Soft Static atmosphere (gradient ground + grain + bloom) — must load LAST (wins source order)
 import { mount } from "svelte";
 import App from "./App.svelte";
 

@@ -192,50 +192,69 @@
 {/if}
 
 <style>
-  .scrim { position: fixed; inset: 0; background: rgba(12,11,9,0.62); z-index: 40; }
+  /* Soft Static: warm paper modal floating on a warm-charcoal scrim, soft lift shadow,
+     generous rounded corners, no hard border. The single publish action carries the
+     rationed signal-orange; everything else stays quiet. */
+  .scrim { position: fixed; inset: 0; background: rgba(59,49,56,0.55); backdrop-filter: blur(2px); z-index: 40; }
   .dialog {
     position: fixed; z-index: 41; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: min(34rem, calc(100vw - var(--space-8))); box-sizing: border-box;
-    background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-lg); padding: var(--space-6);
+    background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift-mid); padding: var(--space-6);
   }
   header { margin-bottom: var(--space-5); }
-  .eyebrow { color: var(--accent); }
-  h2 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; line-height: 1.1; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); }
-  .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; color: var(--ink-paper-secondary); margin: 0; }
+  .eyebrow { color: var(--ink-paper-muted); }
+  h2 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 400; line-height: 1.15; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); text-shadow: var(--shadow-text-haze); }
+  .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
 
   .choices { display: flex; flex-direction: column; gap: var(--space-3); }
   .choice {
     display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer;
     padding: var(--space-4) var(--space-5);
-    background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-md);
-    transition: background 120ms ease, border-color 120ms ease;
+    background: var(--surface-paper-card); border: none; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
+    transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
   }
-  .choice:hover { background: var(--surface-paper-hover); border-color: var(--accent); }
-  .c-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; color: var(--ink-paper-primary); }
-  .c-desc { font-family: var(--font-ui); font-size: 0.82rem; line-height: 1.45; color: var(--ink-paper-secondary); }
+  .choice:hover { background: var(--surface-paper-hover); transform: translateY(-1px); box-shadow: var(--shadow-lift-mid); }
+  .c-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; color: var(--ink-paper-primary); }
+  .c-desc { font-family: var(--font-body); font-size: 0.875rem; line-height: 1.5; color: var(--ink-paper-secondary); }
 
   .body, .result { display: flex; flex-direction: column; gap: var(--space-3); }
   .share-url {
     width: 100%; box-sizing: border-box; font-family: var(--font-mono); font-size: 0.8rem;
     padding: var(--space-2) var(--space-3);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
   }
-  .share-url:focus { outline: none; border-color: var(--accent); }
+  .share-url:focus { outline: none; border-color: var(--accent-2); }
   .share-actions { justify-content: flex-start; margin: 0; }
-  .line { font-family: var(--font-ui); font-size: 0.85rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0; }
-  .line.muted { color: var(--ink-paper-muted); font-size: 0.78rem; }
+  .line { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
+  .line.muted { color: var(--ink-paper-muted); font-size: 0.82rem; }
   code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-primary); }
-  .cmd { margin: 0; padding: var(--space-3) var(--space-4); background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-primary); white-space: pre-wrap; word-break: break-all; }
-  .ok { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; color: var(--semantic-success); margin: 0; }
-  .err { font-family: var(--font-ui); font-size: 0.8rem; line-height: 1.5; color: var(--accent); margin: 0; }
+  .cmd { margin: 0; padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-radius: var(--radius-sm); box-shadow: var(--shadow-inset-fog); font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-primary); white-space: pre-wrap; word-break: break-all; }
+  .ok { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; color: var(--semantic-success); margin: 0; }
+  .err { font-family: var(--font-ui); font-size: 0.8rem; line-height: 1.5; color: var(--semantic-error); margin: 0; }
 
   .actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-4); }
-  button { font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer; }
-  .ghost { background: none; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); }
-  .ghost:hover { color: var(--ink-paper-primary); border-color: var(--ink-paper-secondary); }
-  .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
-  .primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
-  .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: transparent; cursor: default; }
+  /* The ONE focal action → rationed signal-orange, soft rounded, signal glow. */
+  .primary {
+    font-family: var(--font-body); font-size: 0.9rem; font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: var(--space-2) var(--space-5); border-radius: var(--radius-sm); cursor: pointer;
+    background: var(--accent); color: var(--ink-on-accent); border: none;
+    box-shadow: var(--shadow-signal-glow);
+    transition: background 160ms ease, box-shadow 160ms ease;
+  }
+  .primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-lift-mid); }
+  .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); box-shadow: none; cursor: default; }
+  /* Quiet secondary → warm paper, soft border, ink text (the .soft-btn shape). */
+  .ghost {
+    font-family: var(--font-body); font-size: 0.9rem; font-weight: 500;
+    letter-spacing: 0.01em;
+    padding: var(--space-2) var(--space-5); border-radius: var(--radius-sm); cursor: pointer;
+    background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--border-canvas);
+    transition: background 160ms ease, border-color 160ms ease;
+  }
+  .ghost:hover { background: var(--surface-paper-hover); border-color: var(--border-canvas-emphasis); }
 </style>

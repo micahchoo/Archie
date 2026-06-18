@@ -149,7 +149,7 @@
     wsRegions.clearRegions();
     for (const a of annotations) {
       const r = rangeOf(a);
-      if (r) wsRegions.addRegion({ id: a.id, start: r.start, end: r.end ?? r.start + 0.1, drag: false, resize: false, color: "rgba(58,107,76,0.18)" });
+      if (r) wsRegions.addRegion({ id: a.id, start: r.start, end: r.end ?? r.start + 0.1, drag: false, resize: false, color: "rgba(240,99,28,0.14)" });
     }
     addingRegions = false;
   }
@@ -196,9 +196,9 @@
         container: waveformEl,
         url: source,
         height: 96,
-        waveColor: "#8a8475",
-        progressColor: "#3a6b4c",
-        cursorColor: "#3a6b4c",
+        waveColor: "#8593A8",
+        progressColor: "#F0631C",
+        cursorColor: "#B86450",
         cursorWidth: 2,
         barWidth: 2,
         barGap: 1,
@@ -211,7 +211,7 @@
       instance.on("ready", () => {
         wsReady = true;
         renderRegions();
-        disableDrag = regions.enableDragSelection({ color: "rgba(58,107,76,0.25)" });
+        disableDrag = regions.enableDragSelection({ color: "rgba(240,99,28,0.20)" });
         emitRegionRect();
       });
       instance.on("error", (err: unknown) => { wsError = err instanceof Error ? err.message : String(err); });
@@ -353,59 +353,61 @@
 </div>
 
 <style>
-  /* Listening-and-transcribing desk: the recording on the dark light-table, a forest-green marking bar. */
+  /* Listening-and-transcribing desk: the recording on the warm paper light-table, a quiet marking bar. */
   .av { display: flex; flex-direction: column; height: 100%; background: var(--surface-canvas); }
   .stage, .video-wrap { flex: 1; min-height: 0; }
   .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-4); padding: var(--space-8); text-align: center; }
-  .stage .now { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-2); /* amber on dark (contrast-rescue) */ }
-  .stage h1 { font-family: var(--font-display); font-weight: 600; font-size: 2rem; line-height: 1.1; margin: 0; color: var(--ink-canvas-primary); }
+  .stage .now { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .stage h1 { font-family: var(--font-display); font-weight: 300; font-size: 2.4rem; line-height: 1.15; margin: 0; color: var(--ink-canvas-primary); text-shadow: var(--shadow-text-haze); }
 
   /* Video + its frame-draw overlay (the overlay sits exactly over the video box). */
   .video-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
-  .video-wrap video { width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .video-wrap video { width: 100%; height: 100%; object-fit: contain; background: var(--moss-shadow); border-radius: var(--radius-md); }
   .frame-overlay { position: absolute; inset: 0; pointer-events: none; }
-  .frame-overlay.drawing { pointer-events: auto; cursor: crosshair; }
-  .frame-box { position: absolute; box-sizing: border-box; border: 2px solid var(--accent); background: rgba(58, 107, 76, 0.12); pointer-events: none; }
-  .frame-box.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
-  .frame-box.draft { border-style: dashed; }
+  .frame-overlay.drawing { pointer-events: auto; cursor: cell; }
+  .frame-box { position: absolute; box-sizing: border-box; border: 1.5px solid var(--accent); background: rgba(240, 99, 28, 0.10); border-radius: var(--radius-sm); pointer-events: none; }
+  .frame-box.sel { border-color: var(--accent); box-shadow: var(--shadow-signal-glow); }
+  .frame-box.draft { border-style: dashed; border-color: var(--accent-2); background: rgba(92, 107, 190, 0.08); }
   /* Capture-mode signal (videojs affordance): a clear "you're marking now" state on the video. */
-  .video-wrap.capturing { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .capture-hint { position: absolute; top: var(--space-3); left: 50%; transform: translateX(-50%); pointer-events: none; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.03em; color: var(--ink-on-accent); background: var(--accent); padding: var(--space-1) var(--space-3); border-radius: 999px; }
+  .video-wrap.capturing { outline: 1.5px solid var(--accent); outline-offset: -3px; border-radius: var(--radius-md); }
+  .capture-hint { position: absolute; top: var(--space-3); left: 50%; transform: translateX(-50%); pointer-events: none; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-on-accent); background: var(--accent); padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); box-shadow: var(--shadow-signal-glow); }
 
   /* Annotation timeline — each timed note is a range bar (videojs affordance); the video's temporal map. */
-  .vtimeline { position: relative; padding: var(--space-2) var(--space-5); background: var(--surface-canvas-raised); border-top: 1px solid var(--border-canvas); }
-  .vtimeline:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .vt-track { position: relative; height: 1.5rem; background: var(--surface-canvas-overlay); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; }
-  .vt-bar { position: absolute; top: 2px; bottom: 2px; min-width: 3px; box-sizing: border-box; padding: 0 var(--space-1); cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--font-ui); font-size: 0.6rem; line-height: calc(1.5rem - 4px); text-align: left; color: var(--ink-canvas-primary); background: rgba(58, 107, 76, 0.35); border: 1px solid var(--accent); border-radius: 2px; }
-  .vt-bar:hover, .vt-bar.active { background: var(--accent); color: var(--ink-on-accent); }
-  .vt-bar.sel { box-shadow: 0 0 0 2px var(--ink-canvas-primary); z-index: 2; }
-  .vt-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink-canvas-primary); pointer-events: none; }
-  .vt-empty { display: block; margin-top: var(--space-1); font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); }
+  .vtimeline { position: relative; padding: var(--space-2) var(--space-5); background: var(--surface-canvas-raised); }
+  .vtimeline:focus-visible { outline: 1.5px solid var(--accent-2); outline-offset: -2px; border-radius: var(--radius-sm); }
+  .vt-track { position: relative; height: 1.5rem; background: var(--surface-canvas-overlay); border-radius: var(--radius-sm); cursor: pointer; overflow: hidden; box-shadow: var(--shadow-inset-fog); }
+  .vt-bar { position: absolute; top: 2px; bottom: 2px; min-width: 3px; box-sizing: border-box; padding: 0 var(--space-2); cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: var(--font-ui); font-size: 0.6rem; letter-spacing: 0.04em; line-height: calc(1.5rem - 4px); text-align: left; color: var(--ink-canvas-primary); background: var(--accent-2-muted); border-radius: var(--radius-sm); transition: background 0.18s ease, color 0.18s ease; }
+  .vt-bar:hover { background: var(--accent-2); color: var(--ink-on-accent); }
+  .vt-bar.active { background: var(--accent); color: var(--ink-on-accent); }
+  .vt-bar.sel { box-shadow: inset 0 -2px 0 var(--accent); z-index: 2; }
+  .vt-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--accent); pointer-events: none; }
+  .vt-empty { display: block; margin-top: var(--space-1); font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-muted); }
 
-  .wave { width: min(48rem, 92%); margin-top: var(--space-2); min-height: 96px; }
+  .wave { width: min(48rem, 92%); margin-top: var(--space-2); min-height: 96px; padding: var(--space-2); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
   .transport { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; justify-content: center; }
-  .transport .play { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; padding: var(--space-1) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); border-radius: var(--radius-sm); }
-  .transport .play:hover { background: var(--accent-hover); }
-  .transport .wave-hint { font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary); }
+  .transport .play { cursor: pointer; font-family: var(--font-ui); font-weight: 500; font-size: var(--text-ui-sm); letter-spacing: 0.02em; padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low); transition: background 0.18s ease, border-color 0.18s ease; }
+  .transport .play:hover { background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); }
+  .transport .wave-hint { font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.04em; color: var(--ink-canvas-secondary); }
 
   .markbar {
     display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap;
     padding: var(--space-3) var(--space-5);
-    background: var(--surface-canvas-raised); border-top: 1px solid var(--border-canvas);
+    background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low);
   }
-  .now-lbl { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
-  .clock { font-family: var(--font-mono); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); min-width: 3.5rem; }
-  .chip { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent); background: var(--accent-muted); border: 1px solid var(--accent); border-radius: 999px; padding: 2px var(--space-2) 2px var(--space-3); }
-  .chip .x { background: none; border: none; cursor: pointer; color: var(--accent); font-size: 0.7rem; padding: 0; }
-  .markbar button { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); }
-  .markbar .mark { background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); }
-  .markbar .mark:hover { border-color: var(--accent); color: var(--accent); }
-  .markbar .add { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
-  .markbar .region-toggle { background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); border: 1px dashed var(--border-canvas-emphasis); }
-  .markbar .region-toggle:hover { border-color: var(--accent); color: var(--accent); }
-  .markbar .region-toggle.on { background: var(--accent); color: var(--ink-on-accent); border-style: solid; border-color: var(--accent); }
-  .markbar .import { display: inline-flex; align-items: center; cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-canvas-secondary); background: var(--surface-canvas-overlay); border: 1px dashed var(--border-canvas-emphasis); }
-  .markbar .import:hover { color: var(--accent); border-color: var(--accent); }
+  .now-lbl { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .clock { font-family: var(--font-mono); font-size: var(--text-ui-sm); color: var(--ink-canvas-primary); min-width: 3.5rem; }
+  .chip { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-mono); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent-2); background: var(--accent-2-muted); border-radius: var(--radius-sm); padding: 2px var(--space-2) 2px var(--space-3); }
+  .chip .x { background: none; border: none; cursor: pointer; color: var(--accent-2); font-size: 0.7rem; padding: 0; }
+  .markbar button { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease; }
+  .markbar .mark { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); font-family: var(--font-ui); letter-spacing: 0.02em; border: 1px solid var(--border-canvas); box-shadow: var(--shadow-lift-low); }
+  .markbar .mark:hover { background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); }
+  .markbar .add { background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-ui); font-weight: 500; letter-spacing: 0.02em; border: none; box-shadow: var(--shadow-signal-glow); }
+  .markbar .add:hover { background: var(--accent-hover); }
+  .markbar .region-toggle { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); box-shadow: var(--shadow-lift-low); }
+  .markbar .region-toggle:hover { border-color: var(--accent-2); color: var(--accent-2); }
+  .markbar .region-toggle.on { background: var(--accent-2-muted); color: var(--accent-2); border-color: var(--accent-2); }
+  .markbar .import { display: inline-flex; align-items: center; cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.02em; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); box-shadow: var(--shadow-lift-low); transition: border-color 0.18s ease, color 0.18s ease; }
+  .markbar .import:hover { color: var(--accent-2); border-color: var(--accent-2); }
   .markbar .import input { display: none; }
-  .markbar .active { font-family: var(--font-body); font-size: 0.9rem; color: var(--ink-canvas-secondary); margin-left: auto; max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .markbar .active { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-canvas-secondary); margin-left: auto; max-width: 40%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 </style>

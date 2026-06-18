@@ -34,35 +34,38 @@
 {/if}
 
 <style>
-  /* A canvas overlay, sibling to Reader's `.popup` — same surface/border/accent language. Absolute
+  /* A canvas overlay, sibling to Reader's `.popup` — same warm-paper/soft-shadow language. Absolute
      within Reader's `position: relative` container, so it anchors to the canvas, not the viewport. */
   .legend {
     position: absolute; z-index: 20; top: 3.25rem; left: var(--space-5); max-width: 17rem;
     padding: var(--space-3) var(--space-4);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent-2);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
     border-radius: var(--radius-md);
-    font-family: var(--font-ui), sans-serif;
+    box-shadow: var(--shadow-lift-low);
+    font-family: var(--font-body), sans-serif;
   }
   .title {
-    display: block; font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--accent-2); margin-bottom: var(--space-2);
+    display: block; font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 500;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--ink-canvas-muted); opacity: 0.62; margin-bottom: var(--space-2);
   }
-  .opts { display: flex; flex-direction: column; gap: 1px; }
+  .opts { display: flex; flex-direction: column; gap: 2px; }
   .opt {
     display: flex; align-items: center; gap: var(--space-2); text-align: left;
     padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm);
     background: transparent; border: none; color: var(--ink-canvas-secondary); cursor: pointer;
-    font: inherit; font-size: 0.9rem; transition: color 120ms ease, background 120ms ease;
+    font: inherit; font-family: var(--font-body), sans-serif; font-size: 0.9rem;
+    transition: color 160ms ease, background 160ms ease;
   }
   .opt:hover { color: var(--ink-canvas-primary); }
-  .opt.on { color: var(--ink-canvas-primary); font-weight: 600; background: rgba(255, 255, 255, 0.06); }
-  .sw { flex: none; width: 11px; height: 11px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35); }
-  .sw.base { background: var(--ink-canvas-muted, #6b6356); border-radius: 50%; }
+  .opt.on { color: var(--ink-canvas-primary); font-weight: 600; background: var(--accent-muted); }
+  .sw { flex: none; width: 11px; height: 11px; border-radius: 50%; box-shadow: var(--shadow-inset-fog); }
+  .sw.base { background: var(--ink-canvas-muted); }
   .nm { white-space: nowrap; }
   .desc {
     margin: var(--space-2) 0 0; padding-top: var(--space-2);
     border-top: 1px solid var(--border-canvas);
-    font-size: 0.78rem; font-style: italic; line-height: 1.4; color: var(--ink-canvas-secondary);
+    font-family: var(--font-body), sans-serif;
+    font-size: 0.82rem; font-style: italic; line-height: 1.6; color: var(--ink-canvas-secondary);
   }
 </style>

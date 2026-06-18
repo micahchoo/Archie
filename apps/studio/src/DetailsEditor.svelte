@@ -67,25 +67,28 @@
   .field { display: flex; flex-direction: column; gap: var(--space-1); }
   .field-head {
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs, 0.7rem); font-weight: 500;
-    text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-paper-secondary);
+    text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-paper-muted, var(--ink-paper-secondary));
+    opacity: 0.6;
   }
   input, textarea {
     font-family: var(--font-body), serif; font-size: 0.85rem; color: var(--ink-paper-primary);
-    background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis);
+    background: var(--surface-paper-card); border: 1px solid var(--border-paper);
     border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box;
   }
   textarea { resize: vertical; }
   input:focus, textarea:focus { outline: none; border-color: var(--accent); }
 
-  /* Destructive remove (3f4c): a quiet vermillion outline that fills in on the armed second-click guard. */
+  /* Destructive remove (3f4c): a quiet soft button that warms into a semantic-error fill on the armed second-click guard. */
   .danger { margin-top: var(--space-1); }
   .remove {
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm, 0.8125rem);
-    padding: var(--space-1) var(--space-3); cursor: pointer; width: 100%;
-    background: transparent; color: var(--semantic-error);
-    border: 1px solid var(--semantic-error); border-radius: var(--radius-sm);
-    transition: background 120ms ease, color 120ms ease;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    padding: var(--space-2) var(--space-3); cursor: pointer; width: 100%;
+    background: var(--surface-paper-card); color: var(--semantic-error);
+    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lift-low);
+    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
   }
-  .remove:hover { background: var(--semantic-error); color: var(--ink-on-accent); }
-  .remove.confirming { background: var(--semantic-error); color: var(--ink-on-accent); font-weight: 600; }
+  .remove:hover { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; }
+  .remove.confirming { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; font-weight: 600; box-shadow: var(--shadow-lift-mid); }
 </style>

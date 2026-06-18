@@ -138,60 +138,76 @@
 {/if}
 
 <style>
-  /* A warm-paper dialog floating over the dark studio (system.md elevation: …→dialog). The study's
-     lamplit page; the publish action carries the forest-green accent. */
-  .scrim { position: fixed; inset: 0; background: rgba(12,11,9,0.62); z-index: 40; }
+  /* Soft Static: warm paper dialog floating on a warm-charcoal scrim — soft lift shadow,
+     generous rounded corners, no hard border. The single Publish action carries the
+     rationed signal-orange; Cancel and the warning stay quiet. */
+  .scrim { position: fixed; inset: 0; background: rgba(59,49,56,0.55); backdrop-filter: blur(2px); z-index: 40; }
   .dialog {
     position: fixed; z-index: 41; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: min(34rem, calc(100vw - var(--space-8))); box-sizing: border-box;
-    background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-lg);
+    background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift-mid);
     padding: var(--space-6);
   }
   header { margin-bottom: var(--space-5); }
-  .eyebrow { color: var(--accent); }
-  h2 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; line-height: 1.1; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); }
-  .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; color: var(--ink-paper-secondary); margin: 0; }
+  .eyebrow { color: var(--ink-paper-muted); }
+  h2 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 400; line-height: 1.15; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); text-shadow: var(--shadow-text-haze); }
+  .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
 
   form { display: flex; flex-direction: column; gap: var(--space-3); }
   .row { display: flex; gap: var(--space-3); }
   .row label { flex: 1; }
-  label { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  label { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-paper-muted); }
   input {
     font-family: var(--font-body); font-size: 1rem; padding: var(--space-2) var(--space-3);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
   }
-  input:focus { outline: none; border-color: var(--accent); }
-  .note { font-family: var(--font-ui); font-size: 0.72rem; line-height: 1.55; color: var(--ink-paper-muted); margin: 0; }
+  input:focus { outline: none; border-color: var(--accent-2); }
+  .note { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-muted); margin: 0; }
   /* Citation opt-in (originals ship only when checked — CONTEXT §89.1). */
   .cb { flex-direction: row; align-items: flex-start; gap: var(--space-2); text-transform: none; letter-spacing: 0; font-weight: 400; }
-  .cb input { margin-top: 2px; accent-color: var(--accent); }
-  .cb-text { font-family: var(--font-ui); font-size: 0.8125rem; color: var(--ink-paper-primary); }
+  .cb input { margin-top: 2px; accent-color: var(--accent-2); }
+  .cb-text { font-family: var(--font-body); font-size: 0.8125rem; color: var(--ink-paper-primary); }
   .cb-sub { color: var(--ink-paper-secondary); }
 
-  /* Broken-link warning — amber (degradation is recoverable by fixing the link, not an error). */
-  .broken { padding: var(--space-3) var(--space-4); background: rgba(196,155,54,0.1); border: 1px solid var(--semantic-warning); border-radius: var(--radius-sm); }
-  .broken .b-head { margin: 0; font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 600; color: var(--ink-paper-primary); }
-  .broken .b-sub { margin: var(--space-1) 0 var(--space-2); font-family: var(--font-ui); font-size: 0.72rem; line-height: 1.5; color: var(--ink-paper-secondary); }
+  /* Broken-link warning — quiet warm tint (degradation is recoverable, not an error). */
+  .broken { padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-left: 3px solid var(--semantic-warning); border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low); }
+  .broken .b-head { margin: 0; font-family: var(--font-ui); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-secondary); }
+  .broken .b-sub { margin: var(--space-1) 0 var(--space-2); font-family: var(--font-body); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-secondary); }
   .broken ul { margin: 0; padding-left: var(--space-4); }
-  .broken li { font-family: var(--font-ui); font-size: 0.72rem; line-height: 1.6; color: var(--ink-paper-secondary); }
-  .broken code { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-paper-primary); }
+  .broken li { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-secondary); }
+  .broken code { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-paper-primary); }
   .broken .more { list-style: none; color: var(--ink-paper-muted); }
-  .err { font-family: var(--font-ui); font-size: 0.8rem; line-height: 1.5; color: var(--accent); margin: 0; }
+  .err { font-family: var(--font-ui); font-size: 0.8rem; line-height: 1.5; color: var(--semantic-error); margin: 0; }
 
   .actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-2); }
-  button { font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer; transition: background 120ms ease, border-color 120ms ease, color 120ms ease; }
-  .ghost { background: none; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); }
-  .ghost:hover { color: var(--ink-paper-primary); border-color: var(--ink-paper-secondary); }
-  .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
-  .primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
-  .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: transparent; cursor: default; }
+  /* The ONE focal action → rationed signal-orange, soft rounded, signal glow. */
+  .primary {
+    font-family: var(--font-body); font-size: 0.9rem; font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: var(--space-2) var(--space-5); border-radius: var(--radius-sm); cursor: pointer;
+    background: var(--accent); color: var(--ink-on-accent); border: none;
+    box-shadow: var(--shadow-signal-glow);
+    transition: background 160ms ease, box-shadow 160ms ease;
+  }
+  .primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-lift-mid); }
+  .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); box-shadow: none; cursor: default; }
+  /* Quiet secondary → warm paper, soft border, ink text (the .soft-btn shape). */
+  .ghost {
+    font-family: var(--font-body); font-size: 0.9rem; font-weight: 500;
+    letter-spacing: 0.01em;
+    padding: var(--space-2) var(--space-5); border-radius: var(--radius-sm); cursor: pointer;
+    background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--border-canvas);
+    transition: background 160ms ease, border-color 160ms ease;
+  }
+  .ghost:hover { background: var(--surface-paper-hover); border-color: var(--border-canvas-emphasis); }
 
   .result { display: flex; flex-direction: column; gap: var(--space-3); }
-  .result .ok { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; color: var(--semantic-success); margin: 0; }
-  .result .line { font-family: var(--font-ui); font-size: 0.85rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0; word-break: break-all; }
-  .result a { color: var(--accent); }
+  .result .ok { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; color: var(--semantic-success); margin: 0; }
+  .result .line { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; word-break: break-all; }
+  .result a { color: var(--accent-2); }
   .result .muted { color: var(--ink-paper-muted); }
   .result .primary { align-self: flex-end; margin-top: var(--space-2); }
 </style>

@@ -41,23 +41,24 @@
   .tile {
     position: relative; cursor: zoom-in; padding: 0; overflow: hidden;
     width: 132px; height: 92px; border-radius: var(--radius-sm);
-    background: var(--surface-canvas); border: 1px solid var(--border-paper);
-    transition: border-color 120ms ease, transform 120ms ease;
+    background: var(--surface-canvas-raised); border: none;
+    box-shadow: var(--shadow-lift-low);
+    transition: transform 160ms ease, box-shadow 160ms ease;
   }
-  .tile:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
   .tile img, .tile video { width: 100%; height: 100%; object-fit: cover; display: block; }
   /* Broken-media fallback: a quiet label instead of the browser's broken-image glyph. */
-  .tile-failed { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); font-style: italic; }
+  .tile-failed { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-canvas-muted); }
 
-  /* Audio waveform motif — forest-green bars on the dark light-table (matches the av-cover SVG). */
+  /* Audio waveform motif — soft warm-line bars on warm paper (the av-cover motif). */
   .tile.audio { display: flex; align-items: center; justify-content: center; }
   .wave { display: flex; align-items: center; gap: 3px; height: 46px; }
-  .wave span { width: 3px; border-radius: 2px; background: var(--accent); display: block; }
+  .wave span { width: 3px; border-radius: var(--radius-sm); background: var(--accent-3); display: block; }
 
   .badge {
-    position: absolute; bottom: 5px; right: 6px;
-    font-size: 0.72rem; line-height: 1; padding: 3px 6px; border-radius: var(--radius-sm);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis);
+    position: absolute; bottom: 6px; right: 7px;
+    font-family: var(--font-ui, monospace); font-size: 0.72rem; line-height: 1; padding: 3px 7px; border-radius: var(--radius-sm);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
+    box-shadow: var(--shadow-lift-low);
   }
 </style>

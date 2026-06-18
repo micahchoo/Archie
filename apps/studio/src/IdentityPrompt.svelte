@@ -37,32 +37,35 @@
 {/if}
 
 <style>
-  /* Warm-paper dialog over the dark studio — the study's lamplit page (mirrors Publish.svelte). */
-  .scrim { position: fixed; inset: 0; background: rgba(12,11,9,0.62); z-index: 40; }
+  /* Soft Static dialog — warm paper floating over a hazy warm scrim (no navy, no pixel edges). */
+  .scrim { position: fixed; inset: 0; background: rgba(59, 49, 56, 0.55); z-index: 40; }
   .dialog {
     position: fixed; z-index: 41; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: min(30rem, calc(100vw - var(--space-8))); box-sizing: border-box;
-    background: var(--surface-paper); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-lg);
+    background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lift-mid);
     padding: var(--space-6);
   }
   header { margin-bottom: var(--space-5); }
-  .eyebrow { color: var(--accent); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin: 0; }
-  h2 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.12; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); }
-  .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; color: var(--ink-paper-secondary); margin: 0; }
+  /* .eyebrow is the global quiet tracked-mono label — found, not announced */
+  h2 { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; line-height: 1.18; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); }
+  .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
 
   form { display: flex; flex-direction: column; gap: var(--space-4); }
   input {
     font-family: var(--font-body); font-size: 1.1rem; padding: var(--space-3) var(--space-3);
-    background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
+    background: var(--surface-canvas); color: var(--ink-paper-primary);
+    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm);
   }
   input:focus { outline: none; border-color: var(--accent); }
-  .actions { display: flex; justify-content: flex-end; gap: var(--space-3); }
-  button { font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer; transition: background 120ms ease, border-color 120ms ease, color 120ms ease; }
-  .ghost { background: none; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); }
-  .ghost:hover { color: var(--ink-paper-primary); border-color: var(--ink-paper-secondary); }
-  .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); }
+  .actions { display: flex; justify-content: flex-end; gap: var(--space-3); align-items: center; }
+  button { font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 500; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer; transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease; }
+  /* Secondary/ghost — quiet warm paper button, soft border, ink text */
+  .ghost { background: var(--surface-paper-card); color: var(--ink-paper-secondary); border: 1px solid var(--border-canvas-emphasis); font-family: var(--font-ui); letter-spacing: 0.02em; }
+  .ghost:hover { background: var(--surface-paper-hover); color: var(--ink-paper-primary); border-color: var(--border-canvas-emphasis); }
+  /* Primary CTA — the single rationed signal: warm orange, soft glow, no hard edge */
+  .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid var(--accent); font-family: var(--font-ui); font-weight: 600; letter-spacing: 0.02em; box-shadow: var(--shadow-signal-glow); }
   .primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
-  .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: transparent; cursor: default; }
+  .primary:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); border-color: transparent; cursor: default; box-shadow: none; }
 </style>

@@ -33,24 +33,24 @@
 {/if}
 
 <style>
-  .credit { display: inline-flex; align-items: baseline; gap: var(--space-2); position: relative; font-family: var(--font-ui, system-ui), sans-serif; font-size: 0.8rem; line-height: 1.4; }
+  /* Quiet mono credit line — found, not announced (Spline mono, tracked, low-opacity). */
+  .credit { display: inline-flex; align-items: baseline; gap: var(--space-2); position: relative; font-family: var(--font-ui), monospace; font-size: 0.72rem; letter-spacing: 0.06em; line-height: 1.5; opacity: 0.62; }
   .credit.paper { color: var(--ink-paper-secondary); }
   .credit.canvas { color: var(--ink-canvas-secondary); }
-  .line { font-style: italic; }
+  .line { font-style: normal; }
   /* 24px hit box (WCAG 2.2 target-size / Fitts) — negative margin keeps the glyph optically 14px; 6px clears 24px with sub-pixel glyph widths. */
-  .info { cursor: pointer; border: none; background: transparent; padding: 6px; margin: -6px; font-size: 0.85rem; line-height: 1; color: inherit; opacity: 0.7; }
+  .info { cursor: pointer; border: none; background: transparent; padding: 6px; margin: -6px; font-size: 0.85rem; line-height: 1; color: inherit; opacity: 0.7; transition: color 160ms ease, opacity 160ms ease; }
   .info:hover { opacity: 1; color: var(--accent); }
-  /* The ⓘ panel — ReadingLegend's accent-stripe overlay idiom (authoring↔reading symmetry). */
+  /* The ⓘ panel — ReadingLegend's warm-paper overlay idiom (authoring↔reading symmetry). */
   .panel {
     position: absolute; z-index: 20; top: 1.5rem; left: 0; min-width: 16rem; max-width: 24rem;
     display: flex; flex-direction: column; gap: var(--space-2);
     padding: var(--space-3) var(--space-4);
-    background: var(--surface-paper-card, #fcf9f2); color: var(--ink-paper-primary, #2c2618);
-    border: 1px solid var(--border-paper-emphasis, rgba(107,98,80,0.32)); border-left: 3px solid var(--accent, #3a6b4c);
-    border-radius: var(--radius-md, 8px); box-shadow: 0 4px 16px rgba(20,18,14,0.18);
+    background: var(--surface-paper-card); color: var(--ink-paper-primary);
+    border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low);
   }
-  .panel p { margin: 0; display: flex; flex-direction: column; gap: 1px; font-size: 0.8rem; line-height: 1.45; }
-  .panel .k { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-paper-secondary, #6b6250); }
-  .panel .v { color: var(--ink-paper-primary, #2c2618); }
-  .panel a { color: var(--accent, #3a6b4c); }
+  .panel p { margin: 0; display: flex; flex-direction: column; gap: 2px; font-family: var(--font-body), sans-serif; font-size: 0.82rem; line-height: 1.6; }
+  .panel .k { font-family: var(--font-ui), monospace; font-size: 0.62rem; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-paper-muted); opacity: 0.62; }
+  .panel .v { color: var(--ink-paper-primary); }
+  .panel a { color: var(--accent-2); }
 </style>

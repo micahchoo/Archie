@@ -217,7 +217,7 @@
     />
   {:else if activeObject}
     <Reader
-      object={{ source: activeObject.source, canvasId: canvasIdOf(activeObject.id), label: activeObject.label, summary: activeData?.summary }}
+      object={{ source: activeObject.source, canvasId: canvasIdOf(activeObject.id), label: activeObject.label, summary: activeData?.summary, ...(activeObject.tileSource ? { tileSource: activeObject.tileSource } : {}) }}
       annotations={annotationsOf(activeObject.id)}
       readings={data.readings}
       activeReading={activeReading}
@@ -251,28 +251,37 @@
 {/if}
 
 <style>
-  /* Load / error states over the dark light table (system.md §Reader States). */
+  /* Load / error states — quiet found-meta chrome over the warm atmospheric ground (Soft Static).
+     Spline Sans Mono eyebrow: tracked, uppercase, reduced opacity — it feels found, not announced. */
   .state {
-    display: flex; align-items: center; justify-content: center; gap: 10px; height: 100vh;
-    background: var(--surface-canvas); color: var(--ink-canvas-secondary);
-    font-family: var(--font-ui), sans-serif; font-size: 0.9375rem; letter-spacing: 0.02em;
+    display: flex; align-items: center; justify-content: center; gap: var(--space-3); height: 100vh;
+    background: transparent; color: var(--ink-canvas-secondary);
+    font-family: var(--font-ui), monospace; font-size: 0.8125rem; letter-spacing: 0.16em;
+    text-transform: uppercase; opacity: 0.62;
   }
-  .state.error { color: var(--accent-2); }
+  .state.error { color: var(--semantic-error); opacity: 0.85; }
   .warn { font-size: 1.1rem; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.1s ease-in-out infinite; }
-  @keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+  /* Soft signal dot — the one rationed orange mark, gently breathing (no hard pixel steps). */
+  .dot { width: 8px; height: 8px; border-radius: var(--radius-sm); background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
-  /* Cold-arrival chrome — a wax-sealed note over the dark table; understated, fades, not a gate. */
+  /* Cold-arrival chrome — a soft warm-paper toast; understated, fades, not a gate. */
   .arrival {
     position: fixed; z-index: 30; top: var(--space-5); left: 50%; transform: translateX(-50%);
     display: flex; align-items: center; gap: var(--space-3); cursor: pointer;
-    padding: var(--space-2) var(--space-4);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-left: 3px solid var(--accent-2);
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
+    border: none;
+    border-left: 3px solid var(--accent-2);
     border-radius: var(--radius-md);
-    font-family: var(--font-ui), sans-serif; font-size: 0.85rem;
+    box-shadow: var(--shadow-lift-low);
+    font-family: var(--font-body), sans-serif; font-size: 0.8125rem;
+    letter-spacing: 0; text-transform: none;
   }
   .arrival .seal { color: var(--accent-2); font-size: 1rem; }
-  .arrival .dismiss { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
+  .arrival .dismiss {
+    font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 500;
+    letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-canvas-muted);
+  }
   .arrival:hover .dismiss { color: var(--accent-2); }
 </style>

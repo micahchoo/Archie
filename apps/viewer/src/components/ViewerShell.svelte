@@ -216,42 +216,54 @@
   .topbar .right { justify-self: end; }
   .topbar .zone:empty { pointer-events: none; }
 
-  /* Breadcrumb — understated; the way back up (CONTEXT §125). */
+  /* Breadcrumb — understated; the way back up (CONTEXT §125). Connector-blue hover (the secondary
+     signal for links/up-nav) keeps the rationed orange free for the one focal action. */
   .crumbs { display: flex; align-items: center; gap: var(--space-2); }
   .crumbs a { color: var(--ink-canvas-secondary); text-decoration: none; }
-  .crumbs a:hover { color: var(--accent); }
+  .crumbs a:hover { color: var(--accent-2); }
   .crumbs .sep { color: var(--ink-canvas-muted); }
 
   /* Object carousel — ‹ prev · i/n · next › thin glyph form (dba2: lean, no thumbs/labels, so it
-     doesn't fight crumbs + open-another for width). Forest-green hover; quiet overlay pill. */
+     doesn't fight crumbs + open-another for width). The one floating surface reads as a soft warm-paper
+     pill — rounded, lifted by a wide soft shadow, no border (separated by shadow + tone). */
   .carousel {
     display: flex; align-items: center; gap: var(--space-1);
     padding: 2px var(--space-2);
-    background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-md);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lift-low);
   }
   .carousel .cnav {
     display: flex; align-items: center; justify-content: center; min-width: 1.25rem;
     background: none; border: none; color: var(--ink-canvas-secondary); cursor: pointer; font: inherit;
     font-size: 1.05rem; line-height: 1;
   }
-  .carousel .cnav:hover:not(:disabled) { color: var(--accent); }
+  .carousel .cnav:hover:not(:disabled) { color: var(--accent-2); }
   .carousel .cnav:disabled { opacity: 0.3; cursor: default; }
-  .carousel .cpos { color: var(--ink-canvas-muted); font-variant-numeric: tabular-nums; padding: 0 var(--space-1); }
+  .carousel .cpos {
+    color: var(--ink-canvas-muted); font-family: var(--font-mono), monospace;
+    font-variant-numeric: tabular-nums; padding: 0 var(--space-1); letter-spacing: 0.1em;
+  }
 
-  /* Portable swap-to-change — quiet escape, not a primary action (CONTEXT §134). */
+  /* Origin-drift badge — a broken-config alert. Warm-paper chip lifted by a soft shadow, rounded;
+     the alert reads through semantic-error ink + a hairline error border and the quiet uppercase mono
+     tracking (a found warning label, not a loud arcade panel) (CONTEXT §134). */
   .drift {
     position: fixed; z-index: 60; top: var(--space-3); right: var(--space-3);
-    padding: 2px var(--space-2);
-    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 600;
-    color: var(--accent-2); border: 1px solid var(--accent-2); border-radius: var(--radius-sm);
-    background: var(--surface-canvas-overlay);
+    padding: 4px var(--space-2);
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.14em;
+    color: var(--semantic-error);
+    border: 1px solid var(--border-canvas-emphasis);
+    border-radius: var(--radius-sm);
+    background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low);
   }
     .open-another {
-    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); cursor: pointer;
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); cursor: pointer;
+    text-transform: uppercase; letter-spacing: 0.14em;
     background: none; border: none; padding: var(--space-2) 0; color: var(--ink-canvas-secondary); /* 24px+ hit box (Fitts) — transparent, no visual shift */
   }
-  .open-another:hover { color: var(--accent); }
+  .open-another:hover { color: var(--accent-2); }
 
   /* Over the gallery wall (light) the bar's canvas inks fail contrast (axe: 2.1) — swap the quiet
      chrome to paper inks; the bar floats over BOTH surface families, so ink follows the backdrop. */
@@ -262,10 +274,12 @@
   .state {
     display: flex; align-items: center; justify-content: center; gap: 10px; height: 100vh;
     background: var(--surface-canvas); color: var(--ink-canvas-secondary);
-    font-family: var(--font-ui), sans-serif; font-size: 0.9375rem; letter-spacing: 0.02em;
+    font-family: var(--font-ui), sans-serif; font-size: 0.9375rem; text-transform: uppercase; letter-spacing: 0.16em;
   }
-  .state.error { color: var(--accent); }
+  .state.error { color: var(--semantic-error); }
   .warn { font-size: 1.1rem; }
+  /* Soft round pulse — a quiet breathing dot in the rationed signal-orange; the one focal mark on the
+     loading surface (pulse keyframe preserved). */
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.1s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
 </style>

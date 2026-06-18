@@ -44,24 +44,23 @@
      from the former static index.astro; tokens come from the page-level tokens.css import. */
   .gallery { max-width: 1040px; margin: 0 auto; padding: var(--space-12) var(--space-6); }
   .intro { margin-bottom: var(--space-10); max-width: 40rem; }
-  .eyebrow { color: var(--accent); }
-  .intro h1 { font-family: var(--font-display); font-weight: 600; font-size: 3rem; line-height: 1.05; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); }
-  .blurb { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: 0; }
+  .intro h1 { font-family: var(--font-display); font-weight: 300; font-size: 3rem; line-height: 1.1; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); text-shadow: var(--shadow-text-haze); }
+  .blurb { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
   .credit-row { margin: var(--space-3) 0 0; }
 
   .grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--space-6); }
-  .card { display: flex; flex-direction: column; text-decoration: none; background: var(--surface-paper-card); border: 1px solid var(--border-paper); border-radius: var(--radius-lg); overflow: hidden; transition: transform 160ms ease, background 160ms ease; }
-  .card:hover { background: var(--surface-paper-hover); transform: translateY(-2px); }
-  .cover { display: block; aspect-ratio: 3 / 2; background-color: var(--surface-canvas); background-size: cover; background-position: center; border-bottom: 1px solid var(--border-paper); }
+  .card { display: flex; flex-direction: column; text-decoration: none; background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-lift-low); transition: transform 200ms ease, box-shadow 200ms ease; }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift-mid); }
+  .cover { display: block; aspect-ratio: 3 / 2; background-color: var(--surface-canvas); background-size: cover; background-position: center; }
   .caption { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5) var(--space-5); }
-  .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 600; line-height: 1.1; color: var(--ink-paper-primary); }
+  .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; line-height: 1.15; color: var(--ink-paper-primary); }
   /* Live working-store exhibit (Q-3) — "Local: only you can see this"; Publish is what makes it public. */
   .local {
     display: inline-block; vertical-align: middle; margin-left: var(--space-2); padding: 1px var(--space-2);
-    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.04em;
-    color: var(--accent); border: 1px solid var(--accent); border-radius: var(--radius-sm);
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--accent); background: var(--accent-muted); border: none; border-radius: var(--radius-sm);
   }
-  .desc { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45; color: var(--ink-paper-secondary); }
+  .desc { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-secondary); }
 
-  .empty { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.5; color: var(--ink-paper-secondary); padding: var(--space-8); border: 1px dashed var(--border-paper); border-radius: var(--radius-lg); }
+  .empty { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-8); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-lg); box-shadow: var(--shadow-inset-fog); }
 </style>

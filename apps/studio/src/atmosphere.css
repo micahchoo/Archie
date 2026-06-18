@@ -1,0 +1,93 @@
+/* Soft Static atmosphere + utility layer (template: Soft Static design system).
+   The always-on identity: a fixed blush→dusk gradient backdrop, a warm focal bloom, a soft edge
+   vignette, and a heavy grain film over everything. Depth is built from blur + light, never from a
+   hard offset shadow. Functional content rides on warm-paper surfaces so text stays legible at any
+   scroll. MUST load LAST (after markers.css). NOTE: duplicated in apps/viewer/src/atmosphere.css. */
+
+/* ── Ground: the blush→dusk vertical gradient, fixed as a backdrop ── */
+html {
+  background: var(--ground-gradient) fixed;
+  background-color: var(--blush);
+}
+/* Body transparent so the gradient + bloom show through gaps; default cursor (the stillness is the
+   signal — no arcade crosshair here). */
+body { background: transparent; cursor: default; color: var(--ink-canvas-primary); }
+
+/* ── Atmospheric overlays — fixed, non-interactive ── */
+html::before, html::after, body::after { content: ""; position: fixed; inset: 0; pointer-events: none; }
+/* focal bloom — a warm luminous core, screen-blended behind content */
+html::before { z-index: 0; background: var(--focal-bloom); mix-blend-mode: screen; filter: blur(40px); opacity: 0.85; }
+/* vignette — soft edge darkening pulls focus to the warm center */
+html::after { z-index: 9996; background: var(--vignette); }
+/* grain — the defining texture (dialed to ~0.08 for dense-UI legibility; spec allows 0.07 on text) */
+body::after {
+  z-index: 9998; opacity: 0.08; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::selection { background: var(--accent-muted); color: var(--ink); }
+
+/* ── Global soft form chrome — warm paper, soft rounded, no hard edges ── */
+input, textarea, select {
+  background: var(--surface-canvas-raised);
+  color: var(--ink-canvas-primary);
+  border: 1px solid var(--border-canvas-emphasis);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+}
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-muted);
+}
+input::placeholder, textarea::placeholder { color: var(--ink-canvas-muted); }
+
+/* ── Scrollbars — quiet warm ── */
+* { scrollbar-color: var(--mist-blue) transparent; scrollbar-width: thin; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--mist-blue); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+
+/* ── Soft Static utility primitives (the component pass composes these) ── */
+/* The single saturated object — the orange screen. One per surface, focal CTA / live marker only. */
+.signal-tile {
+  background: var(--signal-sheen); color: var(--ink-on-accent);
+  border: none; border-radius: 14px; padding: 14px 22px;
+  box-shadow: var(--shadow-signal-glow);
+  font-family: var(--font-ui); font-weight: 500; letter-spacing: 0.04em;
+}
+/* Soft warm card — separated by shadow + tone, never an outline. */
+.soft-card {
+  background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lift-low);
+}
+/* A quiet (non-signal) button: warm, soft, low-key — the default for secondary actions. */
+.soft-btn {
+  font-family: var(--font-ui); font-weight: 500; letter-spacing: 0.06em;
+  color: var(--ink-canvas-primary); background: var(--surface-canvas-raised);
+  border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm);
+  padding: 10px 20px; cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease;
+}
+.soft-btn:hover { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+
+/* ── Safety-net redefinitions: any 8-Bit Orbit utility classes still present render SOFT until the
+     component pass converts them (no neon, no hard shadow, no square corners, no uppercase cascade). ── */
+.pixel-btn {
+  font-family: var(--font-ui); font-weight: 500; letter-spacing: 0.06em; text-transform: none;
+  color: var(--ink-on-accent); background: var(--accent);
+  border: none; border-radius: var(--radius-sm); padding: 12px 24px; cursor: pointer;
+  box-shadow: var(--shadow-lift-low); transition: background 160ms ease, transform 160ms ease;
+}
+.pixel-btn:hover { background: var(--accent-hover); transform: none; box-shadow: var(--shadow-lift-low); }
+.pixel-btn--pink { background: var(--accent-2); }
+.label-pill { /* old navy pill → quiet Soft Static eyebrow */
+  display: inline-block; font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 400;
+  letter-spacing: 0.26em; text-transform: uppercase; color: rgba(59,49,56,0.55);
+  background: transparent; padding: 0;
+}
+.pixel-card { background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
+.pixel-bracket::before, .pixel-bracket::after { display: none; } /* no corner brackets in Soft Static */
+
+@media (prefers-reduced-motion: reduce) {
+  .soft-btn, .pixel-btn { transition: none; }
+}
