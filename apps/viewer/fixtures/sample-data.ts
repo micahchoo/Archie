@@ -6,7 +6,7 @@ import { appendNew, asClientId, type AObject, type AnnotationLog, type Library, 
 import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichSections, voynichCredits } from "./voynich.js";
 // Single source of truth lives in the viewer-owned base module (not this demo file), so the shell
 // can import canvasIdFor without pulling in demo fixtures. Re-exported for gen-published.mts.
-import { BASE, canvasIdFor } from "./published-base.js";
+import { BASE, canvasIdFor } from "../src/published-base.js";
 import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "./atlas.js";
 export { BASE, canvasIdFor };
 

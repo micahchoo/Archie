@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { appendNew, appendEdit } from "./log.js";
-import { lineage, ancestors, commonAncestor, headsOf, mergeLogs, classifyMerge, classifyLogical, conflictTiebreak } from "./merge.js";
+import { lineage, ancestors, commonAncestor, headsOf, mergeLogs, classifyMerge, classifyLogical, conflictTiebreak, resolveConflict } from "./merge.js";
 import { asClientId } from "../wadm/brand.js";
 import type { AnnotationLog } from "../wadm/types.js";
 
@@ -41,6 +41,20 @@ describe("commonAncestor", () => {
     const { base, aliceLog, v1, v2alice } = diverge();
     const union = mergeLogs(base, aliceLog);
     expect(commonAncestor(union, v1.rev, v2alice.rev)).toBe(v1.rev);
+  });
+  it("follows mergeParents — an ancestor reachable ONLY through a merge node's secondary edge (Q-7)", () => {
+    const { aliceLog, bobLog, v1, v2alice, v2bob } = diverge();
+    const union = mergeLogs(aliceLog, bobLog);
+    // Resolve the concurrent conflict → a multi-parent merge node M (parent = first head, mergeParents = rest).
+    const resolved = resolveConflict(union, v1.logicalId, { lastEditor: alice, now: 4000 });
+    const merge = headsOf(resolved, v1.logicalId)[0]!;
+    expect(merge.mergeParents?.length ?? 0).toBeGreaterThan(0);
+    const secondary = merge.parent === v2alice.rev ? v2bob : v2alice; // the head that landed in mergeParents
+    // `secondary` is reachable from M ONLY through the mergeParents edge. A lineage-only walk (the
+    // pre-fix behavior) would miss it and fall back to v1; the multi-parent walk sees it as a proper
+    // ancestor, so the merge-base of (M, secondary) IS secondary, not v1.
+    expect(ancestors(resolved, merge.rev).has(secondary.rev)).toBe(true);
+    expect(commonAncestor(resolved, merge.rev, secondary.rev)).toBe(secondary.rev);
   });
 });
 

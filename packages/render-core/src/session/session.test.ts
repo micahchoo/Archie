@@ -108,6 +108,31 @@ describe("AnnotationSession — collaboration (Import changes / resolve)", () =>
     expect(local.conflicts()).toEqual([]); // resolved
     expect(local.notes().filter((r) => r.logicalId === id)).toHaveLength(1); // single head again
   });
+
+  it("resolve() carries reading + geo (+ emphasis) onto the merge node — they are NOT dropped on conflict resolution", () => {
+    const geo = { type: "bbox" as const, west: -1, south: 50, east: 1, north: 52 };
+    const local = new AnnotationSession(alice);
+    // A Map note carrying a reading assignment, authored emphasis, AND a geo anchor.
+    const id = local.createNote({ target: rect(0, 0, 10, 10), body: { type: "TextualBody", value: "v1" }, reading: "cipher", emphasis: "strong", geo });
+    const v1 = local.entries[0]!;
+    local.editNote(id, { body: { type: "TextualBody", value: "mine" } }); // local v2 (carries reading/emphasis/geo forward)
+
+    // A CONCURRENT edit of the same note from a colleague, also branching off v1 → a genuine conflict.
+    const theirV2 = { logicalId: v1.logicalId, rev: mintRevId(0, () => 0.9), version: 2, parent: v1.rev, modifiedAt: "tT", lastEditor: bob, deleted: false, target: rect(0, 0, 10, 10), body: { type: "TextualBody" as const, value: "theirs" } };
+    local.importChanges([v1, theirV2]);
+    expect(local.conflictHeads(id as LogicalId)).toHaveLength(2);
+
+    // Resolve WITHOUT re-specifying reading/emphasis/geo — they must inherit from the primary head.
+    local.resolve(id as LogicalId, { body: { type: "TextualBody", value: "merged" } });
+    const head = local.notes().find((r) => r.logicalId === id)!;
+    expect(head.reading).toBe("cipher");
+    expect(head.emphasis).toBe("strong");
+    expect(head.geo).toEqual(geo);
+    // And they reach the working projection the editor binds to.
+    const ann = local.workingAnnotations().find((a) => a.id === id)! as unknown as Record<string, unknown>;
+    expect(ann["archie:reading"]).toBe("cipher");
+    expect(ann["archie:geo"]).toEqual(geo);
+  });
 });
 
 describe("AnnotationSession — persistence round-trip", () => {

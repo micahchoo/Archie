@@ -5,13 +5,12 @@
 // viewport.imageToViewportRectangle + viewport.fitBounds (P1-2). Kept pure so it is the
 // behavioral ORACLE both anvil-stock and the new mount path are held to (the Phase-1 gate).
 
-import { selectorBBox, type Box, type W3CSelector } from "@render/core";
+import { selectorBBox, selectorOf, type Box, type W3CSelector, type AnnotationLike } from "@render/core";
 
-/** A WADM-shaped annotation as Annotorious emits it (the structural-compat surface, P0-2 [NOTE]). */
-export interface AnnotationLike {
-  id?: string;
-  target?: unknown;
-}
+// `selectorOf` + `AnnotationLike` now live in @render/core (the canonical pure selector-extraction
+// home both the viewer and @render/mount share) — re-exported here so existing importers of
+// "./fitbounds" (gate.test.ts: `type AnnotationLike`) keep resolving from the same module.
+export { selectorOf, type AnnotationLike };
 
 export interface FitOptions {
   /** OSD container width in px (0 = unknown → plain fit). */
@@ -59,17 +58,6 @@ export function applyFitBounds(viewport: ViewportLike, selector: W3CSelector, op
   if (box === null) return false;
   viewport.fitBounds(viewport.imageToViewportRectangle(box.x, box.y, box.w, box.h), false);
   return true;
-}
-
-/** Extract a v1 WADM selector (rect/polygon) from a (possibly Annotorious-shaped) annotation. */
-export function selectorOf(ann: AnnotationLike | undefined): W3CSelector | null {
-  const target = (ann as { target?: { selector?: unknown } } | undefined)?.target;
-  const raw = Array.isArray(target?.selector) ? target?.selector[0] : target?.selector;
-  const s = raw as { type?: unknown; value?: unknown } | undefined;
-  if (s && (s.type === "FragmentSelector" || s.type === "SvgSelector") && typeof s.value === "string") {
-    return { type: s.type, value: s.value } as W3CSelector;
-  }
-  return null;
 }
 
 /**

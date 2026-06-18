@@ -39,11 +39,6 @@ export interface PortableLoad {
 
 const ASSET_SEG = "/assets/";
 
-async function readJson<T>(dir: FsDirectory, name: string): Promise<T> {
-  const file = await dir.getFile(name);
-  return JSON.parse(new TextDecoder().decode(await file.readable())) as T;
-}
-
 /**
  * Mint a `blob:` URL for an embedded asset at `{slug}/assets/{name}`. Returns null if the file isn't
  * in the archive — leave the source as-is, like publishLibrary's "bytes unavailable" branch (site.ts).
@@ -148,6 +143,5 @@ export async function loadPortableExhibit(fs: Filesystem, slug: string): Promise
 /** Read the Library Gallery index (`exhibits.json`) from the opened Filesystem — the portable
  *  equivalent of the Viewer's HTTP `loadGallery`. No media, so no blob lifecycle. */
 export async function loadPortableGallery(fs: Filesystem): Promise<ExhibitsJson> {
-  const root = await fs.root();
-  return readJson<ExhibitsJson>(root, "exhibits.json");
+  return fsJsonSource(fs).get<ExhibitsJson>("exhibits.json");
 }

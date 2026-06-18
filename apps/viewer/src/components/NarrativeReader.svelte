@@ -10,7 +10,8 @@
   import NoteMedia from "./NoteMedia.svelte";
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
-  import { renderMarkdown, type MarkerStyle } from "@render/svelte";
+  import { renderMarkdown } from "@render/core";
+  import { type MarkerStyle } from "@render/svelte";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
 
   let {

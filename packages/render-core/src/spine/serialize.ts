@@ -118,29 +118,21 @@ function withDagMeta(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnn
   return ann;
 }
 
-/** @deprecated Put layer membership on a head annotation. Superseded by {@link withReading} (ADR-0007). */
-function withLayers(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
-  if (record.layers !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_LAYERS] = record.layers;
-  return ann;
-}
-
-/** Put the single Reading membership on a head annotation (Archie viewer filters; pure ignores) — ADR-0007. */
-function withReading(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
-  if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
-  return ann;
-}
-
-/** Put authored per-note emphasis on a head annotation (1489) — emitted ONLY when set, so notes with
- *  no authored emphasis stay byte-identical (the viewer's `emphasisOf` reads absence as `"normal"`). */
-function withEmphasis(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
-  if (record.emphasis !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] = record.emphasis;
-  return ann;
-}
-
-/** Put the geographic anchor on a head annotation (geo-truth — Q4/ADR-0015) — emitted ONLY when set, so
- *  non-Map notes stay byte-identical; the consumer's `geoOf` reads absence as undefined. Pure consumers ignore it. */
-function withGeo(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
-  if (record.geo !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_GEO] = record.geo;
+/**
+ * Embed a head annotation's Archie extension fields — ONE cast site for all of them (was five
+ * near-identical `withX` mutators, each carrying its own `as unknown as Record` cast). Each field
+ * is emitted ONLY when set, so notes without it stay byte-identical (a pure consumer ignores every
+ * `archie:` key; `emphasisOf`/`geoOf` read absence as the default). The `layers` disposition is now
+ * an EXPLICIT decision here, NOT a deprecated-but-live call: `archie:layers` is still emitted when a
+ * record carries the (legacy, expand-and-contract — ADR-0007) `layers` field, so the published shape
+ * is unchanged; once no record carries `layers`, this line is dead and can be dropped.
+ */
+function withExtensions(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
+  const a = ann as ArchieAnnotation & Record<string, unknown>;
+  if (record.layers !== undefined) a[ARCHIE_LAYERS] = record.layers; // legacy (ADR-0007); emitted to preserve shape
+  if (record.reading !== undefined) a[ARCHIE_READING] = record.reading;
+  if (record.emphasis !== undefined) a[ARCHIE_EMPHASIS] = record.emphasis;
+  if (record.geo !== undefined) a[ARCHIE_GEO] = record.geo;
   return ann;
 }
 
@@ -158,7 +150,7 @@ export function targetSource(record: AnnotationRecord): string {
 export function headsPageFromRecords(heads: AnnotationRecord[], pageId: string, ids: Map<RevId, string>, opts: SerializeOptions = {}): W3CAnnotationPage {
   const historyBase = opts.historyBase ?? "annotations/history/";
   const items: W3CAnnotation[] = heads.map((head) => {
-    const ann = withGeo(withEmphasis(withReading(withLayers(withProvLink(recordToAnnotation(head, ids.get(head.rev)!), head.parent, ids), head), head), head), head);
+    const ann = withExtensions(withProvLink(recordToAnnotation(head, ids.get(head.rev)!), head.parent, ids), head);
     ann[ARCHIE_HAS_HISTORY] = `${historyBase}${head.logicalId}.json`;
     return ann;
   });

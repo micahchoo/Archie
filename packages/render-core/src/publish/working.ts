@@ -138,6 +138,42 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
   };
 }
 
+/**
+ * The faithful inverse of {@link workingToLibrary}: map a publishable `Library` back to the persisted
+ * working structure, mirroring `workingToLibrary`'s field set, its `rightsOf` helper, and its
+ * `...(x !== undefined ? {x} : {})` style. Maps ONLY the round-trippable fields — replaces the ~8-field
+ * hand-spread the studio inline version did. NB: `cover`/`seedVersion` are NOT carried (no `WorkingExhibitMeta`
+ * cover slot; `seedVersion` is a template marker that does not round-trip), and `provenance` is NOT
+ * reconstructed: `WorkingObjectProvenance` requires `exifOrientation`+`transform` which a `Library` object
+ * lacks (`originalName` alone is insufficient), so a baked import's provenance does not survive this direction.
+ */
+export function libraryToWorking(library: Library): WorkingLibraryMeta {
+  return {
+    ...(library.title !== undefined ? { title: library.title } : {}),
+    ...(library.summary !== undefined ? { summary: library.summary } : {}),
+    ...rightsOf(library),
+    exhibits: library.exhibits.map((ex) => ({
+      id: ex.id, slug: ex.slug, title: ex.title,
+      ...(ex.summary !== undefined ? { summary: ex.summary } : {}),
+      ...(ex.layout !== undefined ? { layout: ex.layout } : {}),
+      ...(ex.mode !== undefined ? { mode: ex.mode } : {}),
+      ...(ex.sections && ex.sections.length ? { sections: ex.sections } : {}),
+      ...(ex.readings && ex.readings.length ? { readings: ex.readings } : {}),
+      ...rightsOf(ex),
+      objects: ex.objects.map((o) => ({
+        id: o.id, source: o.source, label: o.label,
+        ...(o.summary !== undefined ? { summary: o.summary } : {}),
+        ...(o.width !== undefined ? { width: o.width } : {}),
+        ...(o.height !== undefined ? { height: o.height } : {}),
+        ...(o.mediaType !== undefined ? { mediaType: o.mediaType } : {}),
+        ...(o.tileSource !== undefined ? { tileSource: o.tileSource } : {}), // carry the Map basemap (the studio inline version dropped it)
+        ...(o.duration !== undefined ? { duration: o.duration } : {}),
+        ...rightsOf(o),
+      })),
+    })),
+  };
+}
+
 export interface LoadWorkingOptions extends WorkingToLibraryOptions {
   /** Working-store root directory name. Default `WORKING_PROJECT`. */
   project?: string;

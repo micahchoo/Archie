@@ -91,6 +91,32 @@ describe("toManifest (IIIF P3)", () => {
     expect(sectionsFromManifest(toManifest(imgExhibit, { baseUrl: base }))).toEqual([]);
   });
 
+  it("declares an ImageService2 + sized thumbnail for a IIIF-service-base source (routed through resolveTileSource/thumbnailUrl)", () => {
+    const svc: Exhibit = {
+      id: "e4", slug: "iiif", title: "IIIF",
+      objects: [{ id: "obj-s", source: "https://iiif.example.org/iiif/2/folio", label: "Folio", width: 6000, height: 8000 }],
+    };
+    const c = toManifest(svc, { baseUrl: base }).items[0]!;
+    const body = c.items[0]!.items[0]!.body;
+    expect(body.service).toEqual([{ id: "https://iiif.example.org/iiif/2/folio", type: "ImageService2", profile: "level2" }]);
+    expect(c.thumbnail).toEqual([{ id: "https://iiif.example.org/iiif/2/folio/full/240,/0/default.jpg", type: "Image" }]);
+  });
+
+  it("does NOT declare a service/thumbnail for a plain raster source, a blob: URL, or a disallowed scheme", () => {
+    const ex: Exhibit = {
+      id: "e5", slug: "mixed", title: "Mixed",
+      objects: [
+        { id: "raster", source: "https://img/a.jpg", label: "Raster" },
+        { id: "blob", source: "blob:https://app/abc", label: "Blob" },
+        { id: "evil", source: "javascript:alert(1)", label: "Evil" },
+      ],
+    };
+    for (const c of toManifest(ex, { baseUrl: base }).items) {
+      expect(c.items[0]!.items[0]!.body.service).toBeUndefined();
+      expect(c.thumbnail).toBeUndefined();
+    }
+  });
+
   it("projects an AV (sound) object to a Canvas with duration + a Sound body", () => {
     const av: Exhibit = { id: "e2", slug: "audio", title: "Audio", objects: [{ id: "s1", source: "https://a/clip.mp3", label: "Clip", mediaType: "sound", duration: 120, format: "audio/mpeg" }] };
     const c = toManifest(av, { baseUrl: base }).items[0]!;

@@ -10,19 +10,25 @@ import { mintRevId, type RevId, type LogicalId, type ClientId } from "../wadm/br
 import type { AnnotationLog, AnnotationRecord, W3CBody, W3CTarget } from "../wadm/types.js";
 import { linearHead, append } from "./log.js";
 
-function recordByRev(log: AnnotationLog, rev: RevId): AnnotationRecord | undefined {
-  return log.find((r) => r.rev === rev);
+/** Index a log by `rev` (the collision-free node id) for O(1) parent-walk lookups — built ONCE per
+ *  traversal so lineage/ancestors stay O(n) instead of O(n²) (was `log.find` per step). First-wins
+ *  matches the old `log.find` semantics; revs are unique by construction (ADR-0003) so it's moot. */
+function indexByRev(log: AnnotationLog): Map<RevId, AnnotationRecord> {
+  const m = new Map<RevId, AnnotationRecord>();
+  for (const r of log) if (!m.has(r.rev)) m.set(r.rev, r);
+  return m;
 }
 
 /** The chain from `rev` to the root: [rev, parent, grandparent, …]. Self first. Cycle-guarded. */
 export function lineage(log: AnnotationLog, rev: RevId): RevId[] {
+  const byRev = indexByRev(log);
   const out: RevId[] = [];
   const seen = new Set<RevId>();
   let cur: RevId | null = rev;
   while (cur !== null && !seen.has(cur)) {
     seen.add(cur);
     out.push(cur);
-    const rec = recordByRev(log, cur);
+    const rec = byRev.get(cur);
     if (rec === undefined) break;
     cur = rec.parent;
   }
@@ -36,26 +42,62 @@ function parentsOf(record: AnnotationRecord): RevId[] {
 
 /** Proper ancestors of `rev` — a multi-parent DAG walk (follows parent + mergeParents). */
 export function ancestors(log: AnnotationLog, rev: RevId): Set<RevId> {
+  const byRev = indexByRev(log);
   const out = new Set<RevId>();
-  const start = recordByRev(log, rev);
+  const start = byRev.get(rev);
   const stack: RevId[] = start ? parentsOf(start) : [];
   while (stack.length > 0) {
     const cur = stack.pop()!;
     if (out.has(cur)) continue;
     out.add(cur);
-    const rec = recordByRev(log, cur);
+    const rec = byRev.get(cur);
     if (rec) stack.push(...parentsOf(rec));
   }
   return out;
 }
 
-/** The merge-base: the nearest rev present in both lineages, or null if unrelated. */
-export function commonAncestor(log: AnnotationLog, revA: RevId, revB: RevId): RevId | null {
-  const inB = new Set(lineage(log, revB)); // includes B itself
-  for (const r of lineage(log, revA)) {
-    if (inB.has(r)) return r;
+/** Every ancestor of `rev` INCLUDING itself, keyed to its shortest BFS distance from `rev` (0 = self).
+ *  Multi-parent (follows parent + mergeParents) so a merge node never hides shared history reachable
+ *  only through a `mergeParents` edge. */
+function ancestorDepths(byRev: Map<RevId, AnnotationRecord>, rev: RevId): Map<RevId, number> {
+  const depth = new Map<RevId, number>([[rev, 0]]);
+  let frontier: RevId[] = [rev];
+  let d = 0;
+  while (frontier.length > 0) {
+    d += 1;
+    const next: RevId[] = [];
+    for (const r of frontier) {
+      const rec = byRev.get(r);
+      if (!rec) continue;
+      for (const p of parentsOf(rec)) {
+        if (!depth.has(p)) {
+          depth.set(p, d);
+          next.push(p);
+        }
+      }
+    }
+    frontier = next;
   }
-  return null;
+  return depth;
+}
+
+/** The merge-base: the common ancestor nearest BOTH heads (min summed distance), or null if unrelated.
+ *  Multi-parent aware — a merge node's `mergeParents` history counts, which `lineage` (primary chain
+ *  only) missed (Q-7). For a purely linear pair this still returns the nearest shared rev. */
+export function commonAncestor(log: AnnotationLog, revA: RevId, revB: RevId): RevId | null {
+  const byRev = indexByRev(log);
+  const depthA = ancestorDepths(byRev, revA);
+  const depthB = ancestorDepths(byRev, revB);
+  let best: RevId | null = null;
+  let bestScore = Infinity;
+  for (const [rev, da] of depthA) {
+    const db = depthB.get(rev);
+    if (db !== undefined && da + db < bestScore) {
+      bestScore = da + db;
+      best = rev;
+    }
+  }
+  return best;
 }
 
 /** Heads of a logicalId — records no other version references as `parent`. Plural = unresolved. */

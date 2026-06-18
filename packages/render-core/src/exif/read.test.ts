@@ -122,4 +122,21 @@ describe("readExifCaptureDate — capture moment for folder-import ordering (⑫
     expect(readExifCaptureDate(orientationOnly)).toBeNull();
     expect(readExifOrientation(buildExifJpegWithDate("2021:07:04 12:30:01", { inSubIfd: true }))).toBe(1);
   });
+
+  // The 0xff marker-alignment guard, shared via scanJpegApp1 (was a per-copy guard the capture-date
+  // path had silently dropped). A buffer whose first segment boundary after SOI is NOT 0xff-aligned is
+  // malformed; BOTH readers must degrade cleanly (date → null, orientation → 1) rather than mis-read a
+  // bogus length from misaligned bytes. The aligned twin is the positive control (same TIFF, real date).
+  it("the 0xff marker guard degrades a misaligned segment boundary cleanly (date → null, orientation → 1)", () => {
+    const aligned = new Uint8Array(buildExifJpegWithDate("2021:07:04 12:30:01", { inSubIfd: true }));
+    // Positive control: aligned reads the date and (no orientation tag) the identity orientation.
+    expect(readExifCaptureDate(aligned.buffer)).toBe(Date.UTC(2021, 6, 4, 12, 30, 1));
+    expect(readExifOrientation(aligned.buffer)).toBe(1);
+    // Corrupt the byte right after SOI (offset 2) — where the first marker's 0xff MUST be. The guard
+    // catches this before any length is read from the misaligned bytes.
+    const misaligned = aligned.slice();
+    misaligned[2] = 0x00; // was 0xff (APP1 marker prefix) — now non-0xff → guard trips
+    expect(readExifCaptureDate(misaligned.buffer)).toBeNull();
+    expect(readExifOrientation(misaligned.buffer)).toBe(1);
+  });
 });

@@ -2,7 +2,8 @@
 // HTML/markdown; render them THROUGH this. DOMPurify with the html profile strips scripts,
 // event-handler attributes, and javascript: URLs while keeping safe formatting. Donor:
 // field-studio sanitizeSvg/sanitizeIIIFResource. Uses the ambient window (browser, or happy-dom
-// in tests).
+// in tests). Framework-agnostic (no Svelte dependency) — the publish static-pages path documents
+// this same pipeline, so it belongs in @render/core, not @render/svelte.
 
 import DOMPurify from "isomorphic-dompurify";
 import snarkdown from "snarkdown";

@@ -288,11 +288,6 @@ export async function libraryToZip(library: Library, getLog: LogLookup, opts: Pu
   return { zip: fs.toZip(), brokenLinks };
 }
 
-async function readJson<T>(dir: FsDirectory, name: string): Promise<T> {
-  const file = await dir.getFile(name);
-  return JSON.parse(new TextDecoder().decode(await file.readable())) as T;
-}
-
 export interface LoadedLibrary {
   library: Library;
   /** Reloaded annotation log per exhibit slug. */
@@ -306,13 +301,14 @@ export interface LoadedLibrary {
  */
 export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
   const root = await fs.root();
-  const ex = await readJson<ExhibitsJson>(root, "exhibits.json");
+  const src = fsJsonSource(fs);
+  const ex = await src.get<ExhibitsJson>("exhibits.json");
   const cards = [...ex.exhibits].sort((a, b) => a.order - b.order);
   const exhibits: Exhibit[] = [];
   const logs: Record<string, AnnotationLog> = {};
   for (const card of cards) {
     const exDir = await root.getDirectory(card.slug);
-    const manifest = await readJson<IIIFManifest>(exDir, "manifest.json");
+    const manifest = await src.get<IIIFManifest>(`${card.slug}/manifest.json`);
     logs[card.slug] = await readAnnotations(await exDir.getDirectory("annotations"));
     exhibits.push({
       id: card.slug,

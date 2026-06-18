@@ -136,15 +136,50 @@ export class AnnotationSession {
     return headsOf(this.log, logicalId);
   }
 
-  /** Resolve a conflict by appending a merge node with the chosen/merged content. */
-  resolve(logicalId: LogicalId, choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; layers?: string[]; motivation?: string | string[] }): void {
-    this.log = resolveConflict(this.log, logicalId, {
+  /**
+   * Resolve a conflict by appending a merge node with the chosen/merged content. `reading`/`emphasis`/
+   * `geo` are CARRIED onto the merge node — from the choice when supplied, else inherited from the same
+   * lexicographically-first ("primary") head `resolveConflict` defaults body/target from — so a note
+   * carrying a reading assignment, authored emphasis, or a geo anchor does NOT lose it on resolution
+   * (the latent data-loss bug: `resolveConflict` reconstructs the node from body/target/layers/motivation
+   * only, dropping these three). Carried here rather than in `resolveConflict` because that primitive's
+   * `ConflictResolution` contract does not model them; this is the session-level fix.
+   */
+  resolve(
+    logicalId: LogicalId,
+    choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; layers?: string[]; motivation?: string | string[]; reading?: string; emphasis?: Emphasis; geo?: GeoAnchor } = {},
+  ): void {
+    // Inherit reading/emphasis/geo to carry onto the merge node when the choice doesn't override them.
+    // Prefer the primary head (lexicographically-first rev — what resolveConflict builds the node from),
+    // but FALL BACK to any other head that carries the field: a conflict between "has reading" and "no
+    // reading" must keep the reading rather than drop it on rev ordering (that's the data-loss bug).
+    const heads = [...this.conflictHeads(logicalId)].sort((a, b) => (a.rev < b.rev ? -1 : a.rev > b.rev ? 1 : 0));
+    const inherit = <K extends "reading" | "emphasis" | "geo">(k: K): AnnotationRecord[K] | undefined =>
+      heads.find((h) => h[k] !== undefined)?.[k];
+    const reading = choice.reading ?? inherit("reading");
+    const emphasis = choice.emphasis ?? inherit("emphasis");
+    const geo = choice.geo ?? inherit("geo");
+    const merged = resolveConflict(this.log, logicalId, {
       lastEditor: this.editor,
       ...(choice.body !== undefined ? { body: choice.body } : {}),
       ...(choice.target !== undefined ? { target: choice.target } : {}),
       ...(choice.layers !== undefined ? { layers: choice.layers } : {}),
       ...(choice.motivation !== undefined ? { motivation: choice.motivation } : {}),
     });
+    // Carry reading/emphasis/geo onto the just-appended merge node (the last record) — resolveConflict
+    // does not model them. Only when present, so a plain conflict stays byte-stable.
+    if (reading !== undefined || emphasis !== undefined || geo !== undefined) {
+      const head = merged[merged.length - 1]!;
+      const carried: AnnotationRecord = {
+        ...head,
+        ...(reading !== undefined ? { reading } : {}),
+        ...(emphasis !== undefined ? { emphasis } : {}),
+        ...(geo !== undefined ? { geo } : {}),
+      };
+      this.log = Object.freeze([...merged.slice(0, -1), carried]);
+    } else {
+      this.log = merged;
+    }
   }
 
   /**

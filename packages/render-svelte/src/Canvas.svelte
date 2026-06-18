@@ -118,7 +118,7 @@
   // Read the reactive props FIRST, before any `surface?.`/`if (surface)` guard — otherwise the
   // optional-chain short-circuits on the (async) initially-undefined surface and the effect never
   // subscribes to the prop, so it never re-runs when the prop changes (Svelte 5 dep-tracking gotcha).
-  $effect(() => { const a = annotations; if (surface) surface.setAnnotations(a); emitRect(); });
+  $effect(() => { const a = annotations; if (surface) { surface.setAnnotations(a); emitRect(); } });
   $effect(() => { void rectIds; void annotations; if (surface) emitRects(); });
   $effect(() => { const sf = styleOf; if (surface) surface.setStyle(sf); });
   // Coverage border (7e1f) — read `frame` first (dep-tracking gotcha); undefined = leave as-is, null clears.

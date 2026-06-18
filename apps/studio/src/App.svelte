@@ -3,16 +3,9 @@
   // tested @render/core AnnotationSession: draw on the canvas → create note → edit body/tags/
   // layers in the WADM form → publish to .archie.zip. Logic lives in core; this is the thin shell.
   import { onMount, tick } from "svelte";
-  import { inferredMime, planFolderImportGroups } from "./folder-import.js";
-  import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
-  import { planCsvImport } from "./csv-import.js";
-  import { collabBreakdown, collabSummaryText } from "./collab.js";
   import ReadingsModal from "./ReadingsModal.svelte";
   import ReadingsRail from "./ReadingsRail.svelte";
-  import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "../../viewer/src/atlas.js";
-  import { planWadmImport } from "./wadm-import.js";
   import Canvas from "@render/svelte/Canvas.svelte";
-  import { stripMarkdown } from "@render/svelte";
   import Publish from "./Publish.svelte";
   import PublishDialog from "./PublishDialog.svelte";
   import LibraryHome from "./LibraryHome.svelte";
@@ -25,73 +18,40 @@ import LayoutPicker from "./LayoutPicker.svelte";
   import DetailsEditor from "./DetailsEditor.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
   import AddMapModal from "./AddMapModal.svelte";
+  import NoteEditor from "./NoteEditor.svelte";
   import { matches, typingInField } from "./shortcuts.js";
   import {
-    AnnotationSession, asClientId, encodeLinkRef,
-    ZipFilesystem, loadLibrary,
-    readExifOrientation, isOrientationNoop, orientationTransform,
-    mediaTypeFromSource, timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
-    MAX_MASTER_DIM,
+    AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
+    timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
     tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary,
-    parseFragmentXYWH, parsePolygonPoints, lngLatToPixel, pixelToLngLat, formatLngLat,
-    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type W3CTarget, type AnnotationRecord, type AnnotationLog, type FsDirectory, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor, type GeoAnchor,
-    readExifCaptureDate,
+    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import type { DrawTool, MarkerStyle } from "@render/mount";
-  import { bakeDisplayMaster, downscaleIfNeeded } from "./bake.js";
-  import { openExhibitAnnotationsDir, loadLibraryMeta, saveAssetFile, saveOriginalFile, readAssetUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, type ExhibitMeta, type ObjectMeta, type ObjectProvenance } from "./store.js";
+  import { openExhibitAnnotationsDir, loadLibraryMeta, readAssetUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, type ExhibitMeta, type ObjectMeta } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus } from "./save-queue.svelte.js";
   import { zipNameFor } from "./binding.js";
   import { createBindingStore } from "./binding-store.svelte.js";
   import { createPublishFlows } from "./publish-flows.svelte.js";
   import { createReadingState } from "./reading-state.svelte.js";
-  // Phase-4 A2 surgery: the Studio's duplicate voynich.ts was deleted; the ONE seed lives in the
-  // Viewer (apps/viewer/src/voynich.ts) and both apps read it (single source of truth, §A).
-  import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichSections } from "../../viewer/src/voynich.js";
+  // Seed / default-exhibit data lives in seed-data.ts (the DOMINO cut): DEFAULT_EXHIBITS, the per-slug
+  // session factories (seededFor), and the shared region/time selector constructors + BASE.
+  import { DEFAULT_EXHIBITS, seededFor, BASE, timeSel } from "./seed-data.js";
+  // Geo-note selector math (pure, taking the tileSource explicitly) — the geo half of the DOMINO cut.
+  import { geoLabelOf, geoForTarget, selectorValue } from "./geo-notes.js";
+  // The ingest flows (object-add, exhibit-create, bulk-note import, library-replace) — the DOMINO cut.
+  import { createIngestFlows } from "./ingest-flows.js";
+  // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
+  import { createExhibitSession } from "./exhibit-session.svelte.js";
 
-  const BASE = "https://archie.demo/";
   // Local display name → the clientId stamped as lastEditor in the merge DAG (CONTEXT invention #6).
   // Persisted in localStorage (metadata, not content). null = never prompted (ask on first Import);
-  // "" = skipped (Anonymous); else the chosen name. `author` derives from it for any NEW session.
+  // "" = skipped (Anonymous); else the chosen name. `author` derives from it for any NEW sess.session.
   const IDENTITY_KEY = "archie.displayName.v1";
   function loadIdentity(): string | null { try { return localStorage.getItem(IDENTITY_KEY); } catch { return null; } }
   let identity = $state<string | null>(loadIdentity());
   const author = $derived(asClientId(identity || "anonymous"));
   const srcOf = (t: unknown): string | undefined => (typeof t === "string" ? t : (t as { source?: string } | null)?.source);
-
-  // The default exhibits on first run: the imported Voynich manuscript (../../viewer/src/voynich.ts),
-  // one shared seed rendered three ways (rosettes / grid / narrative).
-  // §B object set: 11 IIIF-direct images + 1 sound (o12). Spread width/height/mediaType/duration
-  // conditionally — o12 (sound) carries no dims, and exactOptionalPropertyTypes forbids `width: undefined`.
-  const voynichObjMeta = voynichObjects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}) }));
-  // Geo-annotation prototype (DESIGN.md): a slippy-map basemap as a first-class Archie surface. OSM raster
-  // XYZ tiles fetched LIVE (Phase 1; offline/baked tiles = Phase 3 / D1). maxZoom 6 = world→continent, light
-  // to demo. Attribution is REQUIRED by the OSM tile usage policy (surfaced as a credit on the canvas).
-  const GEO_TEMPLATE = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-  const geoBasemap: TileSourceDescriptor = { kind: "xyz", template: GEO_TEMPLATE, tileSize: 256, minZoom: 0, maxZoom: 6, attribution: "© OpenStreetMap contributors" };
-  const geoRights: RightsFields = { rights: "https://opendatacommons.org/licenses/odbl/", requiredStatement: { label: "Basemap", value: "© OpenStreetMap contributors, ODbL." } };
-  const DEFAULT_EXHIBITS: ExhibitMeta[] = [
-    // THE THREE-LAYOUT EXERCISE — one shared seed (../../viewer/src/voynich.ts), three exhibits, each a
-    // different Archie layout. The authored readings/sections come from the SHARED voynich.ts (§G / ADR-0007).
-    // seedVersion forces the onMount reconcile to treat a pre-exercise persisted copy as STALE and reseed
-    // (the old single `voynich` was narrative @seedVersion 1 → bumped to 2 now it's the GRID main).
-    // SINGLE — only o9 (the Rosettes foldout); no sections → single.
-    { id: "ex-voynich-rosettes", slug: "voynich-rosettes", title: "The Rosettes", layout: "single", seedVersion: 1, readings: voynichReadings, objects: voynichObjMeta.filter((o) => o.id === "o9") },
-    // GRID — all 11 folios + the sounded page; NO sections → grid (the main voynich slug).
-    { id: "ex-voynich", slug: "voynich", title: "The Whole Manuscript", layout: "grid", seedVersion: 2, readings: voynichReadings, objects: voynichObjMeta },
-    // NARRATIVE — all + the sounded page, the 6-beat spine → narrative.
-    { id: "ex-voynich-reading", slug: "voynich-reading", title: "Reading the Unreadable", layout: "narrative", seedVersion: 1, readings: voynichReadings, sections: voynichSections as Section[], objects: voynichObjMeta },
-    // MAP/CLASSROOM — the segment-diverse template (③+⑬, Archie-eaae; user-decided in the grill):
-    // UNESCO's endangered-languages atlas via the Internet Archive (CC BY-SA 4.0 — template-content
-    // rule: third-party rights-clean, never the author's personal work). Two Readings demonstrate
-    // the rival-interpretations differentiator in a non-manuscript register. DRAFT — human-gated.
-    { id: "ex-atlas", slug: "language-atlas", title: atlasTitle, summary: atlasSummary, layout: "grid", seedVersion: 1, readings: atlasReadings, ...atlasRights, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })) },
-    // GEO MAP — the geo-annotation prototype (DESIGN.md). One slippy-map basemap object, geo-annotated with
-    // pins anchored to lng/lat. Hand-seeded descriptor (no map-import UI yet — Phase 2 / D7). DRAFT: this is
-    // the prototype the UI/UX grilling stress-tests.
-    { id: "ex-geo", slug: "geo-map", title: "World map (geo-annotation prototype)", summary: "Drop pins on a live map — each one stays on its place as you zoom and pan, anchored to a longitude and latitude. An early look at annotating maps in Archie.", layout: "single", seedVersion: 1, ...geoRights, objects: [{ id: "m1", source: GEO_TEMPLATE, label: "World basemap", tileSource: geoBasemap, ...geoRights }] },
-  ];
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
   const lib = createLibraryStore({ exhibits: DEFAULT_EXHIBITS }, { onAfterPersist: () => bnd.touch() });
@@ -130,104 +90,21 @@ import LayoutPicker from "./LayoutPicker.svelte";
     assetsReady = true;
   }
 
-  const rectSel = (canvas: string, x: number, y: number, w: number, h: number) => ({
-    type: "SpecificResource" as const, source: canvas,
-    selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value: `xywh=pixel:${x},${y},${w},${h}` },
+  // --- per-exhibit annotation SESSION state machine (the DOMINO cut — exhibit-session.svelte.ts).
+  // Owns session / annDir / storeReady / dirty + the autosave lifecycle + the ATOMIC open transition
+  // (fix #3). The editor CURSOR (selected/editing/creating/currentObjectId/rev) stays in App (bind:-bound).
+  // `bnd` deps are deferred getters (bnd is created below) — called only at action time, never at init. ---
+  const sess = createExhibitSession({
+    baseUrl: BASE,
+    author: () => author,
+    isTemplate,
+    seedFor: (slug) => seededFor(author, slug),
+    autosaveToFolder: () => void bnd.autosaveToFolder(),
+    touchBinding: () => bnd.touch(),
   });
-  // Temporal selector (AV notes) — the time analogue of rectSel; one source of truth for `t=` is core.
-  const timeSel = (canvas: string, start: number, end: number) => ({
-    type: "SpecificResource" as const, source: canvas,
-    selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value: timeFragmentValue(start, end) },
-  });
-  // Seed a default exhibit's notes so it isn't empty on first run (pre-OPFS). Per-slug because the
-  // three default exhibits share one seed (the Voynich folios) rendered three ways.
-  // Seed the Voynich from the SHARED authored content (../../viewer/src/voynich.ts) — the SAME source the
-  // Viewer publishes from, so the Studio boots with the full Readings exhibit (it previously looped only the
-  // empty voynichNotes and booted empty — the runtime bug). Order mirrors sample-data: base notes → the 33
-  // reading notes (xywh + reading + tag bodies) → the 4 AV notes on the o12 sound canvas.
-  // Seed ONE Voynich exhibit's notes from the SHARED authored content, slug-parameterized: notes target
-  // ${BASE}{slug}/canvas/{objId}, matching publishLibrary's per-slug grammar. The three-layout exercise
-  // seeds three slugs off the same data — rosettes = only o9 (no AV); voynich/voynich-reading = all + AV.
-  function seededVoynich(slug: string, opts: { objectIds?: Set<string>; includeAv: boolean }): AnnotationSession {
-    const keep = (objectId: string) => !opts.objectIds || opts.objectIds.has(objectId);
-    const s = new AnnotationSession(author);
-    for (const n of voynichNotes) {
-      if (!keep(n.objectId)) continue;
-      const [x, y, w, h] = n.region;
-      s.createNote({ target: rectSel(`${BASE}${slug}/canvas/${n.objectId}`, x, y, w, h), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
-    }
-    for (const n of voynichReadingNotes) {
-      if (!keep(n.objectId)) continue;
-      const [x, y, w, h] = n.xywh.split(",").map(Number) as [number, number, number, number];
-      const body: W3CBody[] = [
-        { type: "TextualBody", value: n.comment, purpose: "commenting" },
-        ...(n.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" })),
-      ];
-      s.createNote({ target: rectSel(`${BASE}${slug}/canvas/${n.objectId}`, x, y, w, h), body, ...(n.reading ? { reading: n.reading } : {}) });
-    }
-    if (opts.includeAv && keep("o12")) {
-      for (const a of voynichAvNotes) {
-        const [start, end] = a.t.split(",").map(Number) as [number, number];
-        const body: W3CBody[] = [
-          { type: "TextualBody", value: a.comment, purpose: "commenting" },
-          ...(a.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" })),
-        ];
-        s.createNote({ target: timeSel(`${BASE}${slug}/canvas/o12`, start, end), body, ...(a.reading ? { reading: a.reading } : {}) });
-      }
-    }
-    return s;
-  }
-  function seededAtlas(): AnnotationSession {
-    const s = new AnnotationSession(author);
-    for (const n of atlasNotes) {
-      const [x, y, w, h] = n.region;
-      s.createNote({
-        target: rectSel(`${BASE}language-atlas/canvas/${n.objectId}`, x, y, w, h),
-        body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
-        ...(n.reading ? { reading: n.reading } : {}),
-      });
-    }
-    return s;
-  }
-  // Seed the geo-map prototype with a few city pins so the exhibit isn't empty and the lng/lat readout is
-  // immediately visible. Pins are ordinary pixel-selector notes placed at lngLatToPixel(city) — the map
-  // surface keeps them geo-anchored; the readout derives lng/lat back from the pixel centre (geometry/geo).
-  function seededGeo(): AnnotationSession {
-    const s = new AnnotationSession(author);
-    const cities = [
-      { name: "London", lng: -0.1276, lat: 51.5074 },
-      { name: "New York", lng: -74.006, lat: 40.7128 },
-      { name: "Tokyo", lng: 139.6917, lat: 35.6895 },
-      { name: "Nairobi", lng: 36.8219, lat: -1.2921 },
-    ];
-    const W = 140; // image-px box at the full extent — a visible region at the world-fit zoom
-    for (const c of cities) {
-      const p = lngLatToPixel({ lng: c.lng, lat: c.lat }, geoBasemap);
-      const x = Math.round(p.x - W / 2), y = Math.round(p.y - W / 2);
-      const nw = pixelToLngLat({ x, y }, geoBasemap);
-      const se = pixelToLngLat({ x: x + W, y: y + W }, geoBasemap);
-      s.createNote({
-        target: rectSel(`${BASE}geo-map/canvas/m1`, x, y, W, W),
-        body: [{ type: "TextualBody", value: c.name, purpose: "commenting" }],
-        geo: { type: "bbox", west: nw.lng, south: se.lat, east: se.lng, north: nw.lat }, // geo-truth (Q4)
-      });
-    }
-    return s;
-  }
-  const seededFor = (slug: string): (() => AnnotationSession) | null =>
-    slug === "voynich-rosettes" ? () => seededVoynich("voynich-rosettes", { objectIds: new Set(["o9"]), includeAv: false })
-    : slug === "voynich" ? () => seededVoynich("voynich", { includeAv: true })
-    : slug === "voynich-reading" ? () => seededVoynich("voynich-reading", { includeAv: true })
-    : slug === "language-atlas" ? seededAtlas
-    : slug === "geo-map" ? seededGeo
-    : null;
-  let session = $state(new AnnotationSession(author));
-
-  // --- persistence (OPFS working store; per-exhibit annotations + autosave) ---
-  let annDir: FsDirectory | null = null;
-  let dirty = $state(false);
-  let storeReady = $state(false);
-  let saveTimer: ReturnType<typeof setTimeout> | undefined;
+  // Thin App-side wrappers preserve the zero-arg save()/scheduleSave() call sites (they thread the live slug).
+  const save = () => sess.save(currentSlug);
+  const scheduleSave = () => sess.scheduleSave(currentSlug);
 
   // --- Library binding (invention #3, CONTEXT three-configs persistence): WHERE this Library's canonical
   // bytes live. unbound = OPFS-only (this browser); folder = Chromium FSA autosave-in-place; file = a
@@ -239,27 +116,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
   let zipInputEl = $state<HTMLInputElement | null>(null); // hidden picker for "Open" on non-Chromium
   let csvEl = $state<HTMLInputElement | null>(null); // hidden picker for the notes-CSV import (⑥)
   let wadmEl = $state<HTMLInputElement | null>(null); // hidden picker for the WADM/JSON import (⑦)
-  // The library STRUCTURE always persists (which exhibits exist is real; examples are bundled defaults
-  // reconciled on boot). Only an EXAMPLE's annotations are ephemeral — gated in save() on isTemplate.
-  // persist lives in the library-meta store now (saveLibraryMeta + injected bnd.touch).
-  async function save() {
-    if (!annDir || isTemplate(currentSlug)) return; // Examples are playgrounds — their notes aren't saved
-    // Don't write empty heads/history pages for a note-less exhibit; library.json records existence.
-    // Routed through the save queue (worklist 0.1): writes to one exhibit's dir serialize even when
-    // the 800ms debounce overlaps a slow write, and a failure keeps `dirty` + lands in saveStatus.
-    if (session.entries.length > 0) {
-      const dir = annDir, sess = session;
-      if (!(await enqueueSave(`ann:${currentSlug}`, "Notes", () => sess.save(dir, { baseUrl: BASE })))) return;
-    }
-    dirty = false;
-    void bnd.autosaveToFolder(); // a folder-bound Project mirrors the tree to disk in place (no-op otherwise)
-  }
-  function scheduleSave() {
-    bnd.touch(); // an edit means the bound location is now behind (only counts once bound)
-    if (!annDir) return;
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(() => void save(), 800);
-  }
   // Boot into the Library. Load the authored library (or seed the defaults on first run). Self-healing
   // reconcile: for each bundled default, if its persisted copy is STALE (missing, or its object set
   // differs from the current code default — i.e. a fixture was re-imported), replace its structure and
@@ -301,37 +157,26 @@ import LayoutPicker from "./LayoutPicker.svelte";
 
   // Open an exhibit into the editor: load its per-exhibit annotation log (seed the sample if empty).
   async function openExhibit(slug: string) {
-    // Archie-788e: flush any pending debounced edit against the OUTGOING session/dir BEFORE the
-    // swap — otherwise a <800ms-old edit fires its timer after annDir changed (or is lost).
-    clearTimeout(saveTimer);
-    await save();
-    currentSlug = slug;
+    const prevSlug = currentSlug;
     const ex = lib.meta.exhibits.find((e) => e.slug === slug);
+    // The editor CURSOR + reading display are App-owned VIEW state — reset them synchronously up front
+    // (cheap, no await), matching the original ordering where currentSlug moves before the async load.
+    currentSlug = slug;
     currentObjectId = ex?.objects[0]?.id ?? "o1";
     selected = null;
     editing = null;
     creating = null;
     rdg.resetForExhibit(); // fresh exhibit = everything visible, pen on base (fixes the cross-exhibit leak)
     assetsReady = false;
-    await resolveAssets(slug, ex?.objects ?? []); // OPFS /assets → blob: URLs (sets assetsReady)
-    const seed = seededFor(slug);
-    if (isTemplate(slug)) {
-      // Example = playground: in-memory only — never touch OPFS (so "nothing is saved" is literally
-      // true), and always seed fresh so a prior session's persisted notes can't leak into the template.
-      annDir = null;
-      storeReady = false;
-      session = seed ? seed() : new AnnotationSession(author);
-    } else {
-      annDir = await openExhibitAnnotationsDir(slug);
-      storeReady = annDir !== null;
-      if (annDir) {
-        const loaded = await AnnotationSession.load(annDir, author);
-        if (loaded.notes().length > 0) session = loaded;
-        else { session = seed ? seed() : new AnnotationSession(author); await save(); }
-      } else {
-        session = seed ? seed() : new AnnotationSession(author);
-      }
-    }
+    // The SESSION swap is now one ATOMIC transition (fix #3): exhibit-session.open flushes the OUTGOING
+    // exhibit, resolves THIS exhibit's assets, then loads/seeds + installs session/annDir/storeReady in a
+    // single synchronous batch — no subscriber ever sees a half-opened exhibit (the old inline version
+    // interleaved 7 mutations across 2 awaits). Asset resolution stays App-owned (assetUrls/assetsReady),
+    // injected into the transition so it lands inside the same atomic open.
+    await sess.open(prevSlug, {
+      slug,
+      resolveAssets: () => resolveAssets(slug, ex?.objects ?? []), // OPFS /assets → blob: URLs (sets assetsReady)
+    });
     rev += 1;
     // Land at the exhibit's OVERVIEW scale (invention #1) UNLESS it's exactly one object (non-narrative),
     // which goes straight to its annotation surface. An EMPTY (0-object) exhibit also lands at the overview
@@ -340,7 +185,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     view = ((ex?.objects.length ?? 0) !== 1 || (ex?.layout ?? "grid") === "narrative") ? "overview" : "editor";
   }
   async function backToLibrary() {
-    clearTimeout(saveTimer);
+    sess.cancelPendingSave();
     await save();
     revokeAssetUrls(); // free the previous exhibit's blob: URLs
     assetsReady = false;
@@ -357,7 +202,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   async function removeCurrentObject() {
     const objId = currentObjectId;
     const cid = canvasIdOf(objId);
-    for (const r of session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) session.deleteNote(r.logicalId as LogicalId);
+    for (const r of sess.session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) sess.session.deleteNote(r.logicalId as LogicalId);
     bump();
     const remaining = OBJECTS.filter((o) => o.id !== objId);
     await lib.removeObject(currentSlug, objId);
@@ -366,7 +211,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   }
   async function removeCurrentExhibit() {
     const slug = currentSlug;
-    clearTimeout(saveTimer);
+    sess.cancelPendingSave();
     await clearExhibitAnnotations(slug); // wipe its annotation log on disk (do NOT re-save it via backToLibrary)
     await lib.removeExhibit(slug);
     revokeAssetUrls();
@@ -467,7 +312,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     lib.setMeta({ ...lib.meta, exhibits: [...lib.meta.exhibits, copy] });
     // Re-create the current head notes against the copy's canvas IRIs (fresh records — it's new content).
     const fromBase = `${BASE}${from}/canvas/`, toBase = `${BASE}${slug}/canvas/`;
-    const carried = session.notes().filter((r) => !r.deleted).map((r) => {
+    const carried = sess.session.notes().filter((r) => !r.deleted).map((r) => {
       const src = srcOf(r.target);
       const target = src && src.startsWith(fromBase) && typeof r.target !== "string"
         ? { ...(r.target as object), source: toBase + src.slice(fromBase.length) } : r.target;
@@ -475,7 +320,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     });
     await lib.persist();
     await openExhibit(slug); // not a template → persists; seeds empty
-    for (const c of carried) session.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.layers !== undefined ? { layers: c.layers } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}) });
+    for (const c of carried) sess.session.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.layers !== undefined ? { layers: c.layers } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}) });
     rev += 1;
     await save();
     keeping = false;
@@ -488,211 +333,19 @@ import LayoutPicker from "./LayoutPicker.svelte";
     await lib.addExhibit({ id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", layout: "grid", objects: [] });
     await openExhibit(slug);
   }
-  // Folder → exhibit in one gesture (contributor-broadening ① sub-cycle A, Archie-e1d6): the folder
-  // names the exhibit; its media files become objects in reading order. Each file goes through the
-  // SAME ingest as a hand-picked one (addObjectFromFile: EXIF bake, OPFS, AV branch) — no second path.
+  // The ingest flows (file/URL/AV/map object-add, folder/manifest exhibit-create, CSV/WADM bulk-note
+  // import, and the destructive open-zip/open-folder replace) live in ingest-flows.ts now (the DOMINO
+  // cut). `flows` is constructed below — after the $state + the lifecycle callbacks it closes over.
+  // `newExhibitFromFolder` lands at the LIBRARY scale (several new exhibits) — App finishes the nav.
   async function newExhibitFromFolder(files: File[]) {
-    // EXIF pre-pass (⑫): capture date per image so photo folders sort by SHOT time; only the
-    // first 128 KB is read (APP1 sits at the front), only for image-MIME files.
-    // Chunked at 8 (review r9): thousands of photos must not slice concurrently (memory/handles).
-    const picked: { name: string; relativePath: string; type: string; capturedAt: number | null; file: File }[] = [];
-    for (let i = 0; i < files.length; i += 8) {
-      picked.push(...(await Promise.all(files.slice(i, i + 8).map(async (file) => {
-        let capturedAt: number | null = null;
-        if (file.type.startsWith("image/")) {
-          try { capturedAt = readExifCaptureDate(await file.slice(0, 131072).arrayBuffer()); } catch { capturedAt = null; }
-        }
-        return { name: file.name, relativePath: file.webkitRelativePath || file.name, type: file.type, capturedAt, file };
-      }))));
-    }
-    // One exhibit per first-level subfolder (slice B, user-decided); loose files = a root exhibit.
-    const groups = planFolderImportGroups(picked);
-    if (groups.length === 0) {
-      window.alert("No images, audio, or video found in that folder.");
-      return;
-    }
-    let failed = 0, imported = 0;
-    try {
-      for (const g of groups) {
-        await newExhibit(g.name);
-        // storeReady is PER-EXHIBIT state — openExhibit (inside newExhibit) just set it. Without
-        // it, addObjectFromFile would no-op per file = titled, silently-empty exhibits; stop loudly.
-        if (!storeReady) {
-          window.alert("Made the exhibit, but this browser can't save files — you may be in a private window. Adding files stopped.");
-          return;
-        }
-        for (let i = 0; i < g.files.length; i++) {
-          const p = g.files[i]!;
-          importStatus = { name: p.name, index: i + 1, total: g.files.length };
-          // Re-wrap typeless files (.tiff, .avif on some platforms) with the inferred MIME the
-          // plan admitted them under — addObjectFromFile branches on File.type.
-          const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
-          try {
-            await addObjectFromFile(file);
-            imported++;
-          } catch {
-            failed++; // skip-and-tally: one corrupt scan must not abort the rest of the folder
-          }
-        }
-      }
-    } finally {
-      importStatus = null;
-    }
-    const summary = `Added ${imported} file${imported === 1 ? "" : "s"} to ${groups.length} exhibit${groups.length === 1 ? "" : "s"}.${failed > 0 ? ` ${failed} couldn't be added.` : ""}`;
-    if (groups.length > 1) {
-      // Several new exhibits — land where they're all visible; the rail's importNote isn't
-      // rendered there, so the summary uses the app's dialog chrome.
-      await backToLibrary();
-      window.alert(summary);
-    } else if (failed > 0) {
-      importNote = summary;
-    }
+    const r = await flows.newExhibitFromFolder(files);
+    if (r && r.groups > 1) await backToLibrary(); // multi-folder import → where they're all visible
   }
-  // IIIF manifest URL → exhibit (contributor-broadening ②, Archie-bc01): one paste bootstraps from
-  // any institutional IIIF collection. Parsing is the lifted cozy-iiif algorithm subset
-  // (iiif-import.ts); objects reference the REMOTE images (service base preferred — deep-zoomable),
-  // so nothing is downloaded: the manifest's dims ride along and no OPFS bytes are written.
-  async function newExhibitFromManifest(url: string) {
-    const trimmed = url.trim();
-    if (!trimmed) return;
-    let json: unknown;
-    try {
-      const resp = await fetch(trimmed);
-      if (!resp.ok) { console.error("IIIF fetch failed", resp.status, trimmed); window.alert("Couldn't open that link — the server returned an error. Check the address and try again."); return; }
-      json = await resp.json();
-    } catch {
-      window.alert("Couldn't open that link. Check the address is correct and reachable.");
-      return;
-    }
-    let plan: ManifestPlan;
-    try {
-      plan = manifestToExhibit(json, trimmed);
-    } catch (e) {
-      console.error("IIIF manifest parse failed", e);
-      window.alert(e instanceof ManifestImportError ? e.message : "Couldn't read that IIIF link — it doesn't look like a valid manifest.");
-      return;
-    }
-    await newExhibit(plan.title);
-    try {
-      for (let i = 0; i < plan.objects.length; i++) {
-        const o = plan.objects[i]!;
-        importStatus = { name: o.label, index: i + 1, total: plan.objects.length };
-        const ex = lib.meta.exhibits.find((e) => e.slug === currentSlug);
-        if (!ex) break;
-        await appendObject({ id: nextObjectId(ex), ...o });
-      }
-    } finally {
-      importStatus = null;
-    }
-  }
-  // CSV → notes bulk import (contributor-broadening ⑥ sub-cycle A, Archie-79c0): authors who live
-  // in Excel/Sheets annotate THERE (object,x,y,w,h,comment[,tags][,reading] — header-driven) and
-  // bulk-load the result through the SAME createNote path the seeds use. Skip-and-tally per row.
-  async function importNotesCsv(file: File) {
-    const plan = planCsvImport(await file.text(), {
-      objects: OBJECTS.map((o) => ({ id: o.id, label: o.label, ...(o.mediaType ? { mediaType: o.mediaType } : {}) })),
-      readings: currentReadings.map((r) => ({ id: r.id, name: r.name })),
-      currentObjectId,
-    });
-    // Fix-and-retry friendly: re-importing a corrected CSV must not double the rows that were
-    // already good — dedupe on target+comment against the live session.
-    const keyFor = (target: unknown, comment: string) => `${JSON.stringify(target)}|${comment}`;
-    const existing = new Set(session.entries.map((e) => keyFor(e.target, (Array.isArray(e.body) ? e.body : []).find((b) => b?.type === "TextualBody" && b.purpose !== "tagging")?.value ?? "")));
-    let imported = 0, dup = 0;
-    for (const n of plan.notes) {
-      const [x, y, w, h] = n.region;
-      const target = rectSel(canvasIdOf(n.objectId), x, y, w, h);
-      const k = keyFor(target, n.comment);
-      if (existing.has(k)) { dup++; continue; }
-      existing.add(k);
-      session.createNote({
-        target,
-        body: [
-          { type: "TextualBody", value: n.comment, purpose: "commenting" },
-          ...n.tags.map((t) => ({ type: "TextualBody" as const, value: t, purpose: "tagging" as const })),
-        ],
-        ...(n.reading ? { reading: n.reading } : {}),
-      });
-      imported++;
-    }
-    if (imported > 0) bump(); // rev + dirty + scheduleSave (a template stays playground-only per save()'s gate)
-    const head = `Added ${imported} note${imported === 1 ? "" : "s"} from your CSV.`;
-    const dupNote = dup > 0 ? ` ${dup} already added.` : "";
-    importNote = plan.skipped.length > 0
-      ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `line ${s.row}: ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
-      : head + dupNote;
-  }
-  // W3C/WADM annotation import (contributor-broadening ⑦ slice A): an AnnotationPage from Archie's
-  // own publish, Recogito, or any standard WADM producer lands on this exhibit — re-anchored by the
-  // /canvas/<id> tail, selector + bodies verbatim, deduped like the CSV path.
-  async function importNotesWadm(file: File) {
-    let json: unknown;
-    try { json = JSON.parse(await file.text()); }
-    catch { importNote = `Couldn't read “${file.name}” — it isn't a valid notes file.`; return; }
-    const plan = planWadmImport(json, { objectIds: new Set(OBJECTS.map((o) => o.id)) });
-    // Dedupe key spans target + ALL body values (tag-only annotations must not collapse together).
-    const keyFor = (target: unknown, body: unknown) => `${JSON.stringify(target)}|${JSON.stringify(body)}`;
-    const existing = new Set(session.entries.map((e) => keyFor(e.target, e.body ?? [])));
-    let imported = 0, dup = 0;
-    for (const n of plan.notes) {
-      const target = { type: "SpecificResource" as const, source: canvasIdOf(n.objectId), selector: n.selector };
-      const k = keyFor(target, n.body);
-      if (existing.has(k)) { dup++; continue; }
-      existing.add(k);
-      session.createNote({ target, body: n.body }); // typed by the planner's rebuild — no casts
-      imported++;
-    }
-    if (imported > 0) bump();
-    const head = `Added ${imported} note${imported === 1 ? "" : "s"}.`;
-    const dupNote = dup > 0 ? ` ${dup} already added.` : "";
-    importNote = plan.skipped.length > 0
-      ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `#${s.index}: ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
-      : head + dupNote;
-  }
-  // Open a published .archie.zip as the project — the symmetric inverse of Download: read it via
-  // loadLibrary (publish↔load symmetry), then REPLACE the current OPFS project with its structure +
-  // per-exhibit logs. In-lane: stays in the single OPFS project (the folder-autosave-in-place +
-  // multi-"Project" abstraction is invention #3, gated — deferred). Destructive ⇒ confirm-gated.
-  async function openZip(file: File) {
-    let loaded: Awaited<ReturnType<typeof loadLibrary>>;
-    try {
-      loaded = await loadLibrary(ZipFilesystem.fromZip(new Uint8Array(await file.arrayBuffer())));
-    } catch {
-      window.alert("Couldn't open that file — choose a published .archie.zip file.");
-      return;
-    }
-    if (loaded.library.exhibits.length === 0) { window.alert("That file has no exhibits to open."); return; }
-    if (!window.confirm("Open this library? Your current library will be replaced.")) return;
-    await replaceProjectFrom(loaded);
-    bnd.bindToFile(file.name); // the zip you opened is now this Library's canonical file
-    // ⑧ (Archie-59a8): the summary panel — who wrote what in the copy you just opened. This IS
-    // live co-editing's serverless approximation (the "N notes since your last import" indicator).
-    collabNote = collabSummaryText(file.name, collabBreakdown(loaded.logs, author));
-  }
-  // Replace the current OPFS project with a loaded library (the shared body of "Open zip" + "Open folder"):
-  // clear outgoing annotation dirs (no orphans under reused slugs), write each imported log, swap the meta.
-  async function replaceProjectFrom(loaded: Awaited<ReturnType<typeof loadLibrary>>) {
-    // Archie-788e: cancel a pending debounced save — the user confirmed replacement, and a timer
-    // firing mid-replace would write the OUTGOING session into the incoming project's dirs.
-    clearTimeout(saveTimer);
-    for (const e of lib.meta.exhibits) await clearExhibitAnnotations(e.slug);
-    for (const e of loaded.library.exhibits) {
-      const dir = await openExhibitAnnotationsDir(e.slug);
-      if (dir) await new AnnotationSession(author, loaded.logs[e.slug] ?? []).save(dir, { baseUrl: BASE });
-    }
-    lib.setMeta({
-      ...(loaded.library.title !== undefined ? { title: loaded.library.title } : {}),
-      ...(loaded.library.summary !== undefined ? { summary: loaded.library.summary } : {}),
-      ...rightsOf(loaded.library),
-      exhibits: loaded.library.exhibits.map((e) => ({
-        id: e.id, slug: e.slug, title: e.title, ...(e.summary !== undefined ? { summary: e.summary } : {}), ...(e.layout ? { layout: e.layout } : {}), ...((e as { mode?: string }).mode ? { mode: (e as { mode?: string }).mode } : {}),
-        ...rightsOf(e),
-        objects: e.objects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.summary !== undefined ? { summary: o.summary } : {}), ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}), ...rightsOf(o) })),
-      })),
-    });
-    await lib.persist();
-    currentSlug = lib.meta.exhibits[0]!.slug;
-    view = "library";
+  // Open a .archie.zip then bind to it (the zip is now this Library's canonical file) — App keeps the
+  // binding-chip update on its side (the flow stays binding-agnostic).
+  async function openZipFile(file: File) {
+    const r = await flows.openZip(file);
+    if (r) bnd.bindToFile(file.name);
   }
 
   // --- add an object to the current exhibit (Phase D authoring) ---
@@ -702,149 +355,22 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // or a gentle link-by-URL nudge for very large media). Cleared at the start of each new import.
   let importStatus = $state<{ name: string; index: number; total: number } | null>(null);
   let importNote = $state("");
-  const LARGE_MEDIA_BYTES = 100 * 1024 * 1024; // ~100 MB — above this, suggest linking by URL (never blocks)
   let addSource = $state("");
   let addLabel = $state("");
-  // Best-effort natural dimensions (IIIF wants them); resolves null if the URL can't be loaded.
-  function imageDims(src: string): Promise<{ w: number; h: number } | null> {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-      img.onerror = () => resolve(null);
-      img.src = src;
-    });
-  }
-  function nextObjectId(ex: ExhibitMeta): string {
-    const existing = new Set(ex.objects.map((o) => o.id));
-    let n = ex.objects.length + 1, id = `o${n}`;
-    while (existing.has(id)) id = `o${++n}`;
-    return id;
-  }
-  // Append an object to the current exhibit + persist; for imported files, keep its blob: URL.
-  async function appendObject(obj: ObjectMeta, blobUrl?: string) {
-    // Register the blob URL BEFORE the awaited persist (Archie-9db6): lib.appendObject sync-mutates the
-    // store then awaits the OPFS write, and Svelte flushes the reactive graph during that await — so
-    // `current` flips to this object before the await resolves. Setting assetUrls first means
-    // `currentSource` resolves to the blob (not the raw /assets/ path) the instant Canvas mounts,
-    // closing the first-import OSD open-failed race.
-    if (blobUrl) assetUrls = { ...assetUrls, [obj.id]: blobUrl };
-    await lib.appendObject(currentSlug, obj);
-    currentObjectId = obj.id;
-    addSource = "";
-    addLabel = "";
-    addingObject = false;
-  }
-  // Add by URL / public path (e.g. /voynich/herbal.jpg, or an audio/video URL → the AV editor).
-  // AV INGEST (uploading a media file) stays gated (§152); referencing an existing AV URL does not.
-  async function addObject(source: string, label: string) {
-    const src = source.trim();
-    if (!src) return;
-    const ex = lib.meta.exhibits.find((e) => e.slug === currentSlug);
-    if (!ex) return;
-    const id = nextObjectId(ex);
-    const mt = mediaTypeFromSource(src); // .mp3/.mp4/… → sound/video; else image (OSD)
-    const dims = mt === "image" ? await imageDims(src) : null; // dimension-probe only makes sense for images
-    await appendObject({ id, source: src, label: label.trim() || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(mt !== "image" ? { mediaType: mt } : {}) });
-  }
   // Add-map modal (Phase 3 / Q3 — invented UX, human-gated): a Map is an Object whose source is its tile
   // template and which carries the tileSource descriptor (medium = Map). The modal supplies template + bounds.
+  // The add-map FLOW (addMapObject) lives in ingest-flows.ts; this `$state` backs the modal's open chrome.
   let mapModalOpen = $state(false);
-  async function addMapObject(m: { label: string; tileSource: TileSourceDescriptor }) {
-    const ex = lib.meta.exhibits.find((e) => e.slug === currentSlug);
-    if (!ex) return;
-    const id = nextObjectId(ex);
-    await appendObject({ id, source: m.tileSource.template, label: m.label, tileSource: m.tileSource });
-    mapModalOpen = false;
-    switchObject(id);
-    view = "editor";
-  }
-  // Add a LOCAL image file: store bytes in OPFS (persists), source "/assets/{name}". For phone photos
-  // with EXIF orientation (≠1), BAKE an upright display master (CONTEXT §89.1) — the original is
-  // preserved beside it (assets-original/), provenance records the transform, and the object targets
-  // the upright master so the coord layer stays orientation-blind.
-  async function addObjectFromFile(file: File) {
-    if (!storeReady) return; // OPFS unavailable — don't create an object whose bytes can't persist
-    const ex = lib.meta.exhibits.find((e) => e.slug === currentSlug);
-    if (!ex) return;
-    const id = nextObjectId(ex);
-    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-
-    // AV INGEST (§152 gate lifted 2026-05-26, user): store an audio/video file as an OPFS asset — no EXIF/dims.
-    // It renders in AvEditor (WaveSurfer waveform for audio · <video> for video). Local blob → no CORS on decode.
-    if (file.type.startsWith("audio/") || file.type.startsWith("video/")) {
-      const mediaType: "sound" | "video" = file.type.startsWith("video/") ? "video" : "sound";
-      const avName = `${id}-${safe}`;
-      await saveAssetFile(currentSlug, avName, file);
-      await appendObject({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file));
-      if (file.size > LARGE_MEDIA_BYTES) {
-        importNote = `Added “${file.name}” (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.`;
-      }
-      return;
-    }
-    if (!file.type.startsWith("image/")) {
-      importNote = `Archie can’t read “${file.name}”. Add an image, audio, or video file.`;
-      return;
-    }
-
-    const orientation = readExifOrientation(await file.arrayBuffer());
-    let master: Blob = file;
-    let name = `${id}-${safe}`;
-    let dims: { w: number; h: number } | null = null;
-    let provenance: ObjectProvenance | undefined;
-
-    if (!isOrientationNoop(orientation)) {
-      // EXIF path: upright PNG master, capped to the §80 display size; the untouched original is
-      // preserved for citation (the master differs by rotation — provenance records the transform).
-      const baked = await bakeDisplayMaster(file, { maxDim: MAX_MASTER_DIM }); // upright PNG; capped
-      master = baked.blob;
-      dims = { w: baked.width, h: baked.height };
-      name = `${id}-${safe.replace(/\.[^.]+$/, "")}.png`;
-      const originalName = `${id}-${safe}`;
-      await saveOriginalFile(currentSlug, originalName, file); // preserve the untouched original
-      provenance = { exifOrientation: orientation, transform: orientationTransform(orientation), originalName };
-    } else {
-      // No rotation needed. If the image exceeds the §80 cap, downscale to a display master PRESERVING
-      // the source format (LARGE-MEDIA-MEMORY-CEILING #4) — a big JPEG stays JPEG. Under the cap → keep
-      // the raw file untouched. No separate original: per §80 the bundle holds a display-sized image,
-      // not an archive (the user's full-res source stays on their own disk; giant → external IIIF).
-      // Decode ONCE to read dims; downscale only if over the cap, preserving the source format (a big JPEG
-      // stays JPEG); under the cap the raw file is kept untouched (POLISH P6: one decode, no <img> probe).
-      const prepared = await downscaleIfNeeded(file, MAX_MASTER_DIM, file.type || "image/jpeg");
-      master = prepared.blob;
-      dims = { w: prepared.width, h: prepared.height };
-    }
-
-    const blobUrl = URL.createObjectURL(master);
-    if (!dims) dims = await imageDims(blobUrl); // orientation-1 path: probe the (upright) master
-    await saveAssetFile(currentSlug, name, master);
-    await appendObject(
-      { id, source: `${ASSET_PREFIX}${name}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(provenance ? { provenance } : {}) },
-      blobUrl,
-    );
-  }
-  async function addFiles(files: FileList | null) {
-    if (!files) return;
-    const list = Array.from(files);
-    importNote = "";
-    try {
-      for (let i = 0; i < list.length; i++) {
-        importStatus = { name: list[i]!.name, index: i + 1, total: list.length };
-        await addObjectFromFile(list[i]!);
-      }
-    } finally {
-      importStatus = null;
-    }
-  }
-  // Drag-and-drop onto the canvas area.
+  // Drag-and-drop onto the canvas area → the ingest flows' addFiles.
   let dragOver = $state(false);
   function onDrop(e: DragEvent) {
     e.preventDefault();
     dragOver = false;
-    void addFiles(e.dataTransfer?.files ?? null);
+    void flows.addFiles(e.dataTransfer?.files ?? null);
   }
 
   let rev = $state(0);
-  const bump = () => { rev += 1; dirty = true; scheduleSave(); };
+  const bump = () => { rev += 1; sess.markDirty(); scheduleSave(); };
   let selected = $state<string | null>(null);
   // `editing` drives the WADM form. It FOLLOWS `selected` on real selections but NOT on the null
   // deselect Annotorious fires when setAnnotations replaces the set (which happens on every edit) —
@@ -921,7 +447,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // (ADR-0005 mitigation): objectId from the target canvas, start = the selector fragment, lead = the prose.
   const narrativeNotes = $derived.by(() => {
     void rev; // re-derive when the log changes
-    return session.notes().filter((r) => !r.deleted).map((r) => {
+    return sess.session.notes().filter((r) => !r.deleted).map((r) => {
       const objectId = (srcOf(r.target) ?? "").split("/canvas/")[1] ?? "";
       const start = selectorValue(r);
       return { id: r.logicalId, objectId, ...(start ? { start } : {}), lead: stripMarkdown(commentOf(r)).slice(0, 80) || "(untitled)" };
@@ -942,13 +468,13 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const READING_PALETTE = ["#3a6b4c", "#a3553a", "#4c5d8a", "#8a6d3b", "#6b4c8a", "#3a7d8a"];
   function setNoteReading(reading: string | null) {
     if (!editing) return;
-    session.editNote(editing as LogicalId, { reading });
+    sess.session.editNote(editing as LogicalId, { reading });
     bump();
   }
   // Per-note emphasis (Archie-1489): EMPHASIS ONLY — opacity/weight, never hue (hue = the reading, ADR-0007).
   function setNoteEmphasis(emphasis: Emphasis) {
     if (!editing) return;
-    session.editNote(editing as LogicalId, { emphasis });
+    sess.session.editNote(editing as LogicalId, { emphasis });
     bump();
   }
 
@@ -982,12 +508,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
   }
 
   // Notes + working annotations are scoped to the CURRENT object's canvas (then the layer filter).
-  const allNotes = $derived((rev, session.notes()));
+  const allNotes = $derived((rev, sess.session.notes()));
   const objNotes = $derived(allNotes.filter((r) => srcOf(r.target) === canvasId));
   const notes = $derived(
     objNotes.filter((r) => rdg.noteVisible(r)), // visibility = the reading-state set (canvas + margin share it)
   );
-  const objAnnotations = $derived<W3CAnnotation[]>((rev, session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId)));
+  const objAnnotations = $derived<W3CAnnotation[]>((rev, sess.session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId)));
   const annotations = $derived<W3CAnnotation[]>(
     objAnnotations.filter((a) => rdg.isVisible(((a as Record<string, unknown>)["archie:reading"] as string | undefined) ?? "base")),
   );
@@ -1036,15 +562,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
       return;
     }
     // On a Map, capture the region's geo-truth (lng/lat) alongside the pixel selector (Q4/ADR-0015).
-    const geo = isMapCurrent ? geoForTarget(a.target) : undefined;
-    const id = session.createNote({ target: a.target, ...(geo ? { geo } : {}), ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
+    const geo = isMapCurrent ? geoForTarget(a.target, currentTileSource) : undefined;
+    const id = sess.session.createNote({ target: a.target, ...(geo ? { geo } : {}), ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
     bump();
     selected = id;
     creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
   }
   // Geometry edit on canvas → re-derive geo-truth on a Map (null clears it if the new shape is unparseable).
-  const onUpdate = (a: W3CAnnotation) => { session.editNote(a.id as LogicalId, { target: a.target, ...(isMapCurrent ? { geo: geoForTarget(a.target) ?? null } : {}) }); bump(); };
-  const onDelete = (id: string) => { session.deleteNote(id as LogicalId); bump(); if (selected === id) selected = null; if (editing === id) editing = null; };
+  const onUpdate = (a: W3CAnnotation) => { sess.session.editNote(a.id as LogicalId, { target: a.target, ...(isMapCurrent ? { geo: geoForTarget(a.target, currentTileSource) ?? null } : {}) }); bump(); };
+  const onDelete = (id: string) => { sess.session.deleteNote(id as LogicalId); bump(); if (selected === id) selected = null; if (editing === id) editing = null; };
   // Hand-annotate AV: AvEditor marked a [start,end] region → create a supplementing time note, then
   // select it so the WADM form opens to type the note (the temporal analogue of onCreate for OSD draws).
   function onCreateTime(start: number, end: number, box?: { x: number; y: number; w: number; h: number }) {
@@ -1057,7 +583,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
       return;
     }
     const target = { type: "SpecificResource" as const, source: canvasId, selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value } };
-    const id = session.createNote({ target, body: [{ type: "TextualBody", value: "", purpose: "supplementing" }], motivation: "supplementing" });
+    const id = sess.session.createNote({ target, body: [{ type: "TextualBody", value: "", purpose: "supplementing" }], motivation: "supplementing" });
     bump();
     selected = id;
   }
@@ -1067,7 +593,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   function onImportTranscript(text: string) {
     const cued = importTranscript([], text, { source: canvasId, lastEditor: author });
     let n = 0;
-    for (const r of cued) { session.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; }
+    for (const r of cued) { sess.session.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; }
     if (n > 0) { bump(); }
   }
 
@@ -1081,56 +607,19 @@ import LayoutPicker from "./LayoutPicker.svelte";
     if (!editing) return;
     const body: W3CBody[] = [{ type: "TextualBody", value: comment, purpose: "commenting" }];
     for (const t of tagsCsv.split(",").map((s) => s.trim()).filter(Boolean)) body.push({ type: "TextualBody", value: t, purpose: "tagging" });
-    session.editNote(editing as LogicalId, { body }); // reading carries forward; change it via setNoteReading
+    sess.session.editNote(editing as LogicalId, { body }); // reading carries forward; change it via setNoteReading
     bump();
   }
   // AV note time range (for the WADM form's conditional time fieldset). Null for image (xywh) notes.
-  const selectorValue = (r: AnnotationRecord): string => ((r.target as { selector?: { value?: string } } | undefined)?.selector?.value) ?? "";
-  // Geo readout (geo-annotation, Q5): the region's CENTRE lng/lat. Prefer the stored geo-truth (archie:geo,
-  // ADR-0015 — record.geo); fall back to deriving from the pixel selector for any pre-geo record.
-  function geoLabelOf(r: AnnotationRecord): string | null {
-    const ts = currentTileSource;
-    if (!ts) return null;
-    if (r.geo?.type === "bbox") return formatLngLat({ lng: (r.geo.west + r.geo.east) / 2, lat: (r.geo.south + r.geo.north) / 2 });
-    if (r.geo?.type === "polygon" && r.geo.coordinates.length) {
-      const cs = r.geo.coordinates;
-      return formatLngLat({ lng: cs.reduce((s, c) => s + c[0], 0) / cs.length, lat: cs.reduce((s, c) => s + c[1], 0) / cs.length });
-    }
-    const box = parseFragmentXYWH(selectorValue(r));
-    if (!box) return null;
-    return formatLngLat(pixelToLngLat({ x: box.x + box.w / 2, y: box.y + box.h / 2 }, ts));
-  }
-  // Geo-truth capture (Q4 / ADR-0015): turn a drawn region's WORLD-pixel selector into its lng/lat anchor
-  // (the source of truth). Box → bbox (NW/SE corners); Outline → polygon (each vertex). undefined off-map.
-  function geoForTarget(target: W3CTarget): GeoAnchor | undefined {
-    const ts = currentTileSource;
-    if (!ts) return undefined;
-    const v = (target as { selector?: { value?: string } } | undefined)?.selector?.value;
-    if (!v) return undefined;
-    const box = parseFragmentXYWH(v);
-    if (box) {
-      const nw = pixelToLngLat({ x: box.x, y: box.y }, ts);
-      const se = pixelToLngLat({ x: box.x + box.w, y: box.y + box.h }, ts);
-      return { type: "bbox", west: nw.lng, south: se.lat, east: se.lng, north: nw.lat };
-    }
-    const pts = parsePolygonPoints(v);
-    if (pts) return { type: "polygon", coordinates: pts.map((p) => { const ll = pixelToLngLat(p, ts); return [ll.lng, ll.lat] as [number, number]; }) };
-    return undefined;
-  }
+  // selectorValue + the geo selector math (geoLabelOf / geoForTarget) live in geo-notes.ts now — pure
+  // helpers taking `currentTileSource` explicitly (the DOMINO cut). App calls them with that descriptor.
   const timeOf = (r: AnnotationRecord) => parseTimeFragment(selectorValue(r));
   function applyTime(start: number, end: number) {
     if (!editing) return;
-    session.editNote(editing as LogicalId, { target: timeSel(canvasId, Math.max(0, start), Math.max(start, end)) });
+    sess.session.editNote(editing as LogicalId, { target: timeSel(canvasId, Math.max(0, start), Math.max(start, end)) });
     bump();
   }
-  // mm:ss ⇄ seconds for the AV time fieldset (listening notes are second-precision). Parse is tolerant:
-  // "1:30" or bare "90" both work; floor on display keeps it from ever rendering "1:60".
-  const fmtMMSS = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
-  function parseMMSS(v: string): number {
-    const t = v.trim();
-    if (t.includes(":")) { const [m, s] = t.split(":"); return (parseInt(m || "0", 10) || 0) * 60 + (parseFloat(s || "0") || 0); }
-    return parseFloat(t) || 0;
-  }
+  // mm:ss ⇄ seconds for the AV time fieldset moved into NoteEditor.svelte (the WADM form owns them now).
 
   // --- ⌘K intra-Library linking (CONTEXT §95): cite another note/exhibit into the Comment ---
   interface CmdEntry { id: string; kind: "note" | "exhibit"; exhibitSlug: string; exhibitTitle: string; label: string; ref: string; }
@@ -1255,12 +744,46 @@ import LayoutPicker from "./LayoutPicker.svelte";
   async function loadAllLogs(): Promise<Record<string, AnnotationLog>> {
     const map: Record<string, AnnotationLog> = {};
     for (const ex of lib.meta.exhibits) {
-      if (ex.slug === currentSlug) { map[ex.id] = session.entries; continue; }
+      if (ex.slug === currentSlug) { map[ex.id] = sess.session.entries; continue; }
       const dir = await openExhibitAnnotationsDir(ex.slug);
       map[ex.id] = dir ? (await AnnotationSession.load(dir, author)).entries : [];
     }
     return map;
   }
+
+  // The ingest flows (DOMINO cut): object-add (file/URL/AV/map), folder/manifest exhibit-create,
+  // CSV/WADM bulk-note import, and the destructive open-zip/open-folder replace. Every component-scope
+  // dependency arrives through the explicit context — reactive reads are getters (live value at call
+  // time), mutations are setters. Created BEFORE bnd (which consumes flows.replaceProjectFrom).
+  const flows = createIngestFlows({
+    baseUrl: BASE,
+    lib,
+    author: () => author,
+    currentSlug: () => currentSlug,
+    storeReady: () => sess.storeReady,
+    objects: () => OBJECTS,
+    currentObjectId: () => currentObjectId,
+    currentReadings: () => currentReadings,
+    session: () => sess.session,
+    setAssetUrl: (id, url) => { assetUrls = { ...assetUrls, [id]: url }; },
+    setCurrentObjectId: (id) => { currentObjectId = id; },
+    setImportStatus: (s) => { importStatus = s; },
+    setImportNote: (s) => { importNote = s; },
+    setAddingObject: (v) => { addingObject = v; },
+    clearAddForm: () => { addSource = ""; addLabel = ""; },
+    setMapModalOpen: (v) => { mapModalOpen = v; },
+    setCollabNote: (s) => { collabNote = s; },
+    canvasIdOf,
+    switchObject,
+    toEditor: () => { view = "editor"; },
+    newExhibit,
+    openExhibit,
+    bump,
+    cancelPendingSave: () => sess.cancelPendingSave(),
+    finishReplace: () => { currentSlug = lib.meta.exhibits[0]!.slug; view = "library"; },
+    confirmReplace: (msg) => window.confirm(msg),
+    alert: (msg) => window.alert(msg),
+  });
 
   // The publish flows (worklist 0.3 cut 2): every Library→world path — the unified Publish menu's
   // two destinations (local folder / GitHub Pages), the zip download, the site projection + cache,
@@ -1282,7 +805,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     flushExhibit: () => save(),
     writeToFolder: (h) => pub.writeToFolder(h),
     downloadProjectZip: () => pub.downloadProjectZip(),
-    replaceProjectFrom,
+    replaceProjectFrom: (loaded) => flows.replaceProjectFrom(loaded),
     zipName: () => zipNameFor(PROJECT_TITLE),
   });
   /** The capability-routed Open (folder on Chromium, else the zip file picker). */
@@ -1294,7 +817,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
 
 <svelte:window onkeydown={(e) => { onGlobalKey(e); onBindingKey(e); }} />
 <input bind:this={zipInputEl} type="file" accept=".zip,application/zip" style="display:none"
-  onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void openZip(f); el.value = ""; }} />
+  onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void openZipFile(f); el.value = ""; }} />
 
 <div class="app">
 {#if view === "library"}
@@ -1314,7 +837,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     onopen={openExhibit}
     oncreate={newExhibit}
     oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add that folder."); }); }}
-    oncreatefrommanifest={(url) => { newExhibitFromManifest(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't add an exhibit from that IIIF link."); }); }}
+    oncreatefrommanifest={(url) => { flows.newExhibitFromManifest(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't add an exhibit from that IIIF link."); }); }}
     {isTemplate}
     binding={bnd.binding}
     bindingDirty={bnd.dirty}
@@ -1368,10 +891,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
     <!-- The reading dropdown is RETIRED (archie-ux Q-2, grill Q3): the RAIL on the canvas is the
          one home for visibility + the pen; "Manage readings…" on the rail opens the modal. -->
     <button class="layout-trigger" onclick={() => (layoutPickerOpen = true)} title="Choose how visitors move through this exhibit — a grid to browse, a single view, or a guided sequence">▦ {currentLayout}</button>
-    {#if storeReady}
-      <span class="savestate" class:dirty class:error={saveStatus.health === "error"} title={saveStatus.error ?? undefined}>
-        {saveStatus.health === "error" ? "⚠ Save failed" : dirty ? "● Unsaved" : "Saved"}</span>
-      <button onclick={() => void save()} disabled={!dirty}>Save</button>
+    {#if sess.storeReady}
+      <span class="savestate" class:dirty={sess.dirty} class:error={saveStatus.health === "error"} title={saveStatus.error ?? undefined}>
+        {saveStatus.health === "error" ? "⚠ Save failed" : sess.dirty ? "● Unsaved" : "Saved"}</span>
+      <button onclick={() => void save()} disabled={!sess.dirty}>Save</button>
     {/if}
     <button class="publish-signal" onclick={() => pub.openDialog()}>Publish & share…</button>
     <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
@@ -1405,8 +928,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
       </button>
     {/each}
     {#if addingObject}
-      <form class="add-obj" onsubmit={(e) => { e.preventDefault(); void addObject(addSource, addLabel); }}>
-        <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; void addFiles(el.files).then(() => (el.value = "")); }} /></label>
+      <form class="add-obj" onsubmit={(e) => { e.preventDefault(); void flows.addObject(addSource, addLabel); }}>
+        <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; void flows.addFiles(el.files).then(() => (el.value = "")); }} /></label>
         <span class="or">or</span>
         <input bind:value={addSource} placeholder="Link to an image, audio, or video" aria-label="Object source URL" title="Best for large files: a link points to the media where it already lives instead of copying it in, so your library file (.archie.zip) stays small." />
         <input class="lbl" bind:value={addLabel} placeholder="Label" aria-label="Object label" />
@@ -1417,7 +940,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
       <button class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Media</button>
       <button class="add-obj-toggle" onclick={() => (mapModalOpen = true)} title="Add a map (geo-annotation)">+ Map</button>
     {/if}
-    {#if mapModalOpen}<AddMapModal onadd={(m) => { void addMapObject(m); }} onclose={() => (mapModalOpen = false)} />{/if}
+    {#if mapModalOpen}<AddMapModal onadd={(m) => { void flows.addMapObject(m); }} onclose={() => (mapModalOpen = false)} />{/if}
     {#if importStatus}
       <span class="import-status" role="status" aria-live="polite">
         <span class="import-spinner" aria-hidden="true"></span>
@@ -1446,50 +969,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
     </div>
   {/if}
 
-  <!-- The WADM edit form, declared ONCE as a snippet (ADR-0006): rendered as a marker-anchored POPOVER over
-       the image canvas (below, in <main>), or INLINE in the sidebar for an AV object (no spatial marker yet —
-       Wave-2 WaveSurfer). Declared at branch scope so both <aside> and <main> can @render it. -->
-  {#snippet noteForm()}
-    {#if sel}
-      {@const comment = commentOf(sel)}
-      {@const tags = tagsOf(sel).join(", ")}
-      {@const reading = sel.reading ?? null}
-      {@const emphasis = sel.emphasis ?? "normal"}
-      {@const trange = timeOf(sel)}
-      <form class="wadm" onsubmit={(e) => { e.preventDefault(); }}>
-        <h3>Edit note</h3>
-        <label>
-          <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button><button type="button" class="cite" onclick={() => requestVisualCite(citeIntoComment)} title="Cite a note by its image">▦ By image</button></span>
-          <textarea bind:this={commentEl} rows="3" value={comment} onchange={(e) => applyForm((e.currentTarget as HTMLTextAreaElement).value, tags)}></textarea>
-        </label>
-        {#if trange}
-          <fieldset class="time">
-            <legend>Time (m:ss)</legend>
-            <label class="t">Start<input type="text" inputmode="numeric" placeholder="m:ss" value={fmtMMSS(trange.start)} onchange={(e) => applyTime(parseMMSS((e.currentTarget as HTMLInputElement).value), trange.end ?? trange.start)} /></label>
-            <label class="t">End<input type="text" inputmode="numeric" placeholder="m:ss" value={fmtMMSS(trange.end ?? trange.start)} onchange={(e) => applyTime(trange.start, parseMMSS((e.currentTarget as HTMLInputElement).value))} /></label>
-          </fieldset>
-        {/if}
-        <label>Tags (comma-separated)<input value={tags} onchange={(e) => applyForm(comment, (e.currentTarget as HTMLInputElement).value)} /></label>
-        <label>Reading
-          <select value={reading ?? ""} onchange={(e) => setNoteReading((e.currentTarget as HTMLSelectElement).value || null)}>
-            <option value="">— No reading —</option>
-            {#each currentReadings as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
-          </select>
-        </label>
-        <label>Emphasis
-          <select value={emphasis} onchange={(e) => setNoteEmphasis((e.currentTarget as HTMLSelectElement).value as Emphasis)} title="How much this mark stands out — its weight, not its colour (colour follows the reading)">
-            <option value="muted">Muted (recede)</option>
-            <option value="normal">Normal</option>
-            <option value="strong">Strong (stand out)</option>
-          </select>
-        </label>
-        <div class="wadm-actions">
-          <button type="button" class="save" onclick={closeNote}>Save</button>
-          <button type="button" class="del" onclick={() => onDelete(editing!)}>Delete note</button>
-        </div>
-      </form>
-    {/if}
-  {/snippet}
+  <!-- The WADM edit form (ADR-0006) is the NoteEditor component now (the DOMINO cut). It renders as a
+       marker-anchored POPOVER over the canvas (below, in <main>), keyed to the selected record `sel`. -->
 
   <div class="body">
     <aside>
@@ -1547,7 +1028,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
             <button onclick={() => (selected = r.logicalId)}>
               <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
               <div class="meta">
-                {#if isMapCurrent}{@const g = geoLabelOf(r)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
+                {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
                 {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
                 <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
                 {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{/if}
@@ -1560,12 +1041,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
         <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
         <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Bring notes in from a spreadsheet. Columns: object, x, y, w, h, comment (tags and reading are optional), with a header row first. In the object column, use a media item’s label — or leave it blank to use the one you’re on.">… or add notes from a CSV</button>
         <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
-          onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void importNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+          onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
       {/if}
       <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
       <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="Add notes exported from Archie or another annotation tool. Notes attach to the matching media item in this exhibit.">… or add notes from a file</button>
       <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Add notes from a file"
-        onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void importNotesWadm(f).catch((err) => { console.error("Notes add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+        onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesWadm(f).catch((err) => { console.error("Notes add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
       <p class="hint">{isAvCurrent ? "Press play · “Mark start” then “Add note” pins a note to that moment (on video, “Draw a box on the video” points at a spot too) · click any note to jump back to it and edit." : "Start a new note · pick a shape · draw the region it points to · click a marker to edit that note right where it sits — its editor stays pinned to it as you pan and zoom."}</p>
 
       <!-- All notes (image / audio / video) edit in the marker popover anchored to their locus (in <main>);
@@ -1628,7 +1109,9 @@ import LayoutPicker from "./LayoutPicker.svelte";
              that Annotorious needs to draw a new shape (it reappears on the new note once mode → select). -->
         <div class="note-popover" role="group" aria-label="Note editor" style={`left:${notePopoverPos.left}px; top:${notePopoverPos.top}px`} onpointerdown={(e) => e.stopPropagation()}>
           <button type="button" class="np-grip" onpointerdown={noteDragDown} onpointermove={noteDragMove} onpointerup={noteDragUp} onpointercancel={noteDragUp} title="Drag to move" aria-label="Move the note editor">⠿</button>
-          {@render noteForm()}
+          <NoteEditor sel={sel!} editing={editing!} {currentReadings} bind:commentEl
+            {commentOf} {tagsOf} {timeOf}
+            {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {requestCite} {requestVisualCite} {citeIntoComment} {closeNote} {onDelete} />
         </div>
       {/if}
 
@@ -1849,8 +1332,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   }
   .np-grip:hover { color: var(--accent); }
   .np-grip:active { cursor: grabbing; }
-  /* Inside the popover the form provides its own padding (the sidebar used to give it the surrounding space). */
-  .note-popover .wadm { margin-top: 0; border-top: none; padding-top: 0; padding: var(--space-4); }
+  /* The .wadm form CSS (incl. the in-popover override) lives in NoteEditor.svelte now (the DOMINO cut). */
 
   /* Notes sidebar — the notebook (warm paper) */
   aside {
@@ -1908,42 +1390,5 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .rights-disc > summary .dot { color: var(--accent); font-size: 0.6rem; }
   .rights-disc > :global(.rights) { margin-top: var(--space-3); }
 
-  /* WADM form — editing on paper. Labels are quiet mono eyebrows; the one focal action (Save) is the signal. */
-  .wadm { margin-top: var(--space-5); border-top: 1px solid var(--border-paper); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
-  .wadm h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 400; letter-spacing: 0; color: var(--ink-paper-primary); }
-  .wadm label { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
-  /* Comment field header: label + the ⌘K "Cite" link affordance (cord-blue link tone). */
-  .wadm .field-head { display: flex; align-items: center; justify-content: space-between; }
-  .wadm .cite {
-    display: inline-flex; align-items: center; gap: var(--space-1); cursor: pointer;
-    background: none; border: none; padding: 0;
-    font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.03em; text-transform: none;
-    color: var(--accent-2);
-  }
-  .wadm .cite:hover { color: var(--accent-2-hover); }
-  .wadm .cite kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-paper-muted); background: var(--surface-paper-hover); border: 1px solid var(--border-paper); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
-  .wadm textarea, .wadm input:not([type]) {
-    font-family: var(--font-body); font-size: 1rem; padding: var(--space-2) var(--space-3);
-    background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
-  }
-  .wadm textarea:focus, .wadm input:focus { outline: none; border-color: var(--accent-2); }
-  .wadm fieldset { border: 1px solid var(--border-paper); border-radius: var(--radius-sm); display: flex; gap: var(--space-4); padding: var(--space-2) var(--space-3); }
-  /* AV time fieldset — start/end mm:ss inputs (the time note's geometry) */
-  .wadm .time .t { flex-direction: column; gap: var(--space-1); }
-  .wadm .time input {
-    width: 6rem; font-family: var(--font-mono); font-size: 0.9rem; padding: var(--space-1) var(--space-2);
-    background: var(--surface-paper-card); color: var(--ink-paper-primary);
-    border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
-  }
-  .wadm .time input:focus { outline: none; border-color: var(--accent-2); }
-  .wadm legend { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); padding: 0 var(--space-1); }
-  /* Delete = a quiet destructive-toned soft button (not orange — the signal is reserved for Save). */
-  .del { align-self: flex-start; font-family: var(--font-ui); font-size: 0.8rem; letter-spacing: 0.04em; padding: var(--space-2) var(--space-3); background: var(--surface-paper-card); color: var(--semantic-error); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); cursor: pointer; transition: box-shadow 160ms ease; }
-  .del:hover { box-shadow: var(--shadow-lift-low); }
-  /* Note-editor action row — Save (commit + close the popover) beside Delete. */
-  .wadm-actions { display: flex; align-items: center; gap: var(--space-3); }
-  /* Save = the ONE focal action in this popover → the orange signal. */
-  .save { cursor: pointer; font-family: var(--font-ui); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.04em; padding: var(--space-2) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-signal-glow); transition: background 160ms ease; }
-  .save:hover { background: var(--accent-hover); box-shadow: var(--shadow-signal-glow); }
+  /* The WADM form CSS (.wadm family + .save/.del/.wadm-actions) lives in NoteEditor.svelte now. */
 </style>

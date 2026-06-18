@@ -7,6 +7,7 @@
 // in createCanvasController (plain TS, tested).
 
 export { createCanvasController, type CanvasController } from "./controller.js";
-export { sanitizeHtml, renderMarkdown, stripMarkdown } from "./sanitize.js";
+// Re-exported from @render/core (canonical home; impl + deps live there). Kept here for adapter-consumer back-compat.
+export { sanitizeHtml, renderMarkdown, stripMarkdown } from "@render/core";
 // Re-export the marker-style type so adapter consumers (the viewer) needn't depend on @render/mount directly.
 export type { MarkerStyle, FrameOverlay } from "@render/mount";

@@ -52,6 +52,29 @@ export function polygonBBox(points: Point[]): Box | null {
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
 
+/** A WADM-shaped annotation as Annotorious emits it — the minimal structural surface `selectorOf`
+ *  reads (id for lookup, target for the selector). Matches @render/mount's fitbounds AnnotationLike. */
+export interface AnnotationLike {
+  id?: string;
+  target?: unknown;
+}
+
+/**
+ * Extract a v1 WADM selector (rect/polygon) from a (possibly Annotorious-shaped) annotation: read
+ * `ann.target.selector`, take `[0]` if it's an array, accept only a `FragmentSelector`/`SvgSelector`
+ * with a string `value`, else null. The canonical home (@render/core) for the selector extraction the
+ * viewer + @render/mount both need — pure (only W3CSelector, no OpenSeadragon/Annotorious dependency).
+ */
+export function selectorOf(ann: AnnotationLike | undefined): W3CSelector | null {
+  const target = (ann as { target?: { selector?: unknown } } | undefined)?.target;
+  const raw = Array.isArray(target?.selector) ? target?.selector[0] : target?.selector;
+  const s = raw as { type?: unknown; value?: unknown } | undefined;
+  if (s && (s.type === "FragmentSelector" || s.type === "SvgSelector") && typeof s.value === "string") {
+    return { type: s.type, value: s.value } as W3CSelector;
+  }
+  return null;
+}
+
 /** Unify a v1 selector (rect or polygon) to a bounding box — the fitBounds input. */
 export function selectorBBox(selector: W3CSelector): Box | null {
   if (selector.type === "FragmentSelector") return parseFragmentXYWH(selector.value);

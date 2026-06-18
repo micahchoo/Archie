@@ -6,6 +6,10 @@ packages:
 overrides:
   yaml@<2.8.3: '>=2.8.3'
   esbuild@<0.25.0: '>=0.25.0'
+  # dompurify: only runtime/shipped dep; advisories unreachable (USE_PROFILES-only, no IN_PLACE), bump anyway. 3.4.8 in isomorphic-dompurify's ^3.3.1.
+  dompurify@<3.4.8: '3.4.8'
+  # vite: scope to the vulnerable 8.0.x only (via vite-node); blanket vite override violates vitest ^5 / svelte-plugin ^6 / astro ^7.3.2 and breaks build.
+  vite@>=8.0.0 <8.0.16: '8.0.16'
 allowBuilds:
   esbuild: true
   sharp: true

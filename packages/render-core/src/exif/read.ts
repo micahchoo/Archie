@@ -13,35 +13,50 @@ const DATETIME_TAG = 0x0132;          // IFD0 "DateTime" (file modification)
 const EXIF_IFD_POINTER_TAG = 0x8769;  // IFD0 → Exif sub-IFD
 const DATETIME_ORIGINAL_TAG = 0x9003; // sub-IFD "DateTimeOriginal" (capture moment)
 
-/** Read the EXIF Orientation (1..8) from JPEG bytes. Returns 1 when absent/unparseable. */
-export function readExifOrientation(buf: ArrayBuffer): number {
+/**
+ * Scan a JPEG's marker segments and run `handler` over the TIFF block of each APP1/Exif segment,
+ * returning the FIRST non-null handler result (or null if none / not a JPEG / malformed). This is the
+ * ONE scanner both readers share — extracting it kills the ~20-line byte-identical copy and, with it,
+ * the class of divergence bug where one copy silently dropped the `0xff` marker-alignment guard (the
+ * guard now lives in ONE place, so the two readers can never drift again). `handler` receives the TIFF
+ * start (past the 6-byte "Exif\0\0" signature) and the segment end; it returns its parsed value or null
+ * to keep scanning. NB: the not-found sentinel differs per caller (orientation = 1, date = null), so
+ * each reader maps this function's `null` to its own — that mapping is NOT shared (different return
+ * contracts), only the scan loop is.
+ */
+function scanJpegApp1<T>(buf: ArrayBuffer, handler: (v: DataView, tiff: number, end: number) => T | null): T | null {
   try {
     const v = new DataView(buf);
-    if (v.byteLength < 4 || v.getUint16(0) !== 0xffd8) return 1; // not a JPEG (no SOI)
+    if (v.byteLength < 4 || v.getUint16(0) !== 0xffd8) return null; // not a JPEG (no SOI)
     let off = 2;
     while (off + 2 <= v.byteLength) {
-      if (v.getUint8(off) !== 0xff) return 1; // not aligned on a marker — malformed
+      if (v.getUint8(off) !== 0xff) return null; // not aligned on a marker — malformed
       // A marker may be preceded by fill 0xFF bytes; skip them to the real marker byte.
       let marker = v.getUint8(off + 1);
       off += 2;
       while (marker === 0xff && off < v.byteLength) { marker = v.getUint8(off); off += 1; }
-      if (marker === 0xd9 || marker === 0xda) return 1; // EOI / SOS (scan begins) — no Exif found
-      if (marker >= 0xd0 && marker <= 0xd7) continue;   // RSTn: standalone, no length
-      if (off + 2 > v.byteLength) return 1;
+      if (marker === 0xd9 || marker === 0xda) return null; // EOI / SOS (scan begins) — no Exif found
+      if (marker >= 0xd0 && marker <= 0xd7) continue;      // RSTn: standalone, no length
+      if (off + 2 > v.byteLength) return null;
       const len = v.getUint16(off); // segment length INCLUDES these 2 bytes
       const dataStart = off + 2;
       const dataEnd = dataStart + (len - 2);
-      if (len < 2 || dataEnd > v.byteLength) return 1;
+      if (len < 2 || dataEnd > v.byteLength) return null;
       if (marker === 0xe1 && hasExifSignature(v, dataStart)) {
-        const o = parseTiffOrientation(v, dataStart + EXIF_SIGNATURE.length, dataEnd);
-        if (o !== null) return o;
+        const r = handler(v, dataStart + EXIF_SIGNATURE.length, dataEnd);
+        if (r !== null) return r;
       }
       off = dataEnd; // advance to the next marker (APP0-before-APP1 etc. handled by iterating)
     }
-    return 1;
+    return null;
   } catch {
-    return 1; // any out-of-bounds / malformed read → identity
+    return null; // any out-of-bounds / malformed read → not found
   }
+}
+
+/** Read the EXIF Orientation (1..8) from JPEG bytes. Returns 1 when absent/unparseable. */
+export function readExifOrientation(buf: ArrayBuffer): number {
+  return scanJpegApp1(buf, parseTiffOrientation) ?? 1; // not found → identity
 }
 
 /** Read the capture moment from JPEG bytes — DateTimeOriginal (sub-IFD 0x9003) preferred,
@@ -49,32 +64,7 @@ export function readExifOrientation(buf: ArrayBuffer): number {
  *  parsed as UTC, which is deterministic and order-preserving). Null when absent/unparseable.
  *  Powers capture-date ordering in the folder import (Archie-e1d6 slice B / ⑫). */
 export function readExifCaptureDate(buf: ArrayBuffer): number | null {
-  try {
-    const v = new DataView(buf);
-    if (v.byteLength < 4 || v.getUint16(0) !== 0xffd8) return null;
-    let off = 2;
-    while (off + 2 <= v.byteLength) {
-      if (v.getUint8(off) !== 0xff) return null;
-      let marker = v.getUint8(off + 1);
-      off += 2;
-      while (marker === 0xff && off < v.byteLength) { marker = v.getUint8(off); off += 1; }
-      if (marker === 0xd9 || marker === 0xda) return null;
-      if (marker >= 0xd0 && marker <= 0xd7) continue;
-      if (off + 2 > v.byteLength) return null;
-      const len = v.getUint16(off);
-      const dataStart = off + 2;
-      const dataEnd = dataStart + (len - 2);
-      if (len < 2 || dataEnd > v.byteLength) return null;
-      if (marker === 0xe1 && hasExifSignature(v, dataStart)) {
-        const d = parseTiffCaptureDate(v, dataStart + EXIF_SIGNATURE.length, dataEnd);
-        if (d !== null) return d;
-      }
-      off = dataEnd;
-    }
-    return null;
-  } catch {
-    return null;
-  }
+  return scanJpegApp1(buf, parseTiffCaptureDate);
 }
 
 /** Walk IFD0 (DateTime + the Exif-IFD pointer), then the sub-IFD (DateTimeOriginal). */

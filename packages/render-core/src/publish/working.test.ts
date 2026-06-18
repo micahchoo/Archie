@@ -14,9 +14,10 @@ import type { AnnotationLog } from "../wadm/types.js";
 import { publishLibrary } from "./site.js";
 import { loadPortableGallery, loadPortableExhibit } from "./portable.js";
 import {
-  loadWorkingLibrary, workingToLibrary, isBundledExample, WORKING_PROJECT,
+  loadWorkingLibrary, workingToLibrary, libraryToWorking, isBundledExample, WORKING_PROJECT,
   type WorkingLibraryMeta,
 } from "./working.js";
+import type { Library } from "../model/model.js";
 
 const author = asClientId("curator");
 const BASE = "https://u.gh.io/lib/";
@@ -85,6 +86,39 @@ describe("workingToLibrary", () => {
     expect(workingToLibrary(META, { includeTemplates: true }).exhibits).toHaveLength(2);
     expect(isBundledExample(META.exhibits[0]!)).toBe(false);
     expect(isBundledExample(META.exhibits[1]!)).toBe(true);
+  });
+});
+
+describe("libraryToWorking (inverse of workingToLibrary)", () => {
+  it("round-trips the round-trippable fields via workingToLibrary(libraryToWorking(...))", () => {
+    const lib = workingToLibrary(META); // projection drops the bundled example
+    const round = workingToLibrary(libraryToWorking(lib));
+    expect(round.title).toBe("Field Notes");
+    expect(round.summary).toBe("An authored library");
+    expect(round.rights).toBe(META.rights);
+    expect(round.exhibits.map((e) => e.slug)).toEqual([SLUG]);
+    const ex = round.exhibits[0]!;
+    expect(ex).toMatchObject({ id: "ex-user", title: "My Exhibit", layout: "grid" });
+    expect(ex.summary).toBe("Mine");
+    expect(ex.readings).toEqual([{ id: "r1", name: "Cipher" }]);
+    expect(ex.objects[0]).toMatchObject({ id: "o1", label: "Plate 1", width: 100, height: 80 });
+  });
+
+  it("carries tileSource (the Map basemap) — the field the studio inline version dropped", () => {
+    const lib: Library = {
+      id: "demo",
+      exhibits: [{
+        id: "ex-map", slug: "atlas", title: "Atlas",
+        objects: [{
+          id: "m1", source: "world", label: "Basemap",
+          tileSource: { kind: "xyz", template: "https://t/{z}/{x}/{y}.png", maxZoom: 5, attribution: "© OSM" },
+        }],
+      }],
+    };
+    const working = libraryToWorking(lib);
+    expect(working.exhibits[0]!.objects[0]!.tileSource).toEqual({
+      kind: "xyz", template: "https://t/{z}/{x}/{y}.png", maxZoom: 5, attribution: "© OSM",
+    });
   });
 });
 
