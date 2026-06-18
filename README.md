@@ -1,12 +1,14 @@
 # Archie
 
-**Annotate deep-zoom images, audio, and video in your browser — then publish a self-contained static site. No server, no database, no lock-in.**
+**Annotate deep-zoom images, maps, audio, and video in your browser — then publish a self-contained static site. No server, no database, no lock-in.**
 
 ![A published Archie library: "The Archie Library", a gallery of three exhibits](docs/screenshots/auto/gallery-after-sunset.png)
 
 *A published Archie library. You author in the browser; visitors get plain HTML, JSON, and media files that work offline and never phone home.*
 
 ---
+
+## Contents
 
 - [What it is](#what-it-is)
 - [How it works](#how-it-works)
@@ -25,13 +27,13 @@
 
 ## What it is
 
-Archie is a static-publishable, multi-media exhibit annotation platform. You annotate deep-zoom images, audio, and video in a browser-based **Studio**, then publish a self-contained static site — the **Viewer** — that drops onto GitHub Pages, Netlify, or any static host.
+Archie is a static-publishable, multi-media exhibit annotation platform. You annotate deep-zoom images, maps, audio, and video in a browser-based **Studio**, then publish a self-contained static site — the **Viewer** — that drops onto GitHub Pages, Netlify, or any static host.
 
 Your work is built on open standards, on disk, not in a vendor format:
 
 - **Notes are [W3C Web Annotations](https://www.w3.org/TR/annotation-model/).** Exhibits are [IIIF Presentation 3](https://iiif.io/api/presentation/3.0/) manifests. Third-party IIIF tools (Mirador, Universal Viewer) can read your work directly.
 - **The published site has no backend.** A folder of files — or a single `.archie.zip` — is the whole artifact.
-- **One exhibit holds many objects** (images, audio, video) with notes at the library, exhibit, object, region, and time-range level.
+- **One exhibit holds many objects** (images, maps, audio, video) with notes at the library, exhibit, object, region, time-range, and geographic level.
 - **Notes are versioned and linkable.** Annotations live on an append-only log with a version-parent DAG; edits are non-destructive and concurrent changes merge. Cite one note from another, deep-link to a region, and let visitors read prose-led or object-led.
 
 ## How it works
@@ -40,7 +42,7 @@ Archie has five domains that form the author's arc — from blank canvas to publ
 
 | Domain | What it does |
 |---|---|
-| **Exhibit Authoring** | Create libraries and exhibits, import media, arrange objects, draw annotation regions, write notes, organize narrative sections |
+| **Exhibit Authoring** | Create libraries and exhibits, import media, add map basemaps, arrange objects, draw annotation regions, write notes, organize narrative sections |
 | **Annotation Spine** | Append-only annotation log with version-parent DAG — non-destructive edits, concurrent merge, full version history |
 | **IIIF Publishing** | Project exhibits to IIIF Presentation 3 manifests and collections, build the static site tree, export portable `.archie.zip` archives |
 | **Viewer Presentation** | Astro static shell renders any published library at runtime — gallery browse, deep-zoom reading, hash-based deep-linking, portable zip mode |
@@ -51,6 +53,7 @@ Archie has five domains that form the author's arc — from blank canvas to publ
 | You want to… | You do this in Archie |
 |---|---|
 | **Annotate a historic map or manuscript** | Open the high-res image, draw rectangle or polygon regions, attach notes. Publish. Visitors explore your annotations in place. |
+| **Map a place or a fieldwork site** | Add a **map** object — a basemap (OpenStreetMap / Carto) framed to the region you care about — then draw **Box** or **Outline** regions anchored to real longitude/latitude. Re-frame the map and the regions stay nailed to the Earth. |
 | **Present competing interpretations** | Give the same object several **Readings** — a *cipher* reading vs a *hoax* reading — and let the visitor switch between them. |
 | **Build a multimedia essay** | Combine images, audio, and video in one exhibit; write a narrative spine that walks a reader from object to object. |
 | **Create a scholarly edition** | Transcribe and annotate pages, cite notes from notes, credit sources with IIIF rights metadata. Export readable in any IIIF tool. |
@@ -103,7 +106,7 @@ Archie has five domains that form the author's arc — from blank canvas to publ
 ```bash
 pnpm install            # install the whole workspace
 pnpm typecheck          # type-check every package + app
-pnpm test               # run the test suite (~420 tests)
+pnpm test               # run the test suite (~550 tests)
 ```
 
 **Run both apps (recommended):**
@@ -165,8 +168,10 @@ Archie uses a precise vocabulary. One-sentence definitions below; the full gloss
 
 - **Library** — top-level container for one project; on disk a directory or zip; an IIIF `Collection`.
 - **Exhibit** — one published narrative artifact; an IIIF `Manifest`. Owns its objects, media, notes, and narrative.
-- **Object** — one media item inside an exhibit (image / audio / video); an IIIF `Canvas`.
-- **Note** — a single W3C `Annotation`, targeting a library, exhibit, object, region, or time-range.
+- **Object** — one media item inside an exhibit (image / map / audio / video); an IIIF `Canvas`.
+- **Map** — a fourth Object *medium*: an Object whose surface is a slippy-map **basemap** (OpenStreetMap / Carto XYZ tiles) on the same deep-zoom canvas as an image. Geo-regions target it as **Box** or **Outline** shapes whose **longitude/latitude is the source of truth** — the pixel selector is derived, so re-framing the map keeps regions fixed to the Earth (*geo-truth*). Regions only, no pins. See [ADR-0015](docs/adr/0015-map-medium-bounded-extent.md).
+- **Map extent** — a Map's bounded geographic region (`[west, south, east, north]`): the absolute frame the reader cannot pan past, set when the map is added. It is to a Map what `width`/`height` are to an image.
+- **Note** — a single W3C `Annotation`, targeting a library, exhibit, object, region, time-range, or a geographic region on a Map.
 - **Reading** — a curated, **mutually exclusive** interpretive pass over an object (e.g. *cipher* vs *hoax*); an IIIF `AnnotationPage` per object, grouped by an `AnnotationCollection`. The reader switches between Readings; only one shows at a time.
 - **Tag** — a lightweight, **additive** label on a note (a motif, a paleographic note); a flat filter chip with no curation. The deliberate inverse of a Reading.
 - **Section** — one ordered unit of an exhibit's narrative; an IIIF `Range`. Frames a camera on an object; the spine may switch objects across sections.
@@ -181,6 +186,7 @@ Archie uses a precise vocabulary. One-sentence definitions below; the full gloss
 | **Image annotation** | OpenSeadragon deep-zoom + Annotorious; rectangle and polygon regions; canvas-anchored popover form |
 | **Audio annotation** | WaveSurfer waveform; drag to create time-range notes; import VTT/SRT transcripts |
 | **Video annotation** | Spatiotemporal — draw a box on a paused frame + set a time window; combined `xywh=&t=` selectors |
+| **Map annotation** | Slippy-map basemap (OpenStreetMap / Carto XYZ tiles) on a bounded extent; **Box / Outline** geo-regions anchored by true lng/lat (*geo-truth* — re-framing keeps regions earth-fixed); coordinate readout in Studio + Viewer; required basemap attribution |
 | **Readings & Tags** | Readings = mutually-exclusive interpretive passes (IIIF AnnotationPages — real toggleable layers in any IIIF viewer); Tags = additive per-note discovery chips |
 | **Rights & metadata** | IIIF `requiredStatement` (credit) + `rights` (license URI) at library / exhibit / object level, with opt-in inheritance; one quiet credit line + an ⓘ disclosure in the Viewer |
 | **Data model** | Append-only log with version-parent DAG; heads/history projection; non-destructive edits; multi-parent merge; schema migration |
@@ -247,16 +253,17 @@ graph TD
 - **The data model:** `packages/render-core/src/wadm/types.ts` — the W3C annotation types every module speaks.
 - **The annotation spine (the core innovation, [ADR-0003](docs/adr/0003-annotation-spine-append-only-version-dag.md)):** `spine/log.ts` (append-only log), `spine/heads.ts` (multi-head projection), `spine/merge.ts` (three-way merge), `session/session.ts` (transactional CRUD).
 - **How it wires together:** `packages/render-core/src/index.ts` (barrel export), `fs/seam.ts` (three storage backends, one interface), `apps/studio/src/binding.ts` (the three-config persistence system), `publish/site.ts` (the publishing engine).
+- **The map medium (geo-annotation, [ADR-0015](docs/adr/0015-map-medium-bounded-extent.md)):** `geometry/geo.ts` (lng/lat ↔ world-pixel, bounded extent), `iiif/resolve.ts` (XYZ tile source), with the `archie:geo` anchor threaded through the spine and the IIIF manifest; `apps/studio/src/AddMapModal.svelte` is the add-map flow.
 
-**Additional maps:** [`docs/architecture/`](docs/architecture/), [`docs/adr/`](docs/adr/) (ADRs 0001–0010), [`docs/decisions/`](docs/decisions/) (Q-N decision records), and a generated knowledge graph in [`.understand-anything/`](.understand-anything/).
+**Additional maps:** [`docs/architecture/`](docs/architecture/), [`docs/adr/`](docs/adr/) (ADRs 0001–0015), [`docs/decisions/`](docs/decisions/) (Q-N decision records), and a generated knowledge graph in [`.understand-anything/`](.understand-anything/).
 
 ## Status & roadmap
 
-**Tests:** ~420 across the workspace (≈375 `@render/core`, 18 `@render/mount`, 18 `@render/svelte`, plus Viewer tests). Run `pnpm test`.
+**Tests:** ~550 across the workspace (≈490 `@render/core`, 31 `@render/mount`, 19 `@render/svelte`, plus Viewer tests). Run `pnpm test`.
 
 **v1 — complete and dogfooded.** The data layer, both apps, and all major features are built and verified on the Voynich (Beinecke MS 408) demo and a real Bidar fieldwork project. Both apps build clean.
 
-**Shipped:** image / audio / video annotation · Readings & Tags · IIIF rights & metadata · narrative section authoring · overview-as-canvas with drag-to-reorder · <kbd>Cmd</kbd> + <kbd>K</kbd> intra-library linking · EXIF display-master bake · three-config persistence (OPFS / folder / zip) · portable Viewer · playground-vs-project model · streaming-zip save and import downscale for large media.
+**Shipped:** image / audio / video annotation · **map annotation** (geo-regions anchored by true lng/lat — [ADR-0015](docs/adr/0015-map-medium-bounded-extent.md)) · Readings & Tags · IIIF rights & metadata · narrative section authoring · overview-as-canvas with drag-to-reorder · <kbd>Cmd</kbd> + <kbd>K</kbd> intra-library linking · EXIF display-master bake · three-config persistence (OPFS / folder / zip) · portable Viewer · playground-vs-project model · streaming-zip save and import downscale for large media.
 
 **On the v1.1 frontier:** progressive marker reveal in narrative reading · reading modes (scrollytelling, compare, slideshow) · ellipse / freehand shapes · image-aware overlay contrast. The canonical remaining-work list is the deferred-work registry in [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md).
 
@@ -268,8 +275,9 @@ graph TD
 | [`CONTEXT.md`](CONTEXT.md) | Domain language, locked design frames, full glossary |
 | [`docs/README.md`](docs/README.md) | Index to all design & architecture docs |
 | [`docs/architecture/overview.md`](docs/architecture/overview.md) | Architecture map (start here as a developer) |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0010) |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0015) |
 | [`docs/decisions/`](docs/decisions/) | Citable decision records (Q-N) |
+| [`docs/geo-annotation/`](docs/geo-annotation/) | The geo-annotation extension — design + phasing (Map medium, geo-truth) |
 | [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md) | Phasing, sequencing, validation gates, deferred work |
 
 ## Contributing
