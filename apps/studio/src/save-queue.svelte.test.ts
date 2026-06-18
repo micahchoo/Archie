@@ -45,8 +45,7 @@ describe("save-queue", () => {
     const ok = await enqueueSave("k", "Notes", async () => { throw new Error("disk full"); });
     expect(ok).toBe(false);
     expect(saveStatus.health).toBe("error");
-    expect(saveStatus.error).toContain("Notes didn't save");
-    expect(saveStatus.error).toContain("disk full");
+    expect(saveStatus.error).toContain("Notes couldn't be saved");
   });
 
   it("continues the chain after a failure and clears the error on the next success", async () => {

@@ -112,7 +112,7 @@
 
   <aside class:detail={!!current}>
     {#if onback}
-      <button class="exhibit-back soft-btn" onclick={() => onback?.()}>← Back to Exhibit</button>
+      <button class="exhibit-back soft-btn" onclick={() => onback?.()}>← Back to exhibit</button>
     {/if}
     {#if current}
       <!-- detail state (annomea drawer): the selected note -->
@@ -121,7 +121,7 @@
         <!-- prose (media stripped) + the note's media as clickable tiles (image/audio/video) -->
         {#if noteParts.text}<div class="body">{@html renderMarkdown(noteParts.text)}</div>{/if}
         <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
-        {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">📍 {geoCoord}</p>{/if}
+        {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">{geoCoord}</p>{/if}
         <div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>
       </article>
     {:else}
@@ -132,20 +132,20 @@
       <p class="credit-row"><Credit {rights} tone="paper" /></p>
       <h2 class="eyebrow">Notes · {annotations.length}</h2>
       {#if annotations.length === 0}
-        <p class="empty">No notes on this object yet.</p>
+        <p class="empty">No notes on this media item yet.</p>
       {/if}
       <ul>
         {#each annotations as it (it.id)}
           <li onmouseenter={() => onnotehover?.(it.id ?? null)} onmouseleave={() => onnotehover?.(null)}><button style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)}>{stripMarkdown(commentOf(it))}</button></li>
         {/each}
       </ul>
-      <p class="hint">Click a note or a marker on the image. Markers re-anchor as you pan/zoom; selecting one zooms to it (the full nav contract).</p>
+      <p class="hint">Select a note, or a marker on the image. Markers stay pinned as you pan and zoom, and selecting one zooms in.</p>
     {/if}
   </aside>
 
   {#if current}
     <!-- popup: a small floating callout echoing the selection (annomea popup) -->
-    <div class="popup"><strong>Selected</strong> · {stripMarkdown(noteParts.text) || `${noteParts.media.length} media`}</div>
+    <div class="popup"><strong>Selected</strong> · {stripMarkdown(noteParts.text) || `${noteParts.media.length} ${noteParts.media.length === 1 ? "media item" : "media items"}`}</div>
   {/if}
 
   {#if lightbox}

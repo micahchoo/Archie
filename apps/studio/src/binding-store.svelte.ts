@@ -48,8 +48,8 @@ export function createBindingStore(deps: BindingDeps) {
   async function reacquireFolder(): Promise<FileSystemDirectoryHandle | null> {
     if (s.binding.kind !== "folder") return null;
     const handle = folderHandle ?? (s.binding.handleKey ? await getHandle(s.binding.handleKey) : null);
-    if (!handle) { s.error = `Couldn't find "${s.binding.name}" — save as a new project to keep working.`; return null; }
-    if ((await requestPermission(handle)) !== "granted") { s.error = `Access to "${s.binding.name}" was declined — grant it, or save as a new project.`; return null; }
+    if (!handle) { s.error = `Couldn't find "${s.binding.name}". Save as a new library to keep working.`; return null; }
+    if ((await requestPermission(handle)) !== "granted") { s.error = `Access to "${s.binding.name}" was declined. Grant it, or save as a new library.`; return null; }
     folderHandle = handle;
     return handle;
   }
@@ -111,7 +111,8 @@ export function createBindingStore(deps: BindingDeps) {
         rememberBinding();
       } catch (err) {
         // Worklist 0.1: a failed ⌘S/Save must be loud — the recovery card renders this.
-        s.error = `Save failed: ${err instanceof Error ? err.message : String(err)}`;
+        console.error("Save failed:", err);
+        s.error = "Couldn't save your library. Try again, or save it as a new copy to be safe.";
       } finally { s.busy = false; }
     },
 
@@ -124,9 +125,9 @@ export function createBindingStore(deps: BindingDeps) {
       try {
         let loaded: LoadedLibrary;
         try { loaded = await loadLibrary(new FsaFilesystem(handle)); }
-        catch { window.alert("That folder doesn't hold an Archie library (no collection.json)."); return; }
+        catch { window.alert("That folder isn't an Archie library."); return; }
         if (loaded.library.exhibits.length === 0) { window.alert("That folder has no exhibits."); return; }
-        if (!window.confirm("Open this folder as your project? Your current project will be replaced.")) return;
+        if (!window.confirm("Open this folder as your library? Your current library will be replaced.")) return;
         await deps.replaceProjectFrom(loaded);
         folderHandle = handle;
         s.binding = { kind: "folder", name: handle.name, handleKey: crypto.randomUUID() };
@@ -144,12 +145,12 @@ export function createBindingStore(deps: BindingDeps) {
       try {
         const handle = await getHandle(r.id);
         if (!handle || (await requestPermission(handle)) !== "granted") {
-          s.error = `Couldn't reopen "${r.name}" — open it again to re-grant access.`; return;
+          s.error = `Couldn't reopen "${r.name}". Open it again to re-grant access.`; return;
         }
         let loaded: LoadedLibrary;
         try { loaded = await loadLibrary(new FsaFilesystem(handle)); }
         catch { s.error = `"${r.name}" no longer holds an Archie library.`; return; }
-        if (!window.confirm(`Open "${r.name}"? Your current project will be replaced.`)) return;
+        if (!window.confirm(`Open "${r.name}"? Your current library will be replaced.`)) return;
         await deps.replaceProjectFrom(loaded);
         folderHandle = handle;
         s.binding = { kind: "folder", name: handle.name, handleKey: r.id };

@@ -73,7 +73,7 @@ export function planCsvImport(text: string, ctx: CsvImportContext): CsvImportPla
   const col = (name: string) => header.indexOf(name);
   const missing = REQUIRED.filter((c) => col(c) === -1);
   if (missing.length > 0) {
-    return { notes: [], skipped: [{ row: 0, reason: `missing column(s): ${missing.join(", ")} — expected a header row like "object,x,y,w,h,comment"` }] };
+    return { notes: [], skipped: [{ row: 0, reason: `Missing columns: ${missing.join(", ")}. The first row must be a header like: object,x,y,w,h,comment` }] };
   }
 
   const byId = new Map(ctx.objects.map((o) => [o.id.toLowerCase(), o.id]));
@@ -90,14 +90,14 @@ export function planCsvImport(text: string, ctx: CsvImportContext): CsvImportPla
 
     const objRaw = cell("object");
     const objectId = objRaw === "" ? ctx.currentObjectId : (byId.get(objRaw.toLowerCase()) ?? byLabel.get(objRaw.toLowerCase()));
-    if (!objectId) { skipped.push({ row: r + 1, reason: `unknown object "${objRaw}"` }); continue; }
-    if (avIds.has(objectId)) { skipped.push({ row: r + 1, reason: "AV object — regions are image-only" }); continue; }
+    if (!objectId) { skipped.push({ row: r + 1, reason: `no media item named "${objRaw}"` }); continue; }
+    if (avIds.has(objectId)) { skipped.push({ row: r + 1, reason: "Audio and video can't take a region — skipped." }); continue; }
 
     const rawNums = (["x", "y", "w", "h"] as const).map((n) => cell(n));
     const nums = rawNums.map(Number);
     // Number("") is 0 — a blank cell must SKIP, not silently place the note at the origin.
     if (rawNums.some((v) => v === "") || nums.some((n) => !Number.isFinite(n)) || nums[2]! <= 0 || nums[3]! <= 0) {
-      skipped.push({ row: r + 1, reason: "x,y,w,h must all be numbers with positive w,h" });
+      skipped.push({ row: r + 1, reason: "x, y, w, h must all be numbers, and w and h must be greater than zero." });
       continue;
     }
 
@@ -108,7 +108,7 @@ export function planCsvImport(text: string, ctx: CsvImportContext): CsvImportPla
     let reading: string | undefined;
     if (readingRaw !== "") {
       reading = readingById.get(readingRaw.toLowerCase()) ?? readingByName.get(readingRaw.toLowerCase());
-      if (!reading) { skipped.push({ row: r + 1, reason: `unknown reading "${readingRaw}" — create it first` }); continue; }
+      if (!reading) { skipped.push({ row: r + 1, reason: `no reading named "${readingRaw}" — add it to this exhibit first` }); continue; }
     }
 
     const tagsRaw = col("tags") === -1 ? "" : cell("tags");

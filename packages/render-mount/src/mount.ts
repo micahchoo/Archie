@@ -82,9 +82,10 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
 
   await new Promise<void>((resolve, reject) => {
     viewer.addOnceHandler("open", () => resolve());
-    viewer.addOnceHandler("open-failed", (e: { message?: string }) =>
-      reject(new Error(`OpenSeadragon failed to open image: ${e.message ?? "unknown"}`)),
-    );
+    viewer.addOnceHandler("open-failed", (e: { message?: string }) => {
+      console.error("[@render/mount] OpenSeadragon open-failed:", e.message ?? "unknown");
+      reject(new Error("Couldn't load this media item."));
+    });
   });
 
   // Bounded Map extent (ADR-0015, Option A): the tile source is the whole world; constrain the VIEWPORT to

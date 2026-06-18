@@ -90,7 +90,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     // GEO MAP — the geo-annotation prototype (DESIGN.md). One slippy-map basemap object, geo-annotated with
     // pins anchored to lng/lat. Hand-seeded descriptor (no map-import UI yet — Phase 2 / D7). DRAFT: this is
     // the prototype the UI/UX grilling stress-tests.
-    { id: "ex-geo", slug: "geo-map", title: "World map (geo-annotation prototype)", summary: "Drop pins on a live map — each anchored to a longitude/latitude that stays put as you zoom and pan. A prototype of Archie's geo-annotation extension.", layout: "single", seedVersion: 1, ...geoRights, objects: [{ id: "m1", source: GEO_TEMPLATE, label: "World basemap", tileSource: geoBasemap, ...geoRights }] },
+    { id: "ex-geo", slug: "geo-map", title: "World map (geo-annotation prototype)", summary: "Drop pins on a live map — each one stays on its place as you zoom and pan, anchored to a longitude and latitude. An early look at annotating maps in Archie.", layout: "single", seedVersion: 1, ...geoRights, objects: [{ id: "m1", source: GEO_TEMPLATE, label: "World basemap", tileSource: geoBasemap, ...geoRights }] },
   ];
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
@@ -518,7 +518,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
         // storeReady is PER-EXHIBIT state — openExhibit (inside newExhibit) just set it. Without
         // it, addObjectFromFile would no-op per file = titled, silently-empty exhibits; stop loudly.
         if (!storeReady) {
-          window.alert("Created the exhibit, but this browser can't persist imported files (private window, or storage unavailable) — import stopped.");
+          window.alert("Made the exhibit, but this browser can't save files — you may be in a private window. Adding files stopped.");
           return;
         }
         for (let i = 0; i < g.files.length; i++) {
@@ -538,7 +538,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     } finally {
       importStatus = null;
     }
-    const summary = `Imported ${imported} file${imported === 1 ? "" : "s"} into ${groups.length} exhibit${groups.length === 1 ? "" : "s"}.${failed > 0 ? ` ${failed} couldn't be imported.` : ""}`;
+    const summary = `Added ${imported} file${imported === 1 ? "" : "s"} to ${groups.length} exhibit${groups.length === 1 ? "" : "s"}.${failed > 0 ? ` ${failed} couldn't be added.` : ""}`;
     if (groups.length > 1) {
       // Several new exhibits — land where they're all visible; the rail's importNote isn't
       // rendered there, so the summary uses the app's dialog chrome.
@@ -558,17 +558,18 @@ import LayoutPicker from "./LayoutPicker.svelte";
     let json: unknown;
     try {
       const resp = await fetch(trimmed);
-      if (!resp.ok) { window.alert(`Couldn't fetch that URL (HTTP ${resp.status}).`); return; }
+      if (!resp.ok) { console.error("IIIF fetch failed", resp.status, trimmed); window.alert("Couldn't open that link — the server returned an error. Check the address and try again."); return; }
       json = await resp.json();
     } catch {
-      window.alert("Couldn't fetch that URL — check it's reachable (most IIIF servers allow cross-origin reads).");
+      window.alert("Couldn't open that link. Check the address is correct and reachable.");
       return;
     }
     let plan: ManifestPlan;
     try {
       plan = manifestToExhibit(json, trimmed);
     } catch (e) {
-      window.alert(e instanceof ManifestImportError ? e.message : `Couldn't read that manifest: ${String(e)}`);
+      console.error("IIIF manifest parse failed", e);
+      window.alert(e instanceof ManifestImportError ? e.message : "Couldn't read that IIIF link — it doesn't look like a valid manifest.");
       return;
     }
     await newExhibit(plan.title);
@@ -615,10 +616,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
       imported++;
     }
     if (imported > 0) bump(); // rev + dirty + scheduleSave (a template stays playground-only per save()'s gate)
-    const head = `Imported ${imported} note${imported === 1 ? "" : "s"} from CSV.`;
-    const dupNote = dup > 0 ? ` ${dup} already imported.` : "";
+    const head = `Added ${imported} note${imported === 1 ? "" : "s"} from your CSV.`;
+    const dupNote = dup > 0 ? ` ${dup} already added.` : "";
     importNote = plan.skipped.length > 0
-      ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `line ${s.row} — ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
+      ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `line ${s.row}: ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
       : head + dupNote;
   }
   // W3C/WADM annotation import (contributor-broadening ⑦ slice A): an AnnotationPage from Archie's
@@ -627,7 +628,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   async function importNotesWadm(file: File) {
     let json: unknown;
     try { json = JSON.parse(await file.text()); }
-    catch { importNote = `"${file.name}" isn't valid JSON.`; return; }
+    catch { importNote = `Couldn't read “${file.name}” — it isn't a valid notes file.`; return; }
     const plan = planWadmImport(json, { objectIds: new Set(OBJECTS.map((o) => o.id)) });
     // Dedupe key spans target + ALL body values (tag-only annotations must not collapse together).
     const keyFor = (target: unknown, body: unknown) => `${JSON.stringify(target)}|${JSON.stringify(body)}`;
@@ -642,10 +643,10 @@ import LayoutPicker from "./LayoutPicker.svelte";
       imported++;
     }
     if (imported > 0) bump();
-    const head = `Imported ${imported} annotation${imported === 1 ? "" : "s"}.`;
-    const dupNote = dup > 0 ? ` ${dup} already imported.` : "";
+    const head = `Added ${imported} note${imported === 1 ? "" : "s"}.`;
+    const dupNote = dup > 0 ? ` ${dup} already added.` : "";
     importNote = plan.skipped.length > 0
-      ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `#${s.index} — ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
+      ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `#${s.index}: ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
       : head + dupNote;
   }
   // Open a published .archie.zip as the project — the symmetric inverse of Download: read it via
@@ -657,11 +658,11 @@ import LayoutPicker from "./LayoutPicker.svelte";
     try {
       loaded = await loadLibrary(ZipFilesystem.fromZip(new Uint8Array(await file.arrayBuffer())));
     } catch {
-      window.alert("Couldn't read that file as an .archie.zip.");
+      window.alert("Couldn't open that file — choose a published .archie.zip file.");
       return;
     }
-    if (loaded.library.exhibits.length === 0) { window.alert("That archive has no exhibits."); return; }
-    if (!window.confirm("Open this archive as your project? Your current project will be replaced.")) return;
+    if (loaded.library.exhibits.length === 0) { window.alert("That file has no exhibits to open."); return; }
+    if (!window.confirm("Open this library? Your current library will be replaced.")) return;
     await replaceProjectFrom(loaded);
     bnd.bindToFile(file.name); // the zip you opened is now this Library's canonical file
     // ⑧ (Archie-59a8): the summary panel — who wrote what in the copy you just opened. This IS
@@ -776,12 +777,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
       await saveAssetFile(currentSlug, avName, file);
       await appendObject({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file));
       if (file.size > LARGE_MEDIA_BYTES) {
-        importNote = `Imported “${file.name}” (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, pasting a source URL keeps your library light — the archive links it instead of bundling the bytes.`;
+        importNote = `Added “${file.name}” (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.`;
       }
       return;
     }
     if (!file.type.startsWith("image/")) {
-      importNote = `Archie can’t read “${file.name}” — add an image, audio, or video file.`;
+      importNote = `Archie can’t read “${file.name}”. Add an image, audio, or video file.`;
       return;
     }
 
@@ -1312,8 +1313,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
     exhibits={lib.meta.exhibits}
     onopen={openExhibit}
     oncreate={newExhibit}
-    oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => window.alert(`Folder import failed: ${String(e)}`)); }}
-    oncreatefrommanifest={(url) => { newExhibitFromManifest(url).catch((e) => window.alert(`Manifest import failed: ${String(e)}`)); }}
+    oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add that folder."); }); }}
+    oncreatefrommanifest={(url) => { newExhibitFromManifest(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't add an exhibit from that IIIF link."); }); }}
     {isTemplate}
     binding={bnd.binding}
     bindingDirty={bnd.dirty}
@@ -1366,13 +1367,13 @@ import LayoutPicker from "./LayoutPicker.svelte";
          ("New note" in the notes pane, or narrative camera framing). -->
     <!-- The reading dropdown is RETIRED (archie-ux Q-2, grill Q3): the RAIL on the canvas is the
          one home for visibility + the pen; "Manage readings…" on the rail opens the modal. -->
-    <button class="layout-trigger" onclick={() => (layoutPickerOpen = true)} title="How visitors read this exhibit (reading intent)">▦ {currentLayout}</button>
+    <button class="layout-trigger" onclick={() => (layoutPickerOpen = true)} title="Choose how visitors move through this exhibit — a grid to browse, a single view, or a guided sequence">▦ {currentLayout}</button>
     {#if storeReady}
       <span class="savestate" class:dirty class:error={saveStatus.health === "error"} title={saveStatus.error ?? undefined}>
         {saveStatus.health === "error" ? "⚠ Save failed" : dirty ? "● Unsaved" : "Saved"}</span>
       <button onclick={() => void save()} disabled={!dirty}>Save</button>
     {/if}
-    <button class="publish-signal" onclick={() => pub.openDialog()}>Publish & Share…</button>
+    <button class="publish-signal" onclick={() => pub.openDialog()}>Publish & share…</button>
     <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
   </header>
 
@@ -1392,7 +1393,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   <!-- Object rail — the exhibit's objects on the light table; pick which one to annotate. -->
   <nav class="objects" aria-label="Exhibit objects">
     {#if OBJECTS.length === 0}
-      <span class="no-objects">No objects yet — add one below to start annotating.</span>
+      <span class="no-objects">No media yet — add one below to start adding notes.</span>
     {/if}
     {#each OBJECTS as o (o.id)}
       <button class="obj" class:on={o.id === currentObjectId} onclick={() => switchObject(o.id)} title={o.label}>
@@ -1407,20 +1408,20 @@ import LayoutPicker from "./LayoutPicker.svelte";
       <form class="add-obj" onsubmit={(e) => { e.preventDefault(); void addObject(addSource, addLabel); }}>
         <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; void addFiles(el.files).then(() => (el.value = "")); }} /></label>
         <span class="or">or</span>
-        <input bind:value={addSource} placeholder="Source URL or /path (image / audio / video)" aria-label="Object source URL" title="Best for LARGE media: a URL links the file (the archive references it, never bundles the bytes) — keeps your .archie.zip small." />
+        <input bind:value={addSource} placeholder="Link to an image, audio, or video" aria-label="Object source URL" title="Best for large files: a link points to the media where it already lives instead of copying it in, so your library file (.archie.zip) stays small." />
         <input class="lbl" bind:value={addLabel} placeholder="Label" aria-label="Object label" />
         <button type="submit" disabled={addSource.trim() === ""}>Add</button>
         <button type="button" class="cancel" onclick={() => { addingObject = false; addSource = ""; addLabel = ""; }}>✕</button>
       </form>
     {:else}
-      <button class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Object</button>
+      <button class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Media</button>
       <button class="add-obj-toggle" onclick={() => (mapModalOpen = true)} title="Add a map (geo-annotation)">+ Map</button>
     {/if}
     {#if mapModalOpen}<AddMapModal onadd={(m) => { void addMapObject(m); }} onclose={() => (mapModalOpen = false)} />{/if}
     {#if importStatus}
       <span class="import-status" role="status" aria-live="polite">
         <span class="import-spinner" aria-hidden="true"></span>
-        Importing “{importStatus.name}”…{#if importStatus.total > 1} ({importStatus.index} of {importStatus.total}){/if}
+        Adding “{importStatus.name}”…{#if importStatus.total > 1} ({importStatus.index} of {importStatus.total}){/if}
       </span>
     {/if}
     {#if importNote}
@@ -1431,8 +1432,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
   {#if framingSectionId}
     <!-- Loud cue that the canvas is in camera-framing mode, not note-drawing — with the way out. -->
     <div class="framing-banner" role="status">
-      <span class="fb-tag">Framing camera</span>
-      <span class="fb-msg">{isAvCurrent ? "Use “Set in” on the recording to mark this section’s moment." : "Draw a box on the canvas to frame this section’s camera — it isn’t a note."}</span>
+      <span class="fb-tag">Setting the view</span>
+      <span class="fb-msg">{isAvCurrent ? "Hit “Mark start” on the recording to set where this section opens — this sets the view, not a note." : "Draw a box on the image to set what this section shows when a visitor reaches it — this sets the view, not a note."}</span>
       <button class="fb-cancel" onclick={cancelFraming}>Cancel <kbd>Esc</kbd></button>
     </div>
   {:else if creating}
@@ -1458,7 +1459,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
       <form class="wadm" onsubmit={(e) => { e.preventDefault(); }}>
         <h3>Edit note</h3>
         <label>
-          <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button><button type="button" class="cite" onclick={() => requestVisualCite(citeIntoComment)} title="Cite a note by its image">▦ Browse</button></span>
+          <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button><button type="button" class="cite" onclick={() => requestVisualCite(citeIntoComment)} title="Cite a note by its image">▦ By image</button></span>
           <textarea bind:this={commentEl} rows="3" value={comment} onchange={(e) => applyForm((e.currentTarget as HTMLTextAreaElement).value, tags)}></textarea>
         </label>
         {#if trange}
@@ -1471,15 +1472,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
         <label>Tags (comma-separated)<input value={tags} onchange={(e) => applyForm(comment, (e.currentTarget as HTMLInputElement).value)} /></label>
         <label>Reading
           <select value={reading ?? ""} onchange={(e) => setNoteReading((e.currentTarget as HTMLSelectElement).value || null)}>
-            <option value="">— None (base) —</option>
+            <option value="">— No reading —</option>
             {#each currentReadings as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
           </select>
         </label>
         <label>Emphasis
           <select value={emphasis} onchange={(e) => setNoteEmphasis((e.currentTarget as HTMLSelectElement).value as Emphasis)} title="How much this mark stands out — its weight, not its colour (colour follows the reading)">
-            <option value="muted">Muted — recede</option>
+            <option value="muted">Muted (recede)</option>
             <option value="normal">Normal</option>
-            <option value="strong">Strong — stand out</option>
+            <option value="strong">Strong (stand out)</option>
           </select>
         </label>
         <div class="wadm-actions">
@@ -1518,7 +1519,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
           aria-label="Object label"
         />
       {/if}
-      <h2 class="eyebrow">{notes.length} notes</h2>
+      <h2 class="eyebrow">{notes.length} {notes.length === 1 ? "note" : "notes"}</h2>
       {#if current && !isAvCurrent}
         <!-- ADR-0011: drawing is armed only by creating a note. Choose a shape, draw the region on the
              image, and the note is created at that locus — the canvas then returns to ambient selection. -->
@@ -1537,7 +1538,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
         {/if}
       {/if}
       {#if notes.length === 0}
-        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Play it, then “Set in” → “Add note” to mark a moment." : objNotes.length > 0 ? "Notes here are hidden — show their readings in the rail on the canvas." : "No notes on this object yet. Start a note above — choose Box or Outline, then draw the region."}</p>
+        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Press play, hit “Mark start” at the moment you mean, then “Add note” to pin one there." : objNotes.length > 0 ? "This media item has notes, but they’re hidden right now. Switch a reading on in the panel beside the image to show them." : "No notes on this media item yet. Start one above — pick Box or Outline, then draw the region it points to."}</p>
       {/if}
       <ul>
         {#each notes as r (r.rev)}
@@ -1546,7 +1547,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
             <button onclick={() => (selected = r.logicalId)}>
               <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
               <div class="meta">
-                {#if isMapCurrent}{@const g = geoLabelOf(r)}{#if g}<span class="geo" title="Longitude / latitude — the region's centre on the basemap">📍 {g}</span>{/if}{/if}
+                {#if isMapCurrent}{@const g = geoLabelOf(r)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
                 {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
                 <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
                 {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{/if}
@@ -1557,15 +1558,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
       </ul>
       {#if current && !isAvCurrent}
         <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
-        <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Columns: object, x, y, w, h, comment — optional tags, reading. Header row required; object may be an id, a label, or blank for this object.">… or import notes from a CSV</button>
-        <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Import notes from a CSV file"
-          onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void importNotesCsv(f).catch((err) => window.alert(`CSV import failed: ${String(err)}`)); el.value = ""; }} />
+        <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Bring notes in from a spreadsheet. Columns: object, x, y, w, h, comment (tags and reading are optional), with a header row first. In the object column, use a media item’s label — or leave it blank to use the one you’re on.">… or add notes from a CSV</button>
+        <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
+          onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void importNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
       {/if}
       <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
-      <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="A W3C AnnotationPage (or Annotation array) — targets matching this exhibit's /canvas/<id> land on their objects.">… or import W3C annotations (JSON)</button>
-      <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Import W3C annotations from a JSON file"
-        onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void importNotesWadm(f).catch((err) => window.alert(`Annotation import failed: ${String(err)}`)); el.value = ""; }} />
-      <p class="hint">{isAvCurrent ? "Play it · “Set in” → “Add note” marks a moment (video: “+ Region on frame” adds a box) · click a note to seek + edit it in the popover." : "Start a new note → choose a shape → draw the region · click a marker to edit it right there · its editor follows it as you pan/zoom."}</p>
+      <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="Add notes exported from Archie or another annotation tool. Notes attach to the matching media item in this exhibit.">… or add notes from a file</button>
+      <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Add notes from a file"
+        onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void importNotesWadm(f).catch((err) => { console.error("Notes add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+      <p class="hint">{isAvCurrent ? "Press play · “Mark start” then “Add note” pins a note to that moment (on video, “Draw a box on the video” points at a spot too) · click any note to jump back to it and edit." : "Start a new note · pick a shape · draw the region it points to · click a marker to edit that note right where it sits — its editor stays pinned to it as you pan and zoom."}</p>
 
       <!-- All notes (image / audio / video) edit in the marker popover anchored to their locus (in <main>);
            the sidebar is nav + the narrative spine only — no inline form (ADR-0006). -->
@@ -1616,7 +1617,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
       {:else if current}
         <div class="no-canvas">Loading…</div>
       {:else}
-        <div class="no-canvas">Add an object — drop an image here, or use “+ Object” on the rail.</div>
+        <div class="no-canvas">Add media — drop an image here, or use “+ Media” above.</div>
       {/if}
 
       {#if sel && !drawArmed}

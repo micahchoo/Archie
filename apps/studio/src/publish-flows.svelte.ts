@@ -65,8 +65,8 @@ export function createPublishFlows(deps: PublishDeps) {
     if (bytes < ZIP_WARN_BYTES) return true;
     const mb = Math.round(bytes / (1024 * 1024));
     const steer = deps.canFolder()
-      ? "On this browser, “Save to disk” → choose a folder writes straight to disk without holding the whole archive in memory — better for a library this size."
-      : "Tip: link large media by URL (paste a source URL in “+ Object”) so the archive references it instead of bundling the bytes.";
+      ? "On this browser, “Save to disk” → choose a folder writes straight to disk without holding the whole library in memory — better for a library this size."
+      : "Tip: link large media by URL (paste a source URL in “+ Media”) so your library links the file instead of copying it in.";
     return window.confirm(`This library is about ${mb} MB. A single .archie.zip is built entirely in memory and may be slow or fail on a library this large.\n\n${steer}\n\nBuild the zip anyway?`);
   }
   // Size guard for the GH publish path — parity with zipSizeOk (publish uploads file-by-file).

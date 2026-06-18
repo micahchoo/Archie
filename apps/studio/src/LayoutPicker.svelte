@@ -22,13 +22,13 @@
   // future (slideshow/scrollytelling/compare arrive as VARIANTS, never as new flat templates). This
   // two-axis shape is what keeps the picker from sprawling into a template menu (§122/§129/§142).
   const OPTIONS: { type: LayoutType; name: string; stance: string; consequence: string }[] = [
-    { type: "single", name: "Single", stance: "Hold the visitor on a single object.", consequence: "It fills the view; your notes read alongside it." },
-    { type: "grid", name: "Grid", stance: "Set out a collection to wander.", consequence: "Visitors browse the objects and choose where to look." },
-    { type: "narrative", name: "Narrative", stance: "Lead the reading with your own prose.", consequence: "Your sections carry the object to each passage, in the order you set." },
+    { type: "single", name: "Single", stance: "Keep visitors on one media item.", consequence: "It fills the view, with your notes alongside it." },
+    { type: "grid", name: "Grid", stance: "Lay out the whole collection to browse.", consequence: "Visitors scan the media and pick what to look at." },
+    { type: "narrative", name: "Narrative", stance: "Let your writing lead the way through.", consequence: "Your sections move from one media item to the next, in the order you set." },
   ];
   const FAMILIES: { family: ReadingFamily; label: string; clause: string; future: string }[] = [
-    { family: "object-led", label: "Object-led", clause: "the work is what they came for", future: "Later: Compare (two objects side by side) joins here as a new arrangement; Slideshow paces a Grid — as a variant, not a new template." },
-    { family: "prose-led", label: "Prose-led", clause: "your writing leads; the work follows", future: "Later: Scrollytelling joins here — the same prose reading, paced by scroll rather than click." },
+    { family: "object-led", label: "Media first", clause: "the media is what visitors came to see", future: "More arrangements are coming for this group, such as comparing two items side by side." },
+    { family: "prose-led", label: "Writing first", clause: "your writing leads and the media follows along", future: "More ways to pace your writing are coming for this group, such as advancing it by scroll." },
   ];
   const optionsIn = (f: ReadingFamily) => OPTIONS.filter((o) => readingFamily(o.type) === f);
 </script>
@@ -37,7 +37,7 @@
   <div class="sheet" role="dialog" aria-label="Choose how this exhibit is read" onclick={(e) => e.stopPropagation()}>
     <header>
       <h2>How should this exhibit be read?</h2>
-      <p>Each choice sets a different relationship between the visitor, the work, and your voice — not a skin on the same page. It shapes the published exhibit, not this editing view.</p>
+      <p>Each option changes how visitors move through the published exhibit — what they see first and how your writing fits around it. This only affects the published exhibit, not how you edit it here.</p>
     </header>
 
     {#each FAMILIES as fam (fam.family)}
@@ -65,12 +65,12 @@
             </li>
           {/each}
         </ul>
-        <p class="future" title="How v1.1 reading modes attach to this family">{fam.future}</p>
+        <p class="future" title="Coming soon to this group">{fam.future}</p>
       </section>
     {/each}
 
     {#if current === "narrative"}
-      <p class="note">Narrative reads its prose from the exhibit's Sections — authoring the section spine in the Studio is a separate, not-yet-built step, so a Narrative exhibit publishes its intent but needs sections to read fully.</p>
+      <p class="note">Narrative is built from your sections — short passages you write, each paired with a media item. Add and order them in the narrative panel beside your notes.</p>
     {/if}
   </div>
 </div>

@@ -161,7 +161,10 @@ export const SRC_MAX_BYTES = 256 * 1024 * 1024; // 256 MB
  */
 export async function openLibraryFromSrc(url: string, maxBytes: number = SRC_MAX_BYTES): Promise<void> {
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`Couldn't open the library (HTTP ${res.status}).`);
+  if (!res.ok) {
+    console.error(`Archie: couldn't fetch the library from ${url} — HTTP ${res.status}`);
+    throw new Error("Couldn't open the library. The link may be broken or the file unavailable.");
+  }
   const declared = Number(res.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > maxBytes) throw new Error("That library is too large to open here.");
   const bytes = new Uint8Array(await res.arrayBuffer());
@@ -206,7 +209,10 @@ export async function loadGallery(): Promise<ExhibitsJson> {
 
 async function fetchJson<T>(path: string): Promise<T> {
   const res = await fetch(`${PUBLISHED}/${path}`);
-  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+  if (!res.ok) {
+    console.error(`Archie: failed to fetch ${path} — HTTP ${res.status}`);
+    throw new Error("Couldn't load this exhibit. Reload to try again.");
+  }
   return (await res.json()) as T;
 }
 

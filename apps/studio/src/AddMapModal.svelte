@@ -151,10 +151,10 @@
     <label class="field">Name <input bind:value={label} placeholder={`${provider.name} map`} /></label>
 
     <fieldset class="extent">
-      <legend>Region shown — the map is bounded to this (ADR-0015)</legend>
+      <legend>Area shown — visitors can only pan within this</legend>
       <div class="presets">{#each REGIONS as r}<button type="button" onclick={() => applyRegion(r.bounds)}>{r.name}</button>{/each}
-        <button type="button" class="action" onclick={selectCurrent} title="Set the region to exactly what's shown in the locator now">⊡ Use view</button>
-        <button type="button" onclick={fitToBox} title="Centre & zoom the locator on the region">Fit ⤢</button>
+        <button type="button" class="action" onclick={selectCurrent} title="Set the area to exactly what the map below shows right now">⊡ Use view</button>
+        <button type="button" onclick={fitToBox} title="Recentre the map below so the whole area fits in view">Fit ⤢</button>
       </div>
       <!-- Pan/zoom locator (Q3): drag the box / handles to clamp · drag the map to pan · wheel or ± to zoom. -->
       <div class="locator" bind:this={locatorEl} role="application" aria-label="Region locator"
@@ -181,7 +181,7 @@
         <label>N<input type="number" step="any" bind:value={north} /></label>
         <label>Max&nbsp;zoom<input type="number" min="1" max="22" bind:value={maxZoom} /></label>
       </div>
-      <p class="hint">Drag the box (or its corner handles) to clamp · drag the map to pan · wheel or ± to zoom · or type exact bounds.</p>
+      <p class="hint">Drag the box (or its corners) to resize the area · drag the map to move it · scroll or ± to zoom · or type exact edges below.</p>
     </fieldset>
 
     <details bind:open={useCustom}>

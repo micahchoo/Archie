@@ -112,6 +112,6 @@ describe("manifestToExhibit — refusals carry user-facing messages", () => {
     expect(() => manifestToExhibit(null, "u")).toThrow(ManifestImportError);
   });
   it("refuses a manifest with nothing readable", () => {
-    expect(() => manifestToExhibit({ type: "Manifest", items: [{ type: "Canvas", items: [] }] }, "u")).toThrow(/no canvases/);
+    expect(() => manifestToExhibit({ type: "Manifest", items: [{ type: "Canvas", items: [] }] }, "u")).toThrow(/no images or media/);
   });
 });

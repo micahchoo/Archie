@@ -107,7 +107,7 @@
       <h1>{libTitle && libTitle.trim() ? libTitle : "Library"}</h1>
       <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     </div>
-    <p class="lede">Exhibits marked <span class="ex-word">Example</span> are templates — open one to explore (nothing's saved), keep a copy to make it yours. Your own exhibits save as you work. Start a new one any time.</p>
+    <p class="lede">Exhibits marked <span class="ex-word">Example</span> are ready-made samples to explore — changes you make to them aren't kept, so use “Keep a copy” to turn one into your own. Exhibits you create save as you work. Start a new one any time.</p>
 
     <PropsDrawer open={rightsOpen} title="Library details" onclose={() => (rightsOpen = false)}>
       <DetailsEditor title={libTitle ?? ""} summary={librarySummary ?? ""} rights={rights} scope="library" ontitle={ontitle} onsummary={onsummary} onrights={onrights} />
@@ -152,7 +152,7 @@
         <span class="msg">{bindingError}</span>
         <span class="err-actions">
           <button onclick={onopenproject} disabled={bindingBusy}>Open…</button>
-          <button onclick={onrecover} disabled={bindingBusy}>Save as a new project</button>
+          <button onclick={onrecover} disabled={bindingBusy}>Save as a new library</button>
           <button class="x" onclick={ondismisserror} aria-label="Dismiss">×</button>
         </span>
       </div>
@@ -182,7 +182,7 @@
         <button class="card" class:template={isTemplate(ex.slug)} onclick={() => onopen(ex.slug)}>
           {#if isTemplate(ex.slug)}<span class="badge">Example</span>{/if}
           <span class="title">{ex.title}</span>
-          <span class="meta">{ex.objects.length} {ex.objects.length === 1 ? "object" : "objects"} · /{ex.slug}</span>
+          <span class="meta">{ex.objects.length} {ex.objects.length === 1 ? "media item" : "media items"} · /{ex.slug}</span>
         </button>
       </li>
     {/each}
@@ -193,16 +193,16 @@
         <button type="submit" disabled={newTitle.trim() === ""}>Create</button>
         <!-- Folder → exhibit in one gesture: the folder names the exhibit, its images become the
              objects (reading order). webkitdirectory over showDirectoryPicker: cross-browser + testable. -->
-        <button type="button" class="alt-create" onclick={() => dirEl?.click()}>… or import an image folder</button>
+        <button type="button" class="alt-create" onclick={() => dirEl?.click()}>… or add an image folder</button>
         <!-- One paste bootstraps from any institutional IIIF collection (50k+ manifests in the wild).
              prompt() matches the app's alert/confirm chrome convention — a quiet escape, not a form. -->
-        <button type="button" class="alt-create" onclick={() => { const u = window.prompt("Paste a IIIF manifest URL (Presentation 2 or 3):"); if (u) oncreatefrommanifest(u); }}>… or paste a IIIF manifest URL</button>
+        <button type="button" class="alt-create" onclick={() => { const u = window.prompt("Paste a IIIF manifest link"); if (u) oncreatefrommanifest(u); }}>… or paste a IIIF link</button>
         <input
           bind:this={dirEl}
           type="file"
           webkitdirectory
           style="display:none"
-          aria-label="Import a folder of images as a new exhibit"
+          aria-label="Add a folder of images as a new exhibit"
           onchange={(e) => { const el = e.currentTarget as HTMLInputElement; if (el.files?.length) oncreatefromfolder(Array.from(el.files)); el.value = ""; }}
         />
       </form>

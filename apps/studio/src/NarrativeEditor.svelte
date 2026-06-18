@@ -69,7 +69,7 @@
   function cameraLabel(s: Section): string {
     if (!s.start) return "";
     if (avBound(s.objectId)) { const t = parseTimeFragment(s.start); return t ? `${fmtMMSS(t.start)}–${fmtMMSS(t.end ?? t.start)}` : "moment"; }
-    return "framed region";
+    return "area set";
   }
 
   // A new section is anchored to the object you're looking at (currentObjectId) — you then frame its camera.
@@ -102,11 +102,11 @@
 <section class="spine">
   <header>
     <p class="eyebrow">Exhibit narrative</p>
-    <p class="lede">The reading spine — beats shown in order, each framed on one object. Spans the whole exhibit; it stays as you move along the rail.</p>
+    <p class="lede">A narrative is a sequence of sections — short passages you write, each shown with one media item. It runs through the whole exhibit and stays put as you switch between media items.</p>
   </header>
 
   {#if objects.length === 0}
-    <p class="empty">Add an object to the exhibit first — a section is framed on one.</p>
+    <p class="empty">Add a media item to the exhibit first — every section is shown with one.</p>
   {/if}
 
   <ol class="cards">
@@ -125,22 +125,22 @@
           <input class="title" value={s.title} placeholder="Section title" aria-label="Section title"
             onchange={(e) => update(i, { title: (e.currentTarget as HTMLInputElement).value })} />
           <p class="shows">
-            <span class="on-obj">{here ? "On this object" : "On"} · {objectLabel(s.objectId)}</span>
-            {#if !here}<button class="move-here" onclick={() => moveHere(i)} title="Re-bind this section to the object you're viewing (clears its camera)">Move here</button>{/if}
+            <span class="on-obj">{here ? "Shown with this item" : "Shown with"} · {objectLabel(s.objectId)}</span>
+            {#if !here}<button class="move-here" onclick={() => moveHere(i)} title="Show this section with the media item you're viewing now (clears the area it currently highlights)">Move here</button>{/if}
           </p>
           <div class="prose-wrap">
             <button type="button" class="cite" onclick={() => citeInto(i, s.id)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button>
-            <textarea class="prose" rows="2" bind:this={proseEls[s.id]} value={s.prose ?? ""} placeholder="Prose for this beat…" aria-label="Section prose"
+            <textarea class="prose" rows="2" bind:this={proseEls[s.id]} value={s.prose ?? ""} placeholder="Write this section…" aria-label="Section prose"
               onkeydown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); citeInto(i, s.id); } }}
               onchange={(e) => update(i, { prose: (e.currentTarget as HTMLTextAreaElement).value })}></textarea>
           </div>
           <div class="camera">
             {#if framingId === s.id}
-              <span class="framing-now">Framing… {avBound(s.objectId) ? "set the moment on the recording" : "draw a box on the canvas"}</span>
+              <span class="framing-now">{avBound(s.objectId) ? "Set the moment — scrub to it on the recording" : "Set the area — draw a box on the image"}</span>
               <button class="cancel" onclick={oncancelframe}>Cancel</button>
             {:else}
-              <span class="cam" class:set={!!cam}>{cam ? (avBound(s.objectId) ? `⏱ ${cam}` : `▭ ${cam}`) : "No camera framed"}</span>
-              <button class="set-cam" onclick={() => onframe(s.id)}>{cam ? "Reframe" : avBound(s.objectId) ? "Set moment" : "Frame camera"}</button>
+              <span class="cam" class:set={!!cam}>{cam ? (avBound(s.objectId) ? `⏱ ${cam}` : `▭ ${cam}`) : "Whole item shown"}</span>
+              <button class="set-cam" onclick={() => onframe(s.id)}>{cam ? "Change view" : avBound(s.objectId) ? "Set moment" : "Set area"}</button>
             {/if}
           </div>
         </div>

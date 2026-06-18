@@ -54,7 +54,8 @@ export function enqueueSave(key: string, label: string, job: () => Promise<void>
       return true;
     },
     (err: unknown) => {
-      s.errors[key] = `${label} didn't save: ${err instanceof Error ? err.message : String(err)}`;
+      console.error(`Save failed for "${key}" (${label}):`, err);
+      s.errors[key] = `${label} couldn't be saved. Try again, or save your library as a new copy to be safe.`;
       s.pending -= 1;
       return false;
     },

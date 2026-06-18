@@ -305,11 +305,11 @@
         {#each frameBoxes as fb}<div class="frame-box" class:sel={fb.sel} style={`left:${fb.box.x}%;top:${fb.box.y}%;width:${fb.box.w}%;height:${fb.box.h}%`}></div>{/each}
         {#if draftBox}<div class="frame-box draft" style={`left:${draftBox.x}%;top:${draftBox.y}%;width:${draftBox.w}%;height:${draftBox.h}%`}></div>{/if}
       </div>
-      {#if spatialDrawing}<div class="capture-hint" aria-hidden="true">Marking a region — drag a box on the video</div>{/if}
+      {#if spatialDrawing}<div class="capture-hint" aria-hidden="true">Drawing a box — drag on the video</div>{/if}
     </div>
     <!-- Annotation timeline (videojs affordance): notes as range bars; click to seek+select, hover for the
          text, ← → to step between them, playhead shows where you are. -->
-    <div class="vtimeline" role="group" aria-label="Annotation timeline — focus a bar, then ← → step between notes">
+    <div class="vtimeline" role="group" aria-label="Notes timeline — focus a bar, then ← → step between notes">
       <div class="vt-track" role="presentation" onclick={(e) => timelineSeek(e, e.currentTarget as HTMLElement)}>
         {#each videoMarkers as m (m.id)}
           <button type="button" class="vt-bar" class:sel={m.sel} class:active={m.active}
@@ -319,16 +319,16 @@
         {/each}
         {#if duration}<div class="vt-playhead" style={`left:${(currentTime / duration) * 100}%`} aria-hidden="true"></div>{/if}
       </div>
-      {#if videoMarkers.length === 0}<span class="vt-empty">Notes you add appear here as bars on the timeline.</span>{/if}
+      {#if videoMarkers.length === 0}<span class="vt-empty">No notes yet. Mark a moment, then add a note — it appears here as a bar.</span>{/if}
     </div>
   {:else}
     <div class="stage">
-      <span class="now">Now annotating</span>
+      <span class="now">Adding notes to</span>
       <h1>{label}</h1>
       <div class="wave" bind:this={waveformEl}></div>
       <div class="transport">
         <button class="play" onclick={() => ws?.playPause?.()} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? "⏸ Pause" : "▶ Play"}</button>
-        <span class="wave-hint">{wsError ? `Couldn't load audio (${wsError}) — an external URL may block decoding; import a local file.` : wsReady ? "Drag across the waveform to mark a moment, then write your note · click a marked stretch to edit it" : "Loading waveform…"}</span>
+        <span class="wave-hint">{wsError ? "Couldn't load this audio. A file hosted elsewhere may block playback — try adding a local copy." : wsReady ? "Drag across the waveform to mark a moment, then write your note · click a marked stretch to edit it" : "Loading waveform…"}</span>
       </div>
     </div>
   {/if}
@@ -341,12 +341,12 @@
       <span class="chip" title="The note will run from here to the current time">from {fmt(markedIn)}<button class="x" title="Clear the start mark" onclick={() => (markedIn = null)}>✕</button></span>
     {/if}
     {#if isVideo}
-      <button class="region-toggle" class:on={spatialDrawing} onclick={() => (spatialDrawing = !spatialDrawing)} title="Pause the video, then drag a box on it to mark WHERE on the picture — it pairs with the moment in time">{spatialDrawing ? "Drawing… drag on the video" : draftBox ? "▭ box set · draw again" : "▭ Draw a box on the video"}</button>
+      <button class="region-toggle" class:on={spatialDrawing} onclick={() => (spatialDrawing = !spatialDrawing)} title="Pause the video, then drag a box to point at a spot on the picture. The note covers that spot at this moment.">{spatialDrawing ? "Drawing… drag on the video" : draftBox ? "▭ box set · draw again" : "▭ Draw a box on the video"}</button>
     {/if}
-    <button class="mark" onclick={setIn} title="Mark the START of this moment — then “Add note” ends it at the current time. Skip it to note just the current moment.">Mark start</button>
+    <button class="mark" onclick={setIn} title="Set where the note begins. The note runs from here to wherever you are when you add it. Skip this to note a single moment.">Mark start</button>
     <button class="add" onclick={addNote} title="Create a note covering this moment">{addLabel}</button>
     {#if onimport}
-      <label class="import" title="Import a WebVTT or SRT caption file — each line becomes a timed note">⊕ Import captions<input type="file" accept=".vtt,.srt,text/vtt,application/x-subrip" onchange={loadTranscript} /></label>
+      <label class="import" title="Add a caption file (.vtt or .srt) — each caption line becomes a note at its own time">⊕ Add captions<input type="file" accept=".vtt,.srt,text/vtt,application/x-subrip" onchange={loadTranscript} /></label>
     {/if}
     {#if activeText}<span class="active" title={activeText}>▸ {activeText}</span>{/if}
   </div>

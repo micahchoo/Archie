@@ -68,21 +68,21 @@ const FRAGMENT_RE = /^(xywh=(pixel:|percent:)?-?\d+(\.\d+)?(,-?\d+(\.\d+)?){3}|t
 export function sanitizeSelector(raw: unknown): { ok: ImportedSelector } | { err: string } {
   let s = asArray(raw)[0] as Json | undefined;
   if (s && /^Choice$/i.test(String(s["type"] ?? ""))) s = asArray(s["items"])[0] as Json | undefined;
-  if (!s || typeof s !== "object") return { err: "annotation has no selector" };
+  if (!s || typeof s !== "object") return { err: "the region is missing or unreadable" };
   const t = String(s["type"] ?? "");
   const v = String(s["value"] ?? "");
   if (t === "FragmentSelector") {
-    if (!FRAGMENT_RE.test(v)) return { err: `unsupported fragment "${v.slice(0, 40)}"` };
+    if (!FRAGMENT_RE.test(v)) return { err: "unsupported region shape" };
     return { ok: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: v } };
   }
   if (t === "SvgSelector") {
     // Shape-only SVG: reject anything that could carry script into a third-party viewer.
     if (!/^<svg[\s>]/.test(v.trim()) || /<script|<foreignObject|<use|on\w+\s*=|javascript:|href\s*=/i.test(v)) {
-      return { err: "unsupported or unsafe SvgSelector" };
+      return { err: "unsupported or unsafe region shape" };
     }
     return { ok: { type: "SvgSelector", value: v } };
   }
-  return { err: `unsupported selector type "${t || "(none)"}"` };
+  return { err: "unsupported region shape" };
 }
 
 /** Rebuild bodies to TextualBody {value, purpose} only — foreign fields (format, ids, …) drop. */
@@ -96,11 +96,11 @@ export function sanitizeBodies(raw: unknown[]): ImportedBody[] {
 
 export function planWadmImport(json: unknown, ctx: { objectIds: Set<string> }): WadmImportPlan {
   if (isLegacyAnnotationList(json)) {
-    return { notes: [], skipped: [{ index: 0, reason: "legacy oa:/sc:AnnotationList — convert to W3C Web Annotation (e.g. via Mirador export) first; native support is on the roadmap" }] };
+    return { notes: [], skipped: [{ index: 0, reason: "This file uses an older annotation format Archie can't read yet. Re-export it as W3C Web Annotation (for example, from Mirador) and try again." }] };
   }
   const annos = annotationsIn(json);
   if (annos.length === 0) {
-    return { notes: [], skipped: [{ index: 0, reason: "no annotations found — expected a W3C AnnotationPage, an Annotation array, or one Annotation" }] };
+    return { notes: [], skipped: [{ index: 0, reason: "No notes found in that file. Archie reads a W3C Web Annotation file (a single note or a list)." }] };
   }
   const notes: WadmNotePlan[] = [];
   const skipped: WadmImportPlan["skipped"] = [];
@@ -110,7 +110,7 @@ export function planWadmImport(json: unknown, ctx: { objectIds: Set<string> }): 
     const source = typeof target === "string" ? target.split("#")[0] : target?.["source"];
     const objectId = canvasObjectId(source);
     if (!objectId || !ctx.objectIds.has(objectId)) {
-      skipped.push({ index: i + 1, reason: `target ${JSON.stringify(String(source ?? "(none)")).slice(0, 60)} doesn't match an object here (…/canvas/<id>)` });
+      skipped.push({ index: i + 1, reason: "Points to media that isn't in this exhibit." });
       continue;
     }
     // String targets ("…/canvas/o1#xywh=1,2,3,4") carry their selector in the fragment.
@@ -120,7 +120,7 @@ export function planWadmImport(json: unknown, ctx: { objectIds: Set<string> }): 
     const sel = sanitizeSelector(rawSelector);
     if ("err" in sel) { skipped.push({ index: i + 1, reason: sel.err }); continue; }
     const body = sanitizeBodies(asArray(a["body"]));
-    if (body.length === 0) { skipped.push({ index: i + 1, reason: "no usable TextualBody" }); continue; }
+    if (body.length === 0) { skipped.push({ index: i + 1, reason: "no usable note text" }); continue; }
     notes.push({ objectId, selector: sel.ok, body });
   }
   return { notes, skipped };

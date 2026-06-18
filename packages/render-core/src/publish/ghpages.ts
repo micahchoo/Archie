@@ -90,13 +90,20 @@ export class GitHubPublishError extends Error {
 /** Map a failed GitHub response to an actionable cause — token / scope / repo, never "undefined.sha". */
 async function ghError(res: Response, what: string): Promise<GitHubPublishError> {
   const body = (await res.json().catch(() => null)) as { message?: string } | null;
-  const detail = body?.message ? ` (${body.message})` : "";
+  // Keep the raw status + GitHub detail in the console for debugging; never surface them to the author.
+  console.error(`[publish] GitHub ${res.status} during '${what}'${body?.message ? `: ${body.message}` : ""}`);
+  // Plain-language name for the step that failed (no git-plumbing tokens reach the author).
+  const step =
+    what === "image upload" ? "uploading an image"
+    : what === "file tree" ? "preparing your files"
+    : what === "branch lookup" || what === "branch update" ? "updating the published branch"
+    : what === "commit" ? "saving the publish"
+    : "publishing";
   const msg =
-    res.status === 401 ? "GitHub rejected the token — it's invalid or expired."
-    : res.status === 403 ? "GitHub refused the request — the token may lack “Contents: write” for this repo, or you've hit a rate limit. Wait a moment and retry."
-    : res.status === 404 ? "Repository not found — check the owner and name, and that the token can access it."
-    : res.status === 422 ? `GitHub couldn't process the ${what}${detail}.`
-    : `GitHub error creating the ${what} (HTTP ${res.status})${detail}.`;
+    res.status === 401 ? "Couldn't publish: your token was rejected. It may be invalid or expired — paste a fresh one and try again."
+    : res.status === 403 ? "Couldn't publish: the token doesn't have access, or you've hit a rate limit. Check that it has Contents and Pages write access, then wait a moment and try again."
+    : res.status === 404 ? "Couldn't publish: we couldn't find that repository. Check the repository name and that the token can access it."
+    : `Couldn't publish while ${step}. Check the repository name and that the token has Contents and Pages write access, then try again.`;
   return new GitHubPublishError(msg, res.status);
 }
 

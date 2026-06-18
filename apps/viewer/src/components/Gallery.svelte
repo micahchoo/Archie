@@ -29,7 +29,7 @@
           <a class="card" href={`#/${ex.slug}`}>
             <span class="cover" style={ex.cover ? `background-image:url(${ex.cover})` : ""}></span>
             <span class="caption">
-              <span class="title">{ex.title}{#if isLiveSlug(ex.slug)}<span class="local" title="Only you can see this — it lives in this browser's Studio working store. Publish puts it on the web.">Local</span>{/if}</span>
+              <span class="title">{ex.title}{#if isLiveSlug(ex.slug)}<span class="local" title="Only you can see this. It's saved in this browser until you publish it.">Draft</span>{/if}</span>
               {#if ex.description}<span class="desc">{ex.description}</span>{/if}
             </span>
           </a>

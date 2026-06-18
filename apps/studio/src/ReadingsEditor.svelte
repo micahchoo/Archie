@@ -52,15 +52,15 @@
       </span>
       <input class="name" value={r.name} aria-label="Reading name"
         onchange={(e) => { const v = e.currentTarget.value.trim(); if (v) patch(r.id, { name: v }); else e.currentTarget.value = r.name; }} />
-      <button type="button" class="remove" onclick={() => onchange(readings.filter((x) => x.id !== r.id))} title="Remove this reading — its notes stay, shown under “All notes”" aria-label="Remove {r.name}">✕</button>
+      <button type="button" class="remove" onclick={() => onchange(readings.filter((x) => x.id !== r.id))} title="Remove this reading — its notes stay, shown under “General notes”" aria-label="Remove {r.name}">✕</button>
     </div>
-    <textarea rows="2" placeholder="Describe this reading — one or two sentences, shown under its name in the published legend"
+    <textarea rows="2" placeholder="Describe this reading in a sentence or two"
       value={r.description ?? ""} aria-label="Description for {r.name}"
       onchange={(e) => patch(r.id, { description: e.currentTarget.value })}></textarea>
   </section>
 {/each}
 <form class="add" onsubmit={(e) => { e.preventDefault(); add(); }}>
-  <input bind:value={newName} placeholder="New reading — e.g. Cipher" aria-label="New reading name" />
+  <input bind:value={newName} placeholder="Name a reading — e.g. Conservation, Symbolism" aria-label="New reading name" />
   <button type="submit" disabled={newName.trim() === ""}>Add</button>
 </form>
 

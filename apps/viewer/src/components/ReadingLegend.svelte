@@ -21,7 +21,7 @@
     <span class="title">Readings</span>
     <div class="opts" role="radiogroup" aria-label="Readings of this source">
       <button type="button" role="radio" aria-checked={active === null} class="opt" class:on={active === null} onclick={() => onselect(null)}>
-        <span class="sw base"></span><span class="nm">Base</span>
+        <span class="sw base"></span><span class="nm">General notes</span>
       </button>
       {#each readings as r (r.id)}
         <button type="button" role="radio" aria-checked={active === r.id} class="opt" class:on={active === r.id} onclick={() => onselect(r.id)}>

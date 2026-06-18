@@ -24,20 +24,20 @@
     <button class="x" onclick={onclose} aria-label="Close">×</button>
     <header>
       <p class="eyebrow">Readings</p>
-      <h2>Ways of reading this source</h2>
+      <h2>Ways of reading this exhibit</h2>
       <p class="lede">
-        A reading is one way of interpreting this source — a <em>Cipher</em> reading beside a
-        <em>Hoax</em> reading. Rival readings sit side by side; they are never merged.
-        Name, colour, and describe each one here.
+        A reading is one interpretation of what's in this exhibit — for example, a <em>Cipher</em>
+        reading beside a <em>Hoax</em> reading. Competing readings sit side by side and are never
+        merged. Name, colour, and describe each one here.
       </p>
       <ul class="points">
-        <li>Notes you write while a reading is active belong to <strong>it alone</strong>. The
-          <strong>base stays visible</strong> under every reading, so shared ground is always there.</li>
+        <li>Notes you write while a reading is active belong to <strong>it alone</strong>. Your
+          <strong>general notes stay visible</strong> under every reading, so shared ground is always there.</li>
         <li>Each reading's <strong>colour</strong> sets its marks apart on the image.</li>
         <li>The <strong>description</strong> appears under the reading's name in the published
           legend — it's how visitors learn what this way of seeing claims.</li>
         <li><strong>Renaming is safe</strong> — notes stay attached. Removing a reading keeps its
-          notes, shown under “All notes”.</li>
+          notes, shown under “General notes”.</li>
       </ul>
     </header>
     <div class="body">

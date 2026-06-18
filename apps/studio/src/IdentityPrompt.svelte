@@ -29,7 +29,7 @@
       <!-- svelte-ignore a11y_autofocus -->
       <input bind:value={name} placeholder="e.g. Micah Alex" autocomplete="off" autofocus />
       <div class="actions">
-        <button type="button" class="ghost" onclick={onskip}>Skip — stay Anonymous</button>
+        <button type="button" class="ghost" onclick={onskip}>Skip for now</button>
         <button type="submit" class="primary" disabled={name.trim() === ""}>Save name</button>
       </div>
     </form>

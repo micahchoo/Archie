@@ -89,7 +89,7 @@ export function manifestToExhibit(json: unknown, url: string): ManifestPlan {
 
   if (/Collection/i.test(type)) {
     throw new ManifestImportError(
-      "That's a IIIF Collection (a list of manifests). Paste the URL of one of its manifests — collection import is on the roadmap.",
+      "This is a IIIF Collection (a list of manifests). Paste the URL of a single manifest instead.",
     );
   }
   const isP3 = /Manifest$/i.test(type) && Array.isArray(m["items"]);
@@ -116,10 +116,10 @@ export function manifestToExhibit(json: unknown, url: string): ManifestPlan {
       ...(mediaType ? { mediaType, ...(duration ? { duration } : {}) } : dims ?? {}),
     });
   }
-  if (objects.length === 0) throw new ManifestImportError("That manifest has no canvases Archie can read.");
+  if (objects.length === 0) throw new ManifestImportError("That IIIF link has no images or media Archie can add.");
 
   const fallbackTitle = (() => {
-    try { return new URL(url).hostname; } catch { return "Imported manifest"; }
+    try { return new URL(url).hostname; } catch { return "Untitled exhibit"; }
   })();
   return { title: labelToString(m["label"], fallbackTitle), objects };
 }
