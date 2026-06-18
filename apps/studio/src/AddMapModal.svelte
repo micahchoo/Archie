@@ -68,7 +68,7 @@
   type DragMode = "move" | "pan" | "nw" | "ne" | "sw" | "se";
   let locatorEl: HTMLDivElement;
   let drag = $state<{ mode: DragMode; ox: number; oy: number } | null>(null);
-  function ptr(e: PointerEvent): { x: number; y: number } { const r = locatorEl.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  function ptr(e: MouseEvent): { x: number; y: number } { const r = locatorEl.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   function order(): void { if (west > east) [west, east] = [east, west]; if (south > north) [south, north] = [south, north]; }
   function dragDown(mode: DragMode, e: PointerEvent): void { e.preventDefault(); locatorEl.setPointerCapture(e.pointerId); const p = ptr(e); drag = { mode, ox: p.x, oy: p.y }; }
   function dragMove(e: PointerEvent): void {
