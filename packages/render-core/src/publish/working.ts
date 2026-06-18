@@ -13,6 +13,7 @@
 //   {project}/exhibits/{slug}/assets/{name}      — imported display masters
 import type { Filesystem, FsDirectory } from "../fs/seam.js";
 import type { Library, Section, Reading, RightsFields, MediaType, LayoutType } from "../model/model.js";
+import type { TileSourceDescriptor } from "../iiif/resolve.js";
 import type { OrientationTransform } from "../exif/orientation.js";
 import type { AnnotationLog } from "../wadm/types.js";
 import type { ClientId } from "../wadm/brand.js";
@@ -47,6 +48,10 @@ export interface WorkingObjectMeta extends RightsFields {
   mediaType?: MediaType;
   /** Seconds — for sound/video objects. */
   duration?: number;
+  /** Geo-annotation extension (DESIGN.md): when set, this object is a slippy-map basemap — mounted as a
+   *  bounded OSD pixel raster, geo-annotated with pins/regions. The explicit classification hint (a
+   *  `{z}/{x}/{y}` template can't be inferred from `source`; DESIGN.md R1). Absent for normal media. */
+  tileSource?: TileSourceDescriptor;
   provenance?: WorkingObjectProvenance;
 }
 
@@ -124,6 +129,7 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
         ...(o.width !== undefined ? { width: o.width } : {}),
         ...(o.height !== undefined ? { height: o.height } : {}),
         ...(o.mediaType ? { mediaType: o.mediaType } : {}),
+        ...(o.tileSource ? { tileSource: o.tileSource } : {}),
         ...(o.duration !== undefined ? { duration: o.duration } : {}),
         ...(o.provenance?.originalName ? { originalName: o.provenance.originalName } : {}),
         ...rightsOf(o),

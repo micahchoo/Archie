@@ -12,3 +12,6 @@ export { fitBoundsRect, applyFitBounds, type FitOptions, type ViewportLike } fro
 
 // Real OSD + Annotorious wiring (P1-2).
 export { createMount, type MountOptions } from "./mount.js";
+
+// Custom XYZ/slippy-map OSD tile source (geo-annotation extension; DESIGN.md T1).
+export { xyzTileSource, type OsdXyzConfig } from "./xyz.js";

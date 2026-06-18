@@ -18,8 +18,9 @@ import { resolveTileSource, isDegenerateSelectorValue, selectorBBox } from "@ren
 import { dispatchFitBounds, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
-import type { W3CSelector } from "@render/core";
-import type { MountSurface, SelectionId, FrameOverlay } from "./surface.js";
+import { xyzTileSource } from "./xyz.js";
+import type { W3CSelector, TileSourceDescriptor } from "@render/core";
+import type { MountSurface, SelectionId, FrameOverlay, DrawTool } from "./surface.js";
 
 /** Plain fit (no sidebar reservation) — used when the adapter supplies no fit options. */
 const PLAIN_FIT: FitOptions = { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
@@ -27,6 +28,12 @@ const PLAIN_FIT: FitOptions = { containerW: 0, sidebarW: 0, sidebarIsSheet: true
 export interface MountOptions {
   /** Image URL or IIIF source to LOAD into the viewer (classified by resolveTileSource — ADR-0004). */
   source: string;
+  /**
+   * A structured tile-source descriptor (geo-annotation extension; DESIGN.md). When present (an xyz map)
+   * it CLASSIFIES the surface — OSD mounts a bounded slippy-map pixel raster instead of the `source` string
+   * (which a `{z}/{x}/{y}` template could not classify; DESIGN.md R1). Annotations still target `canvasId`.
+   */
+  tileSource?: TileSourceDescriptor;
   /**
    * The canvas IRI annotations TARGET (the W3C adapter's source identity). Distinct from the
    * image `source` — annotations reference the Canvas, OSD loads the image. Defaults to `source`.
@@ -52,10 +59,13 @@ function selectorValue(a: unknown): string | undefined {
  * the image has opened. Returns the imperative MountSurface (fitBounds/setSelected/destroy/onSelect).
  */
 export async function createMount(container: HTMLElement, opts: MountOptions): Promise<MountSurface> {
-  const ts = resolveTileSource(opts.source);
-  const tileSources = ts.kind === "image" ? { type: "image", url: ts.url } : ts.infoUrl;
-  // Annotation target identity: the canvas IRI if given, else the loaded image url.
-  const sourceIRI = opts.canvasId ?? (ts.kind === "image" ? ts.url : ts.infoUrl);
+  // A structured tileSource descriptor (a map) classifies the surface; else the source string (ADR-0004).
+  const ts = resolveTileSource(opts.tileSource ?? opts.source);
+  const tileSources =
+    ts.kind === "image" ? { type: "image", url: ts.url } : ts.kind === "xyz" ? xyzTileSource(ts) : ts.infoUrl;
+  // Annotation target identity: the canvas IRI if given, else the loaded image url (a map MUST set canvasId
+  // — its tile template is not a canvas IRI; DESIGN.md canvas-identity note — so fall back to the source).
+  const sourceIRI = opts.canvasId ?? (ts.kind === "image" ? ts.url : ts.kind === "xyz" ? opts.source : ts.infoUrl);
 
   const viewer = OpenSeadragon({
     element: container,
@@ -143,6 +153,28 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     if (id !== undefined) for (const l of deleteL) l(id);
   });
   if (opts.onSelect) selectL.add(opts.onSelect);
+
+  // Pin gesture (geo-annotation; DESIGN.md T7). annotorious has no POINT shape, so a pin is a tiny rect
+  // synthesized from ONE canvas click — active only while the tool is 'pin' AND drawing is enabled. The
+  // hit-rect is sized to ~PIN_SCREEN_PX at the click zoom so the marker is visible on drop (constant-screen
+  // glyph polish = T8). The click converts screen → image px (the space annotorious anchors in), so the pin
+  // stays put across zoom/pan for free; the app derives lng/lat from the pixel centre (geometry/geo).
+  let drawTool: DrawTool = "rectangle";
+  let drawingOn = opts.drawingEnabled ?? false;
+  const pinArmed = (): boolean => drawingOn && drawTool === "pin";
+  const PIN_SCREEN_PX = 24;
+  viewer.addHandler("canvas-click", (e) => {
+    const ev = e as { quick?: boolean; position?: { x: number; y: number }; preventDefaultAction?: boolean };
+    if (!pinArmed() || ev.quick === false || !ev.position) return;
+    ev.preventDefaultAction = true; // a pin click must not also zoom/recenter the viewport
+    const img = viewer.viewport.viewerElementToImageCoordinates(new OpenSeadragon.Point(ev.position.x, ev.position.y));
+    const w = Math.max(1, viewer.viewport.deltaPointsFromPixels(new OpenSeadragon.Point(PIN_SCREEN_PX, 0)).x);
+    const s = Math.round(w);
+    const value = `xywh=pixel:${Math.round(img.x - w / 2)},${Math.round(img.y - w / 2)},${s},${s}`;
+    // Synthesize the W3C annotation the create-listeners expect; the app's onCreate reads target, not id.
+    const synth = { id: `pin-${crypto.randomUUID()}`, type: "Annotation", target: { source: sourceIRI, selector: { type: "FragmentSelector", value } } };
+    for (const l of createL) l(synth as never);
+  });
 
   const subscribe = <T>(set: Set<T>, cb: T): (() => void) => {
     set.add(cb);
@@ -275,10 +307,15 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       else drawFrame(frame);
     },
     setDrawingEnabled(enabled: boolean) {
-      annotator.setDrawingEnabled(enabled);
+      drawingOn = enabled;
+      // A pin is our own canvas-click gesture, not an annotorious draw tool — keep annotorious OFF for it.
+      annotator.setDrawingEnabled(enabled && drawTool !== "pin");
     },
     setDrawingTool(tool) {
-      annotator.setDrawingTool(tool);
+      drawTool = tool;
+      // annotorious only knows rect/polygon; 'pin' is handled by the canvas-click gesture above.
+      if (tool !== "pin") annotator.setDrawingTool(tool);
+      annotator.setDrawingEnabled(drawingOn && tool !== "pin");
     },
     markerScreenRect(id) {
       // Compute from the PUBLIC annotation list + core geometry (NOT Annotorious internals — that store

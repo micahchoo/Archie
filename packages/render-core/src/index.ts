@@ -53,6 +53,7 @@ export * from "./model/layout.js";
 
 // CLEAN-LIFT pure modules (spike-0001): selector geometry, URL/deep-link, IIIF resolution.
 export * from "./geometry/selector.js";
+export * from "./geometry/geo.js";
 export * from "./geometry/marginalia.js";
 export * from "./geometry/mediafragment.js";
 export * from "./geometry/coverage.js";
