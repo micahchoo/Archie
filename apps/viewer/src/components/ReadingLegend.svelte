@@ -19,6 +19,7 @@
   <!-- aside = complementary landmark (axe region rule: overlay content must live in a landmark) -->
   <aside class="legend" aria-label="Readings">
     <span class="title">Readings</span>
+    <span class="gloss">Compare interpretations</span>
     <div class="opts" role="radiogroup" aria-label="Readings of this source">
       <button type="button" role="radio" aria-checked={active === null} class="opt" class:on={active === null} onclick={() => onselect(null)}>
         <span class="sw base"></span><span class="nm">General notes</span>
@@ -47,8 +48,10 @@
   .title {
     display: block; font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 500;
     letter-spacing: 0.18em; text-transform: uppercase;
-    color: var(--ink-canvas-muted); opacity: 0.62; margin-bottom: var(--space-2);
+    color: var(--ink-canvas-muted); opacity: 0.62; margin-bottom: 2px;
   }
+  /* One-line gloss under the eyebrow — what readings are FOR (compare interpretations). Mirrors the Studio rail. */
+  .gloss { display: block; font-family: var(--font-body), sans-serif; font-size: var(--text-ui-xs, 0.7rem); color: var(--ink-canvas-secondary); margin-bottom: var(--space-2); }
   .opts { display: flex; flex-direction: column; gap: 2px; }
   .opt {
     display: flex; align-items: center; gap: var(--space-2); text-align: left;
