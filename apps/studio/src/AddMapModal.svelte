@@ -1,8 +1,8 @@
 <script lang="ts">
   // Add-map modal (geo-annotation Phase 3, Q3 — INVENTED UX, human-gated). Pick a CURATED basemap (terms
-  // permit static-site embedding, attribution baked in → resolves D6), set the bounded extent, name it;
-  // emits a tileSource descriptor + label. The grilling's ideal extent gesture is "draw a box on a world
-  // locator" (Q3); this first cut uses bounds fields + region presets, with the draw-box as the owed polish.
+  // permit static-site embedding, attribution baked in → resolves D6), set the bounded extent on a
+  // pan/zoom world locator (drag the box / drag handles to clamp · drag the map to pan · wheel/± to zoom),
+  // name it; emits a tileSource descriptor + label. Bounds fields + presets remain for precision.
   import { lngLatToPixel, pixelToLngLat, type TileSourceDescriptor } from "@render/core";
 
   let { onadd, onclose }: {
@@ -25,63 +25,67 @@
 
   let providerId = $state(PROVIDERS[0]!.id);
   let label = $state("");
-  let west = $state(-0.51), south = $state(51.28), east = $state(0.33), north = $state(51.69); // default: a region, not the world
+  let west = $state(-0.51), south = $state(51.28), east = $state(0.33), north = $state(51.69); // a region, not the world
   let maxZoom = $state(14);
   let useCustom = $state(false);
   let customTemplate = $state("");
   let customAttribution = $state("");
 
   const provider = $derived(PROVIDERS.find((p) => p.id === providerId) ?? PROVIDERS[0]!);
-  const templateOk = $derived(!useCustom || /\{z\}/.test(customTemplate) && /\{x\}/.test(customTemplate) && /\{y\}/.test(customTemplate));
+  const templateOk = $derived(!useCustom || (/\{z\}/.test(customTemplate) && /\{x\}/.test(customTemplate) && /\{y\}/.test(customTemplate)));
   const valid = $derived(east > west && north > south && maxZoom >= 1 && maxZoom <= 22 && templateOk);
 
-  function applyRegion(b: [number, number, number, number]) { [west, south, east, north] = b; }
-
-  // --- Graphical clamping (Q3): drag a box on a world locator to set the extent; drag handles to clamp. ---
-  const S = 320; // locator square size (px) — a Web-Mercator world tile rendered SxS
+  // --- Locator (mini slippy map): pixel↔lng/lat at a chosen zoom; pan + zoom for precise clamping. ---
+  const S = 320; // locator viewport (px)
   const clamp = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
-  const toPx = (lng: number, lat: number): { x: number; y: number } => lngLatToPixel({ lng, lat }, { tileSize: S, maxZoom: 0 });
-  const toLL = (x: number, y: number): { lng: number; lat: number } => pixelToLngLat({ x: clamp(x, 0, S), y: clamp(y, 0, S) }, { tileSize: S, maxZoom: 0 });
-  // The current bounds as a pixel rect on the locator (NW corner + size).
-  const boxPx = $derived.by(() => { const nw = toPx(west, north); const se = toPx(east, south); return { x: nw.x, y: nw.y, w: se.x - nw.x, h: se.y - nw.y }; });
-  // The selected basemap's z0 tile = the whole world (a backdrop to draw on); fall back to OSM if custom is blank.
-  const worldTileUrl = $derived.by(() => {
-    const t = useCustom ? customTemplate : provider.template;
-    const filled = t.replace("{z}", "0").replace("{x}", "0").replace("{y}", "0");
-    return /\{[zxy]\}/.test(filled) ? "https://tile.openstreetmap.org/0/0/0.png" : filled;
-  });
+  const ext = (z: number): { tileSize: number; maxZoom: number } => ({ tileSize: 256, maxZoom: z });
+  const llToWorld = (lng: number, lat: number, z: number) => lngLatToPixel({ lng, lat }, ext(z));
+  const worldToLL = (x: number, y: number, z: number) => pixelToLngLat({ x, y }, ext(z));
 
-  type DragMode = "new" | "move" | "nw" | "ne" | "sw" | "se";
-  let locatorEl: SVGSVGElement;
+  let locZoom = $state(8);
+  let locCenter = $state<{ lng: number; lat: number }>({ lng: -0.09, lat: 51.485 });
+
+  const origin = $derived.by(() => { const c = llToWorld(locCenter.lng, locCenter.lat, locZoom); return { x: c.x - S / 2, y: c.y - S / 2, z: locZoom }; });
+  const screenToLL = (sx: number, sy: number) => worldToLL(origin.x + sx, origin.y + sy, origin.z);
+  const llToScreen = (lng: number, lat: number) => { const w = llToWorld(lng, lat, origin.z); return { x: w.x - origin.x, y: w.y - origin.y }; };
+  // basemap tiles covering the viewport at the current zoom (positioned absolutely inside the locator)
+  const tiles = $derived.by(() => {
+    const z = origin.z, n = 2 ** z;
+    const t = useCustom ? customTemplate : provider.template;
+    const out: Array<{ key: string; url: string; left: number; top: number }> = [];
+    for (let tx = Math.floor(origin.x / 256); tx <= Math.floor((origin.x + S) / 256); tx++) {
+      for (let ty = Math.floor(origin.y / 256); ty <= Math.floor((origin.y + S) / 256); ty++) {
+        if (tx < 0 || ty < 0 || tx >= n || ty >= n) continue;
+        const url = t.replace("{z}", String(z)).replace("{x}", String(tx)).replace("{y}", String(ty));
+        if (/\{[zxy]\}/.test(url)) continue; // unfilled (invalid custom template) → skip
+        out.push({ key: `${z}/${tx}/${ty}`, url, left: tx * 256 - origin.x, top: ty * 256 - origin.y });
+      }
+    }
+    return out;
+  });
+  const boxPx = $derived.by(() => { const nw = llToScreen(west, north); const se = llToScreen(east, south); return { x: nw.x, y: nw.y, w: se.x - nw.x, h: se.y - nw.y }; });
+
+  type DragMode = "move" | "pan" | "nw" | "ne" | "sw" | "se";
+  let locatorEl: HTMLDivElement;
   let drag = $state<{ mode: DragMode; ox: number; oy: number } | null>(null);
-  function ptr(e: PointerEvent): { x: number; y: number } {
-    const r = locatorEl.getBoundingClientRect();
-    return { x: clamp(e.clientX - r.left, 0, S), y: clamp(e.clientY - r.top, 0, S) };
-  }
+  function ptr(e: PointerEvent): { x: number; y: number } { const r = locatorEl.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   function order(): void { if (west > east) [west, east] = [east, west]; if (south > north) [south, north] = [south, north]; }
-  function dragDown(mode: DragMode, e: PointerEvent): void {
-    e.preventDefault();
-    locatorEl.setPointerCapture(e.pointerId);
-    const p = ptr(e);
-    drag = { mode, ox: p.x, oy: p.y };
-    if (mode === "new") { const ll = toLL(p.x, p.y); west = ll.lng; east = ll.lng; north = ll.lat; south = ll.lat; }
-  }
+  function dragDown(mode: DragMode, e: PointerEvent): void { e.preventDefault(); locatorEl.setPointerCapture(e.pointerId); const p = ptr(e); drag = { mode, ox: p.x, oy: p.y }; }
   function dragMove(e: PointerEvent): void {
     if (!drag) return;
     const p = ptr(e);
-    if (drag.mode === "new") {
-      const a = toLL(drag.ox, drag.oy), b = toLL(p.x, p.y);
-      west = Math.min(a.lng, b.lng); east = Math.max(a.lng, b.lng); north = Math.max(a.lat, b.lat); south = Math.min(a.lat, b.lat);
+    if (drag.mode === "pan") {
+      const c = llToWorld(locCenter.lng, locCenter.lat, origin.z);
+      locCenter = worldToLL(c.x - (p.x - drag.ox), c.y - (p.y - drag.oy), origin.z);
+      drag.ox = p.x; drag.oy = p.y;
     } else if (drag.mode === "move") {
-      const nw0 = toPx(west, north), se0 = toPx(east, south);
-      const w = se0.x - nw0.x, h = se0.y - nw0.y;
+      const nw = llToScreen(west, north), se = llToScreen(east, south);
       const dx = p.x - drag.ox, dy = p.y - drag.oy;
-      const nx = clamp(nw0.x + dx, 0, S - w), ny = clamp(nw0.y + dy, 0, S - h);
-      const nw = toLL(nx, ny), se = toLL(nx + w, ny + h);
-      west = nw.lng; north = nw.lat; east = se.lng; south = se.lat;
+      const a = screenToLL(nw.x + dx, nw.y + dy), b = screenToLL(se.x + dx, se.y + dy);
+      west = a.lng; north = a.lat; east = b.lng; south = b.lat;
       drag.ox = p.x; drag.oy = p.y;
     } else {
-      const ll = toLL(p.x, p.y);
+      const ll = screenToLL(p.x, p.y);
       if (drag.mode.includes("w")) west = ll.lng;
       if (drag.mode.includes("e")) east = ll.lng;
       if (drag.mode.includes("n")) north = ll.lat;
@@ -90,6 +94,21 @@
     }
   }
   function dragUp(): void { drag = null; }
+  function zoomBy(d: number): void { locZoom = clamp(locZoom + d, 0, Math.min(provider.maxZoom, 18)); }
+  function onWheel(e: WheelEvent): void { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1 : -1); }
+
+  // Centre + fit the locator to the current box (run on preset pick + "fit" button).
+  function fitToBox(): void {
+    locCenter = { lng: (west + east) / 2, lat: (south + north) / 2 };
+    for (let z = 18; z >= 0; z--) {
+      const w = llToWorld(east, south, z).x - llToWorld(west, north, z).x;
+      const h = llToWorld(west, south, z).y - llToWorld(east, north, z).y;
+      if (w <= S * 0.85 && h <= S * 0.85) { locZoom = z; return; }
+    }
+    locZoom = 0;
+  }
+  function applyRegion(b: [number, number, number, number]) { [west, south, east, north] = b; fitToBox(); }
+
   const HANDLES: Array<{ m: DragMode; fx: (b: { x: number; y: number; w: number; h: number }) => number; fy: (b: { x: number; y: number; w: number; h: number }) => number }> = [
     { m: "nw", fx: (b) => b.x, fy: (b) => b.y },
     { m: "ne", fx: (b) => b.x + b.w, fy: (b) => b.y },
@@ -122,12 +141,14 @@
 
     <fieldset class="extent">
       <legend>Region shown — the map is bounded to this (ADR-0015)</legend>
-      <div class="presets">{#each REGIONS as r}<button type="button" onclick={() => applyRegion(r.bounds)}>{r.name}</button>{/each}</div>
-      <!-- Graphical clamping (Q3): drag on the world to draw a region; drag the corner handles to clamp it. -->
-      <div class="locator" style="width:{S}px;height:{S}px">
-        <img src={worldTileUrl} alt="World basemap" width={S} height={S} draggable="false" />
-        <svg bind:this={locatorEl} width={S} height={S} class:dragging={drag !== null}
-          onpointerdown={(e) => dragDown("new", e)} onpointermove={dragMove} onpointerup={dragUp} onpointercancel={dragUp}>
+      <div class="presets">{#each REGIONS as r}<button type="button" onclick={() => applyRegion(r.bounds)}>{r.name}</button>{/each}
+        <button type="button" class="fit" onclick={fitToBox} title="Centre & zoom the locator on the region">Fit ⤢</button>
+      </div>
+      <!-- Pan/zoom locator (Q3): drag the box / handles to clamp · drag the map to pan · wheel or ± to zoom. -->
+      <div class="locator" bind:this={locatorEl} role="application" aria-label="Region locator"
+        style="width:{S}px;height:{S}px" onpointermove={dragMove} onpointerup={dragUp} onpointercancel={dragUp} onwheel={onWheel}>
+        <div class="tiles">{#each tiles as t (t.key)}<img src={t.url} alt="" draggable="false" style="left:{t.left}px;top:{t.top}px" />{/each}</div>
+        <svg width={S} height={S} class:dragging={drag !== null} onpointerdown={(e) => dragDown("pan", e)}>
           <rect class="sel" x={boxPx.x} y={boxPx.y} width={Math.max(0, boxPx.w)} height={Math.max(0, boxPx.h)}
             onpointerdown={(e) => { e.stopPropagation(); dragDown("move", e); }} />
           {#each HANDLES as h}
@@ -135,6 +156,11 @@
               onpointerdown={(e) => { e.stopPropagation(); dragDown(h.m, e); }} />
           {/each}
         </svg>
+        <div class="zoom-ctrls">
+          <button type="button" onclick={() => zoomBy(1)} aria-label="Zoom in">+</button>
+          <button type="button" onclick={() => zoomBy(-1)} aria-label="Zoom out">−</button>
+        </div>
+        <span class="loc-z">z{locZoom}</span>
       </div>
       <div class="bounds">
         <label>W<input type="number" step="any" bind:value={west} /></label>
@@ -143,7 +169,7 @@
         <label>N<input type="number" step="any" bind:value={north} /></label>
         <label>Max&nbsp;zoom<input type="number" min="1" max="22" bind:value={maxZoom} /></label>
       </div>
-      <p class="hint">Drag on the map to draw a region; drag a corner handle to clamp it. Or pick a preset / type exact bounds.</p>
+      <p class="hint">Drag the box (or its corner handles) to clamp · drag the map to pan · wheel or ± to zoom · or type exact bounds.</p>
     </fieldset>
 
     <details bind:open={useCustom}>
@@ -172,13 +198,18 @@
   .extent legend { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-paper-secondary, #6b6557); padding: 0 6px; }
   .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-2, 8px); }
   .presets button { font: inherit; font-size: 0.78rem; padding: 3px 10px; border: 1px solid var(--border-paper, #cfc8ba); border-radius: 999px; background: #fff; cursor: pointer; color: inherit; }
-  /* Graphical clamping locator (Q3): a world tile with an SVG box overlay you drag to set/clamp the extent. */
-  .locator { position: relative; margin: var(--space-2, 8px) auto; border: 1px solid var(--border-paper, #cfc8ba); border-radius: 4px; overflow: hidden; touch-action: none; }
-  .locator img { display: block; width: 100%; height: 100%; user-select: none; -webkit-user-drag: none; opacity: 0.92; }
-  .locator svg { position: absolute; inset: 0; cursor: crosshair; }
+  .presets .fit { margin-left: auto; }
+  /* Pan/zoom locator (Q3). */
+  .locator { position: relative; margin: var(--space-2, 8px) auto; border: 1px solid var(--border-paper, #cfc8ba); border-radius: 4px; overflow: hidden; touch-action: none; background: #aadaff; }
+  .locator .tiles { position: absolute; inset: 0; }
+  .locator .tiles img { position: absolute; width: 256px; height: 256px; user-select: none; -webkit-user-drag: none; }
+  .locator svg { position: absolute; inset: 0; cursor: grab; }
   .locator svg.dragging { cursor: grabbing; }
   .locator .sel { fill: var(--accent, #3a6b4c); fill-opacity: 0.2; stroke: var(--accent, #3a6b4c); stroke-width: 1.5; cursor: move; }
   .locator .handle { fill: #fff; stroke: var(--accent, #3a6b4c); stroke-width: 1.5; cursor: pointer; }
+  .zoom-ctrls { position: absolute; top: 6px; left: 6px; display: flex; flex-direction: column; gap: 2px; }
+  .zoom-ctrls button { width: 24px; height: 24px; font-size: 1rem; line-height: 1; border: 1px solid var(--border-paper, #cfc8ba); background: rgba(255, 255, 255, 0.92); border-radius: 4px; cursor: pointer; color: #2a2722; }
+  .loc-z { position: absolute; bottom: 6px; left: 6px; font: 0.7rem var(--font-mono, monospace); background: rgba(0, 0, 0, 0.55); color: #fff; padding: 1px 5px; border-radius: 3px; }
   .bounds { display: flex; flex-wrap: wrap; gap: 8px; }
   .bounds label { display: flex; align-items: center; gap: 4px; font-size: 0.78rem; }
   .bounds input { width: 5.5rem; }
