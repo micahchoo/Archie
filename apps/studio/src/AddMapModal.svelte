@@ -94,8 +94,19 @@
     }
   }
   function dragUp(): void { drag = null; }
-  function zoomBy(d: number): void { locZoom = clamp(locZoom + d, 0, Math.min(provider.maxZoom, 18)); }
-  function onWheel(e: WheelEvent): void { e.preventDefault(); zoomBy(e.deltaY < 0 ? 1 : -1); }
+  // Zoom keeping the geographic point under (mx,my) fixed on screen — "zoom at mouse", not at centre.
+  function zoomAt(mx: number, my: number, d: number): void {
+    const nz = clamp(locZoom + d, 0, Math.min(provider.maxZoom, 18));
+    if (nz === locZoom) return;
+    const g = screenToLL(mx, my); // geo under the cursor at the current zoom
+    const gw = llToWorld(g.lng, g.lat, nz); // its world px at the new zoom
+    locZoom = nz;
+    locCenter = worldToLL(gw.x - mx + S / 2, gw.y - my + S / 2, nz); // recentre so g stays under (mx,my)
+  }
+  const zoomBy = (d: number): void => zoomAt(S / 2, S / 2, d); // the ± buttons zoom at centre
+  function onWheel(e: WheelEvent): void { e.preventDefault(); const p = ptr(e); zoomAt(p.x, p.y, e.deltaY < 0 ? 1 : -1); }
+  // Set the region to exactly the current locator viewport ("Use view").
+  function selectCurrent(): void { const nw = screenToLL(0, 0), se = screenToLL(S, S); west = nw.lng; north = nw.lat; east = se.lng; south = se.lat; }
 
   // Centre + fit the locator to the current box (run on preset pick + "fit" button).
   function fitToBox(): void {
@@ -142,7 +153,8 @@
     <fieldset class="extent">
       <legend>Region shown — the map is bounded to this (ADR-0015)</legend>
       <div class="presets">{#each REGIONS as r}<button type="button" onclick={() => applyRegion(r.bounds)}>{r.name}</button>{/each}
-        <button type="button" class="fit" onclick={fitToBox} title="Centre & zoom the locator on the region">Fit ⤢</button>
+        <button type="button" class="action" onclick={selectCurrent} title="Set the region to exactly what's shown in the locator now">⊡ Use view</button>
+        <button type="button" onclick={fitToBox} title="Centre & zoom the locator on the region">Fit ⤢</button>
       </div>
       <!-- Pan/zoom locator (Q3): drag the box / handles to clamp · drag the map to pan · wheel or ± to zoom. -->
       <div class="locator" bind:this={locatorEl} role="application" aria-label="Region locator"
@@ -198,7 +210,7 @@
   .extent legend { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-paper-secondary, #6b6557); padding: 0 6px; }
   .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: var(--space-2, 8px); }
   .presets button { font: inherit; font-size: 0.78rem; padding: 3px 10px; border: 1px solid var(--border-paper, #cfc8ba); border-radius: 999px; background: #fff; cursor: pointer; color: inherit; }
-  .presets .fit { margin-left: auto; }
+  .presets .action { margin-left: auto; }
   /* Pan/zoom locator (Q3). */
   .locator { position: relative; margin: var(--space-2, 8px) auto; border: 1px solid var(--border-paper, #cfc8ba); border-radius: 4px; overflow: hidden; touch-action: none; background: #aadaff; }
   .locator .tiles { position: absolute; inset: 0; }
