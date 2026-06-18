@@ -25,6 +25,7 @@ import {
   ARCHIE_LAYERS,
   ARCHIE_READING,
   ARCHIE_EMPHASIS,
+  ARCHIE_GEO,
   ARCHIE_REV,
   ARCHIE_PARENT,
   ARCHIE_MERGE_PARENTS,
@@ -113,6 +114,7 @@ function withDagMeta(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnn
   if (record.layers !== undefined) a[ARCHIE_LAYERS] = record.layers;
   if (record.reading !== undefined) a[ARCHIE_READING] = record.reading;
   if (record.emphasis !== undefined) a[ARCHIE_EMPHASIS] = record.emphasis;
+  if (record.geo !== undefined) a[ARCHIE_GEO] = record.geo;
   return ann;
 }
 
@@ -135,6 +137,13 @@ function withEmphasis(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAn
   return ann;
 }
 
+/** Put the geographic anchor on a head annotation (geo-truth — Q4/ADR-0015) — emitted ONLY when set, so
+ *  non-Map notes stay byte-identical; the consumer's `geoOf` reads absence as undefined. Pure consumers ignore it. */
+function withGeo(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
+  if (record.geo !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_GEO] = record.geo;
+  return ann;
+}
+
 /** The source IRI a record targets (the canvas id, for grouping heads into per-canvas pages). */
 export function targetSource(record: AnnotationRecord): string {
   const t = record.target;
@@ -149,7 +158,7 @@ export function targetSource(record: AnnotationRecord): string {
 export function headsPageFromRecords(heads: AnnotationRecord[], pageId: string, ids: Map<RevId, string>, opts: SerializeOptions = {}): W3CAnnotationPage {
   const historyBase = opts.historyBase ?? "annotations/history/";
   const items: W3CAnnotation[] = heads.map((head) => {
-    const ann = withEmphasis(withReading(withLayers(withProvLink(recordToAnnotation(head, ids.get(head.rev)!), head.parent, ids), head), head), head);
+    const ann = withGeo(withEmphasis(withReading(withLayers(withProvLink(recordToAnnotation(head, ids.get(head.rev)!), head.parent, ids), head), head), head), head);
     ann[ARCHIE_HAS_HISTORY] = `${historyBase}${head.logicalId}.json`;
     return ann;
   });
