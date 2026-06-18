@@ -24,6 +24,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   import NarrativeEditor from "./NarrativeEditor.svelte";
   import DetailsEditor from "./DetailsEditor.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
+  import AddMapModal from "./AddMapModal.svelte";
   import { matches, typingInField } from "./shortcuts.js";
   import {
     AnnotationSession, asClientId, encodeLinkRef,
@@ -744,6 +745,18 @@ import LayoutPicker from "./LayoutPicker.svelte";
     const dims = mt === "image" ? await imageDims(src) : null; // dimension-probe only makes sense for images
     await appendObject({ id, source: src, label: label.trim() || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(mt !== "image" ? { mediaType: mt } : {}) });
   }
+  // Add-map modal (Phase 3 / Q3 — invented UX, human-gated): a Map is an Object whose source is its tile
+  // template and which carries the tileSource descriptor (medium = Map). The modal supplies template + bounds.
+  let mapModalOpen = $state(false);
+  async function addMapObject(m: { label: string; tileSource: TileSourceDescriptor }) {
+    const ex = lib.meta.exhibits.find((e) => e.slug === currentSlug);
+    if (!ex) return;
+    const id = nextObjectId(ex);
+    await appendObject({ id, source: m.tileSource.template, label: m.label, tileSource: m.tileSource });
+    mapModalOpen = false;
+    switchObject(id);
+    view = "editor";
+  }
   // Add a LOCAL image file: store bytes in OPFS (persists), source "/assets/{name}". For phone photos
   // with EXIF orientation (≠1), BAKE an upright display master (CONTEXT §89.1) — the original is
   // preserved beside it (assets-original/), provenance records the transform, and the object targets
@@ -1398,7 +1411,9 @@ import LayoutPicker from "./LayoutPicker.svelte";
       </form>
     {:else}
       <button class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Object</button>
+      <button class="add-obj-toggle" onclick={() => (mapModalOpen = true)} title="Add a map (geo-annotation)">+ Map</button>
     {/if}
+    {#if mapModalOpen}<AddMapModal onadd={(m) => { void addMapObject(m); }} onclose={() => (mapModalOpen = false)} />{/if}
     {#if importStatus}
       <span class="import-status" role="status" aria-live="polite">
         <span class="import-spinner" aria-hidden="true"></span>
