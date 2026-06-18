@@ -9,6 +9,7 @@ import {
   ARCHIE_LAYERS,
   ARCHIE_READING,
   ARCHIE_EMPHASIS,
+  ARCHIE_GEO,
   ARCHIE_REV,
   ARCHIE_PARENT,
   ARCHIE_MERGE_PARENTS,
@@ -16,11 +17,27 @@ import {
   ARCHIE_LAST_EDITOR,
   ARCHIE_DELETED,
 } from "../wadm/types.js";
-import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CAnnotationPage, W3CBody, W3CTarget } from "../wadm/types.js";
+import type { AnnotationLog, AnnotationRecord, GeoAnchor, W3CAnnotation, W3CAnnotationPage, W3CBody, W3CTarget } from "../wadm/types.js";
 import type { RevId } from "../wadm/brand.js";
 
 function asString(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
+}
+
+const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+
+/** Validate a parsed `archie:geo` value into a GeoAnchor (geo-truth — ADR-0015); undefined if malformed
+ *  (a foreign/garbled value is skipped, not an error — matches the emphasis/reading parse contract). */
+function asGeoAnchor(v: unknown): GeoAnchor | undefined {
+  if (typeof v !== "object" || v === null) return undefined;
+  const g = v as Record<string, unknown>;
+  if (g.type === "bbox" && isNum(g.west) && isNum(g.south) && isNum(g.east) && isNum(g.north)) {
+    return { type: "bbox", west: g.west, south: g.south, east: g.east, north: g.north };
+  }
+  if (g.type === "polygon" && Array.isArray(g.coordinates) && g.coordinates.every((c) => Array.isArray(c) && c.length === 2 && isNum(c[0]) && isNum(c[1]))) {
+    return { type: "polygon", coordinates: g.coordinates as Array<[number, number]> };
+  }
+  return undefined;
 }
 
 /**
@@ -46,6 +63,7 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
   const reading = asString(a[ARCHIE_READING]);
   const emphRaw = a[ARCHIE_EMPHASIS];
   const emphasis = emphRaw === "muted" || emphRaw === "normal" || emphRaw === "strong" ? emphRaw : undefined;
+  const geo = asGeoAnchor(a[ARCHIE_GEO]);
   const target = (Array.isArray(ann.target) ? ann.target[0] : ann.target) as W3CTarget;
   const record: AnnotationRecord = {
     logicalId: asLogicalId(logical),
@@ -62,6 +80,7 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
     ...(layers !== undefined ? { layers } : {}),
     ...(reading !== undefined ? { reading } : {}),
     ...(emphasis !== undefined ? { emphasis } : {}),
+    ...(geo !== undefined ? { geo } : {}),
   };
   return record;
 }

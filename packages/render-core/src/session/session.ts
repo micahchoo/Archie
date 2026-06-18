@@ -11,8 +11,8 @@ import { recordToAnnotation } from "../spine/serialize.js";
 import { writeAnnotations, readAnnotations } from "../spine/persist.js";
 import type { SerializeOptions } from "../spine/serialize.js";
 import type { FsDirectory } from "../fs/seam.js";
-import { ARCHIE_LAYERS, ARCHIE_READING, ARCHIE_EMPHASIS } from "../wadm/types.js";
-import type { Emphasis } from "../wadm/types.js";
+import { ARCHIE_LAYERS, ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_GEO } from "../wadm/types.js";
+import type { Emphasis, GeoAnchor } from "../wadm/types.js";
 import { mergeLogs, headsOf, resolveConflict } from "../spine/merge.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CBody, W3CTarget } from "../wadm/types.js";
 import type { ClientId, LogicalId } from "../wadm/brand.js";
@@ -26,6 +26,8 @@ export interface NewNote {
   reading?: string;
   /** Authored per-note emphasis (1489), or undefined = default `"normal"`. */
   emphasis?: Emphasis;
+  /** Geographic anchor (geo-truth, ADR-0015) for a Map note, or undefined = none. */
+  geo?: GeoAnchor;
   motivation?: string | string[];
 }
 
@@ -38,6 +40,8 @@ export interface NoteEdit {
   reading?: string | null;
   /** Emphasis; undefined here leaves it unchanged (carried forward). To CLEAR to `"normal"`, pass null. */
   emphasis?: Emphasis | null;
+  /** Geo anchor (ADR-0015); undefined = carry forward, null = clear, value = set. Mirrors `emphasis`. */
+  geo?: GeoAnchor | null;
   motivation?: string | string[];
 }
 
@@ -75,6 +79,7 @@ export class AnnotationSession {
       ...(input.layers !== undefined ? { layers: input.layers } : {}),
       ...(input.reading !== undefined ? { reading: input.reading } : {}),
       ...(input.emphasis !== undefined ? { emphasis: input.emphasis } : {}),
+      ...(input.geo !== undefined ? { geo: input.geo } : {}),
       ...(input.motivation !== undefined ? { motivation: input.motivation } : {}),
     });
     this.log = log;
@@ -92,6 +97,7 @@ export class AnnotationSession {
       ...(changes.layers !== undefined ? { layers: changes.layers } : {}),
       ...(changes.reading !== undefined ? { reading: changes.reading } : {}),
       ...(changes.emphasis !== undefined ? { emphasis: changes.emphasis } : {}),
+      ...(changes.geo !== undefined ? { geo: changes.geo } : {}),
       ...(changes.motivation !== undefined ? { motivation: changes.motivation } : {}),
     });
     this.log = log;
@@ -152,6 +158,7 @@ export class AnnotationSession {
       if (record.layers !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_LAYERS] = record.layers;
       if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
       if (record.emphasis !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] = record.emphasis;
+      if (record.geo !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_GEO] = record.geo;
       return ann;
     });
   }

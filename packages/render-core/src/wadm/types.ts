@@ -183,17 +183,21 @@ export interface AnnotationRecord {
   /** Authored per-note visual emphasis (1489), or undefined = default `"normal"`. Mirrors `reading`'s
    *  optional shape; serialized to `archie:emphasis` only when set, so existing records stay byte-stable. */
   emphasis?: Emphasis;
+  /** Geographic anchor for a Map annotation (geo-truth — Q4 / ADR-0015): lng/lat is the SOURCE OF TRUTH,
+   *  the target's pixel selector its derived projection. Set only on Map-targeted notes. Serialized to
+   *  `archie:geo` only when set (byte-stable when absent), mirroring `emphasis`; pure consumers ignore it. */
+  geo?: GeoAnchor;
 }
 
 /** Per-note visual emphasis (1489) — the single source of truth (query/published.ts imports this). */
 export type Emphasis = "muted" | "normal" | "strong";
 
-/** A geographic anchor for a map annotation (`archie:geo` value). v1/Phase-1: a point. bbox + polyline
- *  are reserved for geo-regions (Phase 2) so the union does not churn when regions land. */
+/** A geographic anchor for a Map annotation (the `archie:geo` value; geo-truth — ADR-0015 / Q4). A **Box**
+ *  anchors as a `bbox`; an **Outline** as a `polygon` (a ring of `[lng, lat]`). NO point form — pins were
+ *  dropped in the 2026-06-18 grilling; geo-Notes are Box/Outline only (CONTEXT geo-annotation UX). */
 export type GeoAnchor =
-  | { type: "point"; lng: number; lat: number }
   | { type: "bbox"; west: number; south: number; east: number; north: number }
-  | { type: "polyline"; coordinates: Array<[number, number]> };
+  | { type: "polygon"; coordinates: Array<[number, number]> };
 
 /** The append-only annotation log — the authoritative source every projection reads. */
 export type AnnotationLog = readonly AnnotationRecord[];

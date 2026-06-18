@@ -5,7 +5,7 @@
 // must be read without filter.ts's record type. Body traversal is SHARED via query/body.ts — these
 // accessors earn their keep on the reading-key read + commentOf, not by re-typing the body list.
 
-import { ARCHIE_READING, ARCHIE_EMPHASIS, type Emphasis, type W3CAnnotation, type W3CBody } from "../wadm/types.js";
+import { ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_GEO, type Emphasis, type GeoAnchor, type W3CAnnotation, type W3CBody } from "../wadm/types.js";
 import { bodyList } from "./body.js";
 
 export type { Emphasis };
@@ -72,6 +72,22 @@ export function wholeObjectFlagOf(a: W3CAnnotation): boolean {
 export function emphasisOf(a: W3CAnnotation): Emphasis {
   const e = (a as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS];
   return e === "muted" || e === "strong" ? e : "normal";
+}
+
+/** The geographic anchor a published/working annotation carries (the `archie:geo` JSON-LD key; geo-truth —
+ *  ADR-0015), or undefined for a non-Map note. Shape-validated so a malformed value reads as absent. */
+export function geoOf(a: W3CAnnotation): GeoAnchor | undefined {
+  const g = (a as unknown as Record<string, unknown>)[ARCHIE_GEO];
+  if (typeof g !== "object" || g === null) return undefined;
+  const v = g as Record<string, unknown>;
+  const num = (x: unknown): x is number => typeof x === "number" && Number.isFinite(x);
+  if (v.type === "bbox" && num(v.west) && num(v.south) && num(v.east) && num(v.north)) {
+    return { type: "bbox", west: v.west, south: v.south, east: v.east, north: v.north };
+  }
+  if (v.type === "polygon" && Array.isArray(v.coordinates) && v.coordinates.every((c) => Array.isArray(c) && c.length === 2 && num(c[0]) && num(c[1]))) {
+    return { type: "polygon", coordinates: v.coordinates as Array<[number, number]> };
+  }
+  return undefined;
 }
 
 /** Multipliers an emphasis applies — `opacityMul` scales fill/stroke opacity, `strokeWidthMul` scales
