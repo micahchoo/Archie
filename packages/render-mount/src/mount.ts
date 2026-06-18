@@ -12,10 +12,11 @@
 
 import OpenSeadragon from "openseadragon";
 import { createOSDAnnotator, W3CImageFormat, UserSelectAction } from "@annotorious/openseadragon";
-import type { ImageAnnotation, W3CImageAnnotation } from "@annotorious/openseadragon";
+import type { ImageAnnotation, W3CImageAnnotation, DrawingStyle, DrawingStyleExpression } from "@annotorious/openseadragon";
 import { mountPlugin } from "@annotorious/plugin-tools";
 import { resolveTileSource, isDegenerateSelectorValue, selectorBBox, regionPixelRect } from "@render/core";
 import { dispatchFitBounds, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
+import { createFrameOverlay } from "./frame-overlay.js";
 import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
 import { xyzTileSource } from "./xyz.js";
@@ -49,7 +50,18 @@ export interface MountOptions {
   locator?: boolean;
 }
 
-function selectorValue(a: unknown): string | undefined {
+/**
+ * The degenerate-guard's selector-value extractor. INTENTIONALLY DISTINCT from core's `selectorOf`
+ * — they are NOT interchangeable and this is not a dedup candidate:
+ *   - `selectorValue` returns the raw `value` STRING for ANY single selector regardless of `type`
+ *     (the guard only asks "is this geometry empty/NaN?", which is type-agnostic).
+ *   - `selectorOf` returns a typed `{type,value}` OBJECT only for Fragment/Svg, and dereferences
+ *     ARRAY selectors via `[0]`.
+ * Swapping in `selectorOf` would change the guard: array-shaped selectors (→ undefined here, but a
+ * resolved value there) and non-Fragment/Svg single selectors (→ their string here, null there)
+ * would feed `isDegenerateSelectorValue` differently. Characterized in mount-guard.test.ts.
+ */
+export function selectorValue(a: unknown): string | undefined {
   const v = (a as { target?: { selector?: { value?: unknown } } })?.target?.selector?.value;
   return typeof v === "string" ? v : undefined;
 }
@@ -189,74 +201,10 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     };
   };
 
-  // Coverage-border overlay (7e1f) — a single canvas-wide SVG appended over the OSD container. Held in
-  // a closure var so re-calling setFrame replaces it and null clears it. Annotorious is per-shape only,
-  // so this is a NEW mechanism (not a marker style). The SVG ignores pointer events except at the 4
-  // corner hit-targets, leaving the centre free for pan/zoom (donor legibility: stroke-over-stroke halo).
-  let frameEl: SVGSVGElement | null = null;
-  const clearFrame = (): void => {
-    frameEl?.remove();
-    frameEl = null;
-  };
-  const drawFrame = (frame: FrameOverlay): void => {
-    clearFrame();
-    const NS = "http://www.w3.org/2000/svg";
-    const svg = document.createElementNS(NS, "svg");
-    svg.setAttribute("viewBox", "0 0 100 100");
-    svg.setAttribute("preserveAspectRatio", "none");
-    Object.assign(svg.style, {
-      position: "absolute",
-      inset: "0",
-      width: "100%",
-      height: "100%",
-      pointerEvents: "none",
-      zIndex: "20",
-    } as Partial<CSSStyleDeclaration>);
-
-    // The border: a dark halo stroke under the colour stroke so it stays legible over any media
-    // (stroke-over-stroke, matching the marker drop-shadow note). vector-effect keeps width constant.
-    const inset = 1.2;
-    const side = 100 - inset * 2;
-    const halo = document.createElementNS(NS, "rect");
-    const border = document.createElementNS(NS, "rect");
-    for (const r of [halo, border]) {
-      r.setAttribute("x", String(inset));
-      r.setAttribute("y", String(inset));
-      r.setAttribute("width", String(side));
-      r.setAttribute("height", String(side));
-      r.setAttribute("fill", "none");
-      r.setAttribute("vector-effect", "non-scaling-stroke");
-    }
-    halo.setAttribute("stroke", "rgba(0,0,0,0.55)");
-    halo.setAttribute("stroke-width", "5");
-    border.setAttribute("stroke", frame.colour);
-    border.setAttribute("stroke-width", "3");
-    svg.append(halo, border);
-
-    // 4 corner hit-targets — clickable L-brackets, centre untouched. pointer-events:auto only here.
-    const arm = 14;
-    const corners: Array<[number, number, number, number]> = [
-      [inset, inset, 1, 1], // TL
-      [100 - inset, inset, -1, 1], // TR
-      [inset, 100 - inset, 1, -1], // BL
-      [100 - inset, 100 - inset, -1, -1], // BR
-    ];
-    for (const [cx, cy, sx, sy] of corners) {
-      const path = document.createElementNS(NS, "path");
-      path.setAttribute("d", `M ${cx} ${cy + sy * arm} L ${cx} ${cy} L ${cx + sx * arm} ${cy}`);
-      path.setAttribute("fill", "none");
-      path.setAttribute("stroke", frame.colour);
-      path.setAttribute("stroke-width", "6");
-      path.setAttribute("vector-effect", "non-scaling-stroke");
-      path.setAttribute("stroke-linecap", "round");
-      path.style.pointerEvents = "stroke";
-      path.style.cursor = "pointer";
-      path.addEventListener("click", () => frame.onActivate());
-      svg.append(path);
-    }
-    viewer.element.appendChild(svg);
-    frameEl = svg;
-  };
+  // Coverage-border overlay (7e1f) — the canvas-wide SVG renderer is a standalone rendering concern
+  // (createFrameOverlay), appended over the OSD container. setFrame re-draws (replacing any current
+  // frame); null clears it. Annotorious is per-shape only, so this is a NEW mechanism (not a marker style).
+  const frameOverlay = createFrameOverlay(viewer.element);
 
   // Shared rect math for markerScreenRect(s): selector bbox in image px → viewer-element coords +
   // the container's page offset, so a position:fixed anchor works regardless of layout (ADR-0006).
@@ -284,14 +232,21 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
         console.warn(`[@render/mount] legacy log record ${String(a.id)} has degenerate geometry — marker not rendered`, a);
         return false;
       });
-      annotator.setAnnotations(ok as never, true);
+      // The MountSurface contract takes W3CAnnotation[]; the OSD annotator's external model is
+      // W3CImageAnnotation. setAnnotations accepts Partial<E>[] (replace mode) — a WADM record that
+      // omits optional fields is still a valid partial. Narrow to that instead of erasing the type.
+      annotator.setAnnotations(ok as Partial<W3CImageAnnotation>[], true);
     },
     setStyle(styleFor) {
-      // Wire a per-annotation style to Annotorious's DrawingStyleExpression: it passes the parsed
-      // annotation; we key by its id and let the adapter map id → Reading colour (ADR-0007).
-      annotator.setStyle(
-        styleFor ? (((ann: { id?: unknown }) => styleFor(String(ann.id ?? ""))) as never) : undefined,
-      );
+      // Wire a per-annotation style to Annotorious's DrawingStyleExpression<ImageAnnotation>: it
+      // passes the parsed internal annotation; we key by its id and let the adapter map id → Reading
+      // colour (ADR-0007). The expression's typed shape — (ann, state?) => DrawingStyle | undefined.
+      const expr: DrawingStyleExpression<ImageAnnotation> | undefined = styleFor
+        ? (ann: ImageAnnotation) => styleFor(String(ann.id ?? "")) as DrawingStyle | undefined
+        : undefined;
+      // MarkerStyle is structurally a DrawingStyle but with plain `string` fill/stroke (vs the
+      // Color template-literal); the single narrowing cast above is the only boundary type assertion.
+      annotator.setStyle(expr);
     },
     fitBounds(id: SelectionId) {
       // The new path goes through the same dispatchFitBounds oracle the gate test pins.
@@ -309,8 +264,8 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       else annotator.setSelected(id);
     },
     setFrame(frame: FrameOverlay | null) {
-      if (frame === null) clearFrame();
-      else drawFrame(frame);
+      if (frame === null) frameOverlay.clear();
+      else frameOverlay.draw(frame);
     },
     setDrawingEnabled(enabled: boolean) {
       annotator.setDrawingEnabled(enabled);
@@ -354,7 +309,7 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     destroy() {
       if (disposed) return;
       disposed = true;
-      clearFrame();
+      frameOverlay.clear();
       selectL.clear();
       createL.clear();
       updateL.clear();

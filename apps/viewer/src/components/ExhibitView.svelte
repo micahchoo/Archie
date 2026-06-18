@@ -7,9 +7,9 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import {
-    resolveLayout, overlay,
+    resolveLayout, overlay, selectorOf,
     spatialCoverage, isWholeObject, wholeObjectFlagOf, emphasisOf, readingMarkerStyle,
-    type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation, type W3CSelector,
+    type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation,
   } from "@render/core";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
   import { canvasIdFor } from "../published-base.js";
@@ -130,16 +130,9 @@
     return (id) => readingMarkerStyle(colourBy[id] ?? ACCENT, annBy[id] ? emphasisOf(annBy[id]!) : "normal", { highlighted: hovered === id });
   };
 
-  // 7e1f coverage border — single-object image Reader only. Pull the first selector off a target
-  // (string | SpecificResource | array; selector single | array). Replicated inline because
-  // render-mount's selectorOf isn't exported.
-  const firstSelectorOf = (a: W3CAnnotation): W3CSelector | null => {
-    const t = Array.isArray(a.target) ? a.target[0] : a.target;
-    if (!t || typeof t === "string") return null; // bare-IRI target has no region selector
-    const sel = (t as { selector?: W3CSelector | W3CSelector[] }).selector;
-    if (!sel) return null;
-    return Array.isArray(sel) ? (sel[0] ?? null) : sel;
-  };
+  // 7e1f coverage border — single-object image Reader only. The first selector off a target comes from
+  // the canonical `selectorOf` (@render/core): same array-vs-single + Fragment/Svg filtering, returns
+  // W3CSelector | null (was an inline replica back when render-mount's selectorOf wasn't exported).
   // 0045 contrast rule: the frame draws over the near-black light-table canvas (#181714), NOT the
   // grey overlay (#252420) the rule actually targets — and forest-green-on-canvas is the established
   // normal (the active-object ring is green here). A raw WCAG ratio would wrongly fail green on the
@@ -154,7 +147,7 @@
     const colourBy = readingColourById(objectId);
     for (const a of annotationsOf(objectId)) {
       if (!a.id) continue;
-      const sel = firstSelectorOf(a);
+      const sel = selectorOf(a);
       const coverage = sel && w && h ? spatialCoverage(sel, w, h) : 0;
       if (isWholeObject(coverage, wholeObjectFlagOf(a))) {
         return { markId: a.id, colour: frameColour(colourBy[a.id] ?? ACCENT) };

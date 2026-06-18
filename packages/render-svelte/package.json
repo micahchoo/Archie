@@ -17,9 +17,7 @@
   },
   "dependencies": {
     "@render/core": "workspace:*",
-    "@render/mount": "workspace:*",
-    "isomorphic-dompurify": "^2.16.0",
-    "snarkdown": "^2.0.0"
+    "@render/mount": "workspace:*"
   },
   "peerDependencies": {
     "svelte": "^5.0.0"

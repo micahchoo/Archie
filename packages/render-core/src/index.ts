@@ -64,6 +64,9 @@ export * from "./url/breadcrumb.js";
 export * from "./note/media.js";
 export * from "./iiif/resolve.js";
 
+// Body sanitization (CONTEXT §151 XSS): HTML/markdown note bodies → safe HTML/plain text. Framework-agnostic.
+export * from "./text/sanitize.js";
+
 // IIIF Presentation 3 projections (Q-1 exhibit-nested): Manifest / Collection / exhibits.json.
 export * from "./iiif/presentation.js";
 export * from "./iiif/manifest.js";

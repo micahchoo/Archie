@@ -122,7 +122,7 @@ describe("entry vectors (file + ?src=)", () => {
 
   it("openLibraryFromSrc throws on a non-OK response", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 403, headers: { get: () => null }, arrayBuffer: async () => new ArrayBuffer(0) } as unknown as Response)));
-    await expect(openLibraryFromSrc("https://h/x.archie.zip")).rejects.toThrow(/403/);
+    await expect(openLibraryFromSrc("https://h/x.archie.zip")).rejects.toThrow(/couldn't open the library/i);
   });
 });
 

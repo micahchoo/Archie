@@ -2,7 +2,7 @@
   // Note lightbox (CONTEXT §"Local view loop") — a clicked note tile opens here: a modal carousel of
   // ALL the note's media (image / audio / video) with the note's text beside them. ← → / Esc navigate;
   // backdrop or × close. Audio/video play natively (consistent with MediaPlayer).
-  import { renderMarkdown } from "@render/svelte";
+  import { renderMarkdown } from "@render/core";
   import type { NoteMediaItem } from "@render/core";
 
   let {

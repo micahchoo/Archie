@@ -20,7 +20,7 @@ import {
   MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, loadLibrary, mergePublishedIndexes, libraryPageHtml,
   type AnnotationLog, type Library, type ExhibitsJson, type IIIFCollection, type PublishedIndexes,
 } from "@render/core";
-import { library as sampleLibrary, getLog as sampleGetLog, BASE } from "../src/sample-data.js";
+import { library as sampleLibrary, getLog as sampleGetLog, BASE } from "../fixtures/sample-data.js";
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "published");
 

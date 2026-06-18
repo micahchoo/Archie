@@ -3,7 +3,7 @@
 // to the Archie heads AnnotationPage where the notes for that canvas load.
 
 import type { AObject, Exhibit, MediaType, Section } from "../model/model.js";
-import type { TileSourceDescriptor } from "./resolve.js";
+import { resolveTileSource, thumbnailUrl, type TileSourceDescriptor } from "./resolve.js";
 
 /** Object/Canvas extension key carrying a Map's tile-source descriptor (geo-annotation; ADR-0015). Emitted
  *  only when present (byte-stable when absent); pure IIIF viewers ignore it, Archie reads it to mount the map. */
@@ -63,9 +63,12 @@ function toCanvas(manifestBase: string, obj: AObject, readingIds: string[] = [])
     ...(obj.duration !== undefined ? { duration: obj.duration } : {}),
   };
   // IIIF Image API service descriptor — declared so standard viewers can resolve the image.
-  // Only for Image bodies whose source looks like a IIIF service base (not a blob:/data: URL
-  // or a plain image file). Default to ImageService2 — most existing services are v2.
-  if (mediaType === "Image" && /^https?:\/\//i.test(obj.source) && !/\.(jpe?g|png|webp|avif|gif|tiff?|svg)(\?.*)?$/i.test(obj.source)) {
+  // Only for Image bodies whose source classifies as a IIIF service base (resolveTileSource → iiif;
+  // NOT a blob:/data:/disallowed-scheme URL or a plain image file — the canonical classifier, which
+  // also correctly rejects the bogus-service cases the old inline regex would have admitted). Default
+  // to ImageService2 — most existing services are v2.
+  const isIiifService = mediaType === "Image" && resolveTileSource(obj.source).kind === "iiif";
+  if (isIiifService) {
     body.service = [{ id: obj.source, type: "ImageService2", profile: "level2" }];
   }
   const canvas: IIIFCanvas = {
@@ -84,9 +87,11 @@ function toCanvas(manifestBase: string, obj: AObject, readingIds: string[] = [])
         items: [{ id: `${canvasId}/painting/1`, type: "Annotation", motivation: "painting", body, target: canvasId }],
       },
     ],
-    // Sized thumbnail for gallery/overview — derived from the IIIF service base for Image bodies.
-    ...(mediaType === "Image" && /^https?:\/\//i.test(obj.source) && !/\.(jpe?g|png|webp|avif|gif|tiff?|svg)(\?.*)?$/i.test(obj.source)
-      ? { thumbnail: [{ id: `${obj.source.replace(/\/$/, "")}/full/240,/0/default.jpg`, type: "Image" as const }] }
+    // Sized thumbnail for gallery/overview — the canonical thumbnailUrl derives the Image API sized
+    // JPEG from the service base (same `{base}/full/240,/0/default.jpg` the inline template built),
+    // only for Image bodies that classify as a IIIF service (same gate as the service descriptor).
+    ...(isIiifService
+      ? { thumbnail: [{ id: thumbnailUrl(obj.source, 240), type: "Image" as const }] }
       : {}),
     // The base notes page + one page per Reading (ADR-0007) — the multi-AnnotationPage Canvas a
     // pure IIIF viewer (Mirador) can toggle. Reading pages carry partOf → the reading's collection.

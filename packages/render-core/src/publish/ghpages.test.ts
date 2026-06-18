@@ -115,7 +115,7 @@ describe("publishToGitHub — network sequence + error mapping (mocked fetch)", 
 
   it("a missing repo (404) on blob upload names the repo, not a cryptic sha error", async () => {
     stub([{ method: "POST", match: "/git/blobs", status: 404, json: { message: "Not Found" } }]);
-    await expect(publishToGitHub({ ...files }, target)).rejects.toThrow(/Repository not found/i);
+    await expect(publishToGitHub({ ...files }, target)).rejects.toThrow(/find that repository/i);
   });
 
   it("publish still succeeds when Pages can't be enabled (no scope) — pagesEnabled=false", async () => {

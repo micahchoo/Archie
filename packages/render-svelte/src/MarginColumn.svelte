@@ -41,7 +41,7 @@
   // the rect stream — the canvas emits on every viewport change, which covers the margin too).
   const layout = $derived.by(() => {
     void rects; // dep: re-solve on each marker frame
-    void heights;
+    // (heights tracked implicitly: heights[id] is read directly in the items.map below)
     const box = el?.getBoundingClientRect();
     if (!box || box.height < 200 || items.length === 0 || items.length > maxCards) return null;
     return {

@@ -4,6 +4,7 @@ import {
   parsePolygonPoints,
   polygonBBox,
   selectorBBox,
+  selectorOf,
   isDegenerateSelectorValue,
   shapeLabel,
   isV1Shape,
@@ -82,5 +83,27 @@ describe("shapeLabel + isV1Shape (v1 vocab = rect + polygon only, Q-1 shape deci
     expect(isV1Shape({ type: "FragmentSelector", value: "xywh=pixel:0,0,1,1" })).toBe(true);
     expect(isV1Shape({ type: "SvgSelector", value: "<polygon points='0,0 1,1 2,0'/>" })).toBe(true);
     expect(isV1Shape({ type: "SvgSelector", value: "<ellipse cx='1' cy='1' rx='2' ry='2'/>" })).toBe(false);
+  });
+});
+
+describe("selectorOf — extract a v1 selector from a (possibly Annotorious-shaped) annotation", () => {
+  it("reads a FragmentSelector (rect) off target.selector", () => {
+    expect(selectorOf({ id: "a1", target: { selector: { type: "FragmentSelector", value: "xywh=pixel:1,2,3,4" } } }))
+      .toEqual({ type: "FragmentSelector", value: "xywh=pixel:1,2,3,4" });
+  });
+  it("reads an SvgSelector (polygon) off target.selector", () => {
+    expect(selectorOf({ id: "a2", target: { selector: { type: "SvgSelector", value: "<polygon points='0,0 1,1 2,0'/>" } } }))
+      .toEqual({ type: "SvgSelector", value: "<polygon points='0,0 1,1 2,0'/>" });
+  });
+  it("takes the FIRST selector when target.selector is an array (Annotorious shape)", () => {
+    expect(selectorOf({ target: { selector: [{ type: "FragmentSelector", value: "xywh=5,5,5,5" }, { type: "SvgSelector", value: "<polygon/>" }] } }))
+      .toEqual({ type: "FragmentSelector", value: "xywh=5,5,5,5" });
+  });
+  it("returns null for undefined / no-target / wrong-type / non-string-value selectors", () => {
+    expect(selectorOf(undefined)).toBeNull();
+    expect(selectorOf({ id: "x" })).toBeNull(); // no target
+    expect(selectorOf({ target: {} })).toBeNull(); // no selector
+    expect(selectorOf({ target: { selector: { type: "TextQuoteSelector", value: "hi" } } })).toBeNull(); // not a v1 type
+    expect(selectorOf({ target: { selector: { type: "FragmentSelector", value: 123 } } })).toBeNull(); // non-string value
   });
 });

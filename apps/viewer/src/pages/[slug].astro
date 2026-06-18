@@ -1,0 +1,122 @@
+---
+// DYNAMIC exhibit reader page (the published read-only exhibit). Reached from the Gallery (index).
+// ONE template for every per-exhibit page — getStaticPaths enumerates the exhibit slugs (the SAME
+// source the publish generator uses, via og-image's exhibitSlugs) and renders ExhibitView, the layout
+// orchestrator (Grid overview ⇄ object Reader). Replaces the four near-identical voynich*.astro /
+// language-atlas.astro pages: every OG/meta/JSON-LD change now happens HERE, once. Per-slug copy
+// (title / og / JSON-LD type+about+license) is carried as props from getStaticPaths.
+import type { GetStaticPaths } from "astro";
+import ExhibitView from "../components/ExhibitView.svelte";
+import "../tokens.css";
+import "@annotorious/openseadragon/annotorious-openseadragon.css";
+import "@annotorious/plugin-tools/annotorious-plugin-tools.css";
+import "../markers.css"; // A2 + stroke-over-stroke marker styling — must load AFTER Annotorious CSS
+import "../atmosphere.css"; // Soft Static reskin layer (warm paper, soft-focus blur depth, rounded, grain)
+import { ogImageFor } from "../og-image.js";
+
+// Per-slug page metadata — the ONLY thing that differed across the old per-exhibit pages. JSON-LD
+// `description` defaults to the shared `description` unless a page authored a distinct one (the atlas).
+// (A standalone type for the page-body `Astro.props` cast; types erase at runtime, so this stays at
+// module scope — but the META TABLE must live INSIDE getStaticPaths: Astro extracts getStaticPaths
+// into its own prerender chunk and does NOT hoist module-body consts, so a closed-over `META` is
+// `undefined` at build time. Same data either way; the address is what Astro's bundler constrains.)
+type ExhibitMeta = {
+  title: string; // <title> (sans "— Archie")
+  ogTitle: string; // og:title + JSON-LD name
+  description: string; // meta description + og:description (+ JSON-LD description unless overridden)
+  jsonLdType: string; // schema.org @type
+  aboutName: string; // schema.org about.name
+  license: string; // schema.org license URL
+  jsonLdDescription?: string; // override when the JSON-LD copy differs from the meta description
+};
+
+export const getStaticPaths = (() => {
+  // The per-slug copy table. Enumerating its keys is the route set — the SAME exhibits the generator
+  // emits into public/published/. Only slugs carrying authored page-meta render a reader page (this
+  // mirrors the old hand-written page set: voynich / voynich-rosettes / voynich-reading / language-atlas).
+  const META: Record<string, ExhibitMeta> = {
+    voynich: {
+      title: "Voynich manuscript",
+      ogTitle: "The Whole Manuscript",
+      description:
+        "A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.",
+      jsonLdType: "ImageGallery",
+      aboutName: "Voynich manuscript (Beinecke MS 408)",
+      license: "https://creativecommons.org/publicdomain/mark/1.0/",
+    },
+    "voynich-rosettes": {
+      title: "The Rosettes",
+      ogTitle: "The Rosettes",
+      description:
+        "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas.",
+      jsonLdType: "VisualArtwork",
+      aboutName: "Voynich manuscript (Beinecke MS 408)",
+      license: "https://creativecommons.org/publicdomain/mark/1.0/",
+    },
+    "voynich-reading": {
+      title: "Reading the Unreadable",
+      ogTitle: "Reading the Unreadable",
+      description:
+        "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.",
+      jsonLdType: "CreativeWork",
+      aboutName: "Voynich manuscript (Beinecke MS 408)",
+      license: "https://creativecommons.org/publicdomain/mark/1.0/",
+    },
+    "language-atlas": {
+      title: "Where Languages Go Silent",
+      ogTitle: "Where Languages Go Silent",
+      description:
+        "Eight map pages from UNESCO's Atlas of the World's Languages in Danger (2010) — every dot a language losing its speakers, read two ways: a linguist's census, and what the quiet means where it falls.",
+      jsonLdType: "ImageGallery",
+      aboutName: "Atlas of the World's Languages in Danger (UNESCO, 2010)",
+      license: "https://creativecommons.org/licenses/by-sa/4.0/",
+      jsonLdDescription:
+        "Eight map pages from UNESCO's Atlas of the World's Languages in Danger (2010), annotated with a linguist's reading and a community reading.",
+    },
+  };
+  return Object.keys(META).map((slug) => ({ params: { slug }, props: META[slug]! }));
+}) satisfies GetStaticPaths;
+
+const { slug } = Astro.params;
+const meta = Astro.props as ExhibitMeta;
+const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + "/";
+const ogImage = ogImageFor(slug!); // exhibit cover, absolute (ADR-0013)
+const jsonLdDescription = meta.jsonLdDescription ?? meta.description;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href={base + "favicon.svg"} />
+    <title>{meta.title} — Archie</title>
+    <!-- Shareability meta (GOAL §5: og-tags are table-stakes for exhibit publishers — mulch product-research).
+         og:image needs an absolute deploy origin — deferred (seed). -->
+    <meta name="description" content={meta.description} />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="Archie" />
+    <meta property="og:title" content={meta.ogTitle} />
+    <meta property="og:description" content={meta.description} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- schema.org JSON-LD (GOAL §5a ⑤): typed structured data so published exhibits are
+         machine-readable to search engines — same copy as the og tags. -->
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": meta.jsonLdType,
+        name: meta.ogTitle,
+        description: jsonLdDescription,
+        about: { "@type": "CreativeWork", name: meta.aboutName },
+        license: meta.license,
+      })}
+    />
+    <link rel="stylesheet" href={base + "fonts/fonts.css"} />
+  </head>
+  <body style="margin: 0">
+    <!-- client:only — OSD touches `document` at import, so the reader is browser-only (no SSR). -->
+    <ExhibitView client:only="svelte" slug={slug!} />
+  </body>
+</html>

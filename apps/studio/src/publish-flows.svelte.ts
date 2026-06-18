@@ -6,14 +6,14 @@
 // primitive + per-host adapters" now has one home. A `.svelte.ts` rune module (cf.
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
-  MemoryFilesystem, FsaFilesystem, publishLibrary, libraryToZipFs, collectFiles, publishToGitHub,
+  MemoryFilesystem, FsaFilesystem, publishLibrary, libraryToZipFs, collectFiles, publishToGitHub, renderMarkdown,
   type Library, type AnnotationLog, type BrokenLink, type GitHubTarget, type PublishProgress, type LogicalId,
 } from "@render/core";
 import { supportsFileStreamSave, pickFolder, saveZipToDisk } from "./binding.js";
 import { readAssetBlob, readOriginalBytes, assetSize, isAsset, ASSET_PREFIX, type ExhibitMeta } from "./store.js";
 // ADR-0014 (static archival pages): note bodies render through the SAME sanitize pipeline the
-// live Viewer uses (P-1 Q3 no-drift invariant); the viewer link points at the canonical instance.
-import { renderMarkdown } from "@render/svelte";
+// live Viewer uses (P-1 Q3 no-drift invariant) — renderMarkdown is canonical in @render/core now
+// (sanitize moved into core; @render/svelte only re-exports for back-compat).
 import archieConfig from "../../../archie.config.json";
 
 const CANONICAL_VIEWER = `${archieConfig.canonicalOrigin}${archieConfig.viewerPath}`;
