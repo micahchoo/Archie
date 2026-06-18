@@ -32,8 +32,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
     mediaTypeFromSource, timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
     MAX_MASTER_DIM,
     tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary,
-    parseFragmentXYWH, lngLatToPixel, pixelToLngLat, formatLngLat,
-    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type FsDirectory, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
+    parseFragmentXYWH, parsePolygonPoints, lngLatToPixel, pixelToLngLat, formatLngLat,
+    type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type W3CTarget, type AnnotationRecord, type AnnotationLog, type FsDirectory, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor, type GeoAnchor,
     readExifCaptureDate,
   } from "@render/core";
   import type { DrawTool, MarkerStyle } from "@render/mount";
@@ -199,12 +199,16 @@ import LayoutPicker from "./LayoutPicker.svelte";
       { name: "Tokyo", lng: 139.6917, lat: 35.6895 },
       { name: "Nairobi", lng: 36.8219, lat: -1.2921 },
     ];
-    const W = 140; // image-px hit box at the full extent — a visible dot at the world-fit zoom
+    const W = 140; // image-px box at the full extent — a visible region at the world-fit zoom
     for (const c of cities) {
       const p = lngLatToPixel({ lng: c.lng, lat: c.lat }, geoBasemap);
+      const x = Math.round(p.x - W / 2), y = Math.round(p.y - W / 2);
+      const nw = pixelToLngLat({ x, y }, geoBasemap);
+      const se = pixelToLngLat({ x: x + W, y: y + W }, geoBasemap);
       s.createNote({
-        target: rectSel(`${BASE}geo-map/canvas/m1`, Math.round(p.x - W / 2), Math.round(p.y - W / 2), W, W),
+        target: rectSel(`${BASE}geo-map/canvas/m1`, x, y, W, W),
         body: [{ type: "TextualBody", value: c.name, purpose: "commenting" }],
+        geo: { type: "bbox", west: nw.lng, south: se.lat, east: se.lng, north: nw.lat }, // geo-truth (Q4)
       });
     }
     return s;
@@ -1014,12 +1018,15 @@ import LayoutPicker from "./LayoutPicker.svelte";
       framingSectionId = null;
       return;
     }
-    const id = session.createNote({ target: a.target, ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
+    // On a Map, capture the region's geo-truth (lng/lat) alongside the pixel selector (Q4/ADR-0015).
+    const geo = isMapCurrent ? geoForTarget(a.target) : undefined;
+    const id = session.createNote({ target: a.target, ...(geo ? { geo } : {}), ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
     bump();
     selected = id;
     creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
   }
-  const onUpdate = (a: W3CAnnotation) => { session.editNote(a.id as LogicalId, { target: a.target }); bump(); };
+  // Geometry edit on canvas → re-derive geo-truth on a Map (null clears it if the new shape is unparseable).
+  const onUpdate = (a: W3CAnnotation) => { session.editNote(a.id as LogicalId, { target: a.target, ...(isMapCurrent ? { geo: geoForTarget(a.target) ?? null } : {}) }); bump(); };
   const onDelete = (id: string) => { session.deleteNote(id as LogicalId); bump(); if (selected === id) selected = null; if (editing === id) editing = null; };
   // Hand-annotate AV: AvEditor marked a [start,end] region → create a supplementing time note, then
   // select it so the WADM form opens to type the note (the temporal analogue of onCreate for OSD draws).
@@ -1062,14 +1069,36 @@ import LayoutPicker from "./LayoutPicker.svelte";
   }
   // AV note time range (for the WADM form's conditional time fieldset). Null for image (xywh) notes.
   const selectorValue = (r: AnnotationRecord): string => ((r.target as { selector?: { value?: string } } | undefined)?.selector?.value) ?? "";
-  // Geo readout (geo-annotation): derive a pin's lng/lat from its pixel position on the current basemap
-  // (the pixel selector is the source of truth on a fixed basemap; lng/lat is a pure derivation — DESIGN.md D2).
+  // Geo readout (geo-annotation, Q5): the region's CENTRE lng/lat. Prefer the stored geo-truth (archie:geo,
+  // ADR-0015 — record.geo); fall back to deriving from the pixel selector for any pre-geo record.
   function geoLabelOf(r: AnnotationRecord): string | null {
     const ts = currentTileSource;
     if (!ts) return null;
+    if (r.geo?.type === "bbox") return formatLngLat({ lng: (r.geo.west + r.geo.east) / 2, lat: (r.geo.south + r.geo.north) / 2 });
+    if (r.geo?.type === "polygon" && r.geo.coordinates.length) {
+      const cs = r.geo.coordinates;
+      return formatLngLat({ lng: cs.reduce((s, c) => s + c[0], 0) / cs.length, lat: cs.reduce((s, c) => s + c[1], 0) / cs.length });
+    }
     const box = parseFragmentXYWH(selectorValue(r));
     if (!box) return null;
     return formatLngLat(pixelToLngLat({ x: box.x + box.w / 2, y: box.y + box.h / 2 }, ts));
+  }
+  // Geo-truth capture (Q4 / ADR-0015): turn a drawn region's WORLD-pixel selector into its lng/lat anchor
+  // (the source of truth). Box → bbox (NW/SE corners); Outline → polygon (each vertex). undefined off-map.
+  function geoForTarget(target: W3CTarget): GeoAnchor | undefined {
+    const ts = currentTileSource;
+    if (!ts) return undefined;
+    const v = (target as { selector?: { value?: string } } | undefined)?.selector?.value;
+    if (!v) return undefined;
+    const box = parseFragmentXYWH(v);
+    if (box) {
+      const nw = pixelToLngLat({ x: box.x, y: box.y }, ts);
+      const se = pixelToLngLat({ x: box.x + box.w, y: box.y + box.h }, ts);
+      return { type: "bbox", west: nw.lng, south: se.lat, east: se.lng, north: nw.lat };
+    }
+    const pts = parsePolygonPoints(v);
+    if (pts) return { type: "polygon", coordinates: pts.map((p) => { const ll = pixelToLngLat(p, ts); return [ll.lng, ll.lat] as [number, number]; }) };
+    return undefined;
   }
   const timeOf = (r: AnnotationRecord) => parseTimeFragment(selectorValue(r));
   function applyTime(start: number, end: number) {
