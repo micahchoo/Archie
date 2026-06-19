@@ -20,7 +20,6 @@
     thumbFor,
     onopenobject,
     onaddobject,
-    onsetlayout,
     onback,
     onreorder,
     rights,
@@ -38,7 +37,6 @@
     thumbFor: (obj: OverviewObject) => string;
     onopenobject: (objId: string) => void;
     onaddobject: () => void;
-    onsetlayout: () => void;
     onback: () => void;
     /** New reading order, by object id — the overview's reason to exist (Grid/Narrative sequence). */
     onreorder: (orderedIds: string[]) => void;
@@ -56,9 +54,10 @@
   let rightsOpen = $state(false);
   const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
 
-  // Reading intent per layout (Archie-1f0e): name what the VISITOR experiences, not the feature.
-  // Voice mirrors LayoutPicker's stance sentences (curator voice).
-  const LAYOUT_NAME: Record<LayoutType, string> = { single: "Single", grid: "Grid", narrative: "Narrative" };
+  // Reading intent per derived reading-mode (Archie-1f0e): name what the VISITOR experiences, not the
+  // feature. `layout` is the DERIVED LayoutType — now the canonical render-core resolveLayoutType result
+  // (ADR-0016 single source), display-only here. The exhaustive Record over the unchanged LayoutType
+  // union keeps this total. (LAYOUT_NAME chip retired — ADR-0016.)
   const LAYOUT_INTENT: Record<LayoutType, string> = {
     single: "one media item, full attention",
     grid: "a wall of media to browse",
@@ -156,7 +155,8 @@
       <p class="intent">{LAYOUT_INTENT[layout]}</p>
     </div>
     <span class="spacer"></span>
-    <button class="chip layout" onclick={onsetlayout} title="Choose how visitors move through this exhibit">▦ Exhibit layout · {LAYOUT_NAME[layout]}</button>
+    <!-- The "Exhibit layout" chip is RETIRED (ADR-0016): the reading mode is no longer a picked layout but
+         an emergent property of content; the intent line under the title still names what visitors get. -->
     <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for this exhibit">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     <div class="viewtoggle" role="group" aria-label="Overview mode">
       <button class:on={mode === "canvas"} onclick={() => (mode = "canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>

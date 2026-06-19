@@ -4,11 +4,12 @@
   // behind one shell (ADR-0008): HOSTED (baked tree, fetched) auto-detected by presence; PORTABLE (an
   // opened `.archie.zip`). Mode is detected at boot: try to load a library; on "no baked tree" (404)
   // show the empty hall; a `?src=` (ADR-0009) opens a hosted zip first. Hash routing = zero per-host config.
-  import { onMount } from "svelte";
-  import { parseRoute, breadcrumbFor, shouldRenderGalleryFromJson, type ViewerRoute, type ExhibitsJson } from "@render/core";
+  import { onMount, setContext } from "svelte";
+  import { parseRoute, breadcrumbFor, shouldRenderGalleryFromJson, LIVE_CHANNEL, type ViewerRoute, type ExhibitsJson } from "@render/core";
+  import { CITE_GALLERY, type GalleryRef } from "../cite-context.js";
   import {
     loadGallery, probeViewerMode, openLibraryFromSrc, openLibraryFromFile, closePortableLibrary,
-    initLiveSource,
+    initLiveSource, isPortable,
   } from "../published.js";
   import Gallery from "./Gallery.svelte";
   import ExhibitView from "./ExhibitView.svelte";
@@ -16,6 +17,9 @@
 
   let route = $state<ViewerRoute>({ view: "gallery" });
   let gallery = $state<ExhibitsJson | null>(null);
+  // Expose the loaded gallery to the cite-card layer (ProseCites) without prop-drilling — a getter ref
+  // so consumers re-derive as the library loads. See cite-context.ts.
+  setContext(CITE_GALLERY, { get value() { return gallery; } } satisfies GalleryRef);
   let phase = $state<"probing" | "empty" | "ready" | "error">("probing");
   let errorMsg = $state("");
   let openError = $state(""); // shown in the empty hall when an open attempt fails
@@ -46,6 +50,28 @@
       return true;
     } catch {
       return false;
+    }
+  }
+
+  // Live refresh (no reload): re-probe the working store + reload the gallery IN PLACE so a newly-
+  // authored exhibit appears without a restart. Doesn't touch route/phase (the open exhibit is
+  // undisturbed). Guarded against overlap; skips portable mode (an opened .archie.zip is static). From
+  // the empty hall a signal may mean a first library now exists — re-boot to pick it up.
+  let refreshing = false;
+  async function refreshLive(): Promise<void> {
+    if (refreshing || isPortable()) return;
+    refreshing = true;
+    try {
+      if (phase === "ready") {
+        await initLiveSource();
+        gallery = await loadGallery();
+      } else if (phase === "empty") {
+        await boot();
+      }
+    } catch {
+      /* transient (e.g. a read during a Studio write) — keep the current view; the next focus/signal retries */
+    } finally {
+      refreshing = false;
     }
   }
 
@@ -101,7 +127,20 @@
   onMount(() => {
     void boot();
     window.addEventListener("hashchange", sync);
-    return () => window.removeEventListener("hashchange", sync);
+    // Live refresh triggers: tab regains focus (separate-tab flow) OR Studio broadcasts a structural
+    // change (side-by-side / instant). Same-origin, so the channel reaches a backgrounded Viewer too.
+    const onVisible = () => { if (document.visibilityState === "visible") void refreshLive(); };
+    document.addEventListener("visibilitychange", onVisible);
+    let bc: BroadcastChannel | undefined;
+    if (typeof BroadcastChannel !== "undefined") {
+      bc = new BroadcastChannel(LIVE_CHANNEL);
+      bc.onmessage = (e) => { if ((e.data as { type?: string } | null)?.type === "library-changed") void refreshLive(); };
+    }
+    return () => {
+      window.removeEventListener("hashchange", sync);
+      document.removeEventListener("visibilitychange", onVisible);
+      bc?.close();
+    };
   });
 
   // Exhibit↔Library up-nav — only when a gallery exists to return to (not when collapsed to one exhibit).

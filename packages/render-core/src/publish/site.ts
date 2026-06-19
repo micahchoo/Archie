@@ -12,7 +12,7 @@ import type { Filesystem, FsDirectory } from "../fs/seam.js";
 import { ZipFilesystem } from "../fs/zip.js";
 import type { Library } from "../model/model.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CAnnotationPage } from "../wadm/types.js";
-import { buildLinkIndex, resolveLink, validateLink, rewriteArchieLinks, type LinkTarget } from "../link/link.js";
+import { buildLinkIndex, resolveViewerLink, validateLink, rewriteArchieLinks, type LinkTarget } from "../link/link.js";
 import { toCollection } from "../iiif/collection.js";
 import { toExhibitsJson, type ExhibitsJson } from "../iiif/exhibits.js";
 import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest } from "../iiif/manifest.js";
@@ -136,7 +136,11 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   for (const ex of library.exhibits) logsBySlug[ex.slug] = getLog(ex.id);
   const linkIndex = buildLinkIndex(logsBySlug);
   const rw: LinkRewrite = {
-    resolve: (t) => resolveLink(t, { baseUrl }),
+    // Cites project to the live single-shell Viewer route (resolveViewerLink), NOT the old per-page
+    // `{slug}/#/a/<id>` grammar that the slug-qualified router dropped. viewerBase is normally always
+    // supplied (Studio's STATIC_PAGE_OPTS); without it, cites degrade to the durable static-archival
+    // anchor in the data tree (baseUrl). The stored `archie:` ref grammar (encodeLinkRef) is untouched.
+    resolve: (t) => resolveViewerLink(t, { ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), dataBase: baseUrl }),
     validate: (t) => validateLink(t, linkIndex),
   };
   const brokenLinks: BrokenLink[] = [];
@@ -164,6 +168,22 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
         }),
       );
       manifestExhibit = { ...exhibit, objects };
+    }
+    // Resolve in-body `archie:` cites in SECTION prose too — previously ONLY note bodies were rewritten
+    // (rewriteHeadBodies below), so a cite inside a Narrative section shipped a raw `archie:` ref the
+    // Viewer rendered as dead, non-clickable text. Project a COPY for the manifest; the working model's
+    // raw refs stay canonical (loadLibrary doesn't round-trip sections, so this can't corrupt an
+    // Open-zip reload). Broken refs degrade to plain text and report under the section id (no logicalId).
+    if (manifestExhibit.sections?.some((s) => s.prose?.includes("archie:"))) {
+      manifestExhibit = {
+        ...manifestExhibit,
+        sections: manifestExhibit.sections.map((s) => {
+          if (s.prose === undefined || !s.prose.includes("archie:")) return s;
+          const { md, broken } = rewriteArchieLinks(s.prose, rw);
+          for (const t of broken) brokenLinks.push({ exhibitSlug: exhibit.slug, logicalId: s.id, target: t });
+          return md === s.prose ? s : { ...s, prose: md };
+        }),
+      };
     }
     // Build the manifest, then EMBED each canvas's heads items inline into its annotations entries
     // (below) before writing it — a pure IIIF viewer / portable zip can't dereference a bare reference

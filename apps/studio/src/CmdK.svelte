@@ -65,11 +65,13 @@
           bind:value={query}
           onkeydown={onKeydown}
           type="text"
-          placeholder="Cite a note or exhibit…"
+          placeholder="Search for a note or exhibit to link to…"
           spellcheck="false"
         />
         <kbd>esc</kbd>
       </div>
+
+      <p class="lead">Drop a link to another note or exhibit into your text. It becomes a clickable link when you publish.</p>
 
       <ul class="results">
         {#if filtered.length === 0}
@@ -91,7 +93,7 @@
         {/if}
       </ul>
 
-      <p class="hint"><kbd>↑↓</kbd> move · <kbd>↵</kbd> cite · the link points to the right place once you publish</p>
+      <p class="hint"><kbd>↑↓</kbd> move · <kbd>↵</kbd> insert link · it points to the target once you publish</p>
     </div>
   </div>
 {/if}
@@ -121,6 +123,10 @@
     font-family: var(--font-body); font-size: 1.0625rem; color: var(--ink-paper-primary);
   }
   .search input::placeholder { color: var(--ink-paper-muted); }
+
+  /* Orienting lead — what Cite does + its outcome, promoted from the easily-missed footer hint so a
+     first-time curator knows what picking a row will produce before they commit. */
+  .lead { margin: 0; padding: var(--space-3) var(--space-5) 0; font-family: var(--font-body); font-size: 0.9rem; line-height: 1.5; color: var(--ink-paper-secondary); }
 
   kbd {
     font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-paper-secondary);

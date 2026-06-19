@@ -24,6 +24,12 @@ describe("sanitizeHtml", () => {
     expect(out).toContain("https://example.org");
     expect(out).toContain("link");
   });
+  it("unwraps an anchor whose href was stripped — no dead, link-colored link (javascript:)", () => {
+    expect(sanitizeHtml('<a href="javascript:evil()">click</a>')).toBe("click");
+  });
+  it("keeps an anchor with a safe href intact (only href-less anchors unwrap)", () => {
+    expect(sanitizeHtml('<a href="https://example.org">link</a>')).toContain("<a");
+  });
   it("returns empty string for empty / non-string input", () => {
     expect(sanitizeHtml("")).toBe("");
     expect(sanitizeHtml(undefined as unknown as string)).toBe("");
@@ -40,6 +46,14 @@ describe("renderMarkdown", () => {
     const out = renderMarkdown("ok <script>alert(1)</script> [x](javascript:alert(1))");
     expect(out).not.toContain("<script>");
     expect(out).not.toContain("javascript:");
+  });
+  it("degrades a stray un-rewritten internal `archie:` cite to plain text (defense in depth)", () => {
+    // After Bug 1+3 no production path feeds a raw archie: ref here, but if one slips through it must
+    // read as honest text, not a dead link-colored anchor (the original 'renders nothing special' symptom).
+    const out = renderMarkdown("See [the target](archie:bidar/#/a/abc123).");
+    expect(out).toContain("the target"); // label survives as text
+    expect(out).not.toContain("archie:"); // internal scheme never reaches display
+    expect(out).not.toContain("<a"); // unwrapped — no dead anchor element
   });
   it("returns empty string for empty / non-string input", () => {
     expect(renderMarkdown("")).toBe("");

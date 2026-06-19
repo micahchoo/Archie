@@ -6,6 +6,7 @@
 // the Q8 deep-link (#/a/<id>) — no separate link system (CONTEXT). Pure.
 
 import { buildNoteDeepLink, parseNoteDeepLink } from "../url/deeplink.js";
+import { parseRoute, routeToHash, type ViewerRoute } from "../url/route.js";
 import type { LogicalId } from "../wadm/brand.js";
 import type { AnnotationLog } from "../wadm/types.js";
 
@@ -55,6 +56,56 @@ export function resolveLink(target: LinkTarget, opts: ResolveOptions = {}): stri
   }
   if (target.rangeId !== undefined) return `${exhibitUrl}#/s/${target.rangeId}`;
   return exhibitUrl;
+}
+
+export interface ViewerLinkOptions {
+  /** The interactive single-shell Viewer's base URL (the canonical instance, ADR-0013). Cites resolve
+   *  here so a click lands in the live reading experience; same-origin hash nav routes IN-APP (no reload,
+   *  ViewerShell listens on hashchange). Normally always supplied at publish (STATIC_PAGE_OPTS). */
+  viewerBase?: string;
+  /** Data-tree base — used ONLY for the no-viewer fallback below. */
+  dataBase?: string;
+}
+
+/**
+ * Project a structured ref to a NAVIGABLE display URL for the single-shell Viewer — the publish-time
+ * rewrite target for in-prose cites. Distinct from {@link resolveLink}/{@link encodeLinkRef}, whose
+ * `{slug}/#/a/<id>` grammar is the FROZEN stored `archie:` form (it round-trips and lives in users'
+ * logs — never change it). This projector instead emits the route grammar `parseRoute` consumes, via
+ * `routeToHash`, so the two can't drift (the old projection emitted the dead per-exhibit-page form,
+ * dropping the noteId in the single-shell router). The v1 SPA has no section route, so a section/exhibit
+ * ref lands on the exhibit. With no viewerBase, degrades to the durable static-archival anchor
+ * `{dataBase}{slug}/index.html#note-<id>` (ADR-0014) — always present in the published tree.
+ */
+export function resolveViewerLink(target: LinkTarget, opts: ViewerLinkOptions = {}): string {
+  if (opts.viewerBase !== undefined) {
+    const route: ViewerRoute =
+      target.noteLogicalId !== undefined
+        ? { view: "exhibit", slug: target.exhibitSlug, noteId: target.noteLogicalId, ...(target.xywh !== undefined ? { xywh: target.xywh } : {}) }
+        : { view: "exhibit", slug: target.exhibitSlug };
+    return `${opts.viewerBase}${routeToHash(route)}`;
+  }
+  const page = `${opts.dataBase ?? ""}${target.exhibitSlug}/index.html`;
+  return target.noteLogicalId !== undefined ? `${page}#note-${target.noteLogicalId}` : page;
+}
+
+/**
+ * For the Viewer's cite-CARD rendering: given a rendered cite href, return the cited exhibit's slug iff
+ * it is an EXHIBIT cite (not a note cite, not external) and the slug is known. Handles both the live
+ * viewer route `…#/<slug>` and the static-archival fallback `…/<slug>/index.html` (or `…/<slug>/`).
+ * A note cite (`…#/<slug>/a/<id>`) and any href whose slug isn't in `knownSlugs` → null (so external
+ * links and unknown targets never get promoted to a card). Pure; reuses parseRoute for the hash grammar.
+ */
+export function citedExhibitSlug(href: string, knownSlugs: ReadonlySet<string>): string | null {
+  if (typeof href !== "string" || href.length === 0) return null;
+  const hashAt = href.indexOf("#");
+  if (hashAt !== -1) {
+    const route = parseRoute(href.slice(hashAt));
+    return route.view === "exhibit" && route.noteId === undefined && knownSlugs.has(route.slug) ? route.slug : null;
+  }
+  // Static-archival fallback (no-viewer publishes): `…/<slug>/index.html` or `…/<slug>/`.
+  const m = href.match(/\/([a-z0-9_-]+)\/(?:index\.html)?$/i);
+  return m && knownSlugs.has(m[1]!) ? m[1]! : null;
 }
 
 /** Publish-time validation: does the target resolve in the Library-wide index? */

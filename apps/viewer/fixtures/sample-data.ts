@@ -141,27 +141,27 @@ export const library: Library = {
   summary: "A contested manuscript read more than one way — Beinecke MS 408, the same undeciphered marks read three ways across three exhibits.",
   exhibits: [
     // THE THREE-LAYOUT EXERCISE — one shared seed (./voynich.ts), three exhibits, each a different story,
-    // each a different Archie layout. The Viewer's resolveLayout RE-DERIVES the layout from objects/sections
-    // (sections ⇒ narrative; >1 object ⇒ grid; one ⇒ single), so the SHAPE here picks the reader; `layout`
-    // is the authored intent (Studio + the published manifest). cover = a RENDERABLE IIIF 400px derivative
+    // each a different Archie layout. The Viewer's resolveLayout DERIVES the layout from objects/sections
+    // (sections ⇒ narrative; >1 object ⇒ grid; one ⇒ single), so the SHAPE here picks the reader — `layout`
+    // is no longer authored or written (ADR-0016; deprecated, ignored on read). cover = a RENDERABLE IIIF 400px derivative
     // (the gallery card needs an image, not the bare service base which resolves to info.json). Each folio's
     // own Beinecke credit lives on the object (rights un-hack); the exhibit `requiredStatement` is the chrome
     // credit line. Each summary EXPLICITLY names its layout word.
     //
     // SINGLE — "The Rosettes": just o9 (the f85v–86r foldout), no sections → resolveLayout = single → Reader
     // deep-zoom + the 3-option readings legend over the one canvas.
-    { id: "ex-voynich-rosettes", slug: "voynich-rosettes", title: "The Rosettes", summary: "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: rosettesObjs, layout: "single", readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
+    { id: "ex-voynich-rosettes", slug: "voynich-rosettes", title: "The Rosettes", summary: "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: rosettesObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
     // GRID — "The Whole Manuscript" (the MAIN voynich slug): all 11 folios + the sounded page, NO sections →
     // resolveLayout = grid → ObjectGrid; click a folio → Reader with the prev/next carousel + legend + tags.
-    { id: "ex-voynich", slug: "voynich", title: "The Whole Manuscript", summary: "A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.", cover: "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg", objects: voynichObjs, layout: "grid", readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
+    { id: "ex-voynich", slug: "voynich", title: "The Whole Manuscript", summary: "A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.", cover: "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg", objects: voynichObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
     // NARRATIVE — "Reading the Unreadable": all + the sounded page, the 6-beat voynichSections attached →
     // resolveLayout = narrative → NarrativeReader (the section spine + the readings-legend fix + AV notes).
-    { id: "ex-voynich-reading", slug: "voynich-reading", title: "Reading the Unreadable", summary: "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: voynichObjs, layout: "narrative", sections: voynichSectionsTyped, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
+    { id: "ex-voynich-reading", slug: "voynich-reading", title: "Reading the Unreadable", summary: "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: voynichObjs, sections: voynichSectionsTyped, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
     // GRID — "Where Languages Go Silent" (③+⑬): UNESCO's endangered-languages atlas via the Internet
     // Archive's IIIF (CC BY-SA 4.0 on every object). Two Readings (Linguist's/Community) carry the
     // rival-interpretations differentiator beyond manuscripts. cover = a 400px IIIF derivative of the
     // North America page.
-    { id: "ex-atlas", slug: "language-atlas", title: atlasTitle, summary: atlasSummary, cover: `${atlasObjects[0]!.source}/full/400,/0/default.jpg`, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })), layout: "grid", readings: atlasReadings, requiredStatement: atlasRights.requiredStatement },
+    { id: "ex-atlas", slug: "language-atlas", title: atlasTitle, summary: atlasSummary, cover: `${atlasObjects[0]!.source}/full/400,/0/default.jpg`, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })), readings: atlasReadings, requiredStatement: atlasRights.requiredStatement },
   ],
 };
 

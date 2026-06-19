@@ -21,6 +21,7 @@ import {
   type AnnotationLog, type Library, type ExhibitsJson, type IIIFCollection, type PublishedIndexes,
 } from "@render/core";
 import { library as sampleLibrary, getLog as sampleGetLog, BASE } from "../fixtures/sample-data.js";
+import { VIEWER_BASE } from "../src/published-base.js"; // canonical Viewer base (config-derived) so cites resolve to in-app routes
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), "..", "public", "published");
 
@@ -42,7 +43,7 @@ if (zipPath) {
 }
 
 const fs = new MemoryFilesystem();
-await publishLibrary(fs, library, getLog, { baseUrl: BASE });
+await publishLibrary(fs, library, getLog, { baseUrl: BASE, viewerBase: VIEWER_BASE });
 const files = await collectFiles(await fs.root()); // Record<path, {text}|{base64}>
 
 // What does the EXISTING tree hold that this source doesn't own? (null on first run / fresh clone)
@@ -93,7 +94,7 @@ if (merged.preservedSlugs.length > 0) {
       ...carriedCards.map((c) => ({ id: c.slug, slug: c.slug, title: c.title, ...(c.description ? { summary: c.description } : {}), objects: [] })),
     ],
   };
-  writeFileSync(join(OUT, "index.html"), libraryPageHtml(displayLibrary, { baseUrl: BASE }));
+  writeFileSync(join(OUT, "index.html"), libraryPageHtml(displayLibrary, { baseUrl: BASE, viewerBase: VIEWER_BASE }));
   console.log(`Preserved ${merged.preservedSlugs.length} committed exhibit(s): ${merged.preservedSlugs.join(", ")}`);
 }
 console.log(`Wrote ${n} published files → ${OUT}`);

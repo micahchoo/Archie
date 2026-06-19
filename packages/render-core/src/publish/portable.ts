@@ -78,7 +78,10 @@ function guessMime(name: string): string {
  * input unchanged if it isn't an embedded asset (external IIIF / http / blob / data — resolve.ts passthrough).
  */
 async function rewriteAssetUrl(root: FsDirectory, slug: string, url: string, sink: string[]): Promise<string> {
-  const idx = url.indexOf(ASSET_SEG);
+  // lastIndexOf, NOT indexOf: the published source is `${baseUrl}${slug}/assets/${name}`, and the slug
+  // may ITSELF be "assets" (→ `…/assets/assets/plate.png`). The LAST `/assets/` is always the asset-dir
+  // boundary right before the filename, so the name extracts cleanly whatever the slug is named.
+  const idx = url.lastIndexOf(ASSET_SEG);
   if (idx === -1) return url;
   const name = url.slice(idx + ASSET_SEG.length).split(/[?#]/)[0]!;
   const blob = await mintAssetBlob(root, slug, name, guessMime(name), sink);
