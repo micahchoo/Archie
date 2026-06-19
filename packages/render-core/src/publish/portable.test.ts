@@ -56,6 +56,22 @@ async function buildArchiveBytes(): Promise<Uint8Array> {
   return fs.toZip();
 }
 const openArchive = (bytes: Uint8Array) => ZipFilesystem.fromZip(bytes);
+
+// Regression fixture (separate, per the test-fixtures rule): an exhibit slug that is itself "assets" →
+// the published source is `${baseUrl}assets/assets/${name}`, TWO `/assets/` segments. The blob rewrite
+// must key on the LAST one (the asset dir), not the first (the slug).
+async function buildAssetsSlugArchive(): Promise<Uint8Array> {
+  const fs = new ZipFilesystem();
+  const lib: Library = {
+    id: "L", title: "Lib",
+    exhibits: [{ id: "e1", slug: "assets", title: "Assets", objects: [{ id: "o1", source: `/assets/${ASSET_NAME}`, label: "shot" }] }],
+  };
+  await publishLibrary(fs, lib, () => [], {
+    baseUrl: BASE,
+    getAsset: async (slug, name) => (slug === "assets" && name === ASSET_NAME ? PNG_BYTES.slice().buffer : null),
+  });
+  return fs.toZip();
+}
 // ------------------------------------------------------------------------------------------------
 
 describe("portable read seam (ADR-0010) over a ZipFilesystem", () => {
@@ -80,6 +96,14 @@ describe("portable read seam (ADR-0010) over a ZipFilesystem", () => {
     expect(blob).toBeDefined();
     expect(blob!.type).toBe("image/png");
     expect([...new Uint8Array(await blob!.arrayBuffer())]).toEqual([...PNG_BYTES]);
+    revoke();
+  });
+
+  it("resolves the embedded image when the exhibit slug is itself \"assets\" (slug ↔ /assets/ collision)", async () => {
+    const { exhibit, blobUrls, revoke } = await loadPortableExhibit(openArchive(await buildAssetsSlugArchive()), "assets");
+    const src = exhibit.objects[0]!.source;
+    expect(src.startsWith("blob:"), `expected a blob: URL for an "assets"-named exhibit, got ${src}`).toBe(true);
+    expect(blobUrls).toContain(src);
     revoke();
   });
 

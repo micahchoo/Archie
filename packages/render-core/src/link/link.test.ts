@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildLinkIndex, resolveLink, validateLink, encodeLinkRef, parseLinkRef, rewriteArchieLinks, type LinkTarget } from "./link.js";
+import { buildLinkIndex, resolveLink, resolveViewerLink, citedExhibitSlug, validateLink, encodeLinkRef, parseLinkRef, rewriteArchieLinks, type LinkTarget } from "./link.js";
 import { appendNew } from "../spine/log.js";
 import { asClientId } from "../wadm/brand.js";
 import type { AnnotationLog } from "../wadm/types.js";
@@ -30,6 +30,42 @@ describe("resolveLink — structured ref -> published display URL (pinned gramma
   it("resolves a region link (xywh) and an exhibit-root link", () => {
     expect(resolveLink({ exhibitSlug: "main", noteLogicalId: n2.logicalId, xywh: "1,2,3,4" }, { baseUrl: "b/" })).toBe(`b/main/#/a/${n2.logicalId}?xywh=1,2,3,4`);
     expect(resolveLink({ exhibitSlug: "main" }, { baseUrl: "b/" })).toBe("b/main/");
+  });
+});
+
+describe("resolveViewerLink — cite projection to the single-shell Viewer route (routeToHash-symmetric)", () => {
+  it("projects a note to the slug-qualified viewer route the router consumes (NOT the dead per-page grammar)", () => {
+    const t: LinkTarget = { exhibitSlug: "main", noteLogicalId: n2.logicalId };
+    // Regression for the grammar bug: parseRoute reads `#/<slug>/a/<id>`; the old `{slug}/#/a/<id>` dropped the noteId.
+    expect(resolveViewerLink(t, { viewerBase: "https://host/viewer/" })).toBe(`https://host/viewer/#/main/a/${n2.logicalId}`);
+  });
+  it("carries xywh through, and lands a section/exhibit ref on the exhibit (no v1 SPA section route)", () => {
+    expect(resolveViewerLink({ exhibitSlug: "main", noteLogicalId: n2.logicalId, xywh: "1,2,3,4" }, { viewerBase: "https://host/viewer/" })).toBe(`https://host/viewer/#/main/a/${n2.logicalId}?xywh=1,2,3,4`);
+    expect(resolveViewerLink({ exhibitSlug: "main", rangeId: "sec-3" }, { viewerBase: "https://host/viewer/" })).toBe("https://host/viewer/#/main");
+    expect(resolveViewerLink({ exhibitSlug: "main" }, { viewerBase: "https://host/viewer/" })).toBe("https://host/viewer/#/main");
+  });
+  it("degrades to the durable static-archival anchor when no viewer is configured", () => {
+    expect(resolveViewerLink({ exhibitSlug: "main", noteLogicalId: n2.logicalId }, { dataBase: "https://host/lib/" })).toBe(`https://host/lib/main/index.html#note-${n2.logicalId}`);
+    expect(resolveViewerLink({ exhibitSlug: "main", rangeId: "sec-3" }, { dataBase: "https://host/lib/" })).toBe("https://host/lib/main/index.html");
+  });
+});
+
+describe("citedExhibitSlug — detect an EXHIBIT cite (for the viewer cite-card), both grammars", () => {
+  const known = new Set(["voynich", "bidar"]);
+  it("returns the slug for a live viewer-route exhibit cite", () => {
+    expect(citedExhibitSlug("https://h/Archie/viewer/#/bidar", known)).toBe("bidar");
+  });
+  it("returns the slug for the static-archival fallback form", () => {
+    expect(citedExhibitSlug("https://h/lib/bidar/index.html", known)).toBe("bidar");
+    expect(citedExhibitSlug("https://h/lib/bidar/", known)).toBe("bidar");
+  });
+  it("returns null for a NOTE cite (has the /a/ segment)", () => {
+    expect(citedExhibitSlug("https://h/Archie/viewer/#/bidar/a/n3", known)).toBeNull();
+  });
+  it("returns null for an unknown slug or a plain external link", () => {
+    expect(citedExhibitSlug("https://h/Archie/viewer/#/ghost", known)).toBeNull();
+    expect(citedExhibitSlug("https://example.org/article", known)).toBeNull();
+    expect(citedExhibitSlug("https://example.org/ghost/index.html", known)).toBeNull();
   });
 });
 

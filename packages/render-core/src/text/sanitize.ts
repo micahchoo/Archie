@@ -8,6 +8,15 @@
 import DOMPurify from "isomorphic-dompurify";
 import snarkdown from "snarkdown";
 
+// "No dead anchors" invariant: when sanitization strips an <a>'s href (a disallowed scheme — a stray
+// internal `archie:` cite that escaped the publish rewrite, or a javascript: URL), UNWRAP the anchor to
+// its text rather than leave a link-colored element that goes nowhere. Mirrors link.ts's "broken refs
+// degrade to plain text, never a dead href". Registered once at module load; runs on every sanitizeHtml
+// (hence renderMarkdown) call. replaceWith(string) yields a text node — no document handle needed.
+DOMPurify.addHook("afterSanitizeAttributes", (node) => {
+  if (node.tagName === "A" && !node.getAttribute("href")) node.replaceWith(node.textContent ?? "");
+});
+
 /** Sanitize an HTML body value for safe rendering. Empty/non-string -> "". */
 export function sanitizeHtml(dirty: string): string {
   if (typeof dirty !== "string" || dirty.length === 0) return "";

@@ -22,6 +22,22 @@ import { AnnotationSession } from "../session/session.js";
 
 /** The Studio's working-store root directory name (one project per origin in v1). */
 export const WORKING_PROJECT = "archie-demo-project";
+
+/**
+ * The working-store IRI namespace — the base Studio mints canvas / annotation-target IRIs against
+ * (`{WORKING_IRI_BASE}{slug}/canvas/{id}`), and the SAME base the Viewer's live source MUST project
+ * with (`initLiveSource`): `publishLibrary` groups heads by `targetSource === {baseUrl}{slug}/canvas/{id}`,
+ * so a mismatch silently drops EVERY live annotation. This is an internal IDENTIFIER namespace only —
+ * never fetched, never published; the published tree uses the real deploy origin (archie.config.json,
+ * `published-base.ts`). DISTINCT from the published base on purpose — shared here so the Studio writer
+ * and the live reader are one source of truth and can't drift (they were equal-by-coincidence before).
+ */
+export const WORKING_IRI_BASE = "https://archie.demo/";
+
+/** Same-origin BroadcastChannel the Studio posts to when the working library's structure changes
+ *  (exhibit added/removed), so the Viewer's live source can refresh WITHOUT a reload. Shared name so
+ *  writer (Studio) and listener (Viewer) agree. Message shape: `{ type: "library-changed" }`. */
+export const LIVE_CHANNEL = "archie:live";
 const SAMPLE_SLUG = "sample"; // its annotations live at the LEGACY {project}/annotations/ path
 
 /** EXIF display-master provenance (CONTEXT §89.1): the original is preserved, this records the
@@ -62,6 +78,10 @@ export interface WorkingExhibitMeta extends RightsFields {
   title: string;
   /** Optional exhibit description — projects to the Manifest `summary`. */
   summary?: string;
+  /** @deprecated (ADR-0016) The leading surface is now a pure function of content — `resolveLayout`
+   *  always DERIVES the type and IGNORES this field. Kept OPTIONAL only for read-tolerance of legacy
+   *  stored data (harmless when present); the Studio MUST NOT write it. Remove once no stored exhibit
+   *  carries it. */
   layout?: LayoutType;
   /** RESERVED (§43 reading-MODE axis) — v1.1 pacing variant. Unused in v1. */
   mode?: string;

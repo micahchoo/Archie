@@ -25,10 +25,14 @@
 
 <aside class="rail" aria-label="Readings rail" data-comparing={comparing}>
   <span class="title">Readings{#if comparing}<span class="cmp" title="Two or more readings are visible, so notes show as outlines and their colours stay distinct.">· comparing</span>{/if}</span>
-  <span class="gloss">Compare interpretations</span>
+  {#if readings.length === 0}
+    <span class="gloss nudge">Differing opinions in notes? Use a reading.</span>
+  {:else}
+    <span class="gloss">Compare interpretations</span>
+  {/if}
   <div class="rows">
     {#each [{ id: BASE, name: "General notes", colour: "var(--accent)" }, ...readings] as r (r.id)}
-      <div class="row" data-reading={r.id}
+      <div class="row" class:active={rdg.active === r.id} data-reading={r.id} style="--rd:{r.colour ?? 'var(--accent)'}"
         onmouseenter={() => onsolo(r.id)} onmouseleave={() => onsolo(null)} role="group" aria-label={r.name}>
         <input type="checkbox" class="vis" title={`Show “${r.name}” notes (on the image and in the margin)`}
           checked={rdg.isVisible(r.id)} onchange={() => rdg.toggle(r.id)} aria-label={`Show ${r.name}`} />
@@ -43,7 +47,7 @@
       </div>
     {/each}
   </div>
-  <button type="button" class="manage" onclick={onmanage}>Manage readings…</button>
+  <button type="button" class="manage" onclick={onmanage}>{readings.length === 0 ? "+ New reading" : "Manage readings…"}</button>
 </aside>
 
 <style>
@@ -61,9 +65,14 @@
   .title .cmp { margin-left: var(--space-2); color: var(--ink-canvas-secondary); letter-spacing: 0.12em; }
   /* One-line gloss under the eyebrow — what readings are FOR (compare interpretations). Mirrors the Viewer legend. */
   .gloss { display: block; font-family: var(--font-body), sans-serif; font-size: var(--text-ui-xs, 0.7rem); color: var(--ink-canvas-secondary); margin-bottom: var(--space-2); }
+  /* P3: with no readings yet, the gloss becomes a when/why nudge — a touch warmer to invite the first one. */
+  .gloss.nudge { color: var(--ink-canvas-primary); }
   .rows { display: flex; flex-direction: column; gap: 2px; }
   .row { display: flex; align-items: center; gap: var(--space-2); padding: 3px var(--space-1); border-radius: var(--radius-sm); transition: background 0.16s ease; }
   .row:hover { background: var(--accent-2-muted); }
+  /* Active (the pen's reading) = its OWN colour as a left stripe over a neutral fill (ADR-0007),
+     mirroring the Viewer legend — not the global accent-2. */
+  .row.active { background: var(--surface-canvas-overlay); box-shadow: inset 2px 0 0 var(--rd); }
   .vis { margin: 0; accent-color: var(--accent-2); cursor: pointer; }
   .sw { width: 11px; height: 11px; border-radius: 50%; border: 1px solid var(--border-canvas); flex: none; }
   .nm { flex: 1; font-size: var(--text-ui-sm, 0.8rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -71,7 +80,7 @@
   .pen { display: inline-flex; align-items: center; cursor: pointer; color: var(--ink-canvas-muted); }
   .pen input { position: absolute; opacity: 0; pointer-events: none; }
   .pen span { padding: 0 var(--space-1); border-radius: var(--radius-sm); transition: color 0.16s ease, background 0.16s ease; }
-  .pen input:checked + span { color: var(--accent-2); background: var(--accent-2-muted); }
+  .pen input:checked + span { color: var(--rd); background: transparent; }
   .pen:hover span { color: var(--accent-2); }
   .manage { margin-top: var(--space-2); width: 100%; cursor: pointer; font-family: var(--font-ui), monospace; font-size: var(--text-ui-xs); letter-spacing: 0.14em; text-transform: uppercase; padding: var(--space-1) var(--space-2); background: var(--surface-canvas); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 0.16s ease, border-color 0.16s ease; }
   .manage:hover { color: var(--accent-2); border-color: var(--accent-2-muted); }

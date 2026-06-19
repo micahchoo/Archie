@@ -12,7 +12,6 @@
   import CmdK from "./CmdK.svelte";
   import MediaPicker, { type PickItem } from "./MediaPicker.svelte";
   import AvEditor from "./AvEditor.svelte";
-import LayoutPicker from "./LayoutPicker.svelte";
   import ExhibitOverview from "./ExhibitOverview.svelte";
   import NarrativeEditor from "./NarrativeEditor.svelte";
   import DetailsEditor from "./DetailsEditor.svelte";
@@ -23,7 +22,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
-    tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary,
+    tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary, resolveLayoutType,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import type { DrawTool, MarkerStyle } from "@render/mount";
@@ -178,11 +177,13 @@ import LayoutPicker from "./LayoutPicker.svelte";
       resolveAssets: () => resolveAssets(slug, ex?.objects ?? []), // OPFS /assets → blob: URLs (sets assetsReady)
     });
     rev += 1;
-    // Land at the exhibit's OVERVIEW scale (invention #1) UNLESS it's exactly one object (non-narrative),
-    // which goes straight to its annotation surface. An EMPTY (0-object) exhibit also lands at the overview
-    // — that's the only place to name it + add objects (the Details drawer lives there). MUST stay in sync
-    // with `hasOverview` below (same predicate).
-    view = ((ex?.objects.length ?? 0) !== 1 || (ex?.layout ?? "grid") === "narrative") ? "overview" : "editor";
+    // Land at the exhibit's OVERVIEW scale (invention #1) UNLESS it's exactly one object, which goes
+    // straight to its annotation surface (auto-open the only object; the back affordance is suppressed).
+    // An EMPTY (0-object) exhibit also lands at the overview — that's the only place to name it + add
+    // objects (the Details drawer lives there). The overview is an OBJECT-COUNT affordance only: sections
+    // (a narrative) do NOT trigger it (ADR-0016 — narrative is an emergent reading mode of the published
+    // exhibit, not an authoring gate). MUST stay in sync with `hasOverview` below (same predicate).
+    view = (ex?.objects.length ?? 0) !== 1 ? "overview" : "editor";
   }
   async function backToLibrary() {
     sess.cancelPendingSave();
@@ -330,7 +331,9 @@ import LayoutPicker from "./LayoutPicker.svelte";
     const base = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "exhibit";
     let slug = base, n = 2;
     while (lib.meta.exhibits.some((e) => e.slug === slug)) slug = `${base}-${n++}`;
-    await lib.addExhibit({ id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", layout: "grid", objects: [] });
+    // No `layout` written (ADR-0016): the leading surface is DERIVED from content by resolveLayout
+    // (sections → narrative, >1 object → grid, else single). The field is deprecated; Studio never writes it.
+    await lib.addExhibit({ id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", objects: [] });
     await openExhibit(slug);
   }
   // The ingest flows (file/URL/AV/map object-add, folder/manifest exhibit-create, CSV/WADM bulk-note
@@ -431,18 +434,22 @@ import LayoutPicker from "./LayoutPicker.svelte";
     lib.patchObject(currentSlug, objId, { label: l });
   }
 
-  // --- layout-picker (PROTOTYPE; CONTEXT §142): declare the exhibit's reading intent (single/grid/narrative).
-  // Layout is authored structure → persist; it shapes the PUBLISHED exhibit (resolveLayout/Viewer), not this view.
-  let layoutPickerOpen = $state(false);
-  const currentLayout = $derived<LayoutType>(currentExhibit?.layout ?? "grid");
+  // --- Reading mode (ADR-0016 "narrative as an emergent reading mode"): the leading surface is a PURE
+  // FUNCTION OF CONTENT — no stored/picked layout. DELEGATES to render-core's single-source discriminant
+  // (resolveLayoutType); drives only display (the overview intent line). The deprecated stored
+  // `exhibit.layout` is NEVER read or written here. The LayoutPicker is retired.
+  const currentLayout = $derived<LayoutType>(
+    currentExhibit ? resolveLayoutType(currentExhibit.objects, currentExhibit.sections) : "single",
+  );
   const currentReadings = $derived<Reading[]>(currentExhibit?.readings ?? []);
   // (Marginalia cuts D+E reverted 2026-06-11 on user review — "does not look good". The ENGINE
   // survives headless-tested for a future presentation redesign: core layoutMarginalia(+pinId),
   // mount markerScreenRects, Canvas rectIds/onmarkerrects, render-svelte MarginColumn. See
   // IMPROVEMENT-WORKLIST ledger + the marginalia-redesign seeds issue.)
   // Whether this exhibit has an overview scale (invention #1): NOT exactly one object (so: 0 to name/fill,
-  // or >1 to arrange), or a narrative. MUST stay in sync with openExhibit's routing predicate above.
-  const hasOverview = $derived((currentExhibit?.objects.length ?? 0) !== 1 || currentLayout === "narrative");
+  // or >1 to arrange). An OBJECT-COUNT affordance only — sections/narrative do NOT trigger it (ADR-0016).
+  // MUST stay in sync with openExhibit's routing predicate above.
+  const hasOverview = $derived((currentExhibit?.objects.length ?? 0) !== 1);
   // The current exhibit's notes, shaped for the NarrativeEditor's "add section from a Note" shortcut
   // (ADR-0005 mitigation): objectId from the target canvas, start = the selector fragment, lead = the prose.
   const narrativeNotes = $derived.by(() => {
@@ -453,11 +460,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
       return { id: r.logicalId, objectId, ...(start ? { start } : {}), lead: stripMarkdown(commentOf(r)).slice(0, 80) || "(untitled)" };
     });
   });
-  function setLayout(l: LayoutType) {
-    lib.patchExhibit(currentSlug, { layout: l });
-    layoutPickerOpen = false;
-  }
-
   // --- Readings (ADR-0007): the exhibit's curated interpretive passes. Persisted on ExhibitMeta,
   // published as a registry + per-reading AnnotationPages. A note belongs to ONE reading or none (base). ---
   function setReadings(readings: Reading[]) {
@@ -523,6 +525,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
   // what a visitor sees. Colour = the note's reading (ADR-0007); reading-less notes get a neutral forest-
   // green default (so base marks are visible). Per-note emphasis modulates opacity/weight ONLY, never hue.
   const BASE_MARKER = "#3a6b4c"; // forest green — the base (reading-less) note default
+  // The active reading (the pen's destination), shaped for the draw-time cue (P1): name + colour,
+  // falling back to base ("General notes" / the base hue) when the pen is on base. `find ?? null`
+  // dodges the BASE-url collision — base is never in currentReadings, so a miss means base.
+  const activeReading = $derived(currentReadings.find((r) => r.id === rdg.active) ?? null);
+  const activeReadingLabel = $derived(activeReading?.name ?? "General notes");
+  const activeReadingColour = $derived(activeReading?.colour ?? BASE_MARKER);
   // Solo (rail-row hover, B4): the soloed reading's fill returns while comparing. null = none.
   let soloReading = $state<string | null>(null);
   // Per-NOTE solo: hovering a note in the list lights its mark on the canvas (the rail's hover
@@ -659,6 +667,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
     pendingCiteInsert?.(`[${entry.label}](${entry.ref})`);
     pendingCiteInsert = null;
     cmdkOpen = false;
+    // Confirm the outcome via the existing status idiom — the dogfood gap was "wasn't sure what the cite did".
+    importNote = `Added a link to “${entry.label}”. Readers can click through to it in your published exhibit.`;
   }
   // The VISUAL companion to ⌘K (Archie-ea50): same `pendingCiteInsert` target, eyes-first surface. Tiles
   // are THIS exhibit's notes shown by their media (the resolvable + thumbnail-bearing set; cross-exhibit
@@ -681,6 +691,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     pendingCiteInsert?.(`[${it.label}](${ref})`);
     pendingCiteInsert = null;
     mediaPickerOpen = false;
+    importNote = `Added a link to “${it.label}”. Readers can click through to it in your published exhibit.`;
   }
   // The note-Comment cite target: splice at the cursor, persist via applyForm, restore focus past the link.
   async function citeIntoComment(md: string) {
@@ -701,8 +712,14 @@ import LayoutPicker from "./LayoutPicker.svelte";
     // ? toggles the cheat-sheet (not while typing); Esc closes it first.
     if (matches(e, "?") && !typingInField(e)) { e.preventDefault(); helpOpen = !helpOpen; return; }
     if (helpOpen && matches(e, "Esc")) { e.preventDefault(); helpOpen = false; return; }
-    // ⌘K — cite into the note/section being edited (works inside the textarea too).
-    if (matches(e, "⌘K") && view === "editor" && sel) { e.preventDefault(); void requestCite(citeIntoComment); return; }
+    // ⌘K — cite into the note being edited (works inside the textarea too). With nothing selected, give a
+    // hint instead of a silent no-op (shortcuts.ts advertises ⌘K; the dead-key was a dogfood gap).
+    if (matches(e, "⌘K") && view === "editor") {
+      e.preventDefault();
+      if (sel) void requestCite(citeIntoComment);
+      else importNote = "Open a note first — then ⌘K cites another note or exhibit into it.";
+      return;
+    }
     // Esc dismiss-ladder: palette (self-closes) → note popover → camera framing → overview → library.
     if (matches(e, "Esc")) {
       if (cmdkOpen || mediaPickerOpen) return; // those dialogs handle their own Esc
@@ -868,7 +885,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
       thumbFor={(o) => (o.mediaType && o.mediaType !== "image") ? "" : thumbSrc(o)}
       onopenobject={openObject}
       onaddobject={() => { view = "editor"; addingObject = true; }}
-      onsetlayout={() => (layoutPickerOpen = true)}
       onback={backToLibrary}
       onreorder={reorderObjects}
       rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
@@ -890,7 +906,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
          ("New note" in the notes pane, or narrative camera framing). -->
     <!-- The reading dropdown is RETIRED (archie-ux Q-2, grill Q3): the RAIL on the canvas is the
          one home for visibility + the pen; "Manage readings…" on the rail opens the modal. -->
-    <button class="layout-trigger" onclick={() => (layoutPickerOpen = true)} title="Choose how visitors move through this exhibit — a grid to browse, a single view, or a guided sequence">▦ {currentLayout}</button>
+    <!-- The layout-picker trigger is RETIRED (ADR-0016): the reading mode is an EMERGENT property of
+         content (sections → narrative, >1 object → grid, else single), no longer an author choice. -->
     {#if sess.storeReady}
       <span class="savestate" class:dirty={sess.dirty} class:error={saveStatus.health === "error"} title={saveStatus.error ?? undefined}>
         {saveStatus.health === "error" ? "⚠ Save failed" : sess.dirty ? "● Unsaved" : "Saved"}</span>
@@ -965,6 +982,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     <div class="framing-banner" role="status">
       <span class="fb-tag">Drawing a region</span>
       <span class="fb-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"} — it becomes your note’s place{isMapCurrent ? ", anchored to its longitude/latitude" : ""}. Drag pans again once you’ve drawn.</span>
+      <span class="fb-into" title="This note files into the active reading — the ✎ pen in the readings panel sets which.">Filing into <span class="fb-rd" style={`border-color:${activeReadingColour}`}>{activeReadingLabel}</span></span>
       <button class="fb-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
     </div>
   {/if}
@@ -974,22 +992,22 @@ import LayoutPicker from "./LayoutPicker.svelte";
 
   <div class="body">
     <aside>
-      {#if currentLayout === "narrative"}
-        <!-- The narrative spine lives HERE, beside the object-local notes (placement correction): exhibit
-             scope on top (persists across rail switches), object scope below (swaps). -->
-        <NarrativeEditor
-          sections={currentExhibit?.sections ?? []}
-          objects={OBJECTS}
-          {currentObjectId}
-          framingId={framingSectionId}
-          notes={narrativeNotes}
-          onchange={setSections}
-          onframe={startFraming}
-          oncancelframe={cancelFraming}
-          onrequestcite={requestCite}
-        />
-        <div class="scope-sep"><span>This object</span></div>
-      {/if}
+      <!-- The narrative spine is ALWAYS mounted (ADR-0016): a narrative exists iff sections.length>0, and
+           authoring it is no longer gated by a picked layout — adding the first section IS the act that turns
+           this exhibit into a narrative (the published reading mode emerges from the content). Exhibit scope
+           on top (persists across rail switches), object scope below (swaps). -->
+      <NarrativeEditor
+        sections={currentExhibit?.sections ?? []}
+        objects={OBJECTS}
+        {currentObjectId}
+        framingId={framingSectionId}
+        notes={narrativeNotes}
+        onchange={setSections}
+        onframe={startFraming}
+        oncancelframe={cancelFraming}
+        onrequestcite={requestCite}
+      />
+      <div class="scope-sep"><span>This object</span></div>
       {#if current}
         <!-- editable object label (authored structure; persists). Enter or blur commits. -->
         <input
@@ -1007,6 +1025,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
         {#if creating}
           <div class="new-note armed" role="status">
             <span class="nn-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"}</span>
+            <span class="nn-into" title="New notes file into the active reading — the ✎ pen below sets which.">→ <span class="nn-rd" style={`border-color:${activeReadingColour}`}>{activeReadingLabel}</span></span>
             <button type="button" class="nn-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
           </div>
         {:else}
@@ -1031,7 +1050,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
                 {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
                 {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
                 <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
-                {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{/if}
+                {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}>General notes</span>{/if}
               </div>
             </button>
           </li>
@@ -1140,12 +1159,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
   <CmdK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />
   <MediaPicker open={mediaPickerOpen} title="Cite a note by its image" items={mediaPickerItems} onpick={pickVisualCite} onclose={() => (mediaPickerOpen = false)} />
 {/if}
-{#if layoutPickerOpen}
-  <!-- GLOBAL (outside the view branches): the layout picker is opened from BOTH the editor header AND the
-       overview header. When it was scoped to the editor branch, the overview's ▦ could never render it —
-       so a narrative layout couldn't be set from the overview → the "Sections" tab never appeared. -->
-  <LayoutPicker current={currentLayout} onpick={setLayout} onclose={() => (layoutPickerOpen = false)} />
-{/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
 <ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
 </div>
@@ -1219,13 +1232,20 @@ import LayoutPicker from "./LayoutPicker.svelte";
   /* New-note affordance (ADR-0011): the create entry in the notes pane. Choose a shape → draw the
      region. Paper surface (it lives in the sidebar). "Armed" state turns accent while drawing. */
   .new-note { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
-  .new-note .nn-lead { font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
-  .new-note > button { font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease; }
-  .new-note > button:hover { color: var(--ink-paper-primary); background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-low); }
+  /* "New note" is the core daily action — lift it out of the muted eyebrow tier so it reads as a label
+     for something to DO, and give the shape buttons weight + a cord-blue (accent-2) border so they read
+     as actions, not the neutral import chips around them. Signal-orange stays rationed to the header CTA
+     (tokens.css §accent); :not(.nn-cancel) keeps the armed-state Cancel button on its own muted styling. */
+  .new-note .nn-lead { font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  .new-note > button:not(.nn-cancel) { font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--accent-2-paper); border-radius: var(--radius-sm); cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease, border-color 160ms ease; }
+  .new-note > button:not(.nn-cancel):hover { color: var(--ink-paper-primary); background: var(--accent-2-muted); border-color: var(--accent-2-hover); box-shadow: var(--shadow-lift-low); }
   .new-note.armed { gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--accent-muted); border: none; border-radius: var(--radius-sm); }
   .new-note .nn-msg { flex: 1; font-family: var(--font-body); font-size: var(--text-ui-sm); color: var(--ink-paper-primary); }
   .new-note .nn-cancel { font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; background: var(--surface-paper-card); color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); cursor: pointer; transition: color 160ms ease, box-shadow 160ms ease; }
   .new-note .nn-cancel:hover { color: var(--ink-paper-primary); box-shadow: var(--shadow-lift-low); }
+  /* P1: the active-reading destination, shown beside the armed "draw" cue (paper-toned sidebar). */
+  .new-note .nn-into { display: inline-flex; align-items: center; gap: var(--space-1); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-paper-secondary); }
+  .new-note .nn-rd { font-weight: 500; color: var(--ink-paper-primary); background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
 
   /* Framing banner — the canvas is capturing a SECTION camera, not a note. A quiet accent-muted card;
      the active signal is a soft left dot of accent, not a hard bar. */
@@ -1235,6 +1255,9 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .framing-banner .fb-cancel { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: var(--space-2); transition: box-shadow 160ms ease; }
   .framing-banner .fb-cancel kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-canvas-muted); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
   .framing-banner .fb-cancel:hover { box-shadow: var(--shadow-lift-low); color: var(--ink-canvas-primary); }
+  /* P1: where the note will file (the active reading) — surfaced at draw time, on the canvas-toned banner. */
+  .framing-banner .fb-into { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-secondary); }
+  .framing-banner .fb-rd { font-weight: 500; letter-spacing: 0; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
 
   /* Scope separator — the line between exhibit-level (spine, above) and object-level (notes, below). */
   .scope-sep { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }

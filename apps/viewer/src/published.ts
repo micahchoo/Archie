@@ -7,10 +7,9 @@
 //    (ADR-0010 seam). Both sources return the SAME shapes, so ViewerShell/ExhibitView are source-agnostic.
 import {
   ZipFilesystem, FsaFilesystem, MemoryFilesystem, loadPortableExhibit, loadPortableGallery, readExhibitTree,
-  loadWorkingLibrary, publishLibrary, asClientId,
+  loadWorkingLibrary, publishLibrary, asClientId, WORKING_IRI_BASE,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit,
 } from "@render/core";
-import { BASE } from "./published-base.js";
 
 const PUBLISHED = `${import.meta.env.BASE_URL}published`;
 
@@ -77,11 +76,13 @@ export async function initLiveSource(): Promise<boolean> {
       return false;
     }
     const mem = new MemoryFilesystem();
-    // baseUrl = BASE (the canonical IRI base the Studio writes annotation targets against), NOT the tree
-    // path `${PUBLISHED}/`: publishLibrary groups annotations by `targetSource(h) === ${baseUrl}{slug}/canvas/{id}`
-    // (site.ts), so a mismatched base silently drops EVERY live-source annotation (exposed by maps — only the
-    // live source carries them). baseUrl sets IRIs/identifiers only; the tree is read by relative path.
-    await publishLibrary(mem, working.library, working.getLog, { baseUrl: BASE, getAsset: working.getAsset });
+    // baseUrl = WORKING_IRI_BASE — the SAME namespace Studio mints its annotation targets against (NOT the
+    // published base / real deploy origin): publishLibrary groups annotations by `targetSource(h) ===
+    // ${baseUrl}{slug}/canvas/{id}` (site.ts), so a mismatched base silently drops EVERY live-source
+    // annotation (exposed by maps — only the live source carries them). This base sets IRIs/identifiers
+    // only; the in-memory tree is read by relative path. (Decoupling these two bases fixed live notes —
+    // they were equal-by-coincidence until the published base moved to the real origin.)
+    await publishLibrary(mem, working.library, working.getLog, { baseUrl: WORKING_IRI_BASE, getAsset: working.getAsset });
     liveFs = mem;
     liveSlugs = new Set(working.library.exhibits.map((e) => e.slug));
     console.info(`Archie: live source on — ${liveSlugs.size} local exhibit(s) read from this browser's Studio working store`);

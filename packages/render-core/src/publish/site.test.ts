@@ -151,6 +151,7 @@ describe("loadLibrary — inverse of publishLibrary (publish↔load symmetry)", 
 
 describe("intra-Library links — resolved on the heads projection, raw in the canonical history", () => {
   const base = "https://u.gh.io/lib/";
+  const viewer = "https://u.gh.io/lib/viewer/"; // the canonical Viewer (Studio always supplies this at publish)
   const canvas = `${base}lk/canvas/o1`;
   const tgt = () => ({ type: "SpecificResource" as const, source: canvas, selector: { type: "FragmentSelector" as const, value: "xywh=pixel:0,0,3,3" } });
   // N2 = the target note; N1 links to it (valid); N3 links to a ghost id (broken).
@@ -171,11 +172,11 @@ describe("intra-Library links — resolved on the heads projection, raw in the c
 
   it("rewrites a valid ref to its display URL on the heads page, keeps it raw in history, reports the broken one", async () => {
     const fs = new MemoryFilesystem();
-    const { brokenLinks } = await publishLibrary(fs, lkLib, (id) => (id === "lk" ? lkLog : []), { baseUrl: base });
+    const { brokenLinks } = await publishLibrary(fs, lkLib, (id) => (id === "lk" ? lkLog : []), { baseUrl: base, viewerBase: viewer });
 
     // Heads page (consumer projection): valid ref → resolved URL, no `archie:`; broken → plain text.
     const heads = JSON.stringify(await readJson(fs, "lk", "canvas", "o1", "annotations.json"));
-    expect(heads).toContain(`${base}lk/#/a/${n2id}`);
+    expect(heads).toContain(`${viewer}#/lk/a/${n2id}`); // corrected grammar: slug-qualified viewer route (was the dead {slug}/#/a/<id> the router dropped)
     expect(heads).not.toContain("archie:lk/"); // no raw in-body ref survives (≠ the archie:hasHistory PROV prop)
     expect(heads).toContain("A dead one."); // degraded, no dangling href
 
@@ -185,6 +186,31 @@ describe("intra-Library links — resolved on the heads projection, raw in the c
 
     // Broken link surfaced for a publish-time warning.
     expect(brokenLinks).toEqual([{ exhibitSlug: "lk", logicalId: n3id, target: { exhibitSlug: "lk", noteLogicalId: "ghost-id-xyz" } }]);
+  });
+
+  it("rewrites `archie:` cites in SECTION prose too (manifest Range summary), degrading broken ones", async () => {
+    // Regression: previously ONLY note bodies were rewritten, so a cite in Narrative section prose
+    // shipped a raw `archie:` ref the Viewer rendered as dead text. Cite n1 (valid) to isolate the
+    // section rewrite from the note-body cites of n2; ghost degrades to plain text + a broken report.
+    const secLib: Library = {
+      id: "lib",
+      exhibits: [{
+        id: "lk", slug: "lk", title: "Linked",
+        objects: [{ id: "o1", source: "https://img/x.jpg", label: "O1", width: 9, height: 9 }],
+        layout: "narrative",
+        sections: [{
+          id: "sec-1", title: "Intro", objectId: "o1",
+          prose: `Compare [note one](${encodeLinkRef({ exhibitSlug: "lk", noteLogicalId: n1id })}) and [a ghost](${encodeLinkRef({ exhibitSlug: "lk", noteLogicalId: "ghost-id-xyz" as never })}).`,
+        }],
+      }],
+    };
+    const fs = new MemoryFilesystem();
+    const { brokenLinks } = await publishLibrary(fs, secLib, (id) => (id === "lk" ? lkLog : []), { baseUrl: base, viewerBase: viewer });
+    const manifest = JSON.stringify(await readJson(fs, "lk", "manifest.json"));
+    expect(manifest).toContain(`${viewer}#/lk/a/${n1id}`); // section cite resolved to the live viewer route
+    expect(manifest).not.toContain("archie:lk/");           // no raw ref shipped into the manifest summary
+    expect(manifest).toContain("a ghost");                   // broken section cite degraded to plain text
+    expect(brokenLinks).toContainEqual({ exhibitSlug: "lk", logicalId: "sec-1", target: { exhibitSlug: "lk", noteLogicalId: "ghost-id-xyz" } });
   });
 
   it("loadLibrary round-trips the RAW `archie:` ref (history is the source — guards against a future rewrite-history regression)", async () => {

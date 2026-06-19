@@ -2,7 +2,7 @@
   // Note lightbox (CONTEXT §"Local view loop") — a clicked note tile opens here: a modal carousel of
   // ALL the note's media (image / audio / video) with the note's text beside them. ← → / Esc navigate;
   // backdrop or × close. Audio/video play natively (consistent with MediaPlayer).
-  import { renderMarkdown } from "@render/core";
+  import ProseCites from "./ProseCites.svelte";
   import type { NoteMediaItem } from "@render/core";
 
   let {
@@ -57,7 +57,7 @@
   {/if}
 
   {#if text}
-    <div class="lb-text">{@html renderMarkdown(text)}</div>
+    <div class="lb-text"><ProseCites {text} /></div>
   {/if}
 </div>
 
@@ -110,7 +110,8 @@
   }
   .lb-text :global(p) { margin: 0 0 var(--space-2); }
   .lb-text :global(p:last-child) { margin-bottom: 0; }
-  .lb-text :global(a) { color: var(--accent-2); }
+  .lb-text :global(a) { color: var(--accent-2); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; cursor: pointer; }
+  .lb-text :global(a[href*="#/"]:not(.cite-card))::after { content: "¶" / ""; margin-left: 0.15em; font-size: 0.7em; vertical-align: 0.35em; opacity: 0.6; text-decoration: none; }
   .lb-text :global(strong) { font-weight: 700; }
   .lb-text :global(em) { font-style: italic; }
 </style>
