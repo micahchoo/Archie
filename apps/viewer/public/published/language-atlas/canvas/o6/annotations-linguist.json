@@ -1,14 +1,14 @@
 {
   "@context": "https://www.w3.org/ns/anno.jsonld",
-  "id": "https://archie.demo/language-atlas/canvas/o6/annotations-linguist.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6/annotations-linguist.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/language-atlas/annotations/000000000GK82XFVPQDZNMX4KC/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/000000000GK82XFVPQDZNMX4KC/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://archie.demo/language-atlas/canvas/o6",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o6",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -25,12 +25,12 @@
       ],
       "motivation": "commenting",
       "archie:reading": "linguist",
-      "archie:hasHistory": "https://archie.demo/language-atlas/annotations/history/000000000GK82XFVPQDZNMX4KC.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000GK82XFVPQDZNMX4KC.json"
     }
   ],
   "partOf": [
     {
-      "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/readings/linguist.json",
       "type": "AnnotationCollection"
     }
   ]

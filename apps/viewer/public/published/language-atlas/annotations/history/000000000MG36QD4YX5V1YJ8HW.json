@@ -1,14 +1,14 @@
 {
   "@context": "https://www.w3.org/ns/anno.jsonld",
-  "id": "https://archie.demo/language-atlas/annotations/history/000000000MG36QD4YX5V1YJ8HW.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/000000000MG36QD4YX5V1YJ8HW.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/language-atlas/annotations/000000000MG36QD4YX5V1YJ8HW/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/000000000MG36QD4YX5V1YJ8HW/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://archie.demo/language-atlas/canvas/o7",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/o7",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
