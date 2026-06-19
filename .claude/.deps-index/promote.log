@@ -281,3 +281,9 @@ Building package...
 
 Installed: playwright@main (4.4 MB, 2339 sections)
 2026-06-11T22:47:04Z | added playwright@main
+Cloning https://github.com/http-party/node-http-proxy...
+Checking out master...
+Using: node-http-proxy@master
+✓ Found docs at /doc
+Error: No markdown files found in doc. Use --path to specify or --lang all to include all languages.
+2026-06-18T06:20:14Z | failed http-proxy@master — context add failed
