@@ -10,6 +10,7 @@ description: >-
 
   Do NOT use for: ~/.claude/ personal config management, git operations, or
   project code organization outside .claude/.
+compatibility: Requires bash and git; auto-deployment into projects depends on ~/.claude/scripts/deploy-librarian.sh (SessionStart hook). Optional qmd for index duties.
 metadata:
   version: "1.0.0"
   domain: workflow

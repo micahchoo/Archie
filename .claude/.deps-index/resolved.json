@@ -125,5 +125,13 @@
     "ref": "main",
     "status": "added",
     "indexed_at": "2026-06-11T22:47:03Z"
+  },
+  {
+    "name": "http-proxy",
+    "url": "https://github.com/http-party/node-http-proxy",
+    "ref": "master",
+    "status": "failed",
+    "indexed_at": "2026-06-18T06:20:14Z",
+    "error": "context add failed"
   }
 ]

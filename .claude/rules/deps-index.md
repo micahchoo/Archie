@@ -27,11 +27,12 @@ data. If `freshness` is `very-stale` and the answer is load-bearing, call
 | `wavesurfer.js` | `main` | 2026-05-26 | very-stale | https://github.com/katspaugh/wavesurfer.js |
 | `fflate` | `master` | 2026-05-27 | very-stale | https://github.com/101arrowz/fflate |
 | `@astrojs/check` | `main` | 2026-05-27 | very-stale | https://github.com/withastro/astro |
-| `snarkdown` | `main` | 2026-06-09 | fresh | https://github.com/developit/snarkdown |
-| `playwright` | `main` | 2026-06-11 | fresh | https://github.com/microsoft/playwright |
+| `snarkdown` | `main` | 2026-06-09 | stale | https://github.com/developit/snarkdown |
+| `playwright` | `main` | 2026-06-11 | stale | https://github.com/microsoft/playwright |
 
 ## Indexing failures
 
 | Package | Status | Error |
 |---------|--------|-------|
 | `happy-dom` | failed | context add failed |
+| `http-proxy` | failed | context add failed |
