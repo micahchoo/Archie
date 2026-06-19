@@ -10,7 +10,7 @@
   import NoteMedia from "./NoteMedia.svelte";
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
-  import { renderMarkdown } from "@render/core";
+  import ProseCites from "./ProseCites.svelte";
   import { type MarkerStyle } from "@render/svelte";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
 
@@ -27,6 +27,8 @@
     onreading,
     styleFor,
     initialSelected = null,
+    notesHidden = false,
+    onhiddenchange,
   }: {
     objects: AObject[];
     /** Resolve an object id to its published canvas IRI (the Viewer owns the slug). */
@@ -45,6 +47,9 @@
     /** Per-object marker styler (objectId → (annId → style)); colours markers by Reading. */
     styleFor?: (objectId: string) => (id: string) => MarkerStyle | undefined;
     initialSelected?: string | null; // deep-link arrival: land on the section whose object owns this note
+    /** Hide-all (ReadingLegend declutter): canvas draws no markers except the SELECTED one. */
+    notesHidden?: boolean;
+    onhiddenchange?: (hidden: boolean) => void;
   } = $props();
 
   // Deep-link arrival → land on the section whose object owns the note (else section 0).
@@ -77,6 +82,13 @@
   // Note popup on marker click (CONTEXT §123 "Both: annomea popup/drawer on marker click"). Narrative
   // was missing this entirely — a clicked marker selected but showed nothing, so notes never surfaced.
   const current = $derived(activeNotes.find((it) => it.id === selected));
+  // Hide-all: the canvas shows only the selected note's mark (or nothing) — declutter the basemap while a
+  // marker pick still surfaces its single pin. The spine + popup keep the full active-notes set.
+  const canvasNotes = $derived.by(() => {
+    if (!notesHidden) return activeNotes;
+    const sel = activeNotes.find((a) => a.id === selected);
+    return sel ? [sel] : [];
+  });
   const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
   // Geo readout (Q7): a Map note shows its centre lng/lat in the opened popup.
   const geoCoord = $derived.by(() => { if (!current) return null; const g = geoOf(current); return g ? formatLngLat(geoCenter(g)) : null; });
@@ -94,7 +106,7 @@
             source={activeObject.source}
             tileSource={activeObject.tileSource}
             canvasId={canvasIdOf(activeObject.id)}
-            annotations={activeNotes}
+            annotations={canvasNotes}
             styleOf={activeStyleOf}
             focus={activeSection?.start ?? null}
             bind:selected
@@ -105,7 +117,7 @@
   </main>
 
   {#if onreading && readings.length > 0}
-    <ReadingLegend {readings} active={activeReading} onselect={onreading} />
+    <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} />
   {/if}
 
   <aside>
@@ -118,7 +130,7 @@
         <li>
           <button class:active={i === activeIndex} onclick={() => activate(i)}>
             <span class="num">{s.title}{#if multiObject && objects.length > 1}<span class="obj"> · {objects.find((o) => o.id === s.objectId)?.label ?? ""}</span>{/if}</span>
-            <div class="prose">{@html renderMarkdown(s.prose ?? "")}</div>
+            <div class="prose"><ProseCites text={s.prose ?? ""} /></div>
           </button>
         </li>
       {/each}
@@ -129,7 +141,7 @@
     <!-- annomea popup: the selected marker's note, floating over the canvas (CONTEXT §123) -->
     <div class="note-pop">
       <button class="close" onclick={() => (selected = null)} aria-label="Close note">×</button>
-      {#if noteParts.text}<div class="note-body">{@html renderMarkdown(noteParts.text)}</div>{/if}
+      {#if noteParts.text}<div class="note-body"><ProseCites text={noteParts.text} /></div>{/if}
       <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
       {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">{geoCoord}</p>{/if}
       {#if tagsOf(current).length}<div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>{/if}
@@ -179,7 +191,10 @@
   .prose :global(p:last-child) { margin-bottom: 0; }
   .prose :global(strong) { font-weight: 600; }
   .prose :global(em) { font-style: italic; }
-  .prose :global(a) { color: var(--accent-2); }
+  /* Cite link-scent: underline + cursor so it reads as clickable; the ¶ seal marks an intra-Library
+     cite (hash route into this viewer), matching the author-side ¶ Cite affordance. */
+  .prose :global(a) { color: var(--accent-2); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; cursor: pointer; }
+  .prose :global(a[href*="#/"]:not(.cite-card))::after { content: "¶" / ""; margin-left: 0.15em; font-size: 0.7em; vertical-align: 0.35em; opacity: 0.6; text-decoration: none; }
   .prose :global(img) { max-width: 100%; height: auto; border-radius: var(--radius-sm); margin-top: var(--space-2); }
   .prose :global(audio) { width: 100%; margin-top: var(--space-2); }
   /* Pulled quotes read as soft serif set off by a warm clay hairline rule. */
@@ -201,7 +216,8 @@
   .note-body :global(p:last-child) { margin-bottom: 0; }
   .note-body :global(strong) { font-weight: 600; }
   .note-body :global(em) { font-style: italic; }
-  .note-body :global(a) { color: var(--accent-2); }
+  .note-body :global(a) { color: var(--accent-2); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; cursor: pointer; }
+  .note-body :global(a[href*="#/"]:not(.cite-card))::after { content: "¶" / ""; margin-left: 0.15em; font-size: 0.7em; vertical-align: 0.35em; opacity: 0.6; text-decoration: none; }
   /* Note images render as thumbnails — click opens the lightbox. */
   .note-body :global(img) { display: block; max-width: 100%; max-height: 180px; height: auto; margin-top: var(--space-2); border-radius: var(--radius-sm); cursor: zoom-in; }
   .note-pop .tags { margin-top: var(--space-3); display: flex; gap: var(--space-3); }

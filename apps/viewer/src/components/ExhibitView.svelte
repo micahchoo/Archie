@@ -38,6 +38,7 @@
   let arrivedNote = $state<string | null>(null); // deep-link target id (land-in-context)
   let chromeVisible = $state(false); // cold-arrival chrome (§124), fades after a few seconds
   let activeReading = $state<string | null>(null); // ADR-0007 / Q16: base-only by default; null = base
+  let notesHidden = $state(false); // ReadingLegend "Hide all" — declutter the canvas to the bare basemap/image
 
   onMount(async () => {
     try {
@@ -207,6 +208,8 @@
       onreading={(id) => (activeReading = id)}
       styleFor={readingStyleOf}
       initialSelected={arrivedNote}
+      notesHidden={notesHidden}
+      onhiddenchange={(v) => (notesHidden = v)}
     />
   {:else if activeObject}
     <Reader
@@ -221,6 +224,8 @@
       rights={objectRightsOf(activeObject.id)}
       initialSelected={arrivedNote}
       onnotehover={(id) => (hoverNote = id)}
+      notesHidden={notesHidden}
+      onhiddenchange={(v) => (notesHidden = v)}
     />
   {:else}
     <ObjectGrid

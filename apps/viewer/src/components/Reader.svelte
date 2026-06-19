@@ -10,7 +10,8 @@
   import NoteMedia from "./NoteMedia.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import Credit from "./Credit.svelte";
-  import { renderMarkdown, stripMarkdown } from "@render/core";
+  import ProseCites from "./ProseCites.svelte";
+  import { stripMarkdown } from "@render/core";
   import { type MarkerStyle } from "@render/svelte";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
 
@@ -26,6 +27,8 @@
     rights,
     initialSelected = null,
     onnotehover,
+    notesHidden = false,
+    onhiddenchange,
   }: {
     object: { source: string; canvasId: string; label: string; summary?: string; tileSource?: TileSourceDescriptor };
     annotations?: W3CAnnotation[];
@@ -46,6 +49,10 @@
     /** Hovering a note in the list solos its mark on the canvas (the legend's hover affordance,
      *  per-note). The host owns the state so the styleOf identity re-mints. null = hover ended. */
     onnotehover?: (id: string | null) => void;
+    /** Hide-all (ReadingLegend declutter): when true the canvas draws no markers — only the SELECTED
+     *  note's mark stays, so picking from the list still shows what you chose. The note list is intact. */
+    notesHidden?: boolean;
+    onhiddenchange?: (hidden: boolean) => void;
   } = $props();
   // NOTE (dba2): the prev/next object carousel was lifted OUT of here into the persistent top bar
   // (ViewerShell) so it stops occluding the image top-center and has one discoverable home. ExhibitView
@@ -85,10 +92,15 @@
   // same `selected` path a marker click uses. The framed mark's own overlay rect is suppressed below
   // (filtered out of the canvas annotations) so the whole-object border isn't double-drawn.
   const canvasFrame = $derived<FrameOverlay | null>(
-    frame ? { colour: frame.colour, onActivate: () => (selected = frame.markId) } : null,
+    frame && !notesHidden ? { colour: frame.colour, onActivate: () => (selected = frame.markId) } : null,
   );
   // The notes list + detail (`current`) keep the FULL array — only the canvas drops the framed rect.
-  const canvasAnnotations = $derived(frame ? annotations.filter((a) => a.id !== frame.markId) : annotations);
+  // Hide-all: the canvas shows ONLY the selected note's mark (or nothing), decluttering the basemap
+  // while a list pick still reveals its single pin (the camera fit then centres it).
+  const canvasAnnotations = $derived.by(() => {
+    if (notesHidden) { const sel = annotations.find((a) => a.id === selected); return sel ? [sel] : []; }
+    return frame ? annotations.filter((a) => a.id !== frame.markId) : annotations;
+  });
 
   const current = $derived(annotations.find((it) => it.id === selected));
   // Split the selected note into media (clickable tiles → lightbox) + prose (CONTEXT §"Local view loop").
@@ -108,7 +120,7 @@
   </main>
 
   {#if onreading && readings.length > 0}
-    <ReadingLegend {readings} active={activeReading} onselect={onreading} />
+    <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} />
   {/if}
 
   <aside class:detail={!!current}>
@@ -120,7 +132,7 @@
       <button class="back soft-btn" onclick={() => (selected = null)}>← See all notes</button>
       <article>
         <!-- prose (media stripped) + the note's media as clickable tiles (image/audio/video) -->
-        {#if noteParts.text}<div class="body">{@html renderMarkdown(noteParts.text)}</div>{/if}
+        {#if noteParts.text}<div class="body"><ProseCites text={noteParts.text} /></div>{/if}
         <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
         {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">{geoCoord}</p>{/if}
         <div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>
@@ -213,7 +225,14 @@
   article .body :global(p:last-child) { margin-bottom: 0; }
   article .body :global(strong) { font-weight: 700; }
   article .body :global(em) { font-style: italic; }
-  article .body :global(a) { color: var(--accent); }
+  /* Links must LOOK clickable (underline + cursor; colour alone fails WCAG and reads as prose). An
+     intra-Library cite (a hash route back into this viewer) gets the same ¶ seal the author used to make
+     it (Studio's ¶ Cite / CmdK) — link-scent so a reader can tell a cross-link from an outbound one. */
+  article .body :global(a) { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; cursor: pointer; }
+  /* content alt-text `/ ""` keeps the ¶ visible but silent to screen readers (the link text already
+     conveys the target). Heuristic selector: real-publish cites are `…#/slug/a/id`; a rare external
+     `#/`-fragment link may also catch a ¶ — cosmetic only. */
+  article .body :global(a[href*="#/"]:not(.cite-card))::after { content: "¶" / ""; margin-left: 0.15em; font-size: 0.7em; vertical-align: 0.35em; opacity: 0.6; text-decoration: none; }
   article .body :global(ul), article .body :global(ol) { margin: 0 0 var(--space-3); padding-left: var(--space-5); }
   /* Note images render as thumbnails (not full-bleed) — click to open the lightbox. */
   article .body :global(img) { display: block; max-width: 100%; max-height: 200px; height: auto; margin-top: var(--space-2); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); cursor: zoom-in; }
