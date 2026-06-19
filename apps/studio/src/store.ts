@@ -7,7 +7,7 @@
 //   {PROJECT}/annotations/                       — the "sample" exhibit's annotations (LEGACY path,
 //                                                   kept so pre-multi-exhibit work isn't orphaned)
 //   {PROJECT}/exhibits/{slug}/annotations/       — every OTHER exhibit's annotations
-import { FsaFilesystem, type FsDirectory, type WorkingLibraryMeta } from "@render/core";
+import { FsaFilesystem, type FsDirectory, type WorkingLibraryMeta, type LayoutType } from "@render/core";
 
 // The persisted working-store SHAPES live in core now (Q-3 archie-persistence: the Viewer's live
 // source reads the same format via loadWorkingLibrary). Re-exported under their original Studio
@@ -80,7 +80,11 @@ export interface ExhibitMeta extends RightsFields {
   title: string;
   /** Optional exhibit description — projects to the Manifest `summary` (the Gallery card + exhibit chrome). */
   summary?: string;
-  layout?: "single" | "grid" | "narrative";
+  /** @deprecated (ADR-0016) The leading surface is now DERIVED from content by render-core resolveLayout
+   *  (sections → narrative, >1 object → grid, else single). Kept OPTIONAL for back-compat read-tolerance —
+   *  legacy stored data is harmless and IGNORED; the Studio NEVER writes this field anymore. `LayoutType`
+   *  imported from render-core so this stays the single source of truth (no duplicated string union). */
+  layout?: LayoutType;
   /** RESERVED (§43 reading-MODE axis) — v1.1 pacing variant (slideshow/scrollytelling). Unused in v1. */
   mode?: string;
   objects: ObjectMeta[];

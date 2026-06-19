@@ -14,11 +14,16 @@
     object,
     annotations = [],
     rights,
+    onback,
   }: {
     object: { source: string; label: string; mediaType?: "image" | "sound" | "video"; duration?: number };
     annotations?: W3CAnnotation[];
     /** The recording's credit/license (Q5) — AV is MUST-display too; shown by the title. */
     rights?: RightsFields;
+    /** Escape-out (ADR-0016 §137/§223): an AV object opened FROM the narrative index needs a step back
+     *  to that index, else it dead-end-traps the visitor (the carousel/breadcrumb don't serve it). Optional
+     *  + back-compat — absent (single AV, AV-in-grid carry their own nav) hides the affordance. */
+    onback?: () => void;
   } = $props();
 
   let mediaEl = $state<HTMLMediaElement | null>(null);
@@ -73,6 +78,15 @@
 </script>
 
 <div class="player" class:video={isVideo}>
+  <!-- Escape-out (ADR-0016 §137/§223): an AV object opened from the narrative index returns to that
+       index. Canvas-relative chrome, sibling to the OSD Reader's .to-read/.to-index escapes — present
+       only when the caller wires onback (single AV / AV-in-grid carry their own nav and pass none). -->
+  {#if onback}
+    <button class="to-index" onclick={() => onback?.()}>
+      <span class="back-mark" aria-hidden="true">‹</span>Back to the index
+    </button>
+  {/if}
+
   <main>
     <div class="media-region">
       <!-- The media on the dark light-table — same surface as the image canvas, so sound/image read
@@ -143,7 +157,24 @@
 <style>
   /* Listening station: warm paper media ground (left) + warm paper transcript spine (right); the active
      line is a quiet signal — the NarrativeReader idiom, applied to time instead of space. */
-  .player { display: flex; height: 100vh; background: var(--surface-canvas); }
+  .player { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
+
+  /* Escape-out from an index-opened AV recording (ADR-0016 §137 precision-in/escape-out, §223 anti-trap):
+     a quiet step back to the index grid, anchored canvas-relative (top-left of the media column). Cleared
+     to 3.25rem below the persistent top-bar band (ViewerShell .topbar owns top-left for the breadcrumb;
+     the index-AV player also emits the top-bar carousel) — same clearance as the sibling .to-read/.to-index
+     escapes. Mirrors that escape language — transparent chrome, canvas inks, connector-blue (--accent-2)
+     hover keeps the rationed orange free. */
+  .to-index {
+    position: absolute; z-index: 20; top: 3.25rem; left: var(--space-5);
+    display: inline-flex; align-items: center; gap: var(--space-1);
+    background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-1);
+    color: var(--ink-canvas-secondary);
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); letter-spacing: 0.04em;
+    transition: color 160ms ease;
+  }
+  .to-index:hover { color: var(--accent-2); }
+  .to-index .back-mark { font-size: 1.05rem; line-height: 1; }
   main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface-canvas); }
   .media-region { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: var(--space-8); }
 

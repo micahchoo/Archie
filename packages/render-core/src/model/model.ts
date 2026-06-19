@@ -33,8 +33,9 @@ export function mediaTypeFromSource(source: string, format?: string): MediaType 
 /** The v1 layout set (the SPATIAL-arrangement axis; `narrative` also carries the prose-led reading). */
 export type LayoutType = "single" | "grid" | "narrative";
 
-/** The reading-mode family (CONTEXT §43/§122): is the OBJECT the subject, or the author's PROSE? The
- *  layout-picker groups by this so a choice reads as a reading relationship, not an interchangeable skin. */
+/** The reading-mode family (CONTEXT §43/§122): is the OBJECT the subject, or the author's PROSE? Names a
+ *  reading relationship rather than an interchangeable skin.
+ *  RESERVED for the v1.1 'compare' arrangement; no v1 production consumer (the layout-picker is retired — ADR-0016). */
 export type ReadingFamily = "object-led" | "prose-led";
 
 /** Which reading family a layout belongs to. (Single/Grid/Compare = object-led; Narrative = prose-led.) */
@@ -150,7 +151,10 @@ export interface Exhibit extends RightsFields {
   /** The exhibit's curated Readings — interpretive passes (ADR-0007). A Note references one by id
    *  (`record.reading`) or none (base). Absent/empty = a base-only exhibit (no legend). Order = legend order. */
   readings?: Reading[];
-  /** The author's chosen spatial arrangement (reading-intent declaration). Inferred if absent. */
+  /** @deprecated (ADR-0016) The leading surface is now a pure function of content — `resolveLayout`
+   *  always DERIVES the type and IGNORES this field. Kept OPTIONAL only for read-tolerance of legacy
+   *  stored data (harmless when present); the Studio MUST NOT write it. Remove once no stored exhibit
+   *  carries it. */
   layout?: LayoutType;
   /** RESERVED (§43 reading-MODE axis) — a pacing/mode variant of `layout` (e.g. "slideshow" of grid,
    *  "scrollytelling" of narrative). Unused in v1 (no mode is set); reserved so v1.1 modes attach here

@@ -12,7 +12,6 @@
   import CmdK from "./CmdK.svelte";
   import MediaPicker, { type PickItem } from "./MediaPicker.svelte";
   import AvEditor from "./AvEditor.svelte";
-import LayoutPicker from "./LayoutPicker.svelte";
   import ExhibitOverview from "./ExhibitOverview.svelte";
   import NarrativeEditor from "./NarrativeEditor.svelte";
   import DetailsEditor from "./DetailsEditor.svelte";
@@ -23,7 +22,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
-    tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary,
+    tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary, resolveLayoutType,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import type { DrawTool, MarkerStyle } from "@render/mount";
@@ -34,6 +33,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
   import { createBindingStore } from "./binding-store.svelte.js";
   import { createPublishFlows } from "./publish-flows.svelte.js";
   import { createReadingState } from "./reading-state.svelte.js";
+  import { narrativeCueReducer } from "./narrative-cue-reducer.js";
   // Seed / default-exhibit data lives in seed-data.ts (the DOMINO cut): DEFAULT_EXHIBITS, the per-slug
   // session factories (seededFor), and the shared region/time selector constructors + BASE.
   import { DEFAULT_EXHIBITS, seededFor, BASE, timeSel } from "./seed-data.js";
@@ -50,6 +50,16 @@ import LayoutPicker from "./LayoutPicker.svelte";
   const IDENTITY_KEY = "archie.displayName.v1";
   function loadIdentity(): string | null { try { return localStorage.getItem(IDENTITY_KEY); } catch { return null; } }
   let identity = $state<string | null>(loadIdentity());
+
+  // The KEYSTONE matched-pair cue (ADR-0016 staging spec §3): adding the FIRST section flips the exhibit's
+  // front door (the published surface leads with the narrative instead of the grid). A first-timer must be
+  // told this once — but ONLY once per exhibit, so a later beat never re-announces it. Persist the "shown"
+  // flag per slug in localStorage (metadata, not content — same idiom as IDENTITY_KEY). One-time / self-
+  // dismissing; the reverse cue (last→0) is a transient confirm, not persisted (it must fire every time the
+  // narrative is actually cleared).
+  const FIRST_ADD_KEY = (slug: string) => `archie.narrativeFirstAddShown.v1.${slug}`;
+  function firstAddSeen(slug: string): boolean { try { return localStorage.getItem(FIRST_ADD_KEY(slug)) === "1"; } catch { return false; } }
+  function markFirstAddSeen(slug: string) { try { localStorage.setItem(FIRST_ADD_KEY(slug), "1"); } catch { /* private mode — cue simply re-shows, harmless */ } }
   const author = $derived(asClientId(identity || "anonymous"));
   const srcOf = (t: unknown): string | undefined => (typeof t === "string" ? t : (t as { source?: string } | null)?.source);
 
@@ -167,6 +177,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
     editing = null;
     creating = null;
     rdg.resetForExhibit(); // fresh exhibit = everything visible, pen on base (fixes the cross-exhibit leak)
+    firstAddCueSlug = null; pendingClear = null; clearedSlug = null; // drop any narrative-staging cue from the outgoing exhibit
     assetsReady = false;
     // The SESSION swap is now one ATOMIC transition (fix #3): exhibit-session.open flushes the OUTGOING
     // exhibit, resolves THIS exhibit's assets, then loads/seeds + installs session/annDir/storeReady in a
@@ -178,11 +189,13 @@ import LayoutPicker from "./LayoutPicker.svelte";
       resolveAssets: () => resolveAssets(slug, ex?.objects ?? []), // OPFS /assets → blob: URLs (sets assetsReady)
     });
     rev += 1;
-    // Land at the exhibit's OVERVIEW scale (invention #1) UNLESS it's exactly one object (non-narrative),
-    // which goes straight to its annotation surface. An EMPTY (0-object) exhibit also lands at the overview
-    // — that's the only place to name it + add objects (the Details drawer lives there). MUST stay in sync
-    // with `hasOverview` below (same predicate).
-    view = ((ex?.objects.length ?? 0) !== 1 || (ex?.layout ?? "grid") === "narrative") ? "overview" : "editor";
+    // Land at the exhibit's OVERVIEW scale (invention #1) UNLESS it's exactly one object, which goes
+    // straight to its annotation surface (auto-open the only object; the back affordance is suppressed).
+    // An EMPTY (0-object) exhibit also lands at the overview — that's the only place to name it + add
+    // objects (the Details drawer lives there). The overview is an OBJECT-COUNT affordance only: sections
+    // (a narrative) do NOT trigger it (ADR-0016 — narrative is an emergent reading mode of the published
+    // exhibit, not an authoring gate). MUST stay in sync with `hasOverview` below (same predicate).
+    view = (ex?.objects.length ?? 0) !== 1 ? "overview" : "editor";
   }
   async function backToLibrary() {
     sess.cancelPendingSave();
@@ -218,11 +231,52 @@ import LayoutPicker from "./LayoutPicker.svelte";
     assetsReady = false;
     view = "library";
   }
+  // --- The KEYSTONE matched-pair cue state (staging spec §3 / §7). The leading published surface is a pure
+  // function of sections.length (ADR-0016 contract): 0→1 flips the front door TO the narrative; last→0 flips
+  // it BACK to the grid. setSections is the one place every section mutation funnels through, so it owns
+  // detecting both crossings and raising the paired cue.
+  // - 0→1: commit immediately (non-blocking), then raise the inline FIRST-ADD cue (once per exhibit).
+  // - last→0: this REVERTS the front door, so guard it — hold the empty array pending an inline confirm
+  //   ("Remove the last section?…") rather than silently clearing. Confirm commits; cancel discards.
+  let firstAddCueSlug = $state<string | null>(null); // slug whose inline "now opens with your narrative" cue is showing
+  let pendingClear = $state<{ slug: string } | null>(null); // a last→0 removal awaiting the inline confirm
+  let clearedSlug = $state<string | null>(null); // slug whose narrative was JUST cleared → NarrativeEditor shows the "cleared" copy
+  function dismissFirstAddCue() { firstAddCueSlug = null; }
+
   // Persist the authored narrative spine (NarrativeEditor onchange) → ExhibitMeta.sections → publishes as
   // IIIF Ranges (buildFullLibrary → toRanges). Library STRUCTURE persists ungated (sections aren't notes).
+  // Thin dispatcher over the PURE narrativeCueReducer (the keystone crossing logic; staging spec §3/§7).
+  // The reducer decides commit-intent + which cue to raise from the count transition; App owns the side
+  // effects it can't (localStorage "seen" flag, patchExhibit, the $state cue vars).
   function setSections(sections: Section[]) {
+    const prev = currentExhibit?.sections?.length ?? 0;
+    const v = narrativeCueReducer(prev, sections.length, firstAddSeen(currentSlug));
+    // last→0 (commit:false, cue:"clear"): reverting the front door is consequential — stash the (empty)
+    // intent pending the inline confirm strip ("Remove" → confirmClear, "Keep" → cancelClear). Don't commit.
+    if (!v.commit) { pendingClear = { slug: currentSlug }; return; }
     lib.patchExhibit(currentSlug, { sections });
+    // MF-2: every committed write retires any pending last→0 confirm. Resolving a last-remove by ADDING (or
+    // editing a title while the strip is up) commits a non-empty spine — the strip's "Remove the last
+    // section?" copy is now false and confirmClear would wipe the spine without a fresh confirm. Reset it.
+    pendingClear = null;
+    if (sections.length > 0) clearedSlug = null; // any add/edit retires the "just cleared" empty-state copy
+    // 0→1 (cue:"first-add"): the exhibit just became narrative-led. Announce the front-door flip once per
+    // exhibit; markSeen at fire-time (the reducer gates on the seen flag we passed in) so a refresh before
+    // dismiss won't re-fire.
+    if (v.cue === "first-add") firstAddCueSlug = currentSlug;
+    if (v.markSeen) markFirstAddSeen(currentSlug);
   }
+  // The last→0 confirm resolved "Remove": commit the clear (the front door reverts to the grid; the
+  // NarrativeEditor's empty state then shows the "Narrative cleared…" copy). A pending FIRST-ADD cue can't
+  // coexist with a clear, but defensively drop it.
+  function confirmClear() {
+    if (!pendingClear) return;
+    lib.patchExhibit(pendingClear.slug, { sections: [] });
+    firstAddCueSlug = null;
+    clearedSlug = pendingClear.slug; // arm the NarrativeEditor's "Narrative cleared…" empty-state copy
+    pendingClear = null;
+  }
+  function cancelClear() { pendingClear = null; }
   // --- narrative camera FRAMING (ADR-0005 + placement correction 2026-05-25) ---
   // A Section's camera (`start`) is set by FRAMING it on the editor canvas — the same gesture as a note's
   // geometry — not by typing a fragment. "Frame camera" on a section rail-JUMPS to that section's object
@@ -330,7 +384,9 @@ import LayoutPicker from "./LayoutPicker.svelte";
     const base = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "exhibit";
     let slug = base, n = 2;
     while (lib.meta.exhibits.some((e) => e.slug === slug)) slug = `${base}-${n++}`;
-    await lib.addExhibit({ id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", layout: "grid", objects: [] });
+    // No `layout` written (ADR-0016): the leading surface is DERIVED from content by resolveLayout
+    // (sections → narrative, >1 object → grid, else single). The field is deprecated; Studio never writes it.
+    await lib.addExhibit({ id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", objects: [] });
     await openExhibit(slug);
   }
   // The ingest flows (file/URL/AV/map object-add, folder/manifest exhibit-create, CSV/WADM bulk-note
@@ -431,18 +487,22 @@ import LayoutPicker from "./LayoutPicker.svelte";
     lib.patchObject(currentSlug, objId, { label: l });
   }
 
-  // --- layout-picker (PROTOTYPE; CONTEXT §142): declare the exhibit's reading intent (single/grid/narrative).
-  // Layout is authored structure → persist; it shapes the PUBLISHED exhibit (resolveLayout/Viewer), not this view.
-  let layoutPickerOpen = $state(false);
-  const currentLayout = $derived<LayoutType>(currentExhibit?.layout ?? "grid");
+  // --- Reading mode (ADR-0016 "narrative as an emergent reading mode"): the leading surface is a PURE
+  // FUNCTION OF CONTENT — no stored/picked layout. DELEGATES to render-core's single-source discriminant
+  // (resolveLayoutType); drives only display (the overview intent line). The deprecated stored
+  // `exhibit.layout` is NEVER read or written here. The LayoutPicker is retired.
+  const currentLayout = $derived<LayoutType>(
+    currentExhibit ? resolveLayoutType(currentExhibit.objects, currentExhibit.sections) : "single",
+  );
   const currentReadings = $derived<Reading[]>(currentExhibit?.readings ?? []);
   // (Marginalia cuts D+E reverted 2026-06-11 on user review — "does not look good". The ENGINE
   // survives headless-tested for a future presentation redesign: core layoutMarginalia(+pinId),
   // mount markerScreenRects, Canvas rectIds/onmarkerrects, render-svelte MarginColumn. See
   // IMPROVEMENT-WORKLIST ledger + the marginalia-redesign seeds issue.)
   // Whether this exhibit has an overview scale (invention #1): NOT exactly one object (so: 0 to name/fill,
-  // or >1 to arrange), or a narrative. MUST stay in sync with openExhibit's routing predicate above.
-  const hasOverview = $derived((currentExhibit?.objects.length ?? 0) !== 1 || currentLayout === "narrative");
+  // or >1 to arrange). An OBJECT-COUNT affordance only — sections/narrative do NOT trigger it (ADR-0016).
+  // MUST stay in sync with openExhibit's routing predicate above.
+  const hasOverview = $derived((currentExhibit?.objects.length ?? 0) !== 1);
   // The current exhibit's notes, shaped for the NarrativeEditor's "add section from a Note" shortcut
   // (ADR-0005 mitigation): objectId from the target canvas, start = the selector fragment, lead = the prose.
   const narrativeNotes = $derived.by(() => {
@@ -453,11 +513,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
       return { id: r.logicalId, objectId, ...(start ? { start } : {}), lead: stripMarkdown(commentOf(r)).slice(0, 80) || "(untitled)" };
     });
   });
-  function setLayout(l: LayoutType) {
-    lib.patchExhibit(currentSlug, { layout: l });
-    layoutPickerOpen = false;
-  }
-
   // --- Readings (ADR-0007): the exhibit's curated interpretive passes. Persisted on ExhibitMeta,
   // published as a registry + per-reading AnnotationPages. A note belongs to ONE reading or none (base). ---
   function setReadings(readings: Reading[]) {
@@ -866,11 +921,12 @@ import LayoutPicker from "./LayoutPicker.svelte";
       objects={OBJECTS}
       {noteCountOf}
       thumbFor={(o) => (o.mediaType && o.mediaType !== "image") ? "" : thumbSrc(o)}
+      sections={currentExhibit.sections ?? []}
       onopenobject={openObject}
       onaddobject={() => { view = "editor"; addingObject = true; }}
-      onsetlayout={() => (layoutPickerOpen = true)}
       onback={backToLibrary}
       onreorder={reorderObjects}
+      onstartnarrative={() => openObject(OBJECTS[0]?.id ?? currentObjectId)}
       rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}
       summary={currentExhibit.summary}
@@ -890,7 +946,8 @@ import LayoutPicker from "./LayoutPicker.svelte";
          ("New note" in the notes pane, or narrative camera framing). -->
     <!-- The reading dropdown is RETIRED (archie-ux Q-2, grill Q3): the RAIL on the canvas is the
          one home for visibility + the pen; "Manage readings…" on the rail opens the modal. -->
-    <button class="layout-trigger" onclick={() => (layoutPickerOpen = true)} title="Choose how visitors move through this exhibit — a grid to browse, a single view, or a guided sequence">▦ {currentLayout}</button>
+    <!-- The layout-picker trigger is RETIRED (ADR-0016): the reading mode is an EMERGENT property of
+         content (sections → narrative, >1 object → grid, else single), no longer an author choice. -->
     {#if sess.storeReady}
       <span class="savestate" class:dirty={sess.dirty} class:error={saveStatus.health === "error"} title={saveStatus.error ?? undefined}>
         {saveStatus.health === "error" ? "⚠ Save failed" : sess.dirty ? "● Unsaved" : "Saved"}</span>
@@ -974,22 +1031,51 @@ import LayoutPicker from "./LayoutPicker.svelte";
 
   <div class="body">
     <aside>
-      {#if currentLayout === "narrative"}
-        <!-- The narrative spine lives HERE, beside the object-local notes (placement correction): exhibit
-             scope on top (persists across rail switches), object scope below (swaps). -->
-        <NarrativeEditor
-          sections={currentExhibit?.sections ?? []}
-          objects={OBJECTS}
-          {currentObjectId}
-          framingId={framingSectionId}
-          notes={narrativeNotes}
-          onchange={setSections}
-          onframe={startFraming}
-          oncancelframe={cancelFraming}
-          onrequestcite={requestCite}
-        />
-        <div class="scope-sep"><span>This object</span></div>
+      <!-- The narrative spine is ALWAYS mounted (ADR-0016): a narrative exists iff sections.length>0, and
+           authoring it is no longer gated by a picked layout — adding the first section IS the act that turns
+           this exhibit into a narrative (the published reading mode emerges from the content). Exhibit scope
+           on top (persists across rail switches), object scope below (swaps). -->
+      {#if firstAddCueSlug === currentSlug}
+        <!-- KEYSTONE matched-pair cue, FIRST-ADD (0→1): the one-time, non-blocking, dismissible note that
+             adding beat #1 changed the exhibit's published front door. Sits directly above the spine card so
+             it reads as "about this thing you just did." Dismisses on "Got it" and never re-shows for this
+             exhibit (the localStorage flag set at fire-time). -->
+        <div class="narrative-cue" role="status">
+          <p class="nc-msg">This exhibit now opens with your narrative. Visitors see your sections first; the media grid becomes a list they can still reach. <span class="nc-aside">(Remove every section to go back to a plain grid.)</span></p>
+          <div class="nc-actions">
+            <!-- No in-Studio narrative preview surface exists yet (Publish writes the whole site to the
+                 Viewer's folder — not a lightweight in-place preview). Per the build rule, this is a marked
+                 TODO, NOT a fabricated preview. [SNAG] Owed: an in-Studio "preview how it opens" reader. -->
+            <button type="button" class="nc-preview" disabled title="Coming soon — preview the visitor's reading view from inside the Studio (TODO: in-Studio narrative preview)">Preview how it opens</button>
+            <button type="button" class="nc-dismiss" onclick={dismissFirstAddCue} aria-label="Dismiss">Got it</button>
+          </div>
+        </div>
       {/if}
+      {#if pendingClear?.slug === currentSlug}
+        <!-- KEYSTONE matched-pair cue, LAST-REMOVE (last→0): removing the final section reverts the front
+             door, so confirm first (the only section delete that confirms; non-last deletes are silent).
+             Transient — NOT persisted; it must fire every time the narrative is genuinely cleared. -->
+        <div class="narrative-cue confirm" role="alert" aria-label="Remove the last section">
+          <p class="nc-msg">Remove the last section? Your exhibit goes back to opening with the media grid.</p>
+          <div class="nc-actions">
+            <button type="button" class="nc-keep" onclick={cancelClear}>Keep it</button>
+            <button type="button" class="nc-remove" onclick={confirmClear}>Remove</button>
+          </div>
+        </div>
+      {/if}
+      <NarrativeEditor
+        sections={currentExhibit?.sections ?? []}
+        objects={OBJECTS}
+        {currentObjectId}
+        framingId={framingSectionId}
+        notes={narrativeNotes}
+        cleared={clearedSlug === currentSlug}
+        onchange={setSections}
+        onframe={startFraming}
+        oncancelframe={cancelFraming}
+        onrequestcite={requestCite}
+      />
+      <div class="scope-sep"><span>This object</span></div>
       {#if current}
         <!-- editable object label (authored structure; persists). Enter or blur commits. -->
         <input
@@ -1031,7 +1117,7 @@ import LayoutPicker from "./LayoutPicker.svelte";
                 {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
                 {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
                 <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
-                {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{/if}
+                {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}>General notes</span>{/if}
               </div>
             </button>
           </li>
@@ -1140,12 +1226,6 @@ import LayoutPicker from "./LayoutPicker.svelte";
   <CmdK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />
   <MediaPicker open={mediaPickerOpen} title="Cite a note by its image" items={mediaPickerItems} onpick={pickVisualCite} onclose={() => (mediaPickerOpen = false)} />
 {/if}
-{#if layoutPickerOpen}
-  <!-- GLOBAL (outside the view branches): the layout picker is opened from BOTH the editor header AND the
-       overview header. When it was scoped to the editor branch, the overview's ▦ could never render it —
-       so a narrative layout couldn't be set from the overview → the "Sections" tab never appeared. -->
-  <LayoutPicker current={currentLayout} onpick={setLayout} onclose={() => (layoutPickerOpen = false)} />
-{/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
 <ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
 </div>
@@ -1219,9 +1299,13 @@ import LayoutPicker from "./LayoutPicker.svelte";
   /* New-note affordance (ADR-0011): the create entry in the notes pane. Choose a shape → draw the
      region. Paper surface (it lives in the sidebar). "Armed" state turns accent while drawing. */
   .new-note { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-3); }
-  .new-note .nn-lead { font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
-  .new-note > button { font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease; }
-  .new-note > button:hover { color: var(--ink-paper-primary); background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-low); }
+  /* "New note" is the core daily action — lift it out of the muted eyebrow tier so it reads as a label
+     for something to DO, and give the shape buttons weight + a cord-blue (accent-2) border so they read
+     as actions, not the neutral import chips around them. Signal-orange stays rationed to the header CTA
+     (tokens.css §accent); :not(.nn-cancel) keeps the armed-state Cancel button on its own muted styling. */
+  .new-note .nn-lead { font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  .new-note > button:not(.nn-cancel) { font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--accent-2-paper); border-radius: var(--radius-sm); cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease, border-color 160ms ease; }
+  .new-note > button:not(.nn-cancel):hover { color: var(--ink-paper-primary); background: var(--accent-2-muted); border-color: var(--accent-2-hover); box-shadow: var(--shadow-lift-low); }
   .new-note.armed { gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--accent-muted); border: none; border-radius: var(--radius-sm); }
   .new-note .nn-msg { flex: 1; font-family: var(--font-body); font-size: var(--text-ui-sm); color: var(--ink-paper-primary); }
   .new-note .nn-cancel { font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; background: var(--surface-paper-card); color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); padding: var(--space-1) var(--space-2); cursor: pointer; transition: color 160ms ease, box-shadow 160ms ease; }
@@ -1240,6 +1324,27 @@ import LayoutPicker from "./LayoutPicker.svelte";
   .scope-sep { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
   .scope-sep::after { content: ""; flex: 1; height: 1px; background: var(--border-paper); }
   .scope-sep span { font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 400; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-paper-muted); }
+
+  /* KEYSTONE matched-pair cue — a quiet teaching note on warm paper, attached above the spine card. Forest
+     green reads here (paper, not grey), used only on the accent left-rule; the body stays ink. Non-blocking,
+     never a modal. (Sidebar is the paper surface — paper tokens throughout.) */
+  .narrative-cue { display: flex; flex-direction: column; gap: var(--space-2); margin: 0 0 var(--space-3); padding: var(--space-3); background: var(--surface-paper-card); border-left: 3px solid var(--accent); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  .narrative-cue .nc-msg { margin: 0; font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-paper-primary); }
+  .narrative-cue .nc-aside { color: var(--ink-paper-secondary); }
+  .narrative-cue .nc-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .narrative-cue button { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); border-radius: var(--radius-sm); transition: color 120ms ease, border-color 120ms ease, background 120ms ease; }
+  /* "Preview how it opens" — wired to a marked TODO (no in-Studio preview yet), so it sits disabled, not absent. */
+  .nc-preview { background: var(--surface-paper); color: var(--ink-paper-muted); border: 1px solid var(--border-paper); }
+  .nc-preview:disabled { opacity: 0.6; cursor: default; }
+  .nc-dismiss { background: var(--surface-paper); color: var(--accent); border: 1px solid var(--border-paper-emphasis); }
+  .nc-dismiss:hover { border-color: var(--accent); }
+  /* The last-remove confirm: vermillion ONLY on the destructive "Remove" (the design-system inline-confirm
+     idiom, Archie-3f4c); the rule turns vermillion too so the strip reads as a guard, not a tip. */
+  .narrative-cue.confirm { border-left-color: var(--semantic-error); }
+  .nc-keep { background: var(--surface-paper); color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); }
+  .nc-keep:hover { color: var(--ink-paper-primary); border-color: var(--ink-paper-secondary); }
+  .nc-remove { background: var(--semantic-error); color: var(--ink-on-accent); border: 1px solid var(--semantic-error); }
+  .nc-remove:hover { filter: brightness(0.94); }
 
   /* Object rail — the exhibit's works laid along the table edge; the active one marked by a quiet
      accent tint + soft lift (not a loud orange fill — the signal is rationed to Publish). */
