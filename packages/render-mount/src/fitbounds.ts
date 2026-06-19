@@ -40,6 +40,42 @@ export function fitBoundsRect(selector: W3CSelector, opts: FitOptions): Box | nu
   return { x: box.x, y: box.y, w: box.w / (1 - f), h: box.h };
 }
 
+/**
+ * Region-aware fit for a BOUNDED map (ADR-0015). On a bounded slippy basemap, OSD's plain
+ * `fitBounds` centers the note — but the `animation-finish` region clamp (createMount) then pans the
+ * viewport back inside `region`, yanking the note AWAY from centre on a SECOND move (the "camera
+ * shifts off the note" bug). This folds the clamp INTO the fit: it returns the rect to fit so the
+ * note lands as-centred-as-the-region-allows in one motion, and the follow-up PAN clamp finds nothing
+ * to correct — for any note that fits inside the region. (A note larger than the WHOLE extent can't be
+ * centred there and its fit zoom falls below the region floor, so the clamp's zoom branch still nudges
+ * it to fit the region — a benign zoom-to-fit, not the off-centre pan yank this fixes.)
+ *
+ * All boxes are in OSD VIEWPORT coordinates (isotropic: 1 unit x == 1 unit y on screen). `note` is the
+ * note's bbox; `viewportAspect` = container width/height (px); `region` is the bounded extent. We first
+ * grow `note` to the viewport aspect — the bounds OSD's fitBounds actually settles to — then clamp THAT
+ * box's centre inside `region` (the same centre math as the live clamp in mount.ts, so they agree).
+ */
+export function clampedFitRect(note: Box, viewportAspect: number, region: Box): Box {
+  // The viewport bounds OSD settles to when fitting `note`: grow to the container's aspect, centred.
+  // note.w/note.h < aspect ⇒ the note is "taller" than the frame, so height is the binding dimension.
+  let w: number;
+  let h: number;
+  if (note.w / note.h < viewportAspect) {
+    h = note.h;
+    w = note.h * viewportAspect;
+  } else {
+    w = note.w;
+    h = note.w / viewportAspect;
+  }
+  let cx = note.x + note.w / 2;
+  let cy = note.y + note.h / 2;
+  // Keep the settled box inside the region when it fits (mirrors clampToRegion in mount.ts). A box
+  // wider/taller than the region can't be clamped on that axis — leave the note centred there.
+  if (w <= region.w) cx = Math.min(region.x + region.w - w / 2, Math.max(region.x + w / 2, cx));
+  if (h <= region.h) cy = Math.min(region.y + region.h - h / 2, Math.max(region.y + h / 2, cy));
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+
 /** The minimal OSD viewport surface fitBounds dispatch needs (mockable; real one is osd.viewport). */
 export interface ViewportLike {
   imageToViewportRectangle(x: number, y: number, w: number, h: number): unknown;

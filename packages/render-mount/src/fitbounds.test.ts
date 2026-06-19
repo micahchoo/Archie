@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fitBoundsRect, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
+import { fitBoundsRect, applyFitBounds, clampedFitRect, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import type { W3CFragmentSelector, W3CSvgSelector } from "@render/core";
 
 // Characterization test (the Phase-1 acceptance ORACLE). Pins anvil's fitForSidebar behavior
@@ -91,5 +91,37 @@ describe("applyFitBounds — dispatch to an OSD-like viewport (the mockable gate
     const { vp, calls } = mockViewport();
     expect(applyFitBounds(vp, { type: "SvgSelector", value: "<polygon points='NaN'/>" }, sheet)).toBe(false);
     expect(calls).toHaveLength(0);
+  });
+});
+
+// clampedFitRect — the bounded-map fit (ADR-0015). Pins the property that fixes the "camera shifts off
+// the note" bug: the returned fit box stays inside the region (when it fits), so the live
+// animation-finish clamp has nothing to correct. All boxes are in OSD viewport coords; region = 0,0..100,100.
+describe("clampedFitRect (bounded-map note fit)", () => {
+  const region = { x: 0, y: 0, w: 100, h: 100 };
+
+  it("leaves an interior note centred (square viewport, no clamp needed)", () => {
+    const note = { x: 40, y: 40, w: 20, h: 20 }; // centre 50,50 — comfortably inside
+    expect(clampedFitRect(note, 1, region)).toEqual({ x: 40, y: 40, w: 20, h: 20 });
+  });
+
+  it("clamps an edge note inward so the viewport stays in-region (the yank it prevents)", () => {
+    const note = { x: 0, y: 40, w: 10, h: 20 }; // wants centre x=5, but a 20-wide box would spill left
+    const fit = clampedFitRect(note, 1, region);
+    // Grown to the square aspect (20×20), centre pushed to x=10 so the left edge sits exactly on region.x=0.
+    expect(fit).toEqual({ x: 0, y: 40, w: 20, h: 20 });
+    expect(fit.x).toBeGreaterThanOrEqual(region.x); // never spills past the bound
+  });
+
+  it("grows the note to the viewport aspect before clamping (landscape frame widens the box)", () => {
+    const note = { x: 40, y: 40, w: 20, h: 20 };
+    // aspect 2 (W=2H): a square note becomes a 40×20 viewport box, still centred at 50,50.
+    expect(clampedFitRect(note, 2, region)).toEqual({ x: 30, y: 40, w: 40, h: 20 });
+  });
+
+  it("does NOT clamp an axis where the box is larger than the region (can't centre an oversize fit)", () => {
+    const note = { x: -10, y: 40, w: 200, h: 20 }; // centre x=90; grown box (200 wide) exceeds region.w
+    const fit = clampedFitRect(note, 1, region);
+    expect(fit.x + fit.w / 2).toBe(90); // centre untouched on the oversize (x) axis
   });
 });

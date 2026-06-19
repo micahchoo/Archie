@@ -14,8 +14,8 @@ import OpenSeadragon from "openseadragon";
 import { createOSDAnnotator, W3CImageFormat, UserSelectAction } from "@annotorious/openseadragon";
 import type { ImageAnnotation, W3CImageAnnotation, DrawingStyle, DrawingStyleExpression } from "@annotorious/openseadragon";
 import { mountPlugin } from "@annotorious/plugin-tools";
-import { resolveTileSource, isDegenerateSelectorValue, selectorBBox, regionPixelRect } from "@render/core";
-import { dispatchFitBounds, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
+import { resolveTileSource, isDegenerateSelectorValue, selectorOf, selectorBBox, regionPixelRect } from "@render/core";
+import { dispatchFitBounds, applyFitBounds, clampedFitRect, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import { createFrameOverlay } from "./frame-overlay.js";
 import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
@@ -104,9 +104,14 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
   // the authored region so the reader opens framed and can't pan/zoom out past `bounds`. World pixels are
   // bounds-independent, so annotation pixel selectors never move when the extent changes. The tile-URL math
   // stays the verified whole-world path (R8-free). [browser-verify-owed: OSD pan/zoom runtime behavior.]
+  // The bounded extent in VIEWPORT coords, shared with the surface's fitBounds so a note-fit lands
+  // clamped-in-region in one motion (null = unbounded image/world map → plain fit). [SNAG fix: the
+  // separate animation-finish clamp used to yank the camera OFF a just-fit note.]
+  let mapRegion: { x: number; y: number; w: number; h: number } | null = null;
   if (ts.kind === "xyz" && ts.bounds) {
     const r = regionPixelRect(ts); // region rectangle in WORLD image pixels
     const region = viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(r.x, r.y, r.w, r.h));
+    mapRegion = { x: region.x, y: region.y, w: region.width, h: region.height };
     viewer.viewport.fitBounds(region, true); // open framed on the region
     const minZoom = viewer.viewport.getZoom(true); // the region-fit zoom = the floor for zooming out
     // Soft constraint: once a gesture settles, floor the zoom and nudge the centre back so the view stays
@@ -126,6 +131,16 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     };
     viewer.addHandler("animation-finish", clampToRegion);
   }
+
+  // Map-aware fit: zoom to an image-pixel box but land it CLAMPED inside the region in one motion, so
+  // the animation-finish clamp above finds nothing to correct (no second pan that shoves the note off
+  // centre). Only called when mapRegion is set (a bounded map); the image path uses dispatchFitBounds.
+  const fitBoxOnMap = (box: { x: number; y: number; w: number; h: number }): void => {
+    if (!mapRegion) return;
+    const vr = viewer.viewport.imageToViewportRectangle(new OpenSeadragon.Rect(box.x, box.y, box.w, box.h));
+    const fit = clampedFitRect({ x: vr.x, y: vr.y, w: vr.width, h: vr.height }, viewer.viewport.getAspectRatio(), mapRegion);
+    viewer.viewport.fitBounds(new OpenSeadragon.Rect(fit.x, fit.y, fit.w, fit.h), false);
+  };
 
   // Worklist 1.1 (scale-aware marks): stamp the coarse zoom band on the container so CSS can
   // weight markers by distance (far = fit-width presence, near = recede while inside a mark).
@@ -249,14 +264,26 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       annotator.setStyle(expr);
     },
     fitBounds(id: SelectionId) {
-      // The new path goes through the same dispatchFitBounds oracle the gate test pins.
       const anns = annotator.getAnnotations() as W3CImageAnnotation[];
+      if (mapRegion) {
+        // Bounded map: land the note clamped-in-region in one motion (no animation-finish yank).
+        const sel = selectorOf(anns.find((a) => (a as { id?: string }).id === id));
+        const box = sel ? selectorBBox(sel) : null;
+        if (box) fitBoxOnMap(box);
+        return;
+      }
+      // Image path: the same dispatchFitBounds oracle the gate test pins.
       dispatchFitBounds(viewer.viewport as unknown as ViewportLike, anns, id, opts.getFitOptions?.() ?? PLAIN_FIT);
     },
     fitRegion(fragment: string) {
       // Fit an arbitrary region fragment (a Section's camera target — NOT an annotation). Same oracle
       // as fitBounds, but the selector is built from the fragment directly. `t=...` → fitBoundsRect null → no-op.
       const selector = { type: "FragmentSelector", value: fragment } as W3CSelector;
+      if (mapRegion) {
+        const box = selectorBBox(selector);
+        if (box) fitBoxOnMap(box);
+        return;
+      }
       applyFitBounds(viewer.viewport as unknown as ViewportLike, selector, opts.getFitOptions?.() ?? PLAIN_FIT);
     },
     setSelected(id: SelectionId | null) {
