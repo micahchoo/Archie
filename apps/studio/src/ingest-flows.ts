@@ -128,10 +128,12 @@ export function createIngestFlows(ctx: IngestContext) {
   // with EXIF orientation (≠1), BAKE an upright display master (CONTEXT §89.1) — the original is
   // preserved beside it (assets-original/), provenance records the transform, and the object targets
   // the upright master so the coord layer stays orientation-blind.
-  async function addObjectFromFile(file: File) {
-    if (!ctx.storeReady()) return; // OPFS unavailable — don't create an object whose bytes can't persist
+  // Returns whether an object was created + any per-file advisory (large-AV nudge / unsupported), so the
+  // caller (addFiles / folder import) composes ONE message instead of each file clobbering the surface.
+  async function addObjectFromFile(file: File): Promise<{ added: boolean; note?: string }> {
+    if (!ctx.storeReady()) return { added: false }; // OPFS unavailable — caller surfaces this once
     const ex = exhibit();
-    if (!ex) return;
+    if (!ex) return { added: false };
     const slug = ctx.currentSlug();
     const id = nextObjectId(ex);
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -143,14 +145,12 @@ export function createIngestFlows(ctx: IngestContext) {
       const avName = `${id}-${safe}`;
       await saveAssetFile(slug, avName, file);
       await appendObject({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file));
-      if (file.size > LARGE_MEDIA_BYTES) {
-        ctx.setImportNote(`Added “${file.name}” (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.`);
-      }
-      return;
+      return file.size > LARGE_MEDIA_BYTES
+        ? { added: true, note: `“${file.name}” is large (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.` }
+        : { added: true };
     }
     if (!file.type.startsWith("image/")) {
-      ctx.setImportNote(`Archie can’t read “${file.name}”. Add an image, audio, or video file.`);
-      return;
+      return { added: false, note: `Archie can’t read “${file.name}”. Add an image, audio, or video file.` };
     }
 
     const orientation = readExifOrientation(await file.arrayBuffer());
@@ -185,19 +185,43 @@ export function createIngestFlows(ctx: IngestContext) {
       { id, source: `${ASSET_PREFIX}${name}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(provenance ? { provenance } : {}) },
       blobUrl,
     );
+    return { added: true };
   }
   async function addFiles(files: FileList | null) {
     if (!files) return;
     const list = Array.from(files);
+    if (list.length === 0) return;
     ctx.setImportNote("");
+    // OPFS unavailable (e.g. a private window): warn ONCE up front. Without this the per-file no-op
+    // (addObjectFromFile → storeReady false) left the user with a spinner flash and no explanation —
+    // the inverse of the folder-import path, which already warns. (Archie image-upload UX fix.)
+    if (!ctx.storeReady()) {
+      ctx.setImportNote("This browser can’t save files here — you may be in a private window. Open Archie in a normal window to add media.");
+      return;
+    }
+    if (!exhibit()) {
+      ctx.setImportNote("Open an exhibit first — files are added to the exhibit you have open.");
+      return;
+    }
+    let added = 0;
+    const notes: string[] = [];
     try {
       for (let i = 0; i < list.length; i++) {
         ctx.setImportStatus({ name: list[i]!.name, index: i + 1, total: list.length });
-        await addObjectFromFile(list[i]!);
+        const r = await addObjectFromFile(list[i]!);
+        if (r.added) added++;
+        if (r.note) notes.push(r.note);
       }
     } finally {
       ctx.setImportStatus(null);
     }
+    // Confirm the add AND name where it landed (reuses the importNote idiom that already confirms cites).
+    // Compose one message so a mixed batch (some added, some unreadable) reads cleanly.
+    const where = exhibit()?.title ?? "this exhibit";
+    const parts: string[] = [];
+    if (added > 0) parts.push(`Added ${added} file${added === 1 ? "" : "s"} to “${where}”.`);
+    parts.push(...notes);
+    if (parts.length > 0) ctx.setImportNote(parts.join(" "));
   }
 
   // Folder → exhibit in one gesture (contributor-broadening ① sub-cycle A, Archie-e1d6): the folder
@@ -239,8 +263,9 @@ export function createIngestFlows(ctx: IngestContext) {
           // plan admitted them under — addObjectFromFile branches on File.type.
           const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
           try {
-            await addObjectFromFile(file);
-            imported++;
+            const r = await addObjectFromFile(file);
+            if (r.added) imported++; else failed++;
+            if (r.note) ctx.setImportNote(r.note); // large-AV nudge; the end-of-import summary overrides it if any
           } catch {
             failed++; // skip-and-tally: one corrupt scan must not abort the rest of the folder
           }

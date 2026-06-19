@@ -1000,13 +1000,15 @@
       </button>
     {/each}
     {#if addingObject}
-      <form class="add-obj" onsubmit={(e) => { e.preventDefault(); void flows.addObject(addSource, addLabel); }}>
+      <form class="add-obj" aria-label={`Add media to ${currentExhibit?.title ?? "this exhibit"}`} onsubmit={(e) => { e.preventDefault(); void flows.addObject(addSource, addLabel); }}>
+        <span class="add-obj-head">Add media to “{currentExhibit?.title ?? "this exhibit"}”</span>
         <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; void flows.addFiles(el.files).then(() => (el.value = "")); }} /></label>
         <span class="or">or</span>
         <input bind:value={addSource} placeholder="Link to an image, audio, or video" aria-label="Object source URL" title="Best for large files: a link points to the media where it already lives instead of copying it in, so your library file (.archie.zip) stays small." />
         <input class="lbl" bind:value={addLabel} placeholder="Label" aria-label="Object label" />
         <button type="submit" disabled={addSource.trim() === ""}>Add</button>
         <button type="button" class="cancel" onclick={() => { addingObject = false; addSource = ""; addLabel = ""; }}>✕</button>
+        <span class="add-obj-hint">Files are kept in this browser (you won’t see them in a folder). Use <strong>Publish</strong> to save them as a file you can share or keep.</span>
       </form>
     {:else}
       <button class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Media</button>
@@ -1401,7 +1403,10 @@
     font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
   }
   .add-obj-toggle:hover { color: var(--accent-2); border-color: var(--accent-2); background: var(--surface-canvas-overlay); }
-  .add-obj { display: flex; align-items: center; gap: var(--space-2); }
+  .add-obj { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+  .add-obj-head { flex-basis: 100%; font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-primary); }
+  .add-obj-hint { flex-basis: 100%; max-width: 28rem; font-family: var(--font-body); font-size: var(--text-ui-xs); line-height: 1.5; color: var(--ink-canvas-muted); }
+  .add-obj-hint strong { color: var(--ink-canvas-secondary); font-weight: 600; }
   .add-obj input {
     font-family: var(--font-body); font-size: 0.875rem; padding: var(--space-2) var(--space-3);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
