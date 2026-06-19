@@ -1,6 +1,6 @@
 {
   "@context": "https://iiif.io/api/presentation/3/context.json",
-  "id": "https://archie.demo/voynich-rosettes/manifest.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/manifest.json",
   "type": "Manifest",
   "label": {
     "none": [
@@ -26,7 +26,7 @@
   },
   "items": [
     {
-      "id": "https://archie.demo/voynich-rosettes/canvas/o9",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
       "type": "Canvas",
       "label": {
         "none": [
@@ -50,11 +50,11 @@
       "height": 7268,
       "items": [
         {
-          "id": "https://archie.demo/voynich-rosettes/canvas/o9/page/1",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/page/1",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/canvas/o9/painting/1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/painting/1",
               "type": "Annotation",
               "motivation": "painting",
               "body": {
@@ -70,7 +70,7 @@
                   }
                 ]
               },
-              "target": "https://archie.demo/voynich-rosettes/canvas/o9"
+              "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9"
             }
           ]
         }
@@ -83,15 +83,15 @@
       ],
       "annotations": [
         {
-          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations.json",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/0000000001M0GZY8KQDZEF4C74/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/0000000001M0GZY8KQDZEF4C74/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://archie.demo/voynich-rosettes/canvas/o9",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -107,7 +107,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000001M0GZY8KQDZEF4C74.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000001M0GZY8KQDZEF4C74.json"
             }
           ],
           "label": {
@@ -117,15 +117,15 @@
           }
         },
         {
-          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-cipher.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations-cipher.json",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/0000000002QERZ7R4AD74QJ481/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/0000000002QERZ7R4AD74QJ481/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://archie.demo/voynich-rosettes/canvas/o9",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -136,7 +136,7 @@
               "body": [
                 {
                   "type": "TextualBody",
-                  "value": "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [See the Rosettes alone, deep-zoomed.](https://archie.demo/voynich-rosettes/) (§H cross-link, 03 §5: repointed from the sunset bidar exhibit to the SINGLE Rosettes study — `archie:` in-body ref grammar from link.ts, rewritten to the published voynich-rosettes URL on the heads projection; resolves to the exhibit root.)",
+                  "value": "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [See the Rosettes alone, deep-zoomed.](https://micahchoo.github.io/Archie/viewer/#/voynich-rosettes) (§H cross-link, 03 §5: repointed from the sunset bidar exhibit to the SINGLE Rosettes study — `archie:` in-body ref grammar from link.ts, rewritten to the published voynich-rosettes URL on the heads projection; resolves to the exhibit root.)",
                   "purpose": "commenting"
                 },
                 {
@@ -157,12 +157,12 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000002QERZ7R4AD74QJ481.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000002QERZ7R4AD74QJ481.json"
             }
           ],
           "partOf": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/readings/cipher.json",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/readings/cipher.json",
               "type": "AnnotationCollection"
             }
           ],
@@ -178,15 +178,15 @@
           }
         },
         {
-          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-hoax.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations-hoax.json",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/0000000003V9WGXP5NY4Z5C3CA/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/0000000003V9WGXP5NY4Z5C3CA/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://archie.demo/voynich-rosettes/canvas/o9",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -203,12 +203,12 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000003V9WGXP5NY4Z5C3CA.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000003V9WGXP5NY4Z5C3CA.json"
             }
           ],
           "partOf": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/readings/hoax.json",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/readings/hoax.json",
               "type": "AnnotationCollection"
             }
           ],
@@ -224,15 +224,15 @@
           }
         },
         {
-          "id": "https://archie.demo/voynich-rosettes/canvas/o9/annotations-abjad.json",
+          "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9/annotations-abjad.json",
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/0000000004429NM3GG6S8ZYV05/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/0000000004429NM3GG6S8ZYV05/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
-                "source": "https://archie.demo/voynich-rosettes/canvas/o9",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
                 "selector": {
                   "type": "FragmentSelector",
                   "conformsTo": "http://www.w3.org/TR/media-frags/",
@@ -249,12 +249,12 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://archie.demo/voynich-rosettes/annotations/history/0000000004429NM3GG6S8ZYV05.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000004429NM3GG6S8ZYV05.json"
             }
           ],
           "partOf": [
             {
-              "id": "https://archie.demo/voynich-rosettes/annotations/readings/abjad.json",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/readings/abjad.json",
               "type": "AnnotationCollection"
             }
           ],

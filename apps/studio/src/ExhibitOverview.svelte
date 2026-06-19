@@ -6,7 +6,7 @@
   // pretending to be one? The 1b fallback (an explicit List view) ships alongside so the contrast is in hand.
   // Browser-verified (pointer/wheel transforms). Narrative SECTION authoring lives in the editor sidebar
   // (NarrativeEditor), not here — this overview is the zoomed-OUT viewing/arranging scale only.
-  import type { LayoutType, RightsFields } from "@render/core";
+  import type { LayoutType, RightsFields, Section } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
 
@@ -16,12 +16,14 @@
     title,
     layout,
     objects,
+    sections = [],
     noteCountOf,
     thumbFor,
     onopenobject,
     onaddobject,
     onback,
     onreorder,
+    onstartnarrative,
     rights,
     onrights,
     summary,
@@ -32,6 +34,9 @@
     title: string;
     layout: LayoutType;
     objects: OverviewObject[];
+    /** The exhibit's narrative spine (ADR-0016). 0 → show the invitation strip; ≥1 → surface the ordered
+     *  spine + the drag-legend disambiguation. Authored in the object editor (§56), surfaced read-only here. */
+    sections?: ReadonlyArray<Section>;
     noteCountOf: (objId: string) => number;
     /** Resolve an object's thumbnail URL ("" if none — AV/extensionless → placeholder plate). */
     thumbFor: (obj: OverviewObject) => string;
@@ -40,6 +45,9 @@
     onback: () => void;
     /** New reading order, by object id — the overview's reason to exist (Grid/Narrative sequence). */
     onreorder: (orderedIds: string[]) => void;
+    /** Start the narrative: drop into an object editor to author beat 1 (beats are framed on the object
+     *  canvas, NOT the overview — §56). Shown only when there are 0 sections. */
+    onstartnarrative?: () => void;
     /** This exhibit's credit/license (rights grill Q6) — edited in the header → drawer. */
     rights: RightsFields;
     onrights: (next: RightsFields) => void;
@@ -53,6 +61,12 @@
 
   let rightsOpen = $state(false);
   const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
+
+  // The narrative spine surfaced at the overview scale (staging spec §5). 0 → an invitation strip; ≥1 → the
+  // ordered spine list + the drag-legend disambiguation. Beats are NOT authored here (§56) — the spine is
+  // read-only at this scale; "Start the narrative" / a spine row drops into the object editor.
+  const hasNarrative = $derived(sections.length > 0);
+  const objectLabel = (id: string) => objects.find((o) => o.id === id)?.label ?? id;
 
   // Reading intent per derived reading-mode (Archie-1f0e): name what the VISITOR experiences, not the
   // feature. `layout` is the DERIVED LayoutType — now the canonical render-core resolveLayoutType result
@@ -168,6 +182,35 @@
     <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onremove} />
   </PropsDrawer>
 
+  <!-- Narrative at the overview scale (staging spec §5). 0 sections → an invitation to start; ≥1 → the
+       ordered spine, read-only here (beats are authored on the object canvas, §56 — a row drops into it). -->
+  {#if objects.length > 0}
+    {#if !hasNarrative}
+      <div class="narrative-strip invite">
+        <div class="ns-text">
+          <p class="ns-eyebrow">Exhibit narrative</p>
+          <p class="ns-line">Walk visitors through these in an order, with your writing.</p>
+        </div>
+        <button class="ns-start" onclick={() => onstartnarrative?.()}>＋ Start the narrative</button>
+      </div>
+    {:else}
+      <div class="narrative-strip spine">
+        <p class="ns-eyebrow">Exhibit narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}</p>
+        <ol class="ns-spine">
+          {#each sections as s, i (s.id)}
+            <li>
+              <button class="ns-beat" onclick={() => onopenobject(s.objectId)} title="Open the item this section is shown with">
+                <span class="ns-n">{i + 1}</span>
+                <span class="ns-title">{s.title || `Section ${i + 1}`}</span>
+                <span class="ns-with">{objectLabel(s.objectId)}</span>
+              </button>
+            </li>
+          {/each}
+        </ol>
+      </div>
+    {/if}
+  {/if}
+
   {#if mode === "canvas"}
     <div
       class="viewport"
@@ -221,7 +264,9 @@
            frame, and the zoom cluster shows the live % — together signalling "this is a movable canvas". -->
       <div class="edges" aria-hidden="true"></div>
       <div class="canvas-legend" aria-hidden="true">
-        <span class="g lead"><span class="ico">⇅</span> Drag a media item to set the order visitors see it in</span>
+        <!-- Drag-legend disambiguation (staging spec §6): once a narrative exists, drag here no longer sets
+             "the order visitors see" — the SECTION order does. Demote drag to the fallback grid order. -->
+        <span class="g lead"><span class="ico">⇅</span> {hasNarrative ? "Visitors follow your section order. Dragging here only sets the fallback grid order, used when there's no narrative." : "Drag a media item to set the order visitors see it in"}</span>
         <span class="dot">·</span>
         <span class="g"><span class="ico">✥</span> Drag the canvas to pan</span>
         <span class="dot">·</span>
@@ -238,7 +283,7 @@
   {:else}
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
-    <p class="list-hint">Drag a row by its ⠿ handle to set the order visitors see it in.</p>
+    <p class="list-hint">{hasNarrative ? "Visitors follow your section order. Dragging here only sets the fallback grid order, used when there's no narrative." : "Drag a row by its ⠿ handle to set the order visitors see it in."}</p>
     <ul class="list">
       <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
@@ -270,6 +315,24 @@
   /* The overview occupies the middle ~80vh band, FULL WIDTH — the canvas is fully available, not a framed
      window. Vertically centred by .overview-stage (App). */
   .overview { display: flex; flex-direction: column; height: 92vh; min-height: 36rem; width: 100%; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); }
+
+  /* Narrative strip — sits between the header and the canvas; quiet, on the dark canvas ground. The invite
+     variant is a one-line CTA; the spine variant a capped, scrollable read-only list (authored elsewhere). */
+  .narrative-strip { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-6); border-bottom: 1px solid var(--border-canvas); }
+  .narrative-strip.spine { flex-direction: column; align-items: stretch; gap: var(--space-2); }
+  .ns-eyebrow { margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .narrative-strip .ns-text { display: flex; flex-direction: column; gap: 2px; }
+  .ns-line { margin: 0; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.5; color: var(--ink-canvas-secondary); }
+  /* "Start the narrative" — the ONE rationed signal-orange CTA at this scale (mirrors NarrativeEditor's Add). */
+  .ns-start { margin-left: auto; cursor: pointer; font-family: var(--font-body); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.01em; padding: var(--space-2) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-signal-glow); transition: background 140ms ease; }
+  .ns-start:hover { background: var(--accent-hover); }
+  /* The ordered spine: numbered, scrollable, each row a quiet button that opens the item it's shown with. */
+  .ns-spine { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); max-height: 22vh; overflow-y: auto; }
+  .ns-beat { display: flex; align-items: baseline; gap: var(--space-3); width: 100%; text-align: left; cursor: pointer; padding: var(--space-1) var(--space-2); background: transparent; border: none; border-radius: var(--radius-sm); color: inherit; transition: background 140ms ease; }
+  .ns-beat:hover { background: var(--surface-canvas-raised); }
+  .ns-beat .ns-n { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent-2); min-width: 1.25rem; }
+  .ns-beat .ns-title { flex: 1; font-family: var(--font-display); font-size: 1.05rem; font-weight: 400; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ns-beat .ns-with { font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-canvas-muted); white-space: nowrap; }
 
   header { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-canvas); }
   .back { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 160ms ease, border-color 160ms ease; }

@@ -1,6 +1,6 @@
 {
   "@context": "https://www.w3.org/ns/anno.jsonld",
-  "id": "https://archie.demo/language-atlas/annotations/readings/linguist.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/readings/linguist.json",
   "type": "AnnotationCollection",
   "label": {
     "en": [

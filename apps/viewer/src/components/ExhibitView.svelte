@@ -39,6 +39,11 @@
   let chromeVisible = $state(false); // cold-arrival chrome (§124), fades after a few seconds
   let activeReading = $state<string | null>(null); // ADR-0007 / Q16: base-only by default; null = base
   let notesHidden = $state(false); // ReadingLegend "Hide all" — declutter the canvas to the bare basemap/image
+  // Grid-index escape (ADR-0016 keystone): when a narrative LEADS, the object grid stays reachable BEHIND
+  // it as an index (§137 precision-in/escape-out; §223 anti-trap) — not a dead-end takeover. `narrativeIndex`
+  // opens that grid over the read; `indexObjectId` is an object opened FROM the index (its own Reader).
+  let narrativeIndex = $state(false);
+  let indexObjectId = $state<string | null>(null);
 
   onMount(async () => {
     try {
@@ -81,6 +86,11 @@
   });
 
   const isGrid = $derived(layout?.type === "grid");
+  // The object opened FROM the narrative index (its own Reader), resolved against both the layout
+  // descriptor (for the OSD Reader props) and the published data (for mediaType/duration → AV routing).
+  const indexObject = $derived(layout?.objects.find((o) => o.id === indexObjectId));
+  const indexData = $derived(data?.objects.find((o) => o.id === indexObjectId));
+  const indexIsAV = $derived(indexData?.mediaType === "sound" || indexData?.mediaType === "video");
   const activeObject = $derived(layout?.objects.find((o) => o.id === selectedObjectId));
   // The selected object from the PUBLISHED data (carries mediaType/duration); AV objects render in the
   // temporal MediaPlayer instead of the spatial OSD Reader. Works for single AV and AV-in-a-grid.
@@ -165,21 +175,32 @@
   const exhibitRights = $derived(pick(data ?? undefined));
   const objectRightsOf = (objectId: string): RightsFields => pick(data?.objects.find((x) => x.id === objectId));
 
-  // Lift the object-nav snapshot to ViewerShell's top bar (dba2). Reads `selectedObjectId` (via
-  // activeObject) so it re-fires on every navigation, keeping the bar's i/n counter live. Replicates the
-  // OLD in-Reader carousel visibility EXACTLY: only for the single-object Reader path (not grid overview,
-  // AV, or narrative) and only with >1 sibling. Emits null otherwise; clears on teardown so leaving the
-  // exhibit doesn't leave a stale carousel in the bar.
+  // ONE nav shape (S-3): the object currently reading and the setter that navigates between siblings,
+  // derived per layout so the $effect consumes a single snapshot instead of branching on `inNarrative`
+  // three times in parallel ternaries. In a leading narrative the reader is the index-opened object
+  // (image OR AV — both now escape back, so both carry the persistent carousel); outside it the single-
+  // object Reader (not the grid overview). `obj` undefined ⇒ no carousel for this state.
+  const reader = $derived(
+    layout?.type === "narrative"
+      ? { obj: indexObject, set: (id: string) => (indexObjectId = id) }
+      : { obj: !isGrid ? activeObject : undefined, set: (id: string) => (selectedObjectId = id) },
+  );
+
+  // Lift the object-nav snapshot to ViewerShell's top bar (dba2). Reads the derived `reader` so it
+  // re-fires on every navigation, keeping the bar's i/n counter live. An object opened from the
+  // narrative INDEX (image or AV) carries the same persistent nav — the index escape and the carousel
+  // are consistent. Emits null when there's no reader or only one sibling; clears on teardown so
+  // leaving the exhibit doesn't leave a stale carousel in the bar.
   $effect(() => {
     const objs = layout?.objects ?? [];
-    const showCarousel =
-      !!activeObject && !isGrid && !isAV && layout?.type !== "narrative" && objs.length > 1;
+    const navObject = reader.obj;
+    const showCarousel = !!navObject && objs.length > 1;
     onnav?.(
       showCarousel
         ? {
             siblings: objs.map((o) => ({ id: o.id, label: o.label })),
-            currentId: activeObject!.id,
-            navigate: (id: string) => (selectedObjectId = id),
+            currentId: navObject!.id,
+            navigate: reader.set,
           }
         : null,
     );
@@ -195,22 +216,60 @@
   {#if isAV && activeData}
     <MediaPlayer object={activeData} annotations={annotationsOf(activeData.id)} rights={objectRightsOf(activeData.id)} />
   {:else if layout.type === "narrative" && layout.sections && layout.objects[0]}
-    <NarrativeReader
-      objects={data.objects}
-      canvasIdOf={canvasIdOf}
-      annotationsByObject={data.annotationsByObject}
-      readingAnnotationsByObject={data.readingAnnotationsByObject}
-      sections={layout.sections}
-      title={data.title}
-      rights={exhibitRights}
-      readings={data.readings}
-      activeReading={activeReading}
-      onreading={(id) => (activeReading = id)}
-      styleFor={readingStyleOf}
-      initialSelected={arrivedNote}
-      notesHidden={notesHidden}
-      onhiddenchange={(v) => (notesHidden = v)}
-    />
+    <!-- The narrative LEADS (ADR-0016 keystone); the object grid stays reachable BEHIND it as an INDEX
+         (§137 precision-in/escape-out, §223 anti-trap) — never the old whole-exhibit takeover. Three
+         states: read the spine · the index grid · an object opened from the index (its own Reader). -->
+    {#if indexObject}
+      {#if indexIsAV && indexData}
+        <MediaPlayer object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} onback={() => (indexObjectId = null)} />
+      {:else}
+        <Reader
+          object={{ source: indexObject.source, canvasId: canvasIdOf(indexObject.id), label: indexObject.label, summary: indexData?.summary, ...(indexObject.tileSource ? { tileSource: indexObject.tileSource } : {}) }}
+          annotations={annotationsOf(indexObject.id)}
+          readings={data.readings}
+          activeReading={activeReading}
+          onreading={(id) => (activeReading = id)}
+          styleOf={readingStyleOf(indexObject.id)}
+          frame={frameFor(indexObject.id, indexData?.width, indexData?.height)}
+          onback={() => (indexObjectId = null)}
+          rights={objectRightsOf(indexObject.id)}
+          onnotehover={(id) => (hoverNote = id)}
+          notesHidden={notesHidden}
+          onhiddenchange={(v) => (notesHidden = v)}
+        />
+      {/if}
+    {:else if narrativeIndex}
+      <ObjectGrid
+        title={data.title}
+        summary={data.summary}
+        objects={layout.objects}
+        countOf={(id) => annotationsOf(id).length}
+        onselect={(id) => (indexObjectId = id)}
+        rights={exhibitRights}
+      />
+      <!-- Escape-out (§137): the index is a side-trip; one quiet step returns to the leading read. -->
+      <button class="to-read" onclick={() => (narrativeIndex = false)}>
+        <span class="back-mark" aria-hidden="true">‹</span>Back to the reading
+      </button>
+    {:else}
+      <NarrativeReader
+        objects={data.objects}
+        canvasIdOf={canvasIdOf}
+        annotationsByObject={data.annotationsByObject}
+        readingAnnotationsByObject={data.readingAnnotationsByObject}
+        sections={layout.sections}
+        title={data.title}
+        rights={exhibitRights}
+        readings={data.readings}
+        activeReading={activeReading}
+        onreading={(id) => (activeReading = id)}
+        styleFor={readingStyleOf}
+        initialSelected={arrivedNote}
+        notesHidden={notesHidden}
+        onhiddenchange={(v) => (notesHidden = v)}
+        onindex={() => (narrativeIndex = true)}
+      />
+    {/if}
   {:else if activeObject}
     <Reader
       object={{ source: activeObject.source, canvasId: canvasIdOf(activeObject.id), label: activeObject.label, summary: activeData?.summary, ...(activeObject.tileSource ? { tileSource: activeObject.tileSource } : {}) }}
@@ -262,6 +321,24 @@
   /* Soft signal dot — the one rationed orange mark, gently breathing (no hard pixel steps). */
   .dot { width: 8px; height: 8px; border-radius: var(--radius-sm); background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+  /* Escape-out from the narrative index (§137 precision-in/escape-out, §223 anti-trap) — a quiet step
+     back to the leading read, floating over the dark index grid. Mirrors the breadcrumb up-nav idiom:
+     transparent chrome, canvas inks, connector-blue (--accent-2) hover (the secondary up/nav signal,
+     and the green-on-dark contrast rescue) — the rationed orange stays free for the one focal action. */
+  .to-read {
+    /* Cleared below the persistent top-bar band (ViewerShell .topbar: fixed, ~44px tall, owns top-left
+       for the breadcrumb) — S-4: at top:space-5 it collided with that band. 3.25rem matches the sibling
+       .to-index escape's clearance (NarrativeReader), so both escapes sit at the same canvas-top line. */
+    position: fixed; z-index: 30; top: 3.25rem; left: var(--space-5);
+    display: inline-flex; align-items: center; gap: var(--space-1);
+    background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-1);
+    color: var(--ink-canvas-secondary);
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); letter-spacing: 0.04em;
+    transition: color 160ms ease;
+  }
+  .to-read:hover { color: var(--accent-2); }
+  .to-read .back-mark { font-size: 1.05rem; line-height: 1; }
 
   /* Cold-arrival chrome — a soft warm-paper toast; understated, fades, not a gate. */
   .arrival {

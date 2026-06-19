@@ -29,6 +29,7 @@
     initialSelected = null,
     notesHidden = false,
     onhiddenchange,
+    onindex,
   }: {
     objects: AObject[];
     /** Resolve an object id to its published canvas IRI (the Viewer owns the slug). */
@@ -50,6 +51,9 @@
     /** Hide-all (ReadingLegend declutter): canvas draws no markers except the SELECTED one. */
     notesHidden?: boolean;
     onhiddenchange?: (hidden: boolean) => void;
+    /** Open the object grid as an index (ADR-0016 keystone): the narrative leads, but the grid stays
+     *  reachable behind it — precision-in/escape-out (§137), never a dead-end takeover. Absent = hide it. */
+    onindex?: () => void;
   } = $props();
 
   // Deep-link arrival → land on the section whose object owns the note (else section 0).
@@ -118,6 +122,15 @@
 
   {#if onreading && readings.length > 0}
     <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} />
+  {/if}
+
+  <!-- Grid-index escape (ADR-0016 keystone): the narrative leads, but the object grid stays reachable
+       BEHIND it as an index (§137 precision-in/escape-out; §223 anti-trap). Quiet canvas-side chrome,
+       sibling to the legend — shown only when there's a grid to reach (>1 object). -->
+  {#if onindex && objects.length > 1}
+    <button type="button" class="to-index" onclick={onindex}>
+      <span class="grid-mark" aria-hidden="true">▦</span>All objects
+    </button>
   {/if}
 
   <aside>
@@ -199,6 +212,25 @@
   .prose :global(audio) { width: 100%; margin-top: var(--space-2); }
   /* Pulled quotes read as soft serif set off by a warm clay hairline rule. */
   .prose :global(blockquote) { margin: var(--space-3) 0; padding: 0 0 0 var(--space-4); border-left: 1px solid var(--accent-3); font-family: var(--font-display); font-weight: 300; font-style: italic; font-size: 1.125rem; line-height: 1.55; color: var(--ink-paper-secondary); }
+
+  /* Grid-index escape — a quiet canvas overlay, sibling to the legend (same warm-paper pill language).
+     Anchored top-right of the canvas (the legend owns top-left); recedes so the read stays the star,
+     but is always reachable so the narrative can never trap the visitor (§223 anti-trap, §137 escape-out).
+     Connector-blue (--accent-2) hover — the secondary up/nav signal — keeps the rationed orange for the
+     one focal action, and is the established green-on-dark-canvas contrast rescue (system.md §contrast). */
+  .to-index {
+    position: absolute; z-index: 20; top: 3.25rem; right: var(--space-5);
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
+    border: none; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low); cursor: pointer;
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm);
+    letter-spacing: 0.04em; transition: color 160ms ease;
+  }
+  .to-index:hover { color: var(--accent-2); }
+  .to-index .grid-mark { font-size: 0.95rem; line-height: 1; color: var(--ink-canvas-muted); transition: color 160ms ease; }
+  .to-index:hover .grid-mark { color: var(--accent-2); }
 
   /* Note popup — a warm paper callout floating over the ground (annomea popup; mirrors Reader's). */
   .note-pop {

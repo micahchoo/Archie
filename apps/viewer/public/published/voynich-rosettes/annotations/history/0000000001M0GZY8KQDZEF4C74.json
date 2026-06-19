@@ -1,14 +1,14 @@
 {
   "@context": "https://www.w3.org/ns/anno.jsonld",
-  "id": "https://archie.demo/voynich-rosettes/annotations/history/0000000001M0GZY8KQDZEF4C74.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000001M0GZY8KQDZEF4C74.json",
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://archie.demo/voynich-rosettes/annotations/0000000001M0GZY8KQDZEF4C74/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/0000000001M0GZY8KQDZEF4C74/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://archie.demo/voynich-rosettes/canvas/o9",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/canvas/o9",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
