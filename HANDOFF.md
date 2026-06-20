@@ -405,6 +405,13 @@ browser-verify OWED — gated invention, do NOT self-certify):** relocated per t
 - Files: `NarrativeEditor.svelte` (rewrite), `App.svelte` (framing state/handlers + sidebar panel + banner + crumb +
   CSS), `ExhibitOverview.svelte` (sections-mode removal). UNCHANGED: model (A), ADR-0005, archie-narrative Q-1,
   setSections, publish (toRanges), Viewer read path, bidar.
+- **[SUPERSEDED 2026-06-19 — card-as-navigation]:** the explicit **"Move here"** rebind (§(4), comprehension gate)
+  was REMOVED. The card's "Shown with · [object]" line is now the navigation control — clicking it jumps the rail to
+  the section's object AND focuses its framed region on the canvas (App `navigateToSection`/`focusSectionId`/`canvasFocus`
+  → `Canvas focus=` → `fitRegion`), mirroring the viewer's `NarrativeReader.activate`. Sections are bound to their object
+  at creation; the spine is WALKED, not rebound. Also fixed a shared `Canvas.svelte` async-mount race so `focus` fits on
+  remount (cross-object navigate) — this repaired the latent viewer cross-object case too. Files: `NarrativeEditor.svelte`,
+  `App.svelte`, `packages/render-svelte/src/Canvas.svelte`.
 - **COMPREHENSION GATE:** open a NARRATIVE exhibit (Voynich after ▦→Narrative, or Bidar) → overview → click a plate →
   editor shows the "Exhibit narrative" panel; "＋ Add to the narrative" makes a beat bound to the viewed object; "Frame
   camera" → draw a box → card reads "▭ framed region"; switch objects on the rail → spine PERSISTS, off-object cards
