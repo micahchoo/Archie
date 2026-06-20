@@ -5,20 +5,21 @@
   import { onMount, tick } from "svelte";
   import ReadingsModal from "./ReadingsModal.svelte";
   import ReadingsRail from "./ReadingsRail.svelte";
-  import Canvas from "@render/svelte/Canvas.svelte";
+  // Canvas is lazy-loaded (see CanvasComp below) — it pulls OpenSeadragon + Annotorious, the studio's
+  // largest dependency, and Studio boots into the library view that never mounts it. Keeping it out of
+  // the static graph drops that weight from the startup bundle.
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
-  import Publish from "./Publish.svelte";
-  import PublishDialog from "./PublishDialog.svelte";
+  // Publish + PublishDialog are lazy-loaded with the publish flows (ensurePub) — see *Comp below.
   import LibraryHome from "./LibraryHome.svelte";
-  import CmdK from "./CmdK.svelte";
-  import MediaPicker, { type PickItem } from "./MediaPicker.svelte";
-  import AvEditor from "./AvEditor.svelte";
+  // CmdK + MediaPicker components are lazy-loaded on first open (see *Comp below); PickItem is type-only.
+  import type { PickItem } from "./MediaPicker.svelte";
+  // AvEditor (AV objects) is lazy-loaded — see AvEditorComp below (kept out of the startup bundle).
   import ExhibitOverview from "./ExhibitOverview.svelte";
-  import NarrativeEditor from "./NarrativeEditor.svelte";
+  // NarrativeEditor (narrative panel) is lazy-loaded — see NarrativeEditorComp below.
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
-  import AddMapModal from "./AddMapModal.svelte";
+  // AddMapModal (map add) is lazy-loaded — see AddMapModalComp below.
   import NoteEditor from "./NoteEditor.svelte";
   import { matches, typingInField } from "./shortcuts.js";
   import {
@@ -28,12 +29,13 @@
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import type { DrawTool, MarkerStyle } from "@render/mount";
-  import { openExhibitAnnotationsDir, loadLibraryMeta, readAssetUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, type ExhibitMeta, type ObjectMeta } from "./store.js";
+  import { openExhibitAnnotationsDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus } from "./save-queue.svelte.js";
   import { zipNameFor } from "./binding.js";
   import { createBindingStore } from "./binding-store.svelte.js";
-  import { createPublishFlows } from "./publish-flows.svelte.js";
+  // createPublishFlows is imported DYNAMICALLY (ensurePub below) so its fflate + dompurify + GitHub-publish
+  // deps stay OUT of the startup bundle — publishing is a deliberate action, never needed at boot.
   import { createReadingState } from "./reading-state.svelte.js";
   import { narrativeCueReducer } from "./narrative-cue-reducer.js";
   // Seed / default-exhibit data lives in seed-data.ts (the DOMINO cut): DEFAULT_EXHIBITS, the per-slug
@@ -43,6 +45,7 @@
   import { geoLabelOf, geoForTarget, selectorValue } from "./geo-notes.js";
   // The ingest flows (object-add, exhibit-create, bulk-note import, library-replace) — the DOMINO cut.
   import { createIngestFlows } from "./ingest-flows.js";
+  import { buildCsvTemplate, type CsvPendingNote } from "./csv-import.js";
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
 
@@ -68,6 +71,27 @@
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
   const lib = createLibraryStore({ exhibits: DEFAULT_EXHIBITS }, { onAfterPersist: () => bnd.touch() });
   let view = $state<"library" | "overview" | "editor">("library");
+  // Lazy deep-zoom canvas (OpenSeadragon + Annotorious — the largest dep). Loaded the moment the user
+  // enters an exhibit (overview or editor), so it's warm by the time an object opens, while staying OUT
+  // of the startup bundle (the library landing parses less JS). The editor's existing "Loading…" branch
+  // covers the brief first-open gap. Loaded once, then cached.
+  let CanvasComp = $state<typeof import("@render/svelte/Canvas.svelte").default | null>(null);
+  $effect(() => {
+    if (view !== "library" && !CanvasComp) void import("@render/svelte/Canvas.svelte").then((m) => { CanvasComp = m.default; });
+  });
+  // Lazy heavy editors, loaded only on the (rare) paths that use them — out of the startup bundle.
+  let AvEditorComp = $state<typeof import("./AvEditor.svelte").default | null>(null);
+  let AddMapModalComp = $state<typeof import("./AddMapModal.svelte").default | null>(null);
+  let NarrativeEditorComp = $state<typeof import("./NarrativeEditor.svelte").default | null>(null);
+  $effect(() => { if (openPanel === "narrative" && !NarrativeEditorComp) void import("./NarrativeEditor.svelte").then((m) => { NarrativeEditorComp = m.default; }); });
+  // The publish dialogs load alongside the publish flows (ensurePub) — they only render under {#if pub}.
+  let PublishDialogComp = $state<typeof import("./PublishDialog.svelte").default | null>(null);
+  let PublishComp = $state<typeof import("./Publish.svelte").default | null>(null);
+  // CmdK (⌘K palette) + MediaPicker (cite-by-image) load on first open — both rarely used at startup.
+  let CmdKComp = $state<typeof import("./CmdK.svelte").default | null>(null);
+  let MediaPickerComp = $state<typeof import("./MediaPicker.svelte").default | null>(null);
+  $effect(() => { if (cmdkOpen && !CmdKComp) void import("./CmdK.svelte").then((m) => { CmdKComp = m.default; }); });
+  $effect(() => { if (mediaPickerOpen && !MediaPickerComp) void import("./MediaPicker.svelte").then((m) => { MediaPickerComp = m.default; }); });
   // Per-exhibit Playground/Project (CONTEXT §115, the coherent model): a bundled EXAMPLE is a template —
   // opening it is a playground (banner, nothing saved); a USER-CREATED exhibit is a project (saved, no
   // banner). One role per exhibit, one path in/out. "Keep a copy" forks an example into a saved exhibit.
@@ -84,21 +108,33 @@
 
   // --- imported-image assets: stored in OPFS, source "/assets/{name}", resolved to blob: URLs ---
   // ASSET_PREFIX / isAsset live in store.ts now (one definition — App + publish flows share it).
-  let assetUrls = $state<Record<string, string>>({}); // objId -> blob: URL (revoke on nav)
+  let assetUrls = $state<Record<string, string>>({}); // objId -> full MASTER blob: URL (the canvas/OSD source)
+  let thumbUrls = $state<Record<string, string>>({}); // objId -> baked THUMBNAIL blob: URL (overview/rail plates)
   let assetsReady = $state(false);
   function revokeAssetUrls() {
     for (const u of Object.values(assetUrls)) URL.revokeObjectURL(u);
+    for (const u of Object.values(thumbUrls)) URL.revokeObjectURL(u);
     assetUrls = {};
+    thumbUrls = {};
   }
   async function resolveAssets(slug: string, objs: ReadonlyArray<{ id: string; source: string }>) {
     revokeAssetUrls();
-    const map: Record<string, string> = {};
-    for (const o of objs) {
-      if (!isAsset(o.source)) continue;
-      const url = await readAssetUrl(slug, o.source.slice(ASSET_PREFIX.length));
-      if (url) map[o.id] = url;
-    }
-    assetUrls = map;
+    // PERF: resolve every object's OPFS asset to a blob URL CONCURRENTLY — opening a multi-object exhibit
+    // was a per-object read waterfall (one OPFS read + createObjectURL at a time). Independent files keyed
+    // by object id, so fan them out; order doesn't matter. Masters (canvas/OSD source) AND baked thumbnails
+    // (overview/rail plates) resolve in the same wave — the overview then DECODES small thumbs, not full
+    // masters (a thumb is absent only for a pre-baked-feature import / an already-small image → master).
+    const assets = objs.filter((o) => isAsset(o.source));
+    const entry = (resolve: (slug: string, name: string) => Promise<string | null>) =>
+      Promise.all(assets.map(async (o) => {
+        const url = await resolve(slug, o.source.slice(ASSET_PREFIX.length));
+        return url ? ([o.id, url] as const) : null;
+      }));
+    const keep = (es: ReadonlyArray<readonly [string, string] | null>) =>
+      Object.fromEntries(es.filter((e): e is readonly [string, string] => e !== null));
+    const [masters, thumbs] = await Promise.all([entry(readAssetUrl), entry(readThumbUrl)]);
+    assetUrls = keep(masters);
+    thumbUrls = keep(thumbs);
     assetsReady = true;
   }
 
@@ -179,6 +215,8 @@
     selected = null;
     editing = null;
     creating = null;
+    placingPendingId = null; // drop any armed placement from the outgoing exhibit
+    void loadPendingNotes().then((m) => { pendingNotes = m[slug] ?? []; }); // this exhibit's coordinate-free imports awaiting a box
     rdg.resetForExhibit(); // fresh exhibit = everything visible, pen on base (fixes the cross-exhibit leak)
     firstAddCueSlug = null; pendingClear = null; clearedSlug = null; // drop any narrative-staging cue from the outgoing exhibit
     assetsReady = false;
@@ -413,9 +451,9 @@
   // collapsed to their (scope + count) headers. Persisted per the archie.*.v1 metadata idiom. Default: Notes
   // (the per-object annotate loop is the most frequent task; the Narrative is reached deliberately).
   const PANEL_KEY = "archie.editorPanel.v1";
-  function loadPanel(): "narrative" | "notes" | null { try { const v = localStorage.getItem(PANEL_KEY); return v === "narrative" ? "narrative" : v === "none" ? null : "notes"; } catch { return "notes"; } }
-  let openPanel = $state<"narrative" | "notes" | null>(loadPanel());
-  function togglePanel(p: "narrative" | "notes") {
+  function loadPanel(): "narrative" | "notes" | "place" | "info" | null { try { const v = localStorage.getItem(PANEL_KEY); return v === "narrative" ? "narrative" : v === "place" ? "place" : v === "info" ? "info" : v === "none" ? null : "notes"; } catch { return "notes"; } }
+  let openPanel = $state<"narrative" | "notes" | "place" | "info" | null>(loadPanel());
+  function togglePanel(p: "narrative" | "notes" | "place" | "info") {
     openPanel = openPanel === p ? null : p; // click the open one → collapse all; click a collapsed one → open it (the other closes)
     try { localStorage.setItem(PANEL_KEY, openPanel ?? "none"); } catch { /* private mode — resets next load, harmless */ }
   }
@@ -427,7 +465,7 @@
   // Framing a camera and card-navigation DON'T auto-expand: those controls live in the spine body, so the
   // Narrative panel is already open. TRANSIENT — auto-expand does NOT persist (only a manual togglePanel writes
   // the default); a single create shouldn't silently change which panel opens next session.
-  function openPanelTo(p: "narrative" | "notes") {
+  function openPanelTo(p: "narrative" | "notes" | "place" | "info") {
     if (openPanel === p) return;
     openPanel = p; // no localStorage write — transient reveal, not a persisted preference (see note above)
   }
@@ -547,7 +585,12 @@
   // shape = "draw the next region, then disarm". Narrative camera framing (framingSectionId) shares the
   // same draw path. The two are mutually exclusive. No persistent Select|Rect|Polygon palette anymore.
   let creating = $state<DrawTool | null>(null);
-  const drawArmed = $derived(creating !== null || framingSectionId !== null); // canvas in draw mode while either gesture is live
+  // Coordinate-free CSV imports (Archie-79c0 sub-cycle B): notes whose TEXT arrived without a region,
+  // staged exhibit-scoped (persisted via the pending-notes sidecar) until the author draws each box.
+  // `placingPendingId` arms that draw — geometry comes from onCreate, exactly like narrative framing.
+  let pendingNotes = $state<PendingNote[]>([]);
+  let placingPendingId = $state<string | null>(null);
+  const drawArmed = $derived(creating !== null || framingSectionId !== null || placingPendingId !== null); // canvas in draw mode while any gesture is live
   const drawShape = $derived<DrawTool>(creating ?? "rectangle"); // framing always frames a box
   // P-2 (archie-ux Q-2): reading DISPLAY state — visible SET + active pen, never conflated.
   // The rail (ReadingsRail, on the canvas) is the one home; the old dropdown is retired.
@@ -567,6 +610,7 @@
   const canvasId = $derived(canvasIdOf(currentObjectId));
   // AV objects (sound/video) get the temporal AvEditor instead of the OSD Canvas (draw tools too).
   const isAvCurrent = $derived(current?.mediaType === "sound" || current?.mediaType === "video");
+  $effect(() => { if (view === "editor" && isAvCurrent && !AvEditorComp) void import("./AvEditor.svelte").then((m) => { AvEditorComp = m.default; }); });
   // Map objects (geo-annotation): a tileSource descriptor mounts a slippy-map basemap on the same OSD
   // Canvas. The pin tool + lng/lat readout are gated on this.
   const currentTileSource = $derived(current?.tileSource);
@@ -577,7 +621,9 @@
   // a bare IIIF service base isn't an image, so thumbnailUrl derives a sized JPEG; plain files pass through).
   const thumbSrc = (o: { id: string; source: string; tileSource?: TileSourceDescriptor }): string => (
     o.tileSource ? thumbnailUrl(o.tileSource, 240) // a Map → its z0 world tile (thumbnailUrl handles the descriptor)
-    : isAsset(o.source) ? (assetUrls[o.id] ?? "") : thumbnailUrl(o.source, 240)
+    // Prefer the baked thumbnail blob (small) over the full master — the overview/rail decode a shrunk
+    // plate, not a ~2048px master. Falls back to the master when no thumbnail was baked.
+    : isAsset(o.source) ? (thumbUrls[o.id] ?? assetUrls[o.id] ?? "") : thumbnailUrl(o.source, 240)
   );
   function switchObject(id: string) {
     if (id === currentObjectId) return;
@@ -585,7 +631,54 @@
     selected = null;
     editing = null;
     creating = null; // cancel any armed new-note gesture when changing objects
+    placingPendingId = null; // …and any armed pending-placement (a manual switch leaves the bound object)
     focusSectionId = null; // a manual rail switch drops the narrative card's frame focus (navigateToSection re-sets it)
+  }
+  // --- pending notes (coordinate-free imports → "Set area" placement; Archie-79c0 sub-cycle B) ---
+  const objectLabelOf = (id: string) => OBJECTS.find((o) => o.id === id)?.label ?? id;
+  const newPendingId = () => `p-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
+  // Persist the current exhibit's pending list into the slug-keyed sidecar (whole-map I/O; single writer).
+  async function persistPending() {
+    const map = await loadPendingNotes();
+    if (pendingNotes.length) map[currentSlug] = [...pendingNotes]; else delete map[currentSlug];
+    await savePendingNotes(map);
+  }
+  // IngestContext hook: stage coordinate-free CSV rows, deduped by (object, comment). Returns the NEW count.
+  function addPendingNotes(incoming: CsvPendingNote[]): number {
+    const key = (p: { objectId: string; comment: string }) => `${p.objectId} ${p.comment}`;
+    const seen = new Set(pendingNotes.map(key));
+    let added = 0;
+    for (const n of incoming) {
+      if (seen.has(key(n))) continue;
+      seen.add(key(n));
+      pendingNotes.push({ id: newPendingId(), ...n });
+      added++;
+    }
+    if (added > 0) void persistPending();
+    return added;
+  }
+  function removePending(id: string) {
+    pendingNotes = pendingNotes.filter((p) => p.id !== id);
+    if (pendingNotes.length === 0 && openPanel === "place") openPanelTo("notes"); // worklist emptied → reveal Notes
+    void persistPending();
+  }
+  // "Set area" on a pending note: jump to its bound object, arm the draw; onCreate consumes the next box.
+  function startPlacing(id: string) {
+    const p = pendingNotes.find((n) => n.id === id);
+    if (!p) return;
+    switchObject(p.objectId); // pending notes span the exhibit — land on the right canvas first
+    creating = null; framingSectionId = null;
+    placingPendingId = id; // arm AFTER the switch (switchObject nulls it)
+  }
+  function cancelPlacing() { placingPendingId = null; }
+  const placingPending = $derived(placingPendingId ? (pendingNotes.find((p) => p.id === placingPendingId) ?? null) : null);
+  // "Fill in the blank" on-ramp: download a starter CSV seeded with THIS exhibit's items (csv-import).
+  function downloadCsvTemplate() {
+    const csv = buildCsvTemplate(OBJECTS.map((o) => ({ id: o.id, label: o.label, ...(o.mediaType ? { mediaType: o.mediaType } : {}) })));
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = `${currentSlug || "exhibit"}-notes-template.csv`; a.click();
+    URL.revokeObjectURL(url);
   }
   // Step to the previous/next object on the rail ([ / ] shortcuts).
   function stepObject(dir: -1 | 1) {
@@ -689,11 +782,22 @@
     objNotes.filter((r) => rdg.noteVisible(r)), // visibility = the reading-state set (canvas + margin share it)
   );
   const objAnnotations = $derived<W3CAnnotation[]>((rev, sess.session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId)));
+  // O(1) marker lookup for the live styler: Annotorious calls styleOf per marker on every restyle
+  // (hover / solo / reading toggle), so a per-call array scan was O(n²) across the canvas. Rebuilt only
+  // when the working-annotation set changes.
+  const annById = $derived(new Map(objAnnotations.map((a) => [a.id, a] as const)));
   const annotations = $derived<W3CAnnotation[]>(
     objAnnotations.filter((a) => rdg.isVisible(((a as Record<string, unknown>)["archie:reading"] as string | undefined) ?? "base")),
   );
   const sel = $derived(notes.find((r) => r.logicalId === editing));
-  const noteCountOf = (objId: string) => allNotes.filter((r) => srcOf(r.target) === canvasIdOf(objId)).length;
+  // Note count per canvas, built ONCE per allNotes change — the overview/library lists call this per
+  // object, so the old per-call filter was O(objects × notes) on every `rev` bump. O(1) lookup now.
+  const noteCountByCanvas = $derived.by(() => {
+    const m = new Map<string, number>();
+    for (const r of allNotes) { const c = srcOf(r.target); m.set(c, (m.get(c) ?? 0) + 1); }
+    return m;
+  });
+  const noteCountOf = (objId: string) => noteCountByCanvas.get(canvasIdOf(objId)) ?? 0;
   // Live marker styling (Archie-1489) — mirrors the viewer's readingStyleOf so the curator authors against
   // what a visitor sees. Colour = the note's reading (ADR-0007); reading-less notes get a neutral forest-
   // green default (so base marks are visible). Per-note emphasis modulates opacity/weight ONLY, never hue.
@@ -720,7 +824,7 @@
     return (id: string) => markerStyleOf(id);
   });
   function markerStyleOf(id: string): MarkerStyle | undefined {
-    const a = objAnnotations.find((x) => x.id === id);
+    const a = annById.get(id);
     if (!a) return undefined;
     const rid = (a as Record<string, unknown>)["archie:reading"] as string | undefined;
     const colour = (rid ? currentReadings.find((r) => r.id === rid)?.colour : undefined) ?? BASE_MARKER;
@@ -740,6 +844,28 @@
       const frag = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
       if (frag) setSectionStart(framingSectionId, frag);
       framingSectionId = null;
+      return;
+    }
+    if (placingPendingId) {
+      // Placing a coordinate-free import: the drawn box gives the staged note its geometry, then it's
+      // consumed from the tray. Body mirrors importNotesCsv (comment + tags); reading + geo carried too.
+      const p = pendingNotes.find((n) => n.id === placingPendingId);
+      if (p) {
+        const geo = isMapCurrent ? geoForTarget(a.target, currentTileSource) : undefined;
+        const id = sess.session.createNote({
+          target: a.target,
+          body: [
+            { type: "TextualBody", value: p.comment, purpose: "commenting" },
+            ...p.tags.map((t) => ({ type: "TextualBody" as const, value: t, purpose: "tagging" as const })),
+          ],
+          ...(geo ? { geo } : {}),
+          ...(p.reading ? { reading: p.reading } : {}),
+        });
+        removePending(p.id); // drop from the worklist + persist (reveals Notes once the list empties)
+        bump();
+        selected = id;
+      }
+      placingPendingId = null;
       return;
     }
     // On a Map, capture the region's geo-truth (lng/lat) alongside the pixel selector (Q4/ADR-0015).
@@ -900,6 +1026,7 @@
       if (cmdkOpen || mediaPickerOpen) return; // those dialogs handle their own Esc
       if (creating) { e.preventDefault(); creating = null; return; } // disarm a new-note gesture first
       if (framingSectionId) { e.preventDefault(); cancelFraming(); return; }
+      if (placingPendingId) { e.preventDefault(); cancelPlacing(); return; } // disarm a pending-note placement
       if (sel) { e.preventDefault(); selected = null; editing = null; return; }
       if (view === "editor" && hasOverview) { e.preventDefault(); void backToOverview(); return; }
       if (view === "overview") { e.preventDefault(); void backToLibrary(); return; }
@@ -961,6 +1088,7 @@
     setCurrentObjectId: (id) => { currentObjectId = id; },
     setImportStatus: (s) => { importStatus = s; },
     setImportNote: (s) => { importNote = s; },
+    addPendingNotes,
     setAddingObject: (v) => { addingObject = v; },
     clearAddForm: () => { addSource = ""; addLabel = ""; },
     setMapModalOpen: (v) => { mapModalOpen = v; },
@@ -972,7 +1100,7 @@
     openExhibit,
     bump,
     cancelPendingSave: () => sess.cancelPendingSave(),
-    finishReplace: () => { currentSlug = lib.meta.exhibits[0]!.slug; view = "library"; },
+    finishReplace: () => { currentSlug = lib.meta.exhibits[0]!.slug; view = "library"; pendingNotes = []; void savePendingNotes({}); }, // destructive replace wipes the old project's pending sidecar
     confirmReplace: (msg) => window.confirm(msg),
     alert: (msg) => window.alert(msg),
   });
@@ -982,21 +1110,33 @@
   // broken-links advisory, and the large-library size guards — lives in publish-flows.svelte.ts.
   // Deps are function declarations above (hoisted) or deferred reads of `bnd` (created below;
   // called only at action time, never during init).
-  const pub = createPublishFlows({
-    baseUrl: BASE,
-    flushExhibit: () => save(),
-    loadAllLogs,
-    buildFullLibrary: () => buildFullLibrary(),
-    exhibits: () => lib.meta.exhibits,
-    canFolder: () => bnd.canFolder,
-    currentZipName: () => (bnd.binding.kind === "file" && bnd.binding.name ? bnd.binding.name : zipNameFor(PROJECT_TITLE)),
-  });
+  // Lazy publish flows (fflate + dompurify + GitHub publisher live behind this dynamic import). Created on
+  // first publish / save-to-folder action, then cached — so none of that weight is in the startup bundle.
+  let pub = $state<ReturnType<typeof import("./publish-flows.svelte.js").createPublishFlows> | null>(null);
+  async function ensurePub() {
+    if (pub) return pub;
+    const { createPublishFlows } = await import("./publish-flows.svelte.js");
+    const created = createPublishFlows({
+      baseUrl: BASE,
+      flushExhibit: () => save(),
+      loadAllLogs,
+      buildFullLibrary: () => buildFullLibrary(),
+      exhibits: () => lib.meta.exhibits,
+      canFolder: () => bnd.canFolder,
+      currentZipName: () => (bnd.binding.kind === "file" && bnd.binding.name ? bnd.binding.name : zipNameFor(PROJECT_TITLE)),
+    });
+    pub = created;
+    // Load the publish dialog UI now too (they render under {#if pub} once ready).
+    void import("./PublishDialog.svelte").then((m) => { PublishDialogComp = m.default; });
+    void import("./Publish.svelte").then((m) => { PublishComp = m.default; });
+    return created;
+  }
   // The binding store (worklist 0.3 cut 1): the three-configs state machine + its Save/Open/Close/
-  // autosave flows live in binding-store.svelte.ts; its disk sinks come from the publish flows.
+  // autosave flows live in binding-store.svelte.ts; its disk sinks lazy-load the publish flows on first use.
   const bnd = createBindingStore({
     flushExhibit: () => save(),
-    writeToFolder: (h) => pub.writeToFolder(h),
-    downloadProjectZip: () => pub.downloadProjectZip(),
+    writeToFolder: async (h) => (await ensurePub()).writeToFolder(h),
+    downloadProjectZip: async () => (await ensurePub()).downloadProjectZip(),
     replaceProjectFrom: (loaded) => flows.replaceProjectFrom(loaded),
     zipName: () => zipNameFor(PROJECT_TITLE),
   });
@@ -1110,7 +1250,7 @@
         {saveStatus.health === "error" ? "⚠ Save failed" : sess.dirty ? "● Unsaved" : "Saved"}</span>
       <button onclick={() => void save()} disabled={!sess.dirty}>Save</button>
     {/if}
-    <button class="publish-signal" onclick={() => pub.openDialog()}>Publish & share…</button>
+    <button class="publish-signal" onclick={() => void ensurePub().then((p) => p.openDialog())}>Publish & share…</button>
     <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
   </header>
 
@@ -1154,9 +1294,9 @@
       </form>
     {:else}
       <button class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Media</button>
-      <button class="add-obj-toggle" onclick={() => (mapModalOpen = true)} title="Add a map (geo-annotation)">+ Map</button>
+      <button class="add-obj-toggle" onclick={() => { mapModalOpen = true; void import("./AddMapModal.svelte").then((m) => (AddMapModalComp = m.default)); }} title="Add a map (geo-annotation)">+ Map</button>
     {/if}
-    {#if mapModalOpen}<AddMapModal onadd={(m) => { void flows.addMapObject(m); }} onclose={() => (mapModalOpen = false)} />{/if}
+    {#if mapModalOpen && AddMapModalComp}{@const AddMap = AddMapModalComp}<AddMap onadd={(m) => { void flows.addMapObject(m); }} onclose={() => (mapModalOpen = false)} />{/if}
     {#if importStatus}
       <span class="import-status" role="status" aria-live="polite">
         <span class="import-spinner" aria-hidden="true"></span>
@@ -1259,19 +1399,22 @@
         </div>
         {#if openPanel === "narrative"}
           <div class="panel-body" id="panel-body-narrative">
-            <NarrativeEditor
-              sections={currentExhibit?.sections ?? []}
-              objects={OBJECTS}
-              {currentObjectId}
-              activeSectionId={focusSectionId}
-              framingId={framingSectionId}
-              cleared={clearedSlug === currentSlug}
-              onchange={setSections}
-              onframe={startFraming}
-              oncancelframe={cancelFraming}
-              onnavigate={navigateToSection}
-              onrequestcite={requestCite}
-            />
+            {#if NarrativeEditorComp}
+              {@const NE = NarrativeEditorComp}
+              <NE
+                sections={currentExhibit?.sections ?? []}
+                objects={OBJECTS}
+                {currentObjectId}
+                activeSectionId={focusSectionId}
+                framingId={framingSectionId}
+                cleared={clearedSlug === currentSlug}
+                onchange={setSections}
+                onframe={startFraming}
+                oncancelframe={cancelFraming}
+                onnavigate={navigateToSection}
+                onrequestcite={requestCite}
+              />
+            {/if}
           </div>
         {/if}
       </section>
@@ -1314,9 +1457,10 @@
           {/if}
           {#if current && !isAvCurrent}
             <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
-            <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, x, y, w, h, comment (tags and reading optional), header row first. In the object column, use a media item’s label, or leave blank for the current one.">… or add notes from a CSV</button>
+            <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, comment — x, y, w, h, tags, reading all optional, header row first. Rows with no x,y,w,h arrive as “needs placement”: draw each box with Set area. Use a media item’s label in the object column, or leave it blank for the current one.">… or add notes from a CSV</button>
             <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
               onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesCsv(f).then(() => openPanelTo("notes")).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+            <button type="button" class="csv-import" onclick={downloadCsvTemplate} title="Download a starter CSV pre-filled with this exhibit's items. Fill in the blanks in Excel or Sheets, then add it back — rows without x,y,w,h become “needs placement”.">… or download a starter CSV to fill in</button>
           {/if}
           <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
           <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="Import notes from Archie or another annotation tool.">… or add notes from a file</button>
@@ -1360,25 +1504,74 @@
             <!-- All notes (image / audio / video) edit in the marker popover anchored to their locus (in <main>);
                  the sidebar is creation + the present-notes list — no inline form (ADR-0006). -->
 
-            <!-- Object-level rights (rights grill Q6): an INLINE disclosure in the object editor — you're already
-                 editing this object, so no separate drawer. Object = the truest provenance level. -->
-            {#if current}
-              <details class="rights-disc">
-                <summary>Details &amp; rights{#if current.summary || current.rights || current.requiredStatement}<span class="dot" title="Set for this object">●</span>{/if}</summary>
-                <DetailsEditor
-                  showTitle={false}
-                  summary={current.summary ?? ""}
-                  rights={{ ...(current.rights ? { rights: current.rights } : {}), ...(current.requiredStatement ? { requiredStatement: current.requiredStatement } : {}) }}
-                  scope="object"
-                  onsummary={setObjectSummary}
-                  onrights={setObjectRights}
-                  onremove={removeCurrentObject}
-                />
-              </details>
-            {/if}
           </div>
         {/if}
       </section>
+
+      <!-- ── PANEL 3 · TO PLACE (exhibit-wide worklist) — notes imported WITHOUT a region (CSV sub-cycle B,
+           Archie-79c0). NOT a creation tool: a worklist you READ, then place each on the image. Its own panel
+           (was wrongly nested in the Notes create tools). Only present when there's something to place. -->
+      {#if pendingNotes.length > 0}
+        <section class="panel" class:open={openPanel === "place"}>
+          <button type="button" class="panel-head" aria-expanded={openPanel === "place"} aria-controls={openPanel === "place" ? "panel-body-place" : undefined} onclick={() => togglePanel("place")}>
+            <span class="ph-caret" aria-hidden="true">{openPanel === "place" ? "▾" : "▸"}</span>
+            <span class="ph-title">To place</span>
+            <span class="ph-scope">imported notes, no spot yet</span>
+            <span class="count-pill" aria-label={`${pendingNotes.length} to place`}>{pendingNotes.length}</span>
+          </button>
+          {#if openPanel === "place"}
+            <div class="panel-body place-body" id="panel-body-place">
+              <p class="hint">Read a note, then “Place on image” and draw its box on the picture — that turns it into a real note there. The card stays lit while you draw, so you can keep reading it.</p>
+              <ul class="np-list">
+                {#each pendingNotes as p (p.id)}
+                  <li class="np-row" class:placing={p.id === placingPendingId}>
+                    <p class="np-cmt">“{p.comment}”</p>
+                    <div class="np-meta">
+                      <span class="np-obj">on {objectLabelOf(p.objectId)}</span>
+                      {#if p.tags.length}<span class="np-tags">{p.tags.map((t) => "#" + t).join(" ")}</span>{/if}
+                    </div>
+                    <div class="np-actions">
+                      {#if p.id === placingPendingId}
+                        <span class="np-drawing">Drawing… pick a spot on the {isMapCurrent ? "map" : "image"}</span>
+                        <button type="button" class="np-del" onclick={cancelPlacing}>Cancel</button>
+                      {:else}
+                        <button type="button" class="np-set" onclick={() => startPlacing(p.id)} title="Go to {objectLabelOf(p.objectId)} and draw this note’s box on the image">Place on image</button>
+                        <button type="button" class="np-del" onclick={() => removePending(p.id)} title="Remove this imported note">Remove</button>
+                      {/if}
+                    </div>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {/if}
+        </section>
+      {/if}
+
+      <!-- ── PANEL 4 · DETAIL (this item) — the object's description + credit/licence (rights grill Q6). Promoted
+           from an inline disclosure at the foot of the Notes list to its own panel, so metadata isn't buried. -->
+      {#if current}
+        <section class="panel" class:open={openPanel === "info"}>
+          <button type="button" class="panel-head" aria-expanded={openPanel === "info"} aria-controls={openPanel === "info" ? "panel-body-info" : undefined} onclick={() => togglePanel("info")}>
+            <span class="ph-caret" aria-hidden="true">{openPanel === "info" ? "▾" : "▸"}</span>
+            <span class="ph-title">Detail</span>
+            <span class="ph-scope">This item only{current ? ` · ${current.label}` : ""}</span>
+            {#if current.summary || current.rights || current.requiredStatement}<span class="count-pill" title="Description or credit set for this item" aria-label="Details set">●</span>{/if}
+          </button>
+          {#if openPanel === "info"}
+            <div class="panel-body info-body" id="panel-body-info">
+              <DetailsEditor
+                showTitle={false}
+                summary={current.summary ?? ""}
+                rights={{ ...(current.rights ? { rights: current.rights } : {}), ...(current.requiredStatement ? { requiredStatement: current.requiredStatement } : {}) }}
+                scope="object"
+                onsummary={setObjectSummary}
+                onrights={setObjectRights}
+                onremove={removeCurrentObject}
+              />
+            </div>
+          {/if}
+        </section>
+      {/if}
     </aside>
     <ResizeDivider side="left" label="notes" min={260} max={760} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={persistAside} />
     <main
@@ -1395,13 +1588,22 @@
       {#if current && isAvCurrent}
         <!-- AV object → temporal editor (remount on object switch so the media element reloads). -->
         {#key canvasId}
-          <AvEditor source={currentSource} label={current.label} mediaType={current.mediaType} {annotations} bind:selected oncreate={onCreateTime} onimport={onImportTranscript}
-            onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
+          {#if AvEditorComp}
+            {@const Av = AvEditorComp}
+            <Av source={currentSource} label={current.label} mediaType={current.mediaType} {annotations} bind:selected oncreate={onCreateTime} onimport={onImportTranscript}
+              onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
+          {:else}
+            <div class="no-canvas">Loading…</div>
+          {/if}
         {/key}
       {:else if current && assetsReady}
         {#key canvasId}
-          <Canvas source={currentSource} tileSource={currentTileSource} {canvasId} {annotations} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
-            onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
+          {#if CanvasComp}
+            <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} {annotations} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
+              onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
+          {:else}
+            <div class="no-canvas">Loading…</div>
+          {/if}
         {/key}
         {#if isMapCurrent && currentTileSource?.attribution}
           <!-- Basemap attribution (REQUIRED by the tile provider's terms — DESIGN.md D6). -->
@@ -1452,18 +1654,23 @@
     {/if}
   </div>
 
-  <PublishDialog
-    open={pub.dialogOpen}
-    canFolder={bnd.canFolder}
-    onclose={() => pub.closeDialog()}
-    onfolder={pub.localPublishFolder}
-    onzip={pub.localPublishZip}
-    ongithub={() => { pub.closeDialog(); void pub.openPublish(); }}
-    ondownload={pub.download}
-  />
-  <Publish open={pub.publishOpen} onclose={() => pub.closePublish()} onpublish={pub.publish} brokenLinks={pub.brokenLinks} />
-  <CmdK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />
-  <MediaPicker open={mediaPickerOpen} title="Cite a note by its image" items={mediaPickerItems} onpick={pickVisualCite} onclose={() => (mediaPickerOpen = false)} />
+  {#if pub && PublishDialogComp && PublishComp}
+    {@const p = pub}
+    {@const PD = PublishDialogComp}
+    {@const Pub = PublishComp}
+    <PD
+      open={p.dialogOpen}
+      canFolder={bnd.canFolder}
+      onclose={() => p.closeDialog()}
+      onfolder={p.localPublishFolder}
+      onzip={p.localPublishZip}
+      ongithub={() => { p.closeDialog(); void p.openPublish(); }}
+      ondownload={p.download}
+    />
+    <Pub open={p.publishOpen} onclose={() => p.closePublish()} onpublish={p.publish} brokenLinks={p.brokenLinks} />
+  {/if}
+  {#if cmdkOpen && CmdKComp}{@const CK = CmdKComp}<CK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />{/if}
+  {#if mediaPickerOpen && MediaPickerComp}{@const MP = MediaPickerComp}<MP open={mediaPickerOpen} title="Cite a note by its image" items={mediaPickerItems} onpick={pickVisualCite} onclose={() => (mediaPickerOpen = false)} />{/if}
 {/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
 <ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
@@ -1576,8 +1783,8 @@
   .panel-head:hover, .panel.open > .panel-head { background: var(--surface-paper-hover); }
   .panel-head .ph-caret { font-size: 0.7rem; line-height: 1; color: var(--ink-paper-muted); }
   .panel-head .ph-title { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; line-height: 1; color: var(--ink-paper-primary); }
-  .panel-head .ph-scope { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); }
-  .panel-head .ph-count { margin-left: auto; flex: none; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); letter-spacing: 0.04em; color: var(--ink-paper-muted); white-space: nowrap; }
+  .panel-head .ph-scope { flex: 0 1 auto; min-width: 0; overflow-wrap: anywhere; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  .panel-head .ph-count { margin-left: auto; flex: none; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); letter-spacing: 0.04em; color: var(--ink-paper-muted); }
   /* Count pill — on a COLLAPSED accordion with hidden content, the item count shows as a pill so you can see
      there are N things under it without expanding. (Open panels show the descriptive count text instead.) */
   .panel-head .count-pill { margin-left: auto; flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 1.45rem; padding: 1px var(--space-2); font-family: var(--font-ui); font-size: 0.72rem; font-weight: 600; line-height: 1.5; color: var(--ink-paper-primary); background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis); border-radius: 999px; }
@@ -1638,7 +1845,7 @@
   .obj.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
   .obj-thumb { flex-shrink: 0; width: 40px; height: 32px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; box-shadow: var(--shadow-inset-fog); }
   .obj-meta { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-  .obj-label { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 400; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .obj-label { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 400; line-height: 1.1; overflow-wrap: anywhere; }
   .obj-count { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-muted); }
   .obj.on .obj-count { color: var(--accent); }
 
@@ -1668,7 +1875,7 @@
   .add-obj .cancel:hover { color: var(--ink-canvas-primary); }
   /* Import feedback on the rail (AV ingest/upload UX): understated, floating on the warm ground. The
      spinner is the accent; the note is a quiet soft card you can dismiss. */
-  .import-status { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); white-space: nowrap; }
+  .import-status { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); overflow-wrap: anywhere; }
   .import-spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent-muted); border-top-color: var(--accent); animation: import-spin 0.7s linear infinite; }
   @keyframes import-spin { to { transform: rotate(360deg); } }
   .import-note { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 30rem; font-family: var(--font-body); font-size: var(--text-ui-sm); line-height: 1.5; color: var(--ink-canvas-secondary); padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low); white-space: normal; }
@@ -1782,19 +1989,21 @@
   .hint { font-family: var(--font-body); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-4); }
   .csv-import { align-self: flex-start; background: none; border: none; cursor: pointer; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); transition: color 160ms ease; } /* 24px+ hit box */
   .csv-import:hover { color: var(--accent-2); }
+  /* "To place" worklist cards (Archie-79c0 sub-cycle B) — width-responsive: text WRAPS, never truncates. */
+  .np-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .np-row { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px; border: 1px solid var(--ink-paper-muted); border-radius: var(--radius-md); font-family: var(--font-ui); font-size: var(--text-ui-md); }
+  .np-row.placing { border-color: var(--accent-2); box-shadow: 0 0 0 1px var(--accent-2); }
+  .np-cmt { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+  .np-meta { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; color: var(--ink-paper-muted); }
+  .np-obj { min-width: 0; overflow-wrap: anywhere; }
+  .np-tags { min-width: 0; overflow-wrap: anywhere; color: var(--accent-2); }
+  .np-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 2px; }
+  .np-drawing { color: var(--accent-2); overflow-wrap: anywhere; }
+  .np-set { background: none; border: 1px solid var(--accent-2); border-radius: var(--radius-md); cursor: pointer; padding: 3px 10px; font: inherit; color: var(--accent-2); transition: filter 160ms ease; }
+  .np-set:hover { filter: brightness(1.2); }
+  .np-del { background: none; border: none; cursor: pointer; padding: 3px 6px; color: var(--ink-paper-muted); font: inherit; }
+  .np-del:hover { color: var(--accent-2); }
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
-  /* Object-level rights disclosure — tucked at the foot of the object editor (rights grill Q6). */
-  .rights-disc { margin-top: var(--space-4); border-top: 1px solid var(--border-paper); padding-top: var(--space-3); }
-  .rights-disc > summary {
-    cursor: pointer; list-style: none; display: flex; align-items: center; gap: var(--space-2);
-    font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 400;
-    text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-paper-secondary);
-  }
-  .rights-disc > summary::-webkit-details-marker { display: none; }
-  .rights-disc > summary::before { content: "▸"; color: var(--ink-paper-muted); transition: transform 0.15s; }
-  .rights-disc[open] > summary::before { content: "▾"; }
-  .rights-disc > summary .dot { color: var(--accent); font-size: 0.6rem; }
-  .rights-disc > :global(.rights) { margin-top: var(--space-3); }
 
   /* The WADM form CSS (.wadm family + .save/.del/.wadm-actions) lives in NoteEditor.svelte now. */
 </style>

@@ -243,14 +243,14 @@
   /* The "Shown with · [object]" line is the card's NAVIGATION control: click → jump the rail to that section's
      object and focus its framed region (onnavigate). A quiet full-width soft button — link-scent on hover
      (connector-blue), never the rationed orange. The ◎/↗ glyph signals "show me this section's view / go there". */
-  .go-to { display: flex; align-items: center; gap: var(--space-2); width: 100%; margin: 0; padding: var(--space-1) var(--space-2); cursor: pointer; text-align: left; background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 120ms ease, border-color 120ms ease, background 120ms ease; }
+  .go-to { display: flex; align-items: center; gap: var(--space-2); width: 100%; min-width: 0; margin: 0; padding: var(--space-1) var(--space-2); cursor: pointer; text-align: left; background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 120ms ease, border-color 120ms ease, background 120ms ease; }
   .go-to:hover { border-color: var(--accent-2); background: var(--surface-paper-hover); }
   .go-to .go-glyph { font-size: 0.8rem; line-height: 1; color: var(--accent-2); opacity: 0.85; }
   .go-to:hover .on-obj { color: var(--accent-2); opacity: 1; }
   /* The object NAME is the descriptive content now (it leads the label), so render it natural-case — not the
      shouting uppercase eyebrow treatment; a proper item name like "Folio 1r" must read as a name. The "Go to" /
      "Showing" verb is sentence-case before it. Stays visually subordinate to the section Title above it. */
-  .on-obj { font-family: var(--font-ui); font-size: 0.78rem; font-weight: 500; letter-spacing: 0.01em; opacity: 0.7; color: var(--ink-paper-secondary); transition: color 120ms ease, opacity 120ms ease; }
+  .on-obj { font-family: var(--font-ui); font-size: 0.78rem; font-weight: 500; letter-spacing: 0.01em; min-width: 0; overflow-wrap: anywhere; opacity: 0.7; color: var(--ink-paper-secondary); transition: color 120ms ease, opacity 120ms ease; }
   .prose-wrap { display: flex; flex-direction: column; gap: var(--space-1); }
   /* ¶ Cite — the SAME affordance the note Comment has; cites a note/exhibit into the prose (ADR-0005 bridge). */
   .prose-wrap .cite { align-self: flex-end; display: inline-flex; align-items: center; gap: var(--space-1); cursor: pointer; background: none; border: none; padding: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; color: var(--accent-2); transition: opacity 120ms ease, color 120ms ease; }
