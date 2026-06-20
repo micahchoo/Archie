@@ -50,6 +50,32 @@ export async function bakeDisplayMaster(file: Blob, opts: BakeOptions = {}): Pro
   }
 }
 
+/** Bake a small gallery/overview THUMBNAIL from an already-baked display master (the grid loads this, not
+ *  the full master — the multi-object load win). Decodes the master (already ≤ MAX_MASTER_DIM, so cheap)
+ *  and downscales to `dim` on the longer edge in the SAME `mime` (so the stored name's extension stays
+ *  truthful). Returns null when the master is already within `dim` — then there's nothing to gain and the
+ *  caller leaves the object thumbnail-less (the grid uses the master). Lossy mimes use `quality` (default
+ *  0.8 — a thumbnail tolerates more compression than the master). */
+export async function bakeThumbnail(master: Blob, dim: number, mime: string, quality = 0.8): Promise<Blob | null> {
+  const bmp = await createImageBitmap(master);
+  try {
+    if (!exceedsCap(bmp.width, bmp.height, dim)) return null; // master already small — use it directly
+    const target = fitWithin(bmp.width, bmp.height, dim);
+    const canvas = document.createElement("canvas");
+    canvas.width = target.width;
+    canvas.height = target.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("2D canvas context unavailable for thumbnail bake");
+    ctx.drawImage(bmp, 0, 0, target.width, target.height);
+    const lossy = mime === "image/jpeg" || mime === "image/webp";
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, mime, lossy ? quality : undefined));
+    if (!blob) throw new Error("canvas.toBlob produced no thumbnail");
+    return blob;
+  } finally {
+    bmp.close();
+  }
+}
+
 /** Decode `file` ONCE to read its dimensions; if it exceeds `maxDim` on the longer edge, re-encode a
  *  downscaled master (preserving `mime`, quality 0.92 for lossy); otherwise return the file untouched
  *  with its real dimensions. Used by the non-rotated import path to avoid the double-decode of probing
