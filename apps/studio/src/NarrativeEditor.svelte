@@ -10,8 +10,10 @@
   // SURFACE THE SCALE (the IA the rework exists for): this is the EXHIBIT-level spine — it PERSISTS as you
   // switch objects on the rail, while the object-local notes SWAP. Each card NAMES its target object; the
   // card(s) targeting the object you're viewing are lit, the rest dimmed — teaching that sections reach
-  // across the whole exhibit. Re-binding a section to a different object is explicit ("Move to this object",
-  // shown only when it targets another object), never an implicit side effect of framing.
+  // across the whole exhibit. The card is ALSO the navigation control (onnavigate): clicking its "Go to [object]"
+  // line jumps the rail to that section's object and FOCUSES its framed region on the canvas — the editor
+  // counterpart of the viewer's focus={activeSection.start} (NarrativeReader.svelte). A section is bound to
+  // its object at creation (add() uses currentObjectId); the spine is WALKED between objects, never rebound.
   import { parseTimeFragment } from "@render/core";
   import type { Section } from "@render/core";
 
@@ -19,22 +21,24 @@
     sections,
     objects,
     currentObjectId,
+    activeSectionId = null,
     framingId = null,
-    notes = [],
     cleared = false,
     onchange,
     onframe,
     oncancelframe,
+    onnavigate,
     onrequestcite,
   }: {
     sections: Section[];
     objects: ReadonlyArray<{ id: string; label: string; mediaType?: "image" | "sound" | "video" }>;
     /** The object the editor canvas is currently showing — sections targeting it are lit, the rest dimmed. */
     currentObjectId: string;
+    /** The section whose framed region is CURRENTLY shown on the canvas (App's focusSectionId) — this card is
+     *  lit "active", distinguishing the navigated-to section from its object-siblings (which also light via .here). */
+    activeSectionId?: string | null;
     /** The section whose camera is being framed right now (null = not framing). */
     framingId?: string | null;
-    /** The exhibit's notes, for the "add a section from a Note" shortcut (ADR-0005 mitigation). */
-    notes?: ReadonlyArray<{ id: string; objectId: string; start?: string; lead: string }>;
     /** True when the narrative was JUST cleared (last beat removed) — swaps the empty-state copy to the
      *  reverse-cue "Narrative cleared…" message (staging spec §7), distinct from the never-started copy. */
     cleared?: boolean;
@@ -43,6 +47,9 @@
     onframe: (sectionId: string) => void;
     /** Exit framing without capturing (the visible counterpart to Esc). */
     oncancelframe: () => void;
+    /** Navigate to a section: jump the rail to its object and focus its framed region on the canvas
+     *  (mirrors the viewer's NarrativeReader.activate — the card is how you move between the exhibit's objects). */
+    onnavigate: (sectionId: string) => void;
     /** Open App's cite palette (⌘K) with an insert closure that splices the chosen link into a prose field
      *  — the SAME palette notes use; a Section's only structural link to a Note is this prose link (ADR-0005). */
     onrequestcite: (insert: (md: string) => void) => void;
@@ -64,7 +71,6 @@
     });
   }
 
-  const newId = () => `s-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
   const objectLabel = (id: string) => objects.find((o) => o.id === id)?.label ?? id;
   // AV-bound section → its camera is a MOMENT (`t=`), not a spatial region (`xywh=`).
   const avBound = (id: string) => { const m = objects.find((o) => o.id === id)?.mediaType; return m === "sound" || m === "video"; };
@@ -76,16 +82,6 @@
     return "area set";
   }
 
-  // A new section is anchored to the object you're looking at (currentObjectId) — you then frame its camera.
-  function add() {
-    if (!currentObjectId) return;
-    onchange([...sections, { id: newId(), title: `Section ${sections.length + 1}`, objectId: currentObjectId }]);
-  }
-  // Seed a section's object + camera + prose from an existing Note (the model-(A) mitigation — the note
-  // stays its own marker; this COPIES it into a beat).
-  function addFromNote(n: { objectId: string; start?: string; lead: string }) {
-    onchange([...sections, { id: newId(), title: `Section ${sections.length + 1}`, objectId: n.objectId, ...(n.start ? { start: n.start } : {}), prose: n.lead }]);
-  }
   function update(i: number, patch: Partial<Section>) { onchange(sections.map((s, j) => (j === i ? { ...s, ...patch } : s))); }
   function remove(i: number) { onchange(sections.filter((_, j) => j !== i)); }
   function move(i: number, dir: -1 | 1) {
@@ -94,12 +90,6 @@
     const next = sections.slice();
     [next[i], next[j]] = [next[j]!, next[i]!];
     onchange(next);
-  }
-  // Re-bind a section to the object now in view. The old camera was framed on a DIFFERENT object, so it's
-  // meaningless here — drop `start`; the author reframes on the new object.
-  function moveHere(i: number) {
-    const { start: _drop, ...rest } = sections[i]!;
-    onchange(sections.map((s, j) => (j === i ? { ...rest, objectId: currentObjectId } : s)));
   }
 
   // Empty (0-beat) spine → render RECESSED: a quiet strip subordinate to the object Notes list below, so the
@@ -127,15 +117,14 @@
 
 <section class="spine" class:recessed={isEmpty}>
   {#if isEmpty}
-    <!-- Recessed empty state (staging spec §2): eyebrow + ONE teaching line + ONE button. Quiet, low weight,
-         sits ABOVE the Notes list but visually subordinate to it (no card shadow, hairline frame). -->
+    <!-- Recessed empty state (staging spec §2): eyebrow + ONE teaching line (the add CTA now lives in App's
+         always-visible .panel-create, outside this collapsing body). Quiet, low weight, hairline frame. -->
     <p class="eyebrow">Exhibit narrative</p>
     {#if cleared}
-      <p class="empty">Narrative cleared — this exhibit opens with the media grid again. Add a section to lead with your writing instead.</p>
+      <p class="empty">Narrative cleared — visitors see the media grid again. Add a section to lead with your writing.</p>
     {:else}
-      <p class="empty">No sections yet. Add one to begin the narrative — each is shown with one media item and the view you frame, the same box you draw for a note. The first will be shown with the item you're viewing now — {objectLabel(currentObjectId)}.</p>
+      <p class="empty">A section is one passage in this exhibit's narrative, shown with one media item. Your first will be shown with {objectLabel(currentObjectId)}.</p>
     {/if}
-    <button class="add" onclick={add} disabled={objects.length === 0}>＋ Add to the narrative</button>
   {:else}
   <header>
     <p class="eyebrow">Exhibit narrative</p>
@@ -147,14 +136,15 @@
   {:else if onBeatlessObject}
     <!-- Item-switch cue (staging spec §5): every card below is dimmed because none belong to the item now in
          view. Teach that the spine reaches across items, and how to bring a beat here. -->
-    <p class="item-switch-cue">These sections belong to other items in this exhibit — they stay in the spine. Add one here, or move one with “Move here.”</p>
+    <p class="item-switch-cue">These sections belong to other media items — click one to jump to it, or add a new one here.</p>
   {/if}
 
   <ol class="cards">
     {#each sections as s, i (s.id)}
       {@const here = s.objectId === currentObjectId}
       {@const cam = cameraLabel(s)}
-      <li class="card" class:here class:framing={framingId === s.id}>
+      {@const goLabel = here ? "Center the canvas on this section's framed view" : `Go to ${objectLabel(s.objectId)} and show this section's framed view`}
+      <li class="card" class:here class:active={activeSectionId === s.id} class:framing={framingId === s.id}>
         <div class="ord">
           <span class="n">{i + 1}</span>
           <!-- Reorder arrows are HIDDEN (not shown-disabled) until ≥2 beats — a single beat has no order to set
@@ -169,10 +159,17 @@
         <div class="fields">
           <input class="title" value={s.title} placeholder="Section title" aria-label="Section title"
             onchange={(e) => update(i, { title: (e.currentTarget as HTMLInputElement).value })} />
-          <p class="shows">
-            <span class="on-obj">{here ? "Shown with this item" : "Shown with"} · {objectLabel(s.objectId)}</span>
-            {#if !here}<button class="move-here" onclick={() => moveHere(i)} title="Show this section with the media item you're viewing now (clears the area it currently highlights)">Move here</button>{/if}
-          </p>
+          <!-- The card's NAVIGATION control: clicking the "Go to [object]" / "Showing [object]" line jumps the rail to that
+               section's object and focuses its framed region on the canvas (onnavigate) — the editor
+               counterpart of the viewer's focus={activeSection.start}. Replaces the old "Move here" rebind.
+               aria-current marks the section whose frame is currently shown; the action verb lives in the
+               accessible name (aria-label), not just the title (which screen readers announce unreliably). -->
+          <button type="button" class="go-to" class:here onclick={() => onnavigate(s.id)}
+            aria-current={activeSectionId === s.id ? "true" : undefined}
+            title={goLabel} aria-label={goLabel}>
+            <span class="go-glyph" aria-hidden="true">{here ? "◎" : "↗"}</span>
+            <span class="on-obj">{here ? "Showing" : "Go to"} {objectLabel(s.objectId)}</span>
+          </button>
           <div class="prose-wrap">
             <button type="button" class="cite" onclick={() => citeInto(i, s.id)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button>
             <textarea class="prose" rows="2" bind:this={proseEls[s.id]} value={s.prose ?? ""} placeholder="Write this section…" aria-label="Section prose"
@@ -181,7 +178,7 @@
           </div>
           <div class="camera">
             {#if framingId === s.id}
-              <span class="framing-now">{avBound(s.objectId) ? "Set the moment — scrub to it on the recording" : "Set the area — draw a box on the image"}</span>
+              <span class="framing-now">{avBound(s.objectId) ? "Set the moment on the recording" : "Set the area on the image"}</span>
               <button class="cancel" onclick={oncancelframe}>Cancel</button>
             {:else}
               <span class="cam" class:set={!!cam}>{cam ? (avBound(s.objectId) ? `⏱ ${cam}` : `▭ ${cam}`) : "Whole item shown"}</span>
@@ -200,16 +197,6 @@
     <p class="path-preview">Reading order: Section {sectionPath}{#if objectPath}, across {objectPath}{/if}. This is the path visitors walk.</p>
   {/if}
 
-  <div class="add-row">
-    <button class="add" onclick={add} disabled={objects.length === 0}>＋ Add to the narrative</button>
-    {#if notes.length > 0}
-      <select class="from-note" aria-label="Add a section from an existing note"
-        onchange={(e) => { const el = e.currentTarget as HTMLSelectElement; const n = notes.find((x) => x.id === el.value); if (n) addFromNote(n); el.selectedIndex = 0; }}>
-        <option value="">＋ from a note…</option>
-        {#each notes as n (n.id)}<option value={n.id}>{n.lead.slice(0, 40)}</option>{/each}
-      </select>
-    {/if}
-  </div>
   {/if}
 </section>
 
@@ -222,10 +209,6 @@
   .spine.recessed { background: transparent; box-shadow: none; border: 1px solid var(--border-paper); padding: var(--space-2) var(--space-3); gap: var(--space-2); }
   .spine.recessed .eyebrow { margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.55; color: var(--ink-paper-secondary); }
   .spine.recessed .empty { font-size: 0.82rem; line-height: 1.55; opacity: 0.9; }
-  /* The recessed CTA is quieter than the full-weight signal-orange Add — a soft outline, not a filled signal,
-     to stay below the Notes list in the hierarchy. */
-  .spine.recessed .add { align-self: flex-start; background: var(--surface-paper); color: var(--accent); border: 1px solid var(--border-paper-emphasis); box-shadow: none; font-weight: 500; }
-  .spine.recessed .add:hover:not(:disabled) { background: var(--surface-paper-hover); border-color: var(--accent); }
   .spine > header .eyebrow { margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.6; color: var(--ink-paper-secondary); }
   .spine > header .lede { margin: var(--space-1) 0 0; font-family: var(--font-body); font-size: 0.85rem; line-height: 1.6; color: var(--ink-paper-secondary); }
   .empty { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
@@ -242,10 +225,14 @@
      The lit state is a quiet signal: a subtle accent left-rule + full opacity, not a loud fill. */
   .card { display: flex; gap: var(--space-2); padding: var(--space-2); background: var(--surface-paper); border: none; border-left: 2px solid transparent; border-radius: var(--radius-md); opacity: 0.55; transition: opacity 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
   .card.here { opacity: 1; border-left-color: var(--accent); box-shadow: var(--shadow-lift-low); }
+  /* Active = the card whose frame is CURRENTLY shown on the canvas (App.focusSectionId). The connector-blue
+     rule (matching the nav glyph) marks the ONE navigated-to section apart from its object-siblings, which
+     also light via .here (orange). Source-ordered after .here so it wins the left-rule colour when both apply. */
+  .card.active { opacity: 1; border-left-color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
   .card.framing { opacity: 1; border-left-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
 
   .ord { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
-  .ord .n { font-family: var(--font-display); font-weight: 400; font-size: 0.95rem; color: var(--accent-2); }
+  .ord .n { font-family: var(--font-display-2); font-weight: 700; font-size: 1.05rem; color: var(--accent-2); }
   .mv { display: flex; flex-direction: column; gap: 2px; }
   .mv button { cursor: pointer; font-size: 0.55rem; line-height: 1; padding: 2px 5px; background: none; border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); color: var(--ink-paper-secondary); transition: color 120ms ease, border-color 120ms ease; }
   .mv button:disabled { opacity: 0.3; cursor: default; }
@@ -253,11 +240,17 @@
 
   .fields { flex: 1; display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
   .title { font-family: var(--font-display); font-size: 1.1rem; font-weight: 400; line-height: 1.3; padding: var(--space-1) var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-paper-primary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
-  .shows { margin: 0; display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
-  .on-obj { font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.58; color: var(--ink-paper-secondary); }
-  /* Re-bind — a secondary action; quiet soft-btn treatment, never orange. */
-  .move-here { cursor: pointer; font-family: var(--font-ui); font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 2px var(--space-2); background: var(--surface-canvas-raised); color: var(--accent-2); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 120ms ease, border-color 120ms ease; }
-  .move-here:hover { border-color: var(--accent-2); color: var(--accent-2); }
+  /* The "Shown with · [object]" line is the card's NAVIGATION control: click → jump the rail to that section's
+     object and focus its framed region (onnavigate). A quiet full-width soft button — link-scent on hover
+     (connector-blue), never the rationed orange. The ◎/↗ glyph signals "show me this section's view / go there". */
+  .go-to { display: flex; align-items: center; gap: var(--space-2); width: 100%; margin: 0; padding: var(--space-1) var(--space-2); cursor: pointer; text-align: left; background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 120ms ease, border-color 120ms ease, background 120ms ease; }
+  .go-to:hover { border-color: var(--accent-2); background: var(--surface-paper-hover); }
+  .go-to .go-glyph { font-size: 0.8rem; line-height: 1; color: var(--accent-2); opacity: 0.85; }
+  .go-to:hover .on-obj { color: var(--accent-2); opacity: 1; }
+  /* The object NAME is the descriptive content now (it leads the label), so render it natural-case — not the
+     shouting uppercase eyebrow treatment; a proper item name like "Folio 1r" must read as a name. The "Go to" /
+     "Showing" verb is sentence-case before it. Stays visually subordinate to the section Title above it. */
+  .on-obj { font-family: var(--font-ui); font-size: 0.78rem; font-weight: 500; letter-spacing: 0.01em; opacity: 0.7; color: var(--ink-paper-secondary); transition: color 120ms ease, opacity 120ms ease; }
   .prose-wrap { display: flex; flex-direction: column; gap: var(--space-1); }
   /* ¶ Cite — the SAME affordance the note Comment has; cites a note/exhibit into the prose (ADR-0005 bridge). */
   .prose-wrap .cite { align-self: flex-end; display: inline-flex; align-items: center; gap: var(--space-1); cursor: pointer; background: none; border: none; padding: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.7; color: var(--accent-2); transition: opacity 120ms ease, color 120ms ease; }
@@ -280,12 +273,4 @@
   .del { align-self: flex-start; cursor: pointer; font-size: 0.8rem; padding: 2px var(--space-1); background: none; border: none; border-radius: var(--radius-sm); color: var(--ink-paper-muted); transition: color 120ms ease; }
   .del:hover { color: var(--semantic-error); }
 
-  .add-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
-  /* Primary CTA — the ONE rationed signal on this surface: warm body text, signal-orange fill, paper ink,
-     soft warm glow (no hard pixel cascade, no press-down). Everything else here stays quiet. */
-  .add { align-self: flex-start; cursor: pointer; font-family: var(--font-body); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.01em; padding: var(--space-2) var(--space-3); background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-signal-glow); transition: background 140ms ease, box-shadow 140ms ease; }
-  .add:hover:not(:disabled) { background: var(--accent-hover); }
-  .add:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); box-shadow: none; cursor: default; }
-  .from-note { font-family: var(--font-ui); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; padding: var(--space-2) var(--space-2); cursor: pointer; background: var(--surface-canvas-raised); color: var(--ink-paper-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 120ms ease, border-color 120ms ease; }
-  .from-note:hover { border-color: var(--accent-2); color: var(--accent-2); }
 </style>

@@ -240,7 +240,7 @@
   .prose :global(img) { max-width: 100%; height: auto; border-radius: var(--radius-sm); margin-top: var(--space-2); }
   .prose :global(audio) { width: 100%; margin-top: var(--space-2); }
   /* Pulled quotes read as soft serif set off by a warm clay hairline rule. */
-  .prose :global(blockquote) { margin: var(--space-3) 0; padding: 0 0 0 var(--space-4); border-left: 1px solid var(--accent-3); font-family: var(--font-display); font-weight: 300; font-style: italic; font-size: 1.125rem; line-height: 1.55; color: var(--ink-paper-secondary); }
+  .prose :global(blockquote) { margin: var(--space-3) 0; padding: 0 0 0 var(--space-4); border-left: 1px solid var(--accent-3); font-family: var(--font-display-2); font-weight: 600; font-style: italic; font-size: 1.2rem; line-height: 1.5; color: var(--ink-paper-secondary); }
 
   /* Grid-index escape — a quiet canvas overlay, sibling to the legend (same warm-paper pill language).
      Anchored top-right of the canvas (the legend owns top-left); recedes so the read stays the star,

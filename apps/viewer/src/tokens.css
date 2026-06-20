@@ -1,68 +1,71 @@
-/* Archie design tokens — "Soft Static" reskin (hazy grain-soaked atmospheric system).
-   Blush→dusk gradient ground, soft-focus blur depth (NO hard shadow), warm ink, one rationed
-   signal-orange mark. Three voices: Fraunces (soft serif display) / Hanken Grotesk (body) /
-   Spline Sans Mono (quiet signal chrome). Semantic token NAMES preserved so component refs resolve.
+/* Archie design tokens — "Verdant Clearing" reskin (Sweat Sessions After, design/design.md v0.4).
+   Sun-dappled clearing: parchment ground, forest-shade gradient, soft-focus blur depth (NO hard
+   shadow — kept from Soft Static), moss ink, emerald signal + golden-amber second voice. Three
+   voices: Vinque Antique (ornate display) / LARAZ (clean body) / LARAZ (quiet chrome), with FOP VHS
+   reserved for the wordmark/marquee. Semantic token NAMES preserved so component refs resolve.
    NOTE: duplicated in apps/viewer/src/tokens.css — keep the two in sync. */
 
 :root {
-  /* ── Palette (Soft Static) ── */
-  --blush: #F1E2DC;        --rose-fog: #E0C5CB;     --lilac-mist: #D9BFCB;
-  --glow-coral: #D5897C;   --ember: #C56456;        --mist-blue: #8593A8;
-  --deep-slate: #586883;   --signal-orange: #F0631C;--cord-blue: #5C6BBE;
-  --clay-line: #B86450;    --moss-shadow: #2D3E33;  --paper: #FBF6F3;  --ink: #3B3138;
+  /* ── Palette (Verdant Clearing — names kept for resolution; values now green) ── */
+  --blush: #E9EEDF;        --rose-fog: #CDD8C2;     --lilac-mist: #C8D5C0;
+  --glow-coral: #84B894;   --ember: #3A8C5D;        --mist-blue: #6B7D6A;
+  --deep-slate: #2D5F3A;   --signal-orange: #3A8C5D;--cord-blue: #C9A96E;
+  --clay-line: #2D5F3A;    --moss-shadow: #1A3C23;  --paper: #F7F4EC;  --ink: #1A3C23;
 
-  /* ── Canvas (primary work surface — warm paper floating on the gradient ground) ── */
-  --surface-canvas: #FBF6F3;
-  --surface-canvas-raised: #FFFDFB;        /* lighter paper card — never pure white */
-  --surface-canvas-overlay: #F3E7E1;       /* blush-tinted overlay */
-  --ink-canvas-primary: #3B3138;           /* warm charcoal, never pure black */
-  --ink-canvas-secondary: rgba(59, 49, 56, 0.62);
-  --ink-canvas-muted: rgba(59, 49, 56, 0.45);
-  --border-canvas: rgba(59, 49, 56, 0.10);
-  --border-canvas-emphasis: rgba(59, 49, 56, 0.18);
+  /* ── Canvas (primary work surface — warm parchment floating on the gradient ground) ── */
+  --surface-canvas: #F7F4EC;
+  --surface-canvas-raised: #FDFCF5;        /* lighter cream card — never pure white */
+  --surface-canvas-overlay: #ECF0E3;       /* pale sage-tinted overlay */
+  --ink-canvas-primary: #1A3C23;           /* deep forest moss, never pure black */
+  --ink-canvas-secondary: rgba(26, 60, 35, 0.62);
+  --ink-canvas-muted: rgba(26, 60, 35, 0.45);
+  --border-canvas: rgba(26, 60, 35, 0.10);
+  --border-canvas-emphasis: rgba(26, 60, 35, 0.18);
 
-  /* ── Paper (reading / annotation side — same warm paper system) ── */
-  --surface-paper: #FBF6F3;
-  --surface-paper-card: #FFFDFB;
-  --surface-paper-hover: #F3E7E1;
-  --ink-paper-primary: #3B3138;
-  --ink-paper-secondary: rgba(59, 49, 56, 0.62);
-  --ink-paper-muted: rgba(59, 49, 56, 0.45);
-  --border-paper: rgba(59, 49, 56, 0.10);
-  --border-paper-emphasis: rgba(59, 49, 56, 0.18);
+  /* ── Paper (reading / annotation side — same warm parchment system) ── */
+  --surface-paper: #F7F4EC;
+  --surface-paper-card: #FDFCF5;
+  --surface-paper-hover: #ECF0E3;
+  --ink-paper-primary: #1A3C23;
+  --ink-paper-secondary: rgba(26, 60, 35, 0.62);
+  --ink-paper-muted: rgba(26, 60, 35, 0.45);
+  --border-paper: rgba(26, 60, 35, 0.10);
+  --border-paper-emphasis: rgba(26, 60, 35, 0.18);
 
-  /* ── Gallery wall (= the gradient ground; flat blush fallback) ── */
-  --surface-gallery: #F1E2DC;
+  /* ── Gallery wall (= the gradient ground; flat sage-cream fallback) ── */
+  --surface-gallery: #E9EEDF;
 
-  /* ── Accent — signal-orange. RATIONED: primary action / active state only. ── */
-  --accent: #F0631C;
-  --accent-hover: #FF7A3C;
-  --accent-muted: rgba(240, 99, 28, 0.12);
-  --ink-on-accent: #FBF6F3;                /* warm paper text on orange */
+  /* ── Accent — emerald. RATIONED: primary action / active state only. ── */
+  --accent: #3A8C5D;
+  --accent-hover: #46A06E;
+  --accent-muted: rgba(58, 140, 93, 0.14);
+  --ink-on-accent: #F7F4EC;                /* parchment text on emerald */
 
-  /* ── Accent (secondary) — cord-blue (links, connectors) ── */
-  --accent-2: #5C6BBE;
-  --accent-2-hover: #6E7CCB;
-  --accent-2-muted: rgba(92, 107, 190, 0.12);
-  --accent-2-paper: #5C6BBE;
-  --accent-2-paper-hover: #4B59A8;
-  --accent-2-paper-muted: rgba(92, 107, 190, 0.12);
+  /* ── Accent (secondary) — golden amber (links, connectors). Deep enough to read on parchment. ── */
+  --accent-2: #9A7B39;
+  --accent-2-hover: #B8954A;
+  --accent-2-muted: rgba(154, 123, 57, 0.14);
+  --accent-2-paper: #9A7B39;
+  --accent-2-paper-hover: #836425;
+  --accent-2-paper-muted: rgba(154, 123, 57, 0.12);
 
-  /* ── Accent (tertiary) — clay (warm line-art, subtle highlights) ── */
-  --accent-3: #B86450;
-  --accent-3-hover: #C56456;
-  --accent-3-muted: rgba(184, 100, 80, 0.12);
+  /* ── Accent (tertiary) — hunter (deep green line-art, subtle highlights) ── */
+  --accent-3: #2D5F3A;
+  --accent-3-hover: #366E45;
+  --accent-3-muted: rgba(45, 95, 58, 0.12);
 
-  /* ── Semantic — warm-harmonized so signals sit in the haze ── */
-  --semantic-success: #6E8B6A;
-  --semantic-warning: #C68A3E;
-  --semantic-error: #C0503C;
+  /* ── Semantic — kept distinct from the emerald accent / amber link ── */
+  --semantic-success: #5E9648;             /* leaf green — yellower than the emerald accent */
+  --semantic-warning: #C68A3E;             /* ochre */
+  --semantic-error: #BC4A36;               /* warm rust — errors stay red */
 
-  /* ── Typography (Soft Static three-voice stack — never cross the roles) ── */
-  --font-display: "Fraunces", Georgia, serif;          /* soft optical serif — display/hero/quotes */
-  --font-body: "Hanken Grotesk", system-ui, sans-serif;/* calm humanist body + interactive text */
-  --font-ui: "Spline Sans Mono", ui-monospace, monospace; /* quiet signal chrome: eyebrows/captions/labels */
-  --font-mono: "Spline Sans Mono", ui-monospace, monospace;
+  /* ── Typography (Verdant — FOP VHS leads display, Vinque second fiddle, LARAZ body/chrome) ── */
+  --font-marquee: "FOP VHS", "Arial Black", sans-serif;      /* glitch display — wordmark / hero marquee */
+  --font-display: "FOP VHS", "Arial Black", sans-serif;      /* PRIMARY display — all headings & titles (FOP VHS leads) */
+  --font-display-2: "Vinque Antique", Georgia, serif;        /* ornate SECOND-FIDDLE display — italic quotes, numerals, seals */
+  --font-body: "LARAZ", system-ui, sans-serif;               /* clean modern body + interactive text */
+  --font-ui: "LARAZ", system-ui, sans-serif;                 /* quiet chrome: eyebrows/captions/labels (wide-tracked) */
+  --font-mono: "LARAZ", ui-monospace, monospace;
 
   /* ── Type scale (UI) ── */
   --text-ui-sm: 0.8125rem; --text-ui-xs: 0.7rem; --text-ui-md: 0.75rem;
@@ -71,26 +74,26 @@
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
 
-  /* ── Radius — soft & generous (echoes the soft focus) ── */
+  /* ── Radius — soft & generous (kept from Soft Static) ── */
   --radius-sm: 10px; --radius-md: 16px; --radius-lg: 20px;
 
-  /* ── Soft blur shadows (wide, low-opacity, warm charcoal — never a hard offset) ── */
-  --shadow-lift-low: 0 24px 48px -24px rgba(59, 49, 56, 0.30);
-  --shadow-lift-mid: 0 40px 80px -32px rgba(59, 49, 56, 0.38);
-  --shadow-signal-glow: 0 18px 60px -12px rgba(240, 99, 28, 0.55);
-  --shadow-text-haze: 0 2px 24px rgba(59, 49, 56, 0.18);
-  --shadow-inset-fog: inset 0 0 120px 40px rgba(217, 191, 203, 0.45);
+  /* ── Soft blur shadows (wide, low-opacity, moss — never a hard offset; kept from Soft Static) ── */
+  --shadow-lift-low: 0 24px 48px -24px rgba(26, 60, 35, 0.30);
+  --shadow-lift-mid: 0 40px 80px -32px rgba(26, 60, 35, 0.38);
+  --shadow-signal-glow: 0 18px 60px -12px rgba(58, 140, 93, 0.50);
+  --shadow-text-haze: 0 2px 24px rgba(26, 60, 35, 0.18);
+  --shadow-inset-fog: inset 0 0 120px 40px rgba(168, 230, 207, 0.30);
 
   /* ── Gradients ── */
-  --ground-gradient: linear-gradient(180deg, #F1E2DC 0%, #E0C5CB 34%, #D9BFCB 50%, #8593A8 78%, #586883 100%);
-  --focal-bloom: radial-gradient(ellipse 38% 60% at 50% 38%, #C56456 0%, rgba(197,100,86,0.45) 30%, rgba(213,137,124,0.18) 55%, transparent 75%);
-  --signal-sheen: linear-gradient(155deg, #FF7A3C 0%, #F0631C 55%, #D24E12 100%);
-  --vignette: radial-gradient(ellipse 90% 90% at 50% 46%, transparent 55%, rgba(59, 49, 56, 0.22) 100%);
+  --ground-gradient: linear-gradient(180deg, #E9EEDF 0%, #CDD8C2 34%, #C8D5C0 50%, #88A98F 78%, #2D5F3A 100%);
+  --focal-bloom: radial-gradient(ellipse 38% 60% at 50% 38%, #3A8C5D 0%, rgba(58,140,93,0.45) 30%, rgba(132,184,148,0.18) 55%, transparent 75%);
+  --signal-sheen: linear-gradient(155deg, #46A06E 0%, #3A8C5D 55%, #2D5F3A 100%);
+  --vignette: radial-gradient(ellipse 90% 90% at 50% 46%, transparent 55%, rgba(26, 60, 35, 0.22) 100%);
 
-  /* ── Legacy aliases: 8-Bit Orbit token names → Soft Static, so components still on the old
-       palette degrade to soft styling until the component pass rewrites them. ── */
-  --void: #586883; --deep-navy: #46566f;
-  --neon-cyan: #5C6BBE; --neon-pink: #B86450; --neon-yellow: #F0631C; --soft-lavender: #D9BFCB;
+  /* ── Legacy aliases: older palette token names → Verdant, so components still on the old
+       palette degrade to verdant styling until the component pass rewrites them. ── */
+  --void: #2D5F3A; --deep-navy: #244C30;
+  --neon-cyan: #3A8C5D; --neon-pink: #2D5F3A; --neon-yellow: #C9A96E; --soft-lavender: #C8D5C0;
   --pixel-unit: 4px; --grid-size: 40px; --border-pixel: 1px; --border-pixel-bold: 2px;
   --bg-grid: none;
   --shadow-pixel: var(--shadow-lift-low);
@@ -107,7 +110,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; font-family: var(--font-body); color: var(--ink-canvas-primary); }
 
-/* Eyebrow — Soft Static: a quiet tracked uppercase mono line. No box, no fill; low opacity so it
+/* Eyebrow — Verdant: a quiet tracked uppercase chrome line. No box, no fill; low opacity so it
    feels found, not announced. Shared across both apps. */
 .eyebrow {
   font-family: var(--font-ui);
@@ -115,5 +118,5 @@ body { margin: 0; font-family: var(--font-body); color: var(--ink-canvas-primary
   font-weight: 400;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: rgba(59, 49, 56, 0.55);
+  color: rgba(26, 60, 35, 0.55);
 }

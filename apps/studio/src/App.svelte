@@ -340,6 +340,23 @@
   // fragment no-ops on the spatial canvas anyway (AV uses AvEditor, which takes no focus).
   const focusSection = $derived((currentExhibit?.sections ?? []).find((s) => s.id === focusSectionId) ?? null);
   const canvasFocus = $derived(focusSection && focusSection.objectId === currentObjectId ? (focusSection.start ?? null) : null);
+  // Section count for the Narrative accordion header (shown even when that panel is collapsed).
+  const narrativeSectionCount = $derived((currentExhibit?.sections ?? []).length);
+  // Section creation lives in App now (NarrativeEditor is display-only): the narrative panel's create row —
+  // OUTSIDE the collapsing body, always reachable — calls these. A new section is anchored to the item you're
+  // viewing; "from a note" seeds object + camera + prose from an existing Note (ADR-0005 model-(A) mitigation).
+  const newSectionId = () => `s-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
+  function addSection() {
+    if (!currentObjectId) return;
+    const secs = currentExhibit?.sections ?? [];
+    setSections([...secs, { id: newSectionId(), title: `Section ${secs.length + 1}`, objectId: currentObjectId }]);
+    openPanelTo("narrative"); // auto-expand: reveal the new section in the spine
+  }
+  function addSectionFromNote(n: { objectId: string; start?: string; lead: string }) {
+    const secs = currentExhibit?.sections ?? [];
+    setSections([...secs, { id: newSectionId(), title: `Section ${secs.length + 1}`, objectId: n.objectId, ...(n.start ? { start: n.start } : {}), prose: n.lead }]);
+    openPanelTo("narrative"); // auto-expand: reveal the new section in the spine
+  }
 
   // --- note editing POPOVER (ADR-0006): the WADM form anchors to the selected marker on the image canvas
   // instead of sitting at the bottom of a scrolling sidebar. `notePos` is streamed up from Canvas
@@ -388,6 +405,31 @@
       if (s.width == null) localStorage.removeItem(ASIDE_W_KEY); else localStorage.setItem(ASIDE_W_KEY, String(Math.round(s.width)));
       localStorage.setItem(ASIDE_COLLAPSED_KEY, s.collapsed ? "1" : "0");
     } catch { /* private mode — size simply resets next load, harmless */ }
+  }
+
+  // Editor-sidebar ACCORDION: the exhibit-wide Narrative spine and the object-local Notes were fighting for
+  // vertical space with no signal they're different SCOPES. They're now two EXCLUSIVE panels — opening one
+  // collapses the other, so only one ever takes space. `openPanel` is the single open panel, or null = both
+  // collapsed to their (scope + count) headers. Persisted per the archie.*.v1 metadata idiom. Default: Notes
+  // (the per-object annotate loop is the most frequent task; the Narrative is reached deliberately).
+  const PANEL_KEY = "archie.editorPanel.v1";
+  function loadPanel(): "narrative" | "notes" | null { try { const v = localStorage.getItem(PANEL_KEY); return v === "narrative" ? "narrative" : v === "none" ? null : "notes"; } catch { return "notes"; } }
+  let openPanel = $state<"narrative" | "notes" | null>(loadPanel());
+  function togglePanel(p: "narrative" | "notes") {
+    openPanel = openPanel === p ? null : p; // click the open one → collapse all; click a collapsed one → open it (the other closes)
+    try { localStorage.setItem(PANEL_KEY, openPanel ?? "none"); } catch { /* private mode — resets next load, harmless */ }
+  }
+  // AUTO-EXPAND rules — because the create tools sit OUTSIDE the panels (always reachable), completing a create
+  // action opens the matching panel so you SEE the result:
+  //   • Narrative opens when you ADD A SECTION (addSection / addSectionFromNote).
+  //   • Notes opens when you CREATE A NOTE — draw a region (onCreate), mark an AV moment (onCreateTime), or
+  //     import notes (CSV / WADM / transcript).
+  // Framing a camera and card-navigation DON'T auto-expand: those controls live in the spine body, so the
+  // Narrative panel is already open. TRANSIENT — auto-expand does NOT persist (only a manual togglePanel writes
+  // the default); a single create shouldn't silently change which panel opens next session.
+  function openPanelTo(p: "narrative" | "notes") {
+    if (openPanel === p) return;
+    openPanel = p; // no localStorage write — transient reveal, not a persisted preference (see note above)
   }
 
   // Pin the note editor to a docked side inspector (ADR-0006's sanctioned fallback) instead of the
@@ -592,7 +634,7 @@
   }
   // Reading colours (ADR-0007: colour identifies the reading; the viewer legend is a colour radio). The
   // curator may PICK one (Archie-1489) — auto-cycled as the sensible default so naming-and-go still works.
-  const READING_PALETTE = ["#3a6b4c", "#a3553a", "#4c5d8a", "#8a6d3b", "#6b4c8a", "#3a7d8a"];
+  const READING_PALETTE = ["#3A8C5D", "#a3553a", "#4c5d8a", "#8a6d3b", "#6b4c8a", "#3a7d8a"];
   function setNoteReading(reading: string | null) {
     if (!editing) return;
     sess.session.editNote(editing as LogicalId, { reading });
@@ -655,7 +697,7 @@
   // Live marker styling (Archie-1489) — mirrors the viewer's readingStyleOf so the curator authors against
   // what a visitor sees. Colour = the note's reading (ADR-0007); reading-less notes get a neutral forest-
   // green default (so base marks are visible). Per-note emphasis modulates opacity/weight ONLY, never hue.
-  const BASE_MARKER = "#3a6b4c"; // forest green — the base (reading-less) note default
+  const BASE_MARKER = "#3A8C5D"; // forest green — the base (reading-less) note default
   // The active reading (the pen's destination), shaped for the draw-time cue (P1): name + colour,
   // falling back to base ("General notes" / the base hue) when the pen is on base. `find ?? null`
   // dodges the BASE-url collision — base is never in currentReadings, so a miss means base.
@@ -706,6 +748,7 @@
     bump();
     selected = id;
     creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
+    openPanelTo("notes"); // auto-expand: the new note lands in the present-notes list
   }
   // Geometry edit on canvas → re-derive geo-truth on a Map (null clears it if the new shape is unparseable).
   const onUpdate = (a: W3CAnnotation) => { sess.session.editNote(a.id as LogicalId, { target: a.target, ...(isMapCurrent ? { geo: geoForTarget(a.target, currentTileSource) ?? null } : {}) }); bump(); };
@@ -725,6 +768,7 @@
     const id = sess.session.createNote({ target, body: [{ type: "TextualBody", value: "", purpose: "supplementing" }], motivation: "supplementing" });
     bump();
     selected = id;
+    openPanelTo("notes"); // auto-expand: the new time note lands in the present-notes list
   }
   // Import a WebVTT/SRT transcript for the current AV object → supplementing time notes. APPEND-ONLY
   // (archie-av Q-1, advisor): each cue becomes a new note even if it overlaps existing ones — no
@@ -733,7 +777,7 @@
     const cued = importTranscript([], text, { source: canvasId, lastEditor: author });
     let n = 0;
     for (const r of cued) { sess.session.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; }
-    if (n > 0) { bump(); }
+    if (n > 0) { bump(); openPanelTo("notes"); } // auto-expand: reveal the imported transcript time-notes (mirrors CSV/WADM)
   }
 
   // --- WADM form helpers ---
@@ -985,7 +1029,7 @@
     onopen={openExhibit}
     oncreate={newExhibit}
     oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add that folder."); }); }}
-    oncreatefrommanifest={(url) => { flows.newExhibitFromManifest(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't add an exhibit from that IIIF link."); }); }}
+    oncreatefrommanifest={(url) => { flows.newExhibitFromManifest(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
     {isTemplate}
     binding={bnd.binding}
     bindingDirty={bnd.dirty}
@@ -1102,11 +1146,11 @@
         <span class="add-obj-head">Add media to “{currentExhibit?.title ?? "this exhibit"}”</span>
         <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; void flows.addFiles(el.files).then(() => (el.value = "")); }} /></label>
         <span class="or">or</span>
-        <input bind:value={addSource} placeholder="Link to an image, audio, or video" aria-label="Object source URL" title="Best for large files: a link points to the media where it already lives instead of copying it in, so your library file (.archie.zip) stays small." />
+        <input bind:value={addSource} placeholder="Link to an image, audio, or video" aria-label="Object source URL" title="A link points to the media where it lives, so your library stays small." />
         <input class="lbl" bind:value={addLabel} placeholder="Label" aria-label="Object label" />
         <button type="submit" disabled={addSource.trim() === ""}>Add</button>
         <button type="button" class="cancel" onclick={() => { addingObject = false; addSource = ""; addLabel = ""; }}>✕</button>
-        <span class="add-obj-hint">Files are kept in this browser (you won’t see them in a folder). Use <strong>Publish</strong> to save them as a file you can share or keep.</span>
+        <span class="add-obj-hint">Files live in this browser. Use <strong>Publish</strong> to save them as a shareable file.</span>
       </form>
     {:else}
       <button class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Media</button>
@@ -1128,7 +1172,7 @@
     <!-- Loud cue that the canvas is in camera-framing mode, not note-drawing — with the way out. -->
     <div class="framing-banner" role="status">
       <span class="fb-tag">Setting the view</span>
-      <span class="fb-msg">{isAvCurrent ? "Hit “Mark start” on the recording to set where this section opens — this sets the view, not a note." : "Draw a box on the image to set what this section shows when a visitor reaches it — this sets the view, not a note."}</span>
+      <span class="fb-msg">{isAvCurrent ? "Mark a moment on the recording to set where this section opens — the view, not a note." : "Draw a box to set what this section shows — the view, not a note."}</span>
       <button class="fb-cancel" onclick={cancelFraming}>Cancel <kbd>Esc</kbd></button>
     </div>
   {:else if creating}
@@ -1137,7 +1181,7 @@
     <div class="framing-banner" role="status">
       <span class="fb-tag">Drawing a region</span>
       <span class="fb-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"} — it becomes your note’s place{isMapCurrent ? ", anchored to its longitude/latitude" : ""}. Drag pans again once you’ve drawn.</span>
-      <span class="fb-into" title="This note files into the active reading — the ✎ pen in the readings panel sets which.">Filing into <span class="fb-rd" style={`border-color:${activeReadingColour}`}>{activeReadingLabel}</span></span>
+      <span class="fb-into" title="This note files into the active reading (the pen in the readings panel).">Filing into <span class="fb-rd" style={`border-color:${activeReadingColour}`}>{activeReadingLabel}</span></span>
       <button class="fb-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
     </div>
   {/if}
@@ -1169,7 +1213,7 @@
             <!-- No in-Studio narrative preview surface exists yet (Publish writes the whole site to the
                  Viewer's folder — not a lightweight in-place preview). Per the build rule, this is a marked
                  TODO, NOT a fabricated preview. [SNAG] Owed: an in-Studio "preview how it opens" reader. -->
-            <button type="button" class="nc-preview" disabled title="Coming soon — preview the visitor's reading view from inside the Studio (TODO: in-Studio narrative preview)">Preview how it opens</button>
+            <button type="button" class="nc-preview" disabled title="Coming soon — preview the visitor's reading view from the Studio">Preview how it opens</button>
             <button type="button" class="nc-dismiss" onclick={dismissFirstAddCue} aria-label="Dismiss">Got it</button>
           </div>
         </div>
@@ -1179,107 +1223,162 @@
              door, so confirm first (the only section delete that confirms; non-last deletes are silent).
              Transient — NOT persisted; it must fire every time the narrative is genuinely cleared. -->
         <div class="narrative-cue confirm" role="alert" aria-label="Remove the last section">
-          <p class="nc-msg">Remove the last section? Your exhibit goes back to opening with the media grid.</p>
+          <p class="nc-msg">Remove the last section? Your exhibit will open with the media grid instead.</p>
           <div class="nc-actions">
             <button type="button" class="nc-keep" onclick={cancelClear}>Keep it</button>
             <button type="button" class="nc-remove" onclick={confirmClear}>Remove</button>
           </div>
         </div>
       {/if}
-      <NarrativeEditor
-        sections={currentExhibit?.sections ?? []}
-        objects={OBJECTS}
-        {currentObjectId}
-        activeSectionId={focusSectionId}
-        framingId={framingSectionId}
-        notes={narrativeNotes}
-        cleared={clearedSlug === currentSlug}
-        onchange={setSections}
-        onframe={startFraming}
-        oncancelframe={cancelFraming}
-        onnavigate={navigateToSection}
-        onrequestcite={requestCite}
-      />
-      <div class="scope-sep"><span>This object</span></div>
-      {#if current}
-        <!-- editable object label (authored structure; persists). Enter or blur commits. -->
-        <input
-          class="object-title"
-          value={current.label}
-          onchange={(e) => renameObject(currentObjectId, (e.currentTarget as HTMLInputElement).value)}
-          onkeydown={(e) => { if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur(); }}
-          aria-label="Object label"
-        />
-      {/if}
-      <h2 class="eyebrow">{notes.length} {notes.length === 1 ? "note" : "notes"}</h2>
-      {#if current && !isAvCurrent}
-        <!-- ADR-0011: drawing is armed only by creating a note. Choose a shape, draw the region on the
-             image, and the note is created at that locus — the canvas then returns to ambient selection. -->
-        {#if creating}
-          <div class="new-note armed" role="status">
-            <span class="nn-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"}</span>
-            <span class="nn-into" title="New notes file into the active reading — the ✎ pen below sets which.">→ <span class="nn-rd" style={`border-color:${activeReadingColour}`}>{activeReadingLabel}</span></span>
-            <button type="button" class="nn-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
-          </div>
-        {:else}
-          <div class="new-note">
-            <span class="nn-lead">New note</span>
-            <!-- Geo-annotations reuse Box/Outline on a Map (no pin tool — 2026-06-18 grilling Q4); geo-truth is captured on draw. -->
-            <button type="button" onclick={() => (creating = "rectangle")} title={isMapCurrent ? "Draw a rectangular region on the map" : "Draw a rectangular region"}>▭ Box</button>
-            <button type="button" onclick={() => (creating = "polygon")} title={isMapCurrent ? "Trace an irregular region on the map" : "Trace an irregular outline"}>⬠ Outline</button>
+      <!-- ── PANEL 1 · NARRATIVE (exhibit-wide) — the spine spans EVERY item in this exhibit and persists as you
+           switch objects on the rail. EXCLUSIVE accordion with Notes below (togglePanel): opening one collapses
+           the other, so the two scopes never fight for height. The header carries scope + count when collapsed. -->
+      <section class="panel" class:open={openPanel === "narrative"}>
+        <button type="button" class="panel-head" aria-expanded={openPanel === "narrative"} aria-controls={openPanel === "narrative" ? "panel-body-narrative" : undefined} onclick={() => togglePanel("narrative")}>
+          <span class="ph-caret" aria-hidden="true">{openPanel === "narrative" ? "▾" : "▸"}</span>
+          <span class="ph-title">Narrative</span>
+          <span class="ph-scope">{OBJECTS.length > 0 ? "Spans every item" : "Exhibit-wide"}</span>
+          {#if openPanel !== "narrative" && narrativeSectionCount > 0}
+            <!-- Collapsed with hidden content → the count shows as a pill (you can see N sections are under it). -->
+            <span class="count-pill" aria-label={`${narrativeSectionCount} ${narrativeSectionCount === 1 ? "section" : "sections"}`}>{narrativeSectionCount}</span>
+          {:else}
+            <span class="ph-count">{narrativeSectionCount > 0 ? `${narrativeSectionCount} ${narrativeSectionCount === 1 ? "section" : "sections"}` : "Not started"}</span>
+          {/if}
+        </button>
+        <!-- Creation lives OUTSIDE the collapsing body (always reachable, even when the spine is collapsed):
+             add a section, or seed one from an existing note. App owns the add — the spine is display-only. -->
+        <div class="panel-create">
+          <button type="button" class="create-add" onclick={addSection} disabled={OBJECTS.length === 0} title="Add a new section to this exhibit's narrative">＋ Add a section</button>
+          {#if narrativeNotes.length > 0}
+            <select class="from-note" aria-label="Add a section from an existing note"
+              onchange={(e) => { const el = e.currentTarget as HTMLSelectElement; const n = narrativeNotes.find((x) => x.id === el.value); if (n) addSectionFromNote(n); el.selectedIndex = 0; }}>
+              <option value="">＋ from a note…</option>
+              {#each narrativeNotes as n (n.id)}<option value={n.id}>{n.lead.slice(0, 40)}</option>{/each}
+            </select>
+          {/if}
+        </div>
+        {#if openPanel === "narrative"}
+          <div class="panel-body" id="panel-body-narrative">
+            <NarrativeEditor
+              sections={currentExhibit?.sections ?? []}
+              objects={OBJECTS}
+              {currentObjectId}
+              activeSectionId={focusSectionId}
+              framingId={framingSectionId}
+              cleared={clearedSlug === currentSlug}
+              onchange={setSections}
+              onframe={startFraming}
+              oncancelframe={cancelFraming}
+              onnavigate={navigateToSection}
+              onrequestcite={requestCite}
+            />
           </div>
         {/if}
-      {/if}
-      {#if notes.length === 0}
-        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Press play, hit “Mark start” at the moment you mean, then “Add note” to pin one there." : objNotes.length > 0 ? "This media item has notes, but they’re hidden right now. Switch a reading on in the panel beside the image to show them." : "No notes on this media item yet. Start one above — pick Box or Outline, then draw the region it points to."}</p>
-      {/if}
-      <ul>
-        {#each notes as r (r.rev)}
-          <!-- Hovering a note solos its MARK on the canvas (the rail's hover affordance, per-note). -->
-          <li class:sel={editing === r.logicalId} onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}>
-            <button onclick={() => (selected = r.logicalId)}>
-              <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
-              <div class="meta">
-                {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
-                {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
-                <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
-                {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}>General notes</span>{/if}
+      </section>
+
+      <!-- ── PANEL 2 · NOTES (this item) — notes are OBJECT-LOCAL: they belong to the one media item you're viewing
+           and SWAP as you switch objects (unlike the exhibit-wide spine above). Two groups inside: "Add a note"
+           (the creation tools) and "On this item" (the notes already present). -->
+      <section class="panel" class:open={openPanel === "notes"}>
+        <button type="button" class="panel-head" aria-expanded={openPanel === "notes"} aria-controls={openPanel === "notes" ? "panel-body-notes" : undefined} onclick={() => togglePanel("notes")}>
+          <span class="ph-caret" aria-hidden="true">{openPanel === "notes" ? "▾" : "▸"}</span>
+          <span class="ph-title">Notes</span>
+          <span class="ph-scope">This item only{current ? ` · ${current.label}` : ""}</span>
+          {#if openPanel !== "notes" && notes.length > 0}
+            <!-- Collapsed with hidden content → the count shows as a pill (you can see N notes are under it). -->
+            <span class="count-pill" aria-label={`${notes.length} ${notes.length === 1 ? "note" : "notes"}`}>{notes.length}</span>
+          {:else}
+            <span class="ph-count">{notes.length} {notes.length === 1 ? "note" : "notes"}</span>
+          {/if}
+        </button>
+        <!-- Creation OUTSIDE the collapsing body (always reachable): the note-drawing tools + bulk import. The
+             panel body below holds only what's already on this item — the present-notes list. -->
+        <div class="panel-create notes-create">
+          {#if current && !isAvCurrent}
+            <!-- ADR-0011: drawing is armed only by creating a note. Choose a shape, draw the region on the
+                 image, and the note is created at that locus — the canvas then returns to ambient selection. -->
+            {#if creating}
+              <div class="new-note armed" role="status">
+                <span class="nn-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"}</span>
+                <span class="nn-into" title="New notes file into the active reading — the ✎ pen below sets which.">→ <span class="nn-rd" style={`border-color:${activeReadingColour}`}>{activeReadingLabel}</span></span>
+                <button type="button" class="nn-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
               </div>
-            </button>
-          </li>
-        {/each}
-      </ul>
-      {#if current && !isAvCurrent}
-        <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
-        <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Bring notes in from a spreadsheet. Columns: object, x, y, w, h, comment (tags and reading are optional), with a header row first. In the object column, use a media item’s label — or leave it blank to use the one you’re on.">… or add notes from a CSV</button>
-        <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
-          onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
-      {/if}
-      <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
-      <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="Add notes exported from Archie or another annotation tool. Notes attach to the matching media item in this exhibit.">… or add notes from a file</button>
-      <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Add notes from a file"
-        onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesWadm(f).catch((err) => { console.error("Notes add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
-      <p class="hint">{isAvCurrent ? "Press play · “Mark start” then “Add note” pins a note to that moment (on video, “Draw a box on the video” points at a spot too) · click any note to jump back to it and edit." : "Start a new note · pick a shape · draw the region it points to · click a marker to edit that note right where it sits — its editor stays pinned to it as you pan and zoom."}</p>
+            {:else}
+              <div class="new-note">
+                <span class="nn-lead">New note</span>
+                <!-- Geo-annotations reuse Box/Outline on a Map (no pin tool — 2026-06-18 grilling Q4); geo-truth is captured on draw. -->
+                <button type="button" onclick={() => (creating = "rectangle")} title={isMapCurrent ? "Draw a rectangular region on the map" : "Draw a rectangular region"}>▭ Box</button>
+                <button type="button" onclick={() => (creating = "polygon")} title={isMapCurrent ? "Trace an irregular region on the map" : "Trace an irregular outline"}>⬠ Outline</button>
+              </div>
+            {/if}
+          {/if}
+          {#if current && !isAvCurrent}
+            <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
+            <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, x, y, w, h, comment (tags and reading optional), header row first. In the object column, use a media item’s label, or leave blank for the current one.">… or add notes from a CSV</button>
+            <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
+              onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesCsv(f).then(() => openPanelTo("notes")).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+          {/if}
+          <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
+          <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="Import notes from Archie or another annotation tool.">… or add notes from a file</button>
+          <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Add notes from a file"
+            onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesWadm(f).then(() => openPanelTo("notes")).catch((err) => { console.error("Notes add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+          <p class="hint">{isAvCurrent ? "Play the recording · “Mark start” then “Add note” pins a note to that moment · click any note to jump back and edit." : "Pick a shape · draw the region · click a marker to edit — the editor stays pinned as you pan and zoom."}</p>
+        </div>
+        {#if openPanel === "notes"}
+          <div class="panel-body notes-body" id="panel-body-notes">
+            {#if current}
+              <!-- editable object label (authored structure; persists). Enter or blur commits. -->
+              <input
+                class="object-title"
+                value={current.label}
+                onchange={(e) => renameObject(currentObjectId, (e.currentTarget as HTMLInputElement).value)}
+                onkeydown={(e) => { if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur(); }}
+                aria-label="Object label"
+              />
+            {/if}
+            <!-- What's already on this item — the present-notes list (empty-state when none or all hidden). -->
+            {#if notes.length === 0}
+              <p class="empty">{isAvCurrent ? "No notes on this recording yet. Mark a moment, then add a note to pin it." : objNotes.length > 0 ? "This media item has notes, but they’re hidden. Turn on a reading to show them." : "No notes on this media item yet. Pick Box or Outline above, then draw the region."}</p>
+            {/if}
+            <ul>
+              {#each notes as r (r.rev)}
+                <!-- Hovering a note solos its MARK on the canvas (the rail's hover affordance, per-note). -->
+                <li class:sel={editing === r.logicalId} onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}>
+                  <button onclick={() => (selected = r.logicalId)}>
+                    <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
+                    <div class="meta">
+                      {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
+                      {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
+                      <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
+                      {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}>General notes</span>{/if}
+                    </div>
+                  </button>
+                </li>
+              {/each}
+            </ul>
 
-      <!-- All notes (image / audio / video) edit in the marker popover anchored to their locus (in <main>);
-           the sidebar is nav + the narrative spine only — no inline form (ADR-0006). -->
+            <!-- All notes (image / audio / video) edit in the marker popover anchored to their locus (in <main>);
+                 the sidebar is creation + the present-notes list — no inline form (ADR-0006). -->
 
-      <!-- Object-level rights (rights grill Q6): an INLINE disclosure in the object editor — you're
-           already editing this object, so no separate drawer. Object = the truest provenance level. -->
-      {#if current}
-        <details class="rights-disc">
-          <summary>Details &amp; rights{#if current.summary || current.rights || current.requiredStatement}<span class="dot" title="Set for this object">●</span>{/if}</summary>
-          <DetailsEditor
-            showTitle={false}
-            summary={current.summary ?? ""}
-            rights={{ ...(current.rights ? { rights: current.rights } : {}), ...(current.requiredStatement ? { requiredStatement: current.requiredStatement } : {}) }}
-            scope="object"
-            onsummary={setObjectSummary}
-            onrights={setObjectRights}
-            onremove={removeCurrentObject}
-          />
-        </details>
-      {/if}
+            <!-- Object-level rights (rights grill Q6): an INLINE disclosure in the object editor — you're already
+                 editing this object, so no separate drawer. Object = the truest provenance level. -->
+            {#if current}
+              <details class="rights-disc">
+                <summary>Details &amp; rights{#if current.summary || current.rights || current.requiredStatement}<span class="dot" title="Set for this object">●</span>{/if}</summary>
+                <DetailsEditor
+                  showTitle={false}
+                  summary={current.summary ?? ""}
+                  rights={{ ...(current.rights ? { rights: current.rights } : {}), ...(current.requiredStatement ? { requiredStatement: current.requiredStatement } : {}) }}
+                  scope="object"
+                  onsummary={setObjectSummary}
+                  onrights={setObjectRights}
+                  onremove={removeCurrentObject}
+                />
+              </details>
+            {/if}
+          </div>
+        {/if}
+      </section>
     </aside>
     <ResizeDivider side="left" label="notes" min={260} max={760} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={persistAside} />
     <main
@@ -1324,7 +1423,7 @@
         <div class="note-popover" role="group" aria-label="Note editor" style={`left:${notePopoverPos.left}px; top:${notePopoverPos.top}px`} onpointerdown={(e) => e.stopPropagation()}>
           <div class="np-head">
             <button type="button" class="np-grip" onpointerdown={noteDragDown} onpointermove={noteDragMove} onpointerup={noteDragUp} onpointercancel={noteDragUp} title="Drag to move" aria-label="Move the note editor">⠿</button>
-            <button type="button" class="np-pin" onclick={() => { notePinned = true; persistPinned(); }} title="Pin to a docked side panel" aria-label="Pin the note editor to a side panel">⤢</button>
+            <button type="button" class="np-pin" onclick={() => { notePinned = true; persistPinned(); }} title="Pin to a side panel" aria-label="Pin the note editor to a side panel">⤢</button>
           </div>
           {@render noteForm()}
         </div>
@@ -1467,9 +1566,36 @@
   .framing-banner .fb-rd { font-weight: 500; letter-spacing: 0; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
 
   /* Scope separator — the line between exhibit-level (spine, above) and object-level (notes, below). */
-  .scope-sep { display: flex; align-items: center; gap: var(--space-2); margin: 0 0 var(--space-3); }
-  .scope-sep::after { content: ""; flex: 1; height: 1px; background: var(--border-paper); }
-  .scope-sep span { font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 400; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  /* Editor-sidebar ACCORDION (replaces the old flat scope-sep): the exhibit-wide Narrative spine and the
+     object-local Notes are two EXCLUSIVE panels (togglePanel) — opening one collapses the other so the two
+     scopes never fight for height. Each header carries its scope + count even when collapsed. Full-bleed to
+     the aside edges (negative margin cancels the aside's space-5 gutter) so the headers read as bands. */
+  .panel { margin: 0 calc(-1 * var(--space-5)); border-bottom: 1px solid var(--border-paper); }
+  .panel:first-of-type { border-top: 1px solid var(--border-paper); }
+  .panel-head { display: flex; align-items: center; gap: var(--space-2); width: 100%; padding: var(--space-3) var(--space-5); background: none; border: none; cursor: pointer; text-align: left; transition: background 140ms ease; }
+  .panel-head:hover, .panel.open > .panel-head { background: var(--surface-paper-hover); }
+  .panel-head .ph-caret { font-size: 0.7rem; line-height: 1; color: var(--ink-paper-muted); }
+  .panel-head .ph-title { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; line-height: 1; color: var(--ink-paper-primary); }
+  .panel-head .ph-scope { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  .panel-head .ph-count { margin-left: auto; flex: none; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); letter-spacing: 0.04em; color: var(--ink-paper-muted); white-space: nowrap; }
+  /* Count pill — on a COLLAPSED accordion with hidden content, the item count shows as a pill so you can see
+     there are N things under it without expanding. (Open panels show the descriptive count text instead.) */
+  .panel-head .count-pill { margin-left: auto; flex: none; display: inline-flex; align-items: center; justify-content: center; min-width: 1.45rem; padding: 1px var(--space-2); font-family: var(--font-ui); font-size: 0.72rem; font-weight: 600; line-height: 1.5; color: var(--ink-paper-primary); background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis); border-radius: 999px; }
+  .panel-body { padding: var(--space-2) var(--space-5) var(--space-4); }
+  /* Always-visible CREATE row, between a panel's header and its (collapsing) body — the creation tools live
+     OUTSIDE the accordion so you can add a section / note without expanding the panel. Full-bleed gutter like
+     the header; when the panel is open, a hairline separates create from the content below. */
+  .panel-create { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); padding: var(--space-2) var(--space-5) var(--space-3); }
+  .panel.open > .panel-create { border-bottom: 1px solid var(--border-paper); }
+  /* Notes create stacks its rows (draw tools → import links → hint); narrative create stays inline. */
+  .notes-create { flex-direction: column; align-items: stretch; }
+  /* Primary CTA — the ONE rationed signal here: signal-orange fill, warm body text, soft glow. */
+  .create-add { align-self: flex-start; cursor: pointer; font-family: var(--font-body); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.01em; padding: var(--space-2) var(--space-3); background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-signal-glow); transition: background 140ms ease; }
+  .create-add:hover:not(:disabled) { background: var(--accent-hover); }
+  .create-add:disabled { background: var(--accent-muted); color: var(--ink-paper-muted); box-shadow: none; cursor: default; }
+  /* "+ from a note…" — a quiet secondary select beside the Add CTA (seed a section from an existing note). */
+  .from-note { font-family: var(--font-ui); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; padding: var(--space-2); cursor: pointer; background: var(--surface-canvas-raised); color: var(--ink-paper-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 120ms ease, border-color 120ms ease; }
+  .from-note:hover { border-color: var(--accent-2); color: var(--accent-2); }
 
   /* KEYSTONE matched-pair cue — a quiet teaching note on warm paper, attached above the spine card. Forest
      green reads here (paper, not grey), used only on the accent left-rule; the body stays ink. Non-blocking,
@@ -1622,7 +1748,6 @@
   }
   /* Collapsed = give the canvas the whole width (image-first). The divider stays (anti-trap: always expandable). */
   aside.collapsed { width: 0; min-width: 0; padding: 0; border-left: 0; overflow: hidden; }
-  aside h2 { color: var(--ink-paper-secondary); margin: 0 0 var(--space-4); }
   /* Editable object label — reads as a Fraunces title, reveals as an input on hover/focus */
   .object-title {
     display: block; width: 100%; box-sizing: border-box; margin: 0 0 var(--space-1);
