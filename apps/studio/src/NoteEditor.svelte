@@ -109,6 +109,9 @@
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm);
   }
+  /* The comment is the primary authoring field — let it grow with content (drag the handle).
+     Proven on sibling textareas (DetailsEditor:78, NarrativeEditor); the popover's overflow-y absorbs growth. */
+  .wadm textarea { resize: vertical; min-height: 4.5rem; }
   .wadm textarea:focus, .wadm input:focus { outline: none; border-color: var(--accent-2); }
   .wadm fieldset { border: 1px solid var(--border-paper); border-radius: var(--radius-sm); display: flex; gap: var(--space-4); padding: var(--space-2) var(--space-3); }
   /* AV time fieldset — start/end mm:ss inputs (the time note's geometry) */

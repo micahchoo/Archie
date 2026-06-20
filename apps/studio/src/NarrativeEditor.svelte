@@ -235,9 +235,9 @@
   /* Path preview — a quiet caption under the cards naming the walked route; mono ordinals read as a sequence. */
   .path-preview { margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); line-height: 1.6; letter-spacing: 0.03em; color: var(--ink-paper-muted); }
 
-  /* The spine scrolls inside the panel (max 40vh) so a long narrative never pushes the notes + WADM form
-     below the fold of the 352px sidebar. */
-  .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); max-height: 40vh; overflow-y: auto; }
+  /* The spine scrolls inside the panel (max 50vh) so a long narrative never pushes the notes + WADM form
+     below the fold of the sidebar. Raised from 40vh → 50vh to give the section list more room as the aside widens. */
+  .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); max-height: 50vh; overflow-y: auto; }
   /* A beat dims when it targets another object; lights when it targets the one you're viewing (scale cue).
      The lit state is a quiet signal: a subtle accent left-rule + full opacity, not a loud fill. */
   .card { display: flex; gap: var(--space-2); padding: var(--space-2); background: var(--surface-paper); border: none; border-left: 2px solid transparent; border-radius: var(--radius-md); opacity: 0.55; transition: opacity 160ms ease, border-color 160ms ease, box-shadow 160ms ease; }
