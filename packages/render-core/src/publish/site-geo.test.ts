@@ -8,7 +8,7 @@ import { publishLibrary } from "./site.js";
 import { fsJsonSource } from "./read.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { appendNew } from "../spine/log.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import type { Library } from "../model/model.js";
 import type { TileSourceDescriptor } from "../iiif/resolve.js";
 import type { AnnotationLog, W3CAnnotation } from "../wadm/types.js";
@@ -16,7 +16,7 @@ import type { AnnotationLog, W3CAnnotation } from "../wadm/types.js";
 const alice = asClientId("alice");
 const BASE = "https://archie.demo/";
 const tileSource: TileSourceDescriptor = { kind: "xyz", template: "https://t/{z}/{x}/{y}.png", tileSize: 256, minZoom: 0, maxZoom: 6, bounds: [-1, 50, 1, 52] };
-const library: Library = { id: "lib", exhibits: [{ id: "exMap", slug: "geo", title: "Geo", objects: [{ id: "m1", source: tileSource.template, label: "Map", tileSource }] }] };
+const library: Library = { id: asLibraryId("lib"), exhibits: [{ id: asExhibitId("exMap"), slug: "geo", title: "Geo", objects: [{ id: asObjectId("m1"), source: tileSource.template, label: "Map", tileSource }] }] };
 // a geo-region note targeting the map canvas at BASE, carrying archie:geo (geo-truth)
 const log: AnnotationLog = appendNew([], {
   target: { type: "SpecificResource", source: `${BASE}geo/canvas/m1`, selector: { type: "FragmentSelector", value: "xywh=pixel:100,100,40,40" } },

@@ -74,3 +74,37 @@ describe("writeAnnotations / readAnnotations — disk round-trip over the Filesy
     expect(sortByRev(reloaded)).toEqual(sortByRev(log));
   });
 });
+
+describe("incremental writeAnnotations (only) — the write-amplification fix", () => {
+  it("rewrites just the named page; reload stays complete and correct", async () => {
+    const { log: l1, record: a } = appendNew([], { target, body: { type: "TextualBody", value: "a1" }, lastEditor: alice, modifiedAt: "t1", now: 1 });
+    const { log: l2 } = appendNew(l1, { target, body: { type: "TextualBody", value: "b1" }, lastEditor: alice, modifiedAt: "t2", now: 2 });
+    const fs = new MemoryFilesystem();
+    const root = await fs.root();
+    await writeAnnotations(root, l2); // full write of both notes
+    const { log: l3 } = appendEdit(l2, a.logicalId, { body: { type: "TextualBody", value: "a2" }, lastEditor: bob, modifiedAt: "t3", now: 3 });
+    await writeAnnotations(root, l3, {}, new Set([a.logicalId])); // INCREMENTAL: only note A's page
+    expect(sortByRev(await readAnnotations(root))).toEqual(sortByRev(l3)); // A edited, B intact, both present
+  });
+
+  it("does NOT rewrite un-named pages — a stale `only` leaves them at their on-disk version (incrementality proof)", async () => {
+    const { log: l1, record: a } = appendNew([], { target, body: { type: "TextualBody", value: "a1" }, lastEditor: alice, modifiedAt: "t1", now: 1 });
+    const { log: l2, record: b } = appendNew(l1, { target, body: { type: "TextualBody", value: "b1" }, lastEditor: alice, modifiedAt: "t2", now: 2 });
+    const fs = new MemoryFilesystem();
+    const root = await fs.root();
+    await writeAnnotations(root, l2); // disk: A=a1, B=b1
+    const { log: l3 } = appendEdit(l2, a.logicalId, { body: { type: "TextualBody", value: "a2" }, lastEditor: bob, modifiedAt: "t3", now: 3 });
+    const { log: l4 } = appendEdit(l3, b.logicalId, { body: { type: "TextualBody", value: "b2" }, lastEditor: bob, modifiedAt: "t4", now: 4 });
+    await writeAnnotations(root, l4, {}, new Set([a.logicalId])); // only A — B's new version (b2) must NOT hit disk
+    // Reload reflects A's edited chain but B's page is untouched (still b1) → equals l3, NOT l4.
+    expect(sortByRev(await readAnnotations(root))).toEqual(sortByRev(l3));
+  });
+
+  it("undefined `only` writes every page (full projection — the first-save / publish path)", async () => {
+    const { log } = buildLog();
+    const fs = new MemoryFilesystem();
+    const root = await fs.root();
+    await writeAnnotations(root, log); // no `only` → full
+    expect(sortByRev(await readAnnotations(root))).toEqual(sortByRev(log));
+  });
+});

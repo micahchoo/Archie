@@ -24,7 +24,9 @@
   };
 
   function keep(head: AnnotationRecord) {
-    session.resolve(current as LogicalId, { body: head.body, target: head.target, ...(head.layers ? { layers: head.layers } : {}) });
+    // ADR-0007: tags (including legacy layers, folded into purpose:tagging bodies at load) ride on
+    // `head.body`, so resolving with body+target preserves them — no separate `layers` arg needed.
+    session.resolve(current as LogicalId, { body: head.body, target: head.target });
     onchange();
     if (conflicts.length === 0) reviewing = false; // parent recomputed; nothing left
   }

@@ -4,12 +4,12 @@
 //   - the per-slug AnnotationSession seed factories (seededVoynich / seededAtlas / seededGeo).
 // No component scope, no runes — the session factories take the `author` ClientId explicitly so a
 // caller (App.svelte's openExhibit) wires the live identity. The SHARED authored content comes from
-// the Viewer's voynich.ts / atlas.ts (single source of truth, §A) — both apps read it.
+// the Viewer's voynich.ts / atlas.ts / geo.ts (single source of truth, §A) — both apps read it.
 import {
-  AnnotationSession, lngLatToPixel, pixelToLngLat, WORKING_IRI_BASE,
-  type Section, type RightsFields, type TileSourceDescriptor, type W3CBody, type ClientId,
+  AnnotationSession, WORKING_IRI_BASE,
+  type Section, type W3CBody, type ClientId,
   type WorkingExhibitMeta,
-  timeFragmentValue,
+  timeFragmentValue, mediaFragmentValue, fragmentSelector, canvasIdFor,
 } from "@render/core";
 // The canonical authored-structure type is core's WorkingExhibitMeta (store.ts re-exports it as
 // ExhibitMeta). Reference the core type directly here so DEFAULT_EXHIBITS' Map basemap object — whose
@@ -17,6 +17,11 @@ import {
 type ExhibitMeta = WorkingExhibitMeta;
 import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "../../viewer/fixtures/atlas.js";
 import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichSections } from "../../viewer/fixtures/voynich.js";
+// The geo-annotation prototype's content lives in the SHARED fixture (single source of truth, §A) — the
+// SAME module the Viewer's published bake reads. Re-export GEO_TEMPLATE/geoBasemap so existing Studio
+// consumers (geo-notes.test.ts) keep importing them from here while the definitions live in one place.
+import { geoRights, geoTitle, geoSummary, geoObjects, geoNotes } from "../../viewer/fixtures/geo.js";
+export { GEO_TEMPLATE, geoBasemap } from "../../viewer/fixtures/geo.js";
 
 /** The working-store IRI base — every authored/seeded note targets `${BASE}{slug}/canvas/{objId}`.
  *  Sourced from core's WORKING_IRI_BASE (the ONE namespace the Viewer's live source projects with), so
@@ -24,26 +29,21 @@ import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voy
  *  they did. App.svelte + ingest-flows share this; it is an internal identifier, NOT the published base. */
 export const BASE = WORKING_IRI_BASE;
 
-/** A pixel-region (xywh) selector target on a canvas — the OSD draw analogue. */
+/** A pixel-region (xywh) selector target on a canvas — the OSD draw analogue. The value + selector
+ *  shape are both minted by core (mediaFragmentValue + fragmentSelector) so they're one source of truth. */
 export const rectSel = (canvas: string, x: number, y: number, w: number, h: number) => ({
   type: "SpecificResource" as const, source: canvas,
-  selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value: `xywh=pixel:${x},${y},${w},${h}` },
+  selector: fragmentSelector(mediaFragmentValue({ box: { x, y, w, h }, unit: "pixel" })),
 });
 /** Temporal selector (AV notes) — the time analogue of rectSel; one source of truth for `t=` is core. */
 export const timeSel = (canvas: string, start: number, end: number) => ({
   type: "SpecificResource" as const, source: canvas,
-  selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value: timeFragmentValue(start, end) },
+  selector: fragmentSelector(timeFragmentValue(start, end)),
 });
 
 // §B object set: 11 IIIF-direct images + 1 sound (o12). Spread width/height/mediaType/duration
 // conditionally — o12 (sound) carries no dims, and exactOptionalPropertyTypes forbids `width: undefined`.
 const voynichObjMeta = voynichObjects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}) }));
-// Geo-annotation prototype (DESIGN.md): a slippy-map basemap as a first-class Archie surface. OSM raster
-// XYZ tiles fetched LIVE (Phase 1; offline/baked tiles = Phase 3 / D1). maxZoom 6 = world→continent, light
-// to demo. Attribution is REQUIRED by the OSM tile usage policy (surfaced as a credit on the canvas).
-export const GEO_TEMPLATE = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-export const geoBasemap: TileSourceDescriptor = { kind: "xyz", template: GEO_TEMPLATE, tileSize: 256, minZoom: 0, maxZoom: 6, attribution: "© OpenStreetMap contributors" };
-const geoRights: RightsFields = { rights: "https://opendatacommons.org/licenses/odbl/", requiredStatement: { label: "Basemap", value: "© OpenStreetMap contributors, ODbL." } };
 
 // The default exhibits on first run: the imported Voynich manuscript (../../viewer/src/voynich.ts),
 // one shared seed rendered three ways (rosettes / grid / narrative), the atlas, and the geo-map.
@@ -65,10 +65,11 @@ export const DEFAULT_EXHIBITS: ExhibitMeta[] = [
   // rule: third-party rights-clean, never the author's personal work). Two Readings demonstrate
   // the rival-interpretations differentiator in a non-manuscript register. DRAFT — human-gated.
   { id: "ex-atlas", slug: "language-atlas", title: atlasTitle, summary: atlasSummary, seedVersion: 1, readings: atlasReadings, ...atlasRights, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })) },
-  // GEO MAP — the geo-annotation prototype (DESIGN.md). One slippy-map basemap object, geo-annotated with
-  // pins anchored to lng/lat. Hand-seeded descriptor (no map-import UI yet — Phase 2 / D7). DRAFT: this is
-  // the prototype the UI/UX grilling stress-tests.
-  { id: "ex-geo", slug: "geo-map", title: "World map (geo-annotation prototype)", summary: "Drop pins on a live map — each one stays on its place as you zoom and pan, anchored to a longitude and latitude. An early look at annotating maps in Archie.", seedVersion: 1, ...geoRights, objects: [{ id: "m1", source: GEO_TEMPLATE, label: "World basemap", tileSource: geoBasemap, ...geoRights }] },
+  // GEO MAP — the geo-annotation prototype (DESIGN.md / ADR-0015). One slippy-map basemap object, geo-annotated
+  // with pins anchored to lng/lat. Descriptor / object / title / summary all come from the SHARED
+  // ../../viewer/fixtures/geo.ts (single source of truth) — the SAME source the Viewer's published bake reads,
+  // so the Studio playground and the published demo can't drift.
+  { id: "ex-geo", slug: "geo-map", title: geoTitle, summary: geoSummary, seedVersion: 1, ...geoRights, objects: geoObjects.map((o) => ({ ...o, ...geoRights })) },
 ];
 
 // Seed a default exhibit's notes so it isn't empty on first run (pre-OPFS). Per-slug because the
@@ -82,7 +83,7 @@ function seededVoynich(author: ClientId, slug: string, opts: { objectIds?: Set<s
   for (const n of voynichNotes) {
     if (!keep(n.objectId)) continue;
     const [x, y, w, h] = n.region;
-    s.createNote({ target: rectSel(`${BASE}${slug}/canvas/${n.objectId}`, x, y, w, h), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
+    s.createNote({ target: rectSel(canvasIdFor(BASE, slug, n.objectId), x, y, w, h), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
   }
   for (const n of voynichReadingNotes) {
     if (!keep(n.objectId)) continue;
@@ -91,7 +92,7 @@ function seededVoynich(author: ClientId, slug: string, opts: { objectIds?: Set<s
       { type: "TextualBody", value: n.comment, purpose: "commenting" },
       ...(n.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" })),
     ];
-    s.createNote({ target: rectSel(`${BASE}${slug}/canvas/${n.objectId}`, x, y, w, h), body, ...(n.reading ? { reading: n.reading } : {}) });
+    s.createNote({ target: rectSel(canvasIdFor(BASE, slug, n.objectId), x, y, w, h), body, ...(n.reading ? { reading: n.reading } : {}) });
   }
   if (opts.includeAv && keep("o12")) {
     for (const a of voynichAvNotes) {
@@ -100,7 +101,7 @@ function seededVoynich(author: ClientId, slug: string, opts: { objectIds?: Set<s
         { type: "TextualBody", value: a.comment, purpose: "commenting" },
         ...(a.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" })),
       ];
-      s.createNote({ target: timeSel(`${BASE}${slug}/canvas/o12`, start, end), body, ...(a.reading ? { reading: a.reading } : {}) });
+      s.createNote({ target: timeSel(canvasIdFor(BASE, slug, "o12"), start, end), body, ...(a.reading ? { reading: a.reading } : {}) });
     }
   }
   return s;
@@ -110,34 +111,24 @@ function seededAtlas(author: ClientId): AnnotationSession {
   for (const n of atlasNotes) {
     const [x, y, w, h] = n.region;
     s.createNote({
-      target: rectSel(`${BASE}language-atlas/canvas/${n.objectId}`, x, y, w, h),
+      target: rectSel(canvasIdFor(BASE, "language-atlas", n.objectId), x, y, w, h),
       body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
       ...(n.reading ? { reading: n.reading } : {}),
     });
   }
   return s;
 }
-// Seed the geo-map prototype with a few city pins so the exhibit isn't empty and the lng/lat readout is
-// immediately visible. Pins are ordinary pixel-selector notes placed at lngLatToPixel(city) — the map
-// surface keeps them geo-anchored; the readout derives lng/lat back from the pixel centre (geometry/geo).
+// Seed the geo-map prototype with the SHARED city pins (../../viewer/fixtures/geo.ts → geoNotes) so the
+// exhibit isn't empty and the lng/lat readout is immediately visible. The pixel region + geo bbox were
+// computed ONCE in the shared fixture, so this Studio seed and the Viewer's published bake place pin-for-pin
+// identical notes. Each pin is an ordinary pixel-selector note; the map surface keeps it geo-anchored.
 function seededGeo(author: ClientId): AnnotationSession {
   const s = new AnnotationSession(author);
-  const cities = [
-    { name: "London", lng: -0.1276, lat: 51.5074 },
-    { name: "New York", lng: -74.006, lat: 40.7128 },
-    { name: "Tokyo", lng: 139.6917, lat: 35.6895 },
-    { name: "Nairobi", lng: 36.8219, lat: -1.2921 },
-  ];
-  const W = 140; // image-px box at the full extent — a visible region at the world-fit zoom
-  for (const c of cities) {
-    const p = lngLatToPixel({ lng: c.lng, lat: c.lat }, geoBasemap);
-    const x = Math.round(p.x - W / 2), y = Math.round(p.y - W / 2);
-    const nw = pixelToLngLat({ x, y }, geoBasemap);
-    const se = pixelToLngLat({ x: x + W, y: y + W }, geoBasemap);
+  for (const n of geoNotes) {
     s.createNote({
-      target: rectSel(`${BASE}geo-map/canvas/m1`, x, y, W, W),
-      body: [{ type: "TextualBody", value: c.name, purpose: "commenting" }],
-      geo: { type: "bbox", west: nw.lng, south: se.lat, east: se.lng, north: nw.lat }, // geo-truth (Q4)
+      target: rectSel(canvasIdFor(BASE, "geo-map", n.objectId), n.x, n.y, n.w, n.h),
+      body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
+      geo: n.geo, // geo-truth (Q4)
     });
   }
   return s;

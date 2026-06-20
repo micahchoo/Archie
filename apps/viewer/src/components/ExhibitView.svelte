@@ -7,7 +7,7 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import {
-    resolveLayout, overlay, selectorOf,
+    resolveLayout, overlay, selectorOf, asExhibitId,
     spatialCoverage, isWholeObject, wholeObjectFlagOf, emphasisOf, readingMarkerStyle,
     type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation,
   } from "@render/core";
@@ -26,7 +26,7 @@
     slug: string;
     noteId?: string;
     onnav?: (
-      nav: { siblings: { id: string; label: string }[]; currentId: string; navigate: (id: string) => void } | null,
+      nav: { siblings: { id: string; label: string }[]; currentId: string; navigate: (id: string) => void; toOverview?: () => void } | null,
     ) => void;
   } = $props();
 
@@ -37,6 +37,7 @@
   let selectedObjectId = $state<string | null>(null);
   let arrivedNote = $state<string | null>(null); // deep-link target id (land-in-context)
   let chromeVisible = $state(false); // cold-arrival chrome (§124), fades after a few seconds
+  let linkMissing = $state(false); // the deep-linked note resolved to no owner (tombstoned cite) — be honest (#8)
   let activeReading = $state<string | null>(null); // ADR-0007 / Q16: base-only by default; null = base
   let notesHidden = $state(false); // ReadingLegend "Hide all" — declutter the canvas to the bare basemap/image
   // Grid-index escape (ADR-0016 keystone): when a narrative LEADS, the object grid stays reachable BEHIND
@@ -50,7 +51,7 @@
       const d = await loadPublishedExhibit(slug);
       const secs = d.sections; // narrative spine round-tripped from the published manifest (was sample-data sectionsFor)
       const exhibit: Exhibit = {
-        id: `ex-${slug}`, slug, title: d.title, objects: d.objects,
+        id: asExhibitId(`ex-${slug}`), slug, title: d.title, objects: d.objects,
         ...(secs.length ? { sections: secs } : {}),
         ...(d.summary !== undefined ? { summary: d.summary } : {}),
       };
@@ -77,6 +78,13 @@
           arrivedNote = noteId; // → Reader/NarrativeReader initialSelected → fitBounds
           chromeVisible = true;
           setTimeout(() => (chromeVisible = false), 6000);
+        } else {
+          // The cited note is gone — notes are append-only/tombstoned (ADR-0003), so old citation links
+          // outlive their targets. Don't strand a link-follower silently (#8): still raise the arrival
+          // chrome, honestly, and land them on the exhibit instead of somewhere generic with no word.
+          linkMissing = true;
+          chromeVisible = true;
+          setTimeout(() => (chromeVisible = false), 8000);
         }
       }
     } catch (e) {
@@ -86,6 +94,13 @@
   });
 
   const isGrid = $derived(layout?.type === "grid");
+  // Sibling objects for the visible sidebar stepper (R4) — non-narrative multi-object exhibits only (the
+  // narrative spine is section-led, not object-stepped). null ⇒ no sidebar nav for this reader.
+  const gridSiblings = $derived(
+    layout && layout.type !== "narrative" && layout.objects.length > 1
+      ? layout.objects.map((o) => ({ id: o.id, label: o.label }))
+      : null,
+  );
   // The object opened FROM the narrative index (its own Reader), resolved against both the layout
   // descriptor (for the OSD Reader props) and the published data (for mediaType/duration → AV routing).
   const indexObject = $derived(layout?.objects.find((o) => o.id === indexObjectId));
@@ -178,13 +193,22 @@
   // ONE nav shape (S-3): the object currently reading and the setter that navigates between siblings,
   // derived per layout so the $effect consumes a single snapshot instead of branching on `inNarrative`
   // three times in parallel ternaries. In a leading narrative the reader is the index-opened object
-  // (image OR AV — both now escape back, so both carry the persistent carousel); outside it the single-
-  // object Reader (not the grid overview). `obj` undefined ⇒ no carousel for this state.
+  // (image OR AV — both escape back, so both carry the persistent carousel); otherwise it's the selected
+  // object — `activeObject` is undefined only at the grid OVERVIEW (selection null), so the carousel shows
+  // for a grid OBJECT (siblings to step) and is suppressed on the overview and for single-object exhibits.
   const reader = $derived(
     layout?.type === "narrative"
       ? { obj: indexObject, set: (id: string) => (indexObjectId = id) }
-      : { obj: !isGrid ? activeObject : undefined, set: (id: string) => (selectedObjectId = id) },
+      : { obj: activeObject, set: (id: string) => (selectedObjectId = id) },
   );
+
+  // The Exhibit breadcrumb's "natural start" (CONTEXT §142) for a multi-object exhibit = the overview;
+  // lifted to the top bar so the un-routed object selection resets on a crumb click (ViewerShell wiring).
+  // Narrative's overview is the leading read (close any index-opened object); grid's is the object grid.
+  function toOverview() {
+    if (layout?.type === "narrative") { indexObjectId = null; narrativeIndex = false; }
+    else selectedObjectId = null;
+  }
 
   // Lift the object-nav snapshot to ViewerShell's top bar (dba2). Reads the derived `reader` so it
   // re-fires on every navigation, keeping the bar's i/n counter live. An object opened from the
@@ -201,6 +225,7 @@
             siblings: objs.map((o) => ({ id: o.id, label: o.label })),
             currentId: navObject!.id,
             navigate: reader.set,
+            toOverview,
           }
         : null,
     );
@@ -214,14 +239,30 @@
   <div class="state error"><span class="warn" aria-hidden="true">⚠</span><span>{errorMsg}</span></div>
 {:else if data && layout}
   {#if isAV && activeData}
-    <MediaPlayer object={activeData} annotations={annotationsOf(activeData.id)} rights={objectRightsOf(activeData.id)} />
+    <!-- Key on the object so the player REMOUNTS when stepping between AV siblings (R4) — MediaPlayer's
+         media/error state is plain $state with no per-object reset, so without this a failed recording's
+         error (or a stale playhead) would persist onto a healthy sibling. Mirrors the Reader's canvas key. -->
+    {#key activeData.id}
+      <MediaPlayer
+        object={activeData}
+        annotations={annotationsOf(activeData.id)}
+        rights={objectRightsOf(activeData.id)}
+        siblings={gridSiblings ?? undefined}
+        currentId={activeData.id}
+        onstep={(id) => (selectedObjectId = id)}
+        onoverview={() => (selectedObjectId = null)}
+      />
+    {/key}
   {:else if layout.type === "narrative" && layout.sections && layout.objects[0]}
     <!-- The narrative LEADS (ADR-0016 keystone); the object grid stays reachable BEHIND it as an INDEX
          (§137 precision-in/escape-out, §223 anti-trap) — never the old whole-exhibit takeover. Three
          states: read the spine · the index grid · an object opened from the index (its own Reader). -->
     {#if indexObject}
       {#if indexIsAV && indexData}
-        <MediaPlayer object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} onback={() => (indexObjectId = null)} />
+        <!-- Keyed like the grid-AV player: stepping the carousel between AV index objects must remount. -->
+        {#key indexData.id}
+          <MediaPlayer object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} onback={() => (indexObjectId = null)} />
+        {/key}
       {:else}
         <Reader
           object={{ source: indexObject.source, canvasId: canvasIdOf(indexObject.id), label: indexObject.label, summary: indexData?.summary, ...(indexObject.tileSource ? { tileSource: indexObject.tileSource } : {}) }}
@@ -285,6 +326,10 @@
       onnotehover={(id) => (hoverNote = id)}
       notesHidden={notesHidden}
       onhiddenchange={(v) => (notesHidden = v)}
+      siblings={gridSiblings ?? undefined}
+      currentId={activeObject.id}
+      onstep={(id) => (selectedObjectId = id)}
+      onoverview={() => (selectedObjectId = null)}
     />
   {:else}
     <ObjectGrid
@@ -300,8 +345,8 @@
   <!-- Cold-arrival chrome (§124): orient a link-follower, then fade. Transparent, no gate. -->
   {#if chromeVisible}
     <button class="arrival" transition:fade={{ duration: 400 }} onclick={() => (chromeVisible = false)}>
-      <span class="seal" aria-hidden="true">↪</span>
-      <span class="msg">You followed a link to this note</span>
+      <span class="seal" aria-hidden="true">{linkMissing ? "⚐" : "↪"}</span>
+      <span class="msg">{linkMissing ? "That note isn’t here anymore — showing the exhibit instead" : "You followed a link to this note"}</span>
       <span class="dismiss">Dismiss</span>
     </button>
   {/if}
@@ -327,10 +372,10 @@
      transparent chrome, canvas inks, connector-blue (--accent-2) hover (the secondary up/nav signal,
      and the green-on-dark contrast rescue) — the rationed orange stays free for the one focal action. */
   .to-read {
-    /* Cleared below the persistent top-bar band (ViewerShell .topbar: fixed, ~44px tall, owns top-left
-       for the breadcrumb) — S-4: at top:space-5 it collided with that band. 3.25rem matches the sibling
-       .to-index escape's clearance (NarrativeReader), so both escapes sit at the same canvas-top line. */
-    position: fixed; z-index: 30; top: 3.25rem; left: var(--space-5);
+    /* Cleared below the persistent top-bar band via the shared --topbar-h token (ViewerShell .topbar owns
+       the top-left for the breadcrumb) — S-4: at top:space-5 it collided with that band. One token now
+       sets the clearance for every below-band escape (legend, .to-index), so they can't drift apart. */
+    position: fixed; z-index: 30; top: var(--topbar-h); left: var(--space-5);
     display: inline-flex; align-items: center; gap: var(--space-1);
     background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-1);
     color: var(--ink-canvas-secondary);
@@ -340,9 +385,11 @@
   .to-read:hover { color: var(--accent-2); }
   .to-read .back-mark { font-size: 1.05rem; line-height: 1; }
 
-  /* Cold-arrival chrome — a soft warm-paper toast; understated, fades, not a gate. */
+  /* Cold-arrival chrome — a soft warm-paper toast; understated, fades, not a gate. Sits just BELOW the
+     top-bar band (--topbar-h): at top:space-5 it landed on the centered carousel when a deep-link opened
+     a multi-object exhibit (both centered) — now it clears it and stacks under it. */
   .arrival {
-    position: fixed; z-index: 30; top: var(--space-5); left: 50%; transform: translateX(-50%);
+    position: fixed; z-index: 30; top: calc(var(--topbar-h) + var(--space-2)); left: 50%; transform: translateX(-50%);
     display: flex; align-items: center; gap: var(--space-3); cursor: pointer;
     padding: var(--space-3) var(--space-4);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);

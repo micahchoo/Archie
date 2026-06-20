@@ -1,67 +1,44 @@
 import { describe, it, expect } from "vitest";
-import { tagsOf, layersOf, filterByLayer, filterByTag, allLayers, allTags } from "./filter.js";
-import { appendNew, appendEdit } from "../spine/log.js";
-import { toHistory, toHeadsPage } from "../spine/serialize.js";
-import { fromHistory } from "../spine/deserialize.js";
-import { projectHeads } from "../spine/heads.js";
+import { tagsOf, filterByTag, allTags } from "./filter.js";
+import { appendNew } from "../spine/log.js";
 import { asClientId } from "../wadm/brand.js";
 import type { AnnotationRecord } from "../wadm/types.js";
 
-// Layer + tag filtering (CONTEXT: Layers = per-note membership v1; Tags = purpose:tagging).
+// Tag filtering (ADR-0007: Tags = a body with purpose:tagging — the additive home legacy `layers`
+// folded into). The retired multi-valued `layers` filters (layersOf/filterByLayer/allLayers) and
+// their round-trip assertions were removed with the field; layer→Tags back-compat is proven in
+// spine/deserialize.test.ts ("ADR-0007: legacy archie:layers folds into Tags on load").
 
 const alice = asClientId("alice");
 const t = "t";
 
-function note(opts: { value: string; tags?: string[]; layers?: string[] }) {
+function note(opts: { value: string; tags?: string[] }) {
   const bodies = [{ type: "TextualBody" as const, value: opts.value }, ...(opts.tags ?? []).map((v) => ({ type: "TextualBody" as const, value: v, purpose: "tagging" }))];
-  return appendNew([], { target: "c1", body: bodies, lastEditor: alice, modifiedAt: t, now: 1, ...(opts.layers ? { layers: opts.layers } : {}) }).record;
+  return appendNew([], { target: "c1", body: bodies, lastEditor: alice, modifiedAt: t, now: 1 }).record;
 }
 
-describe("tagsOf / layersOf", () => {
+describe("tagsOf", () => {
   it("reads purpose:tagging bodies as tags (ignoring the comment body)", () => {
     const r = note({ value: "a comment", tags: ["medieval", "ink"] });
     expect(tagsOf(r)).toEqual(["medieval", "ink"]);
   });
-  it("reads layer membership off the record", () => {
-    const r = note({ value: "x", layers: ["conservation", "iconography"] });
-    expect(layersOf(r)).toEqual(["conservation", "iconography"]);
-    expect(layersOf(note({ value: "y" }))).toEqual([]);
+  it("returns no tags for a plain comment note", () => {
+    expect(tagsOf(note({ value: "y" }))).toEqual([]);
   });
 });
 
-describe("filterByLayer / filterByTag (cross-object filter)", () => {
+describe("filterByTag / allTags (cross-object filter)", () => {
   const records: AnnotationRecord[] = [
-    note({ value: "1", layers: ["conservation"], tags: ["ink"] }),
-    note({ value: "2", layers: ["iconography"], tags: ["ink", "gold"] }),
-    note({ value: "3", layers: ["conservation", "iconography"] }),
+    note({ value: "1", tags: ["ink"] }),
+    note({ value: "2", tags: ["ink", "gold"] }),
+    note({ value: "3" }),
   ];
-  it("filters by layer membership", () => {
-    expect(filterByLayer(records, "conservation")).toHaveLength(2);
-    expect(filterByLayer(records, "iconography")).toHaveLength(2);
-    expect(filterByLayer(records, "none")).toHaveLength(0);
-  });
   it("filters by tag", () => {
     expect(filterByTag(records, "ink")).toHaveLength(2);
     expect(filterByTag(records, "gold")).toHaveLength(1);
+    expect(filterByTag(records, "none")).toHaveLength(0);
   });
-  it("allLayers / allTags enumerate sorted, deduped sets across notes", () => {
-    expect(allLayers(records)).toEqual(["conservation", "iconography"]);
+  it("allTags enumerates a sorted, deduped set across notes", () => {
     expect(allTags(records)).toEqual(["gold", "ink"]);
-  });
-});
-
-describe("layer membership persists through serialize/deserialize + is filterable on the heads page", () => {
-  it("round-trips layers (log -> history -> log)", () => {
-    const { log } = appendNew([], { target: "c1", body: { type: "TextualBody", value: "x" }, layers: ["conservation"], lastEditor: alice, modifiedAt: t, now: 1 });
-    const reloaded = fromHistory(Object.values(toHistory(log, { baseUrl: "b/" }).pages));
-    expect(reloaded[0]!.layers).toEqual(["conservation"]);
-  });
-  it("carries archie:layers onto the heads page (Archie viewer filters; pure consumer ignores)", () => {
-    const r = note({ value: "x", layers: ["conservation"] });
-    const { log } = appendEdit([r], r.logicalId, { body: { type: "TextualBody", value: "x2" }, lastEditor: alice, modifiedAt: t, now: 2 });
-    void projectHeads(log);
-    const page = toHeadsPage(log, "p", { baseUrl: "b/" });
-    const item = page.items[0] as unknown as Record<string, unknown>;
-    expect(item["archie:layers"]).toEqual(["conservation"]); // edit carried layers forward
   });
 });

@@ -3,7 +3,7 @@ import { collectFiles, buildGitTree, publishToGitHub, pagesUrlFor, GitHubPublish
 import { publishLibrary } from "./site.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { appendNew } from "../spine/log.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import type { Library } from "../model/model.js";
 
 // GH-Pages publish adapter core (CONTEXT: zip-primitive + per-host adapters; the GH adapter uses
@@ -13,7 +13,7 @@ import type { Library } from "../model/model.js";
 const alice = asClientId("alice");
 const base = "https://u.gh.io/lib/";
 const canvas = `${base}a/canvas/o1`;
-const library: Library = { id: "lib", title: "Lib", exhibits: [{ id: "a", slug: "a", title: "A", objects: [{ id: "o1", source: "https://img/a.jpg", label: "A", width: 10, height: 10 }] }] };
+const library: Library = { id: asLibraryId("lib"), title: "Lib", exhibits: [{ id: asExhibitId("a"), slug: "a", title: "A", objects: [{ id: asObjectId("o1"), source: "https://img/a.jpg", label: "A", width: 10, height: 10 }] }] };
 const logA = appendNew([], { target: { type: "SpecificResource", source: canvas, selector: { type: "FragmentSelector", value: "xywh=pixel:0,0,3,3" } }, body: { type: "TextualBody", value: "n" }, lastEditor: alice, modifiedAt: "t", now: 1 }).log;
 
 describe("collectFiles — flatten the published tree from the seam", () => {
@@ -32,7 +32,7 @@ describe("collectFiles — flatten the published tree from the seam", () => {
 
   it("encodes image assets as base64 (binary), JSON as text", async () => {
     const fs = new MemoryFilesystem();
-    const lib: Library = { id: "lib", exhibits: [{ id: "c", slug: "c", title: "C", objects: [{ id: "o1", source: "/assets/pic.png", label: "Imported", width: 4, height: 4 }] }] };
+    const lib: Library = { id: asLibraryId("lib"), exhibits: [{ id: asExhibitId("c"), slug: "c", title: "C", objects: [{ id: asObjectId("o1"), source: "/assets/pic.png", label: "Imported", width: 4, height: 4 }] }] };
     const bytes = new Uint8Array([0, 1, 254, 255]).buffer; // non-UTF8 bytes
     await publishLibrary(fs, lib, () => [], { baseUrl: base, getAsset: async () => bytes });
     const files = await collectFiles(await fs.root());
@@ -46,7 +46,7 @@ describe("collectFiles — flatten the published tree from the seam", () => {
 describe("buildGitTree — GitHub git-trees payload (replace-this-tree)", () => {
   it("maps text → inline content + binary → base64 blob entries, sorted by path", async () => {
     const fs = new MemoryFilesystem();
-    const lib: Library = { id: "lib", exhibits: [{ id: "c", slug: "c", title: "C", objects: [{ id: "o1", source: "/assets/pic.png", label: "Imported", width: 4, height: 4 }] }] };
+    const lib: Library = { id: asLibraryId("lib"), exhibits: [{ id: asExhibitId("c"), slug: "c", title: "C", objects: [{ id: asObjectId("o1"), source: "/assets/pic.png", label: "Imported", width: 4, height: 4 }] }] };
     await publishLibrary(fs, lib, () => [], { baseUrl: base, getAsset: async () => new Uint8Array([1, 2, 3]).buffer });
     const tree = buildGitTree(await collectFiles(await fs.root()));
     expect(tree.length).toBeGreaterThanOrEqual(4);

@@ -6,7 +6,9 @@
 // migration: a top-level `library` object (not a flat array), explicit ordering, first-class
 // cover/title/description, and a reserved `presentation` namespace.
 
-import type { Library, RightsFields } from "../model/model.js";
+import type { Library, Reading, RightsFields } from "../model/model.js";
+import type { W3CAnnotationCollection } from "../wadm/types.js";
+import { WADM_CONTEXT } from "../wadm/types.js";
 
 export interface ExhibitCard {
   slug: string;
@@ -44,6 +46,24 @@ export function toExhibitsJson(library: Library): ExhibitsJson {
       order,
     })),
     presentation: {},
+  };
+}
+
+/**
+ * One IIIF AnnotationCollection per Reading (ADR-0007): the `partOf` target each per-canvas reading
+ * page cites. Header-only (no `total`/`first` — the member annotations live in the per-canvas pages,
+ * not embedded here), carrying the Reading's name/description as `label`/`summary` so a pure IIIF
+ * consumer can label the group. The `id` is supplied by the caller (the published collId path), so
+ * this serializer stays origin-agnostic. Uses the `en` language tag to match the Reading's authored
+ * copy (NOT the `none` map the spatial layers use).
+ */
+export function toReadingCollection(reading: Reading, id: string): W3CAnnotationCollection {
+  return {
+    "@context": WADM_CONTEXT,
+    id,
+    type: "AnnotationCollection",
+    label: { en: [reading.name] },
+    ...(reading.description ? { summary: { en: [reading.description] } } : {}),
   };
 }
 

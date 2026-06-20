@@ -14,6 +14,7 @@
   import ReadingLegend from "./ReadingLegend.svelte";
   import ProseCites from "./ProseCites.svelte";
   import { type MarkerStyle } from "@render/svelte";
+  import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
 
   // Resizable / collapsible narrative spine (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
@@ -21,16 +22,8 @@
   // is headless-tested in @render/core; ResizeDivider is the handle. Collapse = give the canvas the page.
   const ASIDE_W_KEY = "archie.narrativeAsideWidth.v1";
   const ASIDE_COLLAPSED_KEY = "archie.narrativeAsideCollapsed.v1";
-  function loadAsideW(): number | null { try { const v = localStorage.getItem(ASIDE_W_KEY); return v ? (Number(v) || null) : null; } catch { return null; } }
-  function loadAsideCollapsed(): boolean { try { return localStorage.getItem(ASIDE_COLLAPSED_KEY) === "1"; } catch { return false; } }
-  let asideWidth = $state<number | null>(loadAsideW());
-  let asideCollapsed = $state<boolean>(loadAsideCollapsed());
-  function persistAside(s: { width: number | null; collapsed: boolean }) {
-    try {
-      if (s.width == null) localStorage.removeItem(ASIDE_W_KEY); else localStorage.setItem(ASIDE_W_KEY, String(Math.round(s.width)));
-      localStorage.setItem(ASIDE_COLLAPSED_KEY, s.collapsed ? "1" : "0");
-    } catch { /* private mode — size simply resets next load, harmless */ }
-  }
+  let asideWidth = $state<number | null>(loadAsideWidth(ASIDE_W_KEY));
+  let asideCollapsed = $state<boolean>(loadAsideCollapsed(ASIDE_COLLAPSED_KEY));
   // Expand a long note into the centred reading sheet (Phase-3 focus surface).
   let readingSheet = $state<{ text: string } | null>(null);
 
@@ -88,7 +81,14 @@
   let selected = $state<string | null>(initialSelected); // a clicked marker (highlight), distinct from the active section
 
   const activeSection = $derived(sections[activeIndex]);
-  const activeObject = $derived(objects.find((o) => o.id === activeSection?.objectId) ?? objects[0]);
+  const activeObject = $derived.by(() => {
+    // A section whose objectId no longer resolves (its object was deleted in Studio without the section
+    // being pruned) must NOT silently fall back to objects[0] — that pairs the WRONG image with this
+    // section's prose. Undefined → the render gate surfaces a broken-reference state. Only the no-section
+    // case keeps the objects[0] default.
+    if (!activeSection) return objects[0];
+    return objects.find((o) => o.id === activeSection.objectId);
+  });
   const isAV = $derived(activeObject?.mediaType === "sound" || activeObject?.mediaType === "video");
   // Base notes are always visible (Q16); an active Reading overlays its notes on top (ADR-0007) —
   // mirrors ExhibitView.annotationsOf / Reader semantics so the narrative spine carries Readings too.
@@ -117,13 +117,30 @@
   // Geo readout (Q7): a Map note shows its centre lng/lat in the opened popup.
   const geoCoord = $derived.by(() => { if (!current) return null; const g = geoOf(current); return g ? formatLngLat(geoCenter(g)) : null; });
   let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);
+
+  // Esc closes the open note-pop (#3), matching the Reader. Guarded so the lightbox / reading sheet own
+  // Esc while open; arrows stay with OpenSeadragon (it pans the canvas), so only Esc is bound here.
+  function onkey(e: KeyboardEvent) {
+    if (lightbox || readingSheet) return;
+    if (e.key === "Escape" && selected !== null) { selected = null; e.preventDefault(); }
+  }
 </script>
+
+<svelte:window onkeydown={onkey} />
 
 <div class="narrative">
   <main>
-    {#if activeObject}
+    {#if activeSection && !activeObject}
+      <!-- A section references an object that's no longer in the exhibit (deleted, section not pruned).
+           Surface it instead of silently showing the wrong image with this section's prose. -->
+      <div class="missing-obj"><span aria-hidden="true">⚠</span><span>This section points to an item that’s no longer in the exhibit.</span></div>
+    {:else if activeObject}
       {#if isAV}
-        <MediaPlayer object={activeObject} annotations={activeNotes} />
+        <!-- Keyed so an AV→AV section step remounts the player (its media/error state has no per-object
+             reset); mirrors the Canvas branch's {#key activeObject.id} below. -->
+        {#key activeObject.id}
+          <MediaPlayer object={activeObject} annotations={activeNotes} />
+        {/key}
       {:else}
         {#key activeObject.id}
           <Canvas
@@ -153,7 +170,9 @@
     </button>
   {/if}
 
-  <ResizeDivider side="right" label="narrative" min={320} max={820} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={persistAside} />
+  <!-- min/max match the spine's responsive clamp(360px … 620px) so a resize can't escape the designed
+       reading-measure (#14). -->
+  <ResizeDivider side="right" label="narrative" min={360} max={620} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={(s: AsideState) => saveAside(ASIDE_W_KEY, ASIDE_COLLAPSED_KEY, s)} />
   <aside class:collapsed={asideCollapsed} style:--narr-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
     <p class="eyebrow">Narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}</p>
     <h1>{title}</h1>
@@ -199,11 +218,16 @@
      headings, generous radii, wide low-opacity warm shadows. No hard pixel edge anywhere. */
   .narrative { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
   main { flex: 1; min-width: 0; background: var(--surface-canvas); }
+  /* Broken-reference state: a section points at a deleted object. Quiet found-meta chrome over the canvas
+     ground, not a loud error — the rest of the spine still reads. */
+  .missing-obj { display: flex; gap: var(--space-3); align-items: center; justify-content: center; height: 100%; padding: var(--space-6); color: var(--ink-canvas-secondary); font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); }
 
   aside {
     /* Width = a token: responsive by default (clamp), drag-resizable via --narr-aside-w (Phase 2). */
     width: var(--narr-aside-w, clamp(360px, 32vw, 620px)); flex-shrink: 0; overflow: auto; box-sizing: border-box;
-    padding: var(--space-6) var(--space-5);
+    /* Top reserves the fixed top bar (--pane-top) so the spine header (eyebrow · title · hint · credit)
+       keeps its own space, clear of the bar overhead. */
+    padding: var(--pane-top) var(--space-5) var(--space-6);
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
   }
@@ -226,7 +250,7 @@
   }
   .sections button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
   .sections button.active { border-left-color: var(--accent); background: var(--accent-muted); box-shadow: var(--shadow-lift-mid); }
-  .num { display: inline-block; font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-secondary); opacity: 0.62; margin-bottom: var(--space-2); }
+  .num { display: inline-block; font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-secondary); margin-bottom: var(--space-2); }
   .num .obj { color: var(--ink-paper-muted); letter-spacing: 0.14em; }
   .prose { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.65; color: var(--ink-paper-primary); }
   .prose :global(p) { margin: 0 0 var(--space-2); }
@@ -248,7 +272,7 @@
      Connector-blue (--accent-2) hover — the secondary up/nav signal — keeps the rationed orange for the
      one focal action, and is the established green-on-dark-canvas contrast rescue (system.md §contrast). */
   .to-index {
-    position: absolute; z-index: 20; top: 3.25rem; right: var(--space-5);
+    position: absolute; z-index: 20; top: var(--topbar-h); right: var(--space-5);
     display: inline-flex; align-items: center; gap: var(--space-2);
     padding: var(--space-2) var(--space-3);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
@@ -266,7 +290,7 @@
     /* Bottom-anchored, grows upward — cap its height (clear the topbar) and scroll, so a long note
        never overflows the viewport top. */
     position: absolute; left: var(--space-5); bottom: var(--space-5); z-index: 5; max-width: min(44ch, 46%);
-    max-height: calc(100vh - 3.25rem - var(--space-5) - var(--space-4)); overflow-y: auto;
+    max-height: calc(100vh - var(--topbar-h) - var(--space-5) - var(--space-4)); overflow-y: auto;
     padding: var(--space-4) var(--space-6) var(--space-4) var(--space-5);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
     border: none; border-left: 2px solid var(--accent);
@@ -288,5 +312,5 @@
   /* Note images render as thumbnails — click opens the lightbox. */
   .note-body :global(img) { display: block; max-width: 100%; max-height: 180px; height: auto; margin-top: var(--space-2); border-radius: var(--radius-sm); cursor: zoom-in; }
   .note-pop .tags { margin-top: var(--space-3); display: flex; gap: var(--space-3); }
-  .note-pop .tag { font-family: var(--font-ui); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); opacity: 0.62; }
+  .note-pop .tag { font-family: var(--font-ui); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-secondary); }
 </style>

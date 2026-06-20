@@ -59,8 +59,6 @@ export interface NewNoteInput {
   target: W3CTarget;
   body?: W3CBody | W3CBody[];
   motivation?: string | string[];
-  /** @deprecated Layer ids. Use `reading` (ADR-0007). */
-  layers?: string[];
   /** The single Reading this note belongs to (mutually exclusive — ADR-0007). */
   reading?: string;
   /** Authored per-note emphasis (1489); omitted = default `"normal"`. Mirrors `reading`. */
@@ -93,7 +91,6 @@ export function appendNew(log: AnnotationLog, input: NewNoteInput): AppendResult
     target: input.target,
     ...(input.body !== undefined ? { body: input.body } : {}),
     ...(input.motivation !== undefined ? { motivation: input.motivation } : {}),
-    ...(input.layers !== undefined ? { layers: input.layers } : {}),
     ...(input.reading !== undefined ? { reading: input.reading } : {}),
     ...(input.emphasis !== undefined ? { emphasis: input.emphasis } : {}),
     ...(input.geo !== undefined ? { geo: input.geo } : {}),
@@ -105,8 +102,6 @@ export interface EditInput {
   target?: W3CTarget;
   body?: W3CBody | W3CBody[];
   motivation?: string | string[];
-  /** @deprecated Layer ids; omitted = carry forward from the head. */
-  layers?: string[];
   /** Reading id (ADR-0007); omitted = carry forward, `null` = clear to base, string = set. */
   reading?: string | null;
   /** Emphasis (1489); omitted = carry forward, `null` = clear to default `"normal"`, value = set. */
@@ -130,7 +125,6 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
   }
   const body = input.body ?? head.body;
   const motivation = input.motivation ?? head.motivation;
-  const layers = input.layers ?? head.layers;
   const reading = input.reading === undefined ? head.reading : input.reading === null ? undefined : input.reading;
   const emphasis = input.emphasis === undefined ? head.emphasis : input.emphasis === null ? undefined : input.emphasis;
   const geo = input.geo === undefined ? head.geo : input.geo === null ? undefined : input.geo;
@@ -145,7 +139,6 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
     target: input.target ?? head.target,
     ...(body !== undefined ? { body } : {}),
     ...(motivation !== undefined ? { motivation } : {}),
-    ...(layers !== undefined ? { layers } : {}),
     ...(reading !== undefined ? { reading } : {}),
     ...(emphasis !== undefined ? { emphasis } : {}),
     ...(geo !== undefined ? { geo } : {}),

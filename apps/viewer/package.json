@@ -1,6 +1,6 @@
 {
   "name": "@archie/viewer",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Viewer — the published static site built by Studio's publish step. Astro + Svelte islands (ADR-0002 / Q-2). Adopts annomea's 3-state pane + popup/drawer in Phase 2. Read-only. Phase 0 = boundary shell.",

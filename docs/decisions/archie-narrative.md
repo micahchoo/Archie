@@ -11,4 +11,5 @@ See `docs/methodology-dual-use.md` §2 for design rationale.
 | ID | Title | Recorded | Supersedes | Constraint summary |
 |----|-------|----------|------------|--------------------|
 | Q-1 | Section = self-contained third layer, not a tour of Notes | 2026-05-26 | - | Grilled via /grill-with-docs (2026-05-25). FORK RESOLVED: (A) third layer OVER (B) tour-of-notes. A Section = { objectId, start, prose } — its own camera+pros |
+| Q-2 | Section also serializes as a supplementing WADM annotation (additive; Range stays canonical) | 2026-06-20 | - | Each Section ships twice: the canonical IIIF Range in structures[] (Archie reads it) PLUS a derived 'supplementing' WADM annotation in {slug}/annotations/narrat |
 <!-- DECISIONS_INDEX_END -->

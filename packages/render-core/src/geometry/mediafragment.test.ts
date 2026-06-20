@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseMediaFragment, mediaFragmentValue } from "./mediafragment.js";
+import { parseMediaFragment, mediaFragmentValue, fragmentSelector, MEDIA_FRAGS_CONFORMS_TO } from "./mediafragment.js";
 
 describe("parseMediaFragment", () => {
   it("parses a pixel xywh (image)", () => {
@@ -54,6 +54,21 @@ describe("mediaFragmentValue", () => {
   });
   it("serializes a point-in-time (no end)", () => {
     expect(mediaFragmentValue({ time: { start: 7 } })).toBe("t=7");
+  });
+});
+
+describe("fragmentSelector", () => {
+  it("wraps a value into the canonical W3C FragmentSelector shape", () => {
+    expect(fragmentSelector("xywh=pixel:1,2,3,4")).toEqual({
+      type: "FragmentSelector",
+      conformsTo: "http://www.w3.org/TR/media-frags/",
+      value: "xywh=pixel:1,2,3,4",
+    });
+  });
+  it("carries the canonical conformsTo IRI for a temporal value too", () => {
+    const sel = fragmentSelector("t=3,9");
+    expect(sel.conformsTo).toBe(MEDIA_FRAGS_CONFORMS_TO);
+    expect(sel.value).toBe("t=3,9");
   });
 });
 

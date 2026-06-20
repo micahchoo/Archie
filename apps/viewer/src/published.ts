@@ -22,6 +22,10 @@ export type PublishedExhibit = PortableExhibit;
 // state keeps the existing loadGallery/loadPublishedExhibit signatures unchanged for consumers.
 let portableFs: Filesystem | null = null;
 let portableRevoke: (() => void) | null = null;
+// Monotonic load id — guards the revoke lifecycle against rapid navigation (A→B→C) and out-of-order
+// await resolution: a load captures the seq before its await and, if superseded on resume, frees its OWN
+// blobs instead of clobbering the live revoke handle (which would leak the live exhibit's blob URLs).
+let portableSeq = 0;
 
 /** Enter portable mode, reading from `fs` (an opened `.archie.zip`). Frees any prior portable state. */
 export function openPortableLibrary(fs: Filesystem): void {
@@ -31,6 +35,7 @@ export function openPortableLibrary(fs: Filesystem): void {
 
 /** Leave portable mode (revokes the last exhibit's blob URLs). */
 export function closePortableLibrary(): void {
+  portableSeq++; // supersede any in-flight load so it self-revokes after teardown (open-another / re-open)
   portableRevoke?.();
   portableRevoke = null;
   portableFs = null;
@@ -53,8 +58,9 @@ export function isPortable(): boolean {
 let liveFs: MemoryFilesystem | null = null;
 let liveSlugs: ReadonlySet<string> = new Set();
 let liveRevoke: (() => void) | null = null;
+let liveSeq = 0; // mirrors portableSeq — guards the live-source revoke handle against the same load race
 
-/** Is this slug served from the live working store? Drives the Gallery's "Local" badge — local =
+/** Is this slug served from the live working store? Drives the Gallery's "Browser" badge — browser =
  *  only you can see it, in this browser; PUBLISH is what puts it on the web (citable). */
 export function isLiveSlug(slug: string): boolean {
   return liveSlugs.has(slug);
@@ -82,7 +88,7 @@ export async function initLiveSource(): Promise<boolean> {
     // annotation (exposed by maps — only the live source carries them). This base sets IRIs/identifiers
     // only; the in-memory tree is read by relative path. (Decoupling these two bases fixed live notes —
     // they were equal-by-coincidence until the published base moved to the real origin.)
-    await publishLibrary(mem, working.library, working.getLog, { baseUrl: WORKING_IRI_BASE, getAsset: working.getAsset });
+    await publishLibrary(mem, working.library, working.getLog, { baseUrl: WORKING_IRI_BASE, getAsset: working.getAsset, getThumbnail: working.getThumbnail });
     liveFs = mem;
     liveSlugs = new Set(working.library.exhibits.map((e) => e.slug));
     console.info(`Archie: live source on — ${liveSlugs.size} local exhibit(s) read from this browser's Studio working store`);
@@ -135,7 +141,8 @@ export async function probeViewerMode(): Promise<ViewerMode> {
       try {
         await res.json();
         probe = { kind: "ok" };
-      } catch {
+      } catch (e) {
+        console.warn("Archie: exhibits.json returned 200 but wasn't valid JSON (corrupt deployment or an HTML error page) —", e);
         probe = { kind: "malformed" };
       }
     }
@@ -208,19 +215,40 @@ export async function loadGallery(): Promise<ExhibitsJson> {
   return mergeGalleries(await loadPortableGallery(liveFs), hosted);
 }
 
+// Hosted exhibits come from an IMMUTABLE published tree (it changes only on republish → a full page
+// reload), so a slug's read is cacheable for the session: revisiting an exhibit from the Gallery is
+// then instant instead of re-fetching + re-parsing the (now annotation-laden) manifest. Holds JSON
+// only — hosted images are URLs, not bytes — so it's bounded by what you actually open. NOT used for
+// portable/live: those mint blob URLs under a revoke lifecycle (a cached exhibit would hand back
+// revoked URLs) and live data mutates as you author.
+const hostedCache = new Map<string, PublishedExhibit>();
+
 async function fetchJson<T>(path: string): Promise<T> {
   const res = await fetch(`${PUBLISHED}/${path}`);
   if (!res.ok) {
     console.error(`Archie: failed to fetch ${path} — HTTP ${res.status}`);
     throw new Error("Couldn't load this exhibit. Reload to try again.");
   }
-  return (await res.json()) as T;
+  try {
+    return (await res.json()) as T;
+  } catch (e) {
+    // A 200 with an unparsable body (a host's HTML error / SPA-fallback page → "Unexpected token <") is a
+    // corrupt deployment, not a network miss — name it so the failure isn't an undebuggable blank error.
+    console.error(`Archie: ${path} returned 200 but wasn't valid JSON —`, e);
+    throw new Error("Couldn't load this exhibit. Reload to try again.");
+  }
 }
 
-/** Fetch a file that may not exist (e.g. readings.json on a base-only exhibit) → null on 404. */
+/** Fetch a file that may not exist (e.g. readings.json on a base-only exhibit) → null when absent. */
 async function fetchJsonOptional<T>(path: string): Promise<T | null> {
   const res = await fetch(`${PUBLISHED}/${path}`);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    // 404 = genuinely absent (a base-only exhibit). A 5xx/403 is a TRANSIENT failure on an optional file —
+    // still degrade to null (don't abort a loaded exhibit; stay consistent with fsJsonSource.getOptional's
+    // swallow-and-continue), but surface it so a hiccup isn't silently misread as "no data".
+    if (res.status !== 404) console.warn(`Archie: optional ${path} returned HTTP ${res.status} — treating as absent`);
+    return null;
+  }
   return (await res.json()) as T;
 }
 
@@ -232,7 +260,12 @@ export async function loadPublishedExhibit(slug: string): Promise<PublishedExhib
   // minting the next (the revoke lifecycle — browser-verify owed for RAM peak, ADR-0010).
   if (portableFs) {
     portableRevoke?.();
+    portableRevoke = null;
+    const seq = ++portableSeq;
     const { exhibit, revoke } = await loadPortableExhibit(portableFs, slug);
+    // Superseded mid-await by a newer load (rapid nav) or a close? Free THESE blobs now and don't clobber
+    // the live revoke handle — the destroyed component discards `exhibit` anyway. (revoke is idempotent.)
+    if (seq !== portableSeq) { revoke(); return exhibit; }
     portableRevoke = revoke;
     return exhibit;
   }
@@ -240,10 +273,18 @@ export async function loadPublishedExhibit(slug: string): Promise<PublishedExhib
   // projection — blob lifecycle mirrors portable's (revoke the previous before minting the next).
   if (liveFs && liveSlugs.has(slug)) {
     liveRevoke?.();
+    liveRevoke = null;
+    const seq = ++liveSeq;
     const { exhibit, revoke } = await loadPortableExhibit(liveFs, slug);
+    if (seq !== liveSeq) { revoke(); return exhibit; }
     liveRevoke = revoke;
     return exhibit;
   }
   // Hosted: the real deployed-consumer path — the shared reader (the domino) over the HTTP source.
-  return readExhibitTree(httpSource, slug);
+  // Served from the session cache on revisit (the published tree is immutable until a reload).
+  const cached = hostedCache.get(slug);
+  if (cached) return cached;
+  const exhibit = await readExhibitTree(httpSource, slug);
+  hostedCache.set(slug, exhibit);
+  return exhibit;
 }

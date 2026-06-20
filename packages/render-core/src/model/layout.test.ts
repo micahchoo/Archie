@@ -1,14 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { resolveLayout } from "./layout.js";
 import type { Exhibit } from "./model.js";
+import { asExhibitId, asObjectId } from "../wadm/brand.js";
 
 // Layout resolution (CONTEXT §Layout v1 = Single + Grid + Narrative; ADR-0016 "narrative as an
 // emergent reading mode"). The leading surface is a PURE FUNCTION OF CONTENT: the type is always
 // DERIVED (sections → narrative, multiple objects → grid, one object → single) and any author-stored
 // `exhibit.layout` is IGNORED (the field is deprecated, kept only for legacy read-tolerance).
 
-const obj = (id: string) => ({ id, source: `${id}.jpg`, label: id });
-const ex = (over: Partial<Exhibit>): Exhibit => ({ id: "e", slug: "e", title: "E", objects: [obj("a")], ...over });
+const obj = (id: string) => ({ id: asObjectId(id), source: `${id}.jpg`, label: id });
+const ex = (over: Partial<Exhibit>): Exhibit => ({ id: asExhibitId("e"), slug: "e", title: "E", objects: [obj("a")], ...over });
 
 describe("resolveLayout", () => {
   it("ignores a stored layout — the type is derived from content (deprecated field, ADR-0016)", () => {

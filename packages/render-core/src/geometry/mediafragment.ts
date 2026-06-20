@@ -8,6 +8,18 @@
 // first, then delegates each to the existing single-dimension logic — one source of truth per axis.
 import type { Box } from "./selector.js";
 import { parseTimeFragment, timeFragmentValue, type TimeRange } from "../av/time.js";
+import type { W3CFragmentSelector } from "../wadm/types.js";
+
+/** The W3C Media Fragments conformance IRI — the `conformsTo` every media-fragment selector carries.
+ *  One literal so every selector (image rect, AV time, transcript cue) agrees. */
+export const MEDIA_FRAGS_CONFORMS_TO = "http://www.w3.org/TR/media-frags/";
+
+/** Wrap a media-fragment value string (`xywh=…` / `t=…` / combined) into the canonical
+ *  W3C FragmentSelector object — the single builder both apps + the transcript adapter route through,
+ *  so the `{type, conformsTo, value}` shape is minted in exactly one place (ADR-0006). */
+export function fragmentSelector(value: string): W3CFragmentSelector {
+  return { type: "FragmentSelector", conformsTo: MEDIA_FRAGS_CONFORMS_TO, value };
+}
 
 /** Coordinate unit of a spatial fragment: `pixel` (images) or `percent` (video — frame-size-independent). */
 export type FragmentUnit = "pixel" | "percent";

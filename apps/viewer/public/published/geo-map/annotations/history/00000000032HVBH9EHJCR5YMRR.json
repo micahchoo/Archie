@@ -1,0 +1,41 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/history/00000000032HVBH9EHJCR5YMRR.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/00000000032HVBH9EHJCR5YMRR/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:14480,6381,140,140"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.003Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Tokyo",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "00000000032HVBH9EHJCR5YMRR",
+      "archie:rev": "00000000031D4PRKZZZJWYTAMY",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:geo": {
+        "type": "bbox",
+        "west": 138.1640625,
+        "south": 34.43409789359469,
+        "east": 141.240234375,
+        "north": 36.93233006150314
+      }
+    }
+  ]
+}

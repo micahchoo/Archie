@@ -62,7 +62,7 @@
 </div>
 
 <style>
-  .lb-scrim { position: fixed; inset: 0; background: rgba(59,49,56,0.82); backdrop-filter: blur(3px); z-index: 60; }
+  .lb-scrim { position: fixed; inset: 0; background: var(--scrim-dim); backdrop-filter: blur(3px); z-index: 60; }
   .lb {
     position: fixed; z-index: 61; top: 50%; left: 50%; transform: translate(-50%, -50%);
     display: flex; flex-direction: column; gap: var(--space-4);

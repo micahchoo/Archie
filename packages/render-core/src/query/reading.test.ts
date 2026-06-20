@@ -113,16 +113,20 @@ describe("reading round-trips through serialize/deserialize (sub-phase 1B)", () 
 });
 
 describe("migration — legacy layers fold into Tags, losslessly (sub-phase 1C, ADR-0007)", () => {
+  // `layers` is retired from the model (the field no longer exists on AnnotationRecord / NewNoteInput),
+  // so legacy data is simulated by attaching the raw value via cast — exactly how deserialize.ts hands
+  // it to foldLayersIntoTags after reading `archie:layers` off old persisted JSON.
+  const withLegacyLayers = (r: AnnotationRecord, layers: string[]): AnnotationRecord =>
+    Object.assign({}, r, { layers }) as AnnotationRecord;
   it("folds every layer into a purpose:tagging body and drops layers (no data loss)", () => {
-    const r = appendNew([], { target: "c1", body: { type: "TextualBody", value: "comment" }, layers: ["conservation", "iconography"], lastEditor: alice, modifiedAt: t, now: 1 }).record;
+    const r = withLegacyLayers(note({ value: "comment" }), ["conservation", "iconography"]);
     const m = foldLayersIntoTags(r);
     expect(tagsOf(m).sort()).toEqual(["conservation", "iconography"]);
-    expect(m.layers).toBeUndefined();
+    expect((m as { layers?: string[] }).layers).toBeUndefined();
     expect(m.reading).toBeUndefined(); // migration does NOT guess a reading — the curator re-curates
   });
   it("does not duplicate a layer already present as a tag", () => {
-    const r = note({ value: "c", tags: ["ink"] });
-    (r as { layers?: string[] }).layers = ["ink", "gold"];
+    const r = withLegacyLayers(note({ value: "c", tags: ["ink"] }), ["ink", "gold"]);
     const m = foldLayersIntoTags(r);
     expect(tagsOf(m).sort()).toEqual(["gold", "ink"]);
   });

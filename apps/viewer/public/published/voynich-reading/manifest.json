@@ -2936,6 +2936,10 @@
       "start": {
         "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1#xywh=pixel:200,200,2600,3400",
         "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/narrative.json",
+        "type": "AnnotationCollection"
       }
     },
     {
@@ -2960,6 +2964,10 @@
       "start": {
         "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5#xywh=pixel:400,300,4000,3100",
         "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/narrative.json",
+        "type": "AnnotationCollection"
       }
     },
     {
@@ -2984,6 +2992,10 @@
       "start": {
         "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8#xywh=pixel:200,400,2400,3000",
         "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/narrative.json",
+        "type": "AnnotationCollection"
       }
     },
     {
@@ -3008,6 +3020,10 @@
       "start": {
         "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9#xywh=pixel:2600,2400,2800,2600",
         "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/narrative.json",
+        "type": "AnnotationCollection"
       }
     },
     {
@@ -3032,6 +3048,10 @@
       "start": {
         "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10#xywh=pixel:200,400,2300,3000",
         "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/narrative.json",
+        "type": "AnnotationCollection"
       }
     },
     {
@@ -3056,6 +3076,10 @@
       "start": {
         "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11#xywh=pixel:200,160,2300,420",
         "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/narrative.json",
+        "type": "AnnotationCollection"
       }
     }
   ]

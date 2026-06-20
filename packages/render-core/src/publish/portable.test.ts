@@ -10,13 +10,14 @@ import { resolveObjectURL } from "node:buffer";
 import { ZipFilesystem } from "../fs/zip.js";
 import { publishLibrary } from "./site.js";
 import { appendNew } from "../spine/log.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import { thumbnailUrl } from "../iiif/resolve.js";
 import { splitNoteMedia } from "../note/media.js";
 import { bodiesOfAnnotation } from "../query/published.js";
 import type { Library } from "../model/model.js";
 import type { AnnotationLog } from "../wadm/types.js";
 import { loadPortableExhibit, loadPortableGallery } from "./portable.js";
+import { readExhibitTree, fsJsonSource } from "./read.js";
 
 // --- fixture: build a published `.archie.zip`'s bytes WITH an embedded asset image -------------
 const BASE = "https://u.gh.io/lib/";
@@ -41,9 +42,9 @@ function buildLog(): AnnotationLog {
 }
 
 const library: Library = {
-  id: "L",
+  id: asLibraryId("L"),
   title: "Lib",
-  exhibits: [{ id: "e1", slug: SLUG, title: "Voynich", objects: [{ id: "o1", source: `/assets/${ASSET_NAME}`, label: "folio 1" }] }],
+  exhibits: [{ id: asExhibitId("e1"), slug: SLUG, title: "Voynich", objects: [{ id: asObjectId("o1"), source: `/assets/${ASSET_NAME}`, label: "folio 1" }] }],
 };
 
 async function buildArchiveBytes(): Promise<Uint8Array> {
@@ -63,8 +64,8 @@ const openArchive = (bytes: Uint8Array) => ZipFilesystem.fromZip(bytes);
 async function buildAssetsSlugArchive(): Promise<Uint8Array> {
   const fs = new ZipFilesystem();
   const lib: Library = {
-    id: "L", title: "Lib",
-    exhibits: [{ id: "e1", slug: "assets", title: "Assets", objects: [{ id: "o1", source: `/assets/${ASSET_NAME}`, label: "shot" }] }],
+    id: asLibraryId("L"), title: "Lib",
+    exhibits: [{ id: asExhibitId("e1"), slug: "assets", title: "Assets", objects: [{ id: asObjectId("o1"), source: `/assets/${ASSET_NAME}`, label: "shot" }] }],
   };
   await publishLibrary(fs, lib, () => [], {
     baseUrl: BASE,
@@ -144,5 +145,56 @@ describe("portable read seam (ADR-0010) over a ZipFilesystem", () => {
   it("loadPortableGallery reads the exhibits.json index from the archive", async () => {
     const gallery = await loadPortableGallery(openArchive(await buildArchiveBytes()));
     expect(gallery.exhibits.map((e) => e.slug)).toContain(SLUG);
+  });
+});
+
+// --- baked-thumbnail fixture (separate, per the test-fixtures rule) -----------------------------
+// An imported-asset object carrying a baked thumbnail: publishLibrary copies BOTH the master (getAsset)
+// AND the thumbnail (getThumbnail) and rewrites object.thumbnail to its published assets-thumb/ URL. The
+// thumbnail bytes are DISTINCT from the master so a test can prove the right derivative is served.
+const THUMB_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66]);
+const thumbLib: Library = {
+  id: asLibraryId("L"), title: "Lib",
+  exhibits: [{ id: asExhibitId("e1"), slug: SLUG, title: "Voynich",
+    objects: [{ id: asObjectId("o1"), source: `/assets/${ASSET_NAME}`, label: "folio 1", thumbnail: `/assets-thumb/${ASSET_NAME}` }] }],
+};
+async function buildThumbArchive(): Promise<Uint8Array> {
+  const fs = new ZipFilesystem();
+  await publishLibrary(fs, thumbLib, () => [], {
+    baseUrl: BASE,
+    getAsset: async (s, n) => (s === SLUG && n === ASSET_NAME ? PNG_BYTES.slice().buffer : null),
+    getThumbnail: async (s, n) => (s === SLUG && n === ASSET_NAME ? THUMB_BYTES.slice().buffer : null),
+  });
+  return fs.toZip();
+}
+
+describe("baked thumbnail (grid-overview load perf) round-trip", () => {
+  it("publishLibrary copies the thumbnail + readExhibitTree recovers its published URL (hosted path)", async () => {
+    const ex = await readExhibitTree(fsJsonSource(openArchive(await buildThumbArchive())), SLUG);
+    expect(ex.objects[0]!.thumbnail).toBe(`${BASE}${SLUG}/assets-thumb/${ASSET_NAME}`);
+  });
+
+  it("loadPortableExhibit mints a blob: URL for the thumbnail carrying the THUMBNAIL bytes (not the master)", async () => {
+    const { exhibit, blobUrls, revoke } = await loadPortableExhibit(openArchive(await buildThumbArchive()), SLUG);
+    const thumb = exhibit.objects[0]!.thumbnail!;
+    expect(thumb.startsWith("blob:")).toBe(true);
+    expect(blobUrls).toContain(thumb);
+    const blob = resolveObjectURL(thumb);
+    expect([...new Uint8Array(await blob!.arrayBuffer())]).toEqual([...THUMB_BYTES]); // the small derivative, distinct from the master
+    // The master source is its OWN, distinct blob (the grid uses thumbnail; the Reader uses source).
+    expect(exhibit.objects[0]!.source.startsWith("blob:")).toBe(true);
+    expect(exhibit.objects[0]!.source).not.toBe(thumb);
+    revoke();
+  });
+
+  it("drops the thumbnail when getThumbnail is absent — no manifest ref to an unpublished file", async () => {
+    const fs = new ZipFilesystem();
+    await publishLibrary(fs, thumbLib, () => [], {
+      baseUrl: BASE,
+      getAsset: async (s, n) => (s === SLUG && n === ASSET_NAME ? PNG_BYTES.slice().buffer : null),
+      // no getThumbnail wired → the working `/assets-thumb/` ref must be stripped at publish
+    });
+    const ex = await readExhibitTree(fsJsonSource(ZipFilesystem.fromZip(fs.toZip())), SLUG);
+    expect(ex.objects[0]!.thumbnail).toBeUndefined();
   });
 });

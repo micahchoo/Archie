@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { publishLibrary } from "./site.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { appendNew, appendDelete } from "../spine/log.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import type { Library } from "../model/model.js";
 import type { AnnotationLog } from "../wadm/types.js";
 
@@ -33,18 +33,18 @@ function fixture() {
   log = appendDelete(r.log, r.record.logicalId, { lastEditor: alice, modifiedAt: "t5", now: 5 }).log;
 
   const library: Library = {
-    id: "lib",
+    id: asLibraryId("lib"),
     title: "The Library",
     summary: "A library summary",
     requiredStatement: { label: "Attribution", value: "Library credit line — Beinecke" },
     exhibits: [
       {
-        id: "exA", slug: "a", title: "Exhibit Alpha", summary: "Alpha summary",
+        id: asExhibitId("exA"), slug: "a", title: "Exhibit Alpha", summary: "Alpha summary",
         requiredStatement: { label: "Attribution", value: "Alpha exhibit credit" },
-        objects: [{ id: "o1", source: "https://img/a.jpg", label: "Folio 1", width: 10, height: 10 }],
+        objects: [{ id: asObjectId("o1"), source: "https://img/a.jpg", label: "Folio 1", width: 10, height: 10 }],
         readings: [{ id: "cipher", name: "Cipher", colour: "#aa3333" }],
       },
-      { id: "exB", slug: "b", title: "Exhibit Beta", objects: [] },
+      { id: asExhibitId("exB"), slug: "b", title: "Exhibit Beta", objects: [] },
     ],
   };
   const logs: Record<string, AnnotationLog> = { exA: log, exB: [] };
