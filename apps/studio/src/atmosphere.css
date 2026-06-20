@@ -1,7 +1,7 @@
-/* Soft Static atmosphere + utility layer (template: Soft Static design system).
-   The always-on identity: a fixed blush→dusk gradient backdrop, a warm focal bloom, a soft edge
-   vignette, and a heavy grain film over everything. Depth is built from blur + light, never from a
-   hard offset shadow. Functional content rides on warm-paper surfaces so text stays legible at any
+/* Verdant Clearing atmosphere + utility layer (Sweat Sessions After, design/design.md v0.4).
+   The always-on identity: a fixed parchment→forest-shade gradient backdrop, an emerald focal bloom, a
+   soft edge vignette, and a grain film over everything. Depth is built from blur + light, never from a
+   hard offset shadow. Functional content rides on warm-parchment surfaces so text stays legible at any
    scroll. MUST load LAST (after markers.css). NOTE: duplicated in apps/viewer/src/atmosphere.css. */
 
 /* ── Ground: the blush→dusk vertical gradient, fixed as a backdrop ── */
@@ -82,7 +82,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-canvas-muted); }
 .pixel-btn--pink { background: var(--accent-2); }
 .label-pill { /* old navy pill → quiet Soft Static eyebrow */
   display: inline-block; font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 400;
-  letter-spacing: 0.26em; text-transform: uppercase; color: rgba(59,49,56,0.55);
+  letter-spacing: 0.26em; text-transform: uppercase; color: rgba(26,60,35,0.55);
   background: transparent; padding: 0;
 }
 .pixel-card { background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }

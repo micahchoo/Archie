@@ -126,7 +126,7 @@
   };
   // Forest-green neutral default for reading-less (base) marks (system.md §"Base notes") — same
   // stroke-over-stroke opacities as the reading style, so emphasis modulates a VISIBLE base mark.
-  const ACCENT = "#3a6b4c";
+  const ACCENT = "#3A8C5D"; // emerald base mark (--accent) — clears ~4.7:1 on the near-black light-table canvas
   // Per-note hover solo (the Reader list's hover → the mark lights up). Read INSIDE readingStyleOf
   // so the template's `styleOf={readingStyleOf(...)}` expression depends on it and re-mints the
   // closure identity on change — Canvas only re-applies styles when the prop identity changes

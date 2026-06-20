@@ -29,7 +29,9 @@ export const escapeBody = (md: string): string =>
   `<p>${esc(md).replace(/\r?\n\r?\n+/g, "</p>\n<p>").replace(/\r?\n/g, "<br>")}</p>`;
 
 // One shared, deliberately minimal chrome: readable column, no script, archival tone.
-const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:Georgia,serif;line-height:1.55;color:#222}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #3a6b4c;background:#f7f5f0}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#9a6f1e}article .tags,footer,.credit{color:#666;font-size:0.9rem}a{color:#3a6b4c}`;
+// Verdant Clearing palette (design/design.md v0.4): parchment ground, moss ink, hunter accent, amber
+// reading-label. System sans echoes LARAZ without shipping a webfont on this archival surface.
+const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23;background:#F7F4EC}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #2D5F3A;background:#EEF1E6}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#9A7B39}article .tags,footer,.credit{color:#6B7D6A;font-size:0.9rem}a{color:#2D5F3A}`;
 
 function pageShell(title: string, body: string): string {
   return `<!DOCTYPE html>

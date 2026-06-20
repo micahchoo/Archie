@@ -104,6 +104,12 @@
       // re-run on tool/drawing CHANGES, so a state set during the async mount gap would be lost.
       surface.setDrawingTool(tool);
       surface.setDrawingEnabled(drawing);
+      // Same mount-gap catch-up for the focus region (a narrative Section.start, ADR-0005): the line-130
+      // $effect only fires on focus CHANGES, but a REMOUNT (switching objects via {#key canvasId}) sets
+      // `focus` BEFORE this async mount resolves — surface was undefined when the effect first ran, and it
+      // is not reactive, so it never re-fires. Fit it once here, or a cross-object navigate (studio's
+      // narrative card → another object, and the viewer's cross-object section) never frames its region.
+      if (focus) surface.fitRegion(focus);
       // Follow the selected marker as the viewport moves (OSD-native re-anchor — donor pattern, no dep).
       offViewport = surface.onViewportChange(() => { emitRect(); emitRects(); });
       emitRect();

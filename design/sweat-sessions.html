@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sweat Sessions — After (verdant clearing)</title>
+<style>
+/* ============================================================
+   SWEAT SESSIONS — "After" / verdant clearing
+   Self-contained reference render. v0.4
+   Values transcribed verbatim from design/_after-tokens.md.
+   Mood swap: after-dark warehouse → sun-dappled clearing.
+   ============================================================ */
+
+/* ---- @font-face (exact; fonts live in design/fonts/) ---- */
+@font-face { font-family:'FOP VHS'; src:url('fonts/FOPVHS.ttf') format('truetype'); font-weight:700; font-style:normal; font-display:swap; }
+@font-face { font-family:'Vinque Antique'; src:url('fonts/VinqueAntique-Bold.otf') format('opentype'); font-weight:700; font-style:normal; font-display:swap; }
+@font-face { font-family:'Vinque Antique'; src:url('fonts/VinqueAntique-BoldItalic.otf') format('opentype'); font-weight:700; font-style:italic; font-display:swap; }
+@font-face { font-family:'LARAZ'; src:url('fonts/LARAZ-Light.ttf') format('truetype'); font-weight:300; font-style:normal; font-display:swap; }
+@font-face { font-family:'LARAZ'; src:url('fonts/LARAZ-Regular.ttf') format('truetype'); font-weight:400; font-style:normal; font-display:swap; }
+
+:root{
+  /* ---- 7 colors ---- */
+  --parchment:#F7F4EC;
+  --hunter:#2D5F3A;
+  --emerald:#3A8C5D;
+  --mint:#A8E6CF;
+  --amber:#C9A96E;
+  --moss:#1A3C23;
+  --sage:#6B7D6A;
+
+  /* ---- gradients ---- */
+  --verdant-ground:
+    radial-gradient(58% 42% at 50% -4%,  rgba(168,230,207,0.55) 0%, rgba(168,230,207,0) 58%),
+    radial-gradient(52% 48% at 29% 44%,  rgba(201,169,110,0.32) 0%, rgba(201,169,110,0) 60%),
+    radial-gradient(54% 48% at 81% 67%,  rgba(58,140,93,0.30)  0%, rgba(58,140,93,0) 60%),
+    radial-gradient(120% 98% at 56% 22%, rgba(45,95,58,0.26)   0%, rgba(45,95,58,0) 64%),
+    radial-gradient(140% 130% at 50% 128%, rgba(26,60,35,0.14) 36%, transparent 100%),
+    radial-gradient(120% 130% at 3% 78%,   rgba(26,60,35,0.10) 18%, transparent 56%),
+    #F7F4EC;
+  --verdant-ground-soft:
+    radial-gradient(120% 90% at 78% 14%, rgba(58,140,93,0.18) 0%, transparent 62%),
+    radial-gradient(90% 80% at 16% 50%,  rgba(201,169,110,0.14) 0%, transparent 60%),
+    #F7F4EC;
+  --emerald-bloom: radial-gradient(60% 60% at 50% 30%, #3A8C5D 0%, rgba(58,140,93,0) 70%);
+  --amber-bloom:   radial-gradient(55% 55% at 35% 50%, rgba(201,169,110,0.6) 0%, rgba(201,169,110,0) 70%);
+  --vignette:      radial-gradient(130% 120% at 50% 40%, transparent 46%, rgba(26,60,35,0.14) 100%);
+  --poster-scrim:  linear-gradient(to top, rgba(247,244,236,0.94) 0%, rgba(247,244,236,0.55) 17%, transparent 40%);
+
+  /* ---- translucency tiers (moss) ---- */
+  --panel-fill:rgba(26,60,35,0.05);
+  --panel-border:rgba(26,60,35,0.12);
+  --panel-fill-hover:rgba(26,60,35,0.08);
+  --panel-border-hover:rgba(26,60,35,0.20);
+  --inset:rgba(26,60,35,0.08);
+  --hairline:rgba(26,60,35,0.16);
+
+  /* ---- font stacks (documented fallbacks) ---- */
+  --f-vhs:'FOP VHS','Arial Black',sans-serif;
+  --f-vinque:'Vinque Antique','UnifrakturCook',serif;
+  --f-laraz:'LARAZ',system-ui,sans-serif;
+
+  --maxw:1180px;
+  --margin-poster:clamp(20px,4vw,56px);
+  --pad-section-y:clamp(64px,10vh,140px);
+}
+
+*{box-sizing:border-box;}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+body{
+  margin:0;
+  /* body background = verdant-ground over parchment; primary text = moss */
+  background:var(--verdant-ground);
+  background-attachment:fixed;
+  color:var(--moss);
+  font-family:var(--f-laraz);
+  font-weight:400;
+  line-height:1.65;
+}
+
+/* ============================================================
+   GRAIN — two fixed full-viewport passes (inline SVG feTurbulence)
+   coarse multiply 0.08 @0.58 ; finer soft-light 0.06 @0.85
+   ============================================================ */
+.grain,.grain-soft{
+  position:fixed; inset:0;
+  pointer-events:none;
+  z-index:9000;
+}
+.grain{
+  opacity:0.08;
+  mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.58' numOctaves='2' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.4' intercept='-0.6'/%3E%3CfeFuncG type='linear' slope='2.4' intercept='-0.6'/%3E%3CfeFuncB type='linear' slope='2.4' intercept='-0.6'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size:240px 240px;
+}
+.grain-soft{
+  opacity:0.06;
+  mix-blend-mode:soft-light;
+  z-index:9001;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='gs'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='1.7' intercept='-0.35'/%3E%3CfeFuncG type='linear' slope='1.7' intercept='-0.35'/%3E%3CfeFuncB type='linear' slope='1.7' intercept='-0.35'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23gs)'/%3E%3C/svg%3E");
+  background-size:180px 180px;
+}
+/* swatch / poster grain (local, multiply) */
+.grain-local{
+  position:absolute; inset:0; pointer-events:none; z-index:2;
+  opacity:0.15; mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='gl'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.60' numOctaves='2' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.4' intercept='-0.6'/%3E%3CfeFuncG type='linear' slope='2.4' intercept='-0.6'/%3E%3CfeFuncB type='linear' slope='2.4' intercept='-0.6'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23gl)'/%3E%3C/svg%3E");
+  background-size:200px 200px;
+}
+
+/* ============================================================
+   LAYOUT — full-bleed sections, moss hairline seams, inner column
+   ============================================================ */
+section.bleed{
+  position:relative;
+  padding:var(--pad-section-y) var(--margin-poster);
+  border-top:1px solid var(--hairline);
+}
+section.bleed:first-of-type{border-top:none;}
+.col{ max-width:var(--maxw); margin:0 auto; position:relative; z-index:3;}
+
+.eyebrow{
+  font-family:var(--f-laraz); font-weight:300;
+  color:var(--sage);
+  font-size:12px; letter-spacing:0.22em; text-transform:uppercase;
+  display:flex; align-items:center; gap:14px;
+  margin:0 0 28px;
+}
+.eyebrow::after{content:""; flex:1; height:1px; background:var(--hairline);}
+.eyebrow .num{color:var(--emerald);}
+
+.sec-display{
+  font-family:var(--f-vinque); font-weight:700; font-style:italic;
+  font-size:clamp(30px,5vw,60px); line-height:1.0; text-transform:uppercase;
+  letter-spacing:0.005em; margin:0 0 18px; color:var(--moss);
+}
+.sec-lede{
+  font-family:var(--f-laraz); font-weight:400;
+  font-size:clamp(16px,1.6vw,20px); line-height:1.6;
+  max-width:58ch; color:var(--moss); margin:0 0 8px;
+}
+.sec-lede .sage{color:var(--sage);}
+p.body{ font-family:var(--f-laraz); font-weight:400; font-size:clamp(14px,1.2vw,18px); line-height:1.7; max-width:62ch;}
+
+/* ============================================================
+   1) COVER / POSTER
+   ============================================================ */
+.poster-wrap{ display:flex; justify-content:center; }
+.poster{
+  position:relative;
+  width:min(680px,100%);
+  aspect-ratio:4/5;
+  overflow:hidden;
+  border:1px solid var(--panel-border);
+  background:var(--verdant-ground-soft);
+  isolation:isolate;
+}
+.poster .mesh-host{ position:absolute; inset:0; z-index:1; }
+.poster-bloom{
+  position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:var(--emerald-bloom),var(--amber-bloom);
+  opacity:0.55;
+  mix-blend-mode:multiply;
+}
+.poster-bloom.drift{ animation:bloomdrift 26s ease-in-out infinite alternate; }
+@keyframes bloomdrift{
+  0%{ transform:translate(-2%,-1.5%) scale(1.02); opacity:0.5;}
+  100%{ transform:translate(2.5%,2%) scale(1.06); opacity:0.62;}
+}
+.poster-scrim{ position:absolute; inset:0; z-index:2; background:var(--poster-scrim); pointer-events:none;}
+.poster-vignette{ position:absolute; inset:0; z-index:2; background:var(--vignette); pointer-events:none;}
+.poster .grain-local{ z-index:3; opacity:0.15;}
+.poster-content{ position:absolute; inset:0; z-index:4; padding:clamp(20px,4vw,40px); display:flex; flex-direction:column;}
+
+/* marquee lockup band lower-left */
+.poster-lockup{ margin-top:auto; max-width:72%;}
+.marquee{
+  font-family:var(--f-vhs); font-weight:700;
+  text-transform:uppercase; line-height:0.92;
+  font-size:clamp(34px,7.2vw,72px); letter-spacing:0.01em;
+  color:var(--moss); margin:0;
+}
+.marquee .tint{ color:var(--emerald); }
+.stamp-band{
+  display:inline-flex; align-items:baseline; gap:10px;
+  margin-top:14px; padding:8px 14px;
+  background:var(--hunter);
+  border:1px solid rgba(26,60,35,0.4);
+}
+.stamp-no{
+  font-family:var(--f-laraz); font-weight:400;
+  color:var(--mint); font-size:13px; letter-spacing:0.15em; text-transform:uppercase;
+  position:relative; top:-0.32em;
+}
+.stamp-num{
+  font-family:var(--f-vinque); font-weight:700;
+  color:var(--mint); font-size:clamp(34px,5vw,56px); line-height:0.9;
+}
+
+/* metadata plate flush-right same band */
+.poster-meta{
+  position:absolute; right:clamp(20px,4vw,40px); bottom:clamp(72px,14vw,128px);
+  text-align:right;
+  font-family:var(--f-laraz); font-weight:400;
+  color:var(--moss); font-size:clamp(12px,1.2vw,15px);
+  letter-spacing:0.06em; text-transform:uppercase; line-height:1.3;
+  z-index:4;
+}
+.poster-meta span{display:block;}
+
+/* genre tags stacked right edge mid-height */
+.poster-tags{
+  position:absolute; right:clamp(20px,4vw,40px); top:clamp(40px,9vw,90px);
+  display:flex; flex-direction:column; gap:8px; align-items:flex-end; z-index:4;
+}
+
+/* lineup roster bottom-left */
+.poster-lineup{
+  margin-top:18px;
+  font-family:var(--f-vhs); font-weight:700; font-style:italic;
+  text-transform:uppercase; line-height:1.12; color:var(--moss);
+  font-size:clamp(15px,2.4vw,24px);
+}
+.poster-lineup span{display:block;}
+
+/* twin-flame logo bottom-right */
+.poster-logo{ position:absolute; right:clamp(20px,4vw,40px); bottom:clamp(20px,4vw,40px); z-index:4;}
+
+/* ---- pills ---- */
+.pill{
+  display:inline-block;
+  background:rgba(26,60,35,0.05);
+  border:1px solid rgba(26,60,35,0.14);
+  color:var(--moss);
+  font-family:var(--f-laraz); font-size:11px; line-height:1;
+  letter-spacing:0.18em; text-transform:uppercase;
+  padding:7px 12px;
+}
+
+/* ---- buttons ---- */
+.btn{
+  display:inline-block; border:none; cursor:pointer;
+  font-family:var(--f-laraz); font-weight:400; font-size:15px;
+  letter-spacing:0.04em; text-transform:uppercase;
+  padding:16px 32px; border-radius:0;
+  transition:transform .18s ease, background-color .18s ease, color .18s ease;
+}
+.btn-ticket{ background:var(--emerald); color:var(--parchment); }
+.btn-ticket:hover{ transform:translateY(-2px); background:var(--hunter); }
+.btn-ghost{
+  background:transparent; color:var(--moss);
+  border:1.5px solid rgba(26,60,35,0.5); padding:15px 30px;
+}
+.btn-ghost:hover{ transform:translateY(-2px); background:var(--moss); color:var(--parchment); border-color:var(--moss); }
+.btn:focus-visible,
+a:focus-visible,.pill:focus-visible,.swatch:focus-visible,.focus-demo:focus-visible{
+  outline:2px solid var(--emerald); outline-offset:3px;
+}
+
+/* ============================================================
+   2) PALETTE
+   ============================================================ */
+.swatch-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+.swatch{ position:relative; }
+.swatch .chip{
+  position:relative; aspect-ratio:1/1; width:100%;
+  border:1px solid var(--panel-border); overflow:hidden;
+}
+.swatch .cap{
+  margin-top:10px;
+  font-family:var(--f-laraz); font-weight:300; font-size:11px;
+  letter-spacing:0.12em; text-transform:uppercase; color:var(--sage);
+}
+.swatch .cap b{ color:var(--moss); font-weight:400; letter-spacing:0.06em; }
+
+/* ============================================================
+   3) TYPOGRAPHY SPECIMENS
+   ============================================================ */
+.spec{ border-top:1px solid var(--hairline); padding:32px 0; }
+.spec:first-child{ border-top:none; }
+.spec .lbl{
+  font-family:var(--f-laraz); font-weight:300; font-size:11px;
+  letter-spacing:0.18em; text-transform:uppercase; color:var(--sage);
+  margin-bottom:18px;
+}
+.sp-marquee{ font-family:var(--f-vhs); font-weight:700; text-transform:uppercase; font-size:clamp(40px,8vw,96px); line-height:0.95; letter-spacing:0.01em; color:var(--moss);}
+.sp-marquee .tint{ color:var(--emerald); }
+.sp-display{ font-family:var(--f-vinque); font-weight:700; font-style:italic; text-transform:uppercase; font-size:clamp(30px,5vw,60px); line-height:1.0; color:var(--moss);}
+.sp-numeral{ font-family:var(--f-vinque); font-weight:700; font-style:italic; font-size:clamp(54px,9vw,110px); line-height:0.9; color:var(--emerald); }
+.sp-meta{ font-family:var(--f-laraz); font-weight:400; letter-spacing:0.06em; text-transform:uppercase; line-height:1.3; color:var(--moss); font-size:15px;}
+.sp-meta span{display:block;}
+.sp-telemetry{ display:flex; flex-wrap:wrap; gap:24px; }
+.sp-telemetry span{ font-family:var(--f-laraz); font-weight:300; font-size:12px; letter-spacing:0.18em; text-transform:uppercase; color:var(--moss);}
+
+/* ============================================================
+   4) COMPONENTS
+   ============================================================ */
+.comp-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:32px; }
+.comp-cell{ border:1px solid var(--panel-border); padding:28px 32px; background:var(--panel-fill); position:relative; }
+.comp-cell > .grain-local{ z-index:0; }
+.comp-cell > *{ position:relative; z-index:1; }
+.comp-cell .tag{ font-family:var(--f-laraz); font-weight:300; font-size:11px; letter-spacing:0.18em; text-transform:uppercase; color:var(--sage); margin-bottom:18px;}
+.comp-note{ font-family:var(--f-laraz); font-size:13px; line-height:1.6; color:var(--sage); margin-top:14px;}
+.btn-row{ display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
+.pill-row{ display:flex; gap:10px; flex-wrap:wrap; }
+.panel-demo{ background:var(--panel-fill); border:1px solid var(--panel-border); padding:24px; transition:background-color .2s,border-color .2s;}
+.panel-demo:hover{ background:var(--panel-fill-hover); border-color:var(--panel-border-hover);}
+.panel-demo .ptitle{ font-family:var(--f-vinque); font-weight:700; font-style:italic; text-transform:uppercase; font-size:clamp(16px,2vw,22px); line-height:1.15; color:var(--moss); margin:0 0 10px;}
+.panel-demo .pbody{ font-family:var(--f-laraz); font-size:14px; line-height:1.7; color:var(--moss); margin:0;}
+.divider{ height:1px; background:var(--hairline); width:100%; }
+.strand{ width:1px; height:120px; background:repeating-linear-gradient(to bottom, rgba(26,60,35,0.55) 0 3px, transparent 3px 9px); }
+.ring{ width:14px; height:14px; border:1px solid rgba(26,60,35,0.5); border-radius:50%; }
+.ring-row{ display:flex; gap:14px; align-items:center; }
+.focus-demo{ display:inline-block; font-family:var(--f-laraz); font-size:13px; letter-spacing:0.1em; text-transform:uppercase; color:var(--moss); border:1px solid var(--panel-border); padding:12px 20px; outline:2px solid var(--emerald); outline-offset:3px;}
+
+/* ============================================================
+   5) POSTER ANATOMY (annotated)
+   ============================================================ */
+.anatomy{ position:relative; width:min(680px,100%); margin:0 auto; aspect-ratio:4/5; border:1px solid var(--panel-border); overflow:hidden; background:var(--verdant-ground-soft); isolation:isolate;}
+.anatomy .mesh-host{ position:absolute; inset:0; z-index:1; opacity:0.7;}
+.anatomy .poster-scrim{ z-index:2; }
+.anatomy .grain-local{ z-index:3; }
+.an-box{ position:absolute; border:1px dashed rgba(26,60,35,0.55); z-index:5;}
+.an-lbl{
+  position:absolute; z-index:6;
+  font-family:var(--f-laraz); font-weight:300; font-size:10px;
+  letter-spacing:0.14em; text-transform:uppercase; color:var(--moss);
+  background:rgba(247,244,236,0.82); padding:3px 7px; border:1px solid var(--panel-border);
+  white-space:nowrap;
+}
+
+/* ============================================================
+   6) TEXTURE
+   ============================================================ */
+.tex-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px; }
+.tex-cell .lbl{ font-family:var(--f-laraz); font-weight:300; font-size:11px; letter-spacing:0.16em; text-transform:uppercase; color:var(--sage); margin-top:12px;}
+.tex-frame{ position:relative; aspect-ratio:4/3; border:1px solid var(--panel-border); overflow:hidden; background:var(--verdant-ground-soft);}
+.grain-show{ position:absolute; inset:0; opacity:0.5; mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='gx'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.58' numOctaves='2' stitchTiles='stitch'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='2.4' intercept='-0.6'/%3E%3CfeFuncG type='linear' slope='2.4' intercept='-0.6'/%3E%3CfeFuncB type='linear' slope='2.4' intercept='-0.6'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23gx)'/%3E%3C/svg%3E");
+  background-size:200px 200px;}
+.tex-frame .mesh-host{ position:absolute; inset:0; }
+.grad-stack{ position:absolute; inset:0; background:var(--verdant-ground);}
+
+/* ============================================================
+   7) DO / DON'T
+   ============================================================ */
+.dd-grid{ display:grid; grid-template-columns:1fr 1fr; gap:32px; }
+.dd-col{ border:1px solid var(--panel-border); padding:28px 32px; background:var(--panel-fill); position:relative;}
+.dd-col h3{ font-family:var(--f-vinque); font-weight:700; font-style:italic; text-transform:uppercase; font-size:clamp(18px,2.4vw,26px); margin:0 0 20px;}
+.dd-do h3{ color:var(--emerald); }
+.dd-dont h3{ color:var(--hunter); }
+.dd-col ul{ list-style:none; margin:0; padding:0;}
+.dd-col li{ font-family:var(--f-laraz); font-size:14px; line-height:1.6; color:var(--moss); padding:10px 0 10px 24px; position:relative; border-top:1px solid var(--hairline);}
+.dd-col li:first-child{ border-top:none; }
+.dd-do li::before{ content:"+"; position:absolute; left:0; color:var(--emerald); font-weight:400;}
+.dd-dont li::before{ content:"\2013"; position:absolute; left:0; color:var(--hunter);}
+
+/* ============================================================
+   8) COLOPHON
+   ============================================================ */
+.colophon{ display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:start;}
+.colo-lockup{ display:flex; align-items:center; gap:24px; flex-wrap:wrap;}
+.colo-stamp{ display:inline-flex; align-items:baseline; gap:10px; padding:10px 16px; background:var(--hunter); border:1px solid rgba(26,60,35,0.4);}
+.colo-stamp .stamp-no{ position:relative; top:-0.3em;}
+.colo-version{ font-family:var(--f-vinque); font-weight:700; font-style:italic; text-transform:uppercase; font-size:clamp(22px,3.2vw,38px); color:var(--moss); margin:24px 0 0;}
+.credits{ font-family:var(--f-laraz); font-size:13px; line-height:1.8; color:var(--sage);}
+.credits b{ color:var(--moss); font-weight:400;}
+.credits .after-line{ color:var(--moss); display:block; margin-top:16px; font-size:14px;}
+
+@media (max-width:1024px){
+  .swatch-grid{ grid-template-columns:repeat(2,1fr);}
+  .comp-grid,.dd-grid,.colophon{ grid-template-columns:1fr;}
+  .tex-grid{ grid-template-columns:1fr;}
+}
+@media (max-width:520px){
+  .swatch-grid{ grid-template-columns:1fr;}
+  .poster-meta,.poster-tags{ position:static; text-align:left; align-items:flex-start; margin-top:14px;}
+}
+
+/* ---- prefers-reduced-motion: kill bloom drift + button hover transition ---- */
+@media (prefers-reduced-motion:reduce){
+  .poster-bloom.drift{ animation:none; }
+  .btn{ transition:none; }
+  .btn-ticket:hover,.btn-ghost:hover{ transform:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- GRAIN layers (fixed, full viewport) -->
+<div class="grain" aria-hidden="true"></div>
+<div class="grain-soft" aria-hidden="true"></div>
+
+<!-- ============================================================
+     1) COVER / POSTER
+     ============================================================ -->
+<section class="bleed" id="cover">
+  <div class="col">
+    <div class="eyebrow"><span>Sweat Sessions — After</span> <span class="num">verdant clearing</span></div>
+    <div class="poster-wrap">
+      <div class="poster" id="poster">
+        <div class="mesh-host" data-mesh data-seed="8"></div>
+        <div class="poster-bloom drift" aria-hidden="true"></div>
+        <div class="poster-vignette" aria-hidden="true"></div>
+        <div class="poster-scrim" aria-hidden="true"></div>
+        <div class="grain-local" aria-hidden="true"></div>
+
+        <!-- genre tags right edge -->
+        <div class="poster-tags">
+          <span class="pill">TECHNO</span>
+          <span class="pill">18+</span>
+          <span class="pill">BUSHWICK</span>
+        </div>
+
+        <!-- metadata plate flush-right on band -->
+        <div class="poster-meta">
+          <span>FRIDAY</span>
+          <span>10PM · LATE</span>
+          <span>MOOD RING</span>
+          <span>56 BOGART ST</span>
+        </div>
+
+        <div class="poster-content">
+          <div class="poster-lockup">
+            <h1 class="marquee">SWEAT <span class="tint">SESSIONS</span></h1>
+            <div class="stamp-band">
+              <span class="stamp-no">NO.</span>
+              <span class="stamp-num">008</span>
+            </div>
+            <div class="poster-lineup">
+              <span>DJ DEADNAME</span>
+              <span>NO SIR</span>
+              <span>NGUYENDOWSXP</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- twin-flame logo bottom-right -->
+        <div class="poster-logo" aria-hidden="true">
+          <svg width="40" height="34" viewBox="0 0 40 34">
+            <path fill="#1A3C23" d="M11 33C4.9 33 .6 28.4.6 22.5.6 14 8 9 9.2 1.2c.2-1.3 1.5-1.4 2-.2C13.6 9 21.4 13 21.4 22.5 21.4 28.4 17 33 11 33Z"/>
+            <path fill="#1A3C23" d="M29 33c-6.1 0-10.4-4.6-10.4-10.5C18.6 14 26 9 27.2 1.2c.2-1.3 1.5-1.4 2-.2C31.6 9 39.4 13 39.4 22.5 39.4 28.4 35 33 29 33Z"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     2) PALETTE
+     ============================================================ -->
+<section class="bleed" id="palette">
+  <div class="col">
+    <div class="eyebrow"><span>Palette</span> <span class="num">02</span></div>
+    <h2 class="sec-display">Seven Tokens</h2>
+    <p class="sec-lede">Light ground, dark figure. Parchment is the clearing; <span class="sage">moss is everything written on it.</span></p>
+    <div class="swatch-grid" id="swatches" style="margin-top:40px;"></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     3) TYPOGRAPHY
+     ============================================================ -->
+<section class="bleed" id="typography">
+  <div class="col">
+    <div class="eyebrow"><span>Typography</span> <span class="num">03</span></div>
+    <h2 class="sec-display">Three Voices</h2>
+
+    <div class="spec">
+      <div class="lbl">marquee-hero · moss / FOP VHS · upright · uppercase</div>
+      <div class="sp-marquee">SWEAT <span class="tint">SESSIONS</span></div>
+    </div>
+
+    <div class="spec">
+      <div class="lbl">display · moss / Vinque Antique · true italic · uppercase</div>
+      <div class="sp-display">Verdant Clearing</div>
+    </div>
+
+    <div class="spec">
+      <div class="lbl">numeral-xl · emerald / Vinque Antique · true italic</div>
+      <div class="sp-numeral">008</div>
+    </div>
+
+    <div class="spec">
+      <div class="lbl">body · moss / LARAZ Regular · sentence case · line-height ≥1.6</div>
+      <p class="body" style="margin:0;">The atmosphere does the visual work so the type can stay quiet and large. Nothing is clean for its own sake; the polish lives in the discipline of the type and grid sitting on a deliberately textured ground — a sun-dappled clearing rendered as if screen-printed at dawn.</p>
+    </div>
+
+    <div class="spec">
+      <div class="lbl">meta plate · moss / LARAZ · 0.06em · uppercase · line-height 1.3</div>
+      <div class="sp-meta">
+        <span>FRIDAY</span><span>10PM · LATE</span><span>MOOD RING</span><span>56 BOGART ST · BUSHWICK</span>
+      </div>
+    </div>
+
+    <div class="spec">
+      <div class="lbl">telemetry · moss / LARAZ Light · wide-tracked · uppercase</div>
+      <div class="sp-telemetry">
+        <span>NO. 008</span><span>FRI · 10PM</span><span>TECHNO</span><span>18+</span><span>BUSHWICK</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     4) COMPONENTS
+     ============================================================ -->
+<section class="bleed" id="components">
+  <div class="col">
+    <div class="eyebrow"><span>Components</span> <span class="num">04</span></div>
+    <h2 class="sec-display">Chrome</h2>
+    <div class="comp-grid" style="margin-top:40px;">
+
+      <div class="comp-cell">
+        <div class="grain-local"></div>
+        <div class="tag">buttons</div>
+        <div class="btn-row">
+          <button class="btn btn-ticket">Get Tickets</button>
+          <button class="btn btn-ghost">RSVP List</button>
+        </div>
+        <p class="comp-note">Ticket = emerald fill / parchment text, deepens to hunter on hover. Ghost = moss hairline; hover inverts — border fills solid moss, text flips to parchment.</p>
+      </div>
+
+      <div class="comp-cell">
+        <div class="grain-local"></div>
+        <div class="tag">panel</div>
+        <div class="panel-demo">
+          <h3 class="ptitle">Mood Ring</h3>
+          <p class="pbody">A 5% moss wash with a 12% hairline, carrying its own grain. The system's only card — elevation reads from translucency, never a shadow.</p>
+        </div>
+      </div>
+
+      <div class="comp-cell">
+        <div class="grain-local"></div>
+        <div class="tag">label-pills</div>
+        <div class="pill-row">
+          <span class="pill">TECHNO</span><span class="pill">18+</span><span class="pill">BUSHWICK</span><span class="pill">NO. 008</span>
+        </div>
+        <p class="comp-note">Hairline-outlined translucent chips. Never solid-filled.</p>
+      </div>
+
+      <div class="comp-cell">
+        <div class="grain-local"></div>
+        <div class="tag">hairline · strand · rings · focus</div>
+        <div style="display:flex; gap:28px; align-items:center; min-height:120px;">
+          <div class="strand"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:24px;">
+            <div class="divider"></div>
+            <div class="ring-row"><span class="ring"></span><span class="ring"></span><span class="ring"></span></div>
+            <span class="focus-demo" tabindex="0">Focus Ring</span>
+          </div>
+        </div>
+        <p class="comp-note">Dotted strand (beaded-chain echo), 1px hairline divider, hollow rings, and the persistent 2px emerald focus ring at offset 3px.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     5) POSTER ANATOMY
+     ============================================================ -->
+<section class="bleed" id="anatomy">
+  <div class="col">
+    <div class="eyebrow"><span>Poster Anatomy</span> <span class="num">05</span></div>
+    <h2 class="sec-display">Corners Fixed</h2>
+    <p class="sec-lede">Information lives in the lower third, weighted to the corners; the mesh and gradient own the upper field.</p>
+    <div class="anatomy" id="anatomy-frame" style="margin-top:40px;">
+      <div class="mesh-host" data-mesh data-seed="21"></div>
+      <div class="poster-scrim" aria-hidden="true"></div>
+      <div class="grain-local" aria-hidden="true"></div>
+
+      <!-- callout boxes (percentage positioned) -->
+      <div class="an-box" style="left:8%; top:6%; width:84%; height:34%;"></div>
+      <div class="an-lbl" style="left:8%; top:2%;">mesh + scrim — draped canopy owns the upper field</div>
+
+      <div class="an-box" style="left:6%; top:58%; width:46%; height:14%;"></div>
+      <div class="an-lbl" style="left:6%; top:53%;">marquee block (lower-left)</div>
+
+      <div class="an-box" style="left:6%; top:74%; width:30%; height:10%;"></div>
+      <div class="an-lbl" style="left:6%; top:86%;">catalogue stamp — hunter lockup band</div>
+
+      <div class="an-box" style="left:58%; top:58%; width:36%; height:18%;"></div>
+      <div class="an-lbl" style="right:6%; top:53%;">metadata plate (flush-right)</div>
+
+      <div class="an-box" style="left:74%; top:18%; width:20%; height:22%;"></div>
+      <div class="an-lbl" style="right:6%; top:13%;">genre tags (right edge)</div>
+
+      <div class="an-box" style="left:6%; top:84%; width:40%; height:12%;"></div>
+      <div class="an-lbl" style="left:6%; top:96.5%;">lineup roster</div>
+
+      <div class="an-box" style="left:80%; top:86%; width:14%; height:10%;"></div>
+      <div class="an-lbl" style="right:6%; top:96.5%;">twin-flame logo</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     6) TEXTURE
+     ============================================================ -->
+<section class="bleed" id="texture">
+  <div class="col">
+    <div class="eyebrow"><span>Texture</span> <span class="num">06</span></div>
+    <h2 class="sec-display">The Print Plane</h2>
+    <div class="tex-grid" style="margin-top:40px;">
+      <div class="tex-cell">
+        <div class="tex-frame"><div class="grain-show"></div></div>
+        <div class="lbl">grain — feTurbulence 0.58, multiply (+ soft-light 0.85 page pass)</div>
+      </div>
+      <div class="tex-cell">
+        <div class="tex-frame"><div class="mesh-host" data-mesh data-seed="42"></div></div>
+        <div class="lbl">mesh — seeded mulberry32 draped canopy + chains + rings + vortex</div>
+      </div>
+      <div class="tex-cell">
+        <div class="tex-frame"><div class="grad-stack"></div></div>
+        <div class="lbl">verdant-ground — 6 radials over parchment (mint · amber · emerald · hunter · forest-shade)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     7) DO'S & DON'TS
+     ============================================================ -->
+<section class="bleed" id="dos">
+  <div class="col">
+    <div class="eyebrow"><span>Do's &amp; Don'ts</span> <span class="num">07</span></div>
+    <h2 class="sec-display">Hold The Line</h2>
+    <div class="dd-grid" style="margin-top:40px;">
+      <div class="dd-col dd-do">
+        <h3>Do</h3>
+        <ul>
+          <li>Lay the verdant ground plus grain on every surface — the atmosphere is the system; flat color reads as a wireframe.</li>
+          <li>Keep moss as the default display and body figure; reserve emerald for the catalogue numeral on parchment and one selective letter-tint.</li>
+          <li>Set marquee and lineup in FOP VHS, upright, uppercase; let the glitch character carry the lean.</li>
+          <li>Lockup the catalogue stamp on a hunter band so the mint numeral reads, or fall back to emerald on bare parchment.</li>
+          <li>Signal elevation with moss translucency tiers, bloom, and grain — never a shadow; show the 2px emerald focus ring.</li>
+          <li>Respect prefers-reduced-motion: disable the bloom drift and the button hover transition.</li>
+        </ul>
+      </div>
+      <div class="dd-col dd-dont">
+        <h3>Don't</h3>
+        <ul>
+          <li>Don't add a box-shadow anywhere — not even for focus. Depth comes from atmosphere and the offset emerald ring.</li>
+          <li>Don't set mint as type on bare parchment — at ≈1.3:1 it vanishes; mint is for dark-green surfaces only.</li>
+          <li>Don't use emerald for small body text — it fails contrast at body scale. Keep it to headline scale and fills.</li>
+          <li>Don't faux-skew FOP VHS or set the display in sentence case; the marquee is always upright uppercase.</li>
+          <li>Don't fill shapes with solid color beyond the emerald ticket button — no solid-fill pills or badges.</li>
+          <li>Don't let type sit on the busy mesh without a scrim — the canopy lines will fight the letters.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     8) COLOPHON
+     ============================================================ -->
+<section class="bleed" id="colophon">
+  <div class="col">
+    <div class="eyebrow"><span>Colophon</span> <span class="num">08</span></div>
+    <div class="colophon">
+      <div>
+        <div class="colo-lockup">
+          <div class="colo-stamp">
+            <span class="stamp-no">NO.</span>
+            <span class="stamp-num">008</span>
+          </div>
+          <svg width="48" height="40" viewBox="0 0 40 34" aria-hidden="true">
+            <path fill="#1A3C23" d="M11 33C4.9 33 .6 28.4.6 22.5.6 14 8 9 9.2 1.2c.2-1.3 1.5-1.4 2-.2C13.6 9 21.4 13 21.4 22.5 21.4 28.4 17 33 11 33Z"/>
+            <path fill="#1A3C23" d="M29 33c-6.1 0-10.4-4.6-10.4-10.5C18.6 14 26 9 27.2 1.2c.2-1.3 1.5-1.4 2-.2C31.6 9 39.4 13 39.4 22.5 39.4 28.4 35 33 29 33Z"/>
+          </svg>
+        </div>
+        <p class="colo-version">v0.4 — Verdant Clearing</p>
+      </div>
+      <div class="credits">
+        <p><b>FOP VHS</b> — marquee / headline / lineup. By lirkiv, via 1001fonts.</p>
+        <p><b>Vinque Antique</b> — display / subhead / numeral (true italic).</p>
+        <p><b>LARAZ</b> — body / lede / meta plate / telemetry (Light + Regular).</p>
+        <span class="after-line">This is the <b>After</b> of the Sweat Sessions system — the after-dark warehouse reskinned as a sun-dappled clearing. Structure, anatomy, the 8-section layout, the no-shadow rule, and the procedural mesh are all preserved; only the mood was swapped.</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ============================================================
+   Seeded RNG — mulberry32
+   ============================================================ */
+function mulberry32(a){
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const SVGNS = "http://www.w3.org/2000/svg";
+const MOSS = "#1A3C23", HUNTER = "#2D5F3A", EMERALD = "#3A8C5D";
+
+function el(name, attrs){
+  const e = document.createElementNS(SVGNS, name);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+}
+
+/* ============================================================
+   MESH GENERATOR — the signature line work
+   Composes (per spec):
+   - warped DRAPED CANOPY: rings × strands on a perspective cone,
+     apex above frame, rim near 43% height, sinusoidal drape +
+     per-point jitter — 3 overlapping passes at decreasing density
+   - BEADED CHAINS (dotted strands + small rings) on the right
+   - scattered hollow RINGS lower-left
+   - tilted HUNTER square outlines mid-frame
+   - draped HUNTER fishnet lower-right
+   - faint EMERALD vortex at the base
+   Strokes: moss, ~0.42px, per-line opacity 0.15–0.35
+   ============================================================ */
+function buildMesh(host){
+  const W = host.clientWidth || 600;
+  const H = host.clientHeight || 750;
+  const seed = parseInt(host.dataset.seed || "8", 10);
+  const rng = mulberry32(seed);
+  const r = (min,max)=> min + rng()*(max-min);
+
+  const svg = el("svg", {
+    width:W, height:H, viewBox:`0 0 ${W} ${H}`,
+    preserveAspectRatio:"none",
+    style:"position:absolute;inset:0;width:100%;height:100%;"
+  });
+
+  const op = ()=> (0.15 + rng()*0.20).toFixed(3); // per-line 0.15–0.35
+  const SW = 0.42;
+
+  // ---- DRAPED CANOPY: 3 passes, decreasing density ----
+  const apexX = W*0.5, apexY = -H*0.55;        // apex above the frame
+  const rimY  = H*0.43;                          // rim near 43% height
+  const passes = [
+    {rings:13, strands:24, drape:0.16, jitter:7},
+    {rings:9,  strands:16, drape:0.12, jitter:9},
+    {rings:6,  strands:11, drape:0.09, jitter:12}
+  ];
+
+  passes.forEach((P, pi)=>{
+    // map a point on the cone: t in [0..1] along strand (apex→rim+), a = angle
+    const conePt = (t, a, phase)=>{
+      // radius grows from apex(0) to rim, with overshoot past the rim
+      const rad = t * (W*0.62);
+      let x = apexX + Math.cos(a) * rad;
+      // y interpolates apex→below rim; sinusoidal drape sags the sheet
+      const baseY = apexY + (rimY - apexY) * (0.25 + t*1.05);
+      const sag = Math.sin(a*2.2 + phase) * (rad * P.drape);
+      let y = baseY + sag + Math.sin(t*Math.PI) * (H*0.05);
+      // per-point jitter so lines tangle
+      x += (rng()-0.5) * P.jitter * 2;
+      y += (rng()-0.5) * P.jitter * 2;
+      return [x, y];
+    };
+
+    const phase = r(0, Math.PI*2);
+
+    // STRANDS (radial-ish lines down the cone)
+    for(let s=0; s<P.strands; s++){
+      const a = (s / P.strands) * Math.PI*2 + r(-0.04,0.04);
+      let d = "";
+      const steps = P.rings + 4;
+      for(let i=0; i<=steps; i++){
+        const t = i/steps;
+        const [x,y] = conePt(t, a, phase);
+        d += (i===0 ? "M" : "L") + x.toFixed(1) + " " + y.toFixed(1) + " ";
+      }
+      svg.appendChild(el("path",{d, fill:"none", stroke:MOSS, "stroke-width":SW, opacity:op()}));
+    }
+
+    // RINGS (concentric warped bands across the cone)
+    for(let ri=1; ri<=P.rings; ri++){
+      const t = ri/P.rings;
+      let d = "";
+      const segs = 40;
+      for(let i=0; i<=segs; i++){
+        const a = (i/segs) * Math.PI*2;
+        const [x,y] = conePt(t, a, phase);
+        d += (i===0 ? "M" : "L") + x.toFixed(1) + " " + y.toFixed(1) + " ";
+      }
+      d += "Z";
+      svg.appendChild(el("path",{d, fill:"none", stroke:MOSS, "stroke-width":SW, opacity:op()}));
+    }
+  });
+
+  // ---- BEADED CHAINS on the right (dotted strands + small hollow rings) ----
+  const chainN = 4;
+  for(let c=0; c<chainN; c++){
+    const cx = W*(0.72 + c*0.07) + r(-8,8);
+    const top = H*r(0.04,0.12);
+    const bot = H*r(0.40,0.58);
+    // dotted strand
+    const dash = el("line",{
+      x1:cx.toFixed(1), y1:top.toFixed(1), x2:(cx+r(-6,6)).toFixed(1), y2:bot.toFixed(1),
+      stroke:MOSS, "stroke-width":SW, opacity:op(), "stroke-dasharray":"1.4 4"
+    });
+    svg.appendChild(dash);
+    // beads (small hollow rings) along it
+    const beads = Math.floor(r(3,6));
+    for(let b=0; b<beads; b++){
+      const f = (b+1)/(beads+1);
+      svg.appendChild(el("circle",{
+        cx:(cx+r(-5,5)).toFixed(1), cy:(top+(bot-top)*f).toFixed(1),
+        r:r(2,4).toFixed(1), fill:"none", stroke:MOSS, "stroke-width":SW, opacity:op()
+      }));
+    }
+  }
+
+  // ---- scattered hollow RINGS lower-left ----
+  const ringN = 9;
+  for(let i=0; i<ringN; i++){
+    svg.appendChild(el("circle",{
+      cx:(W*r(0.04,0.30)).toFixed(1), cy:(H*r(0.52,0.82)).toFixed(1),
+      r:r(3,11).toFixed(1), fill:"none", stroke:MOSS, "stroke-width":SW, opacity:op()
+    }));
+  }
+
+  // ---- tilted HUNTER square outlines mid-frame ----
+  const sqN = 4;
+  for(let i=0; i<sqN; i++){
+    const cx = W*r(0.30,0.62), cy = H*r(0.30,0.52);
+    const s = r(18,40), ang = r(-0.5,0.5);
+    const cos = Math.cos(ang), sin = Math.sin(ang);
+    const pts = [[-s,-s],[s,-s],[s,s],[-s,s]].map(([x,y])=>{
+      return [(cx + x*cos - y*sin).toFixed(1), (cy + x*sin + y*cos).toFixed(1)];
+    });
+    svg.appendChild(el("polygon",{
+      points:pts.map(p=>p.join(",")).join(" "),
+      fill:"none", stroke:HUNTER, "stroke-width":SW, opacity:op()
+    }));
+  }
+
+  // ---- draped HUNTER fishnet lower-right ----
+  const fnX0 = W*0.58, fnX1 = W*1.02, fnY0 = H*0.66, fnY1 = H*1.02;
+  const fnCols = 9, fnRows = 7;
+  const fnPt = (gx,gy)=>{
+    const u = gx/fnCols, v = gy/fnRows;
+    let x = fnX0 + (fnX1-fnX0)*u;
+    let y = fnY0 + (fnY1-fnY0)*v + Math.sin(u*Math.PI*2)*(H*0.03);
+    x += (rng()-0.5)*6; y += (rng()-0.5)*6;
+    return [x,y];
+  };
+  for(let gy=0; gy<=fnRows; gy++){
+    let d="";
+    for(let gx=0; gx<=fnCols; gx++){ const [x,y]=fnPt(gx,gy); d+=(gx===0?"M":"L")+x.toFixed(1)+" "+y.toFixed(1)+" "; }
+    svg.appendChild(el("path",{d,fill:"none",stroke:HUNTER,"stroke-width":SW,opacity:op()}));
+  }
+  for(let gx=0; gx<=fnCols; gx++){
+    let d="";
+    for(let gy=0; gy<=fnRows; gy++){ const [x,y]=fnPt(gx,gy); d+=(gy===0?"M":"L")+x.toFixed(1)+" "+y.toFixed(1)+" "; }
+    svg.appendChild(el("path",{d,fill:"none",stroke:HUNTER,"stroke-width":SW,opacity:op()}));
+  }
+
+  // ---- faint EMERALD vortex at the base ----
+  const vx = W*0.5, vy = H*0.97, turns = 4.5;
+  let vd="";
+  const vsteps = 220;
+  for(let i=0; i<=vsteps; i++){
+    const t = i/vsteps;
+    const ang = t*turns*Math.PI*2;
+    const rad = t * (W*0.34);
+    const x = vx + Math.cos(ang)*rad;
+    const y = vy + Math.sin(ang)*rad*0.42;  // flattened
+    vd += (i===0?"M":"L")+x.toFixed(1)+" "+y.toFixed(1)+" ";
+  }
+  svg.appendChild(el("path",{d:vd,fill:"none",stroke:EMERALD,"stroke-width":SW,opacity:"0.22"}));
+
+  host.replaceChildren(svg);
+}
+
+/* ---- build all mesh hosts ---- */
+function buildAllMeshes(){
+  document.querySelectorAll("[data-mesh]").forEach(buildMesh);
+}
+buildAllMeshes();
+
+/* ---- rebuild on resize, debounced ~150ms ---- */
+let _rt = null;
+window.addEventListener("resize", ()=>{
+  clearTimeout(_rt);
+  _rt = setTimeout(buildAllMeshes, 150);
+});
+
+/* ============================================================
+   PALETTE swatches — generated from tokens
+   ============================================================ */
+const TOKENS = [
+  ["parchment", "#F7F4EC"],
+  ["hunter",    "#2D5F3A"],
+  ["emerald",   "#3A8C5D"],
+  ["mint",      "#A8E6CF"],
+  ["amber",     "#C9A96E"],
+  ["moss",      "#1A3C23"],
+  ["sage",      "#6B7D6A"]
+];
+(function(){
+  const grid = document.getElementById("swatches");
+  if(!grid) return;
+  TOKENS.forEach(([name,hex])=>{
+    const w = document.createElement("div");
+    w.className = "swatch";
+    w.tabIndex = 0;
+    w.innerHTML =
+      '<div class="chip" style="background:'+hex+'"><div class="grain-local"></div></div>' +
+      '<div class="cap"><b>'+name+'</b> '+hex+'</div>';
+    grid.appendChild(w);
+  });
+})();
+</script>
+</body>
+</html>
