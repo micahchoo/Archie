@@ -9,12 +9,17 @@
   // (read-only mirror of the Studio annotation timeline; HANDOFF "AV affordance pareto-hybrid").
   import { parseMediaFragment, activeNoteIndex, transcriptTextOf, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
   import Credit from "./Credit.svelte";
+  import SidebarObjectNav from "./SidebarObjectNav.svelte";
 
   let {
     object,
     annotations = [],
     rights,
     onback,
+    siblings,
+    currentId,
+    onstep,
+    onoverview,
   }: {
     object: { source: string; label: string; mediaType?: "image" | "sound" | "video"; duration?: number };
     annotations?: W3CAnnotation[];
@@ -24,12 +29,23 @@
      *  to that index, else it dead-end-traps the visitor (the carousel/breadcrumb don't serve it). Optional
      *  + back-compat — absent (single AV, AV-in-grid carry their own nav) hides the affordance. */
     onback?: () => void;
+    /** Multi-object exhibit (R4): an AV-in-grid recording carries the same visible sidebar stepper as the
+     *  image Reader, so stepping/overview work the same whatever the medium. Omitted for single AV. */
+    siblings?: { id: string; label: string }[];
+    currentId?: string;
+    onstep?: (id: string) => void;
+    onoverview?: () => void;
   } = $props();
+
+  const objectNav = $derived(
+    !!siblings && siblings.length > 1 && !!currentId && !!onstep && !!onoverview,
+  );
 
   let mediaEl = $state<HTMLMediaElement | null>(null);
   let currentTime = $state(0);
   let mediaDuration = $state(0); // actual length from `loadedmetadata`; the marker strip's denominator
   let mediaError = $state(false); // the recording's file failed to load (missing / unsupported codec)
+  let mediaReady = $state(false); // metadata arrived — until then a heavy recording is a dead box (#10)
   // The recording's length for positioning marks: the loaded media's own duration, else the published
   // value (voynich.ts o12 = 296s) so the strip can lay out before the file's metadata arrives.
   const dur = $derived(mediaDuration || object.duration || 0);
@@ -65,10 +81,6 @@
     mediaEl.currentTime = Math.max(0, dur ? Math.min(dur, t) : t);
     void mediaEl.play();
   }
-  function seek(i: number) {
-    const c = cues[i];
-    if (c) seekTo(c.range.start);
-  }
   // Click the bare strip (not a mark) → travel to that point in the recording (scrub the time axis).
   function trackSeek(e: MouseEvent, el: HTMLElement) {
     if (!dur) return;
@@ -89,6 +101,11 @@
 
   <main>
     <div class="media-region">
+      <!-- Loading veil (#10): until metadata arrives a heavy recording is an indistinguishable-from-broken
+           dead box — show the shell's breathing-dot idiom so it reads as "loading", not "failed". -->
+      {#if !mediaError && !mediaReady}
+        <div class="media-loading"><span class="dot"></span><span>Loading the recording…</span></div>
+      {/if}
       <!-- The media on the dark light-table — same surface as the image canvas, so sound/image read
            as one kind of object. Controls are the native scrubber (read-only consumer). -->
       {#if mediaError}
@@ -96,7 +113,7 @@
       {:else if isVideo}
         <div class="video-wrap">
           <!-- svelte-ignore a11y_media_has_caption -->
-          <video bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={() => (mediaDuration = mediaEl?.duration ?? 0)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
+          <video bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={() => { mediaDuration = mediaEl?.duration ?? 0; mediaReady = true; }} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
           <!-- Spatiotemporal note regions (ADR-0006): the box appears on the frame during its time window. -->
           <div class="box-overlay" aria-hidden="true">
             {#each videoBoxes as b (b.id)}<div class="rbox" class:active={b.active} style={`left:${b.box.x}%;top:${b.box.y}%;width:${b.box.w}%;height:${b.box.h}%`}></div>{/each}
@@ -106,7 +123,7 @@
         <div class="audio-stage">
           <span class="now">Now playing</span>
           <h1>{object.label}</h1>
-          <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={() => (mediaDuration = mediaEl?.duration ?? 0)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
+          <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={() => { mediaDuration = mediaEl?.duration ?? 0; mediaReady = true; }} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
         </div>
       {/if}
     </div>
@@ -115,7 +132,7 @@
          mirror of the Studio annotation timeline (HANDOFF "AV affordance pareto-hybrid"). The native
          scrubber can't be marked (shadow DOM), so this sibling strip carries the marks. Click a mark to
          travel there; the note now playing is inked (shared `activeIdx`); a quiet line tracks position. -->
-    {#if cues.length > 0 && !mediaError}
+    {#if cues.length > 0 && !mediaError && dur > 0}
       <div class="timeline">
         <span class="tl-label">Where the notes fall in the recording</span>
         <div class="tl-track" role="presentation" onclick={(e) => trackSeek(e, e.currentTarget)}>
@@ -143,13 +160,16 @@
       <ol class="cues">
         {#each cues as c, i (c.id)}
           <li>
-            <button class:active={i === activeIdx} onclick={() => seek(i)}>
+            <button class:active={i === activeIdx} onclick={() => seekTo(c.range.start)}>
               <span class="t">{fmt(c.range.start)}</span>
               <span class="line">{c.text}</span>
             </button>
           </li>
         {/each}
       </ol>
+    {/if}
+    {#if objectNav && siblings && currentId}
+      <SidebarObjectNav {siblings} {currentId} onstep={(id) => onstep?.(id)} onoverview={() => onoverview?.()} />
     {/if}
   </aside>
 </div>
@@ -161,12 +181,12 @@
 
   /* Escape-out from an index-opened AV recording (ADR-0016 §137 precision-in/escape-out, §223 anti-trap):
      a quiet step back to the index grid, anchored canvas-relative (top-left of the media column). Cleared
-     to 3.25rem below the persistent top-bar band (ViewerShell .topbar owns top-left for the breadcrumb;
-     the index-AV player also emits the top-bar carousel) — same clearance as the sibling .to-read/.to-index
-     escapes. Mirrors that escape language — transparent chrome, canvas inks, connector-blue (--accent-2)
+     below the persistent top-bar band via the shared --topbar-h token (ViewerShell .topbar owns top-left
+     for the breadcrumb; the index-AV player also emits the top-bar carousel) — same clearance as the
+     sibling .to-read/.to-index escapes. Mirrors that escape language — transparent chrome, canvas inks, connector-blue (--accent-2)
      hover keeps the rationed orange free. */
   .to-index {
-    position: absolute; z-index: 20; top: 3.25rem; left: var(--space-5);
+    position: absolute; z-index: 20; top: var(--topbar-h); left: var(--space-5);
     display: inline-flex; align-items: center; gap: var(--space-1);
     background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-1);
     color: var(--ink-canvas-secondary);
@@ -176,7 +196,14 @@
   .to-index:hover { color: var(--accent-2); }
   .to-index .back-mark { font-size: 1.05rem; line-height: 1; }
   main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface-canvas); }
-  .media-region { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: var(--space-8); }
+  /* Top padding reserves the fixed top bar (#9 / --pane-top): the centred audio title (and the carousel
+     + "Back to the index" escape that share this top edge) used to ride up under the bar on a short
+     viewport — this is the listening station, the one AV surface with no deep image to anchor attention. */
+  .media-region { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: var(--pane-top) var(--space-8) var(--space-8); }
+  /* Loading veil (#10) — the shell's breathing-dot idiom over the dark stage until metadata arrives. */
+  .media-loading { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; gap: var(--space-3); background: var(--surface-canvas); color: var(--ink-canvas-secondary); font-family: var(--font-ui), sans-serif; font-size: 0.8125rem; letter-spacing: 0.16em; text-transform: uppercase; }
+  .media-loading .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: media-pulse 1.4s ease-in-out infinite; }
+  @keyframes media-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
 
   /* Temporal map: the recording's full length as a soft strip, each note a mark at its moment. A time
      axis, not a scrubber overlay: its width is the media column, not the rendered frame, so a
@@ -205,7 +232,9 @@
 
   aside {
     width: 420px; flex-shrink: 0; overflow: auto; box-sizing: border-box;
-    padding: var(--space-6) var(--space-5);
+    /* Top reserves the fixed top bar (--pane-top) so the transcript header (eyebrow · label · hint ·
+       credit) keeps its own space, clear of the bar overhead. */
+    padding: var(--pane-top) var(--space-5) var(--space-6);
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
   }

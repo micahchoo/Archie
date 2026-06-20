@@ -10,22 +10,24 @@
   const bars = Array.from({ length: 11 }, (_, b) => 28 + ((b * 53) % 64));
 
   // Broken-media fallback (empty/error gate): track which tiles failed to load so a missing image/video
-  // shows a quiet placeholder instead of the browser's broken-image glyph.
-  let failed = $state(new Set<number>());
-  function markFailed(i: number) { failed.add(i); failed = new Set(failed); }
+  // shows a quiet placeholder instead of the browser's broken-image glyph. Keyed by URL, NOT index — this
+  // component instance is REUSED across notes (the popup is an un-keyed {#if}), so an index-keyed set would
+  // bleed a failed tile onto the next note's same-index (healthy) tile. URLs are per-note (blob: in portable).
+  let failed = $state(new Set<string>());
+  function markFailed(url: string) { failed.add(url); failed = new Set(failed); }
 </script>
 
 {#if media.length}
   <div class="strip">
     {#each media as m, i (m.url + i)}
       <button class="tile {m.kind}" onclick={() => onopen(i)} aria-label={`Open ${m.kind}`}>
-        {#if failed.has(i)}
+        {#if failed.has(m.url)}
           <span class="tile-failed">Couldn’t load</span>
         {:else if m.kind === "image"}
-          <img src={m.url} alt="" loading="lazy" onerror={() => markFailed(i)} />
+          <img src={m.url} alt="" loading="lazy" onerror={() => markFailed(m.url)} />
         {:else if m.kind === "video"}
           <!-- preload metadata → shows the first frame as a poster; muted, no controls (a thumbnail). -->
-          <video src={m.url} muted preload="metadata" tabindex="-1" onerror={() => markFailed(i)}></video>
+          <video src={m.url} muted preload="metadata" tabindex="-1" onerror={() => markFailed(m.url)}></video>
           <span class="badge">▶</span>
         {:else}
           <span class="wave" aria-hidden="true">{#each bars as h}<span style={`height:${h}%`}></span>{/each}</span>
