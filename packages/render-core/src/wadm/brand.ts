@@ -24,6 +24,10 @@ export type VersionId = Brand<string, "VersionId">;
 export type ClientId = Brand<string, "ClientId">;
 /** An Exhibit identity (IIIF Manifest scope). */
 export type ExhibitId = Brand<string, "ExhibitId">;
+/** A Library identity (IIIF Collection scope). */
+export type LibraryId = Brand<string, "LibraryId">;
+/** An Object identity, unique within its Exhibit (the canvas-id stem). */
+export type ObjectId = Brand<string, "ObjectId">;
 
 // ---- ULID (dependency-free; Crockford base32) ----
 
@@ -121,4 +125,20 @@ export function asExhibitId(s: string): ExhibitId {
     throw new TypeError(`ExhibitId must be a non-empty string`);
   }
   return s as ExhibitId;
+}
+
+/** Brand a non-empty string as a LibraryId. */
+export function asLibraryId(s: string): LibraryId {
+  if (typeof s !== "string" || s.length === 0) {
+    throw new TypeError(`LibraryId must be a non-empty string`);
+  }
+  return s as LibraryId;
+}
+
+/** Brand a non-empty string as an ObjectId. */
+export function asObjectId(s: string): ObjectId {
+  if (typeof s !== "string" || s.length === 0) {
+    throw new TypeError(`ObjectId must be a non-empty string`);
+  }
+  return s as ObjectId;
 }

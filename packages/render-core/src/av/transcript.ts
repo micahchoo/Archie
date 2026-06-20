@@ -4,6 +4,7 @@
 
 import { appendNew } from "../spine/log.js";
 import { timeFragmentValue } from "./time.js";
+import { fragmentSelector } from "../geometry/mediafragment.js";
 import type { ClientId } from "../wadm/brand.js";
 import type { AnnotationLog, W3CSpecificResource, W3CTextualBody } from "../wadm/types.js";
 
@@ -67,7 +68,7 @@ export function cuesToNotes(cues: VttCue[], source: string): TranscriptNote[] {
     target: {
       type: "SpecificResource",
       source,
-      selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: timeFragmentValue(c.start, c.end) },
+      selector: fragmentSelector(timeFragmentValue(c.start, c.end)),
     },
   }));
 }

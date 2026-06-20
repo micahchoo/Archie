@@ -38,6 +38,7 @@ export interface PortableLoad {
 }
 
 const ASSET_SEG = "/assets/";
+const THUMB_SEG = "/assets-thumb/";
 
 /**
  * Mint a `blob:` URL for an embedded asset at `{slug}/assets/{name}`. Returns null if the file isn't
@@ -88,6 +89,41 @@ async function rewriteAssetUrl(root: FsDirectory, slug: string, url: string, sin
   return blob ?? url;
 }
 
+/**
+ * Mint a `blob:` URL for a baked thumbnail at `{slug}/assets-thumb/{name}` — the sibling of
+ * `mintAssetBlob`'s `assets/` dir. A separate matcher because `/assets-thumb/` does NOT contain the
+ * `/assets/` segment `rewriteAssetUrl` keys on, so the thumbnail would otherwise pass through unrewritten
+ * (and a portable viewer has no server to resolve the embedded path). Null if absent — leave as-is.
+ */
+async function mintThumbBlob(root: FsDirectory, slug: string, name: string, mime: string, sink: string[]): Promise<string | null> {
+  let dir: FsDirectory;
+  try {
+    dir = await (await root.getDirectory(slug)).getDirectory("assets-thumb");
+  } catch {
+    return null;
+  }
+  let file;
+  try {
+    file = await dir.getFile(name);
+  } catch {
+    return null;
+  }
+  const bytes = await file.readable();
+  const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
+  sink.push(url);
+  return url;
+}
+
+/** Rewrite a baked-thumbnail URL (`…/assets-thumb/{name}`) to a `blob:` URL; input unchanged if it isn't
+ *  an embedded thumbnail (external/IIIF thumbnails pass through, like rewriteAssetUrl). */
+async function rewriteThumbUrl(root: FsDirectory, slug: string, url: string, sink: string[]): Promise<string> {
+  const idx = url.lastIndexOf(THUMB_SEG);
+  if (idx === -1) return url;
+  const name = url.slice(idx + THUMB_SEG.length).split(/[?#]/)[0]!;
+  const blob = await mintThumbBlob(root, slug, name, guessMime(name), sink);
+  return blob ?? url;
+}
+
 /** Rewrite embedded-asset urls inside a note body (the `m.url` sink: NoteMedia/NoteLightbox read these
  *  via splitNoteMedia). Rewriting the raw body text yields blob urls with no component change. */
 async function rewriteNoteBodyMedia(root: FsDirectory, slug: string, note: W3CAnnotation, sink: string[]): Promise<W3CAnnotation> {
@@ -128,7 +164,9 @@ export async function loadPortableExhibit(fs: Filesystem, slug: string): Promise
   const transform: NoteTransform = {
     object: async (o) => {
       const src = await rewriteAssetUrl(root, slug, o.source, blobUrls);
-      return src === o.source ? o : { ...o, source: src };
+      const thumb = o.thumbnail !== undefined ? await rewriteThumbUrl(root, slug, o.thumbnail, blobUrls) : undefined;
+      if (src === o.source && (thumb === undefined || thumb === o.thumbnail)) return o;
+      return { ...o, source: src, ...(thumb !== undefined ? { thumbnail: thumb } : {}) };
     },
     note: (n) => rewriteNoteBodyMedia(root, slug, n, blobUrls),
   };

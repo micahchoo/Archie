@@ -1,6 +1,6 @@
 {
   "name": "@render/mount",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Framework-free vanilla mount functions wiring OpenSeadragon + Annotorious headless + Wavesurfer. Exposes an imperative surface (fitBounds/setSelected/destroy) + onSelect callback the adapter owns. Filled in Phase 1 (spike-0001 module 1 delamination). (ADR-0002 / Q-2)",

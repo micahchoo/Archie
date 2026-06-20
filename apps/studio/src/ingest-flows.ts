@@ -13,20 +13,22 @@ import {
   type Library, type ClientId, type TileSourceDescriptor, type W3CTextualBody,
   type WorkingObjectMeta as ObjectMeta,
 } from "@render/core";
-import { bakeDisplayMaster, downscaleIfNeeded } from "./bake.js";
+import { bakeDisplayMaster, downscaleIfNeeded, bakeThumbnail } from "./bake.js";
 import {
-  openExhibitAnnotationsDir, saveAssetFile, saveOriginalFile, clearExhibitAnnotations,
+  openExhibitAnnotationsDir, saveAssetFile, saveOriginalFile, saveThumbFile, clearExhibitAnnotations,
   ASSET_PREFIX, type ExhibitMeta, type ObjectProvenance,
 } from "./store.js";
 import { inferredMime, planFolderImportGroups } from "./folder-import.js";
 import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
-import { planCsvImport } from "./csv-import.js";
+import { planCsvImport, type CsvPendingNote } from "./csv-import.js";
 import { planWadmImport } from "./wadm-import.js";
 import { collabBreakdown, collabSummaryText } from "./collab.js";
 import { rectSel } from "./seed-data.js";
 import type { LibraryStore } from "./library-meta.svelte.js";
 
 const LARGE_MEDIA_BYTES = 100 * 1024 * 1024; // ~100 MB — above this, suggest linking by URL (never blocks)
+const THUMB_DIM = 640; // grid/overview thumbnail longest-edge px — covers retina plates, tiny vs the master
+const ASSET_THUMB_PREFIX = "/assets-thumb/"; // working ref for a baked thumbnail (sibling of ASSET_PREFIX)
 
 /** Everything the ingest flows touch in App.svelte's reactive scope, passed explicitly. Reactive reads
  *  are getters (so the flow sees the live value at call time); mutations are setters/store methods. */
@@ -47,6 +49,9 @@ export interface IngestContext {
   setCurrentObjectId: (id: string) => void;
   setImportStatus: (s: { name: string; index: number; total: number } | null) => void;
   setImportNote: (s: string) => void;
+  /** Stage coordinate-free CSV rows for "Set area" placement (Archie-79c0 sub-cycle B). Returns how many
+   *  were NEWLY staged after dedup, so importNotesCsv can report all three buckets (placed/pending/skipped). */
+  addPendingNotes: (notes: CsvPendingNote[]) => number;
   setAddingObject: (v: boolean) => void;
   clearAddForm: () => void;
   setMapModalOpen: (v: boolean) => void;
@@ -155,6 +160,7 @@ export function createIngestFlows(ctx: IngestContext) {
 
     const orientation = readExifOrientation(await file.arrayBuffer());
     let master: Blob = file;
+    let masterMime = file.type || "image/jpeg"; // the stored master's encoding (drives the thumbnail's)
     let name = `${id}-${safe}`;
     let dims: { w: number; h: number } | null = null;
     let provenance: ObjectProvenance | undefined;
@@ -164,6 +170,7 @@ export function createIngestFlows(ctx: IngestContext) {
       // preserved for citation (the master differs by rotation — provenance records the transform).
       const baked = await bakeDisplayMaster(file, { maxDim: MAX_MASTER_DIM }); // upright PNG; capped
       master = baked.blob;
+      masterMime = "image/png"; // bakeDisplayMaster's default output is PNG
       dims = { w: baked.width, h: baked.height };
       name = `${id}-${safe.replace(/\.[^.]+$/, "")}.png`;
       const originalName = `${id}-${safe}`;
@@ -181,8 +188,21 @@ export function createIngestFlows(ctx: IngestContext) {
     const blobUrl = URL.createObjectURL(master);
     if (!dims) dims = await imageDims(blobUrl); // orientation-1 path: probe the (upright) master
     await saveAssetFile(slug, name, master);
+    // Bake a small grid/overview thumbnail from the master (null when the master is already within
+    // THUMB_DIM). A thumbnail is a PURE optimization — its failure must NEVER block an import (the grid
+    // falls back to the master via thumbnailUrl). Same name, sibling assets-thumb/ dir.
+    let thumbnail: string | undefined;
+    try {
+      const thumb = await bakeThumbnail(master, THUMB_DIM, masterMime);
+      if (thumb) {
+        await saveThumbFile(slug, name, thumb);
+        thumbnail = `${ASSET_THUMB_PREFIX}${name}`;
+      }
+    } catch (e) {
+      console.warn(`[ingest] thumbnail bake skipped for ${name}`, e);
+    }
     await appendObject(
-      { id, source: `${ASSET_PREFIX}${name}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(provenance ? { provenance } : {}) },
+      { id, source: `${ASSET_PREFIX}${name}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(thumbnail ? { thumbnail } : {}), ...(provenance ? { provenance } : {}) },
       blobUrl,
     );
     return { added: true };
@@ -358,11 +378,16 @@ export function createIngestFlows(ctx: IngestContext) {
       imported++;
     }
     if (imported > 0) ctx.bump(); // rev + dirty + scheduleSave (a template stays playground-only per save()'s gate)
-    const head = `Added ${imported} note${imported === 1 ? "" : "s"} from your CSV.`;
-    const dupNote = dup > 0 ? ` ${dup} already added.` : "";
-    ctx.setImportNote(plan.skipped.length > 0
-      ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `line ${s.row}: ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
-      : head + dupNote);
+    // Coordinate-free rows (no x,y,w,h) stage for "Set area" instead of importing — they can't enter the
+    // log without geometry (session.ts). addPendingNotes dedups + persists, returning the NEW count.
+    const staged = ctx.addPendingNotes(plan.pending);
+    // Compose ONE message across the three buckets (mirrors addFiles' parts idiom) so a mixed CSV reads cleanly.
+    const parts: string[] = [];
+    if (imported > 0) parts.push(`Added ${imported} note${imported === 1 ? "" : "s"} from your CSV.`);
+    if (dup > 0) parts.push(`${dup} already added.`);
+    if (staged > 0) parts.push(`${staged} need${staged === 1 ? "s" : ""} a region — pick “Set area” to draw ${staged === 1 ? "it" : "them"}.`);
+    if (plan.skipped.length > 0) parts.push(`Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `line ${s.row}: ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`);
+    ctx.setImportNote(parts.length > 0 ? parts.join(" ") : "That CSV had no notes to add.");
   }
   // W3C/WADM annotation import (contributor-broadening ⑦ slice A): an AnnotationPage from Archie's own
   // publish, Recogito, or any standard WADM producer lands on this exhibit — re-anchored by the

@@ -24,7 +24,7 @@
 
 <style>
   /* Same warm dim + blur as NoteLightbox (visual consistency) — the read stays the star. */
-  .sheet-scrim { position: fixed; inset: 0; background: rgba(59,49,56,0.82); backdrop-filter: blur(3px); z-index: 60; }
+  .sheet-scrim { position: fixed; inset: 0; background: var(--scrim-dim); backdrop-filter: blur(3px); z-index: 60; }
   .sheet {
     position: fixed; z-index: 61; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: min(92vw, 680px); max-height: 86vh; box-sizing: border-box;

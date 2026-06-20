@@ -22,11 +22,22 @@ function signalLibraryChanged(): void {
 
 export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?: () => void } = {}) {
   const s = $state<{ meta: LibraryMeta }>({ meta: initial });
+  let saveTimer: ReturnType<typeof setTimeout> | undefined;
   // Routed through the save queue (worklist 0.1): writes to library.json serialize, and a failure
   // lands in saveStatus instead of vanishing into the `void persist()` sites below.
   async function persist(): Promise<void> {
+    clearTimeout(saveTimer); // an explicit / awaitable persist supersedes any pending debounced write
     if (await enqueueSave("library-meta", "Library details", () => saveLibraryMeta(s.meta)))
       opts.onAfterPersist?.();
+  }
+  // PERF: debounce the high-frequency metadata edits. Title/description inputs fire `oninput` → patch*
+  // PER KEYSTROKE, and each write serializes the WHOLE library.json — so a 50-char description was ~50
+  // full-library writes. Coalesce a burst into ONE write (mirrors the annotation autosave debounce). The
+  // awaitable methods below stay immediate (navigation needs the write durable first).
+  const DEBOUNCE_MS = 500;
+  function schedulePersist(): void {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => void persist(), DEBOUNCE_MS);
   }
   return {
     /** Live read path for `$derived`, child props, and the publish builders. */
@@ -34,10 +45,11 @@ export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?
     /** Explicit persist for the set-only / conditional callers (onMount reconcile, replaceProjectFrom). */
     persist,
 
-    // Auto-persist (fire-and-forget) — mirrors the `void persistLibrary()` patch sites.
-    patchLibrary(fields: Partial<LibraryMeta>) { s.meta = patchLibraryIn(s.meta, fields); void persist(); },
-    patchExhibit(slug: string, fields: Partial<ExhibitMeta>) { s.meta = patchExhibitIn(s.meta, slug, fields); void persist(); },
-    patchObject(slug: string, objId: string, fields: Partial<ObjectMeta>) { s.meta = patchObjectIn(s.meta, slug, objId, fields); void persist(); },
+    // Auto-persist (DEBOUNCED, fire-and-forget) — the meta is updated synchronously (reactive UI is
+    // instant); the library.json write coalesces across a burst of keystrokes.
+    patchLibrary(fields: Partial<LibraryMeta>) { s.meta = patchLibraryIn(s.meta, fields); schedulePersist(); },
+    patchExhibit(slug: string, fields: Partial<ExhibitMeta>) { s.meta = patchExhibitIn(s.meta, slug, fields); schedulePersist(); },
+    patchObject(slug: string, objId: string, fields: Partial<ObjectMeta>) { s.meta = patchObjectIn(s.meta, slug, objId, fields); schedulePersist(); },
 
     // Awaitable — for the sites that `await persistLibrary()` before navigating.
     async appendObject(slug: string, obj: ObjectMeta) { s.meta = appendObjectIn(s.meta, slug, obj); await persist(); },

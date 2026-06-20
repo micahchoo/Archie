@@ -45,18 +45,6 @@ export async function openExhibitAnnotationsDir(slug: string): Promise<FsDirecto
   return ex.getDirectory("annotations", { create: true });
 }
 
-/** A persisted object within an exhibit (the authored structure, not its annotations). */
-/** EXIF display-master provenance (CONTEXT §89.1): the original is preserved, this records the
- *  transform that produced the upright master `source` points at. Absent for non-baked imports. */
-export interface ObjectProvenance {
-  /** EXIF Orientation (2..8) read from the original. */
-  exifOrientation: number;
-  /** The geometric transform baked into the display master. */
-  transform: OrientationTransform;
-  /** The preserved-original file name in the exhibit's `assets-original/` dir. */
-  originalName: string;
-}
-
 /** A persisted object. Carries `RightsFields` (per-object credit/license — the truest provenance level:
  *  each folio = its holding institution). Projects to the Canvas's IIIF rights. */
 export interface ObjectMeta extends RightsFields {
@@ -126,6 +114,45 @@ export async function saveLibraryMeta(meta: LibraryMeta): Promise<void> {
   await w.close();
 }
 
+// --- pending notes (coordinate-free imports awaiting "Set area" placement; Archie-79c0 sub-cycle B) ---
+// A CSV may carry note TEXT without pixel regions. Such notes can't enter the annotation log (it refuses
+// degenerate geometry — session.ts), so they're staged in a project-level sidecar, keyed by exhibit slug,
+// until the author draws each one's box in the editor. NOT authored structure (kept out of library.json /
+// the published library) — purely editor scratch that survives a reload. One small JSON, whole-map I/O.
+
+/** A note imported with text but no region yet. `id` keys it for tray selection/removal. */
+export interface PendingNote {
+  id: string;
+  objectId: string;
+  comment: string;
+  tags: string[];
+  reading?: string;
+}
+
+const PENDING_FILE = "pending-notes.json";
+
+/** Read every exhibit's pending notes (slug → list). Empty map on first run / OPFS-unsupported. */
+export async function loadPendingNotes(): Promise<Record<string, PendingNote[]>> {
+  const project = await openProjectDir();
+  if (!project) return {};
+  try {
+    const file = await project.getFile(PENDING_FILE);
+    return JSON.parse(new TextDecoder().decode(await file.readable())) as Record<string, PendingNote[]>;
+  } catch {
+    return {}; // not yet written (no coordinate-free import has happened)
+  }
+}
+
+/** Persist the pending-notes sidecar (slug → list). No-op if OPFS unsupported. */
+export async function savePendingNotes(map: Record<string, PendingNote[]>): Promise<void> {
+  const project = await openProjectDir();
+  if (!project) return;
+  const file = await project.getFile(PENDING_FILE, { create: true });
+  const w = await file.writable();
+  await w.write(JSON.stringify(map, null, 2));
+  await w.close();
+}
+
 // --- imported-image assets (binary; raw OPFS handles, NOT the JSON-oriented Filesystem seam) ---
 // Imported files persist at {PROJECT}/exhibits/{slug}/assets/{name}; an object stores
 // source "/assets/{name}" and resolves to a blob: URL at load time (see App.svelte assetUrls).
@@ -164,6 +191,13 @@ export async function saveOriginalFile(slug: string, name: string, file: Blob): 
   await writeInto(await assetsDir(slug, true, "assets-original"), name, file);
 }
 
+/** Store a BAKED THUMBNAIL beside the master in `assets-thumb/` — a small gallery/overview derivative so
+ *  the viewer's grid loads a shrunk plate, not the full-resolution master (the multi-object load win).
+ *  Same name as the master. Published via publishLibrary's getThumbnail. No-op if unsupported. */
+export async function saveThumbFile(slug: string, name: string, file: Blob): Promise<void> {
+  await writeInto(await assetsDir(slug, true, "assets-thumb"), name, file);
+}
+
 // OPFS does NOT persist a file's MIME type — `getFile()` returns `type: ""`. Images sniff fine, but
 // `<video>`/`<audio>` (and WaveSurfer) can refuse a typeless blob: URL, so restore the type from the
 // extension on read. Zero-copy via `slice(…, type)` (no in-memory duplication of large media).
@@ -174,6 +208,27 @@ const EXT_MIME: Record<string, string> = {
 };
 function mimeFromName(name: string): string {
   return EXT_MIME[name.toLowerCase().split(".").pop() ?? ""] ?? "";
+}
+
+/** Resolve a stored asset (in the given `sub` dir) to its OPFS File — a LAZY Blob, NOT read into the
+ *  JS heap. The shared path-resolution + tolerant read both the blob-URL and raw-blob readers below use:
+ *  null when the dir/file is absent or OPFS is unsupported. */
+async function readAssetFile(slug: string, name: string, sub: string): Promise<File | null> {
+  try {
+    const dir = await assetsDir(slug, false, sub);
+    if (!dir) return null;
+    return await (await dir.getFileHandle(name)).getFile();
+  } catch {
+    return null; // not stored (a non-asset source, no baked derivative, or OPFS unsupported)
+  }
+}
+
+/** Wrap an OPFS File in a fresh blob: URL, restoring the MIME the extension implies (OPFS drops a
+ *  file's type → `<video>`/`<audio>`/WaveSurfer can refuse a typeless blob: URL). Zero-copy via
+ *  `slice(…, type)` so large media is never duplicated in memory. Caller revokes the URL. */
+function fileToObjectUrl(f: File, name: string): string {
+  const mime = f.type || mimeFromName(name);
+  return URL.createObjectURL(f.type ? f : mime ? f.slice(0, f.size, mime) : f);
 }
 
 /** Byte size of a stored asset — METADATA ONLY (File.size needs no arrayBuffer read). 0 if absent.
@@ -190,16 +245,8 @@ export async function assetSize(slug: string, name: string): Promise<number> {
 
 /** Resolve a stored asset to a fresh blob: URL (caller must revokeObjectURL). Null if absent. */
 export async function readAssetUrl(slug: string, name: string): Promise<string | null> {
-  try {
-    const dir = await assetsDir(slug, false);
-    if (!dir) return null;
-    const fh = await dir.getFileHandle(name);
-    const f = await fh.getFile();
-    const mime = f.type || mimeFromName(name); // OPFS drops the type → restore it for AV playback
-    return URL.createObjectURL(f.type ? f : mime ? f.slice(0, f.size, mime) : f);
-  } catch {
-    return null; // not stored (e.g. a non-asset source, or OPFS unsupported)
-  }
+  const f = await readAssetFile(slug, name, "assets");
+  return f ? fileToObjectUrl(f, name) : null;
 }
 
 /**
@@ -250,13 +297,7 @@ export async function exhibitHasAnnotations(slug: string): Promise<boolean> {
  *  FSA folder backend stream it straight to disk via `createWritable().write(blob)` so even one huge
  *  asset never fully materializes; the zip/memory backends still read it (they need the bytes). Null if absent. */
 export async function readAssetBlob(slug: string, name: string): Promise<Blob | null> {
-  try {
-    const dir = await assetsDir(slug, false);
-    if (!dir) return null;
-    return await (await dir.getFileHandle(name)).getFile(); // the OPFS File — lazy; not read into memory here
-  } catch {
-    return null;
-  }
+  return readAssetFile(slug, name, "assets"); // the OPFS File — lazy; not read into memory here
 }
 // (readAssetBytes removed 2026-05-27 — A.3 routed publishing through the lazy `readAssetBlob`; it had no
 //  other caller. `readOriginalBytes` below still reads eagerly for the GH-publish originals opt-in.)
@@ -271,4 +312,18 @@ export async function readOriginalBytes(slug: string, name: string): Promise<Arr
   } catch {
     return null;
   }
+}
+
+/** Resolve a stored baked thumbnail (`assets-thumb/`) to its OPFS File — lazy, mirroring readAssetBlob
+ *  (the publish getThumbnail reader). Null if absent (publishLibrary then drops the thumbnail ref). */
+export async function readThumbBytes(slug: string, name: string): Promise<Blob | null> {
+  return readAssetFile(slug, name, "assets-thumb");
+}
+
+/** Resolve a stored baked thumbnail to a fresh blob: URL (caller revokes) — the small gallery/overview
+ *  derivative, so the Studio overview/rail paint shrunk plates instead of decoding full-res masters.
+ *  Null when no thumbnail was baked (pre-existing import, or an image already small enough). */
+export async function readThumbUrl(slug: string, name: string): Promise<string | null> {
+  const f = await readAssetFile(slug, name, "assets-thumb"); // no baked thumbnail → caller falls back to the master blob
+  return f ? fileToObjectUrl(f, name) : null;
 }

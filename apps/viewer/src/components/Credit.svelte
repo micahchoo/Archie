@@ -33,8 +33,13 @@
 {/if}
 
 <style>
-  /* Quiet mono credit line — found, not announced (Spline mono, tracked, low-opacity). */
-  .credit { display: inline-flex; align-items: baseline; gap: var(--space-2); position: relative; font-family: var(--font-ui), monospace; font-size: 0.72rem; letter-spacing: 0.06em; line-height: 1.5; opacity: 0.62; }
+  /* Quiet mono credit line — found, not announced (tracked mono). Recession comes ONLY from the ink token's
+     own alpha (--ink-*-secondary = .62) — NOT a second `opacity`. Two reasons: (1) opacity is a GROUP
+     property, so putting it on .credit also dimmed the positioned .panel child (a descendant can't claw it
+     back) — that was the translucent-expandable bug; (2) even on the line alone, .62-token × .62-opacity ≈
+     .38 alpha drops the credit (an IIIF requiredStatement = MUST-display) below readable contrast. One dim,
+     from the token. */
+  .credit { display: inline-flex; align-items: baseline; gap: var(--space-2); position: relative; font-family: var(--font-ui), monospace; font-size: 0.72rem; letter-spacing: 0.06em; line-height: 1.5; }
   .credit.paper { color: var(--ink-paper-secondary); }
   .credit.canvas { color: var(--ink-canvas-secondary); }
   .line { font-style: normal; }

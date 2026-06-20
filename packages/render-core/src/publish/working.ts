@@ -17,7 +17,7 @@ import type { TileSourceDescriptor } from "../iiif/resolve.js";
 import type { OrientationTransform } from "../exif/orientation.js";
 import type { AnnotationLog } from "../wadm/types.js";
 import type { ClientId } from "../wadm/brand.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import { AnnotationSession } from "../session/session.js";
 
 /** The Studio's working-store root directory name (one project per origin in v1). */
@@ -68,6 +68,9 @@ export interface WorkingObjectMeta extends RightsFields {
    *  bounded OSD pixel raster, geo-annotated with pins/regions. The explicit classification hint (a
    *  `{z}/{x}/{y}` template can't be inferred from `source`; DESIGN.md R1). Absent for normal media. */
   tileSource?: TileSourceDescriptor;
+  /** Baked sized thumbnail path `/assets-thumb/{name}` (grid-overview load perf) — set at Studio import
+   *  for an imported raster; the publish projection copies its bytes and rewrites it to the published URL. */
+  thumbnail?: string;
   provenance?: WorkingObjectProvenance;
 }
 
@@ -131,12 +134,12 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
   const source = opts.includeTemplates ? meta.exhibits : meta.exhibits.filter((ex) => !isTemplate(ex));
   const title = meta.title ?? opts.fallbackTitle;
   return {
-    id: opts.id ?? "demo",
+    id: asLibraryId(opts.id ?? "demo"),
     ...(title !== undefined ? { title } : {}),
     ...(meta.summary ? { summary: meta.summary } : {}),
     ...rightsOf(meta),
     exhibits: source.map((ex) => ({
-      id: ex.id, slug: ex.slug, title: ex.title,
+      id: asExhibitId(ex.id), slug: ex.slug, title: ex.title,
       ...(ex.summary ? { summary: ex.summary } : {}),
       ...(ex.layout ? { layout: ex.layout } : {}),
       ...(ex.mode ? { mode: ex.mode } : {}),
@@ -144,13 +147,14 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
       ...(ex.readings && ex.readings.length ? { readings: ex.readings } : {}),
       ...rightsOf(ex),
       objects: ex.objects.map((o) => ({
-        id: o.id, source: o.source, label: o.label,
+        id: asObjectId(o.id), source: o.source, label: o.label,
         ...(o.summary ? { summary: o.summary } : {}),
         ...(o.width !== undefined ? { width: o.width } : {}),
         ...(o.height !== undefined ? { height: o.height } : {}),
         ...(o.mediaType ? { mediaType: o.mediaType } : {}),
         ...(o.tileSource ? { tileSource: o.tileSource } : {}),
         ...(o.duration !== undefined ? { duration: o.duration } : {}),
+        ...(o.thumbnail ? { thumbnail: o.thumbnail } : {}),
         ...(o.provenance?.originalName ? { originalName: o.provenance.originalName } : {}),
         ...rightsOf(o),
       })),
@@ -188,6 +192,7 @@ export function libraryToWorking(library: Library): WorkingLibraryMeta {
         ...(o.mediaType !== undefined ? { mediaType: o.mediaType } : {}),
         ...(o.tileSource !== undefined ? { tileSource: o.tileSource } : {}), // carry the Map basemap (the studio inline version dropped it)
         ...(o.duration !== undefined ? { duration: o.duration } : {}),
+        ...(o.thumbnail !== undefined ? { thumbnail: o.thumbnail } : {}), // carry the baked-thumbnail ref
         ...rightsOf(o),
       })),
     })),
@@ -212,6 +217,9 @@ export interface WorkingLibrary {
   getLog: (id: string) => AnnotationLog;
   /** Imported-asset bytes at `{project}/exhibits/{slug}/assets/{name}` — the publish getAsset. */
   getAsset: (slug: string, name: string) => Promise<ArrayBuffer | null>;
+  /** Baked-thumbnail bytes at `{project}/exhibits/{slug}/assets-thumb/{name}` — the publish getThumbnail.
+   *  Null when this object has no baked thumbnail (publishLibrary then drops the ref). */
+  getThumbnail: (slug: string, name: string) => Promise<ArrayBuffer | null>;
 }
 
 async function readExhibitLog(projectDir: FsDirectory, slug: string, editor: ClientId): Promise<AnnotationLog> {
@@ -245,7 +253,7 @@ export async function loadWorkingLibrary(fs: Filesystem, opts: LoadWorkingOption
   const logs: Record<string, AnnotationLog> = {};
   const included = new Set(library.exhibits.map((e) => e.id));
   for (const ex of meta.exhibits) {
-    if (included.has(ex.id)) logs[ex.id] = await readExhibitLog(projectDir, ex.slug, editor);
+    if (included.has(asExhibitId(ex.id))) logs[ex.id] = await readExhibitLog(projectDir, ex.slug, editor);
   }
   const getAsset = async (slug: string, name: string): Promise<ArrayBuffer | null> => {
     try {
@@ -255,5 +263,13 @@ export async function loadWorkingLibrary(fs: Filesystem, opts: LoadWorkingOption
       return null; // not an imported asset (external URL) — publishLibrary leaves the source as-is
     }
   };
-  return { meta, library, logs, getLog: (id) => logs[id] ?? [], getAsset };
+  const getThumbnail = async (slug: string, name: string): Promise<ArrayBuffer | null> => {
+    try {
+      const dir = await (await (await projectDir.getDirectory("exhibits")).getDirectory(slug)).getDirectory("assets-thumb");
+      return await (await dir.getFile(name)).readable();
+    } catch {
+      return null; // no baked thumbnail for this asset — publishLibrary drops the ref
+    }
+  };
+  return { meta, library, logs, getLog: (id) => logs[id] ?? [], getAsset, getThumbnail };
 }

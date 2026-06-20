@@ -12,7 +12,7 @@
 // o12 is the SOUND object (the Kryptogramm sonification of folio 18v) — the AV evidence in the
 // cipher/hoax/natural-language debate (04-design §E; 02-av-and-material-manifest §1). It maps to o2 (f18v),
 // the very page it sonifies.
-import type { AObject } from "@render/core";
+import { asObjectId, type AObject } from "@render/core";
 
 export const voynichTitle = "The Voynich Manuscript";
 export const voynichCredits =
@@ -38,18 +38,18 @@ const BEINECKE_RIGHTS = "http://creativecommons.org/publicdomain/mark/1.0/"; // 
 const BEINECKE_STATEMENT = { label: "Source", value: "Beinecke Rare Book & Manuscript Library, Yale University — MS 408 (public domain)" } as const;
 const folio = (o: AObject): AObject => ({ ...o, rights: BEINECKE_RIGHTS, requiredStatement: { ...BEINECKE_STATEMENT } });
 export const voynichObjects: AObject[] = [
-  folio({ id: "o1", source: iiif("1006076"), label: "f1r — Herbal (opening page)", width: 2972, height: 3766 }),
-  folio({ id: "o2", source: iiif("1006109"), label: "f18v — Herbal (the sonified folio)", width: 2846, height: 3781 }),
-  folio({ id: "o3", source: iiif("1006123"), label: "f25v — Herbal", width: 2863, height: 3769 }),
-  folio({ id: "o4", source: iiif("1006139"), label: "f33v — Herbal", width: 2871, height: 3769 }),
-  folio({ id: "o5", source: iiif("1006194"), label: "f67r — Astronomical (foldout)", width: 4972, height: 3738 }),
-  folio({ id: "o6", source: iiif("1006196"), label: "f68r — Astronomical (foldout star-chart)", width: 7993, height: 3828 }),
-  folio({ id: "o7", source: iiif("1006208"), label: "f75r — Balneological", width: 2852, height: 3759 }),
-  folio({ id: "o8", source: iiif("1006214"), label: "f78r — Balneological", width: 2793, height: 3761 }),
-  folio({ id: "o9", source: iiif("1006231"), label: "f85v–86r — Cosmological (the Rosettes foldout)", width: 7925, height: 7268 }),
-  folio({ id: "o10", source: iiif("1006246"), label: "f99r — Pharmaceutical", width: 2702, height: 3765 }),
-  folio({ id: "o11", source: iiif("1006277"), label: "f116v — Recipes (the final page)", width: 2686, height: 3697 }),
-  { id: "o12", source: AV_SOURCE, label: "Kryptogramm — “04-f18v” (sonified folio 18v)", mediaType: "sound", format: "audio/mpeg", duration: 296,
+  folio({ id: asObjectId("o1"), source: iiif("1006076"), label: "f1r — Herbal (opening page)", width: 2972, height: 3766 }),
+  folio({ id: asObjectId("o2"), source: iiif("1006109"), label: "f18v — Herbal (the sonified folio)", width: 2846, height: 3781 }),
+  folio({ id: asObjectId("o3"), source: iiif("1006123"), label: "f25v — Herbal", width: 2863, height: 3769 }),
+  folio({ id: asObjectId("o4"), source: iiif("1006139"), label: "f33v — Herbal", width: 2871, height: 3769 }),
+  folio({ id: asObjectId("o5"), source: iiif("1006194"), label: "f67r — Astronomical (foldout)", width: 4972, height: 3738 }),
+  folio({ id: asObjectId("o6"), source: iiif("1006196"), label: "f68r — Astronomical (foldout star-chart)", width: 7993, height: 3828 }),
+  folio({ id: asObjectId("o7"), source: iiif("1006208"), label: "f75r — Balneological", width: 2852, height: 3759 }),
+  folio({ id: asObjectId("o8"), source: iiif("1006214"), label: "f78r — Balneological", width: 2793, height: 3761 }),
+  folio({ id: asObjectId("o9"), source: iiif("1006231"), label: "f85v–86r — Cosmological (the Rosettes foldout)", width: 7925, height: 7268 }),
+  folio({ id: asObjectId("o10"), source: iiif("1006246"), label: "f99r — Pharmaceutical", width: 2702, height: 3765 }),
+  folio({ id: asObjectId("o11"), source: iiif("1006277"), label: "f116v — Recipes (the final page)", width: 2686, height: 3697 }),
+  { id: asObjectId("o12"), source: AV_SOURCE, label: "Kryptogramm — “04-f18v” (sonified folio 18v)", mediaType: "sound", format: "audio/mpeg", duration: 296,
     rights: "http://creativecommons.org/licenses/by-nc-sa/3.0/",
     requiredStatement: { label: "Sound", value: "Kryptogramm — Elias Schwerdtfeger, CC BY-NC-SA 3.0" } },
 ];

@@ -1,6 +1,7 @@
-// Layer + tag filtering over Notes (CONTEXT: Layers = per-note membership v1, cross-object;
-// Tags = a body with purpose:tagging). Pure functions over AnnotationRecords. The Archie viewer
-// uses these to filter; pure WADM consumers show all (three-tier degradation).
+// Reading + tag filtering over Notes (ADR-0007: Reading = per-note single membership; Tags = a body
+// with purpose:tagging — the additive home legacy `layers` folded into). Pure functions over
+// AnnotationRecords. The Archie viewer uses these to filter; pure WADM consumers show all (three-tier
+// degradation). The retired multi-valued `layers` filters are gone (folded into Tags at load).
 
 import type { AnnotationRecord, W3CBody } from "../wadm/types.js";
 import { bodyList } from "./body.js";
@@ -16,11 +17,6 @@ export function tagsOf(record: AnnotationRecord): string[] {
     .filter((b) => (b as { purpose?: string }).purpose === "tagging")
     .map((b) => (b as { value?: unknown }).value)
     .filter((v): v is string => typeof v === "string" && v.trim().length > 0);
-}
-
-/** @deprecated Layer ids a Note belongs to (multi-valued). Use {@link readingOf} (ADR-0007). */
-export function layersOf(record: AnnotationRecord): string[] {
-  return record.layers ?? [];
 }
 
 /** The single Reading a Note belongs to, or undefined = base (ADR-0007; mutually exclusive). */
@@ -45,21 +41,9 @@ export function allReadings(records: readonly AnnotationRecord[]): string[] {
   return [...set].sort();
 }
 
-/** Notes that are members of `layerId`. */
-export function filterByLayer(records: readonly AnnotationRecord[], layerId: string): AnnotationRecord[] {
-  return records.filter((r) => layersOf(r).includes(layerId));
-}
-
 /** Notes carrying `tag`. */
 export function filterByTag(records: readonly AnnotationRecord[], tag: string): AnnotationRecord[] {
   return records.filter((r) => tagsOf(r).includes(tag));
-}
-
-/** All distinct layer ids across the notes, sorted. */
-export function allLayers(records: readonly AnnotationRecord[]): string[] {
-  const set = new Set<string>();
-  for (const r of records) for (const l of layersOf(r)) set.add(l);
-  return [...set].sort();
 }
 
 /** All distinct tags across the notes, sorted. */

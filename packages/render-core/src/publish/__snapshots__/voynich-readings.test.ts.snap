@@ -1,0 +1,234 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibit (ADR-0007) > publishes a BYTE-STABLE manifest.json (inline-embed key order frozen) 1`] = `
+"{
+  "@context": "https://iiif.io/api/presentation/3/context.json",
+  "id": "https://u.gh.io/voynich-lib/voynich/manifest.json",
+  "type": "Manifest",
+  "label": {
+    "none": [
+      "The Voynich Manuscript — competing readings"
+    ]
+  },
+  "summary": {
+    "none": [
+      "Beinecke MS 408, read through rival scholarly interpretations."
+    ]
+  },
+  "items": [
+    {
+      "id": "https://u.gh.io/voynich-lib/voynich/canvas/f1",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Folio (MS 408)"
+        ]
+      },
+      "width": 1450,
+      "height": 2000,
+      "items": [
+        {
+          "id": "https://u.gh.io/voynich-lib/voynich/canvas/f1/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://u.gh.io/voynich-lib/voynich/canvas/f1/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://collections.library.yale.edu/iiif/2/1006074/full/full/0/default.jpg",
+                "type": "Image",
+                "width": 1450,
+                "height": 2000
+              },
+              "target": "https://u.gh.io/voynich-lib/voynich/canvas/f1"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://u.gh.io/voynich-lib/voynich/canvas/f1/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://u.gh.io/voynich-lib/voynich/annotations/0000000004XXXXXXXXXXXXXXXX/v1",
+              "type": "Annotation",
+              "target": {
+                "source": "https://u.gh.io/voynich-lib/voynich/canvas/f1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "value": "xywh=pixel:80,80,300,120"
+                }
+              },
+              "modified": "t",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Voynichese: ~35,000 characters across ~240 leaves in a single distinctive script."
+                }
+              ],
+              "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000004XXXXXXXXXXXXXXXX.json"
+            },
+            {
+              "id": "https://u.gh.io/voynich-lib/voynich/annotations/0000000005XXXXXXXXXXXXXXXX/v1",
+              "type": "Annotation",
+              "target": {
+                "source": "https://u.gh.io/voynich-lib/voynich/canvas/f1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "value": "xywh=pixel:90,1700,400,140"
+                }
+              },
+              "modified": "t",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The hand here is consistent with Currier 'Language B'."
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "paleography",
+                  "purpose": "tagging"
+                }
+              ],
+              "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000005XXXXXXXXXXXXXXXX.json"
+            }
+          ],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://u.gh.io/voynich-lib/voynich/canvas/f1/annotations-cipher.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://u.gh.io/voynich-lib/voynich/annotations/0000000001XXXXXXXXXXXXXXXX/v1",
+              "type": "Annotation",
+              "target": {
+                "source": "https://u.gh.io/voynich-lib/voynich/canvas/f1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "value": "xywh=pixel:300,1200,520,180"
+                }
+              },
+              "modified": "t",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the cipher hypothesis this paragraph is a noun-heavy passage; word-length clustering at 4–6 glyphs fits an enciphered natural language."
+                }
+              ],
+              "archie:reading": "cipher",
+              "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000001XXXXXXXXXXXXXXXX.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://u.gh.io/voynich-lib/voynich/annotations/readings/cipher.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Cipher reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "the glyphs encode a natural language (Friedman / NSA tradition)"
+            ]
+          }
+        },
+        {
+          "id": "https://u.gh.io/voynich-lib/voynich/canvas/f1/annotations-hoax.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://u.gh.io/voynich-lib/voynich/annotations/0000000002XXXXXXXXXXXXXXXX/v1",
+              "type": "Annotation",
+              "target": {
+                "source": "https://u.gh.io/voynich-lib/voynich/canvas/f1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "value": "xywh=pixel:300,1200,520,180"
+                }
+              },
+              "modified": "t",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the hoax hypothesis the same block is meaningless — its statistical regularity is reproducible with a Cardan grille (Rugg 2004)."
+                }
+              ],
+              "archie:reading": "hoax",
+              "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000002XXXXXXXXXXXXXXXX.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://u.gh.io/voynich-lib/voynich/annotations/readings/hoax.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Hoax reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "the glyphs are meaningless, Cardan-grille-style (Rugg 2004; Gaskell & Bowern 2022)"
+            ]
+          }
+        },
+        {
+          "id": "https://u.gh.io/voynich-lib/voynich/canvas/f1/annotations-abjad.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://u.gh.io/voynich-lib/voynich/annotations/0000000003XXXXXXXXXXXXXXXX/v1",
+              "type": "Annotation",
+              "target": {
+                "source": "https://u.gh.io/voynich-lib/voynich/canvas/f1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "value": "xywh=pixel:300,1200,520,180"
+                }
+              },
+              "modified": "t",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Under the natural-language hypothesis the same block is plaintext in an invented alphabet — its word-entropy sits within the natural-language range (Amancio et al. 2013; Bax 2014)."
+                }
+              ],
+              "archie:reading": "abjad",
+              "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000003XXXXXXXXXXXXXXXX.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://u.gh.io/voynich-lib/voynich/annotations/readings/abjad.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Natural-language reading"
+            ]
+          },
+          "summary": {
+            "none": [
+              "the glyphs are a real natural language in an invented alphabet (Bax 2014; Amancio et al. 2013)"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}"
+`;

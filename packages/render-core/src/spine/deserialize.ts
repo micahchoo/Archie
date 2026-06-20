@@ -19,6 +19,7 @@ import {
 } from "../wadm/types.js";
 import type { AnnotationLog, AnnotationRecord, GeoAnchor, W3CAnnotation, W3CAnnotationPage, W3CBody, W3CTarget } from "../wadm/types.js";
 import type { RevId } from "../wadm/brand.js";
+import { foldLayersIntoTags } from "../migrate/migrate.js";
 
 function asString(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
@@ -58,8 +59,10 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
   const parent = typeof parentRaw === "string" ? asRevId(parentRaw) : null;
   const mpRaw = a[ARCHIE_MERGE_PARENTS];
   const mergeParents = Array.isArray(mpRaw) && mpRaw.every((x) => typeof x === "string") ? mpRaw.map((x) => asRevId(x as string)) : undefined;
+  // Legacy `archie:layers` (ADR-0007): parsed ONLY so foldLayersIntoTags can absorb it into Tags
+  // below — never assigned to the typed record (the field is retired). OLD data still carries it.
   const layersRaw = a[ARCHIE_LAYERS];
-  const layers = Array.isArray(layersRaw) && layersRaw.every((x) => typeof x === "string") ? (layersRaw as string[]) : undefined;
+  const legacyLayers = Array.isArray(layersRaw) && layersRaw.every((x) => typeof x === "string") ? (layersRaw as string[]) : undefined;
   const reading = asString(a[ARCHIE_READING]);
   const emphRaw = a[ARCHIE_EMPHASIS];
   const emphasis = emphRaw === "muted" || emphRaw === "normal" || emphRaw === "strong" ? emphRaw : undefined;
@@ -77,12 +80,16 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
     ...(mergeParents !== undefined ? { mergeParents } : {}),
     ...(ann.body !== undefined ? { body: ann.body as W3CBody | W3CBody[] } : {}),
     ...(ann.motivation !== undefined ? { motivation: ann.motivation } : {}),
-    ...(layers !== undefined ? { layers } : {}),
     ...(reading !== undefined ? { reading } : {}),
     ...(emphasis !== undefined ? { emphasis } : {}),
     ...(geo !== undefined ? { geo } : {}),
   };
-  return record;
+  // ADR-0007 contraction: legacy `archie:layers` (OLD persisted data) folds into Tags
+  // (purpose:tagging bodies) on read, losslessly — so no live reader past this boundary ever
+  // sees the retired field. Attached via cast (the field is no longer on the record type) so
+  // foldLayersIntoTags can absorb + strip it. Modern data (no legacy layers) skips the fold.
+  if (legacyLayers === undefined || legacyLayers.length === 0) return record;
+  return foldLayersIntoTags(Object.assign({}, record, { layers: legacyLayers }));
 }
 
 /** All reconstructable records on one history page. */

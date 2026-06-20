@@ -25,8 +25,11 @@ export const PROV_WAS_REVISION_OF = "prov:wasRevisionOf" as const;
 // ADR-0003 rejects a non-WADM log store, so the DAG metadata must ride on the WADM annotations.
 // A pure consumer ignores all `archie:` keys; Archie reads them to reconstruct the log.
 export const ARCHIE_LOGICAL_ID = "archie:logicalId" as const;
-/** @deprecated Layer membership (per-note, multi-valued). SUPERSEDED by ARCHIE_READING (ADR-0007);
- *  kept during the expand-and-contract rename. Migrated to Tags on read (layers[] → purpose:tagging). */
+/** READ-ONLY LEGACY KEY (ADR-0007 contraction landed). `archie:layers` is NEVER written anymore —
+ *  the `layers` field is retired from the model. This const survives ONLY as the recognised key for
+ *  OLD persisted data: deserialize.ts reads it and folds the values into Tags (purpose:tagging) on
+ *  load, then drops it. Do not re-introduce a writer. (Kept as a named const, not inlined, to avoid a
+ *  magic string at the one back-compat read site.) */
 export const ARCHIE_LAYERS = "archie:layers" as const;
 /** Reading membership (per-note, single — ADR-0007). A Reading = a mutually-exclusive interpretive pass,
  *  serialized as the AnnotationPage the note lands in (`partOf` → the reading's AnnotationCollection).
@@ -51,6 +54,14 @@ export const ARCHIE_MERGE_PARENTS = "archie:mergeParents" as const;
 export const ARCHIE_VERSION = "archie:version" as const;
 export const ARCHIE_LAST_EDITOR = "archie:lastEditor" as const;
 export const ARCHIE_DELETED = "archie:deleted" as const;
+/** Role marker for a non-Note annotation — e.g. a Section serialized as a supplementing annotation
+ *  (ADR-0017). Pure consumers ignore it; Archie recognises the annotation WITHOUT parsing IIIF Ranges.
+ *  Distinct from the DAG fields: a section-annotation carries NO logicalId/rev/version/lastEditor, so the
+ *  reload importer (`recordFromHistoryAnnotation`) skips it — no double-count with the `structures[]` Range. */
+export const ARCHIE_ROLE = "archie:role" as const;
+/** Spine position of a section-annotation (0-based). Ordering baked into the annotation, redundant with the
+ *  AnnotationCollection item order for robustness (WADM has no per-annotation order). */
+export const ARCHIE_ORDER = "archie:order" as const;
 
 /** ISO-8601 datetime string (e.g. `2026-05-24T12:00:00.000Z`). */
 export type IsoDateTime = string;
@@ -145,6 +156,43 @@ export interface W3CAnnotationPage {
   partOf?: unknown;
 }
 
+/**
+ * A Section (the narrative spine; ADR-0005) ALSO serialized as a WADM annotation — the additive,
+ * all-round-compatible export view (ADR-0017). The canonical Section transport stays the IIIF `Range`
+ * in `manifest.structures[]` (Archie reads that); this lets a pure WADM/IIIF *annotation* tool — which
+ * reads AnnotationPages, NOT Ranges — consume the narrative. The Range affordances are baked in: the
+ * title → `label`, the active region → a FragmentSelector `target`, the prose → a `describing` body, the
+ * spine position → `archie:order`. It carries NO archie DAG fields, so the reload importer ignores it;
+ * there is no double-count with the `structures[]` Range round-trip.
+ */
+export interface SectionAnnotation extends W3CAnnotation {
+  /** The Section title as a IIIF label. IIIF tools render it; a pure-WADM/JSON-LD consumer ignores the
+   *  unknown term — more compatible than a custom title extension or a guess-which-body scheme. */
+  label?: Record<string, string[]>;
+  /** Marks this annotation as a Section (also inferable from collection membership + `supplementing`). */
+  "archie:role"?: "section";
+  /** 0-based spine position — the ordering affordance, baked in. */
+  "archie:order"?: number;
+}
+
+/**
+ * A WADM AnnotationCollection — an ordered grouping of annotations, paged via `first`/`last`
+ * (W3C / ActivityStreams). Archie emits the narrative spine as one self-contained collection per
+ * exhibit: `first` is an embedded AnnotationPage carrying the section-annotations inline in spine order
+ * (a static export has no server to dereference a bare page id). Each IIIF Range links here via its
+ * `supplementary` property (IIIF Presentation 3 §5.4) — the ecosystem-sanctioned Range↔annotation bridge —
+ * so both IIIF and pure-WADM consumers discover it.
+ */
+export interface W3CAnnotationCollection {
+  "@context"?: string | string[];
+  id: string;
+  type: "AnnotationCollection";
+  label?: Record<string, string[]>;
+  summary?: Record<string, string[]>;
+  total?: number;
+  first?: W3CAnnotationPage;
+}
+
 // ---- The spine's log element ----
 
 /**
@@ -174,9 +222,6 @@ export interface AnnotationRecord {
   body?: W3CBody | W3CBody[];
   target: W3CTarget;
   motivation?: string | string[];
-  /** @deprecated Multi-valued layer membership. SUPERSEDED by `reading` (ADR-0007); kept during the
-   *  expand-and-contract rename, migrated to Tags on read. Do not set on new records. */
-  layers?: string[];
   /** The single Reading this Note belongs to (mutually exclusive — ADR-0007), or undefined = base.
    *  A Reading is a curated interpretive pass; the id resolves against the Exhibit's reading registry. */
   reading?: string;

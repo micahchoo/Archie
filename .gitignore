@@ -71,6 +71,9 @@ Thumbs.db
 # ─────────────────────────────────────────────────────────────
 design/_*
 
+# Session scratch — throwaway analysis maps, never committed.
+.scratch/
+
 # ─────────────────────────────────────────────────────────────
 # Project-local, intentionally untracked (do not commit)
 # ─────────────────────────────────────────────────────────────

@@ -3,7 +3,7 @@
 // resolved to blob URLs, and that the open/close/isPortable state machine behaves. The HOSTED branch
 // (HTTP fetch) is unchanged + exercised by the deployed app; not re-tested here (no server in-test).
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { ZipFilesystem, publishLibrary, appendNew, asClientId, type Library, type AnnotationLog, type ExhibitsJson } from "@render/core";
+import { ZipFilesystem, publishLibrary, appendNew, asClientId, asExhibitId, asLibraryId, asObjectId, type Library, type AnnotationLog, type ExhibitsJson } from "@render/core";
 import {
   openPortableLibrary, closePortableLibrary, isPortable, loadGallery, loadPublishedExhibit,
   modeFromProbe, probeViewerMode, openLibraryFromFile, openLibraryFromSrc, mergeGalleries,
@@ -17,8 +17,8 @@ const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const canvasId = `${BASE}${SLUG}/canvas/o1`;
 
 const library: Library = {
-  id: "L", title: "Lib",
-  exhibits: [{ id: "e1", slug: SLUG, title: "Voynich", objects: [{ id: "o1", source: `/assets/${ASSET_NAME}`, label: "folio 1" }] }],
+  id: asLibraryId("L"), title: "Lib",
+  exhibits: [{ id: asExhibitId("e1"), slug: SLUG, title: "Voynich", objects: [{ id: asObjectId("o1"), source: `/assets/${ASSET_NAME}`, label: "folio 1" }] }],
 };
 
 async function buildArchiveBytes(): Promise<Uint8Array> {
@@ -52,6 +52,27 @@ describe("published.ts hosted/portable seam (PV-2a)", () => {
     expect(ex.title).toBe("Voynich");
     expect(ex.objects[0]!.source.startsWith("blob:")).toBe(true); // embedded media resolved via the core seam
     expect(Array.isArray(ex.readings)).toBe(true); // the readings field (now also read by core's readPublishedExhibit, ADR-0007)
+  });
+
+  it("a superseded concurrent load self-revokes its blobs, keeping the live exhibit's (revoke-race guard)", async () => {
+    await openZip();
+    const revoked: string[] = [];
+    const spy = vi.spyOn(URL, "revokeObjectURL").mockImplementation((u) => { revoked.push(String(u)); });
+    try {
+      // Two loads in flight at once (rapid re-navigation). First call = older seq (superseded), second =
+      // latest (survivor). The guard must free the superseded load's OWN blobs and NOT clobber the live
+      // revoke handle — without it, both set the handle (last wins) and the first load's blob URLs leak.
+      const [a, b] = await Promise.all([loadPublishedExhibit(SLUG), loadPublishedExhibit(SLUG)]);
+      const supersededSrc = a.objects[0]!.source; // first call → older seq
+      const liveSrc = b.objects[0]!.source; // second call → latest seq (the visible exhibit)
+      expect(supersededSrc.startsWith("blob:")).toBe(true);
+      expect(liveSrc.startsWith("blob:")).toBe(true);
+      expect(supersededSrc).not.toBe(liveSrc); // each load minted its own blob set
+      expect(revoked).toContain(supersededSrc); // the superseded load freed its own blobs (no leak)
+      expect(revoked).not.toContain(liveSrc); // the live exhibit's blobs were NOT revoked (no early-free)
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it("closePortableLibrary returns to hosted", async () => {
