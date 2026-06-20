@@ -3,6 +3,14 @@
 // to the Archie heads AnnotationPage where the notes for that canvas load.
 
 import type { AObject, Exhibit, MediaType, Section } from "../model/model.js";
+import type {
+  SectionAnnotation,
+  W3CAnnotation,
+  W3CAnnotationCollection,
+  W3CTarget,
+  W3CTextualBody,
+} from "../wadm/types.js";
+import { WADM_CONTEXT } from "../wadm/types.js";
 import { resolveTileSource, thumbnailUrl, type TileSourceDescriptor } from "./resolve.js";
 
 /** Object/Canvas extension key carrying a Map's tile-source descriptor (geo-annotation; ADR-0015). Emitted
@@ -27,6 +35,7 @@ function asTileSourceDescriptor(v: unknown): TileSourceDescriptor | undefined {
 import {
   IIIF_PRESENTATION_CONTEXT,
   langMap,
+  type AnnotationPageRef,
   type IIIFCanvas,
   type IIIFContentResource,
   type IIIFManifest,
@@ -87,12 +96,16 @@ function toCanvas(manifestBase: string, obj: AObject, readingIds: string[] = [])
         items: [{ id: `${canvasId}/painting/1`, type: "Annotation", motivation: "painting", body, target: canvasId }],
       },
     ],
-    // Sized thumbnail for gallery/overview — the canonical thumbnailUrl derives the Image API sized
-    // JPEG from the service base (same `{base}/full/240,/0/default.jpg` the inline template built),
-    // only for Image bodies that classify as a IIIF service (same gate as the service descriptor).
-    ...(isIiifService
-      ? { thumbnail: [{ id: thumbnailUrl(obj.source, 240), type: "Image" as const }] }
-      : {}),
+    // Gallery/overview thumbnail. A BAKED sized derivative wins (imported rasters, set at Studio
+    // import) — it spares the grid the full-resolution master. Else a IIIF-service source derives the
+    // Image-API sized JPEG via the canonical thumbnailUrl (same `{base}/full/240,/0/default.jpg`), only
+    // for Image bodies that classify as a service. A plain external raster has neither — the grid
+    // derives at runtime (thumbnailUrl passthrough).
+    ...(obj.thumbnail !== undefined
+      ? { thumbnail: [{ id: obj.thumbnail, type: "Image" as const }] }
+      : isIiifService
+        ? { thumbnail: [{ id: thumbnailUrl(obj.source, 240), type: "Image" as const }] }
+        : {}),
     // The base notes page + one page per Reading (ADR-0007) — the multi-AnnotationPage Canvas a
     // pure IIIF viewer (Mirador) can toggle. Reading pages carry partOf → the reading's collection.
     annotations: [
@@ -132,6 +145,11 @@ export function objectsFromManifest(manifest: IIIFManifest): AObject[] {
   return manifest.items.map((canvas) => {
     const body = canvas.items[0]?.items[0]?.body;
     const tileSource = asTileSourceDescriptor((canvas as unknown as Record<string, unknown>)[ARCHIE_TILE_SOURCE]);
+    // Recover only a BAKED thumbnail (the `/assets-thumb/` derivative) into the model — a derived
+    // IIIF-service thumbnail is recomputed at render time, never persisted, so the round-trip stays
+    // byte-stable for IIIF objects (manifest.test.ts pins that emit). Marker, not a stored flag.
+    const thumbId = canvas.thumbnail?.[0]?.id;
+    const thumbnail = thumbId !== undefined && thumbId.includes("/assets-thumb/") ? thumbId : undefined;
     const obj: AObject = {
       id: objIdFromCanvasId(canvas.id),
       source: body?.id ?? "",
@@ -143,15 +161,96 @@ export function objectsFromManifest(manifest: IIIFManifest): AObject[] {
       ...(canvas.duration !== undefined ? { duration: canvas.duration } : {}),
       ...(body?.format !== undefined ? { format: body.format } : {}),
       ...(tileSource !== undefined ? { tileSource } : {}), // Map descriptor round-trip (ADR-0015)
+      ...(thumbnail !== undefined ? { thumbnail } : {}), // baked-thumbnail round-trip (grid overview perf)
       ...rightsFromIIIF(canvas), // round-trip the per-object credit/license (ADR rights & metadata)
     };
     return obj;
   });
 }
 
-/** Project narrative Sections to IIIF Ranges (CONTEXT: Section = Range; the Narrative spine). */
+/**
+ * Extract the INLINE per-canvas annotation items a published manifest already carries. publishLibrary
+ * embeds each canvas's base + per-reading heads page into `canvas.annotations[].items` (the IIIFCanvas
+ * note above: a static site / portable zip has no server to dereference a bare reference). The Viewer's
+ * reader prefers this over re-fetching the standalone `annotations.json` sidecars — the manifest is
+ * already downloaded, so those fetches are pure redundancy. Base page id = `…/annotations.json`; a
+ * reading page id = `…/annotations-{rid}.json` (rid recovered). An entry that carries NO `items` (an
+ * external / legacy manifest that only references its pages) is omitted, so the reader can fall back to
+ * fetching that one. Empty-but-present items (`[]`) are kept — a canvas legitimately has no notes.
+ */
+export function annotationsFromManifest(manifest: IIIFManifest): {
+  byObject: Record<string, W3CAnnotation[]>;
+  readingByObject: Record<string, Record<string, W3CAnnotation[]>>;
+} {
+  const byObject: Record<string, W3CAnnotation[]> = {};
+  const readingByObject: Record<string, Record<string, W3CAnnotation[]>> = {};
+  for (const canvas of manifest.items) {
+    const objId = objIdFromCanvasId(canvas.id);
+    for (const ap of canvas.annotations ?? []) {
+      if (ap.items === undefined) continue; // a bare reference — leave it for the fetch fallback
+      const m = /\/annotations(?:-(.+))?\.json$/.exec(ap.id);
+      if (!m) continue;
+      const rid = m[1];
+      if (rid === undefined) byObject[objId] = ap.items;
+      else (readingByObject[objId] ??= {})[rid] = ap.items;
+    }
+  }
+  return { byObject, readingByObject };
+}
+
+/**
+ * The inline content for ONE heads AnnotationPage reference, keyed by the ref's `id` in
+ * {@link embedHeadsIntoManifest}. `items` is always embedded (possibly `[]`); `partOf`/`label`/`summary`
+ * are present only for the pages that carry them (per-Reading partOf+label+summary; a "Base" label when
+ * an exhibit has Readings). Mirrors the optional fields of {@link AnnotationPageRef}.
+ */
+export interface HeadsEmbed {
+  items: W3CAnnotation[];
+  partOf?: Array<{ id: string; type: "AnnotationCollection" }>;
+  label?: LangMap;
+  summary?: LangMap;
+}
+
+/**
+ * Embed each canvas's heads page content INLINE into the manifest's `canvas.annotations[]` references
+ * (the write-path inverse of {@link annotationsFromManifest}) — returning a NEW manifest, leaving the
+ * input untouched. publishLibrary builds the bare manifest, projects per-canvas heads pages, then calls
+ * this to fold them in before writing (a static site / blob: origin can't dereference a bare reference).
+ * A ref whose id has no embed is passed through unchanged. Key order on each embedded ref is frozen as
+ * `id, type, items, partOf?, label?, summary?` (the published-JSON byte contract — see the byte-stability
+ * snapshot in publish/voynich-readings.test.ts). Pure: no mutation of the input manifest or its canvases.
+ */
+export function embedHeadsIntoManifest(manifest: IIIFManifest, embeds: Map<string, HeadsEmbed>): IIIFManifest {
+  return {
+    ...manifest,
+    items: manifest.items.map((canvas) =>
+      canvas.annotations === undefined
+        ? canvas
+        : {
+            ...canvas,
+            annotations: canvas.annotations.map((ref): AnnotationPageRef => {
+              const e = embeds.get(ref.id);
+              if (e === undefined) return ref;
+              return {
+                id: ref.id,
+                type: ref.type,
+                items: e.items,
+                ...(e.partOf !== undefined ? { partOf: e.partOf } : {}),
+                ...(e.label !== undefined ? { label: e.label } : {}),
+                ...(e.summary !== undefined ? { summary: e.summary } : {}),
+              };
+            }),
+          },
+    ),
+  };
+}
+
+/** Project narrative Sections to IIIF Ranges (CONTEXT: Section = Range; the Narrative spine).
+ *  Each Range links to the exhibit's narrative-spine AnnotationCollection via `supplementary` (ADR-0017) —
+ *  the WADM view of the same Sections — so annotation tools that don't read Ranges still find the narrative. */
 export function toRanges(exhibit: Exhibit, opts: ManifestOptions = {}): IIIFRange[] {
   const manifestBase = `${opts.baseUrl ?? ""}${exhibit.slug}`;
+  const supplementary = { id: narrativeCollectionId(manifestBase), type: "AnnotationCollection" as const };
   return (exhibit.sections ?? []).map((section: Section) => {
     const canvasId = `${manifestBase}/canvas/${section.objectId}`;
     const startId = section.start !== undefined ? `${canvasId}#${section.start}` : canvasId;
@@ -162,8 +261,69 @@ export function toRanges(exhibit: Exhibit, opts: ManifestOptions = {}): IIIFRang
       ...(section.prose !== undefined ? { summary: langMap(section.prose) } : {}),
       items: [{ id: canvasId, type: "Canvas" }],
       start: { id: startId, type: "Canvas" },
+      supplementary,
     };
   });
+}
+
+/** Deterministic id/path of an exhibit's narrative AnnotationCollection (the WADM view of its Sections).
+ *  Both `toRanges` (the Range `supplementary` link) and the publish writer derive the same value, so the
+ *  reference resolves without either side knowing the other built it. */
+function narrativeCollectionId(manifestBase: string): string {
+  return `${manifestBase}/annotations/narrative.json`;
+}
+
+/**
+ * Project one narrative Section to a WADM annotation (ADR-0017) — the additive, all-round-compatible view a
+ * pure annotation tool can read (the canonical transport stays the IIIF Range in `structures[]`). The Range
+ * affordances are baked in: `motivation: "supplementing"` (the IIIF supplementary semantics), the title as a
+ * IIIF `label`, the active region as a media-fragment `target`, the prose as a `describing` body, the spine
+ * position as `archie:order`. Carries NO archie DAG fields, so the reload importer ignores it (no double-count).
+ */
+export function sectionToAnnotation(section: Section, index: number, manifestBase: string): SectionAnnotation {
+  const canvasId = `${manifestBase}/canvas/${section.objectId}`;
+  const target: W3CTarget =
+    section.start !== undefined
+      ? {
+          type: "SpecificResource",
+          source: canvasId,
+          selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: section.start },
+        }
+      : canvasId;
+  return {
+    id: `${manifestBase}/section/${section.id}`,
+    type: "Annotation",
+    motivation: "supplementing",
+    label: langMap(section.title),
+    target,
+    "archie:role": "section",
+    "archie:order": index,
+    ...(section.prose !== undefined
+      ? { body: { type: "TextualBody", value: section.prose, format: "text/html", purpose: "describing" } satisfies W3CTextualBody }
+      : {}),
+  };
+}
+
+/**
+ * Project an Exhibit's narrative Sections to one self-contained WADM AnnotationCollection (ADR-0017): the
+ * section-annotations embedded inline in spine order in the `first` AnnotationPage, so a static export needs
+ * no second fetch. Each IIIF Range links here via `supplementary`. Returns `undefined` for a non-narrative
+ * exhibit (no sections) — nothing to write.
+ */
+export function sectionsToAnnotationCollection(exhibit: Exhibit, opts: ManifestOptions = {}): W3CAnnotationCollection | undefined {
+  const sections = exhibit.sections ?? [];
+  if (sections.length === 0) return undefined;
+  const manifestBase = `${opts.baseUrl ?? ""}${exhibit.slug}`;
+  const id = narrativeCollectionId(manifestBase);
+  const items = sections.map((s, i) => sectionToAnnotation(s, i, manifestBase));
+  return {
+    "@context": WADM_CONTEXT,
+    id,
+    type: "AnnotationCollection",
+    label: langMap(exhibit.title),
+    total: items.length,
+    first: { id: `${id}#page-1`, type: "AnnotationPage", items, partOf: { id, type: "AnnotationCollection" } },
+  };
 }
 
 /**

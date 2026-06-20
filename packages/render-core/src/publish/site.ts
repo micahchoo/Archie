@@ -14,8 +14,8 @@ import type { Library } from "../model/model.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CAnnotationPage } from "../wadm/types.js";
 import { buildLinkIndex, resolveViewerLink, validateLink, rewriteArchieLinks, type LinkTarget } from "../link/link.js";
 import { toCollection } from "../iiif/collection.js";
-import { toExhibitsJson, type ExhibitsJson } from "../iiif/exhibits.js";
-import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest } from "../iiif/manifest.js";
+import { toExhibitsJson, toReadingCollection, type ExhibitsJson } from "../iiif/exhibits.js";
+import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest, sectionsToAnnotationCollection, embedHeadsIntoManifest, type HeadsEmbed } from "../iiif/manifest.js";
 import { rightsFromIIIF } from "../iiif/rights.js";
 import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.js";
 import type { Exhibit, AObject, Section, RightsFields } from "../model/model.js";
@@ -26,7 +26,6 @@ import { readAnnotations } from "../spine/persist.js";
 import { toHistory } from "../spine/serialize.js";
 import { projectHeads } from "../spine/heads.js";
 import { headsPageFromRecords, headsPagesByReading, citationIdMap, targetSource } from "../spine/serialize.js";
-import { WADM_CONTEXT } from "../wadm/types.js";
 import { stamp } from "../migrate/migrate.js";
 
 export interface PublishOptions {
@@ -45,6 +44,15 @@ export interface PublishOptions {
    * for citation. Opt-in — without it, originals stay in the working store and never ship. Keyed by (slug, name).
    */
   getOriginal?: (slug: string, name: string) => Promise<ArrayBuffer | Blob | null>;
+  /**
+   * Provide bytes for an imported asset's BAKED THUMBNAIL — a small gallery/overview derivative so the
+   * published grid loads a shrunk plate, not the full-resolution master (the multi-object load win).
+   * Keyed by (slug, asset name), same name as the master. When given AND the object carries a
+   * `thumbnail`, publishLibrary writes the bytes to `{slug}/assets-thumb/{name}` and rewrites
+   * `object.thumbnail` to that published URL. Without it (or without bytes) the thumbnail is dropped, so
+   * the manifest never references a thumbnail that wasn't published (the grid then derives at runtime).
+   */
+  getThumbnail?: (slug: string, name: string) => Promise<ArrayBuffer | Blob | null>;
   /**
    * The interactive Viewer's base URL (the canonical instance, ADR-0013) — when given, the static
    * archival pages (ADR-0014) link each exhibit/note out to the live experience. App-supplied;
@@ -154,6 +162,10 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     let manifestExhibit = exhibit;
     if (opts.getAsset && exhibit.objects.some((o) => o.source.startsWith(ASSET_PREFIX))) {
       const assetsDir = await exDir.getDirectory("assets", { create: true });
+      // The baked-thumbnail sibling dir, created only when an object actually carries one + the
+      // callback is wired (keeps a thumbnail-less publish byte-identical to before).
+      const wantThumbs = !!opts.getThumbnail && exhibit.objects.some((o) => o.thumbnail !== undefined);
+      const thumbDir = wantThumbs ? await exDir.getDirectory("assets-thumb", { create: true }) : null;
       const objects = await Promise.all(
         exhibit.objects.map(async (o) => {
           if (!o.source.startsWith(ASSET_PREFIX)) return o;
@@ -164,7 +176,21 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
           const w = await f.writable();
           await w.write(bytes);
           await w.close();
-          return { ...o, source: `${baseUrl}${exhibit.slug}/assets/${name}` };
+          const next: AObject = { ...o, source: `${baseUrl}${exhibit.slug}/assets/${name}` };
+          // Publish a baked thumbnail iff its bytes exist — else strip the working `/assets-thumb/` ref so
+          // the manifest can't point at an unpublished file (gen-published has no thumbnails → all dropped).
+          delete next.thumbnail;
+          if (thumbDir && o.thumbnail !== undefined) {
+            const tb = await opts.getThumbnail!(exhibit.slug, name);
+            if (tb) {
+              const tf = await thumbDir.getFile(name, { create: true });
+              const tw = await tf.writable();
+              await tw.write(tb);
+              await tw.close();
+              next.thumbnail = `${baseUrl}${exhibit.slug}/assets-thumb/${name}`;
+            }
+          }
+          return next;
         }),
       );
       manifestExhibit = { ...exhibit, objects };
@@ -185,12 +211,13 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
         }),
       };
     }
-    // Build the manifest, then EMBED each canvas's heads items inline into its annotations entries
+    // Build the bare manifest, then EMBED each canvas's heads items inline into its annotations entries
     // (below) before writing it — a pure IIIF viewer / portable zip can't dereference a bare reference
-    // off a placeholder or blob: origin. Index the references by id so the per-canvas loop can inject.
-    const manifest = toManifest(manifestExhibit, { baseUrl });
-    const annRefById = new Map<string, { id: string; type: "AnnotationPage"; label?: LangMap; summary?: LangMap; partOf?: Array<{ id: string; type: "AnnotationCollection" }>; items?: W3CAnnotation[] }>();
-    for (const c of manifest.items) for (const ap of c.annotations ?? []) annRefById.set(ap.id, ap);
+    // off a placeholder or blob: origin. The per-canvas loop COLLECTS the inline content keyed by page id
+    // into `embeds`; `embedHeadsIntoManifest` folds them in afterward as a pure transform (no in-place
+    // mutation of the manifest — the byte contract is pinned by publish/voynich-readings.test.ts).
+    const bareManifest = toManifest(manifestExhibit, { baseUrl });
+    const embeds = new Map<string, HeadsEmbed>();
 
     // Opt-in: publish preserved ORIGINALS for citation (CONTEXT §89.1). Written beside the tree at
     // {slug}/assets-original/{name}; NOT referenced by any canvas (the display master is) — a citation
@@ -234,16 +261,28 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
       await writeJson(exDir, "readings.json", readings);
       const rdDir = await (await exDir.getDirectory("annotations", { create: true })).getDirectory("readings", { create: true });
       for (const r of readings) {
-        await writeJson(rdDir, `${r.id}.json`, {
-          "@context": WADM_CONTEXT,
-          id: collId(r.id),
-          type: "AnnotationCollection",
-          label: { en: [r.name] },
-          ...(r.description ? { summary: { en: [r.description] } } : {}),
-        });
+        await writeJson(rdDir, `${r.id}.json`, toReadingCollection(r, collId(r.id)));
       }
     }
-    for (const obj of exhibit.objects) {
+    // Narrative spine as a WADM AnnotationCollection (ADR-0017): each Section ALSO serialized as a
+    // `supplementing` annotation, so pure-WADM/IIIF annotation tools (which read AnnotationPages, NOT IIIF
+    // Ranges) can consume the narrative. The Range in structures[] stays canonical — Archie reads that — and
+    // each Range links here via `supplementary`. The section-annotations omit the archie DAG fields, so
+    // loadLibrary's importer ignores them (no double-count with the Range round-trip). Uses manifestExhibit
+    // so the prose body gets the same archie:-link rewrite the Range summaries do (above).
+    const narrativeColl = sectionsToAnnotationCollection(manifestExhibit, { baseUrl });
+    if (narrativeColl) {
+      const annoDir = await exDir.getDirectory("annotations", { create: true });
+      await writeJson(annoDir, "narrative.json", narrativeColl);
+    }
+    // PERF: per-object pages are independent — each writes its OWN {slug}/canvas/{objId}/ dir and
+    // records its OWN `embeds` entries (distinct page ids), so fan them out instead of a per-object
+    // waterfall (the multi-object projection cost the live viewer pays at boot). Kept to one exhibit's
+    // objects at a time (the per-exhibit loop stays serial) to cap concurrent fs handles on the
+    // FSA/OPFS backend. Safe on every backend: every write targets a DISTINCT path, Memory/Zip mutate
+    // their shared Map only on distinct keys with no await between check and set, and `brokenLinks.push`
+    // / distinct-key `embeds.set` are atomic on the single JS thread.
+    await Promise.all(exhibit.objects.map(async (obj) => {
       const canvasId = `${baseUrl}${exhibit.slug}/canvas/${obj.id}`;
       const objDir = await canvasDir.getDirectory(obj.id, { create: true });
       // Resolve in-body `archie:` links on the consumer projection only (history stays canonical).
@@ -252,18 +291,19 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
       const pageId = (r: string | undefined) => `${canvasId}/${fileFor(r)}`;
       const opts = { historyBase: historyBaseAbs };
       const partition = new Map(headsPagesByReading(projected, ids, pageId, collId, opts).map((p) => [p.reading, p.page]));
-      // Embed the page's items into the manifest's matching annotations entry (so a pure IIIF viewer
-      // renders inline, no fetch/CORS) AND write the standalone sidecar file (citation/PROV target).
-      const inline = (page: W3CAnnotationPage) => {
-        const ref = annRefById.get(page.id);
-        if (!ref) return;
-        ref.items = page.items;
-        if (Array.isArray(page.partOf)) ref.partOf = page.partOf as Array<{ id: string; type: "AnnotationCollection" }>;
+      // Record the page's items as the manifest's matching annotations-entry embed (so a pure IIIF
+      // viewer renders inline, no fetch/CORS) AND write the standalone sidecar file (citation target).
+      const record = (page: W3CAnnotationPage, extra: Pick<HeadsEmbed, "label" | "summary"> = {}) => {
+        embeds.set(page.id, {
+          items: page.items,
+          ...(Array.isArray(page.partOf) ? { partOf: page.partOf as Array<{ id: string; type: "AnnotationCollection" }> } : {}),
+          ...extra,
+        });
       };
-      // Base page — always written (the manifest lists it unconditionally).
+      // Base page — always written (the manifest lists it unconditionally). A "Base" label only when the
+      // exhibit has Readings (so the viewer can name the always-on toggle alongside the reading toggles).
       const basePage = partition.get(undefined) ?? headsPageFromRecords([], pageId(undefined), ids, opts);
-      inline(basePage);
-      if (readings.length > 0) { const baseRef = annRefById.get(basePage.id); if (baseRef) baseRef.label = langMap("Base"); }
+      record(basePage, readings.length > 0 ? { label: langMap("Base") } : {});
       await writeJson(objDir, "annotations.json", basePage);
       // One page per REGISTRY reading — empty (with partOf) if this canvas has no notes for it,
       // so every `Canvas.annotations` entry the manifest lists has real (possibly empty) inline items.
@@ -271,13 +311,12 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
       // group by `partOf` WITHOUT dereferencing the AnnotationCollection at a placeholder/host origin.
       for (const r of readings) {
         const page = partition.get(r.id) ?? Object.assign(headsPageFromRecords([], pageId(r.id), ids, opts), { partOf: [{ id: collId(r.id), type: "AnnotationCollection" }] });
-        inline(page);
-        const ref = annRefById.get(page.id);
-        if (ref) { ref.label = langMap(r.name); if (r.description) ref.summary = langMap(r.description); }
+        record(page, { label: langMap(r.name), ...(r.description ? { summary: langMap(r.description) } : {}) });
         await writeJson(objDir, fileFor(r.id), page);
       }
-    }
-    // The manifest now carries inline annotation items — write it after the per-canvas pages embed.
+    }));
+    // Fold the collected inline content into the manifest (pure transform), then write it.
+    const manifest = embedHeadsIntoManifest(bareManifest, embeds);
     await writeJson(exDir, "manifest.json", manifest);
 
     // Static archival page (ADR-0014): the FULL heads projection's note texts with per-note

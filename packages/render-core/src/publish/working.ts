@@ -68,6 +68,9 @@ export interface WorkingObjectMeta extends RightsFields {
    *  bounded OSD pixel raster, geo-annotated with pins/regions. The explicit classification hint (a
    *  `{z}/{x}/{y}` template can't be inferred from `source`; DESIGN.md R1). Absent for normal media. */
   tileSource?: TileSourceDescriptor;
+  /** Baked sized thumbnail path `/assets-thumb/{name}` (grid-overview load perf) — set at Studio import
+   *  for an imported raster; the publish projection copies its bytes and rewrites it to the published URL. */
+  thumbnail?: string;
   provenance?: WorkingObjectProvenance;
 }
 
@@ -151,6 +154,7 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
         ...(o.mediaType ? { mediaType: o.mediaType } : {}),
         ...(o.tileSource ? { tileSource: o.tileSource } : {}),
         ...(o.duration !== undefined ? { duration: o.duration } : {}),
+        ...(o.thumbnail ? { thumbnail: o.thumbnail } : {}),
         ...(o.provenance?.originalName ? { originalName: o.provenance.originalName } : {}),
         ...rightsOf(o),
       })),
@@ -188,6 +192,7 @@ export function libraryToWorking(library: Library): WorkingLibraryMeta {
         ...(o.mediaType !== undefined ? { mediaType: o.mediaType } : {}),
         ...(o.tileSource !== undefined ? { tileSource: o.tileSource } : {}), // carry the Map basemap (the studio inline version dropped it)
         ...(o.duration !== undefined ? { duration: o.duration } : {}),
+        ...(o.thumbnail !== undefined ? { thumbnail: o.thumbnail } : {}), // carry the baked-thumbnail ref
         ...rightsOf(o),
       })),
     })),
@@ -212,6 +217,9 @@ export interface WorkingLibrary {
   getLog: (id: string) => AnnotationLog;
   /** Imported-asset bytes at `{project}/exhibits/{slug}/assets/{name}` — the publish getAsset. */
   getAsset: (slug: string, name: string) => Promise<ArrayBuffer | null>;
+  /** Baked-thumbnail bytes at `{project}/exhibits/{slug}/assets-thumb/{name}` — the publish getThumbnail.
+   *  Null when this object has no baked thumbnail (publishLibrary then drops the ref). */
+  getThumbnail: (slug: string, name: string) => Promise<ArrayBuffer | null>;
 }
 
 async function readExhibitLog(projectDir: FsDirectory, slug: string, editor: ClientId): Promise<AnnotationLog> {
@@ -255,5 +263,13 @@ export async function loadWorkingLibrary(fs: Filesystem, opts: LoadWorkingOption
       return null; // not an imported asset (external URL) — publishLibrary leaves the source as-is
     }
   };
-  return { meta, library, logs, getLog: (id) => logs[id] ?? [], getAsset };
+  const getThumbnail = async (slug: string, name: string): Promise<ArrayBuffer | null> => {
+    try {
+      const dir = await (await (await projectDir.getDirectory("exhibits")).getDirectory(slug)).getDirectory("assets-thumb");
+      return await (await dir.getFile(name)).readable();
+    } catch {
+      return null; // no baked thumbnail for this asset — publishLibrary drops the ref
+    }
+  };
+  return { meta, library, logs, getLog: (id) => logs[id] ?? [], getAsset, getThumbnail };
 }
