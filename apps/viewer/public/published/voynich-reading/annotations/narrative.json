@@ -1,0 +1,183 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/narrative.json",
+  "type": "AnnotationCollection",
+  "label": {
+    "none": [
+      "Reading the Unreadable"
+    ]
+  },
+  "total": 6,
+  "first": {
+    "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/narrative.json#page-1",
+    "type": "AnnotationPage",
+    "items": [
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/section/s1",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Herbal"
+          ]
+        },
+        "target": {
+          "type": "SpecificResource",
+          "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1",
+          "selector": {
+            "type": "FragmentSelector",
+            "conformsTo": "http://www.w3.org/TR/media-frags/",
+            "value": "xywh=pixel:200,200,2600,3400"
+          }
+        },
+        "archie:role": "section",
+        "archie:order": 0,
+        "body": {
+          "type": "TextualBody",
+          "value": "The book opens as a herbal: a plant to a page, text flowing around the drawing. None of these plants can be named with certainty — some look observed, some invented — and the writing has never been read.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/section/s2",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Astronomical"
+          ]
+        },
+        "target": {
+          "type": "SpecificResource",
+          "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o5",
+          "selector": {
+            "type": "FragmentSelector",
+            "conformsTo": "http://www.w3.org/TR/media-frags/",
+            "value": "xywh=pixel:400,300,4000,3100"
+          }
+        },
+        "archie:role": "section",
+        "archie:order": 1,
+        "body": {
+          "type": "TextualBody",
+          "value": "The pages widen into fold-out wheels of Sun, Moon, and stars, each star tied to a small labelled word. Conventional zodiac figures appear, but the labels around them stay closed to us.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/section/s3",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Balneological"
+          ]
+        },
+        "target": {
+          "type": "SpecificResource",
+          "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o8",
+          "selector": {
+            "type": "FragmentSelector",
+            "conformsTo": "http://www.w3.org/TR/media-frags/",
+            "value": "xywh=pixel:200,400,2400,3000"
+          }
+        },
+        "archie:role": "section",
+        "archie:order": 2,
+        "body": {
+          "type": "TextualBody",
+          "value": "Small bathing figures move through green networks of pipes and basins. The script shifts character here — measurably a different system than the herbal — as if a second voice took up the pen.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/section/s4",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Cosmological"
+          ]
+        },
+        "target": {
+          "type": "SpecificResource",
+          "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o9",
+          "selector": {
+            "type": "FragmentSelector",
+            "conformsTo": "http://www.w3.org/TR/media-frags/",
+            "value": "xywh=pixel:2600,2400,2800,2600"
+          }
+        },
+        "archie:role": "section",
+        "archie:order": 3,
+        "body": {
+          "type": "TextualBody",
+          "value": "The largest spread in the book unfolds into nine medallions joined by causeways, with castle-like and map-like forms. Whether it charts real places or imagined ones is part of what the page refuses to settle.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/section/s5",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Pharmaceutical"
+          ]
+        },
+        "target": {
+          "type": "SpecificResource",
+          "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o10",
+          "selector": {
+            "type": "FragmentSelector",
+            "conformsTo": "http://www.w3.org/TR/media-frags/",
+            "value": "xywh=pixel:200,400,2300,3000"
+          }
+        },
+        "archie:role": "section",
+        "archie:order": 4,
+        "body": {
+          "type": "TextualBody",
+          "value": "Rows of labelled containers sit beside isolated roots and leaves — many of them tidier copies of plants from the opening herbal, as if assembled into a working reference.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/section/s6",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Recipes"
+          ]
+        },
+        "target": {
+          "type": "SpecificResource",
+          "source": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o11",
+          "selector": {
+            "type": "FragmentSelector",
+            "conformsTo": "http://www.w3.org/TR/media-frags/",
+            "value": "xywh=pixel:200,160,2300,420"
+          }
+        },
+        "archie:role": "section",
+        "archie:order": 5,
+        "body": {
+          "type": "TextualBody",
+          "value": "The book closes on short starred paragraphs and, on its very last page, a few lines in ordinary Latin script — a later hand reaching in from outside the manuscript's silence.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      }
+    ],
+    "partOf": {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/narrative.json",
+      "type": "AnnotationCollection"
+    }
+  }
+}

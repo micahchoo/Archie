@@ -72,6 +72,21 @@
           "type": "Image"
         }
       ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/manifest.json",
+      "type": "Manifest",
+      "label": {
+        "none": [
+          "World map (geo-annotation prototype)"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://tile.openstreetmap.org/0/0/0.png",
+          "type": "Image"
+        }
+      ]
     }
   ]
 }

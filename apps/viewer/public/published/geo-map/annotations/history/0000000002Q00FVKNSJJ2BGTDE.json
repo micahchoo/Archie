@@ -1,0 +1,41 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/history/0000000002Q00FVKNSJJ2BGTDE.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/0000000002Q00FVKNSJJ2BGTDE/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:4754,6090,140,140"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.002Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "New York",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "0000000002Q00FVKNSJJ2BGTDE",
+      "archie:rev": "0000000002FJRVNBPPEZWPNYR1",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:geo": {
+        "type": "bbox",
+        "west": -75.5419921875,
+        "south": 39.53793974517627,
+        "east": -72.4658203125,
+        "north": 41.869560826994544
+      }
+    }
+  ]
+}
