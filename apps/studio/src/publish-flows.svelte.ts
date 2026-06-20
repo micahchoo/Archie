@@ -10,7 +10,7 @@ import {
   type Library, type AnnotationLog, type BrokenLink, type GitHubTarget, type PublishProgress, type LogicalId,
 } from "@render/core";
 import { supportsFileStreamSave, pickFolder, saveZipToDisk } from "./binding.js";
-import { readAssetBlob, readOriginalBytes, assetSize, isAsset, ASSET_PREFIX, type ExhibitMeta } from "./store.js";
+import { readAssetBlob, readOriginalBytes, readThumbBytes, assetSize, isAsset, ASSET_PREFIX, type ExhibitMeta } from "./store.js";
 // ADR-0014 (static archival pages): note bodies render through the SAME sanitize pipeline the
 // live Viewer uses (P-1 Q3 no-drift invariant) — renderMarkdown is canonical in @render/core now
 // (sanitize moved into core; @render/svelte only re-exports for back-compat).
@@ -48,6 +48,9 @@ export function createPublishFlows(deps: PublishDeps) {
   let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish
 
   const getAsset = (slug: string, name: string) => readAssetBlob(slug, name);
+  // Baked grid/overview thumbnails ride along every publish sink (folder / zip / GH / memory) so the
+  // published viewer's overview loads small plates, not full masters. Absent → publishLibrary drops the ref.
+  const getThumbnail = (slug: string, name: string) => readThumbBytes(slug, name);
 
   // Metadata-only imported-asset byte estimate (File.size — never reads bytes).
   async function estimateLibraryBytes(): Promise<number> {
@@ -81,7 +84,7 @@ export function createPublishFlows(deps: PublishDeps) {
   async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[] }> {
     const logs = await deps.loadAllLogs();
     const fs = new MemoryFilesystem();
-    const { brokenLinks } = await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks } = await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     return { fs, brokenLinks };
   }
@@ -94,12 +97,12 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE zip builder for the three zip paths (project Save / dialog download / local publish).
   async function buildZipFs() {
     const logs = await deps.loadAllLogs();
-    return libraryToZipFs(deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, ...STATIC_PAGE_OPTS });
+    return libraryToZipFs(deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, ...STATIC_PAGE_OPTS });
   }
   // ONE folder writer for the two folder sinks (binding autosave/Save + local publish).
   async function writeTree(handle: FileSystemDirectoryHandle) {
     const logs = await deps.loadAllLogs();
-    await publishLibrary(new FsaFilesystem(handle), deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, ...STATIC_PAGE_OPTS });
+    await publishLibrary(new FsaFilesystem(handle), deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, ...STATIC_PAGE_OPTS });
   }
   /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
   async function downloadProjectZip(): Promise<boolean> {

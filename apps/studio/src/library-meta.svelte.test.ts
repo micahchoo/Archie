@@ -13,18 +13,32 @@ const initial = (): LibraryMeta => ({ title: "L", exhibits: [{ id: "e1", slug: "
 // A macrotask drains ALL pending microtasks — persist now hops through the save queue (worklist 0.1),
 // so a fixed two-await flush undercounts.
 const flush = () => new Promise<void>((r) => setTimeout(r, 0));
+// patch* now DEBOUNCES the persist (500ms) — wait past the window, then let the queued write settle.
+const afterDebounce = () => new Promise<void>((r) => setTimeout(r, 600));
 
 describe("library-meta store (rune wrapper)", () => {
   beforeEach(() => saveLibraryMeta.mockClear());
 
-  it("patchExhibit mutates meta, persists once, and fires onAfterPersist (the touchBinding seam)", async () => {
+  it("patchExhibit mutates meta synchronously, then persists once (debounced) + fires onAfterPersist", async () => {
     const onAfterPersist = vi.fn();
     const lib = createLibraryStore(initial(), { onAfterPersist });
     lib.patchExhibit("a", { title: "A!" });
-    expect(lib.meta.exhibits[0]!.title).toBe("A!"); // live read through the getter
-    await flush(); // settle the fire-and-forget persist
+    expect(lib.meta.exhibits[0]!.title).toBe("A!"); // live read through the getter — instant
+    await flush();
+    expect(saveLibraryMeta).not.toHaveBeenCalled(); // debounced — no write yet
+    await afterDebounce(); // settle the debounced fire-and-forget persist
     expect(saveLibraryMeta).toHaveBeenCalledTimes(1);
     expect(onAfterPersist).toHaveBeenCalledTimes(1);
+  });
+
+  it("a burst of patch* edits coalesces into ONE library.json write (the write-amplification fix)", async () => {
+    const onAfterPersist = vi.fn();
+    const lib = createLibraryStore(initial(), { onAfterPersist });
+    const full = "A new description"; // simulate per-keystroke oninput → cumulative substrings
+    for (let i = 1; i <= full.length; i++) lib.patchExhibit("a", { summary: full.slice(0, i) });
+    await afterDebounce();
+    expect(saveLibraryMeta).toHaveBeenCalledTimes(1); // ONE write for the whole burst, not one-per-keystroke
+    expect(lib.meta.exhibits[0]!.summary).toBe(full); // the final coalesced state persisted
   });
 
   it("setMeta does NOT persist (boot reconcile / replaceProjectFrom keep their own timing)", async () => {
