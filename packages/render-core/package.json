@@ -1,6 +1,6 @@
 {
   "name": "@render/core",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Pure-TS rendering core: WADM types, annotation spine (append-only log -> version DAG -> heads/history), selector/URL/IIIF/geometry, Filesystem seam. No framework, no DOM-runtime deps. (ADR-0002 / Q-2)",

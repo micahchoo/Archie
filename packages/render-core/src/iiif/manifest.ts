@@ -43,6 +43,7 @@ import {
   type LangMap,
 } from "./presentation.js";
 import { rightsProps, rightsFromIIIF } from "./rights.js";
+import { asObjectId } from "../wadm/brand.js";
 
 /** First value of a IIIF language map (Archie writes single-language `none` maps). */
 function unLang(m: LangMap): string {
@@ -151,7 +152,7 @@ export function objectsFromManifest(manifest: IIIFManifest): AObject[] {
     const thumbId = canvas.thumbnail?.[0]?.id;
     const thumbnail = thumbId !== undefined && thumbId.includes("/assets-thumb/") ? thumbId : undefined;
     const obj: AObject = {
-      id: objIdFromCanvasId(canvas.id),
+      id: asObjectId(objIdFromCanvasId(canvas.id)),
       source: body?.id ?? "",
       label: canvas.label?.none?.[0] ?? "",
       ...(canvas.summary !== undefined ? { summary: unLang(canvas.summary) } : {}),

@@ -9,7 +9,7 @@ import {
   AnnotationSession, WORKING_IRI_BASE,
   type Section, type W3CBody, type ClientId,
   type WorkingExhibitMeta,
-  timeFragmentValue, mediaFragmentValue, fragmentSelector,
+  timeFragmentValue, mediaFragmentValue, fragmentSelector, canvasIdFor,
 } from "@render/core";
 // The canonical authored-structure type is core's WorkingExhibitMeta (store.ts re-exports it as
 // ExhibitMeta). Reference the core type directly here so DEFAULT_EXHIBITS' Map basemap object — whose
@@ -83,7 +83,7 @@ function seededVoynich(author: ClientId, slug: string, opts: { objectIds?: Set<s
   for (const n of voynichNotes) {
     if (!keep(n.objectId)) continue;
     const [x, y, w, h] = n.region;
-    s.createNote({ target: rectSel(`${BASE}${slug}/canvas/${n.objectId}`, x, y, w, h), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
+    s.createNote({ target: rectSel(canvasIdFor(BASE, slug, n.objectId), x, y, w, h), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
   }
   for (const n of voynichReadingNotes) {
     if (!keep(n.objectId)) continue;
@@ -92,7 +92,7 @@ function seededVoynich(author: ClientId, slug: string, opts: { objectIds?: Set<s
       { type: "TextualBody", value: n.comment, purpose: "commenting" },
       ...(n.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" })),
     ];
-    s.createNote({ target: rectSel(`${BASE}${slug}/canvas/${n.objectId}`, x, y, w, h), body, ...(n.reading ? { reading: n.reading } : {}) });
+    s.createNote({ target: rectSel(canvasIdFor(BASE, slug, n.objectId), x, y, w, h), body, ...(n.reading ? { reading: n.reading } : {}) });
   }
   if (opts.includeAv && keep("o12")) {
     for (const a of voynichAvNotes) {
@@ -101,7 +101,7 @@ function seededVoynich(author: ClientId, slug: string, opts: { objectIds?: Set<s
         { type: "TextualBody", value: a.comment, purpose: "commenting" },
         ...(a.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" })),
       ];
-      s.createNote({ target: timeSel(`${BASE}${slug}/canvas/o12`, start, end), body, ...(a.reading ? { reading: a.reading } : {}) });
+      s.createNote({ target: timeSel(canvasIdFor(BASE, slug, "o12"), start, end), body, ...(a.reading ? { reading: a.reading } : {}) });
     }
   }
   return s;
@@ -111,7 +111,7 @@ function seededAtlas(author: ClientId): AnnotationSession {
   for (const n of atlasNotes) {
     const [x, y, w, h] = n.region;
     s.createNote({
-      target: rectSel(`${BASE}language-atlas/canvas/${n.objectId}`, x, y, w, h),
+      target: rectSel(canvasIdFor(BASE, "language-atlas", n.objectId), x, y, w, h),
       body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
       ...(n.reading ? { reading: n.reading } : {}),
     });
@@ -126,7 +126,7 @@ function seededGeo(author: ClientId): AnnotationSession {
   const s = new AnnotationSession(author);
   for (const n of geoNotes) {
     s.createNote({
-      target: rectSel(`${BASE}geo-map/canvas/${n.objectId}`, n.x, n.y, n.w, n.h),
+      target: rectSel(canvasIdFor(BASE, "geo-map", n.objectId), n.x, n.y, n.w, n.h),
       body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
       geo: n.geo, // geo-truth (Q4)
     });

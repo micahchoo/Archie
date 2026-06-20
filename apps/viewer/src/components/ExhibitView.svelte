@@ -7,7 +7,7 @@
   import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import {
-    resolveLayout, overlay, selectorOf,
+    resolveLayout, overlay, selectorOf, asExhibitId,
     spatialCoverage, isWholeObject, wholeObjectFlagOf, emphasisOf, readingMarkerStyle,
     type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation,
   } from "@render/core";
@@ -51,7 +51,7 @@
       const d = await loadPublishedExhibit(slug);
       const secs = d.sections; // narrative spine round-tripped from the published manifest (was sample-data sectionsFor)
       const exhibit: Exhibit = {
-        id: `ex-${slug}`, slug, title: d.title, objects: d.objects,
+        id: asExhibitId(`ex-${slug}`), slug, title: d.title, objects: d.objects,
         ...(secs.length ? { sections: secs } : {}),
         ...(d.summary !== undefined ? { summary: d.summary } : {}),
       };

@@ -1,15 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { singleExhibitLibrary, type Library } from "./model.js";
+import { asExhibitId, asLibraryId } from "../wadm/brand.js";
 
 // "single-exhibit export = a Library with N=1" (CONTEXT §"Local view loop") — not a new artifact.
 
 const lib: Library = {
-  id: "L",
+  id: asLibraryId("L"),
   title: "My Library",
   summary: "things",
   exhibits: [
-    { id: "e1", slug: "a", title: "A", objects: [] },
-    { id: "e2", slug: "b", title: "B", objects: [] },
+    { id: asExhibitId("e1"), slug: "a", title: "A", objects: [] },
+    { id: asExhibitId("e2"), slug: "b", title: "B", objects: [] },
   ],
 };
 

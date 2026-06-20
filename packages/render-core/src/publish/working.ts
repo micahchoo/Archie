@@ -17,7 +17,7 @@ import type { TileSourceDescriptor } from "../iiif/resolve.js";
 import type { OrientationTransform } from "../exif/orientation.js";
 import type { AnnotationLog } from "../wadm/types.js";
 import type { ClientId } from "../wadm/brand.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import { AnnotationSession } from "../session/session.js";
 
 /** The Studio's working-store root directory name (one project per origin in v1). */
@@ -134,12 +134,12 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
   const source = opts.includeTemplates ? meta.exhibits : meta.exhibits.filter((ex) => !isTemplate(ex));
   const title = meta.title ?? opts.fallbackTitle;
   return {
-    id: opts.id ?? "demo",
+    id: asLibraryId(opts.id ?? "demo"),
     ...(title !== undefined ? { title } : {}),
     ...(meta.summary ? { summary: meta.summary } : {}),
     ...rightsOf(meta),
     exhibits: source.map((ex) => ({
-      id: ex.id, slug: ex.slug, title: ex.title,
+      id: asExhibitId(ex.id), slug: ex.slug, title: ex.title,
       ...(ex.summary ? { summary: ex.summary } : {}),
       ...(ex.layout ? { layout: ex.layout } : {}),
       ...(ex.mode ? { mode: ex.mode } : {}),
@@ -147,7 +147,7 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
       ...(ex.readings && ex.readings.length ? { readings: ex.readings } : {}),
       ...rightsOf(ex),
       objects: ex.objects.map((o) => ({
-        id: o.id, source: o.source, label: o.label,
+        id: asObjectId(o.id), source: o.source, label: o.label,
         ...(o.summary ? { summary: o.summary } : {}),
         ...(o.width !== undefined ? { width: o.width } : {}),
         ...(o.height !== undefined ? { height: o.height } : {}),
@@ -253,7 +253,7 @@ export async function loadWorkingLibrary(fs: Filesystem, opts: LoadWorkingOption
   const logs: Record<string, AnnotationLog> = {};
   const included = new Set(library.exhibits.map((e) => e.id));
   for (const ex of meta.exhibits) {
-    if (included.has(ex.id)) logs[ex.id] = await readExhibitLog(projectDir, ex.slug, editor);
+    if (included.has(asExhibitId(ex.id))) logs[ex.id] = await readExhibitLog(projectDir, ex.slug, editor);
   }
   const getAsset = async (slug: string, name: string): Promise<ArrayBuffer | null> => {
     try {

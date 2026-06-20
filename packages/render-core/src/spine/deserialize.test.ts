@@ -3,7 +3,8 @@ import { appendNew, appendEdit, appendDelete, append } from "./log.js";
 import { toHistory } from "./serialize.js";
 import { fromHistory, fromHistoryPage } from "./deserialize.js";
 import { asClientId, mintRevId } from "../wadm/brand.js";
-import type { AnnotationLog, AnnotationRecord } from "../wadm/types.js";
+import { tagsOf } from "../query/filter.js";
+import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CAnnotationPage, W3CBody } from "../wadm/types.js";
 
 // deserialize = inverse of serialize (ADR-0003 reload/merge load path). The full DAG is
 // reconstructed from the history pages (which carry archie: metadata), NOT the heads page.
@@ -66,5 +67,64 @@ describe("fromHistory — reconstruct the full log from history pages (the reloa
   it("fromHistoryPage ignores annotations lacking archie metadata (a pure-WADM page)", () => {
     const pureWadmPage = { type: "AnnotationPage" as const, id: "p", items: [{ id: "x", type: "Annotation" as const, target }] };
     expect(fromHistoryPage(pureWadmPage)).toEqual([]);
+  });
+});
+
+// ADR-0007 back-compat (A3 contraction): OLD persisted history JSON carrying `archie:layers`
+// must, on LOAD, fold those layer values into Tags (purpose:tagging bodies) losslessly and drop
+// `layers` — so no information is lost and no live reader past the load boundary ever sees the
+// retired field. The fold is wired into recordFromHistoryAnnotation, so EVERY load path (OPFS
+// reload, working-library cold-read, ZIP import — all funnel through fromHistory) inherits it.
+describe("ADR-0007: legacy archie:layers folds into Tags on load (back-compat)", () => {
+  // Valid 26-char Crockford-base32 ULIDs (the id grammar asLogicalId/asRevId enforce).
+  const OLD_LOGICAL = "01HZZZZZZZZZZZZZZZZZZZZZZA";
+  const OLD_REV = "01HZZZZZZZZZZZZZZZZZZZZZZB";
+
+  /** A hand-authored OLD-format history page, exactly as a pre-contraction Archie wrote it. */
+  function legacyPage(layers: string[], extraBodies: W3CBody[] = []): W3CAnnotationPage {
+    return {
+      type: "AnnotationPage",
+      id: `annotations/history/${OLD_LOGICAL}.json`,
+      items: [
+        {
+          id: `${base}${OLD_LOGICAL}/v1`,
+          type: "Annotation",
+          target,
+          modified: "2026-05-01T00:00:00.000Z",
+          body: [{ type: "TextualBody", value: "a legacy comment" }, ...extraBodies],
+          "archie:logicalId": OLD_LOGICAL,
+          "archie:rev": OLD_REV,
+          "archie:version": 1,
+          "archie:lastEditor": "alice",
+          "archie:parent": null,
+          "archie:layers": layers,
+        } as unknown as W3CAnnotation,
+      ],
+    };
+  }
+
+  it("folds every legacy layer into a purpose:tagging body and drops `layers` (no data loss)", () => {
+    const [rec] = fromHistory([legacyPage(["conservation", "iconography"])]);
+    expect(rec).toBeDefined();
+    expect((rec as { layers?: string[] }).layers).toBeUndefined();
+    expect(tagsOf(rec!).sort()).toEqual(["conservation", "iconography"]);
+    // the original comment body survives alongside the new tag bodies
+    const bodies = Array.isArray(rec!.body) ? rec!.body : [rec!.body];
+    expect(bodies.some((b) => (b as { value?: string }).value === "a legacy comment")).toBe(true);
+  });
+
+  it("does not duplicate a layer that is already present as a tag", () => {
+    const [rec] = fromHistory([legacyPage(["ink", "gold"], [{ type: "TextualBody", value: "ink", purpose: "tagging" }])]);
+    expect(tagsOf(rec!).sort()).toEqual(["gold", "ink"]); // 'ink' appears once
+    expect((rec as { layers?: string[] }).layers).toBeUndefined();
+  });
+
+  it("leaves a record with no archie:layers byte-identical (idempotent — modern data untouched)", () => {
+    const { log } = appendNew([], { target, body: { type: "TextualBody", value: "modern" }, reading: "cipher", lastEditor: alice, modifiedAt: "t", now: 1 });
+    const { pages } = toHistory(log, { baseUrl: base });
+    const [rec] = fromHistory(Object.values(pages));
+    expect((rec as { layers?: string[] }).layers).toBeUndefined();
+    expect(rec!.reading).toBe("cipher"); // reading is unaffected by the fold
+    expect(tagsOf(rec!)).toEqual([]); // no spurious tags introduced
   });
 });

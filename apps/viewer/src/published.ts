@@ -60,7 +60,7 @@ let liveSlugs: ReadonlySet<string> = new Set();
 let liveRevoke: (() => void) | null = null;
 let liveSeq = 0; // mirrors portableSeq — guards the live-source revoke handle against the same load race
 
-/** Is this slug served from the live working store? Drives the Gallery's "Local" badge — local =
+/** Is this slug served from the live working store? Drives the Gallery's "Browser" badge — browser =
  *  only you can see it, in this browser; PUBLISH is what puts it on the web (citable). */
 export function isLiveSlug(slug: string): boolean {
   return liveSlugs.has(slug);

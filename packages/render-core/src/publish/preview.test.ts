@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { publishLibrary, readPublishedExhibit } from "./site.js";
 import { appendNew } from "../spine/log.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import type { Library } from "../model/model.js";
 import type { AnnotationLog } from "../wadm/types.js";
 
@@ -15,9 +15,9 @@ const base = "https://u.gh.io/lib/";
 const canvasId = `${base}voynich/canvas/o1`;
 const note = appendNew([], { target: canvasId, body: { type: "TextualBody", value: "hi" }, lastEditor: author, modifiedAt: "t", now: 1 }).record;
 const lib: Library = {
-  id: "L",
+  id: asLibraryId("L"),
   title: "Lib",
-  exhibits: [{ id: "e1", slug: "voynich", title: "Voynich", objects: [{ id: "o1", source: "https://img/1.jpg", label: "one" }] }],
+  exhibits: [{ id: asExhibitId("e1"), slug: "voynich", title: "Voynich", objects: [{ id: asObjectId("o1"), source: "https://img/1.jpg", label: "one" }] }],
 };
 const logs: Record<string, AnnotationLog> = { e1: [note] };
 
@@ -38,13 +38,13 @@ describe("readPublishedExhibit (preview == publish, in-memory)", () => {
   // pages that publishLibrary writes, mirroring loadPortableExhibit/the viewer (minus the blob rewrite).
   it("surfaces the readings registry and per-reading pages (ADR-0007)", async () => {
     const rdLib: Library = {
-      id: "L",
+      id: asLibraryId("L"),
       title: "Lib",
       exhibits: [{
-        id: "e1",
+        id: asExhibitId("e1"),
         slug: "rd",
         title: "Readings",
-        objects: [{ id: "o1", source: "https://img/1.jpg", label: "one" }],
+        objects: [{ id: asObjectId("o1"), source: "https://img/1.jpg", label: "one" }],
         readings: [{ id: "cipher", name: "Cipher" }, { id: "hoax", name: "Hoax" }],
       }],
     };
@@ -65,12 +65,12 @@ describe("readPublishedExhibit (preview == publish, in-memory)", () => {
   // so NarrativeReader's activeNotes = annotationsByObject[section.objectId] is populated.
   it("a sectioned (narrative) exhibit still surfaces the object's notes, keyed to the section's objectId", async () => {
     const narrativeLib: Library = {
-      id: "L",
+      id: asLibraryId("L"),
       exhibits: [{
-        id: "e1",
+        id: asExhibitId("e1"),
         slug: "story",
         title: "Story",
-        objects: [{ id: "o1", source: "https://img/1.jpg", label: "one" }],
+        objects: [{ id: asObjectId("o1"), source: "https://img/1.jpg", label: "one" }],
         sections: [{ id: "s1", title: "Section 1", objectId: "o1", start: "xywh=0,0,10,10", prose: "hi" }],
       }],
     };

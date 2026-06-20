@@ -3,7 +3,7 @@
 // resolved to blob URLs, and that the open/close/isPortable state machine behaves. The HOSTED branch
 // (HTTP fetch) is unchanged + exercised by the deployed app; not re-tested here (no server in-test).
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { ZipFilesystem, publishLibrary, appendNew, asClientId, type Library, type AnnotationLog, type ExhibitsJson } from "@render/core";
+import { ZipFilesystem, publishLibrary, appendNew, asClientId, asExhibitId, asLibraryId, asObjectId, type Library, type AnnotationLog, type ExhibitsJson } from "@render/core";
 import {
   openPortableLibrary, closePortableLibrary, isPortable, loadGallery, loadPublishedExhibit,
   modeFromProbe, probeViewerMode, openLibraryFromFile, openLibraryFromSrc, mergeGalleries,
@@ -17,8 +17,8 @@ const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
 const canvasId = `${BASE}${SLUG}/canvas/o1`;
 
 const library: Library = {
-  id: "L", title: "Lib",
-  exhibits: [{ id: "e1", slug: SLUG, title: "Voynich", objects: [{ id: "o1", source: `/assets/${ASSET_NAME}`, label: "folio 1" }] }],
+  id: asLibraryId("L"), title: "Lib",
+  exhibits: [{ id: asExhibitId("e1"), slug: SLUG, title: "Voynich", objects: [{ id: asObjectId("o1"), source: `/assets/${ASSET_NAME}`, label: "folio 1" }] }],
 };
 
 async function buildArchiveBytes(): Promise<Uint8Array> {

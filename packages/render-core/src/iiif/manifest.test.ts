@@ -2,19 +2,20 @@ import { describe, it, expect } from "vitest";
 import { toManifest, sectionsFromManifest, sectionToAnnotation, sectionsToAnnotationCollection } from "./manifest.js";
 import type { Exhibit } from "../model/model.js";
 import type { W3CSpecificResource, W3CTextualBody } from "../wadm/types.js";
+import { asExhibitId, asObjectId } from "../wadm/brand.js";
 
 // toManifest: Exhibit -> IIIF Presentation 3 Manifest with painting canvases (ADR-0001 / Q-1).
 
 const base = "https://u.gh.io/lib/";
 
 const imgExhibit: Exhibit = {
-  id: "e1",
+  id: asExhibitId("e1"),
   slug: "renaissance",
   title: "Renaissance Portraits",
   summary: "A small show.",
   objects: [
-    { id: "obj-a", source: "https://img/a.jpg", label: "Portrait A", width: 4000, height: 3000, format: "image/jpeg" },
-    { id: "obj-b", source: "https://img/b.jpg", label: "Portrait B", width: 2000, height: 2500 },
+    { id: asObjectId("obj-a"), source: "https://img/a.jpg", label: "Portrait A", width: 4000, height: 3000, format: "image/jpeg" },
+    { id: asObjectId("obj-b"), source: "https://img/b.jpg", label: "Portrait B", width: 2000, height: 2500 },
   ],
 };
 
@@ -52,8 +53,8 @@ describe("toManifest (IIIF P3)", () => {
 
   it("projects narrative Sections to IIIF Ranges in manifest.structures (start = active canvas/region)", () => {
     const narrative: Exhibit = {
-      id: "e3", slug: "story", title: "A Narrative",
-      objects: [{ id: "oA", source: "https://img/a.jpg", label: "A", width: 100, height: 100 }],
+      id: asExhibitId("e3"), slug: "story", title: "A Narrative",
+      objects: [{ id: asObjectId("oA"), source: "https://img/a.jpg", label: "A", width: 100, height: 100 }],
       sections: [
         { id: "s1", title: "Opening", objectId: "oA", start: "xywh=10,10,40,40", prose: "Look here first." },
         { id: "s2", title: "Detail", objectId: "oA" },
@@ -80,8 +81,8 @@ describe("toManifest (IIIF P3)", () => {
       { id: "s2", title: "Detail", objectId: "oA" },
     ];
     const narrative: Exhibit = {
-      id: "e3", slug: "story", title: "A Narrative",
-      objects: [{ id: "oA", source: "https://img/a.jpg", label: "A", width: 100, height: 100 }],
+      id: asExhibitId("e3"), slug: "story", title: "A Narrative",
+      objects: [{ id: asObjectId("oA"), source: "https://img/a.jpg", label: "A", width: 100, height: 100 }],
       sections,
     };
     const m = toManifest(narrative, { baseUrl: base });
@@ -94,8 +95,8 @@ describe("toManifest (IIIF P3)", () => {
 
   it("declares an ImageService2 + sized thumbnail for a IIIF-service-base source (routed through resolveTileSource/thumbnailUrl)", () => {
     const svc: Exhibit = {
-      id: "e4", slug: "iiif", title: "IIIF",
-      objects: [{ id: "obj-s", source: "https://iiif.example.org/iiif/2/folio", label: "Folio", width: 6000, height: 8000 }],
+      id: asExhibitId("e4"), slug: "iiif", title: "IIIF",
+      objects: [{ id: asObjectId("obj-s"), source: "https://iiif.example.org/iiif/2/folio", label: "Folio", width: 6000, height: 8000 }],
     };
     const c = toManifest(svc, { baseUrl: base }).items[0]!;
     const body = c.items[0]!.items[0]!.body;
@@ -105,11 +106,11 @@ describe("toManifest (IIIF P3)", () => {
 
   it("does NOT declare a service/thumbnail for a plain raster source, a blob: URL, or a disallowed scheme", () => {
     const ex: Exhibit = {
-      id: "e5", slug: "mixed", title: "Mixed",
+      id: asExhibitId("e5"), slug: "mixed", title: "Mixed",
       objects: [
-        { id: "raster", source: "https://img/a.jpg", label: "Raster" },
-        { id: "blob", source: "blob:https://app/abc", label: "Blob" },
-        { id: "evil", source: "javascript:alert(1)", label: "Evil" },
+        { id: asObjectId("raster"), source: "https://img/a.jpg", label: "Raster" },
+        { id: asObjectId("blob"), source: "blob:https://app/abc", label: "Blob" },
+        { id: asObjectId("evil"), source: "javascript:alert(1)", label: "Evil" },
       ],
     };
     for (const c of toManifest(ex, { baseUrl: base }).items) {
@@ -119,7 +120,7 @@ describe("toManifest (IIIF P3)", () => {
   });
 
   it("projects an AV (sound) object to a Canvas with duration + a Sound body", () => {
-    const av: Exhibit = { id: "e2", slug: "audio", title: "Audio", objects: [{ id: "s1", source: "https://a/clip.mp3", label: "Clip", mediaType: "sound", duration: 120, format: "audio/mpeg" }] };
+    const av: Exhibit = { id: asExhibitId("e2"), slug: "audio", title: "Audio", objects: [{ id: asObjectId("s1"), source: "https://a/clip.mp3", label: "Clip", mediaType: "sound", duration: 120, format: "audio/mpeg" }] };
     const c = toManifest(av, { baseUrl: base }).items[0]!;
     expect(c.duration).toBe(120);
     expect(c.width).toBeUndefined();
@@ -129,8 +130,8 @@ describe("toManifest (IIIF P3)", () => {
 
 describe("Section → WADM annotation (ADR-0017: additive, all-round-compatible export)", () => {
   const narrative: Exhibit = {
-    id: "e3", slug: "story", title: "A Narrative",
-    objects: [{ id: "oA", source: "https://img/a.jpg", label: "A", width: 100, height: 100 }],
+    id: asExhibitId("e3"), slug: "story", title: "A Narrative",
+    objects: [{ id: asObjectId("oA"), source: "https://img/a.jpg", label: "A", width: 100, height: 100 }],
     sections: [
       { id: "s1", title: "Opening", objectId: "oA", start: "xywh=10,10,40,40", prose: "Look here first." },
       { id: "s2", title: "Detail", objectId: "oA" },

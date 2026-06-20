@@ -25,8 +25,11 @@ export const PROV_WAS_REVISION_OF = "prov:wasRevisionOf" as const;
 // ADR-0003 rejects a non-WADM log store, so the DAG metadata must ride on the WADM annotations.
 // A pure consumer ignores all `archie:` keys; Archie reads them to reconstruct the log.
 export const ARCHIE_LOGICAL_ID = "archie:logicalId" as const;
-/** @deprecated Layer membership (per-note, multi-valued). SUPERSEDED by ARCHIE_READING (ADR-0007);
- *  kept during the expand-and-contract rename. Migrated to Tags on read (layers[] → purpose:tagging). */
+/** READ-ONLY LEGACY KEY (ADR-0007 contraction landed). `archie:layers` is NEVER written anymore —
+ *  the `layers` field is retired from the model. This const survives ONLY as the recognised key for
+ *  OLD persisted data: deserialize.ts reads it and folds the values into Tags (purpose:tagging) on
+ *  load, then drops it. Do not re-introduce a writer. (Kept as a named const, not inlined, to avoid a
+ *  magic string at the one back-compat read site.) */
 export const ARCHIE_LAYERS = "archie:layers" as const;
 /** Reading membership (per-note, single — ADR-0007). A Reading = a mutually-exclusive interpretive pass,
  *  serialized as the AnnotationPage the note lands in (`partOf` → the reading's AnnotationCollection).
@@ -219,9 +222,6 @@ export interface AnnotationRecord {
   body?: W3CBody | W3CBody[];
   target: W3CTarget;
   motivation?: string | string[];
-  /** @deprecated Multi-valued layer membership. SUPERSEDED by `reading` (ADR-0007); kept during the
-   *  expand-and-contract rename, migrated to Tags on read. Do not set on new records. */
-  layers?: string[];
   /** The single Reading this Note belongs to (mutually exclusive — ADR-0007), or undefined = base.
    *  A Reading is a curated interpretive pass; the id resolves against the Exhibit's reading registry. */
   reading?: string;

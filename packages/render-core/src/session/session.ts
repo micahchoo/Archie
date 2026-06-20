@@ -11,7 +11,7 @@ import { recordToAnnotation } from "../spine/serialize.js";
 import { writeAnnotations, readAnnotations } from "../spine/persist.js";
 import type { SerializeOptions } from "../spine/serialize.js";
 import type { FsDirectory } from "../fs/seam.js";
-import { ARCHIE_LAYERS, ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_GEO } from "../wadm/types.js";
+import { ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_GEO } from "../wadm/types.js";
 import type { Emphasis, GeoAnchor } from "../wadm/types.js";
 import { mergeLogs, headsOf, resolveConflict } from "../spine/merge.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CBody, W3CTarget } from "../wadm/types.js";
@@ -20,8 +20,6 @@ import type { ClientId, LogicalId } from "../wadm/brand.js";
 export interface NewNote {
   target: W3CTarget;
   body?: W3CBody | W3CBody[];
-  /** @deprecated use `reading` (ADR-0007). */
-  layers?: string[];
   /** The single Reading this note belongs to (ADR-0007), or undefined = base. */
   reading?: string;
   /** Authored per-note emphasis (1489), or undefined = default `"normal"`. */
@@ -34,8 +32,6 @@ export interface NewNote {
 export interface NoteEdit {
   target?: W3CTarget;
   body?: W3CBody | W3CBody[];
-  /** @deprecated use `reading` (ADR-0007). */
-  layers?: string[];
   /** Reading id; undefined here leaves it unchanged (carried forward). To CLEAR it, pass null. */
   reading?: string | null;
   /** Emphasis; undefined here leaves it unchanged (carried forward). To CLEAR to `"normal"`, pass null. */
@@ -97,7 +93,6 @@ export class AnnotationSession {
       target: input.target,
       lastEditor: this.editor,
       ...(input.body !== undefined ? { body: input.body } : {}),
-      ...(input.layers !== undefined ? { layers: input.layers } : {}),
       ...(input.reading !== undefined ? { reading: input.reading } : {}),
       ...(input.emphasis !== undefined ? { emphasis: input.emphasis } : {}),
       ...(input.geo !== undefined ? { geo: input.geo } : {}),
@@ -116,7 +111,6 @@ export class AnnotationSession {
       lastEditor: this.editor,
       ...(changes.target !== undefined ? { target: changes.target } : {}),
       ...(changes.body !== undefined ? { body: changes.body } : {}),
-      ...(changes.layers !== undefined ? { layers: changes.layers } : {}),
       ...(changes.reading !== undefined ? { reading: changes.reading } : {}),
       ...(changes.emphasis !== undefined ? { emphasis: changes.emphasis } : {}),
       ...(changes.geo !== undefined ? { geo: changes.geo } : {}),
@@ -168,13 +162,13 @@ export class AnnotationSession {
    * `geo` are CARRIED onto the merge node — from the choice when supplied, else inherited from the same
    * lexicographically-first ("primary") head `resolveConflict` defaults body/target from — so a note
    * carrying a reading assignment, authored emphasis, or a geo anchor does NOT lose it on resolution
-   * (the latent data-loss bug: `resolveConflict` reconstructs the node from body/target/layers/motivation
+   * (the latent data-loss bug: `resolveConflict` reconstructs the node from body/target/motivation
    * only, dropping these three). Carried here rather than in `resolveConflict` because that primitive's
    * `ConflictResolution` contract does not model them; this is the session-level fix.
    */
   resolve(
     logicalId: LogicalId,
-    choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; layers?: string[]; motivation?: string | string[]; reading?: string; emphasis?: Emphasis; geo?: GeoAnchor } = {},
+    choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; motivation?: string | string[]; reading?: string; emphasis?: Emphasis; geo?: GeoAnchor } = {},
   ): void {
     // Inherit reading/emphasis/geo to carry onto the merge node when the choice doesn't override them.
     // Prefer the primary head (lexicographically-first rev — what resolveConflict builds the node from),
@@ -190,7 +184,6 @@ export class AnnotationSession {
       lastEditor: this.editor,
       ...(choice.body !== undefined ? { body: choice.body } : {}),
       ...(choice.target !== undefined ? { target: choice.target } : {}),
-      ...(choice.layers !== undefined ? { layers: choice.layers } : {}),
       ...(choice.motivation !== undefined ? { motivation: choice.motivation } : {}),
     });
     // Carry reading/emphasis/geo onto the just-appended merge node (the last record) — resolveConflict
@@ -218,7 +211,6 @@ export class AnnotationSession {
   workingAnnotations(): W3CAnnotation[] {
     return this.heads().map((record) => {
       const ann = recordToAnnotation(record, record.logicalId);
-      if (record.layers !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_LAYERS] = record.layers;
       if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
       if (record.emphasis !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] = record.emphasis;
       if (record.geo !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_GEO] = record.geo;

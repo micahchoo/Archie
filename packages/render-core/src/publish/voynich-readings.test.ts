@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { publishLibrary } from "./site.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { appendNew } from "../spine/log.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import type { Library, Exhibit } from "../model/model.js";
 import type { AnnotationLog, W3CSpecificResource } from "../wadm/types.js";
 
@@ -20,12 +20,12 @@ const region = (xywh: string): W3CSpecificResource => ({ source: CANVAS, selecto
 const KEYSTONE = region("300,1200,520,180"); // the SAME glyph-block both camps read incompatibly
 
 const voynich: Exhibit = {
-  id: "voynich",
+  id: asExhibitId("voynich"),
   slug: "voynich",
   title: "The Voynich Manuscript — competing readings",
   summary: "Beinecke MS 408, read through rival scholarly interpretations.",
   objects: [
-    { id: "f1", source: "https://collections.library.yale.edu/iiif/2/1006074/full/full/0/default.jpg", label: "Folio (MS 408)", width: 1450, height: 2000 },
+    { id: asObjectId("f1"), source: "https://collections.library.yale.edu/iiif/2/1006074/full/full/0/default.jpg", label: "Folio (MS 408)", width: 1450, height: 2000 },
   ],
   readings: [
     { id: "cipher", name: "Cipher reading", description: "the glyphs encode a natural language (Friedman / NSA tradition)", colour: "#3a6b4c" },
@@ -33,7 +33,7 @@ const voynich: Exhibit = {
     { id: "abjad", name: "Natural-language reading", description: "the glyphs are a real natural language in an invented alphabet (Bax 2014; Amancio et al. 2013)", colour: "#4c5d8a" },
   ],
 };
-const library: Library = { id: "voynich-lib", title: "Voynich", exhibits: [voynich] };
+const library: Library = { id: asLibraryId("voynich-lib"), title: "Voynich", exhibits: [voynich] };
 
 // The genuine exercise: rival camps annotate the SAME block; plus a base fact and an apparatus Tag.
 function buildLog(): AnnotationLog {

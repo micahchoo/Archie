@@ -176,10 +176,9 @@ export function conflictTiebreak(a: AnnotationRecord, b: AnnotationRecord): Anno
 }
 
 export interface ConflictResolution {
-  /** Resolved body/target/layers/motivation; default to the lexicographically-first head's. */
+  /** Resolved body/target/motivation; default to the lexicographically-first head's. */
   body?: W3CBody | W3CBody[];
   target?: W3CTarget;
-  layers?: string[];
   motivation?: string | string[];
   lastEditor: ClientId;
   now?: number;
@@ -202,7 +201,6 @@ export function resolveConflict(log: AnnotationLog, logicalId: LogicalId, resolu
   const maxVersion = Math.max(...heads.map((h) => h.version));
   const body = resolution.body ?? primary.body;
   const motivation = resolution.motivation ?? primary.motivation;
-  const layers = resolution.layers ?? primary.layers;
   const record: AnnotationRecord = {
     logicalId,
     rev: mintRevId(resolution.now),
@@ -215,7 +213,6 @@ export function resolveConflict(log: AnnotationLog, logicalId: LogicalId, resolu
     target: resolution.target ?? primary.target,
     ...(body !== undefined ? { body } : {}),
     ...(motivation !== undefined ? { motivation } : {}),
-    ...(layers !== undefined ? { layers } : {}),
   };
   return append(log, record);
 }

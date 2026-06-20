@@ -2,7 +2,7 @@
 // one shared seed rendered three ways (rosettes / grid / narrative). `published.ts` runs this through
 // publishLibrary and reads it back per-exhibit, exactly as a static consumer would. One log per exhibit;
 // each note targets its object's canvas.
-import { appendNew, asClientId, type AObject, type AnnotationLog, type Library, type Section } from "@render/core";
+import { appendNew, asClientId, asExhibitId, asLibraryId, type AObject, type AnnotationLog, type Library, type Section } from "@render/core";
 import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichSections, voynichCredits } from "./voynich.js";
 // Single source of truth lives in the viewer-owned base module (not this demo file), so the shell
 // can import canvasIdFor without pulling in demo fixtures. Re-exported for gen-published.mts.
@@ -152,7 +152,7 @@ const rosettesObjs: AObject[] = voynichObjs.filter((o) => o.id === "o9");
 const voynichSectionsTyped: Section[] = voynichSections;
 
 export const library: Library = {
-  id: "archie-lib",
+  id: asLibraryId("archie-lib"),
   title: "The Archie Library",
   // A genuine library summary now that the Beinecke credit moved to its EXHIBIT (rights grill un-hack):
   // `voynichCredits` was abusing `library.summary` to surface the Voynich folio attribution, but the
@@ -170,24 +170,24 @@ export const library: Library = {
     //
     // SINGLE — "The Rosettes": just o9 (the f85v–86r foldout), no sections → resolveLayout = single → Reader
     // deep-zoom + the 3-option readings legend over the one canvas.
-    { id: "ex-voynich-rosettes", slug: "voynich-rosettes", title: "The Rosettes", summary: "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: rosettesObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
+    { id: asExhibitId("ex-voynich-rosettes"), slug: "voynich-rosettes", title: "The Rosettes", summary: "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: rosettesObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
     // GRID — "The Whole Manuscript" (the MAIN voynich slug): all 11 folios + the sounded page, NO sections →
     // resolveLayout = grid → ObjectGrid; click a folio → Reader with the prev/next carousel + legend + tags.
-    { id: "ex-voynich", slug: "voynich", title: "The Whole Manuscript", summary: "A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.", cover: "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg", objects: voynichObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
+    { id: asExhibitId("ex-voynich"), slug: "voynich", title: "The Whole Manuscript", summary: "A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.", cover: "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg", objects: voynichObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
     // NARRATIVE — "Reading the Unreadable": all + the sounded page, the 6-beat voynichSections attached →
     // resolveLayout = narrative → NarrativeReader (the section spine + the readings-legend fix + AV notes).
-    { id: "ex-voynich-reading", slug: "voynich-reading", title: "Reading the Unreadable", summary: "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: voynichObjs, sections: voynichSectionsTyped, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
+    { id: asExhibitId("ex-voynich-reading"), slug: "voynich-reading", title: "Reading the Unreadable", summary: "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: voynichObjs, sections: voynichSectionsTyped, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
     // GRID — "Where Languages Go Silent" (③+⑬): UNESCO's endangered-languages atlas via the Internet
     // Archive's IIIF (CC BY-SA 4.0 on every object). Two Readings (Linguist's/Community) carry the
     // rival-interpretations differentiator beyond manuscripts. cover = a 400px IIIF derivative of the
     // North America page.
-    { id: "ex-atlas", slug: "language-atlas", title: atlasTitle, summary: atlasSummary, cover: `${atlasObjects[0]!.source}/full/400,/0/default.jpg`, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })), readings: atlasReadings, requiredStatement: atlasRights.requiredStatement },
+    { id: asExhibitId("ex-atlas"), slug: "language-atlas", title: atlasTitle, summary: atlasSummary, cover: `${atlasObjects[0]!.source}/full/400,/0/default.jpg`, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })), readings: atlasReadings, requiredStatement: atlasRights.requiredStatement },
     // GEO — "World map (geo-annotation prototype)" (ADR-0015): one OSM slippy-map basemap object, geo-annotated
     // with city pins anchored to lng/lat. ONE object → resolveLayout = single → the Reader mounts the bounded
     // map raster (render-mount/xyz) + the lng/lat readout on each opened pin. The descriptor, object, cover and
     // pins all come from the SHARED ./geo.js — the same source Studio's seed reads (no drift). cover = the
     // whole-world tile (z0/0/0). No readings: this prototype carries one reading of place, not rival camps.
-    { id: "ex-geo", slug: "geo-map", title: geoTitle, summary: geoSummary, cover: geoCover, objects: geoObjects.map((o) => ({ ...o, ...geoRights })), requiredStatement: geoRights.requiredStatement },
+    { id: asExhibitId("ex-geo"), slug: "geo-map", title: geoTitle, summary: geoSummary, cover: geoCover, objects: geoObjects.map((o) => ({ ...o, ...geoRights })), requiredStatement: geoRights.requiredStatement },
   ],
 };
 

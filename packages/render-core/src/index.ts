@@ -70,6 +70,7 @@ export * from "./text/sanitize.js";
 
 // IIIF Presentation 3 projections (Q-1 exhibit-nested): Manifest / Collection / exhibits.json.
 export * from "./iiif/presentation.js";
+export * from "./iiif/canvasid.js";
 export * from "./iiif/manifest.js";
 export * from "./iiif/collection.js";
 export * from "./iiif/exhibits.js";

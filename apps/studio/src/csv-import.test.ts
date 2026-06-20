@@ -1,5 +1,27 @@
 import { describe, it, expect } from "vitest";
-import { parseCsv, planCsvImport, buildCsvTemplate } from "./csv-import.js";
+import { parseCsv, planCsvImport, buildCsvTemplate, parseRegion } from "./csv-import.js";
+
+describe("parseRegion — the x,y,w,h state machine", () => {
+  it("all four blank → pending", () => {
+    expect(parseRegion(["", "", "", ""])).toEqual({ kind: "pending" });
+  });
+  it("all four valid → a placed region", () => {
+    expect(parseRegion(["10", "20", "30", "40"])).toEqual({ kind: "region", region: [10, 20, 30, 40] });
+  });
+  it("some-but-not-all present → error (a partial region is malformed, not omitted)", () => {
+    expect(parseRegion(["10", "", "30", "40"])).toEqual({
+      kind: "error",
+      reason: "x, y, w, h must all be numbers, and w and h must be greater than zero.",
+    });
+  });
+  it("non-numeric cell → error", () => {
+    expect(parseRegion(["x", "20", "30", "40"]).kind).toBe("error");
+  });
+  it("zero or negative width/height → error", () => {
+    expect(parseRegion(["0", "0", "0", "40"]).kind).toBe("error");
+    expect(parseRegion(["0", "0", "30", "-1"]).kind).toBe("error");
+  });
+});
 
 const CTX = {
   objects: [{ id: "o1", label: "f1r — Herbal" }, { id: "o2", label: "f18v" }, { id: "o12", label: "Kryptogramm", mediaType: "sound" }],

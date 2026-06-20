@@ -1123,7 +1123,7 @@
       buildFullLibrary: () => buildFullLibrary(),
       exhibits: () => lib.meta.exhibits,
       canFolder: () => bnd.canFolder,
-      currentZipName: () => (bnd.binding.kind === "file" && bnd.binding.name ? bnd.binding.name : zipNameFor(PROJECT_TITLE)),
+      currentZipName: () => (bnd.binding.kind === "file" && bnd.binding.name ? bnd.binding.name : zipNameFor(lib.meta.title || PROJECT_TITLE)),
     });
     pub = created;
     // Load the publish dialog UI now too (they render under {#if pub} once ready).
@@ -1138,7 +1138,7 @@
     writeToFolder: async (h) => (await ensurePub()).writeToFolder(h),
     downloadProjectZip: async () => (await ensurePub()).downloadProjectZip(),
     replaceProjectFrom: (loaded) => flows.replaceProjectFrom(loaded),
-    zipName: () => zipNameFor(PROJECT_TITLE),
+    zipName: () => zipNameFor(lib.meta.title || PROJECT_TITLE),
   });
   /** The capability-routed Open (folder on Chromium, else the zip file picker). */
   function openProject() { if (bnd.canFolder) void bnd.openProjectFolder(); else zipInputEl?.click(); }
