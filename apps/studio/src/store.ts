@@ -45,18 +45,6 @@ export async function openExhibitAnnotationsDir(slug: string): Promise<FsDirecto
   return ex.getDirectory("annotations", { create: true });
 }
 
-/** A persisted object within an exhibit (the authored structure, not its annotations). */
-/** EXIF display-master provenance (CONTEXT §89.1): the original is preserved, this records the
- *  transform that produced the upright master `source` points at. Absent for non-baked imports. */
-export interface ObjectProvenance {
-  /** EXIF Orientation (2..8) read from the original. */
-  exifOrientation: number;
-  /** The geometric transform baked into the display master. */
-  transform: OrientationTransform;
-  /** The preserved-original file name in the exhibit's `assets-original/` dir. */
-  originalName: string;
-}
-
 /** A persisted object. Carries `RightsFields` (per-object credit/license — the truest provenance level:
  *  each folio = its holding institution). Projects to the Canvas's IIIF rights. */
 export interface ObjectMeta extends RightsFields {
@@ -126,6 +114,45 @@ export async function saveLibraryMeta(meta: LibraryMeta): Promise<void> {
   await w.close();
 }
 
+// --- pending notes (coordinate-free imports awaiting "Set area" placement; Archie-79c0 sub-cycle B) ---
+// A CSV may carry note TEXT without pixel regions. Such notes can't enter the annotation log (it refuses
+// degenerate geometry — session.ts), so they're staged in a project-level sidecar, keyed by exhibit slug,
+// until the author draws each one's box in the editor. NOT authored structure (kept out of library.json /
+// the published library) — purely editor scratch that survives a reload. One small JSON, whole-map I/O.
+
+/** A note imported with text but no region yet. `id` keys it for tray selection/removal. */
+export interface PendingNote {
+  id: string;
+  objectId: string;
+  comment: string;
+  tags: string[];
+  reading?: string;
+}
+
+const PENDING_FILE = "pending-notes.json";
+
+/** Read every exhibit's pending notes (slug → list). Empty map on first run / OPFS-unsupported. */
+export async function loadPendingNotes(): Promise<Record<string, PendingNote[]>> {
+  const project = await openProjectDir();
+  if (!project) return {};
+  try {
+    const file = await project.getFile(PENDING_FILE);
+    return JSON.parse(new TextDecoder().decode(await file.readable())) as Record<string, PendingNote[]>;
+  } catch {
+    return {}; // not yet written (no coordinate-free import has happened)
+  }
+}
+
+/** Persist the pending-notes sidecar (slug → list). No-op if OPFS unsupported. */
+export async function savePendingNotes(map: Record<string, PendingNote[]>): Promise<void> {
+  const project = await openProjectDir();
+  if (!project) return;
+  const file = await project.getFile(PENDING_FILE, { create: true });
+  const w = await file.writable();
+  await w.write(JSON.stringify(map, null, 2));
+  await w.close();
+}
+
 // --- imported-image assets (binary; raw OPFS handles, NOT the JSON-oriented Filesystem seam) ---
 // Imported files persist at {PROJECT}/exhibits/{slug}/assets/{name}; an object stores
 // source "/assets/{name}" and resolves to a blob: URL at load time (see App.svelte assetUrls).
@@ -162,6 +189,13 @@ export async function saveAssetFile(slug: string, name: string, file: Blob): Pro
  *  Not published unless "include source for citation" is opted in (follow-up). No-op if unsupported. */
 export async function saveOriginalFile(slug: string, name: string, file: Blob): Promise<void> {
   await writeInto(await assetsDir(slug, true, "assets-original"), name, file);
+}
+
+/** Store a BAKED THUMBNAIL beside the master in `assets-thumb/` — a small gallery/overview derivative so
+ *  the viewer's grid loads a shrunk plate, not the full-resolution master (the multi-object load win).
+ *  Same name as the master. Published via publishLibrary's getThumbnail. No-op if unsupported. */
+export async function saveThumbFile(slug: string, name: string, file: Blob): Promise<void> {
+  await writeInto(await assetsDir(slug, true, "assets-thumb"), name, file);
 }
 
 // OPFS does NOT persist a file's MIME type — `getFile()` returns `type: ""`. Images sniff fine, but
@@ -270,5 +304,32 @@ export async function readOriginalBytes(slug: string, name: string): Promise<Arr
     return await (await fh.getFile()).arrayBuffer();
   } catch {
     return null;
+  }
+}
+
+/** Resolve a stored baked thumbnail (`assets-thumb/`) to its OPFS File — lazy, mirroring readAssetBlob
+ *  (the publish getThumbnail reader). Null if absent (publishLibrary then drops the thumbnail ref). */
+export async function readThumbBytes(slug: string, name: string): Promise<Blob | null> {
+  try {
+    const dir = await assetsDir(slug, false, "assets-thumb");
+    if (!dir) return null;
+    return await (await dir.getFileHandle(name)).getFile();
+  } catch {
+    return null;
+  }
+}
+
+/** Resolve a stored baked thumbnail to a fresh blob: URL (caller revokes) — the small gallery/overview
+ *  derivative, so the Studio overview/rail paint shrunk plates instead of decoding full-res masters.
+ *  Null when no thumbnail was baked (pre-existing import, or an image already small enough). */
+export async function readThumbUrl(slug: string, name: string): Promise<string | null> {
+  try {
+    const dir = await assetsDir(slug, false, "assets-thumb");
+    if (!dir) return null;
+    const f = await (await dir.getFileHandle(name)).getFile();
+    const mime = f.type || mimeFromName(name); // OPFS drops the type → restore from extension
+    return URL.createObjectURL(f.type ? f : mime ? f.slice(0, f.size, mime) : f);
+  } catch {
+    return null; // no baked thumbnail — caller falls back to the master blob
   }
 }
