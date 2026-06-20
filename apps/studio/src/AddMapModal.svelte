@@ -146,12 +146,12 @@
         {#each PROVIDERS as p}<option value={p.id}>{p.name}</option>{/each}
       </select>
     </label>
-    <p class="attr">{useCustom ? (customAttribution || "Set attribution below — required by most providers") : provider.attribution}</p>
+    <p class="attr">{useCustom ? (customAttribution || "Add attribution below — most providers require it.") : provider.attribution}</p>
 
     <label class="field">Name <input bind:value={label} placeholder={`${provider.name} map`} /></label>
 
     <fieldset class="extent">
-      <legend>Area shown — visitors can only pan within this</legend>
+      <legend>Area shown to visitors</legend>
       <div class="presets">{#each REGIONS as r}<button type="button" onclick={() => applyRegion(r.bounds)}>{r.name}</button>{/each}
         <button type="button" class="action" onclick={selectCurrent} title="Set the area to exactly what the map below shows right now">⊡ Use view</button>
         <button type="button" onclick={fitToBox} title="Recentre the map below so the whole area fits in view">Fit ⤢</button>
@@ -181,7 +181,7 @@
         <label>N<input type="number" step="any" bind:value={north} /></label>
         <label>Max&nbsp;zoom<input type="number" min="1" max="22" bind:value={maxZoom} /></label>
       </div>
-      <p class="hint">Drag the box (or its corners) to resize the area · drag the map to move it · scroll or ± to zoom · or type exact edges below.</p>
+      <p class="hint">Drag the box to resize · drag the map to move · scroll to zoom · or type exact edges below.</p>
     </fieldset>
 
     <details bind:open={useCustom}>

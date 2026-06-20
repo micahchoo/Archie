@@ -193,7 +193,7 @@
       <div class="narrative-strip invite">
         <div class="ns-text">
           <p class="ns-eyebrow">Exhibit narrative</p>
-          <p class="ns-line">Walk visitors through these in an order, with your writing.</p>
+          <p class="ns-line">Guide visitors through the media with your writing.</p>
         </div>
         <button class="ns-start" onclick={() => onstartnarrative?.()}>＋ Start the narrative</button>
       </div>
@@ -203,7 +203,7 @@
         <ol class="ns-spine">
           {#each sections as s, i (s.id)}
             <li>
-              <button class="ns-beat" onclick={() => onopenobject(s.objectId)} title="Open the item this section is shown with">
+              <button class="ns-beat" onclick={() => onopenobject(s.objectId)} title="Open the media item for this section">
                 <span class="ns-n">{i + 1}</span>
                 <span class="ns-title">{s.title || `Section ${i + 1}`}</span>
                 <span class="ns-with">{objectLabel(s.objectId)}</span>
@@ -277,7 +277,7 @@
       <div class="canvas-legend" aria-hidden="true">
         <!-- Drag-legend disambiguation (staging spec §6): once a narrative exists, drag here no longer sets
              "the order visitors see" — the SECTION order does. Demote drag to the fallback grid order. -->
-        <span class="g lead"><span class="ico">⇅</span> {hasNarrative ? "Visitors follow your section order. Dragging here only sets the fallback grid order, used when there's no narrative." : "Drag a media item to set the order visitors see it in"}</span>
+        <span class="g lead"><span class="ico">⇅</span> {hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a media item to set the reading order"}</span>
         <span class="dot">·</span>
         <span class="g"><span class="ico">✥</span> Drag the canvas to pan</span>
         <span class="dot">·</span>
@@ -289,12 +289,12 @@
         <button class="fit" onclick={fit} title="Reset to 100%">Fit</button>
         <button onclick={() => nudgeZoom(1.2)} aria-label="Zoom in">+</button>
       </div>
-      <p class="hint">Click a media item to open it and add notes</p>
+      <p class="hint">Click a media item to open and add notes</p>
     </div>
   {:else}
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
-    <p class="list-hint">{hasNarrative ? "Visitors follow your section order. Dragging here only sets the fallback grid order, used when there's no narrative." : "Drag a row by its ⠿ handle to set the order visitors see it in."}</p>
+    <p class="list-hint">{hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order."}</p>
     <ul class="list">
       <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}

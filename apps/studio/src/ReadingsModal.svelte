@@ -27,8 +27,7 @@
       <h2>Ways of reading this exhibit</h2>
       <p class="lede">
         A reading is one interpretation of what's in this exhibit — for example, a <em>Cipher</em>
-        reading beside a <em>Hoax</em> reading. Competing readings sit side by side and are never
-        merged. Name, colour, and describe each one here.
+        reading beside a <em>Hoax</em> reading. Competing readings sit side by side and are never merged.
       </p>
       <ul class="points">
         <li>Notes you write while a reading is active belong to <strong>it alone</strong>. Your

@@ -70,7 +70,7 @@
           {/each}
         </ul>
       {/if}
-      <p class="hint">Click a tile to cite it · or press <kbd>esc</kbd> and use <kbd>⌘K</kbd> to cite by text</p>
+      <p class="hint">Click a tile to cite · or use <kbd>⌘K</kbd> to cite by text</p>
     </div>
   </div>
 {/if}

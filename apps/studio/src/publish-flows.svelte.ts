@@ -67,14 +67,14 @@ export function createPublishFlows(deps: PublishDeps) {
     const steer = deps.canFolder()
       ? "On this browser, “Save to disk” → choose a folder writes straight to disk without holding the whole library in memory — better for a library this size."
       : "Tip: link large media by URL (paste a source URL in “+ Media”) so your library links the file instead of copying it in.";
-    return window.confirm(`This library is about ${mb} MB. A single .archie.zip is built entirely in memory and may be slow or fail on a library this large.\n\n${steer}\n\nBuild the zip anyway?`);
+    return window.confirm(`This library is about ${mb} MB, which may be slow to build and download.\n\n${steer}\n\nBuild the zip anyway?`);
   }
   // Size guard for the GH publish path — parity with zipSizeOk (publish uploads file-by-file).
   async function publishSizeOk(): Promise<boolean> {
     const bytes = await estimateLibraryBytes();
     if (bytes < ZIP_WARN_BYTES) return true;
     const mb = Math.round(bytes / (1024 * 1024));
-    return window.confirm(`This library is about ${mb} MB. Publishing uploads every file to GitHub one at a time, so a library this size may be slow or hit GitHub's rate limits.\n\nPublish anyway?`);
+    return window.confirm(`This library is about ${mb} MB, which may make publishing slow or hit GitHub's rate limits.\n\nPublish anyway?`);
   }
   // Project the Library into the static site tree (in a MemoryFilesystem). Same projection the zip
   // uses — different sink. withOriginals (opt-in) re-projects with preserved source files included.

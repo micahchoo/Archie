@@ -24,7 +24,7 @@
 </script>
 
 <aside class="rail" aria-label="Readings rail" data-comparing={comparing}>
-  <span class="title">Readings{#if comparing}<span class="cmp" title="Two or more readings are visible, so notes show as outlines and their colours stay distinct.">· comparing</span>{/if}</span>
+  <span class="title">Readings{#if comparing}<span class="cmp" title="Multiple readings are visible — notes show as outlines so their colours stay distinct.">· comparing</span>{/if}</span>
   {#if readings.length === 0}
     <span class="gloss nudge">Differing opinions in notes? Use a reading.</span>
   {:else}
@@ -34,12 +34,12 @@
     {#each [{ id: BASE, name: "General notes", colour: "var(--accent)" }, ...readings] as r (r.id)}
       <div class="row" class:active={rdg.active === r.id} data-reading={r.id} style="--rd:{r.colour ?? 'var(--accent)'}"
         onmouseenter={() => onsolo(r.id)} onmouseleave={() => onsolo(null)} role="group" aria-label={r.name}>
-        <input type="checkbox" class="vis" title={`Show “${r.name}” notes (on the image and in the margin)`}
+        <input type="checkbox" class="vis" title={`Show “${r.name}” notes on the image and in the margin`}
           checked={rdg.isVisible(r.id)} onchange={() => rdg.toggle(r.id)} aria-label={`Show ${r.name}`} />
         <span class="sw" style="background:{r.colour ?? 'var(--accent)'}"></span>
         <span class="nm">{r.name}</span>
         <span class="ct">{r.id === BASE ? baseCount : countOf(r.id)}</span>
-        <label class="pen" title={`File new notes under “${r.name}”. This is where every note you draw goes, no matter which readings are shown.`}>
+        <label class="pen" title={`File new notes under “${r.name}” — every note you draw goes here.`}>
           <input type="radio" name="active-reading" value={r.id}
             checked={rdg.active === r.id} onchange={() => rdg.setActive(r.id)} aria-label={`Draw into ${r.name}`} />
           <span aria-hidden="true">✎</span>
