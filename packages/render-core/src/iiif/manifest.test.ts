@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { toManifest, sectionsFromManifest } from "./manifest.js";
+import { toManifest, sectionsFromManifest, sectionToAnnotation, sectionsToAnnotationCollection } from "./manifest.js";
 import type { Exhibit } from "../model/model.js";
+import type { W3CSpecificResource, W3CTextualBody } from "../wadm/types.js";
 
 // toManifest: Exhibit -> IIIF Presentation 3 Manifest with painting canvases (ADR-0001 / Q-1).
 
@@ -123,5 +124,63 @@ describe("toManifest (IIIF P3)", () => {
     expect(c.duration).toBe(120);
     expect(c.width).toBeUndefined();
     expect(c.items[0]!.items[0]!.body.type).toBe("Sound");
+  });
+});
+
+describe("Section → WADM annotation (ADR-0017: additive, all-round-compatible export)", () => {
+  const narrative: Exhibit = {
+    id: "e3", slug: "story", title: "A Narrative",
+    objects: [{ id: "oA", source: "https://img/a.jpg", label: "A", width: 100, height: 100 }],
+    sections: [
+      { id: "s1", title: "Opening", objectId: "oA", start: "xywh=10,10,40,40", prose: "Look here first." },
+      { id: "s2", title: "Detail", objectId: "oA" },
+    ],
+  };
+
+  it("bakes the Range affordances into a supplementing annotation (title→label, region→FragmentSelector, prose→describing body, position→archie:order)", () => {
+    const a = sectionToAnnotation(narrative.sections![0]!, 0, `${base}story`);
+    expect(a.type).toBe("Annotation");
+    expect(a.id).toBe(`${base}story/section/s1`);
+    expect(a.motivation).toBe("supplementing");
+    expect(a.label).toEqual({ none: ["Opening"] });
+    expect(a["archie:role"]).toBe("section");
+    expect(a["archie:order"]).toBe(0);
+    const t = a.target as W3CSpecificResource;
+    expect(t.source).toBe(`${base}story/canvas/oA`);
+    expect(t.selector).toEqual({ type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: "xywh=10,10,40,40" });
+    expect(a.body as W3CTextualBody).toEqual({ type: "TextualBody", value: "Look here first.", format: "text/html", purpose: "describing" });
+  });
+
+  it("carries NO archie DAG fields, so the reload importer ignores it (no double-count with the structures[] Range)", () => {
+    const a = sectionToAnnotation(narrative.sections![0]!, 0, `${base}story`) as unknown as Record<string, unknown>;
+    for (const k of ["archie:logicalId", "archie:rev", "archie:version", "archie:lastEditor"]) expect(a[k]).toBeUndefined();
+  });
+
+  it("targets the bare canvas and emits no body when a Section has no region or prose", () => {
+    const a = sectionToAnnotation(narrative.sections![1]!, 1, `${base}story`);
+    expect(a.target).toBe(`${base}story/canvas/oA`);
+    expect(a.body).toBeUndefined();
+    expect(a["archie:order"]).toBe(1);
+  });
+
+  it("sectionsToAnnotationCollection emits one self-contained ordered collection (WADM_CONTEXT at collection level; section-annotations inline in spine order)", () => {
+    const coll = sectionsToAnnotationCollection(narrative, { baseUrl: base })!;
+    expect(coll.type).toBe("AnnotationCollection");
+    expect(coll["@context"]).toBe("https://www.w3.org/ns/anno.jsonld");
+    expect(coll.id).toBe(`${base}story/annotations/narrative.json`);
+    expect(coll.total).toBe(2);
+    expect(coll.first?.type).toBe("AnnotationPage");
+    expect(coll.first?.items.map((i) => i.id)).toEqual([`${base}story/section/s1`, `${base}story/section/s2`]);
+    expect(coll.first?.partOf).toEqual({ id: coll.id, type: "AnnotationCollection" });
+  });
+
+  it("returns undefined for a non-narrative exhibit (nothing to write)", () => {
+    expect(sectionsToAnnotationCollection(imgExhibit, { baseUrl: base })).toBeUndefined();
+  });
+
+  it("links each IIIF Range to the narrative collection via supplementary (the IIIF Pres 3 §5.4 bridge)", () => {
+    const m = toManifest(narrative, { baseUrl: base });
+    const collId = `${base}story/annotations/narrative.json`;
+    for (const r of m.structures!) expect(r.supplementary).toEqual({ id: collId, type: "AnnotationCollection" });
   });
 });

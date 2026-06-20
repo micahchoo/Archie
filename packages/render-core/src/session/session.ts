@@ -47,6 +47,17 @@ export interface NoteEdit {
 
 export class AnnotationSession {
   private log: AnnotationLog;
+  /** Memoized heads projection, keyed by log IDENTITY. Every mutation REPLACES `this.log` with a new
+   *  array (appendNew/appendEdit/appendDelete/merge/resolve), so a reference match proves the projection
+   *  is unchanged. notes() and workingAnnotations() both read it, so the Studio's per-edit `rev` bump
+   *  (which re-derives BOTH) projects the log ONCE, not twice. */
+  private headsCache: { log: AnnotationLog; heads: AnnotationRecord[] } | null = null;
+  /** Logical ids changed since the last save — the incremental-persist dirty set (the session is the ONE
+   *  writer, so this is authoritative). Each mutation adds its id; save() writes just these pages. */
+  private dirty = new Set<LogicalId>();
+  /** True once the full log is known to be on disk (after a full write, or a load FROM disk). Until then
+   *  the next save is a FULL write — incremental writes are only safe once every page exists on disk. */
+  private persistedFully = false;
 
   constructor(
     private readonly editor: ClientId,
@@ -55,9 +66,19 @@ export class AnnotationSession {
     this.log = log;
   }
 
+  /** The head records, memoized by `this.log` identity (recomputed only when the log actually changed). */
+  private heads(): AnnotationRecord[] {
+    if (this.headsCache === null || this.headsCache.log !== this.log) {
+      this.headsCache = { log: this.log, heads: projectHeads(this.log) };
+    }
+    return this.headsCache.heads;
+  }
+
   /** Load a session from a persisted annotations directory (the reload/open path). */
   static async load(annDir: FsDirectory, editor: ClientId): Promise<AnnotationSession> {
-    return new AnnotationSession(editor, await readAnnotations(annDir));
+    const s = new AnnotationSession(editor, await readAnnotations(annDir));
+    s.persistedFully = true; // every page is on disk (we just read them) — subsequent saves can be incremental
+    return s;
   }
 
   /** The raw append-only log (e.g. for publish or inspection). */
@@ -83,6 +104,7 @@ export class AnnotationSession {
       ...(input.motivation !== undefined ? { motivation: input.motivation } : {}),
     });
     this.log = log;
+    this.dirty.add(record.logicalId);
     return record.logicalId;
   }
 
@@ -101,17 +123,19 @@ export class AnnotationSession {
       ...(changes.motivation !== undefined ? { motivation: changes.motivation } : {}),
     });
     this.log = log;
+    this.dirty.add(logicalId);
   }
 
   /** Append a tombstone (append-only delete). */
   deleteNote(logicalId: LogicalId): void {
     const { log } = appendDelete(this.log, logicalId, { lastEditor: this.editor });
     this.log = log;
+    this.dirty.add(logicalId);
   }
 
-  /** The current live notes (head records) — for the sidebar list. */
+  /** The current live notes (head records) — for the sidebar list. Memoized by log identity. */
   notes(): AnnotationRecord[] {
-    return projectHeads(this.log);
+    return this.heads();
   }
 
   // ── Collaboration (async-zip exchange — the Review-Changes flow) ──
@@ -122,6 +146,9 @@ export class AnnotationSession {
    */
   importChanges(incoming: AnnotationLog): LogicalId[] {
     this.log = mergeLogs(this.log, incoming);
+    // A merge can add/rewrite MANY pages (fast-forwards, new logicalIds) the dirty set didn't track —
+    // force the next save to be a full write rather than risk a stale page on disk.
+    this.persistedFully = false;
     return this.conflicts();
   }
 
@@ -180,6 +207,7 @@ export class AnnotationSession {
     } else {
       this.log = merged;
     }
+    this.dirty.add(logicalId);
   }
 
   /**
@@ -188,7 +216,7 @@ export class AnnotationSession {
    * projection (toHeadsPage) instead.
    */
   workingAnnotations(): W3CAnnotation[] {
-    return projectHeads(this.log).map((record) => {
+    return this.heads().map((record) => {
       const ann = recordToAnnotation(record, record.logicalId);
       if (record.layers !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_LAYERS] = record.layers;
       if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
@@ -198,8 +226,20 @@ export class AnnotationSession {
     });
   }
 
-  /** Persist the log (heads + history) into an annotations directory. */
+  /** Persist the log (heads + history) into an annotations directory. Incremental once the full log is on
+   *  disk: rewrites only the pages changed since the last save (the write-amplification fix). The first
+   *  save (or one after a merge) writes everything. */
   async save(annDir: FsDirectory, opts: SerializeOptions = {}): Promise<void> {
-    await writeAnnotations(annDir, this.log, opts);
+    if (!this.persistedFully) {
+      await writeAnnotations(annDir, this.log, opts); // full projection — every page to disk
+      this.persistedFully = true;
+      this.dirty.clear();
+      return;
+    }
+    // Snapshot the dirty set, write just those pages, then clear ONLY what we wrote — edits that land
+    // during the async write stay dirty for the next save (the log passed reflects this snapshot).
+    const snapshot = new Set(this.dirty);
+    await writeAnnotations(annDir, this.log, opts, snapshot);
+    for (const id of snapshot) this.dirty.delete(id);
   }
 }

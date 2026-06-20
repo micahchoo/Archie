@@ -104,4 +104,22 @@ describe("Phase 5 — the Voynich publishes as a genuinely-plural Readings exhib
     const coll = await readJson(fs, "voynich", "annotations", "readings", "hoax.json");
     expect(coll.summary.en[0]).toContain("Cardan");
   });
+
+  // BYTE-STABILITY GUARD (Track B / B2): the published manifest serializes BYTE-IDENTICALLY — pins the
+  // exact inline-embed shape (key order: id, type, items, partOf, label, summary) across the base page +
+  // 3 reading pages, so a refactor of the embed step (mutable map → pure transform) cannot drift the
+  // serialized JSON. The annotation logical-ids carry a per-RUN random ULID tail (10-char ordered counter
+  // + 16 random chars); mask just that tail so the snapshot stays deterministic while still pinning the
+  // ordered counter prefix, the full structure, and the embedded key order.
+  it("publishes a BYTE-STABLE manifest.json (inline-embed key order frozen)", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, library, (id) => (id === "voynich" ? buildLog() : []), { baseUrl: BASE });
+    const manifest = await readJson(fs, "voynich", "manifest.json");
+    // /annotations/{10-digit counter}{16 random chars}(.json|/v1) → mask the 16 random chars only.
+    const masked = JSON.stringify(manifest, null, 2).replace(
+      /(\/annotations\/(?:history\/)?\d{10})[0-9A-Z]{16}/g,
+      "$1XXXXXXXXXXXXXXXX",
+    );
+    expect(masked).toMatchSnapshot();
+  });
 });

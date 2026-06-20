@@ -146,4 +146,46 @@ describe("AnnotationSession — persistence round-trip", () => {
     const reloaded = await AnnotationSession.load(await fs.root(), alice);
     expect(reloaded.notes().map((r) => r.logicalId).sort()).toEqual(s.notes().map((r) => r.logicalId).sort());
   });
+
+  // Incremental persist (write-amplification fix): the session writes only changed pages after the first
+  // full save. These guard data SAFETY — every mutation kind must reach disk, and a seed must full-write.
+  const text = (value: string) => ({ type: "TextualBody" as const, value });
+  const valueOf = (r: { body?: unknown } | undefined): string | undefined => {
+    const b = r?.body as { value?: string } | Array<{ value?: string }> | undefined;
+    return Array.isArray(b) ? b[0]?.value : b?.value;
+  };
+
+  it("persists every mutation kind across INCREMENTAL saves — reload is correct (no dirty-tracking gap)", async () => {
+    const fs = new MemoryFilesystem();
+    const root = await fs.root();
+    const s = new AnnotationSession(alice);
+    const a = s.createNote({ target: rect(0, 0, 10, 10), body: text("a1") });
+    const b = s.createNote({ target: rect(20, 0, 10, 10), body: text("b1") });
+    await s.save(root); // first save → FULL (persistedFully was false)
+    s.editNote(a, { body: text("a2") });
+    await s.save(root); // incremental → only A
+    const c = s.createNote({ target: rect(40, 0, 10, 10), body: text("c1") });
+    await s.save(root); // incremental → only C (a create AFTER the first save)
+    s.deleteNote(b);
+    await s.save(root); // incremental → only B (tombstone)
+
+    const reloaded = await AnnotationSession.load(root, alice);
+    const byId = new Map(reloaded.notes().map((r) => [r.logicalId, r]));
+    expect(valueOf(byId.get(a))).toBe("a2"); // edit persisted incrementally
+    expect(valueOf(byId.get(c))).toBe("c1"); // post-first-save create persisted incrementally
+    const liveIds = reloaded.notes().filter((r) => !r.deleted).map((r) => r.logicalId);
+    expect(liveIds).toContain(a);
+    expect(liveIds).toContain(c);
+    expect(liveIds).not.toContain(b); // delete persisted incrementally
+  });
+
+  it("a seeded session (log via constructor, no mutations) FULL-writes on first save", async () => {
+    const fs = new MemoryFilesystem();
+    const root = await fs.root();
+    const { log } = appendNew([], { target: rect(0, 0, 5, 5), body: text("seed"), lastEditor: alice, modifiedAt: "t", now: 1 });
+    const s = new AnnotationSession(alice, log); // seed NOT via createNote → dirty empty, persistedFully false
+    await s.save(root); // must full-write the seed, NOT skip it because the dirty set is empty
+    const reloaded = await AnnotationSession.load(root, alice);
+    expect(valueOf(reloaded.notes()[0])).toBe("seed");
+  });
 });

@@ -62,6 +62,21 @@ export interface IIIFAnnotationPage {
   items: IIIFPaintingAnnotation[];
 }
 
+/**
+ * A reference to a heads AnnotationPage that MAY embed its content inline (ADR-0007).
+ * Bare `{id, type}` = dereference target; with `items` = embedded so a pure IIIF viewer
+ * renders notes with no second fetch. A per-Reading page carries `partOf` → its collection.
+ * Canonical shape for IIIFCanvas.annotations[] and the publish-time staging map (site.ts).
+ */
+export interface AnnotationPageRef {
+  id: string;
+  type: "AnnotationPage";
+  label?: LangMap;
+  summary?: LangMap;
+  partOf?: Array<{ id: string; type: "AnnotationCollection" }>;
+  items?: W3CAnnotation[];
+}
+
 export interface IIIFCanvas extends IIIFRightsProps {
   id: string;
   type: "Canvas";
@@ -80,7 +95,7 @@ export interface IIIFCanvas extends IIIFRightsProps {
    * CORS, regardless of the base IRI. A Reading page carries `partOf` → its AnnotationCollection. The
    * standalone sidecar file at each `id` is still written, as the citation / PROV dereference target.
    */
-  annotations?: Array<{ id: string; type: "AnnotationPage"; label?: LangMap; summary?: LangMap; partOf?: Array<{ id: string; type: "AnnotationCollection" }>; items?: W3CAnnotation[] }>;
+  annotations?: AnnotationPageRef[];
   /** Sized thumbnail derivative (Image canvases only). */
   thumbnail?: Array<{ id: string; type: "Image" }>;
 }
@@ -94,6 +109,10 @@ export interface IIIFRange {
   summary?: LangMap;
   items: Array<{ id: string; type: "Canvas" }>;
   start?: { id: string; type: "Canvas" };
+  /** Link to the AnnotationCollection of supplementing annotations for this Range (IIIF Pres 3 §5.4) —
+   *  Archie points it at the exhibit's narrative-spine collection (the WADM view of the Sections; ADR-0017),
+   *  the ecosystem-sanctioned Range↔annotation bridge. Additive: `sectionsFromManifest` ignores it. */
+  supplementary?: { id: string; type: "AnnotationCollection" };
 }
 
 export interface IIIFManifest extends IIIFRightsProps {

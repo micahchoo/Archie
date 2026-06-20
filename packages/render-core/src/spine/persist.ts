@@ -30,16 +30,25 @@ async function readJson<T>(dir: FsDirectory, name: string): Promise<T> {
  * Write the annotation log into `annDir`: the consumer heads page + the history sidecar +
  * the index. Pure idempotent projection of the log (re-writing the same log is a no-op result).
  */
-export async function writeAnnotations(annDir: FsDirectory, log: AnnotationLog, opts: SerializeOptions = {}): Promise<void> {
+export async function writeAnnotations(annDir: FsDirectory, log: AnnotationLog, opts: SerializeOptions = {}, only?: ReadonlySet<string>): Promise<void> {
   const headsPage = toHeadsPage(log, `${opts.baseUrl ?? ""}heads.json`, opts);
   await writeJson(annDir, HEADS_FILE, headsPage);
 
   const { index, pages } = toHistory(log, opts);
   const histDir = await annDir.getDirectory(HISTORY_DIR, { create: true });
   await writeJson(histDir, INDEX_FILE, index);
-  for (const [logicalId, page] of Object.entries(pages)) {
-    await writeJson(histDir, `${logicalId}.json`, page);
-  }
+  // PERF: history pages are independent files — write them concurrently instead of awaiting each in turn
+  // (the autosave latency was linear in note count: one round-trip per page). Distinct paths → race-free
+  // across all fs backends (a writable locks only its own file).
+  //
+  // INCREMENTAL: when `only` is given (the session's dirty logicalIds), rewrite JUST those pages —
+  // editing one note rewrites one file, not all N (the write-amplification fix). heads.json + index.json
+  // are ALWAYS rewritten in full (small, whole-log projections that reload reads); unnamed pages stay on
+  // disk from a prior full write. SAFE because the index still lists every logicalId, so reload reads them
+  // all — the un-rewritten ones are byte-identical to what's on disk. `only` undefined = full write (the
+  // first save / post-seed / post-merge, and every publish/zip projection).
+  const entries = only ? Object.entries(pages).filter(([id]) => only.has(id)) : Object.entries(pages);
+  await Promise.all(entries.map(([logicalId, page]) => writeJson(histDir, `${logicalId}.json`, page)));
 }
 
 /**
@@ -54,9 +63,10 @@ export async function readAnnotations(annDir: FsDirectory): Promise<AnnotationLo
     return []; // nothing persisted yet
   }
   const index = await readJson<Record<string, string>>(histDir, INDEX_FILE);
-  const pages: W3CAnnotationPage[] = [];
-  for (const logicalId of Object.keys(index)) {
-    pages.push(await readJson<W3CAnnotationPage>(histDir, `${logicalId}.json`));
-  }
+  // PERF: read the history pages concurrently (exhibit-open latency was linear in note count — one
+  // round-trip per page). Promise.all preserves array order, so fromHistory sees the same page order.
+  const pages = await Promise.all(
+    Object.keys(index).map((logicalId) => readJson<W3CAnnotationPage>(histDir, `${logicalId}.json`)),
+  );
   return fromHistory(pages);
 }

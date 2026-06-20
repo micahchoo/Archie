@@ -95,6 +95,12 @@ export interface AObject extends RightsFields {
   /** Preserved-original filename, published to `{slug}/assets-original/{name}` for citation when opted in
    *  (CONTEXT §89.1 EXIF display-master). Set from the bake provenance; absent for non-baked objects. */
   originalName?: string;
+  /** A BAKED sized thumbnail for the gallery/overview grid — a small derivative so a multi-object
+   *  exhibit doesn't load N full-resolution masters just to paint ~280px plates. Working value
+   *  `/assets-thumb/{name}` (published to `{slug}/assets-thumb/{name}`, blob: in portable/live). Set at
+   *  Studio import for imported rasters; absent for external/IIIF sources (the grid derives those via
+   *  `thumbnailUrl`). Distinct from `originalName` (citation master) — this is a DISPLAY shrink. */
+  thumbnail?: string;
 }
 
 /**
