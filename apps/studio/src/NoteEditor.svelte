@@ -77,7 +77,7 @@
     </select>
   </label>
   <label>Emphasis
-    <select value={emphasis} onchange={(e) => setNoteEmphasis((e.currentTarget as HTMLSelectElement).value as Emphasis)} title="How much this mark stands out — its weight, not its colour (colour follows the reading)">
+    <select value={emphasis} onchange={(e) => setNoteEmphasis((e.currentTarget as HTMLSelectElement).value as Emphasis)} title="How much a mark stands out — its weight, not its colour.">
       <option value="muted">Muted (recede)</option>
       <option value="normal">Normal</option>
       <option value="strong">Strong (stand out)</option>

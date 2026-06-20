@@ -71,7 +71,7 @@
         <kbd>esc</kbd>
       </div>
 
-      <p class="lead">Drop a link to another note or exhibit into your text. It becomes a clickable link when you publish.</p>
+      <p class="lead">Links to a note or exhibit become clickable when you publish.</p>
 
       <ul class="results">
         {#if filtered.length === 0}

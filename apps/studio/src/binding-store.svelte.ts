@@ -145,11 +145,11 @@ export function createBindingStore(deps: BindingDeps) {
       try {
         const handle = await getHandle(r.id);
         if (!handle || (await requestPermission(handle)) !== "granted") {
-          s.error = `Couldn't reopen "${r.name}". Open it again to re-grant access.`; return;
+          s.error = `Couldn't reopen "${r.name}" — grant access again to reconnect it.`; return;
         }
         let loaded: LoadedLibrary;
         try { loaded = await loadLibrary(new FsaFilesystem(handle)); }
-        catch { s.error = `"${r.name}" no longer holds an Archie library.`; return; }
+        catch { s.error = `"${r.name}" is no longer an Archie library.`; return; }
         if (!window.confirm(`Open "${r.name}"? Your current library will be replaced.`)) return;
         await deps.replaceProjectFrom(loaded);
         folderHandle = handle;

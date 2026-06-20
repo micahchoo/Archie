@@ -119,7 +119,7 @@
              done-download must never claim a save the user cancelled. -->
         <button class="choice" onclick={async () => { if (await ondownload().catch(() => false)) phase = "done-download"; }}>
           <span class="c-title">Save a copy — or share a link</span>
-          <span class="c-desc">Pack the whole library into one <code>.archie.zip</code> to keep, re-open, hand to a colleague — or host it and share a link that opens in any browser.</span>
+          <span class="c-desc">Keep a copy, share a link, or hand it to a colleague — packed into one <code>.archie.zip</code>.</span>
         </button>
       </div>
       <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>

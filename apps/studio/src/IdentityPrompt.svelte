@@ -23,7 +23,7 @@
     <header>
       <p class="eyebrow">Before you sync</p>
       <h2>What name should collaborators see?</h2>
-      <p class="lede">You're about to merge someone else's changes. This name marks your edits in the shared history — it stays on this computer, and you can change it any time.</p>
+      <p class="lede">This name marks your edits in the shared history — it stays on this computer, and you can change it any time.</p>
     </header>
     <form onsubmit={(e) => { e.preventDefault(); save(); }}>
       <!-- svelte-ignore a11y_autofocus -->

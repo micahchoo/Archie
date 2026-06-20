@@ -196,11 +196,11 @@ export function createIngestFlows(ctx: IngestContext) {
     // (addObjectFromFile → storeReady false) left the user with a spinner flash and no explanation —
     // the inverse of the folder-import path, which already warns. (Archie image-upload UX fix.)
     if (!ctx.storeReady()) {
-      ctx.setImportNote("This browser can’t save files here — you may be in a private window. Open Archie in a normal window to add media.");
+      ctx.setImportNote("This browser can’t save files here — you may be in a private window. Use a normal window to add media.");
       return;
     }
     if (!exhibit()) {
-      ctx.setImportNote("Open an exhibit first — files are added to the exhibit you have open.");
+      ctx.setImportNote("Open an exhibit first.");
       return;
     }
     let added = 0;
@@ -253,7 +253,7 @@ export function createIngestFlows(ctx: IngestContext) {
         // storeReady is PER-EXHIBIT state — openExhibit (inside newExhibit) just set it. Without
         // it, addObjectFromFile would no-op per file = titled, silently-empty exhibits; stop loudly.
         if (!ctx.storeReady()) {
-          ctx.alert("Made the exhibit, but this browser can't save files — you may be in a private window. Adding files stopped.");
+          ctx.alert("Made the exhibit, but this browser can't save files — open a normal window to add them.");
           return;
         }
         for (let i = 0; i < g.files.length; i++) {
@@ -293,7 +293,7 @@ export function createIngestFlows(ctx: IngestContext) {
     let json: unknown;
     try {
       const resp = await fetch(trimmed);
-      if (!resp.ok) { console.error("IIIF fetch failed", resp.status, trimmed); ctx.alert("Couldn't open that link — the server returned an error. Check the address and try again."); return; }
+      if (!resp.ok) { console.error("IIIF fetch failed", resp.status, trimmed); ctx.alert("Couldn't open that link. Check the address and try again."); return; }
       json = await resp.json();
     } catch {
       ctx.alert("Couldn't open that link. Check the address is correct and reachable.");
