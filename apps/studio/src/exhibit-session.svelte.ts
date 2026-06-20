@@ -87,6 +87,12 @@ export function createExhibitSession(deps: ExhibitSessionDeps) {
     /** Replace the live session in place (keepCopy / a bulk rebuild that mints a fresh session). */
     replace(session: AnnotationSession) { s.session = session; },
 
+    /** Forget the open exhibit's OPFS binding WITHOUT saving — for when that exhibit was just DELETED. Nulls
+     *  annDir + storeReady so the NEXT open()'s outgoing-flush (`save(prevSlug)`) no-ops instead of
+     *  resurrecting the just-cleared annotation dir on disk (Archie-79be). The session is left as-is; the
+     *  next open() swaps it. Mirrors the swap's invariant (annDir and storeReady move together). */
+    forgetCurrent() { cancelPendingSave(); annDir = null; s.storeReady = false; },
+
     /**
      * ATOMIC open transition (fix #3). Flushes the OUTGOING exhibit, then does ALL the slow async work
      * (asset resolve + log load/seed) into LOCALS, and only then applies the session/annDir/storeReady

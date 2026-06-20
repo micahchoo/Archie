@@ -20,6 +20,7 @@
     noteCountOf,
     thumbFor,
     onopenobject,
+    oneditobject,
     onaddobject,
     onback,
     onreorder,
@@ -41,6 +42,9 @@
     /** Resolve an object's thumbnail URL ("" if none — AV/extensionless → placeholder plate). */
     thumbFor: (obj: OverviewObject) => string;
     onopenobject: (objId: string) => void;
+    /** Per-plate/per-row pencil CRUD (Archie-79be): open the App-owned object details drawer (title /
+     *  description / credit / remove) WITHOUT descending into the object editor. */
+    oneditobject: (objId: string) => void;
     onaddobject: () => void;
     onback: () => void;
     /** New reading order, by object id — the overview's reason to exist (Grid/Narrative sequence). */
@@ -233,22 +237,29 @@
           role="presentation" aria-hidden="true"></div>
         {#each objects as o, i (o.id)}
           {@const thumb = thumbFor(o)}
-          <button class="plate" class:dragging={dragId === o.id} class:over={overId === o.id}
-            draggable="true"
-            ondragstart={(e) => onPlateDragStart(e, o.id)}
-            ondragover={(e) => onPlateDragOver(e, o.id)}
-            ondrop={(e) => { e.preventDefault(); commitReorder(o.id); }}
-            ondragend={onDragEnd}
-            onpointerdown={(e) => e.stopPropagation()} onclick={() => onopenobject(o.id)} title={o.label}>
-            <span class="order">{i + 1}</span>
-            <span class="frame" class:av={!thumb}>
-              {#if thumb}<span class="img" style={`background-image:url(${thumb})`}></span>{:else}<span class="glyph">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}
-            </span>
-            <span class="caption">
-              <span class="lbl">{o.label}</span>
-              <span class="cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
-            </span>
-          </button>
+          <div class="plate-wrap" class:dragging={dragId === o.id}>
+            <button class="plate" class:over={overId === o.id}
+              draggable="true"
+              ondragstart={(e) => onPlateDragStart(e, o.id)}
+              ondragover={(e) => onPlateDragOver(e, o.id)}
+              ondrop={(e) => { e.preventDefault(); commitReorder(o.id); }}
+              ondragend={onDragEnd}
+              onpointerdown={(e) => e.stopPropagation()} onclick={() => onopenobject(o.id)} title={o.label}>
+              <span class="order">{i + 1}</span>
+              <span class="frame" class:av={!thumb}>
+                {#if thumb}<span class="img" style={`background-image:url(${thumb})`}></span>{:else}<span class="glyph">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}
+              </span>
+              <span class="caption">
+                <span class="lbl">{o.label}</span>
+                <span class="cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
+              </span>
+            </button>
+            <!-- Per-plate pencil (Archie-79be): edit this media item's details without opening it. A SIBLING
+                 of the plate button (no button-in-button); stops pointerdown/click so it neither pans the
+                 canvas nor opens the object. -->
+            <button class="plate-edit" title="Edit details for {o.label}" aria-label="Edit details for {o.label}"
+              onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); oneditobject(o.id); }}>✎</button>
+          </div>
         {/each}
         <button class="plate add" class:over={overId === END}
           ondragover={(e) => { if (dragId) { e.preventDefault(); overId = END; } }}
@@ -301,6 +312,9 @@
             <span class="li-lbl">{o.label}</span>
             <span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
           </button>
+          <!-- Per-row pencil (Archie-79be): edit this media item's details without opening it. -->
+          <button class="row-edit" title="Edit details for {o.label}" aria-label="Edit details for {o.label}"
+            onclick={(e) => { e.stopPropagation(); oneditobject(o.id); }}>✎</button>
         </li>
       {/each}
       <li class="end" class:over={overId === END} ondragover={(e) => { if (dragId) { e.preventDefault(); overId = END; } }} ondrop={(e) => { e.preventDefault(); commitReorder(null); }} ondragleave={() => { if (overId === END) overId = null; }}>
@@ -380,8 +394,24 @@
   .plate[draggable="true"] { cursor: grab; }
   .plate[draggable="true"]:active { cursor: grabbing; }
   /* Drag-to-reorder feedback (canvas): dragged plate dims; drop target shows a quiet signal insert-before bar. */
-  .plate.dragging { opacity: 0.4; }
+  .plate-wrap.dragging { opacity: 0.4; } /* dim the whole wrapper (plate + pencil) while it's the drag source */
   .plate.over { box-shadow: var(--shadow-lift-low), -4px 0 0 var(--accent); }
+  /* Per-plate pencil (Archie-79be): a quiet glyph over the plate's top-right corner. The wrapper is both the
+     flex/drag child AND the positioning context. Faint at rest (still visible on touch), bright on hover/focus. */
+  .plate-wrap { position: relative; }
+  .plate-edit {
+    position: absolute; top: var(--space-2); right: var(--space-2); z-index: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.85rem; height: 1.85rem; padding: 0; cursor: pointer; line-height: 1;
+    font-family: var(--font-ui); font-size: 0.95rem;
+    color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised);
+    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lift-low);
+    opacity: 0.5; transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .plate-wrap:hover .plate-edit, .plate-wrap:focus-within .plate-edit { opacity: 1; }
+  .plate-edit:hover { color: var(--accent); border-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
+  .plate-edit:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
   .plate.add.over { border-color: var(--accent); border-style: solid; color: var(--accent); }
   .canvas-legend .lead { color: var(--ink-canvas-secondary); }
   /* Leading "insert before first" drop zone (canvas): a thin column that only takes space while armed;
@@ -418,6 +448,19 @@
   .li-thumb .glyph { color: var(--accent-2); }
   .li-lbl { flex: 1; font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; color: var(--ink-canvas-primary); }
   .li-cnt { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
+  /* Per-row pencil (Archie-79be): a trailing quiet glyph. Selector outspecifies `.list li button` (which sets
+     flex:1) so flex:none holds and the open-button keeps the row width. */
+  .list li .row-edit {
+    flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+    width: 2rem; height: 2rem; margin-left: var(--space-1); padding: 0; cursor: pointer; line-height: 1;
+    font-family: var(--font-ui); font-size: 0.95rem;
+    color: var(--ink-canvas-muted); background: var(--surface-canvas-raised);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lift-low);
+    transition: color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+  }
+  .list li .row-edit:hover { color: var(--accent); border-color: var(--accent); box-shadow: var(--shadow-lift-mid); transform: none; }
+  .list li .row-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .li-add { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); padding: var(--space-3); cursor: pointer; width: 100%; transition: color 160ms ease, border-color 160ms ease; }
   .li-add:hover { color: var(--ink-canvas-primary); border-color: var(--accent); }
 </style>

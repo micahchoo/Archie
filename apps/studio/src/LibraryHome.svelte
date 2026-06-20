@@ -39,6 +39,8 @@
     librarySummary,
     ontitle,
     onsummary,
+    onpatchexhibit,
+    onremoveexhibit,
   }: {
     exhibits: ExhibitMeta[];
     onopen: (slug: string) => void;
@@ -74,10 +76,22 @@
     librarySummary?: string;
     ontitle: (v: string) => void;
     onsummary: (v: string) => void;
+    /** Per-card pencil CRUD (Archie-79be): patch any exhibit's metadata, or remove it, without opening it. */
+    onpatchexhibit: (slug: string, fields: Partial<ExhibitMeta>) => void;
+    onremoveexhibit: (slug: string) => void;
   } = $props();
 
   let rightsOpen = $state(false);
   const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
+
+  // The exhibit whose per-card pencil drawer is open (Archie-79be) — transient view state, like rightsOpen.
+  // Resolves to its full ExhibitMeta so the shared DetailsEditor can read title/description/rights.
+  let editingSlug = $state<string | null>(null);
+  const editingExhibit = $derived(exhibits.find((e) => e.slug === editingSlug) ?? null);
+  const rightsOf = (e: ExhibitMeta): RightsFields => ({
+    ...(e.rights ? { rights: e.rights } : {}),
+    ...(e.requiredStatement ? { requiredStatement: e.requiredStatement } : {}),
+  });
 
   let newTitle = $state("");
   function create() {
@@ -111,6 +125,25 @@
 
     <PropsDrawer open={rightsOpen} title="Library details" onclose={() => (rightsOpen = false)}>
       <DetailsEditor title={libTitle ?? ""} summary={librarySummary ?? ""} rights={rights} scope="library" ontitle={ontitle} onsummary={onsummary} onrights={onrights} />
+    </PropsDrawer>
+
+    <!-- Per-card exhibit pencil drawer (Archie-79be): the shared DetailsEditor targeted at the picked card by
+         slug. onremove threads removeExhibitById up to App; closing before removing avoids a stale-field flash. -->
+    <PropsDrawer open={!!editingExhibit} title="Exhibit details" onclose={() => (editingSlug = null)}>
+      {#if editingExhibit}
+        <DetailsEditor
+          title={editingExhibit.title}
+          summary={editingExhibit.summary ?? ""}
+          rights={rightsOf(editingExhibit)}
+          scope="exhibit"
+          ontitle={(v) => onpatchexhibit(editingExhibit!.slug, { title: v })}
+          onsummary={(v) => onpatchexhibit(editingExhibit!.slug, { summary: v })}
+          onrights={(next) => onpatchexhibit(editingExhibit!.slug, { rights: next.rights, requiredStatement: next.requiredStatement })}
+          onremove={isTemplate(editingExhibit.slug)
+            ? undefined
+            : () => { const s = editingExhibit!.slug; editingSlug = null; onremoveexhibit(s); }}
+        />
+      {/if}
     </PropsDrawer>
 
     <!-- Project bar: where this whole library lives. -->
@@ -178,13 +211,17 @@
 
   <ul class="grid">
     {#each exhibits as ex (ex.slug)}
-      <li>
+      <li class="card-wrap">
         <button class="card" class:template={isTemplate(ex.slug)} onclick={() => onopen(ex.slug)}>
           {#if isTemplate(ex.slug)}<span class="badge">Example</span>{/if}
           <span class="title">{ex.title}</span>
           <span class="meta">{ex.objects.length} {ex.objects.length === 1 ? "media item" : "media items"} · /{ex.slug}</span>
           {#if isTemplate(ex.slug)}<span class="ex-hint">Explore freely — changes aren't kept. Keep a copy to make it yours.</span>{/if}
         </button>
+        <!-- Per-card pencil (Archie-79be): edit this exhibit's title/description/credit + remove, without
+             opening it. A SIBLING of the card button (no button-in-button); sits over the top-right corner. -->
+        <button class="edit-meta" title="Edit details for {ex.title}" aria-label="Edit details for {ex.title}"
+          onclick={() => (editingSlug = ex.slug)}>✎</button>
       </li>
     {/each}
     <li>
@@ -292,7 +329,24 @@
     transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
   }
   .card:hover { background: var(--surface-canvas-overlay); transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
-  .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); }
+  /* Per-card pencil (Archie-79be): a quiet glyph button over the card's top-right corner. Faint at rest so
+     the grid stays calm (and still visible on touch, where there's no hover), brightening on hover/focus. */
+  .card-wrap { position: relative; }
+  .edit-meta {
+    position: absolute; top: var(--space-3); right: var(--space-3); z-index: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.85rem; height: 1.85rem; padding: 0; cursor: pointer; line-height: 1;
+    font-family: var(--font-ui); font-size: 0.95rem;
+    color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised);
+    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lift-low);
+    opacity: 0.45; transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .card-wrap:hover .edit-meta, .card-wrap:focus-within .edit-meta { opacity: 1; }
+  .edit-meta:hover { color: var(--accent); border-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
+  .edit-meta:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+  /* padding-right reserves the top-right pencil's gutter (--space-3 inset + ~1.85rem button) so a long title wraps before it. */
+  .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); padding-right: calc(var(--space-3) + 1.85rem); }
   .meta { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
   /* Example (template) marker — a soft warm dashed edge + quiet warning label (transient, not yours-yet). */
   .card.template { box-shadow: var(--shadow-lift-low), inset 0 0 0 1px var(--border-canvas-emphasis); }
