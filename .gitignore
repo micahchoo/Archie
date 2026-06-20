@@ -1,19 +1,80 @@
+# ─────────────────────────────────────────────────────────────
+# Dependencies
+# ─────────────────────────────────────────────────────────────
 node_modules/
+.pnpm-store/
+
+# ─────────────────────────────────────────────────────────────
+# Build output / generated
+# ─────────────────────────────────────────────────────────────
 dist/
+build/
 gh-pages-dist/
 .astro/
+.svelte-kit/
+.vite/
 *.tsbuildinfo
-.DS_Store
-coverage/
+
+# ─────────────────────────────────────────────────────────────
+# Caches
+# ─────────────────────────────────────────────────────────────
+.cache/
+.turbo/
+.eslintcache
+node-compile-cache/
+v8-compile-cache-*/
 .foxhound/
 
-# bidar example — removed from Studio examples, kept locally but untracked (2026-06-09)
+# ─────────────────────────────────────────────────────────────
+# Test / coverage / browser-runner droppings
+# ─────────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright-artifacts-*/
+playwright_chromiumdev_profile-*/
+
+# ─────────────────────────────────────────────────────────────
+# Logs (keep the deliberately-tracked deps-index promotion log)
+# ─────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+!.claude/.deps-index/promote.log
+
+# ─────────────────────────────────────────────────────────────
+# Environment
+# ─────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─────────────────────────────────────────────────────────────
+# Editor / OS
+# ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.idea/
+
+# ─────────────────────────────────────────────────────────────
+# Design working scratch — source assets stay tracked
+# (design/fonts/ faces + licenses, design/*.html references);
+# session droppings are ignored. Convention: `_`-prefixed names
+# are throwaway (build logs, screenshots, capture scripts).
+# ─────────────────────────────────────────────────────────────
+design/_*
+
+# ─────────────────────────────────────────────────────────────
+# Project-local, intentionally untracked (do not commit)
+# ─────────────────────────────────────────────────────────────
+# bidar example — removed from Studio examples, kept locally (2026-06-09)
 apps/studio/src/bidar.ts
 scripts/import-bidar.mjs
 docs/screenshots/auto/viewer-bidar.desktop.png
-
-# test-runner droppings at repo root (worklist 0.4 — keep the root clean)
-playwright-artifacts-*/
-playwright_chromiumdev_profile-*/
-node-compile-cache/
-v8-compile-cache-*/
