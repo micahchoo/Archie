@@ -74,6 +74,25 @@
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;
 
+  /* ── Top-chrome coordinate system ──
+     The persistent top bar (ViewerShell .topbar) owns the top:0 viewport row — breadcrumb | carousel |
+     open-another — and is ~52px tall. ONE source of truth for that band height so every canvas-relative
+     chrome that must clear it (ReadingLegend, the index/back escapes, the cold-arrival toast, the note
+     popups' max-height) reads the SAME value — was 3.25rem hardcoded across six sites that drifted apart. */
+  --topbar-h: 3.25rem;
+  /* Soft backing so the floating chrome reads over ANY deep-zoom image region, not just the cream
+     ground: a partial wash at the very top edge, fading to nothing within the band (chrome still
+     recedes). Cream over the warm ground; both surface families are cream in Verdant, so one serves both. */
+  --scrim-top: linear-gradient(to bottom, rgba(247, 244, 236, 0.78), rgba(247, 244, 236, 0));
+  /* The rule for PAPER panels (reader sidebars, the overview header): the top bar floats over them, so
+     they reserve its height + a touch of air for their own header (title · subtitle · rights · notes
+     count) to keep its space, clear of the bar's "Open another library" zone. The CANVAS is exempt — its
+     chrome floats over the image on purpose (dba2). One token so every panel clears the bar identically. */
+  --pane-top: calc(var(--topbar-h) + var(--space-3));
+  /* Modal backdrop dim (reading sheet, lightbox): the Verdant moss dusk, matching --shadow-lift-* — was a
+     pre-Verdant mauve rgba(59,49,56,…) that cast a cool-purple wash behind the warm-paper focus surfaces. */
+  --scrim-dim: rgba(26, 60, 35, 0.82);
+
   /* ── Radius — soft & generous (kept from Soft Static) ── */
   --radius-sm: 10px; --radius-md: 16px; --radius-lg: 20px;
 
@@ -118,5 +137,7 @@ body { margin: 0; font-family: var(--font-body); color: var(--ink-canvas-primary
   font-weight: 400;
   letter-spacing: 0.26em;
   text-transform: uppercase;
-  color: rgba(26, 60, 35, 0.55);
+  /* 0.70 (was 0.55): at 12px uppercase + heavy tracking the eyebrow is the viewer's most-repeated label;
+     0.55 alpha forest on cream sat ~3:1. One token edit lifts every eyebrow to a readable quiet. */
+  color: rgba(26, 60, 35, 0.70);
 }

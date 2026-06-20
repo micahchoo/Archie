@@ -12,7 +12,9 @@
     initLiveSource, isPortable,
   } from "../published.js";
   import Gallery from "./Gallery.svelte";
-  import ExhibitView from "./ExhibitView.svelte";
+  // ExhibitView is imported LAZILY in the exhibit-route block below — its subtree (Reader/NarrativeReader →
+  // @render/svelte → @render/mount) pulls OpenSeadragon + Annotorious (~1 MB), none of which the gallery
+  // landing needs. Static-importing it here forced that chunk onto the highest-traffic page.
   import EmptyHall from "./EmptyHall.svelte";
 
   let route = $state<ViewerRoute>({ view: "gallery" });
@@ -27,7 +29,11 @@
   // Object-nav carousel snapshot lifted up from ExhibitView (dba2): the center zone of the persistent top
   // bar. `selectedObjectId` stays owned by ExhibitView; this only reflects it + calls back to navigate.
   // null whenever the carousel shouldn't show (gallery, grid overview, AV, narrative, single object).
-  type CarouselNav = { siblings: { id: string; label: string }[]; currentId: string; navigate: (id: string) => void };
+  // `toOverview` (R2): the Exhibit breadcrumb's "natural start" (CONTEXT §142) is the OVERVIEW for a
+  // multi-object exhibit. Object selection is component-local (un-routed by design), so the exhibit
+  // crumb can't navigate by hash (it'd point at the current hash → no hashchange → no-op). ExhibitView
+  // hands up a reset callback instead; present only while an object is open within a multi-object exhibit.
+  type CarouselNav = { siblings: { id: string; label: string }[]; currentId: string; navigate: (id: string) => void; toOverview?: () => void };
   let carousel = $state<CarouselNav | null>(null);
 
   function sync() {
@@ -204,17 +210,33 @@
         <nav class="crumbs" aria-label="Breadcrumb">
           {#each crumbs as c, i (c.hash)}
             {#if i > 0}<span class="sep">›</span>{/if}
-            <a href={c.hash}>{c.label}</a>
+            {#if c.level === "exhibit" && carousel?.toOverview}
+              <!-- R2: in a multi-object exhibit viewing an object, the Exhibit crumb returns to the
+                   OVERVIEW (its natural start). Selection is un-routed, so reset via the lifted callback
+                   rather than an href that points at the current hash (which would no-op). -->
+              <button type="button" class="crumb-link" onclick={() => carousel?.toOverview?.()}>{c.label}</button>
+            {:else}
+              <a href={c.hash}>{c.label}</a>
+            {/if}
           {/each}
         </nav>
+      {:else if route.view === "exhibit" && crumbs.length > 1}
+        <!-- Single-exhibit library: no breadcrumb (nothing above to return to), so the only overview route
+             lived inside the collapsible sidebar — collapse it and you were stranded on an object (#5). The
+             bar now guarantees it: in an object → "Back to Exhibit"; at the overview → the exhibit's name. -->
+        {#if carousel?.toOverview}
+          <button type="button" class="crumb-link" onclick={() => carousel?.toOverview?.()}>← Back to Exhibit</button>
+        {:else}
+          <span class="bar-title">{crumbs[1]?.label}</span>
+        {/if}
       {/if}
     </div>
     <div class="zone center">
       {#if carousel}
         <nav class="carousel" aria-label="Media in this exhibit">
-          <button class="cnav" disabled={!cPrev} onclick={() => { if (cPrev) carousel?.navigate(cPrev.id); }} title={cPrev ? `Previous: ${cPrev.label}` : "This is the first item"}>‹</button>
-          <span class="cpos">{cIdx >= 0 ? cIdx + 1 : "–"} / {carousel.siblings.length}</span>
-          <button class="cnav" disabled={!cNext} onclick={() => { if (cNext) carousel?.navigate(cNext.id); }} title={cNext ? `Next: ${cNext.label}` : "This is the last item"}>›</button>
+          <button class="cnav" disabled={!cPrev} aria-label={cPrev ? `Previous: ${cPrev.label}` : "This is the first item"} onclick={() => { if (cPrev) carousel?.navigate(cPrev.id); }} title={cPrev ? `Previous: ${cPrev.label}` : "This is the first item"}>‹</button>
+          <span class="cpos" aria-label={`Item ${cIdx >= 0 ? cIdx + 1 : "–"} of ${carousel.siblings.length}`}>{cIdx >= 0 ? cIdx + 1 : "–"} / {carousel.siblings.length}</span>
+          <button class="cnav" disabled={!cNext} aria-label={cNext ? `Next: ${cNext.label}` : "This is the last item"} onclick={() => { if (cNext) carousel?.navigate(cNext.id); }} title={cNext ? `Next: ${cNext.label}` : "This is the last item"}>›</button>
         </nav>
       {/if}
     </div>
@@ -231,9 +253,19 @@
 {:else if phase === "error"}
   <div class="state error"><span class="warn" aria-hidden="true">⚠</span><span>{errorMsg}</span></div>
 {:else if route.view === "exhibit"}
-  {#key `${route.slug}/${route.noteId ?? ""}`}
-    <ExhibitView slug={route.slug} noteId={route.noteId} onnav={(n) => (carousel = n)} />
-  {/key}
+  <!-- Lazy ExhibitView: its subtree pulls OpenSeadragon + Annotorious (~1 MB), so it's fetched only on the
+       exhibit route, not the gallery landing. The {#key} sits inside :then so switching object/exhibit
+       remounts the resolved component WITHOUT re-importing (the dynamic import resolves from cache). The
+       deep-link [slug].astro keeps its own eager client:only ExhibitView. Canvas/OSD mount is browser-verify-owed. -->
+  {#await import("./ExhibitView.svelte")}
+    <div class="state"><span class="dot"></span><span>Opening the exhibit…</span></div>
+  {:then { default: ExhibitView }}
+    {#key `${route.slug}/${route.noteId ?? ""}`}
+      <ExhibitView slug={route.slug} noteId={route.noteId} onnav={(n) => (carousel = n)} />
+    {/key}
+  {:catch}
+    <div class="state error"><span class="warn" aria-hidden="true">⚠</span><span>Couldn’t load the viewer. Reload to try again.</span></div>
+  {/await}
 {:else if gallery}
   <Gallery {gallery} />
 {/if}
@@ -254,6 +286,15 @@
   .topbar .center { justify-self: center; }
   .topbar .right { justify-self: end; }
   .topbar .zone:empty { pointer-events: none; }
+  /* Soft backing (R3): the chrome floats over the deep-zoom image, where a breadcrumb can get lost on a
+     busy region. A partial wash at the top edge — behind the zones (z-index -1, no pointer capture) —
+     gives every floating control a consistent backdrop, then fades to nothing within the band so the
+     chrome still recedes and the image stays the star. */
+  .topbar::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 0;
+    height: calc(100% + var(--space-4)); z-index: -1; pointer-events: none;
+    background: var(--scrim-top);
+  }
 
   /* Breadcrumb — understated; the way back up (CONTEXT §125). Connector-blue hover (the secondary
      signal for links/up-nav) keeps the rationed orange free for the one focal action. */
@@ -261,6 +302,16 @@
   .crumbs a { color: var(--ink-canvas-secondary); text-decoration: none; }
   .crumbs a:hover { color: var(--accent-2); }
   .crumbs .sep { color: var(--ink-canvas-muted); }
+  /* The Exhibit crumb in a multi-object object view is a button (resets selection → overview), but reads
+     identically to the anchor crumbs — same ink, same connector-blue hover. */
+  .crumbs .crumb-link {
+    background: none; border: none; padding: 0; cursor: pointer; font: inherit;
+    color: var(--ink-canvas-secondary);
+  }
+  .crumbs .crumb-link:hover { color: var(--accent-2); }
+  /* Single-exhibit orientation label where the breadcrumb would be — quiet, non-interactive (the name,
+     not a link, since there's nothing above to return to). */
+  .bar-title { color: var(--ink-canvas-secondary); font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); }
 
   /* Object carousel — ‹ prev · i/n · next › thin glyph form (dba2: lean, no thumbs/labels, so it
      doesn't fight crumbs + open-another for width). The one floating surface reads as a soft warm-paper
@@ -280,7 +331,9 @@
   .carousel .cnav:hover:not(:disabled) { color: var(--accent-2); }
   .carousel .cnav:disabled { opacity: 0.3; cursor: default; }
   .carousel .cpos {
-    color: var(--ink-canvas-muted); font-family: var(--font-mono), monospace;
+    /* Secondary, not muted: the i/n count is the carousel's payload — it read fainter than the ‹ › arrows
+       (also --ink-canvas-secondary) beside it, undercutting the reason the carousel was lifted into the bar. */
+    color: var(--ink-canvas-secondary); font-family: var(--font-mono), monospace;
     font-variant-numeric: tabular-nums; padding: 0 var(--space-1); letter-spacing: 0.1em;
   }
 
@@ -288,7 +341,11 @@
      the alert reads through semantic-error ink + a hairline error border and the quiet uppercase mono
      tracking (a found warning label, not a loud arcade panel) (CONTEXT §134). */
   .drift {
-    position: fixed; z-index: 60; top: var(--space-3); right: var(--space-3);
+    /* Bottom-CENTER. Top-right is the bar's "Open another library" zone (this z-60 badge stole its click);
+       bottom-right is now the sidebar object-nav's stepper (SidebarObjectNav, flush to the aside corner) —
+       same click-theft there. Bottom-center sits over the canvas, clear of the aside nav (right) and the
+       note popups (bottom-LEFT), and clear of the cold-arrival toast (top, below the band). */
+    position: fixed; z-index: 60; bottom: var(--space-3); left: 50%; transform: translateX(-50%);
     padding: 4px var(--space-2);
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 500;
     text-transform: uppercase; letter-spacing: 0.14em;
@@ -306,7 +363,9 @@
 
   /* Over the gallery wall (light) the bar's canvas inks fail contrast (axe: 2.1) — swap the quiet
      chrome to paper inks; the bar floats over BOTH surface families, so ink follows the backdrop. */
-  .topbar.on-paper .crumbs a { color: var(--ink-paper-secondary); }
+  .topbar.on-paper .crumbs a,
+  .topbar.on-paper .crumbs .crumb-link,
+  .topbar.on-paper .bar-title { color: var(--ink-paper-secondary); }
   .topbar.on-paper .crumbs .sep { color: var(--ink-paper-muted); }
   .topbar.on-paper .open-another { color: var(--ink-paper-secondary); }
 

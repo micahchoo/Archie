@@ -8,6 +8,7 @@ import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voy
 // can import canvasIdFor without pulling in demo fixtures. Re-exported for gen-published.mts.
 import { BASE, canvasIdFor } from "../src/published-base.js";
 import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "./atlas.js";
+import { geoTitle, geoSummary, geoRights, geoObjects, geoCover, geoNotes } from "./geo.js";
 export { BASE, canvasIdFor };
 
 const author = asClientId("curator");
@@ -54,6 +55,25 @@ function buildAtlasLog(slug: string): AnnotationLog {
       body: [{ type: "TextualBody" as const, value: n.comment, purpose: "commenting" as const }],
       motivation: "commenting", lastEditor: author, now: ++now, rng,
       ...(n.reading ? { reading: n.reading } : {}),
+    }));
+  }
+  return log;
+}
+
+// "World map (geo-annotation prototype)" — the geo Playground's published log (ADR-0015). Each city pin is a
+// pixel-selector note carrying an archie:geo bbox (geo-truth); the SHARED geoNotes pre-computed the geometry,
+// so this bake places pins identical to the Studio seed (seededGeo). Same seeded-rng / monotonic-now contract
+// as the other builders (ADR-0014 durable anchors) — array order of geoNotes is load-bearing.
+function buildGeoLog(slug: string): AnnotationLog {
+  let log: AnnotationLog = [];
+  let now = 0;
+  const rng = seededRng(3); // per-builder seed — reproducible ids (ADR-0014 durable anchors)
+  for (const n of geoNotes) {
+    ({ log } = appendNew(log, {
+      target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `xywh=pixel:${n.x},${n.y},${n.w},${n.h}` } },
+      body: [{ type: "TextualBody" as const, value: n.comment, purpose: "commenting" as const }],
+      geo: n.geo, // geo-truth (Q4) → archie:geo on the published canvas annotation
+      motivation: "commenting", lastEditor: author, now: ++now, rng,
     }));
   }
   return log;
@@ -162,10 +182,17 @@ export const library: Library = {
     // rival-interpretations differentiator beyond manuscripts. cover = a 400px IIIF derivative of the
     // North America page.
     { id: "ex-atlas", slug: "language-atlas", title: atlasTitle, summary: atlasSummary, cover: `${atlasObjects[0]!.source}/full/400,/0/default.jpg`, objects: atlasObjects.map((o) => ({ ...o, ...atlasRights })), readings: atlasReadings, requiredStatement: atlasRights.requiredStatement },
+    // GEO — "World map (geo-annotation prototype)" (ADR-0015): one OSM slippy-map basemap object, geo-annotated
+    // with city pins anchored to lng/lat. ONE object → resolveLayout = single → the Reader mounts the bounded
+    // map raster (render-mount/xyz) + the lng/lat readout on each opened pin. The descriptor, object, cover and
+    // pins all come from the SHARED ./geo.js — the same source Studio's seed reads (no drift). cover = the
+    // whole-world tile (z0/0/0). No readings: this prototype carries one reading of place, not rival camps.
+    { id: "ex-geo", slug: "geo-map", title: geoTitle, summary: geoSummary, cover: geoCover, objects: geoObjects.map((o) => ({ ...o, ...geoRights })), requiredStatement: geoRights.requiredStatement },
   ],
 };
 
 const atlasLog = buildAtlasLog("language-atlas");
-const logsById: Record<string, AnnotationLog> = { "ex-voynich-rosettes": rosettesLog, "ex-voynich": voynichLog, "ex-voynich-reading": readingLog, "ex-atlas": atlasLog };
+const geoLog = buildGeoLog("geo-map");
+const logsById: Record<string, AnnotationLog> = { "ex-voynich-rosettes": rosettesLog, "ex-voynich": voynichLog, "ex-voynich-reading": readingLog, "ex-atlas": atlasLog, "ex-geo": geoLog };
 /** Log lookup for publishLibrary, by exhibit id. */
 export const getLog = (exhibitId: string): AnnotationLog => logsById[exhibitId] ?? [];

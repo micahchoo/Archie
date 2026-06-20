@@ -51,8 +51,12 @@ const readJsonIf = <T,>(name: string): T | null => {
   const p = join(OUT, name);
   try {
     return existsSync(p) ? (JSON.parse(readFileSync(p, "utf8")) as T) : null;
-  } catch {
-    return null; // unparsable index — treat as no existing tree rather than aborting the regen
+  } catch (e) {
+    // Unparsable index — treat as no existing tree rather than aborting the regen, but WARN: a corrupt
+    // exhibits.json/collection.json makes the merge skip preservation, so carried (non-owned) exhibits
+    // drop out of the rewritten root indexes (their dirs survive on disk, but the cards/landing vanish).
+    console.warn(`gen-published: failed to parse existing ${name} (${p}) — treating as no existing tree; carried exhibits will NOT be preserved this run: ${e instanceof Error ? e.message : String(e)}`);
+    return null;
   }
 };
 const existingExhibits = readJsonIf<ExhibitsJson>("exhibits.json");

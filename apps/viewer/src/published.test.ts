@@ -54,6 +54,27 @@ describe("published.ts hosted/portable seam (PV-2a)", () => {
     expect(Array.isArray(ex.readings)).toBe(true); // the readings field (now also read by core's readPublishedExhibit, ADR-0007)
   });
 
+  it("a superseded concurrent load self-revokes its blobs, keeping the live exhibit's (revoke-race guard)", async () => {
+    await openZip();
+    const revoked: string[] = [];
+    const spy = vi.spyOn(URL, "revokeObjectURL").mockImplementation((u) => { revoked.push(String(u)); });
+    try {
+      // Two loads in flight at once (rapid re-navigation). First call = older seq (superseded), second =
+      // latest (survivor). The guard must free the superseded load's OWN blobs and NOT clobber the live
+      // revoke handle — without it, both set the handle (last wins) and the first load's blob URLs leak.
+      const [a, b] = await Promise.all([loadPublishedExhibit(SLUG), loadPublishedExhibit(SLUG)]);
+      const supersededSrc = a.objects[0]!.source; // first call → older seq
+      const liveSrc = b.objects[0]!.source; // second call → latest seq (the visible exhibit)
+      expect(supersededSrc.startsWith("blob:")).toBe(true);
+      expect(liveSrc.startsWith("blob:")).toBe(true);
+      expect(supersededSrc).not.toBe(liveSrc); // each load minted its own blob set
+      expect(revoked).toContain(supersededSrc); // the superseded load freed its own blobs (no leak)
+      expect(revoked).not.toContain(liveSrc); // the live exhibit's blobs were NOT revoked (no early-free)
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it("closePortableLibrary returns to hosted", async () => {
     await openZip();
     expect(isPortable()).toBe(true);
