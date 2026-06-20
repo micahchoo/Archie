@@ -55,6 +55,7 @@ export * from "./model/layout.js";
 export * from "./geometry/selector.js";
 export * from "./geometry/geo.js";
 export * from "./geometry/marginalia.js";
+export * from "./geometry/panel-resize.js";
 export * from "./geometry/mediafragment.js";
 export * from "./geometry/coverage.js";
 export * from "./geometry/downscale.js";

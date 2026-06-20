@@ -9,7 +9,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./Canvas.svelte": "./src/Canvas.svelte",
-    "./MarginColumn.svelte": "./src/MarginColumn.svelte"
+    "./MarginColumn.svelte": "./src/MarginColumn.svelte",
+    "./ResizeDivider.svelte": "./src/ResizeDivider.svelte"
   },
   "scripts": {
     "test": "vitest run",

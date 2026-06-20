@@ -6,6 +6,7 @@
   import ReadingsModal from "./ReadingsModal.svelte";
   import ReadingsRail from "./ReadingsRail.svelte";
   import Canvas from "@render/svelte/Canvas.svelte";
+  import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
   import Publish from "./Publish.svelte";
   import PublishDialog from "./PublishDialog.svelte";
   import LibraryHome from "./LibraryHome.svelte";
@@ -329,6 +330,29 @@
     noteDragging = false;
     (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
   }
+
+  // Resizable / collapsible notes+spine sidebar (Phase-2 expandability). `asideWidth` is a px OVERRIDE
+  // of the responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom
+  // (same as IDENTITY_KEY). The drag math is headless-tested in @render/core; ResizeDivider is the handle.
+  const ASIDE_W_KEY = "archie.notesAsideWidth.v1";
+  const ASIDE_COLLAPSED_KEY = "archie.notesAsideCollapsed.v1";
+  function loadAsideW(): number | null { try { const v = localStorage.getItem(ASIDE_W_KEY); return v ? (Number(v) || null) : null; } catch { return null; } }
+  function loadAsideCollapsed(): boolean { try { return localStorage.getItem(ASIDE_COLLAPSED_KEY) === "1"; } catch { return false; } }
+  let asideWidth = $state<number | null>(loadAsideW());
+  let asideCollapsed = $state<boolean>(loadAsideCollapsed());
+  function persistAside(s: { width: number | null; collapsed: boolean }) {
+    try {
+      if (s.width == null) localStorage.removeItem(ASIDE_W_KEY); else localStorage.setItem(ASIDE_W_KEY, String(Math.round(s.width)));
+      localStorage.setItem(ASIDE_COLLAPSED_KEY, s.collapsed ? "1" : "0");
+    } catch { /* private mode — size simply resets next load, harmless */ }
+  }
+
+  // Pin the note editor to a docked side inspector (ADR-0006's sanctioned fallback) instead of the
+  // floating marker popover — deep editing without the cramped 320px column. SAME form, different home.
+  const NOTE_PINNED_KEY = "archie.noteInspectorPinned.v1";
+  function loadNotePinned(): boolean { try { return localStorage.getItem(NOTE_PINNED_KEY) === "1"; } catch { return false; } }
+  let notePinned = $state<boolean>(loadNotePinned());
+  function persistPinned() { try { localStorage.setItem(NOTE_PINNED_KEY, notePinned ? "1" : "0"); } catch { /* private mode — harmless */ } }
   // "Save" on the note editor: commit any uncommitted comment text (edits already autosave live, but a click
   // might not have blurred the textarea first), then deselect → the popover hides (selected drives `sel`).
   function closeNote() {
@@ -1048,7 +1072,14 @@
        marker-anchored POPOVER over the canvas (below, in <main>), keyed to the selected record `sel`. -->
 
   <div class="body">
-    <aside>
+    <!-- ONE WADM form definition (ADR-0006), rendered into EITHER the floating marker popover OR the
+         docked inspector below — never forked. Declared at .body scope so both sites can {@render} it. -->
+    {#snippet noteForm()}
+      <NoteEditor sel={sel!} editing={editing!} {currentReadings} bind:commentEl
+        {commentOf} {tagsOf} {timeOf}
+        {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {requestCite} {requestVisualCite} {citeIntoComment} {closeNote} {onDelete} />
+    {/snippet}
+    <aside class:collapsed={asideCollapsed} style:--studio-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
       <!-- The narrative spine is ALWAYS mounted (ADR-0016): a narrative exists iff sections.length>0, and
            authoring it is no longer gated by a picked layout — adding the first section IS the act that turns
            this exhibit into a narrative (the published reading mode emerges from the content). Exhibit scope
@@ -1174,6 +1205,7 @@
         </details>
       {/if}
     </aside>
+    <ResizeDivider side="left" label="notes" min={260} max={760} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={persistAside} />
     <main
       bind:this={mainEl}
       class:drawing={drawArmed}
@@ -1206,17 +1238,19 @@
         <div class="no-canvas">Add media — drop an image here, or use “+ Media” above.</div>
       {/if}
 
-      {#if sel && !drawArmed}
+      {#if sel && !drawArmed && !notePinned}
         <!-- The WADM form anchored to the selected marker (ADR-0006): an image's canvas marker OR an audio
              cue's waveform region (both stream their screen-rect via onmarkerrect → notePos). Offset off the
              marker, follows the surface, draggable by the grip; stopPropagation so dragging never pans OSD.
              HIDDEN in draw mode — a position:fixed popover would otherwise intercept the canvas pointer events
-             that Annotorious needs to draw a new shape (it reappears on the new note once mode → select). -->
+             that Annotorious needs to draw a new shape (it reappears on the new note once mode → select).
+             The ⤢ pin lifts the SAME form into the docked inspector (below) for roomier editing. -->
         <div class="note-popover" role="group" aria-label="Note editor" style={`left:${notePopoverPos.left}px; top:${notePopoverPos.top}px`} onpointerdown={(e) => e.stopPropagation()}>
-          <button type="button" class="np-grip" onpointerdown={noteDragDown} onpointermove={noteDragMove} onpointerup={noteDragUp} onpointercancel={noteDragUp} title="Drag to move" aria-label="Move the note editor">⠿</button>
-          <NoteEditor sel={sel!} editing={editing!} {currentReadings} bind:commentEl
-            {commentOf} {tagsOf} {timeOf}
-            {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {requestCite} {requestVisualCite} {citeIntoComment} {closeNote} {onDelete} />
+          <div class="np-head">
+            <button type="button" class="np-grip" onpointerdown={noteDragDown} onpointermove={noteDragMove} onpointerup={noteDragUp} onpointercancel={noteDragUp} title="Drag to move" aria-label="Move the note editor">⠿</button>
+            <button type="button" class="np-pin" onclick={() => { notePinned = true; persistPinned(); }} title="Pin to a docked side panel" aria-label="Pin the note editor to a side panel">⤢</button>
+          </div>
+          {@render noteForm()}
         </div>
       {/if}
 
@@ -1230,6 +1264,17 @@
           onmanage={() => (readingsOpen = true)} />
       {/if}
     </main>
+    {#if sel && !drawArmed && notePinned}
+      <!-- Pinned inspector (ADR-0006 sanctioned fallback): the SAME WADM form, docked full-height on the
+           right (opposite the notes aside), detached from the marker. ⤡ unpins back to the float. -->
+      <aside class="note-inspector" aria-label="Note editor">
+        <header class="ni-head">
+          <span class="ni-title">Editing note</span>
+          <button type="button" class="ni-unpin" onclick={() => { notePinned = false; persistPinned(); }} title="Unpin — float at the marker" aria-label="Unpin the note editor">⤡ Unpin</button>
+        </header>
+        {@render noteForm()}
+      </aside>
+    {/if}
   </div>
 
   <PublishDialog
@@ -1451,7 +1496,8 @@
   /* Marker-anchored note editor (ADR-0006) — a warm-paper card floating over the canvas, positioned by
      Canvas's onmarkerrect (+14px off the marker, donor PADDING) and following it on pan/zoom. */
   .note-popover {
-    position: fixed; z-index: 50; width: 320px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px);
+    /* Responsive: grows on wide monitors, never below 320px; still clamped to the viewport. */
+    position: fixed; z-index: 50; width: clamp(320px, 23vw, 440px); max-width: calc(100vw - 32px); max-height: calc(100vh - 32px);
     overflow-y: auto; box-sizing: border-box;
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border: none; border-radius: var(--radius-md);
@@ -1465,15 +1511,41 @@
   }
   .np-grip:hover { color: var(--accent); }
   .np-grip:active { cursor: grabbing; }
+  /* Popover header — the drag grip fills, the ⤢ pin button sits at the right; together they own the top edge. */
+  .np-head { display: flex; align-items: stretch; border-radius: var(--radius-md) var(--radius-md) 0 0; overflow: hidden; }
+  .np-head .np-grip { flex: 1; width: auto; border-radius: 0; }
+  .np-pin {
+    flex: 0 0 auto; display: flex; align-items: center; justify-content: center; width: 2rem; cursor: pointer;
+    background: var(--surface-paper-hover); border: none; border-bottom: 1px solid var(--border-paper);
+    color: var(--ink-paper-muted); font-size: 0.95rem; line-height: 1; transition: color 160ms ease;
+  }
+  .np-pin:hover { color: var(--accent-2); }
+
+  /* Pinned note inspector (ADR-0006 sanctioned fallback) — the SAME WADM form, docked full-height on the
+     RIGHT (opposite the notes aside), detached from the marker. One form definition; the wadm sheds its
+     in-popover top frame here too (the header IS the frame). */
+  .note-inspector {
+    width: clamp(320px, 24vw, 460px); flex-shrink: 0; overflow: auto; box-sizing: border-box;
+    background: var(--surface-paper); color: var(--ink-paper-primary);
+    border-left: 1px solid var(--border-canvas);
+  }
+  .ni-head { display: flex; align-items: center; justify-content: space-between; padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-paper); }
+  .ni-title { font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  .ni-unpin { cursor: pointer; font-family: var(--font-ui); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px var(--space-2); background: var(--surface-paper-card); color: var(--ink-paper-secondary); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); transition: color 160ms ease, box-shadow 160ms ease; }
+  .ni-unpin:hover { color: var(--accent-2); box-shadow: var(--shadow-lift-low); }
+  .note-inspector :global(.wadm) { margin-top: 0; border-top: none; padding-top: 0; padding: var(--space-4); }
   /* The .wadm form CSS (incl. the in-popover override) lives in NoteEditor.svelte now (the DOMINO cut). */
 
   /* Notes sidebar — the notebook (warm paper) */
   aside {
-    width: 352px; flex-shrink: 0; overflow: auto; box-sizing: border-box;
+    /* Width = a token so it's responsive by default (clamp) AND drag-resizable (Phase 2 sets --studio-aside-w inline). */
+    width: var(--studio-aside-w, clamp(320px, 26vw, 520px)); flex-shrink: 0; overflow: auto; box-sizing: border-box;
     padding: var(--space-5);
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
   }
+  /* Collapsed = give the canvas the whole width (image-first). The divider stays (anti-trap: always expandable). */
+  aside.collapsed { width: 0; min-width: 0; padding: 0; border-left: 0; overflow: hidden; }
   aside h2 { color: var(--ink-paper-secondary); margin: 0 0 var(--space-4); }
   /* Editable object label — reads as a Fraunces title, reveals as an input on hover/focus */
   .object-title {

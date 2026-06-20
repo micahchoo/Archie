@@ -5,8 +5,10 @@
   // Object-parameterized (Phase-2 Grid): the parent (ExhibitView) supplies which object to read
   // and that object's projected annotations; `onback` returns to the exhibit's object grid.
   import Canvas from "@render/svelte/Canvas.svelte";
+  import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
   import type { FrameOverlay } from "@render/svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
+  import ReadingSheet from "./ReadingSheet.svelte";
   import NoteMedia from "./NoteMedia.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import Credit from "./Credit.svelte";
@@ -14,6 +16,24 @@
   import { stripMarkdown } from "@render/core";
   import { type MarkerStyle } from "@render/svelte";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
+
+  // Resizable / collapsible reader sidebar (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
+  // responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom. Drag math
+  // is headless-tested in @render/core; ResizeDivider is the handle. Collapse = image-first close looking.
+  const ASIDE_W_KEY = "archie.readerAsideWidth.v1";
+  const ASIDE_COLLAPSED_KEY = "archie.readerAsideCollapsed.v1";
+  function loadAsideW(): number | null { try { const v = localStorage.getItem(ASIDE_W_KEY); return v ? (Number(v) || null) : null; } catch { return null; } }
+  function loadAsideCollapsed(): boolean { try { return localStorage.getItem(ASIDE_COLLAPSED_KEY) === "1"; } catch { return false; } }
+  let asideWidth = $state<number | null>(loadAsideW());
+  let asideCollapsed = $state<boolean>(loadAsideCollapsed());
+  function persistAside(s: { width: number | null; collapsed: boolean }) {
+    try {
+      if (s.width == null) localStorage.removeItem(ASIDE_W_KEY); else localStorage.setItem(ASIDE_W_KEY, String(Math.round(s.width)));
+      localStorage.setItem(ASIDE_COLLAPSED_KEY, s.collapsed ? "1" : "0");
+    } catch { /* private mode — size simply resets next load, harmless */ }
+  }
+  // Expand a long note into the centred reading sheet (Phase-3 focus surface).
+  let readingSheet = $state<{ text: string } | null>(null);
 
   let {
     object,
@@ -123,7 +143,8 @@
     <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} />
   {/if}
 
-  <aside class:detail={!!current}>
+  <ResizeDivider side="right" label="notes" min={300} max={760} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={persistAside} />
+  <aside class:detail={!!current} class:collapsed={asideCollapsed} style:--reader-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
     {#if onback}
       <button class="exhibit-back soft-btn" onclick={() => onback?.()}>← Back to exhibit</button>
     {/if}
@@ -158,11 +179,15 @@
 
   {#if current}
     <!-- popup: a small floating callout echoing the selection (annomea popup) -->
-    <div class="popup"><strong>Selected</strong> · {stripMarkdown(noteParts.text) || `${noteParts.media.length} ${noteParts.media.length === 1 ? "media item" : "media items"}`}</div>
+    <div class="popup"><strong>Selected</strong> · {stripMarkdown(noteParts.text) || `${noteParts.media.length} ${noteParts.media.length === 1 ? "media item" : "media items"}`}{#if noteParts.text}<button class="expand" onclick={() => (readingSheet = { text: noteParts.text })} title="Expand to read" aria-label="Expand note to a reading sheet">⤢</button>{/if}</div>
   {/if}
 
   {#if lightbox}
     <NoteLightbox media={lightbox.media} text={lightbox.text} index={lightbox.index} onclose={() => (lightbox = null)} />
+  {/if}
+
+  {#if readingSheet}
+    <ReadingSheet text={readingSheet.text} onclose={() => (readingSheet = null)} />
   {/if}
 </div>
 
@@ -185,12 +210,15 @@
   /* Reader panel — warm paper, quiet catalog entries; separated from the canvas by a soft shadow
      and a hair-thin warm border, not a hard rule. */
   aside {
-    width: 352px; flex-shrink: 0; overflow: auto; box-sizing: border-box;
+    /* Width = a token: responsive by default (clamp), drag-resizable via --reader-aside-w (Phase 2). */
+    width: var(--reader-aside-w, clamp(320px, 27vw, 560px)); flex-shrink: 0; overflow: auto; box-sizing: border-box;
     padding: var(--space-6) var(--space-5);
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
     box-shadow: var(--shadow-lift-low);
   }
+  /* Collapsed = give the canvas the whole width (image-first close looking). Divider stays (anti-trap). */
+  aside.collapsed { width: 0; min-width: 0; padding: 0; border-left: 0; box-shadow: none; overflow: hidden; }
   /* The only h2 is the `.eyebrow` — let the global Soft Static eyebrow (tracked mono, low-opacity)
      own its colour/type; just give it bottom rhythm here. */
   aside h2 { margin: 0 0 var(--space-4); }
@@ -245,7 +273,10 @@
   /* Popup — a hushed warm-paper callout floating over the canvas, carrying a quiet cord-blue
      left-edge signal (the secondary connector accent, not the rationed orange). */
   .popup {
+    /* Bottom-anchored, grows upward — cap its height (clear the topbar) and scroll, so a long note
+       never overflows the viewport top. */
     position: absolute; left: var(--space-5); bottom: var(--space-5); max-width: 46%;
+    max-height: calc(100vh - 3.25rem - var(--space-5) - var(--space-4)); overflow-y: auto;
     padding: var(--space-3) var(--space-4);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
     border: none; border-left: 3px solid var(--accent-2);
@@ -254,4 +285,7 @@
     font-family: var(--font-body); font-size: 1rem; line-height: 1.4;
   }
   .popup strong { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent-2); }
+  /* Expand-to-read — quiet affordance opening the centred reading sheet for the full note. */
+  .popup .expand { background: none; border: none; cursor: pointer; color: var(--accent-2); font-size: 0.95rem; line-height: 1; margin-left: var(--space-2); vertical-align: middle; transition: color 160ms ease; }
+  .popup .expand:hover { color: var(--accent); }
 </style>

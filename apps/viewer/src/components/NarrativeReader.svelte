@@ -5,14 +5,34 @@
   // order (the old section-i↔note-i index coupling is gone). An AV-object section renders the temporal
   // MediaPlayer instead of the OSD canvas. Markers shown = the active object's notes (progressive §122 = v1.1).
   import Canvas from "@render/svelte/Canvas.svelte";
+  import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
   import MediaPlayer from "./MediaPlayer.svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
+  import ReadingSheet from "./ReadingSheet.svelte";
   import NoteMedia from "./NoteMedia.svelte";
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import ProseCites from "./ProseCites.svelte";
   import { type MarkerStyle } from "@render/svelte";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
+
+  // Resizable / collapsible narrative spine (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
+  // responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom. Drag math
+  // is headless-tested in @render/core; ResizeDivider is the handle. Collapse = give the canvas the page.
+  const ASIDE_W_KEY = "archie.narrativeAsideWidth.v1";
+  const ASIDE_COLLAPSED_KEY = "archie.narrativeAsideCollapsed.v1";
+  function loadAsideW(): number | null { try { const v = localStorage.getItem(ASIDE_W_KEY); return v ? (Number(v) || null) : null; } catch { return null; } }
+  function loadAsideCollapsed(): boolean { try { return localStorage.getItem(ASIDE_COLLAPSED_KEY) === "1"; } catch { return false; } }
+  let asideWidth = $state<number | null>(loadAsideW());
+  let asideCollapsed = $state<boolean>(loadAsideCollapsed());
+  function persistAside(s: { width: number | null; collapsed: boolean }) {
+    try {
+      if (s.width == null) localStorage.removeItem(ASIDE_W_KEY); else localStorage.setItem(ASIDE_W_KEY, String(Math.round(s.width)));
+      localStorage.setItem(ASIDE_COLLAPSED_KEY, s.collapsed ? "1" : "0");
+    } catch { /* private mode — size simply resets next load, harmless */ }
+  }
+  // Expand a long note into the centred reading sheet (Phase-3 focus surface).
+  let readingSheet = $state<{ text: string } | null>(null);
 
   let {
     objects = [],
@@ -133,7 +153,8 @@
     </button>
   {/if}
 
-  <aside>
+  <ResizeDivider side="right" label="narrative" min={320} max={820} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={persistAside} />
+  <aside class:collapsed={asideCollapsed} style:--narr-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
     <p class="eyebrow">Narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}</p>
     <h1>{title}</h1>
     <p class="hint">Read down the page, or jump to any section. The image follows along, zooming to what each section is about{multiObject ? ", and switching between items as you go" : ""}.</p>
@@ -154,11 +175,16 @@
     <!-- annomea popup: the selected marker's note, floating over the canvas (CONTEXT §123) -->
     <div class="note-pop">
       <button class="close" onclick={() => (selected = null)} aria-label="Close note">×</button>
+      {#if noteParts.text}<button class="expand" onclick={() => (readingSheet = { text: noteParts.text })} title="Expand to read" aria-label="Expand note to a reading sheet">⤢</button>{/if}
       {#if noteParts.text}<div class="note-body"><ProseCites text={noteParts.text} /></div>{/if}
       <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
       {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">{geoCoord}</p>{/if}
       {#if tagsOf(current).length}<div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>{/if}
     </div>
+  {/if}
+
+  {#if readingSheet}
+    <ReadingSheet text={readingSheet.text} onclose={() => (readingSheet = null)} />
   {/if}
 
   {#if lightbox}
@@ -175,11 +201,14 @@
   main { flex: 1; min-width: 0; background: var(--surface-canvas); }
 
   aside {
-    width: 420px; flex-shrink: 0; overflow: auto; box-sizing: border-box;
+    /* Width = a token: responsive by default (clamp), drag-resizable via --narr-aside-w (Phase 2). */
+    width: var(--narr-aside-w, clamp(360px, 32vw, 620px)); flex-shrink: 0; overflow: auto; box-sizing: border-box;
     padding: var(--space-6) var(--space-5);
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
   }
+  /* Collapsed = give the canvas the whole page (image-first). Divider stays (anti-trap §223: always expandable). */
+  aside.collapsed { width: 0; min-width: 0; padding: 0; border-left: 0; overflow: hidden; }
   .eyebrow { color: var(--ink-paper-muted); }
   aside h1 { font-family: var(--font-display); font-weight: 300; font-size: 2rem; line-height: 1.2; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); text-shadow: var(--shadow-text-haze); }
   .hint { font-family: var(--font-body); font-size: 0.8rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0 0 var(--space-5); }
@@ -234,7 +263,10 @@
 
   /* Note popup — a warm paper callout floating over the ground (annomea popup; mirrors Reader's). */
   .note-pop {
+    /* Bottom-anchored, grows upward — cap its height (clear the topbar) and scroll, so a long note
+       never overflows the viewport top. */
     position: absolute; left: var(--space-5); bottom: var(--space-5); z-index: 5; max-width: min(44ch, 46%);
+    max-height: calc(100vh - 3.25rem - var(--space-5) - var(--space-4)); overflow-y: auto;
     padding: var(--space-4) var(--space-6) var(--space-4) var(--space-5);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
     border: none; border-left: 2px solid var(--accent);
@@ -243,6 +275,9 @@
   }
   .note-pop .close { position: absolute; top: 8px; right: 12px; background: none; border: none; cursor: pointer; color: var(--ink-canvas-muted); font-size: 1.2rem; line-height: 1; transition: color 160ms ease; }
   .note-pop .close:hover { color: var(--accent); }
+  /* Expand-to-read — quiet cord-blue affordance beside the close, opens the centred reading sheet. */
+  .note-pop .expand { position: absolute; top: 9px; right: 38px; background: none; border: none; cursor: pointer; color: var(--ink-canvas-muted); font-size: 0.95rem; line-height: 1; transition: color 160ms ease; }
+  .note-pop .expand:hover { color: var(--accent-2); }
   .note-body { font-family: var(--font-body); font-size: 1rem; line-height: 1.65; color: var(--ink-canvas-primary); }
   .note-body :global(p) { margin: 0 0 var(--space-2); }
   .note-body :global(p:last-child) { margin-bottom: 0; }
