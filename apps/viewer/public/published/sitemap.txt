@@ -3,3 +3,4 @@ https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/index.html
 https://micahchoo.github.io/Archie/viewer/published/voynich/index.html
 https://micahchoo.github.io/Archie/viewer/published/voynich-reading/index.html
 https://micahchoo.github.io/Archie/viewer/published/language-atlas/index.html
+https://micahchoo.github.io/Archie/viewer/published/geo-map/index.html

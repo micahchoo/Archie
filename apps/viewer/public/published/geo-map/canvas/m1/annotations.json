@@ -1,0 +1,127 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1/annotations.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/0000000001Q1E2RFF58H62PFSW/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:8116,5378,140,140"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.001Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "London",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:geo": {
+        "type": "bbox",
+        "west": -1.669921875,
+        "south": 50.54136296522161,
+        "east": 1.40625,
+        "north": 52.45600939264075
+      },
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/history/0000000001Q1E2RFF58H62PFSW.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/0000000002Q00FVKNSJJ2BGTDE/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:4754,6090,140,140"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.002Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "New York",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:geo": {
+        "type": "bbox",
+        "west": -75.5419921875,
+        "south": 39.53793974517627,
+        "east": -72.4658203125,
+        "north": 41.869560826994544
+      },
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/history/0000000002Q00FVKNSJJ2BGTDE.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/00000000032HVBH9EHJCR5YMRR/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:14480,6381,140,140"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.003Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Tokyo",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:geo": {
+        "type": "bbox",
+        "west": 138.1640625,
+        "south": 34.43409789359469,
+        "east": 141.240234375,
+        "north": 36.93233006150314
+      },
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/history/00000000032HVBH9EHJCR5YMRR.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/0000000004CK4MH8W1V2DW0N39/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:9798,8181,140,140"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.004Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Nairobi",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:geo": {
+        "type": "bbox",
+        "west": 35.2880859375,
+        "south": -2.8333171968553015,
+        "east": 38.3642578125,
+        "north": 0.24169850190165834
+      },
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/geo-map/annotations/history/0000000004CK4MH8W1V2DW0N39.json"
+    }
+  ]
+}
