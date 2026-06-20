@@ -16,6 +16,7 @@
   import ExhibitOverview from "./ExhibitOverview.svelte";
   import NarrativeEditor from "./NarrativeEditor.svelte";
   import DetailsEditor from "./DetailsEditor.svelte";
+  import PropsDrawer from "./PropsDrawer.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
   import AddMapModal from "./AddMapModal.svelte";
   import NoteEditor from "./NoteEditor.svelte";
@@ -174,6 +175,7 @@
     // (cheap, no await), matching the original ordering where currentSlug moves before the async load.
     currentSlug = slug;
     currentObjectId = ex?.objects[0]?.id ?? "o1";
+    editingObjectId = null; // drop any overview pencil edit-cursor from the outgoing exhibit
     selected = null;
     editing = null;
     creating = null;
@@ -203,33 +205,57 @@
     await save();
     revokeAssetUrls(); // free the previous exhibit's blob: URLs
     assetsReady = false;
+    editingObjectId = null; // drop any overview pencil edit-cursor as we leave the overview
     view = "library";
   }
   // Overview ↔ object (invention #1): descend from a plate into close annotation, then climb back. Going
   // back to the overview KEEPS the resolved thumbnails (unlike backToLibrary, which frees them).
-  function openObject(objId: string) { switchObject(objId); view = "editor"; }
-  async function backToOverview() { await save(); view = "overview"; }
+  function openObject(objId: string) { editingObjectId = null; switchObject(objId); view = "editor"; }
+  async function backToOverview() { editingObjectId = null; await save(); view = "overview"; }
 
   // --- Destructive removes (Archie-3f4c). Object → tombstone its notes (ADR-0003 append-only; recoverable
   // via history, orphaned tombstones don't project), then drop the object. Exhibit → clear its annotation
   // log, then drop it; the LAST exhibit leaves a truly-empty library (no DEFAULT_EXHIBITS reseed). ---
-  async function removeCurrentObject() {
-    const objId = currentObjectId;
+  // Tombstone an object's notes (ADR-0003 append-only; recoverable via history) then drop it from meta. The
+  // shared core: removeCurrentObject navigates afterwards; the overview pencil's removeObjectById stays put.
+  async function deleteObjectNotesAndMeta(objId: string) {
     const cid = canvasIdOf(objId);
     for (const r of sess.session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) sess.session.deleteNote(r.logicalId as LogicalId);
     bump();
-    const remaining = OBJECTS.filter((o) => o.id !== objId);
     await lib.removeObject(currentSlug, objId);
+  }
+  async function removeCurrentObject() {
+    const objId = currentObjectId;
+    const remaining = OBJECTS.filter((o) => o.id !== objId);
+    await deleteObjectNotesAndMeta(objId);
     if (remaining[0]) switchObject(remaining[0].id);
     else { selected = null; editing = null; creating = null; await backToOverview(); } // last object → empty exhibit overview (valid post-e5c0)
   }
-  async function removeCurrentExhibit() {
-    const slug = currentSlug;
-    sess.cancelPendingSave();
+  // Overview pencil-CRUD delete (Archie-79be): remove ANY object without opening it; stay in the overview.
+  // If the cursor pointed at the removed object, advance it to a survivor so the (unmounted) editor stays valid.
+  async function removeObjectById(objId: string) {
+    await deleteObjectNotesAndMeta(objId);
+    // Keep the view==overview ⟺ hasOverview invariant: openExhibit routes a 1-object exhibit straight to the
+    // editor, so deleting down to a lone survivor drops into ITS editor, not a 1-plate "overview" the rest of
+    // the app never enters. (0 survivors → stay; an empty overview is valid, the only place to re-add.)
+    if (OBJECTS.length === 1) { switchObject(OBJECTS[0]!.id); view = "editor"; return; }
+    if (objId === currentObjectId) { const surv = OBJECTS.find((o) => o.id !== objId); if (surv) switchObject(surv.id); }
+  }
+  // Remove an exhibit by slug — meta + on-disk annotation log. Safe for a NON-loaded exhibit (library-grid
+  // pencil CRUD, Archie-79be): session/asset teardown runs ONLY when the target is the loaded exhibit, so
+  // deleting another exhibit can't tear down the one currently in the session.
+  async function removeExhibitById(slug: string) {
+    const isLoaded = slug === currentSlug;
+    // forgetCurrent (not just cancelPendingSave): nulls the session's annDir so the NEXT openExhibit's
+    // outgoing-flush can't re-create the log we're about to clear (Archie-79be — newly easy to hit now that
+    // the library grid can delete the loaded exhibit; the pre-existing overview-remove path is fixed too).
+    if (isLoaded) sess.forgetCurrent();
     await clearExhibitAnnotations(slug); // wipe its annotation log on disk (do NOT re-save it via backToLibrary)
     await lib.removeExhibit(slug);
-    revokeAssetUrls();
-    assetsReady = false;
+    if (isLoaded) { revokeAssetUrls(); assetsReady = false; }
+  }
+  async function removeCurrentExhibit() {
+    await removeExhibitById(currentSlug);
     view = "library";
   }
   // --- The KEYSTONE matched-pair cue state (staging spec §3 / §7). The leading published surface is a pure
@@ -282,8 +308,8 @@
   // A Section's camera (`start`) is set by FRAMING it on the editor canvas — the same gesture as a note's
   // geometry — not by typing a fragment. "Frame camera" on a section rail-JUMPS to that section's object
   // (an explicit, visible move — never an implicit rebind), then arms the canvas draw; the next drawn box
-  // (or AV in-out) becomes the camera instead of creating a note. Re-binding a section to a different
-  // object is the separate, explicit "Move here" action in the spine panel.
+  // (or AV in-out) becomes the camera instead of creating a note. A section is bound to its object at
+  // creation; navigating between objects (navigateToSection) WALKS the spine, it never rebinds.
   let framingSectionId = $state<string | null>(null);
   function startFraming(sectionId: string) {
     const s = (currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
@@ -297,6 +323,23 @@
   function setSectionStart(sectionId: string, start: string) {
     setSections((currentExhibit?.sections ?? []).map((s) => (s.id === sectionId ? { ...s, start, objectId: currentObjectId } : s)));
   }
+
+  // --- narrative card NAVIGATION (mirrors the viewer's NarrativeReader.activate) ---
+  // A narrative card is the control that MOVES between the exhibit's objects: clicking it jumps the rail to
+  // the section's object and FOCUSES its framed region on the canvas, so the author sees exactly what the
+  // section shows — the editor counterpart of the reader's focus={activeSection.start} (NarrativeReader.svelte).
+  let focusSectionId = $state<string | null>(null);
+  function navigateToSection(sectionId: string) {
+    const s = (currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
+    if (!s) return;
+    switchObject(s.objectId); // rail-jump to the section's object (no-op when already there; clears focusSectionId)
+    focusSectionId = sectionId; // set AFTER switchObject → drives the canvas focus fragment + the lit "active" card
+  }
+  // The framed region the active card points at, passed to Canvas.focus to fit the viewport to it (ADR-0005
+  // Section.start). Gated on object-match so a stale fragment never fits the wrong canvas; a temporal `t=` AV
+  // fragment no-ops on the spatial canvas anyway (AV uses AvEditor, which takes no focus).
+  const focusSection = $derived((currentExhibit?.sections ?? []).find((s) => s.id === focusSectionId) ?? null);
+  const canvasFocus = $derived(focusSection && focusSection.objectId === currentObjectId ? (focusSection.start ?? null) : null);
 
   // --- note editing POPOVER (ADR-0006): the WADM form anchors to the selected marker on the image canvas
   // instead of sitting at the bottom of a scrolling sidebar. `notePos` is streamed up from Canvas
@@ -475,6 +518,10 @@
   // Which object of the exhibit the editor is showing. Switching resets transient view state.
   let currentObjectId = $state("o1");
   const current = $derived(OBJECTS.find((o) => o.id === currentObjectId) ?? OBJECTS[0]);
+  // The overview pencil's edit target (pencil-CRUD, Archie-79be) — a transient cursor independent of
+  // currentObjectId, so editing a plate's details opens a drawer WITHOUT navigating into the object.
+  let editingObjectId = $state<string | null>(null);
+  const editingObject = $derived(currentExhibit?.objects.find((o) => o.id === editingObjectId) ?? null);
   const canvasId = $derived(canvasIdOf(currentObjectId));
   // AV objects (sound/video) get the temporal AvEditor instead of the OSD Canvas (draw tools too).
   const isAvCurrent = $derived(current?.mediaType === "sound" || current?.mediaType === "video");
@@ -496,6 +543,7 @@
     selected = null;
     editing = null;
     creating = null; // cancel any armed new-note gesture when changing objects
+    focusSectionId = null; // a manual rail switch drops the narrative card's frame focus (navigateToSection re-sets it)
   }
   // Step to the previous/next object on the rail ([ / ] shortcuts).
   function stepObject(dir: -1 | 1) {
@@ -585,6 +633,12 @@
     const objId = currentObjectId;
     lib.patchObject(currentSlug, objId, { summary: v });
   }
+
+  // --- Per-item metadata edit (pencil CRUD, Archie-79be): id-parameterized siblings of the cursor wrappers
+  // above. The library grid edits any EXHIBIT and the overview edits any OBJECT without opening it, so these
+  // take an explicit id instead of reading currentSlug/currentObjectId. Object edits target the open exhibit. ---
+  function patchExhibitMeta(slug: string, fields: Partial<ExhibitMeta>) { lib.patchExhibit(slug, fields); }
+  function patchObjectMeta(objId: string, fields: Partial<ObjectMeta>) { lib.patchObject(currentSlug, objId, fields); }
 
   // Notes + working annotations are scoped to the CURRENT object's canvas (then the layer filter).
   const allNotes = $derived((rev, sess.session.notes()));
@@ -951,6 +1005,8 @@
     librarySummary={lib.meta.summary}
     ontitle={setLibraryTitle}
     onsummary={setLibrarySummary}
+    onpatchexhibit={patchExhibitMeta}
+    onremoveexhibit={(slug) => void removeExhibitById(slug)}
   />
 {:else if view === "overview"}
   <div class="overview-stage">
@@ -962,7 +1018,8 @@
       thumbFor={(o) => (o.mediaType && o.mediaType !== "image") ? "" : thumbSrc(o)}
       sections={currentExhibit.sections ?? []}
       onopenobject={openObject}
-      onaddobject={() => { view = "editor"; addingObject = true; }}
+      oneditobject={(objId) => (editingObjectId = objId)}
+      onaddobject={() => { editingObjectId = null; view = "editor"; addingObject = true; }}
       onback={backToLibrary}
       onreorder={reorderObjects}
       onstartnarrative={() => openObject(OBJECTS[0]?.id ?? currentObjectId)}
@@ -973,6 +1030,23 @@
       onsummary={setExhibitSummary}
       onremove={removeCurrentExhibit}
     />
+    <!-- Object pencil-CRUD drawer (Archie-79be): edit ANY plate's details (title/description/rights) +
+         remove, without descending into the object. App-owned because it holds the full ObjectMeta + the
+         object mutation wrappers; the overview only signals which object via oneditobject. -->
+    <PropsDrawer open={!!editingObject} title="Media details" onclose={() => (editingObjectId = null)}>
+      {#if editingObject}
+        <DetailsEditor
+          title={editingObject.label}
+          summary={editingObject.summary ?? ""}
+          rights={{ ...(editingObject.rights ? { rights: editingObject.rights } : {}), ...(editingObject.requiredStatement ? { requiredStatement: editingObject.requiredStatement } : {}) }}
+          scope="object"
+          ontitle={(v) => renameObject(editingObject!.id, v)}
+          onsummary={(v) => patchObjectMeta(editingObject!.id, { summary: v })}
+          onrights={(next) => patchObjectMeta(editingObject!.id, { rights: next.rights, requiredStatement: next.requiredStatement })}
+          onremove={() => { const id = editingObject!.id; editingObjectId = null; void removeObjectById(id); }}
+        />
+      {/if}
+    </PropsDrawer>
   </div>
 {:else}
   <header>
@@ -1116,12 +1190,14 @@
         sections={currentExhibit?.sections ?? []}
         objects={OBJECTS}
         {currentObjectId}
+        activeSectionId={focusSectionId}
         framingId={framingSectionId}
         notes={narrativeNotes}
         cleared={clearedSlug === currentSlug}
         onchange={setSections}
         onframe={startFraming}
         oncancelframe={cancelFraming}
+        onnavigate={navigateToSection}
         onrequestcite={requestCite}
       />
       <div class="scope-sep"><span>This object</span></div>
@@ -1225,7 +1301,7 @@
         {/key}
       {:else if current && assetsReady}
         {#key canvasId}
-          <Canvas source={currentSource} tileSource={currentTileSource} {canvasId} {annotations} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
+          <Canvas source={currentSource} tileSource={currentTileSource} {canvasId} {annotations} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
             onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
         {/key}
         {#if isMapCurrent && currentTileSource?.attribution}
