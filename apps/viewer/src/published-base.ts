@@ -9,6 +9,7 @@
 // / dev bakes the real canonical origin into the tree instead of a stand-in (no more archie.demo).
 // JSON import works in both node (gen) and the Astro client bundle (cf. og-image.ts).
 
+import { canvasIdFor as mintCanvasId } from "@render/core";
 import config from "../../../archie.config.json";
 
 /** Build-time default base for published-tree IDs, from archie.config.json (canonicalOrigin + viewerPath). */
@@ -28,4 +29,4 @@ export const VIEWER_BASE =
     ? process.env.PUBLIC_CANONICAL_ORIGIN
     : `${config.canonicalOrigin}${config.viewerPath}`;
 
-export const canvasIdFor = (slug: string, objectId: string): string => `${BASE}${slug}/canvas/${objectId}`;
+export const canvasIdFor = (slug: string, objectId: string): string => mintCanvasId(BASE, slug, objectId);

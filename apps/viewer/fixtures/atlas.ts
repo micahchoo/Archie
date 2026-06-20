@@ -10,7 +10,7 @@
 //
 // Note regions were placed by VISUAL AUDIT against each rendered map page (red-box overlay pass,
 // 2026-06-09) — the map plate occupies only the top half of each 2550x3301 page.
-import type { Reading } from "@render/core";
+import { asObjectId, type Reading } from "@render/core";
 
 const IA = "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_";
 const page = (n: number) => `${IA}0${n}.jp2`;
@@ -30,14 +30,14 @@ export const atlasReadings: Reading[] = [
 ];
 
 export const atlasObjects = [
-  { id: "o1", source: page(166), label: "North America", width: 2550, height: 3301 },
-  { id: "o2", source: page(176), label: "Western South America", width: 2550, height: 3301 },
-  { id: "o3", source: page(184), label: "The Caucasus", width: 2550, height: 3301 },
-  { id: "o4", source: page(190), label: "Western Africa", width: 2550, height: 3301 },
-  { id: "o5", source: page(196), label: "Siberia", width: 2550, height: 3301 },
-  { id: "o6", source: page(202), label: "The Himalaya", width: 2550, height: 3301 },
-  { id: "o7", source: page(208), label: "South-East Asia", width: 2550, height: 3301 },
-  { id: "o8", source: page(214), label: "Australia", width: 2550, height: 3301 },
+  { id: asObjectId("o1"), source: page(166), label: "North America", width: 2550, height: 3301 },
+  { id: asObjectId("o2"), source: page(176), label: "Western South America", width: 2550, height: 3301 },
+  { id: asObjectId("o3"), source: page(184), label: "The Caucasus", width: 2550, height: 3301 },
+  { id: asObjectId("o4"), source: page(190), label: "Western Africa", width: 2550, height: 3301 },
+  { id: asObjectId("o5"), source: page(196), label: "Siberia", width: 2550, height: 3301 },
+  { id: asObjectId("o6"), source: page(202), label: "The Himalaya", width: 2550, height: 3301 },
+  { id: asObjectId("o7"), source: page(208), label: "South-East Asia", width: 2550, height: 3301 },
+  { id: asObjectId("o8"), source: page(214), label: "Australia", width: 2550, height: 3301 },
 ];
 
 export interface AtlasNote {

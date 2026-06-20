@@ -8,7 +8,7 @@
 // ONLY here. Both the Studio (seed-data.ts → seededGeo / DEFAULT_EXHIBITS) and the Viewer's published library
 // (sample-data.ts → buildGeoLog) import this file; neither redefines the basemap or recomputes the pin
 // geometry, so the authored Studio seed and the published bake cannot drift. Mirrors voynich.ts / atlas.ts.
-import { lngLatToPixel, pixelToLngLat, thumbnailUrl, type AObject, type RightsFields, type TileSourceDescriptor } from "@render/core";
+import { asObjectId, lngLatToPixel, pixelToLngLat, thumbnailUrl, type AObject, type RightsFields, type TileSourceDescriptor } from "@render/core";
 
 /** OSM raster XYZ template — `{z}/{x}/{y}` slippy tiles, fetched live. */
 export const GEO_TEMPLATE = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
@@ -24,7 +24,7 @@ export const geoTitle = "World map (geo-annotation prototype)";
 export const geoSummary = "Drop pins on a live map — each one stays on its place as you zoom and pan, anchored to a longitude and latitude. An early look at annotating maps in Archie.";
 
 /** The one Map object (the basemap canvas). Rights are spread by each consumer (mirrors atlasObjects). */
-export const geoObjects: AObject[] = [{ id: "m1", source: GEO_TEMPLATE, label: "World basemap", tileSource: geoBasemap }];
+export const geoObjects: AObject[] = [{ id: asObjectId("m1"), source: GEO_TEMPLATE, label: "World basemap", tileSource: geoBasemap }];
 
 /** A RENDERABLE gallery cover — the shallowest single world tile (z=minZoom, 0, 0); one fetch, a real image
  *  (the bare `{z}/{x}/{y}` template is not itself an image). thumbnailUrl owns the xyz→tile-URL derivation. */

@@ -9,7 +9,7 @@ import { describe, it, expect } from "vitest";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { writeAnnotations } from "../spine/persist.js";
 import { appendNew } from "../spine/log.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import type { AnnotationLog } from "../wadm/types.js";
 import { publishLibrary } from "./site.js";
 import { loadPortableGallery, loadPortableExhibit } from "./portable.js";
@@ -106,11 +106,11 @@ describe("libraryToWorking (inverse of workingToLibrary)", () => {
 
   it("carries tileSource (the Map basemap) — the field the studio inline version dropped", () => {
     const lib: Library = {
-      id: "demo",
+      id: asLibraryId("demo"),
       exhibits: [{
-        id: "ex-map", slug: "atlas", title: "Atlas",
+        id: asExhibitId("ex-map"), slug: "atlas", title: "Atlas",
         objects: [{
-          id: "m1", source: "world", label: "Basemap",
+          id: asObjectId("m1"), source: "world", label: "Basemap",
           tileSource: { kind: "xyz", template: "https://t/{z}/{x}/{y}.png", maxZoom: 5, attribution: "© OSM" },
         }],
       }],

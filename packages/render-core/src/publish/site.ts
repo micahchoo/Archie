@@ -23,6 +23,7 @@ import type { PortableExhibit } from "./portable.js"; // type-only (erased) — 
 import { readExhibitTree, fsJsonSource } from "./read.js";
 import { libraryPageHtml, exhibitPageHtml, sitemapTxt } from "./static-pages.js";
 import { readAnnotations } from "../spine/persist.js";
+import { asExhibitId, asLibraryId } from "../wadm/brand.js";
 import { toHistory } from "../spine/serialize.js";
 import { projectHeads } from "../spine/heads.js";
 import { headsPageFromRecords, headsPagesByReading, citationIdMap, targetSource } from "../spine/serialize.js";
@@ -370,7 +371,7 @@ export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
     const manifest = await src.get<IIIFManifest>(`${card.slug}/manifest.json`);
     logs[card.slug] = await readAnnotations(await exDir.getDirectory("annotations"));
     exhibits.push({
-      id: card.slug,
+      id: asExhibitId(card.slug),
       slug: card.slug,
       title: card.title,
       objects: objectsFromManifest(manifest),
@@ -380,7 +381,7 @@ export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
     });
   }
   const library: Library = {
-    id: ex.library.id,
+    id: asLibraryId(ex.library.id),
     exhibits,
     ...(ex.library.title !== undefined ? { title: ex.library.title } : {}),
     ...(ex.library.summary !== undefined ? { summary: ex.library.summary } : {}),

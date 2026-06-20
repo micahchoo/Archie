@@ -1,6 +1,6 @@
 {
   "name": "archie",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "Static-publishable, multi-media exhibit annotation platform. Monorepo root (ADR-0002 / Q-2).",

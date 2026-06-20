@@ -12,14 +12,20 @@ import type { AnnotationRecord, W3CBody, W3CTextualBody } from "../wadm/types.js
 export const SCHEMA_VERSION = 1;
 
 /**
- * ADR-0007 record migration: fold the deprecated multi-valued `layers` into Tags (purpose:tagging
+ * ADR-0007 record migration: fold a legacy multi-valued `layers` value into Tags (purpose:tagging
  * bodies), losslessly, and drop `layers`. A Reading is single/exclusive so it CANNOT absorb a
  * multi-value `layers` without data-loss; Tags are additive and absorb `string[]` cleanly — so the
- * old undifferentiated "layer" maps onto the additive side of the Frame-C split. Applied at the
- * read/load boundary (deserialize + OPFS load). Idempotent: no `layers` → returned unchanged.
+ * old undifferentiated "layer" maps onto the additive side of the Frame-C split. Idempotent: no
+ * `layers` → returned unchanged.
+ *
+ * WIRED at the deserialize/load boundary (`spine/deserialize.ts` recordFromHistoryAnnotation, which
+ * every load path funnels through — OPFS reload, working-library cold-read, ZIP import). `layers` is
+ * retired from the `AnnotationRecord` type and no longer written or serialized; this fold is the sole
+ * remaining consumer of legacy `archie:layers` data. It reads/strips `layers` via cast since the field
+ * is no longer typed. See docs/plans/data-standardisation-plan.md item A3.
  */
 export function foldLayersIntoTags(record: AnnotationRecord): AnnotationRecord {
-  const layers = record.layers;
+  const layers = (record as { layers?: string[] }).layers;
   if (layers === undefined || layers.length === 0) return record;
   const bodies: W3CBody[] =
     record.body === undefined ? [] : Array.isArray(record.body) ? [...record.body] : [record.body];

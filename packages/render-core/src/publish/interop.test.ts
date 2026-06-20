@@ -3,7 +3,7 @@ import { libraryToZip } from "./site.js";
 import { ZipFilesystem } from "../fs/zip.js";
 import type { FsDirectory } from "../fs/seam.js";
 import { appendNew } from "../spine/log.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import type { Library } from "../model/model.js";
 import type { AnnotationLog } from "../wadm/types.js";
 
@@ -30,15 +30,15 @@ function buildLog(): AnnotationLog {
 }
 
 const library: Library = {
-  id: "lib",
+  id: asLibraryId("lib"),
   exhibits: [
     {
-      id: "ex",
+      id: asExhibitId("ex"),
       slug,
       title: "Show",
       objects: [
-        { id: "oA", source: "https://img/a.jpg", label: "A", width: 10, height: 10 },
-        { id: "oB", source: "https://img/b.jpg", label: "B", width: 10, height: 10 },
+        { id: asObjectId("oA"), source: "https://img/a.jpg", label: "A", width: 10, height: 10 },
+        { id: asObjectId("oB"), source: "https://img/b.jpg", label: "B", width: 10, height: 10 },
       ],
     },
   ],

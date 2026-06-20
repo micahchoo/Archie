@@ -3,7 +3,7 @@ import { MemoryFilesystem } from "../fs/memory.js";
 import { publishLibrary } from "./site.js";
 import { readExhibitTree, fsJsonSource, type NoteTransform, type JsonSource } from "./read.js";
 import { appendNew } from "../spine/log.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import type { Library } from "../model/model.js";
 
 // The domino's unit: one source-parameterized traversal behind a JsonSource seam. The three readers
@@ -13,13 +13,13 @@ const author = asClientId("curator");
 const base = "https://u.gh.io/lib/";
 const canvas = `${base}rd/canvas/o1`;
 const lib: Library = {
-  id: "L",
+  id: asLibraryId("L"),
   title: "Lib",
   exhibits: [{
-    id: "e1",
+    id: asExhibitId("e1"),
     slug: "rd",
     title: "Readings",
-    objects: [{ id: "o1", source: "https://img/1.jpg", label: "one" }],
+    objects: [{ id: asObjectId("o1"), source: "https://img/1.jpg", label: "one" }],
     readings: [{ id: "cipher", name: "Cipher" }],
   }],
 };
@@ -78,10 +78,10 @@ describe("Section WADM-annotation export (ADR-0017) leaves the read round-trip i
   const nbase = "https://u.gh.io/lib/";
   const ncanvas = `${nbase}narr/canvas/o1`;
   const nlib: Library = {
-    id: "L2", title: "Lib2",
+    id: asLibraryId("L2"), title: "Lib2",
     exhibits: [{
-      id: "e2", slug: "narr", title: "Narrative",
-      objects: [{ id: "o1", source: "https://img/1.jpg", label: "one" }],
+      id: asExhibitId("e2"), slug: "narr", title: "Narrative",
+      objects: [{ id: asObjectId("o1"), source: "https://img/1.jpg", label: "one" }],
       sections: [
         { id: "s1", title: "Open", objectId: "o1", start: "xywh=0,0,10,10", prose: "p" },
         { id: "s2", title: "Close", objectId: "o1" },

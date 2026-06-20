@@ -79,12 +79,9 @@ describe("AnnotationSession — create / edit / delete", () => {
     expect(s.notes()).toHaveLength(0);
     expect(s.entries).toHaveLength(2); // create + tombstone
   });
-
-  it("carries layers onto the working annotation (archie:layers, for the editor's layer view)", () => {
-    const s = new AnnotationSession(alice);
-    s.createNote({ target: rect(0, 0, 10, 10), layers: ["conservation"] });
-    expect((s.workingAnnotations()[0] as unknown as Record<string, unknown>)["archie:layers"]).toEqual(["conservation"]);
-  });
+  // (Removed: the `archie:layers` working-annotation assertion — `layers` is retired by the ADR-0007
+  //  contraction; legacy values fold into Tags at load. Reading/emphasis/geo working-annotation
+  //  carries are covered in reading.test.ts + the geo/emphasis suites.)
 });
 
 describe("AnnotationSession — collaboration (Import changes / resolve)", () => {

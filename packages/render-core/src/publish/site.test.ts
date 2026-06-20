@@ -4,7 +4,7 @@ import { ZipFilesystem } from "../fs/zip.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { readAnnotations } from "../spine/persist.js";
 import { appendNew } from "../spine/log.js";
-import { asClientId } from "../wadm/brand.js";
+import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import { encodeLinkRef } from "../link/link.js";
 import type { Library } from "../model/model.js";
 import type { AnnotationLog } from "../wadm/types.js";
@@ -14,9 +14,9 @@ import type { AnnotationLog } from "../wadm/types.js";
 // zip. The GH-Pages Contents-API adapter is a thin browser/network layer over this.
 
 const alice = asClientId("alice");
-const exA = { id: "exA", slug: "a", title: "Exhibit A", objects: [{ id: "o1", source: "https://img/a.jpg", label: "A1", width: 10, height: 10 }] };
-const exB = { id: "exB", slug: "b", title: "Exhibit B", objects: [] };
-const library: Library = { id: "lib", title: "Lib", exhibits: [exA, exB] };
+const exA = { id: asExhibitId("exA"), slug: "a", title: "Exhibit A", objects: [{ id: asObjectId("o1"), source: "https://img/a.jpg", label: "A1", width: 10, height: 10 }] };
+const exB = { id: asExhibitId("exB"), slug: "b", title: "Exhibit B", objects: [] };
+const library: Library = { id: asLibraryId("lib"), title: "Lib", exhibits: [exA, exB] };
 
 const logA: AnnotationLog = appendNew([], { target: "https://img/a.jpg", body: { type: "TextualBody", value: "note" }, lastEditor: alice, modifiedAt: "t", now: 1 }).log;
 const logs: Record<string, AnnotationLog> = { exA: logA, exB: [] };
@@ -50,9 +50,9 @@ describe("publishLibrary — write the full site data tree via the seam", () => 
 
   it("writes imported-asset bytes + rewrites the canvas image URL (P2-X getAsset)", async () => {
     const fs = new MemoryFilesystem();
-    const exC = { id: "exC", slug: "c", title: "C", objects: [{ id: "o1", source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }] };
+    const exC = { id: asExhibitId("exC"), slug: "c", title: "C", objects: [{ id: asObjectId("o1"), source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }] };
     const bytes = new Uint8Array([1, 2, 3, 4]).buffer;
-    await publishLibrary(fs, { id: "lib", exhibits: [exC] }, () => [], { baseUrl: "https://u.gh.io/lib/", getAsset: async () => bytes });
+    await publishLibrary(fs, { id: asLibraryId("lib"), exhibits: [exC] }, () => [], { baseUrl: "https://u.gh.io/lib/", getAsset: async () => bytes });
     const cDir = await (await fs.root()).getDirectory("c");
     // bytes written under the exhibit's assets dir
     const assetFile = await (await cDir.getDirectory("assets")).getFile("photo.jpg");
@@ -69,9 +69,9 @@ describe("publishLibrary — write the full site data tree via the seam", () => 
     // must treat a Blob return identically to an ArrayBuffer — this pins that contract headlessly. (The
     // streaming peak-reduction itself is FSA-only, browser-verified.)
     const fs = new MemoryFilesystem();
-    const exC = { id: "exC", slug: "c", title: "C", objects: [{ id: "o1", source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }] };
+    const exC = { id: asExhibitId("exC"), slug: "c", title: "C", objects: [{ id: asObjectId("o1"), source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }] };
     const blob = new Blob([new Uint8Array([9, 8, 7, 6])]);
-    await publishLibrary(fs, { id: "lib", exhibits: [exC] }, () => [], { baseUrl: "https://u.gh.io/lib/", getAsset: async () => blob });
+    await publishLibrary(fs, { id: asLibraryId("lib"), exhibits: [exC] }, () => [], { baseUrl: "https://u.gh.io/lib/", getAsset: async () => blob });
     const cDir = await (await fs.root()).getDirectory("c");
     const assetFile = await (await cDir.getDirectory("assets")).getFile("photo.jpg");
     expect(new Uint8Array(await assetFile.readable())).toEqual(new Uint8Array([9, 8, 7, 6]));
@@ -79,26 +79,26 @@ describe("publishLibrary — write the full site data tree via the seam", () => 
 
   it("leaves /assets/ sources untouched when no getAsset is supplied (backward compatible)", async () => {
     const fs = new MemoryFilesystem();
-    const exC = { id: "exC", slug: "c", title: "C", objects: [{ id: "o1", source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }] };
-    await publishLibrary(fs, { id: "lib", exhibits: [exC] }, () => [], { baseUrl: "https://u.gh.io/lib/" });
+    const exC = { id: asExhibitId("exC"), slug: "c", title: "C", objects: [{ id: asObjectId("o1"), source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }] };
+    await publishLibrary(fs, { id: asLibraryId("lib"), exhibits: [exC] }, () => [], { baseUrl: "https://u.gh.io/lib/" });
     const cDir = await (await fs.root()).getDirectory("c");
     const manifest = JSON.parse(new TextDecoder().decode(await (await cDir.getFile("manifest.json")).readable()));
     expect(JSON.stringify(manifest)).toContain("/assets/photo.jpg");
   });
 
   it("publishes a preserved ORIGINAL for citation when getOriginal is supplied (CONTEXT §89.1 opt-in)", async () => {
-    const exP = { id: "exP", slug: "p", title: "P", objects: [{ id: "o1", source: "/assets/master.png", label: "Phone photo", width: 4, height: 4, originalName: "IMG_0042.heic" }] };
+    const exP = { id: asExhibitId("exP"), slug: "p", title: "P", objects: [{ id: asObjectId("o1"), source: "/assets/master.png", label: "Phone photo", width: 4, height: 4, originalName: "IMG_0042.heic" }] };
     const orig = new Uint8Array([9, 8, 7]).buffer;
     const fs = new MemoryFilesystem();
-    await publishLibrary(fs, { id: "lib", exhibits: [exP] }, () => [], { baseUrl: "https://u.gh.io/lib/", getOriginal: async () => orig });
+    await publishLibrary(fs, { id: asLibraryId("lib"), exhibits: [exP] }, () => [], { baseUrl: "https://u.gh.io/lib/", getOriginal: async () => orig });
     const origFile = await (await (await fs.root()).getDirectory("p")).getDirectory("assets-original").then((d) => d.getFile("IMG_0042.heic"));
     expect(new Uint8Array(await origFile.readable())).toEqual(new Uint8Array([9, 8, 7]));
   });
 
   it("does NOT write originals when getOriginal is absent (opt-in — originals stay in the working store)", async () => {
-    const exP = { id: "exP", slug: "p", title: "P", objects: [{ id: "o1", source: "/assets/master.png", label: "Phone photo", width: 4, height: 4, originalName: "IMG_0042.heic" }] };
+    const exP = { id: asExhibitId("exP"), slug: "p", title: "P", objects: [{ id: asObjectId("o1"), source: "/assets/master.png", label: "Phone photo", width: 4, height: 4, originalName: "IMG_0042.heic" }] };
     const fs = new MemoryFilesystem();
-    await publishLibrary(fs, { id: "lib", exhibits: [exP] }, () => [], { baseUrl: "https://u.gh.io/lib/" });
+    await publishLibrary(fs, { id: asLibraryId("lib"), exhibits: [exP] }, () => [], { baseUrl: "https://u.gh.io/lib/" });
     const pDir = await (await fs.root()).getDirectory("p");
     const names: string[] = [];
     for await (const e of pDir.entries()) names.push(e.name);
@@ -126,10 +126,10 @@ describe("libraryToZip — the architectural zip primitive", () => {
 describe("loadLibrary — inverse of publishLibrary (publish↔load symmetry)", () => {
   const base = "https://u.gh.io/lib/";
   const lib2: Library = {
-    id: "L",
+    id: asLibraryId("L"),
     title: "L Title",
     summary: "L summary",
-    exhibits: [{ id: "a", slug: "a", title: "Exhibit A", summary: "about a", objects: [{ id: "o1", source: "https://img/a.jpg", label: "O1", width: 10, height: 8 }] }],
+    exhibits: [{ id: asExhibitId("a"), slug: "a", title: "Exhibit A", summary: "about a", objects: [{ id: asObjectId("o1"), source: "https://img/a.jpg", label: "O1", width: 10, height: 8 }] }],
   };
   const canvasA = `${base}a/canvas/o1`;
   const log2: AnnotationLog = appendNew([], { target: { type: "SpecificResource", source: canvasA, selector: { type: "FragmentSelector", value: "xywh=pixel:0,0,3,3" } }, body: { type: "TextualBody", value: "n" }, lastEditor: asClientId("alice"), modifiedAt: "t", now: 1 }).log;
@@ -162,7 +162,7 @@ describe("intra-Library links — resolved on the heads projection, raw in the c
   const lkLog = a3.log;
   const n1id = a1.record.logicalId;
   const n3id = a3.record.logicalId;
-  const lkLib: Library = { id: "lib", exhibits: [{ id: "lk", slug: "lk", title: "Linked", objects: [{ id: "o1", source: "https://img/x.jpg", label: "O1", width: 9, height: 9 }] }] };
+  const lkLib: Library = { id: asLibraryId("lib"), exhibits: [{ id: asExhibitId("lk"), slug: "lk", title: "Linked", objects: [{ id: asObjectId("o1"), source: "https://img/x.jpg", label: "O1", width: 9, height: 9 }] }] };
 
   const readJson = async (fs: MemoryFilesystem, ...path: string[]) => {
     let dir = await fs.root();
@@ -193,10 +193,10 @@ describe("intra-Library links — resolved on the heads projection, raw in the c
     // shipped a raw `archie:` ref the Viewer rendered as dead text. Cite n1 (valid) to isolate the
     // section rewrite from the note-body cites of n2; ghost degrades to plain text + a broken report.
     const secLib: Library = {
-      id: "lib",
+      id: asLibraryId("lib"),
       exhibits: [{
-        id: "lk", slug: "lk", title: "Linked",
-        objects: [{ id: "o1", source: "https://img/x.jpg", label: "O1", width: 9, height: 9 }],
+        id: asExhibitId("lk"), slug: "lk", title: "Linked",
+        objects: [{ id: asObjectId("o1"), source: "https://img/x.jpg", label: "O1", width: 9, height: 9 }],
         layout: "narrative",
         sections: [{
           id: "sec-1", title: "Intro", objectId: "o1",
@@ -229,16 +229,16 @@ describe("publishLibrary — Readings emit per-reading AnnotationPages + collect
   const rbase = "https://u.gh.io/lib/";
   const rCanvas = `${rbase}v/canvas/o1`;
   const exV = {
-    id: "exV",
+    id: asExhibitId("exV"),
     slug: "v",
     title: "Voynich",
-    objects: [{ id: "o1", source: "https://img/v.jpg", label: "f1", width: 10, height: 10 }],
+    objects: [{ id: asObjectId("o1"), source: "https://img/v.jpg", label: "f1", width: 10, height: 10 }],
     readings: [
       { id: "cipher", name: "Cipher", description: "an enciphered natural language" },
       { id: "hoax", name: "Hoax" },
     ],
   };
-  const libV: Library = { id: "lib", exhibits: [exV] };
+  const libV: Library = { id: asLibraryId("lib"), exhibits: [exV] };
   // A cipher note ON the canvas; hoax has NO note on o1 (→ an empty hoax page must still be emitted).
   const logV: AnnotationLog = appendNew([], { target: rCanvas, body: { type: "TextualBody", value: "noun-phrase" }, reading: "cipher", lastEditor: alice, modifiedAt: "t", now: 1 }).log;
 

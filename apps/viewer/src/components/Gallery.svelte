@@ -37,7 +37,7 @@
               <span class="cover cover-fallback">{ex.title}</span>
             {/if}
             <span class="caption">
-              <span class="title">{ex.title}{#if isLiveSlug(ex.slug)}<span class="draft" title="Draft — only you can see this. It's saved in this browser until you publish it.">Draft</span>{/if}</span>
+              <span class="title">{ex.title}{#if isLiveSlug(ex.slug)}<span class="draft" title="Browser — saved only in this browser; only you can see it until you publish.">Browser</span>{/if}</span>
               {#if ex.description}<span class="desc">{ex.description}</span>{/if}
             </span>
           </a>
@@ -64,7 +64,7 @@
   .cover-fallback { display: flex; align-items: center; justify-content: center; padding: var(--space-5); box-sizing: border-box; text-align: center; font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-secondary); }
   .caption { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5) var(--space-5); }
   .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; line-height: 1.15; color: var(--ink-paper-primary); }
-  /* Live working-store exhibit (Q-3) — a "Draft" badge: only you can see it; Publish makes it public. */
+  /* Live working-store exhibit (Q-3) — a "Browser" badge: only you can see it; Publish makes it public. */
   .draft {
     display: inline-block; vertical-align: middle; margin-left: var(--space-2); padding: 1px var(--space-2);
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;

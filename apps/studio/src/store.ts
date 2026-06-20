@@ -210,6 +210,27 @@ function mimeFromName(name: string): string {
   return EXT_MIME[name.toLowerCase().split(".").pop() ?? ""] ?? "";
 }
 
+/** Resolve a stored asset (in the given `sub` dir) to its OPFS File — a LAZY Blob, NOT read into the
+ *  JS heap. The shared path-resolution + tolerant read both the blob-URL and raw-blob readers below use:
+ *  null when the dir/file is absent or OPFS is unsupported. */
+async function readAssetFile(slug: string, name: string, sub: string): Promise<File | null> {
+  try {
+    const dir = await assetsDir(slug, false, sub);
+    if (!dir) return null;
+    return await (await dir.getFileHandle(name)).getFile();
+  } catch {
+    return null; // not stored (a non-asset source, no baked derivative, or OPFS unsupported)
+  }
+}
+
+/** Wrap an OPFS File in a fresh blob: URL, restoring the MIME the extension implies (OPFS drops a
+ *  file's type → `<video>`/`<audio>`/WaveSurfer can refuse a typeless blob: URL). Zero-copy via
+ *  `slice(…, type)` so large media is never duplicated in memory. Caller revokes the URL. */
+function fileToObjectUrl(f: File, name: string): string {
+  const mime = f.type || mimeFromName(name);
+  return URL.createObjectURL(f.type ? f : mime ? f.slice(0, f.size, mime) : f);
+}
+
 /** Byte size of a stored asset — METADATA ONLY (File.size needs no arrayBuffer read). 0 if absent.
  *  Used by the pre-zip size estimate (LARGE-MEDIA-MEMORY-CEILING #1) — never reads the bytes. */
 export async function assetSize(slug: string, name: string): Promise<number> {
@@ -224,16 +245,8 @@ export async function assetSize(slug: string, name: string): Promise<number> {
 
 /** Resolve a stored asset to a fresh blob: URL (caller must revokeObjectURL). Null if absent. */
 export async function readAssetUrl(slug: string, name: string): Promise<string | null> {
-  try {
-    const dir = await assetsDir(slug, false);
-    if (!dir) return null;
-    const fh = await dir.getFileHandle(name);
-    const f = await fh.getFile();
-    const mime = f.type || mimeFromName(name); // OPFS drops the type → restore it for AV playback
-    return URL.createObjectURL(f.type ? f : mime ? f.slice(0, f.size, mime) : f);
-  } catch {
-    return null; // not stored (e.g. a non-asset source, or OPFS unsupported)
-  }
+  const f = await readAssetFile(slug, name, "assets");
+  return f ? fileToObjectUrl(f, name) : null;
 }
 
 /**
@@ -284,13 +297,7 @@ export async function exhibitHasAnnotations(slug: string): Promise<boolean> {
  *  FSA folder backend stream it straight to disk via `createWritable().write(blob)` so even one huge
  *  asset never fully materializes; the zip/memory backends still read it (they need the bytes). Null if absent. */
 export async function readAssetBlob(slug: string, name: string): Promise<Blob | null> {
-  try {
-    const dir = await assetsDir(slug, false);
-    if (!dir) return null;
-    return await (await dir.getFileHandle(name)).getFile(); // the OPFS File — lazy; not read into memory here
-  } catch {
-    return null;
-  }
+  return readAssetFile(slug, name, "assets"); // the OPFS File — lazy; not read into memory here
 }
 // (readAssetBytes removed 2026-05-27 — A.3 routed publishing through the lazy `readAssetBlob`; it had no
 //  other caller. `readOriginalBytes` below still reads eagerly for the GH-publish originals opt-in.)
@@ -310,26 +317,13 @@ export async function readOriginalBytes(slug: string, name: string): Promise<Arr
 /** Resolve a stored baked thumbnail (`assets-thumb/`) to its OPFS File — lazy, mirroring readAssetBlob
  *  (the publish getThumbnail reader). Null if absent (publishLibrary then drops the thumbnail ref). */
 export async function readThumbBytes(slug: string, name: string): Promise<Blob | null> {
-  try {
-    const dir = await assetsDir(slug, false, "assets-thumb");
-    if (!dir) return null;
-    return await (await dir.getFileHandle(name)).getFile();
-  } catch {
-    return null;
-  }
+  return readAssetFile(slug, name, "assets-thumb");
 }
 
 /** Resolve a stored baked thumbnail to a fresh blob: URL (caller revokes) — the small gallery/overview
  *  derivative, so the Studio overview/rail paint shrunk plates instead of decoding full-res masters.
  *  Null when no thumbnail was baked (pre-existing import, or an image already small enough). */
 export async function readThumbUrl(slug: string, name: string): Promise<string | null> {
-  try {
-    const dir = await assetsDir(slug, false, "assets-thumb");
-    if (!dir) return null;
-    const f = await (await dir.getFileHandle(name)).getFile();
-    const mime = f.type || mimeFromName(name); // OPFS drops the type → restore from extension
-    return URL.createObjectURL(f.type ? f : mime ? f.slice(0, f.size, mime) : f);
-  } catch {
-    return null; // no baked thumbnail — caller falls back to the master blob
-  }
+  const f = await readAssetFile(slug, name, "assets-thumb"); // no baked thumbnail → caller falls back to the master blob
+  return f ? fileToObjectUrl(f, name) : null;
 }

@@ -6,6 +6,7 @@ import { toExhibitsJson } from "./exhibits.js";
 import { publishLibrary, loadLibrary } from "../publish/site.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import type { Library, Exhibit, AObject, RightsFields } from "../model/model.js";
+import { asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 
 const CC_BY = "http://creativecommons.org/licenses/by/4.0/";
 
@@ -75,14 +76,14 @@ describe("rightsFromIIIF — IIIF rights props → model RightsFields (reverse)"
 
 describe("the three IIIF projections carry rights at every level", () => {
   const obj: AObject = {
-    id: "o1",
+    id: asObjectId("o1"),
     source: "https://img/o1.jpg",
     label: "Folio 1r",
     rights: "http://rightsstatements.org/vocab/InC/1.0/",
     requiredStatement: { label: "Held by", value: "Beinecke Rare Book Library" },
   };
   const exhibit: Exhibit = {
-    id: "ex",
+    id: asExhibitId("ex"),
     slug: "voynich",
     title: "Voynich",
     objects: [obj],
@@ -90,7 +91,7 @@ describe("the three IIIF projections carry rights at every level", () => {
     requiredStatement: { label: "", value: "Compiled by the curator" }, // blank label → "Attribution"
   };
   const library: Library = {
-    id: "lib",
+    id: asLibraryId("lib"),
     title: "Archie",
     exhibits: [exhibit],
     rights: "http://creativecommons.org/publicdomain/zero/1.0/",
@@ -130,8 +131,8 @@ describe("the three IIIF projections carry rights at every level", () => {
 
 describe("object summary (description) projects to + recovers from the Canvas (Phase 4)", () => {
   const exhibit: Exhibit = {
-    id: "ex", slug: "voynich", title: "Voynich",
-    objects: [{ id: "o1", source: "https://img/o1.jpg", label: "Folio 1r", summary: "The opening herbal page." }],
+    id: asExhibitId("ex"), slug: "voynich", title: "Voynich",
+    objects: [{ id: asObjectId("o1"), source: "https://img/o1.jpg", label: "Folio 1r", summary: "The opening herbal page." }],
   };
   it("toManifest emits the Canvas summary as a language map", () => {
     const canvas = toManifest(exhibit).items[0]!;
@@ -141,7 +142,7 @@ describe("object summary (description) projects to + recovers from the Canvas (P
     expect(objectsFromManifest(toManifest(exhibit))[0]!.summary).toBe("The opening herbal page.");
   });
   it("omits the Canvas summary when absent or empty", () => {
-    const noSummary: Exhibit = { id: "ex", slug: "s", title: "T", objects: [{ id: "o1", source: "x", label: "L", summary: "" }] };
+    const noSummary: Exhibit = { id: asExhibitId("ex"), slug: "s", title: "T", objects: [{ id: asObjectId("o1"), source: "x", label: "L", summary: "" }] };
     expect(toManifest(noSummary).items[0]!.summary).toBeUndefined();
   });
 });
@@ -149,20 +150,20 @@ describe("object summary (description) projects to + recovers from the Canvas (P
 describe("publish ↔ load round-trip preserves rights at all three levels", () => {
   it("loadLibrary restores library / exhibit / object rights", async () => {
     const library: Library = {
-      id: "lib",
+      id: asLibraryId("lib"),
       title: "Archie",
       rights: "http://creativecommons.org/publicdomain/zero/1.0/",
       requiredStatement: { label: "Collection", value: "The Archie Library" },
       exhibits: [
         {
-          id: "ex-voynich",
+          id: asExhibitId("ex-voynich"),
           slug: "voynich",
           title: "Voynich",
           rights: CC_BY,
           requiredStatement: { label: "Source", value: "Beinecke MS 408" },
           objects: [
             {
-              id: "o1",
+              id: asObjectId("o1"),
               source: "https://img/o1.jpg",
               label: "Folio 1r",
               rights: "http://rightsstatements.org/vocab/InC/1.0/",

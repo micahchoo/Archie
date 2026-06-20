@@ -4,6 +4,7 @@
 // an Exhibit owns its Objects; there is no shared object pool.
 
 import type { TileSourceDescriptor } from "../iiif/resolve.js";
+import type { ExhibitId, LibraryId, ObjectId } from "../wadm/brand.js";
 
 /** Media kind of an Object (CONTEXT: image / audio / video). */
 export type MediaType = "image" | "sound" | "video";
@@ -74,7 +75,7 @@ export interface RightsFields {
 /** One media item inside an Exhibit; projects to an IIIF Canvas. */
 export interface AObject extends RightsFields {
   /** Stable id within the Exhibit (used to build the canvas id). */
-  id: string;
+  id: ObjectId;
   /** Image URL or IIIF service/info.json (classified by resolveTileSource). */
   source: string;
   label: string;
@@ -144,7 +145,7 @@ export interface Reading {
 /** One published narrative artifact; projects to an IIIF Manifest. Self-contained (Q-1).
  *  Carries `RightsFields` (credit/license) at the Exhibit level. */
 export interface Exhibit extends RightsFields {
-  id: string;
+  id: ExhibitId;
   /** URL segment — the published grammar is `/{slug}/` (CONTEXT linkability). */
   slug: string;
   title: string;
@@ -171,7 +172,7 @@ export interface Exhibit extends RightsFields {
 /** Top-level container for one project; projects to an IIIF Collection. Array order = display order.
  *  Carries `RightsFields` (credit/license) at the Library level. */
 export interface Library extends RightsFields {
-  id: string;
+  id: LibraryId;
   title?: string;
   summary?: string;
   exhibits: Exhibit[];

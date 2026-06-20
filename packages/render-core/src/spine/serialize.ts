@@ -22,7 +22,6 @@ import {
   ARCHIE_HAS_HISTORY,
   PROV_WAS_REVISION_OF,
   ARCHIE_LOGICAL_ID,
-  ARCHIE_LAYERS,
   ARCHIE_READING,
   ARCHIE_EMPHASIS,
   ARCHIE_GEO,
@@ -111,7 +110,6 @@ function withDagMeta(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnn
   a[ARCHIE_PARENT] = record.parent; // RevId | null
   if (record.mergeParents !== undefined && record.mergeParents.length > 0) a[ARCHIE_MERGE_PARENTS] = record.mergeParents;
   if (record.deleted) a[ARCHIE_DELETED] = true;
-  if (record.layers !== undefined) a[ARCHIE_LAYERS] = record.layers;
   if (record.reading !== undefined) a[ARCHIE_READING] = record.reading;
   if (record.emphasis !== undefined) a[ARCHIE_EMPHASIS] = record.emphasis;
   if (record.geo !== undefined) a[ARCHIE_GEO] = record.geo;
@@ -122,14 +120,12 @@ function withDagMeta(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnn
  * Embed a head annotation's Archie extension fields — ONE cast site for all of them (was five
  * near-identical `withX` mutators, each carrying its own `as unknown as Record` cast). Each field
  * is emitted ONLY when set, so notes without it stay byte-identical (a pure consumer ignores every
- * `archie:` key; `emphasisOf`/`geoOf` read absence as the default). The `layers` disposition is now
- * an EXPLICIT decision here, NOT a deprecated-but-live call: `archie:layers` is still emitted when a
- * record carries the (legacy, expand-and-contract — ADR-0007) `layers` field, so the published shape
- * is unchanged; once no record carries `layers`, this line is dead and can be dropped.
+ * `archie:` key; `emphasisOf`/`geoOf` read absence as the default). `archie:layers` is NO LONGER
+ * emitted: the ADR-0007 contraction landed — legacy layers fold into Tags at the load boundary
+ * (deserialize.ts), so no record past load carries `layers` to serialize.
  */
 function withExtensions(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
   const a = ann as ArchieAnnotation & Record<string, unknown>;
-  if (record.layers !== undefined) a[ARCHIE_LAYERS] = record.layers; // legacy (ADR-0007); emitted to preserve shape
   if (record.reading !== undefined) a[ARCHIE_READING] = record.reading;
   if (record.emphasis !== undefined) a[ARCHIE_EMPHASIS] = record.emphasis;
   if (record.geo !== undefined) a[ARCHIE_GEO] = record.geo;
