@@ -90,6 +90,14 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
   const viewer = OpenSeadragon({
     element: container,
     tileSources,
+    // Remote IIIF (e.g. iiif.archive.org) is cross-origin: without a crossOrigin request the tile images
+    // taint the canvas and OSD's WebGL drawer refuses to paint them ("WebGL cannot be used to draw this
+    // TiledImage because it has tainted data"). 'Anonymous' makes the requests CORS so WebGL can draw —
+    // same-origin/blob: sources are unaffected; a (rare) non-CORS server then fails to load rather than
+    // load-but-taint, which is no worse than the silent blank it produced before.
+    crossOriginPolicy: "Anonymous",
+    // Slow institutional IIIF backends were hitting the 30s default and dropping tiles — give them longer.
+    timeout: 60000,
     showNavigationControl: false,
     gestureSettingsMouse: { clickToZoom: false, dblClickToZoom: false },
     immediateRender: true,
