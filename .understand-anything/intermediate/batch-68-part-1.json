@@ -1,0 +1,874 @@
+{
+  "batchIndex": 68,
+  "partIndex": 1,
+  "nodes": [
+    {
+      "id": "apps",
+      "type": "directory",
+      "label": "apps",
+      "filePath": "apps",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio",
+      "type": "directory",
+      "label": "studio",
+      "filePath": "apps/studio",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio/src",
+      "type": "directory",
+      "label": "src",
+      "filePath": "apps/studio/src",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio/src/ingest-flows.ts",
+      "type": "file",
+      "label": "ingest-flows.ts",
+      "filePath": "apps/studio/src/ingest-flows.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 465,
+      "metadata": {
+        "metrics": {
+          "importCount": 9,
+          "exportCount": 2,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/ingest-flows.ts:createIngestFlows",
+      "type": "function",
+      "label": "createIngestFlows",
+      "filePath": "apps/studio/src/ingest-flows.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 386,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "ctx"
+        ],
+        "startLine": 78,
+        "endLine": 463
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e68p1_0",
+      "source": "apps",
+      "target": "apps/studio",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p1_1",
+      "source": "apps/studio",
+      "target": "apps/studio/src",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p1_2",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p1_3",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts:createIngestFlows",
+      "type": "contains",
+      "label": "ingest-flows.ts contains createIngestFlows",
+      "metadata": {}
+    },
+    {
+      "id": "e68p1_4",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts:createIngestFlows",
+      "type": "export",
+      "label": "exports createIngestFlows",
+      "metadata": {
+        "isDefault": false,
+        "line": 78
+      }
+    },
+    {
+      "id": "e68p1_5",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "export",
+      "label": "exports Library",
+      "metadata": {
+        "isDefault": false,
+        "line": 465,
+        "inline": true
+      }
+    },
+    {
+      "id": "e68p1_6",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "imageDims calls resolve",
+      "metadata": {
+        "caller": "imageDims",
+        "callee": "resolve",
+        "internal": true,
+        "line": 82
+      }
+    },
+    {
+      "id": "e68p1_7",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "nextObjectId calls ex.objects.map",
+      "metadata": {
+        "caller": "nextObjectId",
+        "callee": "ex.objects.map",
+        "internal": true,
+        "line": 86
+      }
+    },
+    {
+      "id": "e68p1_8",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "nextObjectId calls existing.has",
+      "metadata": {
+        "caller": "nextObjectId",
+        "callee": "existing.has",
+        "internal": true,
+        "line": 87
+      }
+    },
+    {
+      "id": "e68p1_9",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "exhibit calls ctx.lib.meta.exhibits.find",
+      "metadata": {
+        "caller": "exhibit",
+        "callee": "ctx.lib.meta.exhibits.find",
+        "internal": true,
+        "line": 91
+      }
+    },
+    {
+      "id": "e68p1_10",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "exhibit calls ctx.currentSlug",
+      "metadata": {
+        "caller": "exhibit",
+        "callee": "ctx.currentSlug",
+        "internal": true,
+        "line": 92
+      }
+    },
+    {
+      "id": "e68p1_11",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "appendObject calls ctx.setAssetUrl",
+      "metadata": {
+        "caller": "appendObject",
+        "callee": "ctx.setAssetUrl",
+        "internal": true,
+        "line": 106
+      }
+    },
+    {
+      "id": "e68p1_12",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "appendObject calls ctx.lib.appendObject",
+      "metadata": {
+        "caller": "appendObject",
+        "callee": "ctx.lib.appendObject",
+        "internal": true,
+        "line": 107
+      }
+    },
+    {
+      "id": "e68p1_13",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "appendObject calls ctx.currentSlug",
+      "metadata": {
+        "caller": "appendObject",
+        "callee": "ctx.currentSlug",
+        "internal": true,
+        "line": 108
+      }
+    },
+    {
+      "id": "e68p1_14",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "appendObject calls ctx.setCurrentObjectId",
+      "metadata": {
+        "caller": "appendObject",
+        "callee": "ctx.setCurrentObjectId",
+        "internal": true,
+        "line": 109
+      }
+    },
+    {
+      "id": "e68p1_15",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "appendObject calls ctx.clearAddForm",
+      "metadata": {
+        "caller": "appendObject",
+        "callee": "ctx.clearAddForm",
+        "internal": true,
+        "line": 110
+      }
+    },
+    {
+      "id": "e68p1_16",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "appendObject calls ctx.setAddingObject",
+      "metadata": {
+        "caller": "appendObject",
+        "callee": "ctx.setAddingObject",
+        "internal": true,
+        "line": 111
+      }
+    },
+    {
+      "id": "e68p1_17",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObject calls source.trim",
+      "metadata": {
+        "caller": "addObject",
+        "callee": "source.trim",
+        "internal": true,
+        "line": 115
+      }
+    },
+    {
+      "id": "e68p1_18",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObject calls exhibit",
+      "metadata": {
+        "caller": "addObject",
+        "callee": "exhibit",
+        "internal": true,
+        "line": 116
+      }
+    },
+    {
+      "id": "e68p1_19",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObject calls nextObjectId",
+      "metadata": {
+        "caller": "addObject",
+        "callee": "nextObjectId",
+        "internal": true,
+        "line": 117
+      }
+    },
+    {
+      "id": "e68p1_20",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObject calls mediaTypeFromSource",
+      "metadata": {
+        "caller": "addObject",
+        "callee": "mediaTypeFromSource",
+        "internal": true,
+        "line": 118
+      }
+    },
+    {
+      "id": "e68p1_21",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObject calls imageDims",
+      "metadata": {
+        "caller": "addObject",
+        "callee": "imageDims",
+        "internal": true,
+        "line": 119
+      }
+    },
+    {
+      "id": "e68p1_22",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObject calls appendObject",
+      "metadata": {
+        "caller": "addObject",
+        "callee": "appendObject",
+        "internal": true,
+        "line": 125
+      }
+    },
+    {
+      "id": "e68p1_23",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObject calls label.trim",
+      "metadata": {
+        "caller": "addObject",
+        "callee": "label.trim",
+        "internal": true,
+        "line": 127
+      }
+    },
+    {
+      "id": "e68p1_24",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addMapObject calls exhibit",
+      "metadata": {
+        "caller": "addMapObject",
+        "callee": "exhibit",
+        "internal": true,
+        "line": 136
+      }
+    },
+    {
+      "id": "e68p1_25",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addMapObject calls nextObjectId",
+      "metadata": {
+        "caller": "addMapObject",
+        "callee": "nextObjectId",
+        "internal": true,
+        "line": 138
+      }
+    },
+    {
+      "id": "e68p1_26",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addMapObject calls appendObject",
+      "metadata": {
+        "caller": "addMapObject",
+        "callee": "appendObject",
+        "internal": true,
+        "line": 142
+      }
+    },
+    {
+      "id": "e68p1_27",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls ctx.setMapModalOpen",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "ctx.setMapModalOpen",
+        "internal": true,
+        "line": 152
+      }
+    },
+    {
+      "id": "e68p1_28",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls ctx.switchObject",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "ctx.switchObject",
+        "internal": true,
+        "line": 153
+      }
+    },
+    {
+      "id": "e68p1_29",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls ctx.toEditor",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "ctx.toEditor",
+        "internal": true,
+        "line": 154
+      }
+    },
+    {
+      "id": "e68p1_30",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls ctx.storeReady",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "ctx.storeReady",
+        "internal": true,
+        "line": 157
+      }
+    },
+    {
+      "id": "e68p1_31",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls file.name.replace",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "file.name.replace",
+        "internal": true,
+        "line": 160
+      }
+    },
+    {
+      "id": "e68p1_32",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls file.type.startsWith",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "file.type.startsWith",
+        "internal": true,
+        "line": 163
+      }
+    },
+    {
+      "id": "e68p1_33",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls saveAssetFile",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "saveAssetFile",
+        "internal": true,
+        "line": 166
+      }
+    },
+    {
+      "id": "e68p1_34",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls URL.createObjectURL",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "URL.createObjectURL",
+        "internal": true,
+        "line": 169
+      }
+    },
+    {
+      "id": "e68p1_35",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls Math.round",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "Math.round",
+        "internal": true,
+        "line": 175
+      }
+    },
+    {
+      "id": "e68p1_36",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls readExifOrientation",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "readExifOrientation",
+        "internal": true,
+        "line": 180
+      }
+    },
+    {
+      "id": "e68p1_37",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls file.arrayBuffer",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "file.arrayBuffer",
+        "internal": true,
+        "line": 182
+      }
+    },
+    {
+      "id": "e68p1_38",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls isOrientationNoop",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "isOrientationNoop",
+        "internal": true,
+        "line": 183
+      }
+    },
+    {
+      "id": "e68p1_39",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addObjectFromFile calls bakeDisplayMaster",
+      "metadata": {
+        "caller": "addObjectFromFile",
+        "callee": "bakeDisplayMaster",
+        "internal": true,
+        "line": 186
+      }
+    },
+    {
+      "id": "e68p1_40",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addFiles calls ctx.setImportBusy",
+      "metadata": {
+        "caller": "addFiles",
+        "callee": "ctx.setImportBusy",
+        "internal": true,
+        "line": 230
+      }
+    },
+    {
+      "id": "e68p1_41",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addFiles calls saveAssetFile",
+      "metadata": {
+        "caller": "addFiles",
+        "callee": "saveAssetFile",
+        "internal": true,
+        "line": 233
+      }
+    },
+    {
+      "id": "e68p1_42",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addFiles calls URL.createObjectURL",
+      "metadata": {
+        "caller": "addFiles",
+        "callee": "URL.createObjectURL",
+        "internal": true,
+        "line": 239
+      }
+    },
+    {
+      "id": "e68p1_43",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addFiles calls Math.round",
+      "metadata": {
+        "caller": "addFiles",
+        "callee": "Math.round",
+        "internal": true,
+        "line": 245
+      }
+    },
+    {
+      "id": "e68p1_44",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addFiles calls file.arrayBuffer",
+      "metadata": {
+        "caller": "addFiles",
+        "callee": "file.arrayBuffer",
+        "internal": true,
+        "line": 248
+      }
+    },
+    {
+      "id": "e68p1_45",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addFiles calls readExifOrientation",
+      "metadata": {
+        "caller": "addFiles",
+        "callee": "readExifOrientation",
+        "internal": true,
+        "line": 249
+      }
+    },
+    {
+      "id": "e68p1_46",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addFiles calls isOrientationNoop",
+      "metadata": {
+        "caller": "addFiles",
+        "callee": "isOrientationNoop",
+        "internal": true,
+        "line": 251
+      }
+    },
+    {
+      "id": "e68p1_47",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addFiles calls bakeDisplayMaster",
+      "metadata": {
+        "caller": "addFiles",
+        "callee": "bakeDisplayMaster",
+        "internal": true,
+        "line": 255
+      }
+    },
+    {
+      "id": "e68p1_48",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "addFiles calls appendObject",
+      "metadata": {
+        "caller": "addFiles",
+        "callee": "appendObject",
+        "internal": true,
+        "line": 261
+      }
+    },
+    {
+      "id": "e68p1_49",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "newExhibitFromFolder calls ctx.lib.showCreateExhibitDialog",
+      "metadata": {
+        "caller": "newExhibitFromFolder",
+        "callee": "ctx.lib.showCreateExhibitDialog",
+        "internal": true,
+        "line": 275
+      }
+    },
+    {
+      "id": "e68p1_50",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "newExhibitFromFolder calls ctx.setImportBusy",
+      "metadata": {
+        "caller": "newExhibitFromFolder",
+        "callee": "ctx.setImportBusy",
+        "internal": true,
+        "line": 282
+      }
+    },
+    {
+      "id": "e68p1_51",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "newExhibitFromFolder calls saveAssetFile",
+      "metadata": {
+        "caller": "newExhibitFromFolder",
+        "callee": "saveAssetFile",
+        "internal": true,
+        "line": 286
+      }
+    },
+    {
+      "id": "e68p1_52",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "newExhibitFromFolder calls appendObject",
+      "metadata": {
+        "caller": "newExhibitFromFolder",
+        "callee": "appendObject",
+        "internal": true,
+        "line": 297
+      }
+    },
+    {
+      "id": "e68p1_53",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "newExhibitFromManifest calls ctx.lib.showCreateExhibitDialog",
+      "metadata": {
+        "caller": "newExhibitFromManifest",
+        "callee": "ctx.lib.showCreateExhibitDialog",
+        "internal": true,
+        "line": 310
+      }
+    },
+    {
+      "id": "e68p1_54",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "newExhibitFromManifest calls planIIIFImportGroups",
+      "metadata": {
+        "caller": "newExhibitFromManifest",
+        "callee": "planIIIFImportGroups",
+        "internal": true,
+        "line": 316
+      }
+    },
+    {
+      "id": "e68p1_55",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "newExhibitFromManifest calls appendObject",
+      "metadata": {
+        "caller": "newExhibitFromManifest",
+        "callee": "appendObject",
+        "internal": true,
+        "line": 341
+      }
+    },
+    {
+      "id": "e68p1_56",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "importNotesCsv calls ctx.lib.annotationStore.importCsv",
+      "metadata": {
+        "caller": "importNotesCsv",
+        "callee": "ctx.lib.annotationStore.importCsv",
+        "internal": true,
+        "line": 354
+      }
+    },
+    {
+      "id": "e68p1_57",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "importNotesCsv calls ctx.lib.annotationStore.importWadm",
+      "metadata": {
+        "caller": "importNotesCsv",
+        "callee": "ctx.lib.annotationStore.importWadm",
+        "internal": true,
+        "line": 355
+      }
+    },
+    {
+      "id": "e68p1_58",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "keyFor calls h[0].toLowerCase",
+      "metadata": {
+        "caller": "keyFor",
+        "callee": "h[0].toLowerCase",
+        "internal": true,
+        "line": 360
+      }
+    },
+    {
+      "id": "e68p1_59",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "commentValue calls row[keyFor",
+      "metadata": {
+        "caller": "commentValue",
+        "callee": "row[keyFor",
+        "internal": true,
+        "line": 362
+      }
+    },
+    {
+      "id": "e68p1_60",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "importNotesWadm calls ctx.lib.annotationStore.importWadm",
+      "metadata": {
+        "caller": "importNotesWadm",
+        "callee": "ctx.lib.annotationStore.importWadm",
+        "internal": true,
+        "line": 378
+      }
+    },
+    {
+      "id": "e68p1_61",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "replaceProjectFrom calls ctx.lib.showReplaceProjectDialog",
+      "metadata": {
+        "caller": "replaceProjectFrom",
+        "callee": "ctx.lib.showReplaceProjectDialog",
+        "internal": true,
+        "line": 390
+      }
+    },
+    {
+      "id": "e68p1_62",
+      "source": "apps/studio/src/ingest-flows.ts",
+      "target": "apps/studio/src/ingest-flows.ts",
+      "type": "calls",
+      "label": "openZip calls ctx.lib.showOpenZipDialog",
+      "metadata": {
+        "caller": "openZip",
+        "callee": "ctx.lib.showOpenZipDialog",
+        "internal": true,
+        "line": 402
+      }
+    }
+  ],
+  "stats": {
+    "nodeCount": 5,
+    "edgeCount": 63,
+    "fileCount": 1,
+    "totalParts": 4
+  }
+}

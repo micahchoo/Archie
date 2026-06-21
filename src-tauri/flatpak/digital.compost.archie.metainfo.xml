@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>digital.compost.archie</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-only</project_license>
+  <name>Archie Studio</name>
+  <summary>Author deep-zoom image annotations and exhibits</summary>
+  <description>
+    <p>
+      Archie is a local-first authoring tool for deep-zoom image annotation. Build exhibits
+      from high-resolution images, place annotations and readings on a zoomable canvas, compose
+      narrative sections, and publish a self-contained static viewer.
+    </p>
+  </description>
+  <launchable type="desktop-id">digital.compost.archie.desktop</launchable>
+  <provides>
+    <binary>archie</binary>
+  </provides>
+  <categories>
+    <category>Graphics</category>
+    <category>Education</category>
+  </categories>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="1.0.0" date="2026-06-20" />
+  </releases>
+  <url type="homepage">https://compost.digital</url>
+</component>

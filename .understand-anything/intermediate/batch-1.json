@@ -1,0 +1,186 @@
+{
+  "batchIndex": 1,
+  "nodes": [
+    {
+      "id": ".github",
+      "type": "directory",
+      "label": ".github",
+      "filePath": ".github",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": ".github/workflows",
+      "type": "directory",
+      "label": "workflows",
+      "filePath": ".github/workflows",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": ".github/workflows/deploy.yml",
+      "type": "file",
+      "label": "deploy.yml",
+      "filePath": ".github/workflows/deploy.yml",
+      "language": "yaml",
+      "fileCategory": "infra",
+      "sizeLines": 45,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        }
+      }
+    },
+    {
+      "id": ".github/workflows/deploy.yml_section-name",
+      "type": "section",
+      "label": "name",
+      "filePath": ".github/workflows/deploy.yml",
+      "language": "yaml",
+      "fileCategory": "infra",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 1
+      }
+    },
+    {
+      "id": ".github/workflows/deploy.yml_section-on",
+      "type": "section",
+      "label": "on",
+      "filePath": ".github/workflows/deploy.yml",
+      "language": "yaml",
+      "fileCategory": "infra",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 3
+      }
+    },
+    {
+      "id": ".github/workflows/deploy.yml_section-jobs",
+      "type": "section",
+      "label": "jobs",
+      "filePath": ".github/workflows/deploy.yml",
+      "language": "yaml",
+      "fileCategory": "infra",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 16
+      }
+    },
+    {
+      "id": ".github/workflows/deploy.yml_section-deploy",
+      "type": "section",
+      "label": "deploy",
+      "filePath": ".github/workflows/deploy.yml",
+      "language": "yaml",
+      "fileCategory": "infra",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 17
+      }
+    },
+    {
+      "id": ".github/workflows/deploy.yml_section-steps",
+      "type": "section",
+      "label": "steps",
+      "filePath": ".github/workflows/deploy.yml",
+      "language": "yaml",
+      "fileCategory": "infra",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 22
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1_0",
+      "source": ".github",
+      "target": ".github/workflows",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e1_1",
+      "source": ".github/workflows",
+      "target": ".github/workflows/deploy.yml",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e1_2",
+      "source": ".github/workflows/deploy.yml",
+      "target": ".github/workflows/deploy.yml_section-name",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "name"
+      }
+    },
+    {
+      "id": "e1_3",
+      "source": ".github/workflows/deploy.yml",
+      "target": ".github/workflows/deploy.yml_section-on",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "on"
+      }
+    },
+    {
+      "id": "e1_4",
+      "source": ".github/workflows/deploy.yml",
+      "target": ".github/workflows/deploy.yml_section-jobs",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "jobs"
+      }
+    },
+    {
+      "id": "e1_5",
+      "source": ".github/workflows/deploy.yml",
+      "target": ".github/workflows/deploy.yml_section-deploy",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "deploy"
+      }
+    },
+    {
+      "id": "e1_6",
+      "source": ".github/workflows/deploy.yml",
+      "target": ".github/workflows/deploy.yml_section-steps",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "steps"
+      }
+    }
+  ],
+  "stats": {
+    "nodeCount": 8,
+    "edgeCount": 7,
+    "fileCount": 1
+  }
+}

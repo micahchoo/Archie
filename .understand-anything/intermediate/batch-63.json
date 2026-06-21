@@ -1,0 +1,2050 @@
+{
+  "batchIndex": 63,
+  "nodes": [
+    {
+      "id": "docs",
+      "type": "directory",
+      "label": "docs",
+      "filePath": "docs",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "docs/architecture",
+      "type": "directory",
+      "label": "architecture",
+      "filePath": "docs/architecture",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "docs/architecture/_meta.json",
+      "type": "file",
+      "label": "_meta.json",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 45,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 12
+        }
+      }
+    },
+    {
+      "id": "docs/architecture/domain.md",
+      "type": "file",
+      "label": "domain.md",
+      "filePath": "docs/architecture/domain.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 63,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 7
+        }
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md",
+      "type": "file",
+      "label": "ecosystem.md",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 71,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 11
+        }
+      }
+    },
+    {
+      "id": "docs/architecture/evolution.md",
+      "type": "file",
+      "label": "evolution.md",
+      "filePath": "docs/architecture/evolution.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 74,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 11
+        }
+      }
+    },
+    {
+      "id": "docs/architecture/features.json",
+      "type": "file",
+      "label": "features.json",
+      "filePath": "docs/architecture/features.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 40,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 4
+        }
+      }
+    },
+    {
+      "id": "docs/architecture/infrastructure.md",
+      "type": "file",
+      "label": "infrastructure.md",
+      "filePath": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 86,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 9
+        }
+      }
+    },
+    {
+      "id": "docs/architecture/overview.md",
+      "type": "file",
+      "label": "overview.md",
+      "filePath": "docs/architecture/overview.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 101,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 9
+        }
+      }
+    },
+    {
+      "id": "docs/architecture/risk-map.md",
+      "type": "file",
+      "label": "risk-map.md",
+      "filePath": "docs/architecture/risk-map.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 55,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 8
+        }
+      }
+    },
+    {
+      "id": "docs/architecture/subsystems.md",
+      "type": "file",
+      "label": "subsystems.md",
+      "filePath": "docs/architecture/subsystems.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 99,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 14
+        }
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-schema_version",
+      "type": "section",
+      "label": "schema_version",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 2
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-project_shape",
+      "type": "section",
+      "label": "project_shape",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 3
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-analyzed_at",
+      "type": "section",
+      "label": "analyzed_at",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 4
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-git_sha",
+      "type": "section",
+      "label": "git_sha",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 5
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-levels_completed",
+      "type": "section",
+      "label": "levels_completed",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 6
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-levels_skipped",
+      "type": "section",
+      "label": "levels_skipped",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 7
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-subsystems",
+      "type": "section",
+      "label": "subsystems",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 8
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-cross_cutting_lenses",
+      "type": "section",
+      "label": "cross_cutting_lenses",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 16
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-staleness_hashes",
+      "type": "section",
+      "label": "staleness_hashes",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 24
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-sources",
+      "type": "section",
+      "label": "sources",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 34
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-confidence",
+      "type": "section",
+      "label": "confidence",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 43
+      }
+    },
+    {
+      "id": "docs/architecture/_meta.json_section-stale_since",
+      "type": "section",
+      "label": "stale_since",
+      "filePath": "docs/architecture/_meta.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 44
+      }
+    },
+    {
+      "id": "docs/architecture/domain.md_section-Domain___Archie",
+      "type": "section",
+      "label": "Domain — Archie",
+      "filePath": "docs/architecture/domain.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 1
+      }
+    },
+    {
+      "id": "docs/architecture/domain.md_section-Business_Problem",
+      "type": "section",
+      "label": "Business Problem",
+      "filePath": "docs/architecture/domain.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 5
+      }
+    },
+    {
+      "id": "docs/architecture/domain.md_section-Core_Concepts__Ubiquitous_Language_",
+      "type": "section",
+      "label": "Core Concepts (Ubiquitous Language)",
+      "filePath": "docs/architecture/domain.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 9
+      }
+    },
+    {
+      "id": "docs/architecture/domain.md_section-Relationships",
+      "type": "section",
+      "label": "Relationships",
+      "filePath": "docs/architecture/domain.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 25
+      }
+    },
+    {
+      "id": "docs/architecture/domain.md_section-Locked_Frames__Non-Negotiable_",
+      "type": "section",
+      "label": "Locked Frames (Non-Negotiable)",
+      "filePath": "docs/architecture/domain.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 34
+      }
+    },
+    {
+      "id": "docs/architecture/domain.md_section-Architectural_Through-Line",
+      "type": "section",
+      "label": "Architectural Through-Line",
+      "filePath": "docs/architecture/domain.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 45
+      }
+    },
+    {
+      "id": "docs/architecture/domain.md_section-Layout_Model",
+      "type": "section",
+      "label": "Layout Model",
+      "filePath": "docs/architecture/domain.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 59
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-Ecosystem___Archie",
+      "type": "section",
+      "label": "Ecosystem — Archie",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 1
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-Package_Ecosystem",
+      "type": "section",
+      "label": "Package Ecosystem",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 5
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-Runtime_Dependencies",
+      "type": "section",
+      "label": "Runtime Dependencies",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 7
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-Dev_Dependencies",
+      "type": "section",
+      "label": "Dev Dependencies",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 13
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-Build_Tooling",
+      "type": "section",
+      "label": "Build Tooling",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 20
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-External_Dependencies",
+      "type": "section",
+      "label": "External Dependencies",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 32
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-IIIF___Standards",
+      "type": "section",
+      "label": "IIIF / Standards",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 35
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-Standards_Compliance",
+      "type": "section",
+      "label": "Standards Compliance",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 37
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-Deployment_Targets",
+      "type": "section",
+      "label": "Deployment Targets",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 46
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-External_Data_Sources",
+      "type": "section",
+      "label": "External Data Sources",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 53
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-Prior_Art_Survey",
+      "type": "section",
+      "label": "Prior Art Survey",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 59
+      }
+    },
+    {
+      "id": "docs/architecture/ecosystem.md_section-Era_Vintages",
+      "type": "section",
+      "label": "Era Vintages",
+      "filePath": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 67
+      }
+    },
+    {
+      "id": "docs/architecture/evolution.md_section-Evolution___Archie",
+      "type": "section",
+      "label": "Evolution — Archie",
+      "filePath": "docs/architecture/evolution.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 1
+      }
+    },
+    {
+      "id": "docs/architecture/evolution.md_section-Current_State",
+      "type": "section",
+      "label": "Current State",
+      "filePath": "docs/architecture/evolution.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 5
+      }
+    },
+    {
+      "id": "docs/architecture/evolution.md_section-Single-Era_Architecture__Pre-1_0_",
+      "type": "section",
+      "label": "Single-Era Architecture (Pre-1.0)",
+      "filePath": "docs/architecture/evolution.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 14
+      }
+    },
+    {
+      "id": "docs/architecture/evolution.md_section-Why_Single-Era",
+      "type": "section",
+      "label": "Why Single-Era",
+      "filePath": "docs/architecture/evolution.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 28
+      }
+    },
+    {
+      "id": "docs/architecture/evolution.md_section-Pivot_History",
+      "type": "section",
+      "label": "Pivot History",
+      "filePath": "docs/architecture/evolution.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 35
+      }
+    },
+    {
+      "id": "docs/architecture/evolution.md_section-Migration_Path",
+      "type": "section",
+      "label": "Migration Path",
+      "filePath": "docs/architecture/evolution.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 48
+      }
+    },
+    {
+      "id": "docs/architecture/evolution.md_section-Era_Compatibility",
+      "type": "section",
+      "label": "Era Compatibility",
+      "filePath": "docs/architecture/evolution.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 69
+      }
+    },
+    {
+      "id": "docs/architecture/features.json_section-root",
+      "type": "section",
+      "label": "root",
+      "filePath": "docs/architecture/features.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 2
+      }
+    },
+    {
+      "id": "docs/architecture/features.json_section-git_sha",
+      "type": "section",
+      "label": "git_sha",
+      "filePath": "docs/architecture/features.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 3
+      }
+    },
+    {
+      "id": "docs/architecture/features.json_section-analyzed_at",
+      "type": "section",
+      "label": "analyzed_at",
+      "filePath": "docs/architecture/features.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 4
+      }
+    },
+    {
+      "id": "docs/architecture/features.json_section-features",
+      "type": "section",
+      "label": "features",
+      "filePath": "docs/architecture/features.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 5
+      }
+    },
+    {
+      "id": "docs/architecture/infrastructure.md_section-Infrastructure___Archie",
+      "type": "section",
+      "label": "Infrastructure — Archie",
+      "filePath": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 1
+      }
+    },
+    {
+      "id": "docs/architecture/infrastructure.md_section-Repository",
+      "type": "section",
+      "label": "Repository",
+      "filePath": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 5
+      }
+    },
+    {
+      "id": "docs/architecture/infrastructure.md_section-Language_Breakdown",
+      "type": "section",
+      "label": "Language Breakdown",
+      "filePath": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 12
+      }
+    },
+    {
+      "id": "docs/architecture/infrastructure.md_section-Subsystems",
+      "type": "section",
+      "label": "Subsystems",
+      "filePath": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 47
+      }
+    },
+    {
+      "id": "docs/architecture/infrastructure.md_section-The_Through-Line",
+      "type": "section",
+      "label": "The Through-Line",
+      "filePath": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 58
+      }
+    },
+    {
+      "id": "docs/architecture/infrastructure.md_section-Key_Decisions",
+      "type": "section",
+      "label": "Key Decisions",
+      "filePath": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 68
+      }
+    },
+    {
+      "id": "docs/architecture/infrastructure.md_section-Current_State",
+      "type": "section",
+      "label": "Current State",
+      "filePath": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 79
+      }
+    },
+    {
+      "id": "docs/architecture/infrastructure.md_section-Risk_Concentration",
+      "type": "section",
+      "label": "Risk Concentration",
+      "filePath": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 86
+      }
+    },
+    {
+      "id": "docs/architecture/infrastructure.md_section-See_Also",
+      "type": "section",
+      "label": "See Also",
+      "filePath": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 85
+      }
+    },
+    {
+      "id": "docs/architecture/overview.md_section-Overview___Archie",
+      "type": "section",
+      "label": "Overview — Archie",
+      "filePath": "docs/architecture/overview.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 1
+      }
+    },
+    {
+      "id": "docs/architecture/overview.md_section-What_Archie_Is",
+      "type": "section",
+      "label": "What Archie Is",
+      "filePath": "docs/architecture/overview.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 5
+      }
+    },
+    {
+      "id": "docs/architecture/overview.md_section-Core_Architecture",
+      "type": "section",
+      "label": "Core Architecture",
+      "filePath": "docs/architecture/overview.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 16
+      }
+    },
+    {
+      "id": "docs/architecture/overview.md_section-Subsystems",
+      "type": "section",
+      "label": "Subsystems",
+      "filePath": "docs/architecture/overview.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 26
+      }
+    },
+    {
+      "id": "docs/architecture/overview.md_section-Cross-Subsystem_Flows",
+      "type": "section",
+      "label": "Cross-Subsystem Flows",
+      "filePath": "docs/architecture/overview.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 71
+      }
+    },
+    {
+      "id": "docs/architecture/overview.md_section-Key_Design_Decisions",
+      "type": "section",
+      "label": "Key Design Decisions",
+      "filePath": "docs/architecture/overview.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 78
+      }
+    },
+    {
+      "id": "docs/architecture/overview.md_section-Current_Limitations",
+      "type": "section",
+      "label": "Current Limitations",
+      "filePath": "docs/architecture/overview.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 89
+      }
+    },
+    {
+      "id": "docs/architecture/risk-map.md_section-Risk_Map___Archie",
+      "type": "section",
+      "label": "Risk Map — Archie",
+      "filePath": "docs/architecture/risk-map.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 1
+      }
+    },
+    {
+      "id": "docs/architecture/risk-map.md_section-Risk_Landscape",
+      "type": "section",
+      "label": "Risk Landscape",
+      "filePath": "docs/architecture/risk-map.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 5
+      }
+    },
+    {
+      "id": "docs/architecture/risk-map.md_section-High_Risk",
+      "type": "section",
+      "label": "High Risk",
+      "filePath": "docs/architecture/risk-map.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 8
+      }
+    },
+    {
+      "id": "docs/architecture/risk-map.md_section-Medium_Risk",
+      "type": "section",
+      "label": "Medium Risk",
+      "filePath": "docs/architecture/risk-map.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 18
+      }
+    },
+    {
+      "id": "docs/architecture/risk-map.md_section-Low_Risk",
+      "type": "section",
+      "label": "Low Risk",
+      "filePath": "docs/architecture/risk-map.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 28
+      }
+    },
+    {
+      "id": "docs/architecture/risk-map.md_section-Mitigation_Strategy",
+      "type": "section",
+      "label": "Mitigation Strategy",
+      "filePath": "docs/architecture/risk-map.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 38
+      }
+    },
+    {
+      "id": "docs/architecture/subsystems.md_section-Subsystems___Archie",
+      "type": "section",
+      "label": "Subsystems — Archie",
+      "filePath": "docs/architecture/subsystems.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 1
+      }
+    },
+    {
+      "id": "docs/architecture/subsystems.md_section-1__Core_Data",
+      "type": "section",
+      "label": "1. Core Data",
+      "filePath": "docs/architecture/subsystems.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 5
+      }
+    },
+    {
+      "id": "docs/architecture/subsystems.md_section-2__Rendering",
+      "type": "section",
+      "label": "2. Rendering",
+      "filePath": "docs/architecture/subsystems.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 35
+      }
+    },
+    {
+      "id": "docs/architecture/subsystems.md_section-3__Storage",
+      "type": "section",
+      "label": "3. Storage",
+      "filePath": "docs/architecture/subsystems.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 49
+      }
+    },
+    {
+      "id": "docs/architecture/subsystems.md_section-4__Publish",
+      "type": "section",
+      "label": "4. Publish",
+      "filePath": "docs/architecture/subsystems.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 54
+      }
+    },
+    {
+      "id": "docs/architecture/subsystems.md_section-5__Studio",
+      "type": "section",
+      "label": "5. Studio",
+      "filePath": "docs/architecture/subsystems.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 59
+      }
+    },
+    {
+      "id": "docs/architecture/subsystems.md_section-6__Viewer",
+      "type": "section",
+      "label": "6. Viewer",
+      "filePath": "docs/architecture/subsystems.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 3,
+        "line": 65
+      }
+    },
+    {
+      "id": "docs/architecture/subsystems.md_section-Cross-Subsystem_Flows",
+      "type": "section",
+      "label": "Cross-Subsystem Flows",
+      "filePath": "docs/architecture/subsystems.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 2,
+        "line": 71
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e63_0",
+      "source": "docs",
+      "target": "docs/architecture",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e63_1",
+      "source": "docs/architecture",
+      "target": "docs/architecture/_meta.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e63_2",
+      "source": "docs/architecture",
+      "target": "docs/architecture/domain.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e63_3",
+      "source": "docs/architecture",
+      "target": "docs/architecture/ecosystem.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e63_4",
+      "source": "docs/architecture",
+      "target": "docs/architecture/evolution.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e63_5",
+      "source": "docs/architecture",
+      "target": "docs/architecture/features.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e63_6",
+      "source": "docs/architecture",
+      "target": "docs/architecture/infrastructure.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e63_7",
+      "source": "docs/architecture",
+      "target": "docs/architecture/overview.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e63_8",
+      "source": "docs/architecture",
+      "target": "docs/architecture/risk-map.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e63_9",
+      "source": "docs/architecture",
+      "target": "docs/architecture/subsystems.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e63_10",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-schema_version",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "schema_version"
+      }
+    },
+    {
+      "id": "e63_11",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-project_shape",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "project_shape"
+      }
+    },
+    {
+      "id": "e63_12",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-analyzed_at",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "analyzed_at"
+      }
+    },
+    {
+      "id": "e63_13",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-git_sha",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "git_sha"
+      }
+    },
+    {
+      "id": "e63_14",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-levels_completed",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "levels_completed"
+      }
+    },
+    {
+      "id": "e63_15",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-levels_skipped",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "levels_skipped"
+      }
+    },
+    {
+      "id": "e63_16",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-subsystems",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "subsystems"
+      }
+    },
+    {
+      "id": "e63_17",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-cross_cutting_lenses",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "cross_cutting_lenses"
+      }
+    },
+    {
+      "id": "e63_18",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-staleness_hashes",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "staleness_hashes"
+      }
+    },
+    {
+      "id": "e63_19",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-sources",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "sources"
+      }
+    },
+    {
+      "id": "e63_20",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-confidence",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "confidence"
+      }
+    },
+    {
+      "id": "e63_21",
+      "source": "docs/architecture/_meta.json",
+      "target": "docs/architecture/_meta.json_section-stale_since",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "stale_since"
+      }
+    },
+    {
+      "id": "e63_22",
+      "source": "docs/architecture/domain.md",
+      "target": "docs/architecture/domain.md_section-Domain___Archie",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Domain — Archie"
+      }
+    },
+    {
+      "id": "e63_23",
+      "source": "docs/architecture/domain.md",
+      "target": "docs/architecture/domain.md_section-Business_Problem",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Business Problem"
+      }
+    },
+    {
+      "id": "e63_24",
+      "source": "docs/architecture/domain.md",
+      "target": "docs/architecture/domain.md_section-Core_Concepts__Ubiquitous_Language_",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Core Concepts (Ubiquitous Language)"
+      }
+    },
+    {
+      "id": "e63_25",
+      "source": "docs/architecture/domain.md",
+      "target": "docs/architecture/domain.md_section-Relationships",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Relationships"
+      }
+    },
+    {
+      "id": "e63_26",
+      "source": "docs/architecture/domain.md",
+      "target": "docs/architecture/domain.md_section-Locked_Frames__Non-Negotiable_",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Locked Frames (Non-Negotiable)"
+      }
+    },
+    {
+      "id": "e63_27",
+      "source": "docs/architecture/domain.md",
+      "target": "docs/architecture/domain.md_section-Architectural_Through-Line",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Architectural Through-Line"
+      }
+    },
+    {
+      "id": "e63_28",
+      "source": "docs/architecture/domain.md",
+      "target": "docs/architecture/domain.md_section-Layout_Model",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Layout Model"
+      }
+    },
+    {
+      "id": "e63_29",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-Ecosystem___Archie",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Ecosystem — Archie"
+      }
+    },
+    {
+      "id": "e63_30",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-Package_Ecosystem",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Package Ecosystem"
+      }
+    },
+    {
+      "id": "e63_31",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-Runtime_Dependencies",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Runtime Dependencies"
+      }
+    },
+    {
+      "id": "e63_32",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-Dev_Dependencies",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Dev Dependencies"
+      }
+    },
+    {
+      "id": "e63_33",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-Build_Tooling",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Build Tooling"
+      }
+    },
+    {
+      "id": "e63_34",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-External_Dependencies",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "External Dependencies"
+      }
+    },
+    {
+      "id": "e63_35",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-IIIF___Standards",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "IIIF / Standards"
+      }
+    },
+    {
+      "id": "e63_36",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-Standards_Compliance",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Standards Compliance"
+      }
+    },
+    {
+      "id": "e63_37",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-Deployment_Targets",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Deployment Targets"
+      }
+    },
+    {
+      "id": "e63_38",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-External_Data_Sources",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "External Data Sources"
+      }
+    },
+    {
+      "id": "e63_39",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-Prior_Art_Survey",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Prior Art Survey"
+      }
+    },
+    {
+      "id": "e63_40",
+      "source": "docs/architecture/ecosystem.md",
+      "target": "docs/architecture/ecosystem.md_section-Era_Vintages",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Era Vintages"
+      }
+    },
+    {
+      "id": "e63_41",
+      "source": "docs/architecture/evolution.md",
+      "target": "docs/architecture/evolution.md_section-Evolution___Archie",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Evolution — Archie"
+      }
+    },
+    {
+      "id": "e63_42",
+      "source": "docs/architecture/evolution.md",
+      "target": "docs/architecture/evolution.md_section-Current_State",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Current State"
+      }
+    },
+    {
+      "id": "e63_43",
+      "source": "docs/architecture/evolution.md",
+      "target": "docs/architecture/evolution.md_section-Single-Era_Architecture__Pre-1_0_",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Single-Era Architecture (Pre-1.0)"
+      }
+    },
+    {
+      "id": "e63_44",
+      "source": "docs/architecture/evolution.md",
+      "target": "docs/architecture/evolution.md_section-Why_Single-Era",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Why Single-Era"
+      }
+    },
+    {
+      "id": "e63_45",
+      "source": "docs/architecture/evolution.md",
+      "target": "docs/architecture/evolution.md_section-Pivot_History",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Pivot History"
+      }
+    },
+    {
+      "id": "e63_46",
+      "source": "docs/architecture/evolution.md",
+      "target": "docs/architecture/evolution.md_section-Migration_Path",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Migration Path"
+      }
+    },
+    {
+      "id": "e63_47",
+      "source": "docs/architecture/evolution.md",
+      "target": "docs/architecture/evolution.md_section-Era_Compatibility",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Era Compatibility"
+      }
+    },
+    {
+      "id": "e63_48",
+      "source": "docs/architecture/features.json",
+      "target": "docs/architecture/features.json_section-root",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "root"
+      }
+    },
+    {
+      "id": "e63_49",
+      "source": "docs/architecture/features.json",
+      "target": "docs/architecture/features.json_section-git_sha",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "git_sha"
+      }
+    },
+    {
+      "id": "e63_50",
+      "source": "docs/architecture/features.json",
+      "target": "docs/architecture/features.json_section-analyzed_at",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "analyzed_at"
+      }
+    },
+    {
+      "id": "e63_51",
+      "source": "docs/architecture/features.json",
+      "target": "docs/architecture/features.json_section-features",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "features"
+      }
+    },
+    {
+      "id": "e63_52",
+      "source": "docs/architecture/infrastructure.md",
+      "target": "docs/architecture/infrastructure.md_section-Infrastructure___Archie",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Infrastructure — Archie"
+      }
+    },
+    {
+      "id": "e63_53",
+      "source": "docs/architecture/infrastructure.md",
+      "target": "docs/architecture/infrastructure.md_section-Repository",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Repository"
+      }
+    },
+    {
+      "id": "e63_54",
+      "source": "docs/architecture/infrastructure.md",
+      "target": "docs/architecture/infrastructure.md_section-Language_Breakdown",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Language Breakdown"
+      }
+    },
+    {
+      "id": "e63_55",
+      "source": "docs/architecture/infrastructure.md",
+      "target": "docs/architecture/infrastructure.md_section-Subsystems",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Subsystems"
+      }
+    },
+    {
+      "id": "e63_56",
+      "source": "docs/architecture/infrastructure.md",
+      "target": "docs/architecture/infrastructure.md_section-The_Through-Line",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "The Through-Line"
+      }
+    },
+    {
+      "id": "e63_57",
+      "source": "docs/architecture/infrastructure.md",
+      "target": "docs/architecture/infrastructure.md_section-Key_Decisions",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Key Decisions"
+      }
+    },
+    {
+      "id": "e63_58",
+      "source": "docs/architecture/infrastructure.md",
+      "target": "docs/architecture/infrastructure.md_section-Current_State",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Current State"
+      }
+    },
+    {
+      "id": "e63_59",
+      "source": "docs/architecture/infrastructure.md",
+      "target": "docs/architecture/infrastructure.md_section-Risk_Concentration",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Risk Concentration"
+      }
+    },
+    {
+      "id": "e63_60",
+      "source": "docs/architecture/infrastructure.md",
+      "target": "docs/architecture/infrastructure.md_section-See_Also",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "See Also"
+      }
+    },
+    {
+      "id": "e63_61",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/overview.md_section-Overview___Archie",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Overview — Archie"
+      }
+    },
+    {
+      "id": "e63_62",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/overview.md_section-What_Archie_Is",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "What Archie Is"
+      }
+    },
+    {
+      "id": "e63_63",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/overview.md_section-Core_Architecture",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Core Architecture"
+      }
+    },
+    {
+      "id": "e63_64",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/overview.md_section-Subsystems",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Subsystems"
+      }
+    },
+    {
+      "id": "e63_65",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/overview.md_section-Cross-Subsystem_Flows",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Cross-Subsystem Flows"
+      }
+    },
+    {
+      "id": "e63_66",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/overview.md_section-Key_Design_Decisions",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Key Design Decisions"
+      }
+    },
+    {
+      "id": "e63_67",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/overview.md_section-Current_Limitations",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Current Limitations"
+      }
+    },
+    {
+      "id": "e63_68",
+      "source": "docs/architecture/risk-map.md",
+      "target": "docs/architecture/risk-map.md_section-Risk_Map___Archie",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Risk Map — Archie"
+      }
+    },
+    {
+      "id": "e63_69",
+      "source": "docs/architecture/risk-map.md",
+      "target": "docs/architecture/risk-map.md_section-Risk_Landscape",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Risk Landscape"
+      }
+    },
+    {
+      "id": "e63_70",
+      "source": "docs/architecture/risk-map.md",
+      "target": "docs/architecture/risk-map.md_section-High_Risk",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "High Risk"
+      }
+    },
+    {
+      "id": "e63_71",
+      "source": "docs/architecture/risk-map.md",
+      "target": "docs/architecture/risk-map.md_section-Medium_Risk",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Medium Risk"
+      }
+    },
+    {
+      "id": "e63_72",
+      "source": "docs/architecture/risk-map.md",
+      "target": "docs/architecture/risk-map.md_section-Low_Risk",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Low Risk"
+      }
+    },
+    {
+      "id": "e63_73",
+      "source": "docs/architecture/risk-map.md",
+      "target": "docs/architecture/risk-map.md_section-Mitigation_Strategy",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Mitigation Strategy"
+      }
+    },
+    {
+      "id": "e63_74",
+      "source": "docs/architecture/subsystems.md",
+      "target": "docs/architecture/subsystems.md_section-Subsystems___Archie",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Subsystems — Archie"
+      }
+    },
+    {
+      "id": "e63_75",
+      "source": "docs/architecture/subsystems.md",
+      "target": "docs/architecture/subsystems.md_section-1__Core_Data",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "1. Core Data"
+      }
+    },
+    {
+      "id": "e63_76",
+      "source": "docs/architecture/subsystems.md",
+      "target": "docs/architecture/subsystems.md_section-2__Rendering",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "2. Rendering"
+      }
+    },
+    {
+      "id": "e63_77",
+      "source": "docs/architecture/subsystems.md",
+      "target": "docs/architecture/subsystems.md_section-3__Storage",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "3. Storage"
+      }
+    },
+    {
+      "id": "e63_78",
+      "source": "docs/architecture/subsystems.md",
+      "target": "docs/architecture/subsystems.md_section-4__Publish",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "4. Publish"
+      }
+    },
+    {
+      "id": "e63_79",
+      "source": "docs/architecture/subsystems.md",
+      "target": "docs/architecture/subsystems.md_section-5__Studio",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "5. Studio"
+      }
+    },
+    {
+      "id": "e63_80",
+      "source": "docs/architecture/subsystems.md",
+      "target": "docs/architecture/subsystems.md_section-6__Viewer",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "6. Viewer"
+      }
+    },
+    {
+      "id": "e63_81",
+      "source": "docs/architecture/subsystems.md",
+      "target": "docs/architecture/subsystems.md_section-Cross-Subsystem_Flows",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "Cross-Subsystem Flows"
+      }
+    },
+    {
+      "id": "e63_82",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/domain.md",
+      "type": "related",
+      "label": "overview references domain",
+      "metadata": {}
+    },
+    {
+      "id": "e63_83",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/ecosystem.md",
+      "type": "related",
+      "label": "overview references ecosystem",
+      "metadata": {}
+    },
+    {
+      "id": "e63_84",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/evolution.md",
+      "type": "related",
+      "label": "overview references evolution",
+      "metadata": {}
+    },
+    {
+      "id": "e63_85",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/infrastructure.md",
+      "type": "related",
+      "label": "overview references infrastructure",
+      "metadata": {}
+    },
+    {
+      "id": "e63_86",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/risk-map.md",
+      "type": "related",
+      "label": "overview references risk-map",
+      "metadata": {}
+    },
+    {
+      "id": "e63_87",
+      "source": "docs/architecture/overview.md",
+      "target": "docs/architecture/subsystems.md",
+      "type": "related",
+      "label": "overview references subsystems",
+      "metadata": {}
+    }
+  ],
+  "stats": {
+    "nodeCount": 83,
+    "edgeCount": 88,
+    "fileCount": 9
+  }
+}

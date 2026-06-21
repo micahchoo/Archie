@@ -1,0 +1,45 @@
+# Flatpak manifest for Archie Studio (Tauri desktop shell).
+# Packages the self-contained Tauri release binary (frontend embedded by `tauri::generate_context!`)
+# against the GNOME 49 runtime, which provides webkit2gtk-4.1 + GTK3 + libsoup3 (the wry/Tauri
+# Linux dependency set). See docs/plans/tauri-port.md.
+#
+# Build:  flatpak run org.flatpak.Builder --user --install --force-clean build-dir \
+#           src-tauri/flatpak/digital.compost.archie.yml
+# Run:    flatpak run digital.compost.archie
+id: digital.compost.archie
+
+runtime: org.gnome.Platform
+runtime-version: "49"
+sdk: org.gnome.Sdk
+
+command: archie
+
+finish-args:
+  - --socket=wayland # show the window under Wayland
+  - --socket=fallback-x11 # …or X11
+  - --device=dri # GPU acceleration for the deep-zoom canvas
+  - --share=ipc # required with X11
+  - --share=network # remote-hosted templates (e.g. Bidar) + future sharing; local-first otherwise
+  - --filesystem=home # user-picked Project folders + "Save .archie.zip" land in the real home dir
+  # - --env=WEBKIT_DISABLE_COMPOSITING_MODE=1 # uncomment if the webview renders black on Wayland
+
+modules:
+  - name: archie
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 archie /app/bin/archie
+      - install -Dm644 digital.compost.archie.desktop /app/share/applications/digital.compost.archie.desktop
+      - install -Dm644 digital.compost.archie.metainfo.xml /app/share/metainfo/digital.compost.archie.metainfo.xml
+      - install -Dm644 128x128.png /app/share/icons/hicolor/128x128/apps/digital.compost.archie.png
+      - install -Dm644 128x128@2x.png /app/share/icons/hicolor/256x256/apps/digital.compost.archie.png
+    sources:
+      - type: file
+        path: ../target/release/archie
+      - type: file
+        path: digital.compost.archie.desktop
+      - type: file
+        path: digital.compost.archie.metainfo.xml
+      - type: file
+        path: ../icons/128x128.png
+      - type: file
+        path: ../icons/128x128@2x.png

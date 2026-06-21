@@ -1,0 +1,1267 @@
+{
+  "batchIndex": 68,
+  "partIndex": 4,
+  "nodes": [
+    {
+      "id": "apps",
+      "type": "directory",
+      "label": "apps",
+      "filePath": "apps",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio",
+      "type": "directory",
+      "label": "studio",
+      "filePath": "apps/studio",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio/src",
+      "type": "directory",
+      "label": "src",
+      "filePath": "apps/studio/src",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio/src/exhibit-session.svelte.ts",
+      "type": "file",
+      "label": "exhibit-session.svelte.ts",
+      "filePath": "apps/studio/src/exhibit-session.svelte.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 141,
+      "metadata": {
+        "metrics": {
+          "importCount": 2,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/exhibit-session.svelte.ts:createExhibitSession",
+      "type": "function",
+      "label": "createExhibitSession",
+      "filePath": "apps/studio/src/exhibit-session.svelte.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 96,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "deps"
+        ],
+        "startLine": 45,
+        "endLine": 140
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta-reducers.ts",
+      "type": "file",
+      "label": "library-meta-reducers.ts",
+      "filePath": "apps/studio/src/library-meta-reducers.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 52,
+      "metadata": {
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 7,
+          "functionCount": 7,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta-reducers.ts:addExhibitIn",
+      "type": "function",
+      "label": "addExhibitIn",
+      "filePath": "apps/studio/src/library-meta-reducers.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 5,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "exhibits",
+          "ex"
+        ],
+        "startLine": 4,
+        "endLine": 8
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta-reducers.ts:patchExhibitIn",
+      "type": "function",
+      "label": "patchExhibitIn",
+      "filePath": "apps/studio/src/library-meta-reducers.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 7,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "exhibits",
+          "slug",
+          "patch"
+        ],
+        "startLine": 12,
+        "endLine": 18
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta-reducers.ts:removeExhibitIn",
+      "type": "function",
+      "label": "removeExhibitIn",
+      "filePath": "apps/studio/src/library-meta-reducers.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 3,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "exhibits",
+          "slug"
+        ],
+        "startLine": 22,
+        "endLine": 24
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta-reducers.ts:appendObjectIn",
+      "type": "function",
+      "label": "appendObjectIn",
+      "filePath": "apps/studio/src/library-meta-reducers.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 6,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "exhibits",
+          "slug",
+          "obj"
+        ],
+        "startLine": 28,
+        "endLine": 33
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta-reducers.ts:patchObjectIn",
+      "type": "function",
+      "label": "patchObjectIn",
+      "filePath": "apps/studio/src/library-meta-reducers.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 12,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "exhibits",
+          "slug",
+          "objectId",
+          "patch"
+        ],
+        "startLine": 37,
+        "endLine": 48
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta-reducers.ts:removeObjectIn",
+      "type": "function",
+      "label": "removeObjectIn",
+      "filePath": "apps/studio/src/library-meta-reducers.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 3,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "exhibits",
+          "slug",
+          "objectId"
+        ],
+        "startLine": 50,
+        "endLine": 52
+      }
+    },
+    {
+      "id": "apps/studio/src/geo-notes.ts",
+      "type": "file",
+      "label": "geo-notes.ts",
+      "filePath": "apps/studio/src/geo-notes.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 45,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 3,
+          "functionCount": 3,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/geo-notes.ts:resolveGeo",
+      "type": "function",
+      "label": "resolveGeo",
+      "filePath": "apps/studio/src/geo-notes.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 10,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "src"
+        ],
+        "startLine": 6,
+        "endLine": 15
+      }
+    },
+    {
+      "id": "apps/studio/src/geo-notes.ts:saveGeoNote",
+      "type": "function",
+      "label": "saveGeoNote",
+      "filePath": "apps/studio/src/geo-notes.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 10,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "note",
+          "lib"
+        ],
+        "startLine": 19,
+        "endLine": 28
+      }
+    },
+    {
+      "id": "apps/studio/src/geo-notes.ts:deleteGeoNote",
+      "type": "function",
+      "label": "deleteGeoNote",
+      "filePath": "apps/studio/src/geo-notes.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 9,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "noteId",
+          "lib"
+        ],
+        "startLine": 32,
+        "endLine": 40
+      }
+    },
+    {
+      "id": "apps/studio/src/folder-import.test.ts",
+      "type": "file",
+      "label": "folder-import.test.ts",
+      "filePath": "apps/studio/src/folder-import.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 130,
+      "metadata": {
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 0,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta.svelte.test.ts",
+      "type": "file",
+      "label": "library-meta.svelte.test.ts",
+      "filePath": "apps/studio/src/library-meta.svelte.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 77,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 3,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta.svelte.test.ts:withObjects",
+      "type": "function",
+      "label": "withObjects",
+      "filePath": "apps/studio/src/library-meta.svelte.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 11,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "objects"
+        ],
+        "startLine": 14,
+        "endLine": 24
+      }
+    },
+    {
+      "id": "apps/studio/src/geo-notes.test.ts",
+      "type": "file",
+      "label": "geo-notes.test.ts",
+      "filePath": "apps/studio/src/geo-notes.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 56,
+      "metadata": {
+        "metrics": {
+          "importCount": 2,
+          "exportCount": 0,
+          "functionCount": 2,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/geo-notes.test.ts:makeState",
+      "type": "function",
+      "label": "makeState",
+      "filePath": "apps/studio/src/geo-notes.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 10,
+      "metadata": {
+        "metrics": {},
+        "params": [],
+        "startLine": 6,
+        "endLine": 15
+      }
+    },
+    {
+      "id": "apps/studio/src/geo-notes.test.ts:asGeoNote",
+      "type": "function",
+      "label": "asGeoNote",
+      "filePath": "apps/studio/src/geo-notes.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 10,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "overrides"
+        ],
+        "startLine": 17,
+        "endLine": 26
+      }
+    },
+    {
+      "id": "apps/studio/src/iiif-import.test.ts",
+      "type": "file",
+      "label": "iiif-import.test.ts",
+      "filePath": "apps/studio/src/iiif-import.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 117,
+      "metadata": {
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta-reducers.test.ts",
+      "type": "file",
+      "label": "library-meta-reducers.test.ts",
+      "filePath": "apps/studio/src/library-meta-reducers.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 78,
+      "metadata": {
+        "metrics": {
+          "importCount": 2,
+          "exportCount": 0,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/narrative-cue-reducer.test.ts",
+      "type": "file",
+      "label": "narrative-cue-reducer.test.ts",
+      "filePath": "apps/studio/src/narrative-cue-reducer.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 43,
+      "metadata": {
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/narrative-cue-reducer.ts",
+      "type": "file",
+      "label": "narrative-cue-reducer.ts",
+      "filePath": "apps/studio/src/narrative-cue-reducer.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 34,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/narrative-cue-reducer.ts:narrativeCueReducer",
+      "type": "function",
+      "label": "narrativeCueReducer",
+      "filePath": "apps/studio/src/narrative-cue-reducer.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 10,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "prev",
+          "next",
+          "seen"
+        ],
+        "startLine": 25,
+        "endLine": 34
+      }
+    },
+    {
+      "id": "apps/studio/src/ExhibitOverview.svelte",
+      "type": "file",
+      "label": "ExhibitOverview.svelte",
+      "filePath": "apps/studio/src/ExhibitOverview.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 466,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/IdentityPrompt.svelte",
+      "type": "file",
+      "label": "IdentityPrompt.svelte",
+      "filePath": "apps/studio/src/IdentityPrompt.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 71,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/LibraryHome.svelte",
+      "type": "file",
+      "label": "LibraryHome.svelte",
+      "filePath": "apps/studio/src/LibraryHome.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 381,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/main.ts",
+      "type": "file",
+      "label": "main.ts",
+      "filePath": "apps/studio/src/main.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 13,
+      "metadata": {
+        "metrics": {
+          "importCount": 4,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/MediaPicker.svelte",
+      "type": "file",
+      "label": "MediaPicker.svelte",
+      "filePath": "apps/studio/src/MediaPicker.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 110,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/MergeReview.svelte",
+      "type": "file",
+      "label": "MergeReview.svelte",
+      "filePath": "apps/studio/src/MergeReview.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 97,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/NarrativeEditor.svelte",
+      "type": "file",
+      "label": "NarrativeEditor.svelte",
+      "filePath": "apps/studio/src/NarrativeEditor.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 276,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/NoteEditor.svelte",
+      "type": "file",
+      "label": "NoteEditor.svelte",
+      "filePath": "apps/studio/src/NoteEditor.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 138,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/PropsDrawer.svelte",
+      "type": "file",
+      "label": "PropsDrawer.svelte",
+      "filePath": "apps/studio/src/PropsDrawer.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 45,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        }
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e68p4_0",
+      "source": "apps",
+      "target": "apps/studio",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_1",
+      "source": "apps/studio",
+      "target": "apps/studio/src",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_2",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/exhibit-session.svelte.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_3",
+      "source": "apps/studio/src/exhibit-session.svelte.ts",
+      "target": "apps/studio/src/exhibit-session.svelte.ts:createExhibitSession",
+      "type": "contains",
+      "label": "exhibit-session.svelte.ts contains createExhibitSession",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_4",
+      "source": "apps/studio/src/exhibit-session.svelte.ts",
+      "target": "apps/studio/src/exhibit-session.svelte.ts:createExhibitSession",
+      "type": "export",
+      "label": "exports createExhibitSession",
+      "metadata": {
+        "isDefault": false,
+        "line": 45
+      }
+    },
+    {
+      "id": "e68p4_5",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/library-meta-reducers.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_6",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:addExhibitIn",
+      "type": "contains",
+      "label": "library-meta-reducers.ts contains addExhibitIn",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_7",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:patchExhibitIn",
+      "type": "contains",
+      "label": "library-meta-reducers.ts contains patchExhibitIn",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_8",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:removeExhibitIn",
+      "type": "contains",
+      "label": "library-meta-reducers.ts contains removeExhibitIn",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_9",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:appendObjectIn",
+      "type": "contains",
+      "label": "library-meta-reducers.ts contains appendObjectIn",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_10",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:patchObjectIn",
+      "type": "contains",
+      "label": "library-meta-reducers.ts contains patchObjectIn",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_11",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:removeObjectIn",
+      "type": "contains",
+      "label": "library-meta-reducers.ts contains removeObjectIn",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_12",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:addExhibitIn",
+      "type": "export",
+      "label": "exports addExhibitIn",
+      "metadata": {
+        "isDefault": false,
+        "line": 4
+      }
+    },
+    {
+      "id": "e68p4_13",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:patchExhibitIn",
+      "type": "export",
+      "label": "exports patchExhibitIn",
+      "metadata": {
+        "isDefault": false,
+        "line": 12
+      }
+    },
+    {
+      "id": "e68p4_14",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:removeExhibitIn",
+      "type": "export",
+      "label": "exports removeExhibitIn",
+      "metadata": {
+        "isDefault": false,
+        "line": 22
+      }
+    },
+    {
+      "id": "e68p4_15",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:appendObjectIn",
+      "type": "export",
+      "label": "exports appendObjectIn",
+      "metadata": {
+        "isDefault": false,
+        "line": 28
+      }
+    },
+    {
+      "id": "e68p4_16",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:patchObjectIn",
+      "type": "export",
+      "label": "exports patchObjectIn",
+      "metadata": {
+        "isDefault": false,
+        "line": 37
+      }
+    },
+    {
+      "id": "e68p4_17",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts:removeObjectIn",
+      "type": "export",
+      "label": "exports removeObjectIn",
+      "metadata": {
+        "isDefault": false,
+        "line": 50
+      }
+    },
+    {
+      "id": "e68p4_18",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts",
+      "type": "export",
+      "label": "exports patchLibraryIn",
+      "metadata": {
+        "isDefault": false,
+        "line": 1,
+        "inline": true
+      }
+    },
+    {
+      "id": "e68p4_19",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/geo-notes.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_20",
+      "source": "apps/studio/src/geo-notes.ts",
+      "target": "apps/studio/src/geo-notes.ts:resolveGeo",
+      "type": "contains",
+      "label": "geo-notes.ts contains resolveGeo",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_21",
+      "source": "apps/studio/src/geo-notes.ts",
+      "target": "apps/studio/src/geo-notes.ts:saveGeoNote",
+      "type": "contains",
+      "label": "geo-notes.ts contains saveGeoNote",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_22",
+      "source": "apps/studio/src/geo-notes.ts",
+      "target": "apps/studio/src/geo-notes.ts:deleteGeoNote",
+      "type": "contains",
+      "label": "geo-notes.ts contains deleteGeoNote",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_23",
+      "source": "apps/studio/src/geo-notes.ts",
+      "target": "apps/studio/src/geo-notes.ts:resolveGeo",
+      "type": "export",
+      "label": "exports resolveGeo",
+      "metadata": {
+        "isDefault": false,
+        "line": 6
+      }
+    },
+    {
+      "id": "e68p4_24",
+      "source": "apps/studio/src/geo-notes.ts",
+      "target": "apps/studio/src/geo-notes.ts:saveGeoNote",
+      "type": "export",
+      "label": "exports saveGeoNote",
+      "metadata": {
+        "isDefault": false,
+        "line": 19
+      }
+    },
+    {
+      "id": "e68p4_25",
+      "source": "apps/studio/src/geo-notes.ts",
+      "target": "apps/studio/src/geo-notes.ts:deleteGeoNote",
+      "type": "export",
+      "label": "exports deleteGeoNote",
+      "metadata": {
+        "isDefault": false,
+        "line": 32
+      }
+    },
+    {
+      "id": "e68p4_26",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/folder-import.test.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_27",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/library-meta.svelte.test.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_28",
+      "source": "apps/studio/src/library-meta.svelte.test.ts",
+      "target": "apps/studio/src/library-meta.svelte.test.ts:withObjects",
+      "type": "contains",
+      "label": "library-meta.svelte.test.ts contains withObjects",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_29",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/geo-notes.test.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_30",
+      "source": "apps/studio/src/geo-notes.test.ts",
+      "target": "apps/studio/src/geo-notes.test.ts:makeState",
+      "type": "contains",
+      "label": "geo-notes.test.ts contains makeState",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_31",
+      "source": "apps/studio/src/geo-notes.test.ts",
+      "target": "apps/studio/src/geo-notes.test.ts:asGeoNote",
+      "type": "contains",
+      "label": "geo-notes.test.ts contains asGeoNote",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_32",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/iiif-import.test.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_33",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/library-meta-reducers.test.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_34",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/narrative-cue-reducer.test.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_35",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/narrative-cue-reducer.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_36",
+      "source": "apps/studio/src/narrative-cue-reducer.ts",
+      "target": "apps/studio/src/narrative-cue-reducer.ts:narrativeCueReducer",
+      "type": "contains",
+      "label": "narrative-cue-reducer.ts contains narrativeCueReducer",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_37",
+      "source": "apps/studio/src/narrative-cue-reducer.ts",
+      "target": "apps/studio/src/narrative-cue-reducer.ts:narrativeCueReducer",
+      "type": "export",
+      "label": "exports narrativeCueReducer",
+      "metadata": {
+        "isDefault": false,
+        "line": 25
+      }
+    },
+    {
+      "id": "e68p4_38",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/ExhibitOverview.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_39",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/IdentityPrompt.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_40",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/LibraryHome.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_41",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/main.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_42",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/MediaPicker.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_43",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/MergeReview.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_44",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/NarrativeEditor.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_45",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/NoteEditor.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_46",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/PropsDrawer.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_47",
+      "source": "apps/studio/src/exhibit-session.svelte.ts:createExhibitSession",
+      "target": "apps/studio/src/exhibit-session.svelte.ts",
+      "type": "calls",
+      "label": "createExhibitSession calls $state",
+      "metadata": {
+        "callee": "$state",
+        "external": true,
+        "line": 46
+      }
+    },
+    {
+      "id": "e68p4_48",
+      "source": "apps/studio/src/exhibit-session.svelte.ts:createExhibitSession",
+      "target": "apps/studio/src/exhibit-session.svelte.ts",
+      "type": "calls",
+      "label": "createExhibitSession calls sess.save",
+      "metadata": {
+        "callee": "sess.save",
+        "external": true,
+        "line": 61
+      }
+    },
+    {
+      "id": "e68p4_49",
+      "source": "apps/studio/src/exhibit-session.svelte.ts",
+      "target": "apps/studio/src/exhibit-session.svelte.ts",
+      "type": "calls",
+      "label": "save calls deps.autosaveToFolder",
+      "metadata": {
+        "caller": "save",
+        "callee": "deps.autosaveToFolder",
+        "internal": true,
+        "line": 64
+      }
+    },
+    {
+      "id": "e68p4_50",
+      "source": "apps/studio/src/exhibit-session.svelte.ts",
+      "target": "apps/studio/src/exhibit-session.svelte.ts",
+      "type": "calls",
+      "label": "scheduleSave calls deps.touchBinding",
+      "metadata": {
+        "caller": "scheduleSave",
+        "callee": "deps.touchBinding",
+        "internal": true,
+        "line": 68
+      }
+    },
+    {
+      "id": "e68p4_51",
+      "source": "apps/studio/src/exhibit-session.svelte.ts",
+      "target": "apps/studio/src/exhibit-session.svelte.ts",
+      "type": "calls",
+      "label": "scheduleSave calls clearTimeout",
+      "metadata": {
+        "caller": "scheduleSave",
+        "callee": "clearTimeout",
+        "internal": true,
+        "line": 70
+      }
+    },
+    {
+      "id": "e68p4_52",
+      "source": "apps/studio/src/exhibit-session.svelte.ts",
+      "target": "apps/studio/src/exhibit-session.svelte.ts",
+      "type": "calls",
+      "label": "scheduleSave calls setTimeout",
+      "metadata": {
+        "caller": "scheduleSave",
+        "callee": "setTimeout",
+        "internal": true,
+        "line": 71
+      }
+    },
+    {
+      "id": "e68p4_53",
+      "source": "apps/studio/src/exhibit-session.svelte.ts",
+      "target": "apps/studio/src/exhibit-session.svelte.ts",
+      "type": "calls",
+      "label": "open calls freshSeed",
+      "metadata": {
+        "caller": "open",
+        "callee": "freshSeed",
+        "internal": true,
+        "line": 126
+      }
+    },
+    {
+      "id": "e68p4_54",
+      "source": "apps/studio/src/exhibit-session.svelte.ts",
+      "target": "apps/studio/src/exhibit-session.svelte.ts",
+      "type": "calls",
+      "label": "open calls save",
+      "metadata": {
+        "caller": "open",
+        "callee": "save",
+        "internal": true,
+        "line": 137
+      }
+    },
+    {
+      "id": "e68p4_55",
+      "source": "apps/studio/src/library-meta-reducers.ts:appendObjectIn",
+      "target": "apps/studio/src/library-meta-reducers.ts",
+      "type": "calls",
+      "label": "appendObjectIn calls ex.objects.push",
+      "metadata": {
+        "callee": "ex.objects.push",
+        "external": true,
+        "line": 30
+      }
+    },
+    {
+      "id": "e68p4_56",
+      "source": "apps/studio/src/library-meta-reducers.ts:patchObjectIn",
+      "target": "apps/studio/src/library-meta-reducers.ts",
+      "type": "calls",
+      "label": "patchObjectIn calls ex.objects.findIndex",
+      "metadata": {
+        "callee": "ex.objects.findIndex",
+        "external": true,
+        "line": 40
+      }
+    },
+    {
+      "id": "e68p4_57",
+      "source": "apps/studio/src/library-meta-reducers.ts:patchObjectIn",
+      "target": "apps/studio/src/library-meta-reducers.ts",
+      "type": "calls",
+      "label": "patchObjectIn calls Object.assign",
+      "metadata": {
+        "callee": "Object.assign",
+        "external": true,
+        "line": 44
+      }
+    },
+    {
+      "id": "e68p4_58",
+      "source": "apps/studio/src/library-meta-reducers.ts:removeObjectIn",
+      "target": "apps/studio/src/library-meta-reducers.ts",
+      "type": "calls",
+      "label": "removeObjectIn calls ex.objects.findIndex",
+      "metadata": {
+        "callee": "ex.objects.findIndex",
+        "external": true,
+        "line": 50
+      }
+    },
+    {
+      "id": "e68p4_59",
+      "source": "apps/studio/src/library-meta-reducers.ts:removeObjectIn",
+      "target": "apps/studio/src/library-meta-reducers.ts",
+      "type": "calls",
+      "label": "removeObjectIn calls ex.objects.splice",
+      "metadata": {
+        "callee": "ex.objects.splice",
+        "external": true,
+        "line": 51
+      }
+    },
+    {
+      "id": "e68p4_60",
+      "source": "apps/studio/src/folder-import.test.ts",
+      "target": "apps/studio/src/folder-import.test.ts",
+      "type": "calls",
+      "label": "f calls relativePath.split(\"/\").pop",
+      "metadata": {
+        "caller": "f",
+        "callee": "relativePath.split(\"/\").pop",
+        "internal": true,
+        "line": 4
+      }
+    },
+    {
+      "id": "e68p4_61",
+      "source": "apps/studio/src/folder-import.test.ts",
+      "target": "apps/studio/src/folder-import.test.ts",
+      "type": "calls",
+      "label": "f calls relativePath.split",
+      "metadata": {
+        "caller": "f",
+        "callee": "relativePath.split",
+        "internal": true,
+        "line": 4
+      }
+    },
+    {
+      "id": "e68p4_62",
+      "source": "apps/studio/src/geo-notes.test.ts",
+      "target": "apps/studio/src/geo-notes.ts",
+      "type": "tests",
+      "label": "tests",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_63",
+      "source": "apps/studio/src/geo-notes.ts",
+      "target": "apps/studio/src/geo-notes.test.ts",
+      "type": "tested_by",
+      "label": "tested by",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_64",
+      "source": "apps/studio/src/library-meta-reducers.test.ts",
+      "target": "apps/studio/src/library-meta-reducers.ts",
+      "type": "tests",
+      "label": "tests",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_65",
+      "source": "apps/studio/src/library-meta-reducers.ts",
+      "target": "apps/studio/src/library-meta-reducers.test.ts",
+      "type": "tested_by",
+      "label": "tested by",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_66",
+      "source": "apps/studio/src/narrative-cue-reducer.test.ts",
+      "target": "apps/studio/src/narrative-cue-reducer.ts",
+      "type": "tests",
+      "label": "tests",
+      "metadata": {}
+    },
+    {
+      "id": "e68p4_67",
+      "source": "apps/studio/src/narrative-cue-reducer.ts",
+      "target": "apps/studio/src/narrative-cue-reducer.test.ts",
+      "type": "tested_by",
+      "label": "tested by",
+      "metadata": {}
+    }
+  ],
+  "stats": {
+    "nodeCount": 36,
+    "edgeCount": 68,
+    "fileCount": 19,
+    "totalParts": 4
+  }
+}

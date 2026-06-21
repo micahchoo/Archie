@@ -1135,7 +1135,7 @@
   // autosave flows live in binding-store.svelte.ts; its disk sinks lazy-load the publish flows on first use.
   const bnd = createBindingStore({
     flushExhibit: () => save(),
-    writeToFolder: async (h) => (await ensurePub()).writeToFolder(h),
+    writeToFolder: async (fs) => (await ensurePub()).writeToFolder(fs),
     downloadProjectZip: async () => (await ensurePub()).downloadProjectZip(),
     replaceProjectFrom: (loaded) => flows.replaceProjectFrom(loaded),
     zipName: () => zipNameFor(lib.meta.title || PROJECT_TITLE),

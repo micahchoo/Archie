@@ -1,0 +1,343 @@
+{
+  "batchIndex": 65,
+  "nodes": [
+    {
+      "id": "docs/decisions",
+      "type": "directory",
+      "label": "decisions",
+      "filePath": "docs/decisions",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "document:docs/decisions/PROPOSALS.md",
+      "type": "document",
+      "label": "PROPOSALS.md",
+      "filePath": "docs/decisions/PROPOSALS.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 107,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "Decision proposals \u2014 PENDING USER GATE (not minted Q-Ns)",
+            "level": 1,
+            "line": 1
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 1
+        },
+        "description": "Pending decision proposals (P-1 archivability, P-2 readings overlap) \u2014 user-gated"
+      }
+    },
+    {
+      "id": "document:docs/decisions/archie-av.md",
+      "type": "document",
+      "label": "archie-av.md",
+      "filePath": "docs/decisions/archie-av.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 15,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "Decisions \u2014 scope: archie-av",
+            "level": 1,
+            "line": 1
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 1
+        },
+        "description": "AV media handling decisions"
+      }
+    },
+    {
+      "id": "document:docs/decisions/archie-linkability.md",
+      "type": "document",
+      "label": "archie-linkability.md",
+      "filePath": "docs/decisions/archie-linkability.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 15,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "Decisions \u2014 scope: archie-linkability",
+            "level": 1,
+            "line": 1
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 1
+        },
+        "description": "Hash routing, deep-linking decisions"
+      }
+    },
+    {
+      "id": "document:docs/decisions/archie-narrative.md",
+      "type": "document",
+      "label": "archie-narrative.md",
+      "filePath": "docs/decisions/archie-narrative.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 15,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "Decisions \u2014 scope: archie-narrative",
+            "level": 1,
+            "line": 1
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 1
+        },
+        "description": "Prose-spine reading, section-object driving decisions"
+      }
+    },
+    {
+      "id": "document:docs/decisions/archie-persistence.md",
+      "type": "document",
+      "label": "archie-persistence.md",
+      "filePath": "docs/decisions/archie-persistence.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 16,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "Decisions \u2014 scope: archie-persistence",
+            "level": 1,
+            "line": 1
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 1
+        },
+        "description": "Published artifacts, local storage decisions"
+      }
+    },
+    {
+      "id": "document:docs/decisions/archie-ux.md",
+      "type": "document",
+      "label": "archie-ux.md",
+      "filePath": "docs/decisions/archie-ux.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 15,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "Decisions \u2014 scope: archie-ux",
+            "level": 1,
+            "line": 1
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 1
+        },
+        "description": "Viewer surfaces, exhibit navigation decisions"
+      }
+    },
+    {
+      "id": "document:docs/decisions/archie.md",
+      "type": "document",
+      "label": "archie.md",
+      "filePath": "docs/decisions/archie.md",
+      "language": "markdown",
+      "fileCategory": "docs",
+      "sizeLines": 20,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "Decisions \u2014 scope: archie",
+            "level": 1,
+            "line": 1
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 1
+        },
+        "description": "Root cross-cutting architectural decisions"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e65_0",
+      "source": "docs/decisions",
+      "target": "document:docs/decisions/PROPOSALS.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e65_1",
+      "source": "docs/decisions",
+      "target": "document:docs/decisions/archie-av.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e65_2",
+      "source": "docs/decisions",
+      "target": "document:docs/decisions/archie-linkability.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e65_3",
+      "source": "docs/decisions",
+      "target": "document:docs/decisions/archie-narrative.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e65_4",
+      "source": "docs/decisions",
+      "target": "document:docs/decisions/archie-persistence.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e65_5",
+      "source": "docs/decisions",
+      "target": "document:docs/decisions/archie-ux.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e65_6",
+      "source": "docs/decisions",
+      "target": "document:docs/decisions/archie.md",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e65_7",
+      "source": "document:docs/decisions/PROPOSALS.md",
+      "target": "document:docs/decisions/archie-av.md",
+      "type": "documents",
+      "label": "proposal parenting",
+      "metadata": {}
+    },
+    {
+      "id": "e65_8",
+      "source": "document:docs/decisions/PROPOSALS.md",
+      "target": "document:docs/decisions/archie-linkability.md",
+      "type": "documents",
+      "label": "proposal parenting",
+      "metadata": {}
+    },
+    {
+      "id": "e65_9",
+      "source": "document:docs/decisions/PROPOSALS.md",
+      "target": "document:docs/decisions/archie-narrative.md",
+      "type": "documents",
+      "label": "proposal parenting",
+      "metadata": {}
+    },
+    {
+      "id": "e65_10",
+      "source": "document:docs/decisions/PROPOSALS.md",
+      "target": "document:docs/decisions/archie-persistence.md",
+      "type": "documents",
+      "label": "proposal parenting",
+      "metadata": {}
+    },
+    {
+      "id": "e65_11",
+      "source": "document:docs/decisions/PROPOSALS.md",
+      "target": "document:docs/decisions/archie-ux.md",
+      "type": "documents",
+      "label": "proposal parenting",
+      "metadata": {}
+    },
+    {
+      "id": "e65_12",
+      "source": "document:docs/decisions/PROPOSALS.md",
+      "target": "document:docs/decisions/archie.md",
+      "type": "documents",
+      "label": "proposal parenting",
+      "metadata": {}
+    },
+    {
+      "id": "e65_13",
+      "source": "document:docs/decisions/archie-av.md",
+      "target": "document:docs/decisions/archie.md",
+      "type": "related",
+      "label": "scoped subset of archie decisions",
+      "metadata": {}
+    },
+    {
+      "id": "e65_14",
+      "source": "document:docs/decisions/archie-linkability.md",
+      "target": "document:docs/decisions/archie.md",
+      "type": "related",
+      "label": "scoped subset of archie decisions",
+      "metadata": {}
+    },
+    {
+      "id": "e65_15",
+      "source": "document:docs/decisions/archie-narrative.md",
+      "target": "document:docs/decisions/archie.md",
+      "type": "related",
+      "label": "scoped subset of archie decisions",
+      "metadata": {}
+    },
+    {
+      "id": "e65_16",
+      "source": "document:docs/decisions/archie-persistence.md",
+      "target": "document:docs/decisions/archie.md",
+      "type": "related",
+      "label": "scoped subset of archie decisions",
+      "metadata": {}
+    },
+    {
+      "id": "e65_17",
+      "source": "document:docs/decisions/archie-ux.md",
+      "target": "document:docs/decisions/archie.md",
+      "type": "related",
+      "label": "scoped subset of archie decisions",
+      "metadata": {}
+    }
+  ]
+}

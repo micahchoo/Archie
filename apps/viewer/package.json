@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Viewer — the published static site built by Studio's publish step. Astro + Svelte islands (ADR-0002 / Q-2). Adopts annomea's 3-state pane + popup/drawer in Phase 2. Read-only. Phase 0 = boundary shell.",
+  "license": "GPL-3.0-only",
   "scripts": {
     "gen": "vite-node scripts/gen-published.mts",
     "dev": "astro dev",
@@ -22,6 +23,7 @@
     "@render/svelte": "workspace:*",
     "fflate": "^0.8.2",
     "isomorphic-dompurify": "^2.16.0",
+    "minisearch": "^7.2.0",
     "snarkdown": "^2.0.0"
   },
   "devDependencies": {

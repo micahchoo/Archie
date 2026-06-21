@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1 · Meet Archie — Onboarding</title>
+<link rel="stylesheet" href="assets/lesson.css">
+<script defer src="assets/glossary.js"></script>
+<script defer src="assets/models.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Archie Learn · Onboarding · Step 1 of 6</p>
+  <h1>Meet Archie</h1>
+  <p class="standfirst">No buttons yet — just play with the models below until the shape of the tool clicks. Two minutes here saves an hour of poking around.</p>
+
+  <div class="level-toggle" role="group" aria-label="Detail level">
+    <button data-level="simple">Simple</button>
+    <button data-level="advanced">Advanced</button>
+  </div>
+  <p class="level-note"><span class="for-simple">Plain and quick. Switch to <b>Advanced</b> for the standards &amp; citation depth (IIIF, web annotations, source refs).</span><span class="for-adv">Scholar mode: adds how Archie maps onto IIIF &amp; W3C annotations, with source references. Back to <b>Simple</b> any time — your choice sticks across steps.</span></p>
+
+  <p>You bring the media. Archie gives it back as a published, annotated exhibit — built in <span class="term" data-term="studio">Studio</span>, read in the <span class="term" data-term="viewer">Viewer</span>.</p>
+
+  <div class="flow">
+    <div class="stack">
+      <span class="tile"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg> Images</span>
+      <span class="tile"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg> Audio</span>
+      <span class="tile"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M10 9l5 3-5 3z" fill="currentColor"/></svg> Video</span>
+      <span class="tile"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3 3 6v15l6-3 6 3 6-3V3l-6 3-6-3z"/><path d="M9 3v15M15 6v15"/></svg> Maps</span>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node">Archie<small>annotate · arrange · publish</small></div>
+    <div class="arrow">→</div>
+    <div class="out">A live exhibit<small>deep-zoom · read · link · cite</small></div>
+  </div>
+  <p class="flow-cap">Runs in your browser — no servers, no build tools, no lock-in.</p>
+
+  <figure class="real">
+    <img src="assets/img/gallery.png" alt="The Archie Viewer gallery: a parchment page headed 'The Archie Library' with cards for each exhibit">
+    <figcaption><b>Where it ends up</b> — a published Library's Gallery (real screenshot). Every Exhibit you author becomes a card here.</figcaption>
+  </figure>
+
+  <h2>1. How everything nests</h2>
+  <p>Archie has exactly four containers, each inside the last. Click in to descend, use the trail to climb back out.</p>
+
+  <div class="model drill">
+    <script type="application/json" class="drill-data">
+    [
+      { "name": "Library", "tag": "one published site",
+        "def": "The whole site you publish — here, \"The Archie Library\". Holds many Exhibits plus site-wide title and rights.",
+        "children": ["The Whole Manuscript", "Reading the Unreadable", "The Rosettes"] },
+      { "name": "Exhibit", "tag": "one self-contained argument",
+        "def": "A complete, publishable piece — e.g. \"The Whole Manuscript\", 12 items across six manuscript sections. Owns everything inside it.",
+        "children": ["f1r — Herbal", "f18v — Herbal (the sonified folio)", "f25v — Herbal"] },
+      { "name": "Object", "tag": "one media item",
+        "def": "A single image, sound, video, or map — e.g. folio f1r — the surface you deep-zoom and annotate.",
+        "children": ["Opening herbal — cipher reading", "Hoax reading: an invented plant", "Natural-language reading"] },
+      { "name": "Note", "tag": "one annotation",
+        "def": "A single annotation pinned to a region, a moment, or a place — and assignable to a Reading (cipher / hoax / natural-language). Linkable, kept forever.",
+        "children": [] }
+    ]
+    </script>
+    <div class="drill-bar"></div>
+    <div class="drill-stage"></div>
+    <p class="model-cap"><span class="hint">Model ·</span> <b>Library › Exhibit › Object › Note.</b> These four words carry the whole mental model — the rest of onboarding hangs off them.</p>
+  </div>
+
+  <p>Later, you layer three optional extras on top — nothing to worry about yet:</p>
+  <div class="layers">
+    <div class="base"><b>Objects + Notes</b> — what you build first</div>
+    <p class="lbl">add any of these on top ↓</p>
+    <div class="adds">
+      <div class="add"><b>Sections</b><small>a guided walk-through</small></div>
+      <div class="add"><b>Readings</b><small>compare interpretations</small></div>
+      <div class="add"><b>Tags</b><small>filter your notes</small></div>
+    </div>
+  </div>
+
+  <div class="aside-adv adv">
+    <span class="label">For the standards-minded</span>
+    These four map straight onto <span class="term" data-term="iiif">IIIF</span>: Library → Collection, Exhibit → Manifest, Object → Canvas; and each Note is a <span class="term" data-term="wadm">W3C Web Annotation</span>. So your work opens in Mirador or any IIIF viewer too — nothing is trapped in Archie, and Notes stay durably citable across versions.
+  </div>
+
+  <h2>2. Where onboarding is taking you</h2>
+  <p>The rest walks one path — from your media to a live exhibit:</p>
+  <div class="pipeline">
+    <span class="pnode">Your media</span>
+    <span class="parrow">→</span>
+    <button class="pstep" data-why="Step 1 · Start from a blank title, a folder of images, or a IIIF link — three onramps, zero friction."><span class="pn">1</span> Create</button>
+    <button class="pstep" data-why="Step 2 · Lay your Objects out on a light-table and drag to set the order readers move through."><span class="pn">2</span> Arrange</button>
+    <button class="pstep" data-why="Step 3 · Deep-zoom an image and draw a Note; or mark a time-range on audio and video."><span class="pn">3</span> Annotate</button>
+    <button class="pstep" data-why="Step 4 · Group Notes into Readings, label them with Tags, and write a narrative of Sections."><span class="pn">4</span> Interpret</button>
+    <button class="pstep" data-why="Step 5 · Optional — bring in many annotations at once from a CSV or a transcript."><span class="pn">5</span> Import</button>
+    <button class="pstep" data-why="Step 6 · Hand someone a single portable file, or push it to a live site on the web."><span class="pn">6</span> Publish</button>
+    <span class="parrow">→</span>
+    <span class="pnode end">Live exhibit</span>
+    <p class="pdetail">Tap a step to see what it's for.</p>
+  </div>
+
+  <div class="try">
+    <h3>Your first move</h3>
+    <p>The best way to learn Archie is to open it. Launch <b>Studio</b> and choose <b>"Try a template"</b> — that drops you into a <span class="term" data-term="playground">Playground</span> with a real exhibit loaded. Don't author anything yet: just find the two zoom scales (the all-Objects <em>Overview</em> and the single-<em>Object</em> surface) and notice the dark light-table. Step 2 picks up right there.</p>
+  </div>
+
+  <p class="ask"><b>I'm your guide through this.</b> Stuck on a word, or want me to point to exactly where something lives in the real UI? Just ask — that's what makes the next step land.</p>
+
+  <div class="lesson-nav">
+    <a class="next" href="0002-get-media-in.html"><span>Next</span>Step 2 · Get your media in</a>
+  </div>
+</main>
+</body>
+</html>

@@ -80,6 +80,23 @@
   let activeIndex = $state(arrivalSection);
   let selected = $state<string | null>(initialSelected); // a clicked marker (highlight), distinct from the active section
 
+  // Re-selection seam (A0): when ExhibitView's arriveAtNote re-fires on an ALREADY-mounted narrative
+  // (search jump Q-4, keyboard index Q-5), `initialSelected` changes to a new note. `selected` and
+  // `activeIndex` were only seeded once at init, so without this the re-selection did nothing. Track the
+  // previous value; on a new non-null target, select it AND jump to the section whose object owns it
+  // (mirrors arrivalSection — the canvas follows `activeSection.start`, so the camera fits the region).
+  let prevInitialSelected: string | null = initialSelected;
+  $effect(() => {
+    const next = initialSelected;
+    if (next !== null && next !== prevInitialSelected) {
+      selected = next;
+      const ownerId = objects.find((o) => (annotationsByObject[o.id] ?? []).some((a) => a.id === next))?.id;
+      const idx = sections.findIndex((s) => s.objectId === ownerId);
+      if (idx >= 0) activeIndex = idx;
+    }
+    prevInitialSelected = next;
+  });
+
   const activeSection = $derived(sections[activeIndex]);
   const activeObject = $derived.by(() => {
     // A section whose objectId no longer resolves (its object was deleted in Studio without the section

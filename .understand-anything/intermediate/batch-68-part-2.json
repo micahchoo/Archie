@@ -1,0 +1,722 @@
+{
+  "batchIndex": 68,
+  "partIndex": 2,
+  "nodes": [
+    {
+      "id": "apps",
+      "type": "directory",
+      "label": "apps",
+      "filePath": "apps",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio",
+      "type": "directory",
+      "label": "studio",
+      "filePath": "apps/studio",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio/src",
+      "type": "directory",
+      "label": "src",
+      "filePath": "apps/studio/src",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio/src/folder-import.ts",
+      "type": "file",
+      "label": "folder-import.ts",
+      "filePath": "apps/studio/src/folder-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 103,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 6,
+          "functionCount": 6,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/folder-import.ts:inferredMime",
+      "type": "function",
+      "label": "inferredMime",
+      "filePath": "apps/studio/src/folder-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 3,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "f"
+        ],
+        "startLine": 29,
+        "endLine": 31
+      }
+    },
+    {
+      "id": "apps/studio/src/folder-import.ts:isImportableMedia",
+      "type": "function",
+      "label": "isImportableMedia",
+      "filePath": "apps/studio/src/folder-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 3,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "f"
+        ],
+        "startLine": 34,
+        "endLine": 36
+      }
+    },
+    {
+      "id": "apps/studio/src/folder-import.ts:isHiddenPath",
+      "type": "function",
+      "label": "isHiddenPath",
+      "filePath": "apps/studio/src/folder-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 5,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "relativePath"
+        ],
+        "startLine": 39,
+        "endLine": 43
+      }
+    },
+    {
+      "id": "apps/studio/src/folder-import.ts:folderNameFrom",
+      "type": "function",
+      "label": "folderNameFrom",
+      "filePath": "apps/studio/src/folder-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 5,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "files"
+        ],
+        "startLine": 48,
+        "endLine": 52
+      }
+    },
+    {
+      "id": "apps/studio/src/folder-import.ts:mediaFilesInOrder",
+      "type": "function",
+      "label": "mediaFilesInOrder",
+      "filePath": "apps/studio/src/folder-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 5,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "files"
+        ],
+        "startLine": 56,
+        "endLine": 60
+      }
+    },
+    {
+      "id": "apps/studio/src/folder-import.ts:planFolderImportGroups",
+      "type": "function",
+      "label": "planFolderImportGroups",
+      "filePath": "apps/studio/src/folder-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 32,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "files"
+        ],
+        "startLine": 72,
+        "endLine": 103
+      }
+    },
+    {
+      "id": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "file",
+      "label": "publish-flows.svelte.ts",
+      "filePath": "apps/studio/src/publish-flows.svelte.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 172,
+      "metadata": {
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "type": "function",
+      "label": "createPublishFlows",
+      "filePath": "apps/studio/src/publish-flows.svelte.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 160,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "deps"
+        ],
+        "startLine": 12,
+        "endLine": 171
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e68p2_0",
+      "source": "apps",
+      "target": "apps/studio",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_1",
+      "source": "apps/studio",
+      "target": "apps/studio/src",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_2",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/folder-import.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_3",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:inferredMime",
+      "type": "contains",
+      "label": "folder-import.ts contains inferredMime",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_4",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:isImportableMedia",
+      "type": "contains",
+      "label": "folder-import.ts contains isImportableMedia",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_5",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:isHiddenPath",
+      "type": "contains",
+      "label": "folder-import.ts contains isHiddenPath",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_6",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:folderNameFrom",
+      "type": "contains",
+      "label": "folder-import.ts contains folderNameFrom",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_7",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:mediaFilesInOrder",
+      "type": "contains",
+      "label": "folder-import.ts contains mediaFilesInOrder",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_8",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:planFolderImportGroups",
+      "type": "contains",
+      "label": "folder-import.ts contains planFolderImportGroups",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_9",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:inferredMime",
+      "type": "export",
+      "label": "exports inferredMime",
+      "metadata": {
+        "isDefault": false,
+        "line": 29
+      }
+    },
+    {
+      "id": "e68p2_10",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:isImportableMedia",
+      "type": "export",
+      "label": "exports isImportableMedia",
+      "metadata": {
+        "isDefault": false,
+        "line": 34
+      }
+    },
+    {
+      "id": "e68p2_11",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:isHiddenPath",
+      "type": "export",
+      "label": "exports isHiddenPath",
+      "metadata": {
+        "isDefault": false,
+        "line": 39
+      }
+    },
+    {
+      "id": "e68p2_12",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:folderNameFrom",
+      "type": "export",
+      "label": "exports folderNameFrom",
+      "metadata": {
+        "isDefault": false,
+        "line": 48
+      }
+    },
+    {
+      "id": "e68p2_13",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:mediaFilesInOrder",
+      "type": "export",
+      "label": "exports mediaFilesInOrder",
+      "metadata": {
+        "isDefault": false,
+        "line": 56
+      }
+    },
+    {
+      "id": "e68p2_14",
+      "source": "apps/studio/src/folder-import.ts",
+      "target": "apps/studio/src/folder-import.ts:planFolderImportGroups",
+      "type": "export",
+      "label": "exports planFolderImportGroups",
+      "metadata": {
+        "isDefault": false,
+        "line": 72
+      }
+    },
+    {
+      "id": "e68p2_15",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_16",
+      "source": "apps/studio/src/publish-flows.svelte.ts",
+      "target": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "type": "contains",
+      "label": "publish-flows.svelte.ts contains createPublishFlows",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_17",
+      "source": "apps/studio/src/publish-flows.svelte.ts",
+      "target": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "type": "export",
+      "label": "exports createPublishFlows",
+      "metadata": {
+        "isDefault": false,
+        "line": 12
+      }
+    },
+    {
+      "id": "e68p2_18",
+      "source": "apps/studio/src/folder-import.ts:inferredMime",
+      "target": "apps/studio/src/folder-import.ts",
+      "type": "calls",
+      "label": "inferredMime calls f.type.startsWith",
+      "metadata": {
+        "callee": "f.type.startsWith",
+        "external": true,
+        "line": 30
+      }
+    },
+    {
+      "id": "e68p2_19",
+      "source": "apps/studio/src/folder-import.ts:isImportableMedia",
+      "target": "apps/studio/src/folder-import.ts",
+      "type": "calls",
+      "label": "isImportableMedia calls f.type.startsWith",
+      "metadata": {
+        "callee": "f.type.startsWith",
+        "external": true,
+        "line": 35
+      }
+    },
+    {
+      "id": "e68p2_20",
+      "source": "apps/studio/src/folder-import.ts:isHiddenPath",
+      "target": "apps/studio/src/folder-import.ts",
+      "type": "calls",
+      "label": "isHiddenPath calls relativePath.split",
+      "metadata": {
+        "callee": "relativePath.split",
+        "external": true,
+        "line": 40
+      }
+    },
+    {
+      "id": "e68p2_21",
+      "source": "apps/studio/src/folder-import.ts:folderNameFrom",
+      "target": "apps/studio/src/folder-import.ts",
+      "type": "calls",
+      "label": "folderNameFrom calls first.replace",
+      "metadata": {
+        "callee": "first.replace",
+        "external": true,
+        "line": 50
+      }
+    },
+    {
+      "id": "e68p2_22",
+      "source": "apps/studio/src/folder-import.ts:folderNameFrom",
+      "target": "apps/studio/src/folder-import.ts",
+      "type": "calls",
+      "label": "folderNameFrom calls root.trim",
+      "metadata": {
+        "callee": "root.trim",
+        "external": true,
+        "line": 51
+      }
+    },
+    {
+      "id": "e68p2_23",
+      "source": "apps/studio/src/folder-import.ts:mediaFilesInOrder",
+      "target": "apps/studio/src/folder-import.ts:isHiddenPath",
+      "type": "calls",
+      "label": "mediaFilesInOrder calls isHiddenPath",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_24",
+      "source": "apps/studio/src/folder-import.ts:mediaFilesInOrder",
+      "target": "apps/studio/src/folder-import.ts:isImportableMedia",
+      "type": "calls",
+      "label": "mediaFilesInOrder calls isImportableMedia",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_25",
+      "source": "apps/studio/src/folder-import.ts:mediaFilesInOrder",
+      "target": "apps/studio/src/folder-import.ts",
+      "type": "calls",
+      "label": "mediaFilesInOrder calls a.relativePath.localeCompare",
+      "metadata": {
+        "callee": "a.relativePath.localeCompare",
+        "external": true,
+        "line": 59
+      }
+    },
+    {
+      "id": "e68p2_26",
+      "source": "apps/studio/src/folder-import.ts:planFolderImportGroups",
+      "target": "apps/studio/src/folder-import.ts",
+      "type": "calls",
+      "label": "planFolderImportGroups calls files.filter",
+      "metadata": {
+        "callee": "files.filter",
+        "external": true,
+        "line": 73
+      }
+    },
+    {
+      "id": "e68p2_27",
+      "source": "apps/studio/src/folder-import.ts:planFolderImportGroups",
+      "target": "apps/studio/src/folder-import.ts:isHiddenPath",
+      "type": "calls",
+      "label": "planFolderImportGroups calls isHiddenPath",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_28",
+      "source": "apps/studio/src/folder-import.ts:planFolderImportGroups",
+      "target": "apps/studio/src/folder-import.ts:isImportableMedia",
+      "type": "calls",
+      "label": "planFolderImportGroups calls isImportableMedia",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_29",
+      "source": "apps/studio/src/folder-import.ts:planFolderImportGroups",
+      "target": "apps/studio/src/folder-import.ts",
+      "type": "calls",
+      "label": "planFolderImportGroups calls group.files.sort",
+      "metadata": {
+        "callee": "group.files.sort",
+        "external": true,
+        "line": 75
+      }
+    },
+    {
+      "id": "e68p2_30",
+      "source": "apps/studio/src/folder-import.ts:planFolderImportGroups",
+      "target": "apps/studio/src/folder-import.ts:folderNameFrom",
+      "type": "calls",
+      "label": "planFolderImportGroups calls folderNameFrom",
+      "metadata": {}
+    },
+    {
+      "id": "e68p2_31",
+      "source": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "createPublishFlows calls $state",
+      "metadata": {
+        "callee": "$state",
+        "external": true,
+        "line": 15
+      }
+    },
+    {
+      "id": "e68p2_32",
+      "source": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "createPublishFlows calls deps.persistPublishedLibrary",
+      "metadata": {
+        "callee": "deps.persistPublishedLibrary",
+        "external": true,
+        "line": 20
+      }
+    },
+    {
+      "id": "e68p2_33",
+      "source": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "createPublishFlows calls deps.bakeThumbnails",
+      "metadata": {
+        "callee": "deps.bakeThumbnails",
+        "external": true,
+        "line": 25
+      }
+    },
+    {
+      "id": "e68p2_34",
+      "source": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "createPublishFlows calls deps.bakeTileSource",
+      "metadata": {
+        "callee": "deps.bakeTileSource",
+        "external": true,
+        "line": 30
+      }
+    },
+    {
+      "id": "e68p2_35",
+      "source": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "createPublishFlows calls deps.persistProjectAssets",
+      "metadata": {
+        "callee": "deps.persistProjectAssets",
+        "external": true,
+        "line": 37
+      }
+    },
+    {
+      "id": "e68p2_36",
+      "source": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "createPublishFlows calls deps.stampPublishedIdentity",
+      "metadata": {
+        "callee": "deps.stampPublishedIdentity",
+        "external": true,
+        "line": 42
+      }
+    },
+    {
+      "id": "e68p2_37",
+      "source": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "createPublishFlows calls deps.cleanPublishedMedia",
+      "metadata": {
+        "callee": "deps.cleanPublishedMedia",
+        "external": true,
+        "line": 49
+      }
+    },
+    {
+      "id": "e68p2_38",
+      "source": "apps/studio/src/publish-flows.svelte.ts",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "publish calls persistLibrary",
+      "metadata": {
+        "caller": "publish",
+        "callee": "persistLibrary",
+        "internal": true,
+        "line": 52
+      }
+    },
+    {
+      "id": "e68p2_39",
+      "source": "apps/studio/src/publish-flows.svelte.ts",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "publish calls persistBaked",
+      "metadata": {
+        "caller": "publish",
+        "callee": "persistBaked",
+        "internal": true,
+        "line": 53
+      }
+    },
+    {
+      "id": "e68p2_40",
+      "source": "apps/studio/src/publish-flows.svelte.ts",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "publish calls persistAssets",
+      "metadata": {
+        "caller": "publish",
+        "callee": "persistAssets",
+        "internal": true,
+        "line": 54
+      }
+    },
+    {
+      "id": "e68p2_41",
+      "source": "apps/studio/src/publish-flows.svelte.ts",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "publish calls stampIdentity",
+      "metadata": {
+        "caller": "publish",
+        "callee": "stampIdentity",
+        "internal": true,
+        "line": 55
+      }
+    },
+    {
+      "id": "e68p2_42",
+      "source": "apps/studio/src/publish-flows.svelte.ts",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "publish calls cleanMedia",
+      "metadata": {
+        "caller": "publish",
+        "callee": "cleanMedia",
+        "internal": true,
+        "line": 56
+      }
+    },
+    {
+      "id": "e68p2_43",
+      "source": "apps/studio/src/publish-flows.svelte.ts",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "publish calls setTimeout",
+      "metadata": {
+        "caller": "publish",
+        "callee": "setTimeout",
+        "internal": true,
+        "line": 57
+      }
+    },
+    {
+      "id": "e68p2_44",
+      "source": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "createPublishFlows calls $derived",
+      "metadata": {
+        "callee": "$derived",
+        "external": true,
+        "line": 65
+      }
+    },
+    {
+      "id": "e68p2_45",
+      "source": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "createPublishFlows calls deps.persistPublishedLibraryToZip",
+      "metadata": {
+        "callee": "deps.persistPublishedLibraryToZip",
+        "external": true,
+        "line": 80
+      }
+    },
+    {
+      "id": "e68p2_46",
+      "source": "apps/studio/src/publish-flows.svelte.ts:createPublishFlows",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "createPublishFlows calls deps.persistPublishedLibraryToGHPages",
+      "metadata": {
+        "callee": "deps.persistPublishedLibraryToGHPages",
+        "external": true,
+        "line": 93
+      }
+    },
+    {
+      "id": "e68p2_47",
+      "source": "apps/studio/src/publish-flows.svelte.ts",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "publishToZip calls setTimeout",
+      "metadata": {
+        "caller": "publishToZip",
+        "callee": "setTimeout",
+        "internal": true,
+        "line": 96
+      }
+    },
+    {
+      "id": "e68p2_48",
+      "source": "apps/studio/src/publish-flows.svelte.ts",
+      "target": "apps/studio/src/publish-flows.svelte.ts",
+      "type": "calls",
+      "label": "publishToGHPages calls setTimeout",
+      "metadata": {
+        "caller": "publishToGHPages",
+        "callee": "setTimeout",
+        "internal": true,
+        "line": 108
+      }
+    }
+  ],
+  "stats": {
+    "nodeCount": 12,
+    "edgeCount": 49,
+    "fileCount": 2,
+    "totalParts": 4
+  }
+}

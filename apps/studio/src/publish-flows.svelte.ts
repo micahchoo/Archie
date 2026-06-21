@@ -6,10 +6,11 @@
 // primitive + per-host adapters" now has one home. A `.svelte.ts` rune module (cf.
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
-  MemoryFilesystem, FsaFilesystem, publishLibrary, libraryToZipFs, collectFiles, publishToGitHub, renderMarkdown,
-  type Library, type AnnotationLog, type BrokenLink, type GitHubTarget, type PublishProgress, type LogicalId,
+  MemoryFilesystem, publishLibrary, libraryToZipFs, collectFiles, publishToGitHub, renderMarkdown,
+  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type GitHubTarget, type PublishProgress, type LogicalId,
 } from "@render/core";
-import { supportsFileStreamSave, pickFolder, saveZipToDisk } from "./binding.js";
+import { supportsFileStreamSave, saveZipToDisk } from "./binding.js";
+import { pickFolderBinding } from "./folder-backend.js";
 import { readAssetBlob, readOriginalBytes, readThumbBytes, assetSize, isAsset, ASSET_PREFIX, type ExhibitMeta } from "./store.js";
 // ADR-0014 (static archival pages): note bodies render through the SAME sanitize pipeline the
 // live Viewer uses (P-1 Q3 no-drift invariant) — renderMarkdown is canonical in @render/core now
@@ -99,10 +100,11 @@ export function createPublishFlows(deps: PublishDeps) {
     const logs = await deps.loadAllLogs();
     return libraryToZipFs(deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, ...STATIC_PAGE_OPTS });
   }
-  // ONE folder writer for the two folder sinks (binding autosave/Save + local publish).
-  async function writeTree(handle: FileSystemDirectoryHandle) {
+  // ONE folder writer for the two folder sinks (binding autosave/Save + local publish). Takes the
+  // Filesystem seam directly (FSA or Tauri), so the caller owns capability selection (folder-backend).
+  async function writeTree(fs: Filesystem) {
     const logs = await deps.loadAllLogs();
-    await publishLibrary(new FsaFilesystem(handle), deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, ...STATIC_PAGE_OPTS });
+    await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, ...STATIC_PAGE_OPTS });
   }
   /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
   async function downloadProjectZip(): Promise<boolean> {
@@ -121,8 +123,8 @@ export function createPublishFlows(deps: PublishDeps) {
     closeDialog() { s.dialogOpen = false; },
     closePublish() { s.publishOpen = false; },
 
-    /** Write the whole published tree into a folder handle (the git / GH-Pages on-ramp; also the
-     *  binding store's folder sink). */
+    /** Write the whole published tree into a bound folder's Filesystem (FSA or Tauri — the git /
+     *  GH-Pages on-ramp; also the binding store's folder sink). */
     writeToFolder: writeTree,
     downloadProjectZip,
     /** The Publish-dialog zip download (A.1 streaming; surfaces brokenLinks via console). Returns
@@ -156,10 +158,10 @@ export function createPublishFlows(deps: PublishDeps) {
     /** Local flow: pick a folder + write the published tree; returns the folder name (null = cancelled). */
     async localPublishFolder(): Promise<string | null> {
       await deps.flushExhibit(); // flush current edits so the published tree is current
-      const handle = await pickFolder();
-      if (!handle) return null;
-      await writeTree(handle);
-      return handle.name;
+      const fb = await pickFolderBinding();
+      if (!fb) return null;
+      await writeTree(fb.fs);
+      return fb.name;
     },
     /** Local flow (non-Chromium, no folder picker): save the project zip; returns its filename. */
     async localPublishZip(): Promise<string> {

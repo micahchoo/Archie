@@ -287,3 +287,27 @@ Using: node-http-proxy@master
 ✓ Found docs at /doc
 Error: No markdown files found in doc. Use --path to specify or --lang all to include all languages.
 2026-06-18T06:20:14Z | failed http-proxy@master — context add failed
+Cloning https://github.com/rossmacarthur/serde...
+Checking out master...
+Using: serde@master
+✓ Found docs at /docs
+✓ Found 3 markdown files
+Building package...
+Error: The module '/home/micah/.npm-global/lib/node_modules/@neuledge/context/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 115. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+2026-06-20T23:15:04Z | failed serde@master — context add failed
+Cloning https://github.com/tauri-apps/tauri...
+Checking out dev...
+Using: tauri@dev
+✓ Reading from repository root
+✓ Found 48 markdown files
+Building package...
+Error: The module '/home/micah/.npm-global/lib/node_modules/@neuledge/context/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 115. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+2026-06-20T23:15:07Z | failed tauri@dev — context add failed

@@ -1,0 +1,722 @@
+{
+  "batchIndex": 52,
+  "nodes": [
+    {
+      "id": "apps",
+      "type": "directory",
+      "label": "apps",
+      "filePath": "apps",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer",
+      "type": "directory",
+      "label": "viewer",
+      "filePath": "apps/viewer",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public",
+      "type": "directory",
+      "label": "public",
+      "filePath": "apps/viewer/public",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published",
+      "type": "directory",
+      "label": "published",
+      "filePath": "apps/viewer/public/published",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/voynich",
+      "type": "directory",
+      "label": "voynich",
+      "filePath": "apps/viewer/public/published/voynich",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas",
+      "type": "directory",
+      "label": "canvas",
+      "filePath": "apps/viewer/public/published/voynich/canvas",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3",
+      "type": "directory",
+      "label": "o3",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "type": "file",
+      "label": "annotations-abjad.json",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 36,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        }
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "type": "file",
+      "label": "annotations-cipher.json",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 46,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        }
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "type": "file",
+      "label": "annotations-hoax.json",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 36,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        }
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "type": "file",
+      "label": "annotations.json",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 29,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 4
+        }
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json_section-_context",
+      "type": "section",
+      "label": "@context",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 2
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json_section-id",
+      "type": "section",
+      "label": "id",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 3
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json_section-type",
+      "type": "section",
+      "label": "type",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 4
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json_section-items",
+      "type": "section",
+      "label": "items",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 5
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json_section-partOf",
+      "type": "section",
+      "label": "partOf",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 31
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json_section-_context",
+      "type": "section",
+      "label": "@context",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 2
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json_section-id",
+      "type": "section",
+      "label": "id",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 3
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json_section-type",
+      "type": "section",
+      "label": "type",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 4
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json_section-items",
+      "type": "section",
+      "label": "items",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 5
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json_section-partOf",
+      "type": "section",
+      "label": "partOf",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 41
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json_section-_context",
+      "type": "section",
+      "label": "@context",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 2
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json_section-id",
+      "type": "section",
+      "label": "id",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 3
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json_section-type",
+      "type": "section",
+      "label": "type",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 4
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json_section-items",
+      "type": "section",
+      "label": "items",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 5
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json_section-partOf",
+      "type": "section",
+      "label": "partOf",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 31
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations.json_section-_context",
+      "type": "section",
+      "label": "@context",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 2
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations.json_section-id",
+      "type": "section",
+      "label": "id",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 3
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations.json_section-type",
+      "type": "section",
+      "label": "type",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 4
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/voynich/canvas/o3/annotations.json_section-partOf",
+      "type": "section",
+      "label": "partOf",
+      "filePath": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 24
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e52_0",
+      "source": "apps",
+      "target": "apps/viewer",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e52_1",
+      "source": "apps/viewer",
+      "target": "apps/viewer/public",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e52_2",
+      "source": "apps/viewer/public",
+      "target": "apps/viewer/public/published",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e52_3",
+      "source": "apps/viewer/public/published",
+      "target": "apps/viewer/public/published/voynich",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e52_4",
+      "source": "apps/viewer/public/published/voynich",
+      "target": "apps/viewer/public/published/voynich/canvas",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e52_5",
+      "source": "apps/viewer/public/published/voynich/canvas",
+      "target": "apps/viewer/public/published/voynich/canvas/o3",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e52_6",
+      "source": "apps/viewer/public/published/voynich/canvas/o3",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e52_7",
+      "source": "apps/viewer/public/published/voynich/canvas/o3",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e52_8",
+      "source": "apps/viewer/public/published/voynich/canvas/o3",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e52_9",
+      "source": "apps/viewer/public/published/voynich/canvas/o3",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e52_10",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3",
+      "type": "configures",
+      "label": "configures",
+      "metadata": {}
+    },
+    {
+      "id": "e52_11",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3",
+      "type": "configures",
+      "label": "configures",
+      "metadata": {}
+    },
+    {
+      "id": "e52_12",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3",
+      "type": "configures",
+      "label": "configures",
+      "metadata": {}
+    },
+    {
+      "id": "e52_13",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3",
+      "type": "configures",
+      "label": "configures",
+      "metadata": {}
+    },
+    {
+      "id": "e52_14",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json_section-_context",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "@context"
+      }
+    },
+    {
+      "id": "e52_15",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json_section-id",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "id"
+      }
+    },
+    {
+      "id": "e52_16",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json_section-type",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "type"
+      }
+    },
+    {
+      "id": "e52_17",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json_section-items",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "items"
+      }
+    },
+    {
+      "id": "e52_18",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json_section-partOf",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "partOf"
+      }
+    },
+    {
+      "id": "e52_19",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json_section-_context",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "@context"
+      }
+    },
+    {
+      "id": "e52_20",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json_section-id",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "id"
+      }
+    },
+    {
+      "id": "e52_21",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json_section-type",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "type"
+      }
+    },
+    {
+      "id": "e52_22",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json_section-items",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "items"
+      }
+    },
+    {
+      "id": "e52_23",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json_section-partOf",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "partOf"
+      }
+    },
+    {
+      "id": "e52_24",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json_section-_context",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "@context"
+      }
+    },
+    {
+      "id": "e52_25",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json_section-id",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "id"
+      }
+    },
+    {
+      "id": "e52_26",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json_section-type",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "type"
+      }
+    },
+    {
+      "id": "e52_27",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json_section-items",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "items"
+      }
+    },
+    {
+      "id": "e52_28",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json_section-partOf",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "partOf"
+      }
+    },
+    {
+      "id": "e52_29",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations.json_section-_context",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "@context"
+      }
+    },
+    {
+      "id": "e52_30",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations.json_section-id",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "id"
+      }
+    },
+    {
+      "id": "e52_31",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations.json_section-type",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "type"
+      }
+    },
+    {
+      "id": "e52_32",
+      "source": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "target": "apps/viewer/public/published/voynich/canvas/o3/annotations.json_section-partOf",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "partOf"
+      }
+    }
+  ],
+  "stats": {
+    "nodeCount": 30,
+    "edgeCount": 33,
+    "fileCount": 4
+  }
+}

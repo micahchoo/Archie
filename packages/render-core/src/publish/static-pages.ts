@@ -19,6 +19,32 @@ export interface StaticPageOptions {
   viewerBase?: string;
   /** Markdown → SAFE html. Default escapes everything (entity-encoded, paragraph breaks only). */
   renderBody?: (md: string) => string;
+  /** The artifact's true publish time (ISO 8601). Threaded into JSON-LD `datePublished`/`dateModified`
+   *  and the sitemap `<lastmod>`. Absent = those fields are omitted (the honest default). */
+  publishedAt?: string;
+}
+
+/** The SEO head projection a page carries (Q-8): Open Graph + Twitter card + a canonical link + one
+ *  schema.org JSON-LD object. URLs are ABSOLUTE (built from the publish baseUrl). */
+export interface PageMeta {
+  title: string;
+  description?: string;
+  /** ABSOLUTE og:image URL. */
+  ogImage: string;
+  /** ABSOLUTE canonical URL of this page. */
+  canonical: string;
+  /** og:type — "article" for an exhibit, "website" for the library landing. */
+  ogType: "article" | "website";
+  /** The schema.org object serialized into `<script type="application/ld+json">`. */
+  jsonLd: Record<string, unknown>;
+}
+
+/** og:image for an exhibit: the cover if absolute, else the first object's absolute source, else the
+ *  brand card at the publish base. Mirrors apps/viewer ogImageFor but works from the baseUrl render-core
+ *  already holds (the viewer module reads archie.config.json — not importable cleanly into core). */
+function ogImageForExhibit(exhibit: Exhibit, baseUrl: string): string {
+  const abs = (u: string | undefined): string | undefined => (u && /^https?:\/\//.test(u) ? u : undefined);
+  return abs(exhibit.cover) ?? abs(exhibit.objects[0]?.source) ?? `${baseUrl}og-card.png`;
 }
 
 const esc = (s: string): string =>

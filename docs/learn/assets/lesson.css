@@ -1,0 +1,384 @@
+/* Archie Learn — shared lesson stylesheet.
+   One component, linked by every lesson, so the spine reads as one course.
+   Tufte-leaning: generous measure, restrained palette, prints clean. */
+
+:root {
+  /* Archie "Verdant Clearing" palette — matched to apps/viewer/src/tokens.css
+     so the docs read as part of the product, not a separate site. */
+  --ink:        #1a3c23;   /* deep forest moss (primary ink, not pure black) */
+  --ink-soft:   #3a5340;
+  --ink-faint:  #6b7d6e;
+  --paper:      #f7f4ec;   /* warm parchment (the real surface-paper) */
+  --rule:       #dfe3d3;
+  --accent:     #3a8c5d;   /* emerald — primary actions / active state */
+  --accent-bg:  #e7efe3;   /* muted emerald tint */
+  --accent-2:   #9a7b39;   /* golden amber — links & connectors */
+  --good:       #3a8c5d;
+  --good-bg:    #e7efe3;
+  --bad:        #9a3b34;
+  --bad-bg:     #f6eae8;
+  --code-bg:    #ecf0e3;
+  --measure:    38rem;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 17px; }
+
+body {
+  margin: 0;
+  padding: 3.5rem 1.5rem 6rem;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, serif;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap { max-width: var(--measure); margin: 0 auto; }
+.wrap.wide { max-width: 52rem; }
+
+/* — masthead — */
+.eyebrow {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 0.6rem;
+}
+h1 {
+  font-size: 2.1rem;
+  line-height: 1.12;
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+}
+.standfirst {
+  font-size: 1.18rem;
+  color: var(--ink-soft);
+  margin: 0 0 1.4rem;
+  font-style: italic;
+}
+
+/* — Simple ⇄ Advanced level toggle (paired with models.js) — */
+.level-toggle {
+  display: inline-flex; align-items: center; gap: 0; margin: 0 0 0.4rem;
+  border: 1px solid var(--rule); border-radius: 999px; overflow: hidden; background: #fff;
+}
+.level-toggle button {
+  font: inherit; font-size: 0.82rem; cursor: pointer; border: none; background: transparent;
+  color: var(--ink-soft); padding: 0.32rem 0.95rem;
+}
+.level-toggle button.on { background: var(--accent); color: #fff; }
+.level-note { font-size: 0.8rem; color: var(--ink-faint); margin: 0 0 2rem; }
+.level-note .for-simple { display: inline; }
+.level-note .for-adv { display: none; }
+body[data-level="advanced"] .level-note .for-simple { display: none; }
+body[data-level="advanced"] .level-note .for-adv { display: inline; }
+
+/* advanced-only depth: hidden in Simple, revealed in Advanced */
+.adv { display: none; }
+body[data-level="advanced"] .adv { display: block; }
+.adv-inline { display: none; }
+body[data-level="advanced"] .adv-inline { display: inline; }
+
+/* an advanced aside callout */
+.aside-adv {
+  border-left: 3px solid var(--accent-2); background: #faf6ec;
+  padding: 0.75rem 1.05rem; border-radius: 0 6px 6px 0; margin: 1.2rem 0;
+  font-size: 0.95rem;
+}
+.aside-adv .label {
+  font-family: ui-monospace, monospace; font-size: 0.68rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent-2); display: block; margin-bottom: 0.3rem;
+}
+h2 {
+  font-size: 1.32rem;
+  margin: 2.6rem 0 0.8rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.3rem;
+}
+h3 { font-size: 1.05rem; margin: 1.6rem 0 0.4rem; }
+
+p, li { font-size: 1.02rem; }
+a { color: var(--accent-2); text-underline-offset: 2px; }   /* amber, per real UI */
+
+/* — glossary term + popover (no separate glossary page) — */
+.term {
+  border-bottom: 1px dashed var(--accent-2);
+  cursor: help; color: inherit;
+}
+.term:focus { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.gloss-pop {
+  position: absolute; z-index: 60; max-width: 19rem;
+  background: #fff; border: 1px solid var(--rule); border-radius: 9px;
+  box-shadow: 0 10px 28px -10px rgba(26,60,35,0.4);
+  padding: 0.7rem 0.9rem; font-family: "Iowan Old Style", Palatino, Georgia, serif;
+  font-size: 0.9rem; line-height: 1.45; color: var(--ink);
+}
+.gloss-pop.hidden { display: none; }
+.gloss-pop .t {
+  display: block; font-weight: 600; color: var(--accent); margin-bottom: 0.2rem;
+  font-size: 0.95rem;
+}
+.gloss-pop .d { color: var(--ink-soft); }
+
+code, kbd, .mono {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.86em;
+}
+code { background: var(--code-bg); padding: 0.08em 0.34em; border-radius: 3px; }
+kbd {
+  background: #fff; border: 1px solid var(--rule); border-bottom-width: 2px;
+  border-radius: 4px; padding: 0.05em 0.4em; font-size: 0.8em; color: var(--ink-soft);
+}
+
+/* — the journey spine — */
+.spine { list-style: none; margin: 1.4rem 0; padding: 0; counter-reset: step; }
+.spine > li {
+  position: relative;
+  padding: 0.9rem 0 0.9rem 3rem;
+  border-left: 2px solid var(--rule);
+  counter-increment: step;
+}
+.spine > li::before {
+  content: counter(step);
+  position: absolute; left: -0.95rem; top: 0.85rem;
+  width: 1.7rem; height: 1.7rem;
+  background: var(--accent); color: #fff;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: ui-monospace, monospace; font-size: 0.82rem;
+}
+.spine > li:last-child { border-left-color: transparent; }
+.spine .stage-name { font-weight: 600; }
+.spine .stage-why { color: var(--ink-faint); font-size: 0.92rem; display: block; margin-top: 0.15rem; }
+
+/* — transformation infographic (the one-glance value prop) — */
+.flow {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+  gap: 0.6rem 0.9rem; margin: 1.4rem 0;
+  padding: 1.3rem 1rem; border: 1px solid var(--rule); border-radius: 12px; background: #fff;
+}
+.flow .stack { display: grid; gap: 0.4rem; }
+.flow .tile {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: var(--accent-bg); border: 1px solid var(--rule); border-radius: 7px;
+  padding: 0.34rem 0.7rem; font-size: 0.86rem; color: var(--ink-soft);
+}
+.flow .tile svg { flex: none; }
+.flow .arrow { color: var(--accent); font-size: 1.5rem; line-height: 1; }
+.flow .node {
+  background: var(--accent); color: #fff; font-weight: 600;
+  padding: 0.7rem 1.15rem; border-radius: 9px; text-align: center;
+  box-shadow: 0 6px 16px -8px rgba(58,140,93,0.7);
+}
+.flow .node small { display: block; font-weight: 400; font-size: 0.7rem; opacity: 0.85; }
+.flow .out {
+  display: flex; flex-direction: column; gap: 0.25rem; align-items: center;
+  background: var(--paper); border: 1.5px dashed var(--accent); border-radius: 9px;
+  padding: 0.7rem 0.95rem; max-width: 12rem; text-align: center;
+  font-size: 0.9rem; color: var(--ink); font-weight: 600;
+}
+.flow .out small { font-weight: 400; font-size: 0.75rem; color: var(--ink-faint); }
+.flow-cap { text-align: center; font-size: 0.86rem; color: var(--ink-soft); margin: 0.2rem 0 0; }
+@media (max-width: 30rem) { .flow .arrow { transform: rotate(90deg); } }
+
+/* — journey pipeline infographic (interactive: tap a step) — */
+.pipeline {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+  gap: 0.45rem 0.5rem; margin: 1.4rem 0;
+  padding: 1.3rem 1rem; border: 1px solid var(--rule); border-radius: 12px; background: #fff;
+}
+.pipeline .pnode {
+  background: var(--accent-bg); border: 1px solid var(--rule); border-radius: 7px;
+  padding: 0.45rem 0.7rem; font-size: 0.82rem; color: var(--ink-soft); font-weight: 600;
+}
+.pipeline .pnode.end { border: 1.5px dashed var(--accent); background: var(--paper); color: var(--ink); }
+.pipeline .parrow { color: var(--accent); font-size: 1.25rem; line-height: 1; }
+.pipeline .pstep {
+  font: inherit; font-size: 0.82rem; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;
+  background: #fff; border: 1px solid var(--rule); border-radius: 999px; padding: 0.32rem 0.7rem 0.32rem 0.32rem;
+  color: var(--ink); transition: border-color 0.12s, background 0.12s;
+}
+.pipeline .pstep:hover { border-color: var(--accent); }
+.pipeline .pstep.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pipeline .pstep .pn {
+  display: grid; place-items: center; width: 1.35rem; height: 1.35rem; border-radius: 50%;
+  background: var(--accent); color: #fff; font-family: ui-monospace, monospace; font-size: 0.72rem;
+}
+.pipeline .pstep.on .pn { background: #fff; color: var(--accent); }
+.pipeline .pdetail {
+  flex-basis: 100%; text-align: center; margin: 0.6rem 0 0; padding-top: 0.6rem;
+  border-top: 1px solid var(--rule); font-size: 0.92rem; color: var(--ink-soft); min-height: 1.2rem;
+}
+
+/* — additive-layers infographic — */
+.layers { margin: 1.4rem 0; border: 1px solid var(--rule); border-radius: 12px; background: #fff; padding: 1.1rem; }
+.layers .base {
+  background: var(--paper); border: 1px dashed var(--accent-2); border-radius: 8px;
+  padding: 0.55rem 0.8rem; font-size: 0.88rem; color: var(--ink-soft); text-align: center;
+}
+.layers .base b { color: var(--ink); }
+.layers .lbl { text-align: center; font-size: 0.78rem; color: var(--ink-faint); margin: 0.55rem 0; }
+.layers .adds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.layers .add {
+  display: block; text-decoration: none; background: var(--accent-bg); border: 1px solid var(--rule);
+  border-radius: 8px; padding: 0.6rem 0.7rem; font-size: 0.84rem; transition: border-color 0.12s;
+}
+.layers .add:hover { border-color: var(--accent); }
+.layers .add b { color: var(--accent); display: block; }
+.layers .add small { color: var(--ink-faint); }
+@media (max-width: 30rem) { .layers .adds { grid-template-columns: 1fr; } }
+
+/* — noun cards — */
+.nouns { display: grid; gap: 0.7rem; margin: 1.2rem 0; }
+.noun {
+  border: 1px solid var(--rule); border-radius: 8px;
+  padding: 0.7rem 0.9rem; background: #fff;
+}
+.noun b { color: var(--accent); }
+.noun .rel { display: block; color: var(--ink-faint); font-size: 0.88rem; margin-top: 0.2rem; }
+
+/* "easy to miss" flag for non-obvious affordances */
+.flag {
+  display: inline-block; font-family: ui-monospace, monospace; font-size: 0.64rem;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent);
+  background: var(--accent-bg); border: 1px solid var(--rule); border-radius: 4px;
+  padding: 0.05rem 0.4rem; margin-left: 0.35rem; vertical-align: middle;
+}
+
+/* — callouts — */
+.callout {
+  border-left: 3px solid var(--accent);
+  background: var(--accent-bg);
+  padding: 0.8rem 1.1rem; border-radius: 0 6px 6px 0;
+  margin: 1.4rem 0;
+}
+.callout .label {
+  font-family: ui-monospace, monospace; font-size: 0.7rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 0.3rem;
+}
+.source {
+  font-family: ui-monospace, monospace; font-size: 0.74rem; color: var(--ink-faint);
+}
+
+/* — primary-source + ask-teacher footers — */
+.try {
+  border: 1px dashed var(--accent); border-radius: 8px;
+  padding: 1rem 1.2rem; margin: 2rem 0;
+}
+.try h3 { margin-top: 0; color: var(--accent); }
+
+.ask {
+  margin-top: 3rem; padding-top: 1.2rem; border-top: 1px solid var(--rule);
+  color: var(--ink-soft); font-size: 0.96rem;
+}
+.ask b { color: var(--ink); }
+
+/* — prev/next nav — */
+.lesson-nav {
+  display: flex; justify-content: space-between; gap: 1rem;
+  margin-top: 2.5rem; padding-top: 1.2rem; border-top: 1px solid var(--rule);
+  font-size: 0.92rem;
+}
+.lesson-nav a { text-decoration: none; }
+.lesson-nav .next { margin-left: auto; text-align: right; }
+.lesson-nav span { display: block; font-size: 0.72rem; color: var(--ink-faint);
+  font-family: ui-monospace, monospace; text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* ====================================================================
+   Interactive models (paired with models.js).
+   The teaching happens by manipulation, not by reading. Each model is a
+   small sandbox the learner drives; captions stay short. ==================== */
+
+.model {
+  border: 1px solid var(--rule); border-radius: 12px;
+  background: #fff; margin: 1.6rem 0; overflow: hidden;
+}
+.model .model-cap {
+  font-size: 0.86rem; color: var(--ink-soft);
+  padding: 0.7rem 1.1rem; border-top: 1px solid var(--rule); background: var(--paper);
+}
+.model .model-cap b { color: var(--ink); }
+.model .hint {
+  font-family: ui-monospace, monospace; font-size: 0.68rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--accent);
+}
+
+/* — drill-down containment model — */
+.drill .drill-bar {
+  display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;
+  padding: 0.7rem 1.1rem; border-bottom: 1px solid var(--rule);
+  font-family: ui-monospace, monospace; font-size: 0.82rem;
+}
+.drill .crumb { background: none; border: none; font: inherit; color: var(--accent);
+  cursor: pointer; padding: 0.1rem 0.2rem; }
+.drill .crumb:disabled { color: var(--ink); cursor: default; }
+.drill .crumb-sep { color: var(--ink-faint); }
+.drill .drill-stage { padding: 1.2rem 1.1rem 1.4rem; }
+.drill .level-name { font-size: 1.4rem; font-weight: 600; color: var(--accent); margin: 0; }
+.drill .level-tag { color: var(--ink-faint); font-size: 0.9rem; margin: 0.1rem 0 0.7rem; }
+.drill .level-def { margin: 0 0 1rem; color: var(--ink-soft); }
+.drill .child-head { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--ink-faint); font-family: ui-monospace, monospace; margin: 0 0 0.5rem; }
+.drill .children { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.drill .chip {
+  font: inherit; font-size: 0.9rem; cursor: pointer;
+  background: var(--accent-bg); border: 1px solid var(--rule); color: var(--ink);
+  border-radius: 999px; padding: 0.4rem 0.9rem; transition: border-color 0.12s, transform 0.06s;
+}
+.drill .chip:hover { border-color: var(--accent); }
+.drill .chip:active { transform: translateY(1px); }
+.drill .chip .arr { color: var(--accent); margin-left: 0.35rem; }
+.drill .leaf-note { color: var(--ink-faint); font-style: italic; }
+
+/* — grid ⇄ narrative flipper model — */
+.flip .flip-controls {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.8rem 1.1rem; border-bottom: 1px solid var(--rule); flex-wrap: wrap;
+}
+.flip .flip-controls button {
+  font: inherit; font-size: 0.9rem; cursor: pointer;
+  background: var(--accent); color: #fff; border: none;
+  border-radius: 6px; padding: 0.4rem 0.9rem;
+}
+.flip .flip-controls button.ghost { background: #fff; color: var(--accent); border: 1px solid var(--rule); }
+.flip .flip-controls button:disabled { opacity: 0.4; cursor: default; }
+.flip .flip-count { font-family: ui-monospace, monospace; font-size: 0.82rem; color: var(--ink-soft); }
+.flip .flip-mode { margin-left: auto; font-family: ui-monospace, monospace; font-size: 0.78rem;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.flip .flip-stage { padding: 0; }
+
+/* real-screenshot variant: swap between actual Viewer front doors */
+.flip .shot { margin: 0; }
+.flip .shot.hidden { display: none; }
+.flip .shot img { display: block; width: 100%; height: auto; border-bottom: 1px solid var(--rule); }
+.flip .shot figcaption {
+  font-size: 0.84rem; color: var(--ink-soft); padding: 0.7rem 1.1rem;
+}
+.flip .shot figcaption b { color: var(--accent); }
+
+/* a plain captioned real screenshot, reused outside the flipper */
+figure.real { margin: 1.4rem 0; border: 1px solid var(--rule); border-radius: 10px; overflow: hidden; background: #fff; }
+figure.real img { display: block; width: 100%; height: auto; }
+figure.real figcaption { font-size: 0.84rem; color: var(--ink-soft); padding: 0.7rem 1.1rem; border-top: 1px solid var(--rule); background: var(--paper); }
+figure.real figcaption b { color: var(--ink); }
+
+/* — clickable journey spine (expand-on-click) — */
+.spine.interactive > li { cursor: pointer; }
+.spine.interactive .stage-why { display: none; }
+.spine.interactive > li.open .stage-why { display: block; }
+.spine.interactive .stage-name::after { content: " +"; color: var(--accent); font-family: ui-monospace, monospace; }
+.spine.interactive > li.open .stage-name::after { content: " −"; }
+
+/* — print — */
+@media print {
+  body { background: #fff; padding: 0; font-size: 11pt; }
+  .lesson-nav { display: none; }
+  .spine.interactive .stage-why { display: block; }
+  .spine.interactive .stage-name::after { content: ""; }
+  a { color: var(--ink); text-decoration: none; }
+  .model { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
