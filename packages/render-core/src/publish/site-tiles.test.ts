@@ -62,17 +62,18 @@ describe("publishLibrary DZI tiling (tileObject)", () => {
     expect(paths.some((p) => p.includes("_files"))).toBe(false);
   });
 
-  it("bakes a REMOTE IIIF object via tileRemote → persists {objId}_files + stamps tileSource", async () => {
-    const remoteLib: Library = {
-      id: asLibraryId("lib"),
-      exhibits: [{
-        id: asExhibitId("r"), slug: "r", title: "R",
-        objects: [{ id: asObjectId("o9"), source: "https://iiif.example/img/info.json", label: "Remote", width: 8000, height: 6000 }],
-      }],
-    };
+  const remoteObj = (extra: Record<string, unknown> = {}) => ({
+    id: asObjectId("o9"), source: "https://iiif.example/img/info.json", label: "Remote", width: 8000, height: 6000, ...extra,
+  });
+  const remoteLib = (extra?: Record<string, unknown>): Library => ({
+    id: asLibraryId("lib"),
+    exhibits: [{ id: asExhibitId("r"), slug: "r", title: "R", objects: [remoteObj(extra)] }],
+  });
+
+  it("bakes a REMOTE IIIF object ONLY when opted in (bakeTiles) → persists {objId}_files + stamps tileSource", async () => {
     const fs = new MemoryFilesystem();
     let calledId: string | null = null;
-    await publishLibrary(fs, remoteLib, () => [], {
+    await publishLibrary(fs, remoteLib({ bakeTiles: true }), () => [], {
       baseUrl: base,
       tileRemote: async (_slug, obj) => { calledId = obj.id; return { descriptor, tiles: fakeTiles() }; },
     });
@@ -82,6 +83,17 @@ describe("publishLibrary DZI tiling (tileObject)", () => {
     expect(paths).toContain("r/o9_files/0/0_0.jpg");
     expect(paths).toContain("r/o9_files/13/1_0.jpg");
     expect((files["r/manifest.json"] as { text: string }).text).toContain(`${base}r/o9_files`);
+  });
+
+  it("does NOT bake a remote object without bakeTiles (opt-in OFF by default)", async () => {
+    const fs = new MemoryFilesystem();
+    let called = false;
+    await publishLibrary(fs, remoteLib(), () => [], { // no bakeTiles
+      baseUrl: base,
+      tileRemote: async () => { called = true; return { descriptor, tiles: fakeTiles() }; },
+    });
+    expect(called).toBe(false);
+    expect(Object.keys(await collectFiles(await fs.root())).some((p) => p.includes("_files"))).toBe(false);
   });
 
   it("does NOT re-tile a just-published local /assets/ object as if remote (the /assets/ guard)", async () => {

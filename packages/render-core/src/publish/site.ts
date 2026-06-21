@@ -178,7 +178,8 @@ async function writeTilePyramid(filesDir: FsDirectory, tiles: Map<string, Blob>)
  *  (AV is never tiled). The `/assets/` guard is load-bearing: without it the asset pass's rewritten https
  *  sources would be re-tiled here as if remote. */
 function isRemoteTileable(o: AObject): boolean {
-  return !o.tileSource
+  return o.bakeTiles === true // explicit per-object opt-in (Q-9): remote baking is OFF by default
+    && !o.tileSource
     && /^https?:\/\//i.test(o.source)
     && !/\/assets\//.test(o.source)
     && (o.mediaType === undefined || o.mediaType === "image");
