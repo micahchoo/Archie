@@ -29,13 +29,42 @@ export interface XyzTileSource {
   attribution?: string;
 }
 
-/** A structured tile-source hint an author supplies for a non-string source (a map). v1: xyz only. */
-export type TileSourceDescriptor = XyzTileSource;
+/**
+ * A pre-generated Deep Zoom Image (DZI) tile pyramid descriptor (Phase B tiling; Q-8/Q-9). When an
+ * import is too large to bundle as one responsive master (`exceedsCap`), the author-side slicer
+ * (apps/studio/src/dzi-slicer.worker.ts) bakes a `.dzi`-shaped tile pyramid and records THIS on the
+ * object. The viewer hands it to OSD, which renders DZI natively (a tiny config — no viewer-side
+ * generation). The geometry/`.dzi` XML/tile-URL math lives in geometry/dzi.ts; this is the carried
+ * descriptor only. Distinct from `XyzTileSource` (a live slippy basemap) — a DZI is a baked, finite
+ * pyramid of a single source image, not a world projection.
+ */
+export interface DziTileSource {
+  kind: "dzi";
+  /** Full-resolution source width in px (the `Size/@Width` of the `.dzi`). */
+  width: number;
+  /** Full-resolution source height in px (the `Size/@Height` of the `.dzi`). */
+  height: number;
+  /** Tile edge in px (the Deep Zoom default is 254 → 256 effective with overlap 1). */
+  tileSize: number;
+  /** Per-edge pixel overlap baked into each interior tile (Deep Zoom default 1). */
+  overlap: number;
+  /** Tile image MIME (e.g. "image/jpeg") — also the `.dzi` `Format` (extension derived from it). */
+  format: string;
+  /** Base path to the tile pyramid directory (the DZI `_files` folder, no trailing slash). A tile is
+   *  `{filesPath}/{level}/{col}_{row}.{ext}`. Published relative within the exhibit tree; a blob:/absolute
+   *  base also works (the viewer fills the same template). */
+  filesPath: string;
+}
+
+/** A structured tile-source hint an author supplies / a bake emits for a non-string source. A live slippy
+ *  basemap (`xyz`) or a baked Deep Zoom pyramid (`dzi`) — both carried on `AObject.tileSource`. */
+export type TileSourceDescriptor = XyzTileSource | DziTileSource;
 
 export type TileSource =
   | { kind: "image"; url: string }
   | { kind: "iiif"; infoUrl: string }
-  | XyzTileSource;
+  | XyzTileSource
+  | DziTileSource;
 
 const IMAGE_EXT_RE = /\.(jpe?g|png|webp|avif|gif|tiff?|svg)(\?.*)?$/i;
 
@@ -84,6 +113,13 @@ export function thumbnailUrl(source: string | TileSourceDescriptor, width = 240)
   const t = resolveTileSource(source);
   // A map's thumbnail is its shallowest single world tile (z=minZoom, 0, 0) — one fetch, no pyramid.
   if (t.kind === "xyz") return fillXyzTemplate(t.template, t.minZoom ?? 0, 0, 0);
+  // A DZI's thumbnail is its level-0 single tile (`{filesPath}/0/0_0.{ext}`) — the top of the pyramid,
+  // a sub-tileSize scaled image, one fetch. Prefer the baked `thumbnail` on the object where one exists
+  // (the grid path), but a bare descriptor still resolves to its smallest tile here.
+  if (t.kind === "dzi") {
+    const ext = t.format.split("/").pop() ?? "jpeg";
+    return `${t.filesPath.replace(/\/$/, "")}/0/0_0.${ext === "jpeg" ? "jpg" : ext}`;
+  }
   if (t.kind === "iiif") {
     // resolveTileSource gives us the info.json URL; the service base is that minus the trailing
     // /info.json. Derive from the RESOLVED infoUrl (source may be a descriptor here, not a string).
