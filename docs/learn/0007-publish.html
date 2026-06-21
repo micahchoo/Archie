@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>7 · Publish — Onboarding</title>
+<link rel="stylesheet" href="assets/lesson.css">
+<script defer src="assets/glossary.js"></script>
+<script defer src="assets/models.js"></script>
+<script defer src="assets/deck.js"></script>
+</head>
+<body class="deck-mode">
+<div class="deck" data-prev="0006-bulk-import.html">
+  <header class="deck-top">
+    <p class="eyebrow">Archie Learn · Step 7 of 7 · Publish &amp; share</p>
+  </header>
+
+  <div class="deck-stage">
+
+    <!-- Slide 1 · portable zip (no account) -->
+    <section class="slide active">
+      <div class="slide-inner">
+        <h1>Share it — the easy way first</h1>
+        <p class="standfirst">No account, no server, nothing to configure: export your whole library as one portable file. Whoever you send it to opens it and reads.</p>
+        <div class="flow">
+          <div class="node">Your <span class="term" data-term="library">library</span></div>
+          <div class="arrow">→</div>
+          <div class="node"><span class="term" data-term="portable">.archie.zip</span><small>one self-contained file</small></div>
+          <div class="arrow">→</div>
+          <div class="out">Opens in the Viewer<small>any browser · no server</small></div>
+        </div>
+        <p class="flow-cap">Use it to back up your work, move between machines, or hand a finished exhibit to a colleague.</p>
+        <div class="aside-adv">
+          <span class="label">Also the collaboration unit</span>
+          The same <code>.archie.zip</code> is how two people work async: share a copy, each edits, then import the changes back — Archie merges them by version history. No server, no accounts.
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2 · GitHub Pages (live site) -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2>Or put it live on the web</h2>
+        <p>To publish a public site, Archie pushes straight to <b>GitHub Pages</b>: give it the <b>owner</b>, <b>repo</b>, <b>branch</b>, and a personal access <b>token</b> (pasted fresh, never stored). It uploads your media, makes the commit, turns Pages on, and hands you a live URL.</p>
+        <figure class="real">
+          <img src="assets/img/gallery.png" alt="A published Archie Library gallery: a parchment page titled 'The Archie Library' with a card per exhibit">
+          <figcaption><b>The result</b> — a live, public <span class="term" data-term="gallery">Gallery</span> at your URL (real screenshot).</figcaption>
+        </figure>
+        <div class="aside-adv">
+          <span class="label">For citation &amp; reuse</span>
+          Tick <b>"ship source originals"</b> to include full-resolution files others can cite. Links between exhibits in your library are checked at publish, so nothing points into the void.
+        </div>
+        <div class="callout">
+          <span class="label">You've got the whole loop</span>
+          Media in → annotate → group → narrate → import → publish. That's Archie end to end. Re-open any step from the dots, or jump back with ‹ Previous step.
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <nav class="deck-nav">
+    <button class="dnav prev" type="button"></button>
+    <div class="dots"></div>
+    <button class="dnav next" type="button"></button>
+  </nav>
+</div>
+</body>
+</html>

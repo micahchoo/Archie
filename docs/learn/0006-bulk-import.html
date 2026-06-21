@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>6 · Bulk import — Onboarding</title>
+<link rel="stylesheet" href="assets/lesson.css">
+<script defer src="assets/glossary.js"></script>
+<script defer src="assets/models.js"></script>
+<script defer src="assets/deck.js"></script>
+</head>
+<body class="deck-mode">
+<div class="deck" data-prev="0005-narrative.html" data-next="0007-publish.html">
+  <header class="deck-top">
+    <p class="eyebrow">Archie Learn · Step 6 of 7 · Bring in many notes at once</p>
+  </header>
+
+  <div class="deck-stage">
+
+    <!-- Slide 1 · CSV → notes -->
+    <section class="slide active">
+      <div class="slide-inner">
+        <h1>Import notes from a spreadsheet</h1>
+        <p class="standfirst">Hand-drawing every note is slow. If you already have your annotations in a spreadsheet, import them in bulk — one row becomes one <span class="term" data-term="note">Note</span>.</p>
+        <div class="flow">
+          <div class="stack">
+            <span class="tile">object</span>
+            <span class="tile">x · y · w · h</span>
+            <span class="tile">comment</span>
+            <span class="tile">tags</span>
+            <span class="tile">reading</span>
+          </div>
+          <div class="arrow">→</div>
+          <div class="out">Notes on your objects<small>one row each</small></div>
+        </div>
+        <p class="flow-cap">Those are the CSV columns. Grab the <b>template</b> from the import menu so the headers match.</p>
+        <div class="aside-adv">
+          <span class="label">Good to know</span>
+          A row that already has a region (<code>x · y · w · h</code>) lands as a finished note straight away. Tags and reading are optional — fill them and the note arrives already grouped (Step 4).
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2 · rows without coordinates -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2>No coordinates? They wait for you</h2>
+        <p>This is the part people miss: a row with text but <em>no region</em> isn't dropped. It waits in a <b>pending notes</b> drawer until you place it.</p>
+        <div class="pipeline">
+          <span class="pnode">Row, no region</span>
+          <span class="parrow">→</span>
+          <button class="pstep" data-why="The text-only row lands in a 'pending notes' drawer instead of on the canvas — nothing is lost."><span class="pn">1</span> Pending drawer</button>
+          <button class="pstep" data-why="Open the drawer, pick a pending note, and draw its region on the image — the same gesture as a manual note."><span class="pn">2</span> Draw its region</button>
+          <button class="pstep" data-why="“Set area” attaches that region to the note — it leaves the drawer and joins the rest."><span class="pn">3</span> Set area</button>
+          <span class="parrow">→</span>
+          <span class="pnode end">Placed note</span>
+          <p class="pdetail">Tap a step to see what happens.</p>
+        </div>
+        <div class="aside-adv">
+          <span class="label">Why the extra step</span>
+          Every Note stays anchored to a real region of an Object — so coordinate-free text never becomes a placeless marker floating on the canvas. You import fast, then place with intent.
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <nav class="deck-nav">
+    <button class="dnav prev" type="button"></button>
+    <div class="dots"></div>
+    <button class="dnav next" type="button"></button>
+  </nav>
+</div>
+</body>
+</html>

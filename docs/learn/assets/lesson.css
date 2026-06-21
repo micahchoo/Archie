@@ -126,11 +126,9 @@ h1 {
 body[data-level="advanced"] .level-note .for-simple { display: none; }
 body[data-level="advanced"] .level-note .for-adv { display: inline; }
 
-/* advanced-only depth: hidden in Simple, revealed in Advanced */
-.adv { display: none; }
-body[data-level="advanced"] .adv { display: block; }
-.adv-inline { display: none; }
-body[data-level="advanced"] .adv-inline { display: inline; }
+/* Single register (Simple version dropped 2026-06-20): depth shown to everyone. */
+.adv { display: block; }
+.adv-inline { display: inline; }
 
 /* an advanced aside callout */
 .aside-adv {

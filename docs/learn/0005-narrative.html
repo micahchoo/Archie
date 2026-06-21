@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>5 · Narrative — Onboarding</title>
+<link rel="stylesheet" href="assets/lesson.css">
+<script defer src="assets/glossary.js"></script>
+<script defer src="assets/models.js"></script>
+<script defer src="assets/deck.js"></script>
+</head>
+<body class="deck-mode">
+<div class="deck" data-prev="0004-annotation-layers.html" data-next="0006-bulk-import.html">
+  <header class="deck-top">
+    <p class="eyebrow">Archie Learn · Step 5 of 7 · Lead the reader</p>
+  </header>
+
+  <div class="deck-stage">
+
+    <!-- Slide 1 · add a Section → the front door flips -->
+    <section class="slide active">
+      <div class="slide-inner">
+        <h1>Lead the reader through it</h1>
+        <p class="standfirst">By default visitors browse your media freely. Write one <span class="term" data-term="section">Section</span> and the front door becomes a guided walk-through — no setting, just a consequence. Add one and watch:</p>
+        <div class="model flip" data-max="1">
+          <div class="flip-controls">
+            <button data-act="add">+ Add a Section</button>
+            <button class="ghost" data-act="rem">− Remove all</button>
+            <span class="flip-count"></span>
+            <span class="flip-mode"></span>
+          </div>
+          <div class="flip-stage">
+            <figure class="shot" data-mode="grid">
+              <img src="assets/img/grid-led.png" alt="Archie Viewer, grid-led: the exhibit opens as a grid of folio cards">
+              <figcaption><b>No narrative.</b> Visitors browse a grid of your media freely.</figcaption>
+            </figure>
+            <figure class="shot hidden" data-mode="narr">
+              <img src="assets/img/narrative-led.png" alt="Archie Viewer, narrative-led: a deep-zoom folio on the left, a prose spine of sections on the right">
+              <figcaption><b>With a narrative.</b> The same exhibit now walks visitors through it — your words beside the matching view.</figcaption>
+            </figure>
+          </div>
+          <p class="model-cap"><span class="hint">Notice ·</span> You never picked a layout — <b>writing a narrative (or not) chose it for you</b>. <span class="source">model.ts — <code>sections.length &gt; 0 ? 'narrative' : 'grid'</code></span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2 · what a Section is -->
+    <section class="slide">
+      <div class="slide-inner">
+        <h2>What one Section is</h2>
+        <p>A Section is a single beat — your prose plus a framed view of one Object (you set the "camera" right on the canvas). An ordered run of beats is the <span class="term" data-term="narrative">narrative</span>.</p>
+        <div class="flow">
+          <div class="stack">
+            <span class="tile">Your prose</span>
+            <span class="tile">A framed view of one Object</span>
+          </div>
+          <div class="arrow">→</div>
+          <div class="node">One Section<small>a beat</small></div>
+          <div class="arrow">→</div>
+          <div class="out">×N = a narrative<small>ordered spine</small></div>
+        </div>
+        <div class="aside-adv">
+          <span class="label">Authored on the canvas</span>
+          You frame a Section by drawing the region (or marking the time-range) you want the reader to land on — so what you see while authoring is exactly what they'll see. A Section is independent of your Notes: it's its own beat, not a tour of existing markers.
+        </div>
+        <div class="callout">
+          <span class="label">Try it</span>
+          In an object, add a beat, write a line of prose, and frame a detail. Open the Viewer — your exhibit now greets readers with that walk-through.
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <nav class="deck-nav">
+    <button class="dnav prev" type="button"></button>
+    <div class="dots"></div>
+    <button class="dnav next" type="button"></button>
+  </nav>
+</div>
+</body>
+</html>
