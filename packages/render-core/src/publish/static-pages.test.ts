@@ -94,7 +94,9 @@ describe("static pages — the self-describing artifact (ADR-0014, frozen contra
   it("a hostile body arrives ENTITY-ESCAPED under the default renderer (the XSS boundary)", async () => {
     const { fs } = await publishToMem();
     const html = await readText(fs, ["a", "index.html"]);
-    expect(html).not.toContain("<script");
+    // No EXECUTABLE script from a body (the JSON-LD `application/ld+json` block is inert data, not JS).
+    expect(html).not.toMatch(/<script(?![^>]*type="application\/ld\+json")/);
+    expect(html).not.toContain("<script>alert");
     expect(html).toContain("&lt;script&gt;");
     expect(html).not.toContain("<img src=x");
   });
