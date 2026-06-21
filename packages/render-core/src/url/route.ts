@@ -3,6 +3,7 @@
 // up from page-local `#/a/<id>` (deeplink.ts, when each exhibit had its own page) to:
 //   `#/`                          → the Library Gallery
 //   `#/<slug>`                    → an Exhibit
+//   `#/<slug>/o/<objectId>`       → an Exhibit, landing on a whole Object (cite ladder, ADR-0018)
 //   `#/<slug>/a/<noteId>[?xywh=]` → an Exhibit, landing on a note (cold-arrival)
 //   `?src=<zip-url>`              → a hosted-zip pointer (ADR-0009) that COMPOSES with any of the
 //                                   above: open that `.archie.zip` first, then apply the rest of the
@@ -13,7 +14,7 @@
 
 export type ViewerRoute =
   | { view: "gallery"; src?: string }
-  | { view: "exhibit"; slug: string; noteId?: string; xywh?: string; src?: string };
+  | { view: "exhibit"; slug: string; noteId?: string; objectId?: string; xywh?: string; src?: string };
 
 /**
  * Parse a location hash into a ViewerRoute. Structural only — an empty/garbage path falls back to
@@ -35,12 +36,15 @@ export function parseRoute(hash: string): ViewerRoute {
   if (parts.length === 0) return src ? { view: "gallery", src } : { view: "gallery" };
 
   const slug = parts[0]!;
-  const route: { view: "exhibit"; slug: string; noteId?: string; xywh?: string; src?: string } = { view: "exhibit", slug };
+  const route: { view: "exhibit"; slug: string; noteId?: string; objectId?: string; xywh?: string; src?: string } = { view: "exhibit", slug };
   // `/a/<noteId>` tail → land on a note; xywh only meaningful alongside a note.
   if (parts.length >= 3 && parts[1] === "a" && parts[2]) {
     route.noteId = parts[2];
     const xywh = params?.get("xywh");
     if (xywh) route.xywh = xywh;
+  } else if (parts.length >= 3 && parts[1] === "o" && parts[2]) {
+    // `/o/<objectId>` tail → land on a whole Object (cite ladder, ADR-0018).
+    route.objectId = parts[2];
   }
   if (src) route.src = src;
   return route;
@@ -56,6 +60,8 @@ export function routeToHash(route: ViewerRoute): string {
     if (route.noteId) {
       h += `/a/${route.noteId}`;
       if (route.xywh) h += `?xywh=${route.xywh}`;
+    } else if (route.objectId) {
+      h += `/o/${route.objectId}`;
     }
   }
   // ?src= is appended last and percent-encoded (its :/?& would otherwise break the outer hash).

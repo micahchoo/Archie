@@ -149,5 +149,37 @@
     "status": "failed",
     "indexed_at": "2026-06-20T23:15:07Z",
     "error": "context add failed"
+  },
+  {
+    "name": "@tauri-apps/api",
+    "url": "https://github.com/tauri-apps/tauri",
+    "ref": "dev",
+    "status": "failed",
+    "indexed_at": "2026-06-21T00:53:49Z",
+    "error": "context add failed"
+  },
+  {
+    "name": "@tauri-apps/plugin-dialog",
+    "url": "https://github.com/tauri-apps/plugins-workspace",
+    "ref": "v2",
+    "status": "failed",
+    "indexed_at": "2026-06-21T00:53:52Z",
+    "error": "context add failed"
+  },
+  {
+    "name": "@tauri-apps/plugin-fs",
+    "url": "https://github.com/tauri-apps/plugins-workspace",
+    "ref": "v2",
+    "status": "failed",
+    "indexed_at": "2026-06-21T00:53:55Z",
+    "error": "context add failed"
+  },
+  {
+    "name": "@tauri-apps/plugin-http",
+    "url": "https://github.com/tauri-apps/plugins-workspace",
+    "ref": "v2",
+    "status": "failed",
+    "indexed_at": "2026-06-21T00:53:57Z",
+    "error": "context add failed"
   }
 ]

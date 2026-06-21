@@ -16,7 +16,7 @@ import {
 // `tileSource` lives on WorkingObjectMeta — types cleanly regardless of store.ts's re-export shape.
 type ExhibitMeta = WorkingExhibitMeta;
 import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "../../viewer/fixtures/atlas.js";
-import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichSections } from "../../viewer/fixtures/voynich.js";
+import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichSections } from "../../viewer/fixtures/voynich.js";
 // The geo-annotation prototype's content lives in the SHARED fixture (single source of truth, §A) — the
 // SAME module the Viewer's published bake reads. Re-export GEO_TEMPLATE/geoBasemap so existing Studio
 // consumers (geo-notes.test.ts) keep importing them from here while the definitions live in one place.
@@ -103,6 +103,12 @@ function seededVoynich(author: ClientId, slug: string, opts: { objectIds?: Set<s
       ];
       s.createNote({ target: timeSel(canvasIdFor(BASE, slug, "o12"), start, end), body, ...(a.reading ? { reading: a.reading } : {}) });
     }
+  }
+  // Whole-object (Object-level) Notes — a BARE canvas IRI target string, no selector (ADR-0018). Seeded
+  // LAST so existing notes are unchanged; the Studio frames the whole object like the published Viewer.
+  for (const n of voynichWholeObjectNotes) {
+    if (!keep(n.objectId)) continue;
+    s.createNote({ target: canvasIdFor(BASE, slug, n.objectId), body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }] });
   }
   return s;
 }

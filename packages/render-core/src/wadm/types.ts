@@ -39,6 +39,12 @@ export const ARCHIE_READING = "archie:reading" as const;
  *  On heads + history (round-trip), mirroring ARCHIE_READING. Emitted ONLY when authored (no default-serialize,
  *  so existing snapshots stay byte-stable); absence reads back as `"normal"` via `emphasisOf`. */
 export const ARCHIE_EMPHASIS = "archie:emphasis" as const;
+/** Region-override (ADR-0018): force the whole-object frame on a note that DOES carry a region
+ *  selector, regardless of coverage. A whole-object Note proper is a bare-IRI target (no selector)
+ *  and is whole-object by construction — it needs no flag; this is the override for the region case
+ *  (the read-but-never-written seam this round closes). On heads + history (round-trip), emitted ONLY
+ *  when `true` (byte-stable when absent), mirroring ARCHIE_EMPHASIS; read by `wholeObjectFlagOf`. */
+export const ARCHIE_WHOLE_OBJECT = "archie:wholeObject" as const;
 /** Durable geographic anchor for an annotation on a MAP surface (geo-annotation extension; DESIGN.md D2).
  *  Rides alongside the pixel selector: the pixel selector is the render path every existing consumer reads
  *  (fitBounds, markers, IIIF publish), while `archie:geo` is the source-of-truth lng/lat Archie re-projects
@@ -228,6 +234,11 @@ export interface AnnotationRecord {
   /** Authored per-note visual emphasis (1489), or undefined = default `"normal"`. Mirrors `reading`'s
    *  optional shape; serialized to `archie:emphasis` only when set, so existing records stay byte-stable. */
   emphasis?: Emphasis;
+  /** Region-override (ADR-0018): force the whole-object frame on a note that HAS a region selector,
+   *  regardless of coverage. Undefined/absent = no override (a bare-IRI target is whole-object by
+   *  construction; the ≥75% coverage heuristic still applies to region notes). Serialized to
+   *  `archie:wholeObject` only when `true`, so existing records stay byte-stable; mirrors `emphasis`. */
+  wholeObject?: boolean;
   /** Geographic anchor for a Map annotation (geo-truth — Q4 / ADR-0015): lng/lat is the SOURCE OF TRUTH,
    *  the target's pixel selector its derived projection. Set only on Map-targeted notes. Serialized to
    *  `archie:geo` only when set (byte-stable when absent), mirroring `emphasis`; pure consumers ignore it. */

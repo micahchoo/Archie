@@ -88,6 +88,19 @@ export const voynichNotes: VoynichNote[] = [
   { objectId: "o11", region: [200, 240, 2280, 3200], comment: "The manuscript's final page: short starred paragraphs and, set apart from the unknown script, a few lines in ordinary Latin written by a later hand." },
 ];
 
+// Whole-object (Object-level) Notes — a Note whose target is the OBJECT itself (a bare canvas IRI,
+// no selector — ADR-0018), not a drawn region. It frames the whole folio in the Viewer and is reachable
+// from the note list / finder. Dogfoods the Object rung of the target-scope ladder. Consumers append
+// these LAST (after the reading/AV notes) so the existing notes' deterministic logical ids are unchanged.
+export interface VoynichWholeNote { objectId: string; comment: string }
+export const voynichWholeObjectNotes: VoynichWholeNote[] = [
+  { objectId: "o1", comment: "**The opening leaf, as a whole object.** Quire structure, the ruling of the page, and the erased ownership inscription in the top margin all belong to *folio 1r entire* — not to any single drawn region. This note is attached to the whole object (no box), so the Viewer frames the folio rather than pinning a spot on it." },
+  { objectId: "o9", comment: "**The Rosettes foldout, as a whole object.** The nine medallions, their joining causeways, and the six-panel fold structure are properties of the spread *entire* (f85v–86r) — the largest object in the manuscript. Attached to the whole object (no box), so the Viewer frames the foldout rather than pinning one rosette." },
+  // o12 is the SOUND object — a whole-object Note on a recording (no time range): the AV analogue, rendered
+  // as the whole-track band above the transcript (ADR-0018), not a timeline mark.
+  { objectId: "o12", comment: "This note is about the whole recording, not any moment in it: the Kryptogramm sonification reads folio 18v end to end. Whether you hear enciphered speech, a grille's rhythm, or an unknown real language is the manuscript's whole condition — so the claim attaches to the track entire." },
+];
+
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 // AUTHORED READINGS CONTENT (ADR-0007). The SINGLE SOURCE OF TRUTH for the genuinely-plural Voynich
 // exhibit — extracted here so BOTH the Viewer (sample-data.ts → published tree) AND the Studio
@@ -205,10 +218,10 @@ export interface VoynichSection { id: string; title: string; objectId: string; s
 
 // §G — the 6-beat narrative spine (03 §3). Curator voice (names what the visitor sees — no dev jargon).
 export const voynichSections: VoynichSection[] = [
-  { id: "s1", title: "Herbal", objectId: "o1", start: "xywh=pixel:200,200,2600,3400", prose: "The book opens as a herbal: a plant to a page, text flowing around the drawing. None of these plants can be named with certainty — some look observed, some invented — and the writing has never been read." },
+  { id: "s1", title: "Herbal", objectId: "o1", start: "xywh=pixel:200,200,2600,3400", prose: "The book opens as a herbal: a plant to a page, text flowing around the drawing. None of these plants can be named with certainty — some look observed, some invented — and the writing has never been read. Step back, first, to the leaf entire:\n\n[Folio 1r, as a whole object.](archie:voynich/#/o/o1)" },
   { id: "s2", title: "Astronomical", objectId: "o5", start: "xywh=pixel:400,300,4000,3100", prose: "The pages widen into fold-out wheels of Sun, Moon, and stars, each star tied to a small labelled word. Conventional zodiac figures appear, but the labels around them stay closed to us." },
   { id: "s3", title: "Balneological", objectId: "o8", start: "xywh=pixel:200,400,2400,3000", prose: "Small bathing figures move through green networks of pipes and basins. The script shifts character here — measurably a different system than the herbal — as if a second voice took up the pen." },
-  { id: "s4", title: "Cosmological", objectId: "o9", start: "xywh=pixel:2600,2400,2800,2600", prose: "The largest spread in the book unfolds into nine medallions joined by causeways, with castle-like and map-like forms. Whether it charts real places or imagined ones is part of what the page refuses to settle." },
+  { id: "s4", title: "Cosmological", objectId: "o9", start: "xywh=pixel:2600,2400,2800,2600", prose: "The largest spread in the book unfolds into nine medallions joined by causeways, with castle-like and map-like forms. Whether it charts real places or imagined ones is part of what the page refuses to settle. The same foldout, alone and deep-zoomed, is its own study:\n\n[The Rosettes foldout, in the full grid.](archie:voynich/#/o/o9)" },
   { id: "s5", title: "Pharmaceutical", objectId: "o10", start: "xywh=pixel:200,400,2300,3000", prose: "Rows of labelled containers sit beside isolated roots and leaves — many of them tidier copies of plants from the opening herbal, as if assembled into a working reference." },
   { id: "s6", title: "Recipes", objectId: "o11", start: "xywh=pixel:200,160,2300,420", prose: "The book closes on short starred paragraphs and, on its very last page, a few lines in ordinary Latin script — a later hand reaching in from outside the manuscript's silence." },
 ];

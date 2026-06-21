@@ -8,6 +8,7 @@
   import { splitProseCites } from "../cite-cards.js";
   import { CITE_GALLERY, type GalleryRef } from "../cite-context.js";
   import ExhibitCiteCard from "./ExhibitCiteCard.svelte";
+  import CiteCard from "./CiteCard.svelte";
 
   let { text }: { text: string } = $props();
 
@@ -15,6 +16,7 @@
   const cards = $derived(galleryRef?.value?.exhibits ?? []);
   const slugs = $derived(new Set(cards.map((e) => e.slug)));
   const segments = $derived(splitProseCites(renderMarkdown(text ?? ""), slugs));
+  const entryFor = (slug?: string) => cards.find((e) => e.slug === slug);
 </script>
 
-{#each segments as seg}{#if seg.kind === "html"}{@html seg.html}{:else}<ExhibitCiteCard slug={seg.slug} label={seg.label} entry={cards.find((e) => e.slug === seg.slug)} />{/if}{/each}
+{#each segments as seg}{#if seg.kind === "html"}{@html seg.html}{:else if seg.cite.kind === "exhibit"}<ExhibitCiteCard slug={seg.cite.slug ?? ""} label={seg.label} entry={entryFor(seg.cite.slug)} />{:else}<CiteCard cite={seg.cite} label={seg.label} entry={entryFor(seg.cite.slug)} />{/if}{/each}

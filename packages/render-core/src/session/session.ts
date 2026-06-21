@@ -11,7 +11,7 @@ import { recordToAnnotation } from "../spine/serialize.js";
 import { writeAnnotations, readAnnotations } from "../spine/persist.js";
 import type { SerializeOptions } from "../spine/serialize.js";
 import type { FsDirectory } from "../fs/seam.js";
-import { ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_GEO } from "../wadm/types.js";
+import { ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_WHOLE_OBJECT, ARCHIE_GEO } from "../wadm/types.js";
 import type { Emphasis, GeoAnchor } from "../wadm/types.js";
 import { mergeLogs, headsOf, resolveConflict } from "../spine/merge.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CBody, W3CTarget } from "../wadm/types.js";
@@ -24,6 +24,8 @@ export interface NewNote {
   reading?: string;
   /** Authored per-note emphasis (1489), or undefined = default `"normal"`. */
   emphasis?: Emphasis;
+  /** Region-override (ADR-0018): force the whole-object frame on a region note; undefined = none. */
+  wholeObject?: boolean;
   /** Geographic anchor (geo-truth, ADR-0015) for a Map note, or undefined = none. */
   geo?: GeoAnchor;
   motivation?: string | string[];
@@ -36,6 +38,8 @@ export interface NoteEdit {
   reading?: string | null;
   /** Emphasis; undefined here leaves it unchanged (carried forward). To CLEAR to `"normal"`, pass null. */
   emphasis?: Emphasis | null;
+  /** Region-override (ADR-0018); undefined = carry forward, null/false = clear, true = set. */
+  wholeObject?: boolean | null;
   /** Geo anchor (ADR-0015); undefined = carry forward, null = clear, value = set. Mirrors `emphasis`. */
   geo?: GeoAnchor | null;
   motivation?: string | string[];
@@ -95,6 +99,7 @@ export class AnnotationSession {
       ...(input.body !== undefined ? { body: input.body } : {}),
       ...(input.reading !== undefined ? { reading: input.reading } : {}),
       ...(input.emphasis !== undefined ? { emphasis: input.emphasis } : {}),
+      ...(input.wholeObject ? { wholeObject: true } : {}),
       ...(input.geo !== undefined ? { geo: input.geo } : {}),
       ...(input.motivation !== undefined ? { motivation: input.motivation } : {}),
     });
@@ -113,6 +118,7 @@ export class AnnotationSession {
       ...(changes.body !== undefined ? { body: changes.body } : {}),
       ...(changes.reading !== undefined ? { reading: changes.reading } : {}),
       ...(changes.emphasis !== undefined ? { emphasis: changes.emphasis } : {}),
+      ...(changes.wholeObject !== undefined ? { wholeObject: changes.wholeObject } : {}),
       ...(changes.geo !== undefined ? { geo: changes.geo } : {}),
       ...(changes.motivation !== undefined ? { motivation: changes.motivation } : {}),
     });
@@ -168,17 +174,18 @@ export class AnnotationSession {
    */
   resolve(
     logicalId: LogicalId,
-    choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; motivation?: string | string[]; reading?: string; emphasis?: Emphasis; geo?: GeoAnchor } = {},
+    choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; motivation?: string | string[]; reading?: string; emphasis?: Emphasis; wholeObject?: boolean; geo?: GeoAnchor } = {},
   ): void {
     // Inherit reading/emphasis/geo to carry onto the merge node when the choice doesn't override them.
     // Prefer the primary head (lexicographically-first rev — what resolveConflict builds the node from),
     // but FALL BACK to any other head that carries the field: a conflict between "has reading" and "no
     // reading" must keep the reading rather than drop it on rev ordering (that's the data-loss bug).
     const heads = [...this.conflictHeads(logicalId)].sort((a, b) => (a.rev < b.rev ? -1 : a.rev > b.rev ? 1 : 0));
-    const inherit = <K extends "reading" | "emphasis" | "geo">(k: K): AnnotationRecord[K] | undefined =>
+    const inherit = <K extends "reading" | "emphasis" | "wholeObject" | "geo">(k: K): AnnotationRecord[K] | undefined =>
       heads.find((h) => h[k] !== undefined)?.[k];
     const reading = choice.reading ?? inherit("reading");
     const emphasis = choice.emphasis ?? inherit("emphasis");
+    const wholeObject = choice.wholeObject ?? inherit("wholeObject");
     const geo = choice.geo ?? inherit("geo");
     const merged = resolveConflict(this.log, logicalId, {
       lastEditor: this.editor,
@@ -188,12 +195,13 @@ export class AnnotationSession {
     });
     // Carry reading/emphasis/geo onto the just-appended merge node (the last record) — resolveConflict
     // does not model them. Only when present, so a plain conflict stays byte-stable.
-    if (reading !== undefined || emphasis !== undefined || geo !== undefined) {
+    if (reading !== undefined || emphasis !== undefined || wholeObject !== undefined || geo !== undefined) {
       const head = merged[merged.length - 1]!;
       const carried: AnnotationRecord = {
         ...head,
         ...(reading !== undefined ? { reading } : {}),
         ...(emphasis !== undefined ? { emphasis } : {}),
+        ...(wholeObject ? { wholeObject: true } : {}),
         ...(geo !== undefined ? { geo } : {}),
       };
       this.log = Object.freeze([...merged.slice(0, -1), carried]);
@@ -213,6 +221,7 @@ export class AnnotationSession {
       const ann = recordToAnnotation(record, record.logicalId);
       if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
       if (record.emphasis !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] = record.emphasis;
+      if (record.wholeObject === true) (ann as unknown as Record<string, unknown>)[ARCHIE_WHOLE_OBJECT] = true;
       if (record.geo !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_GEO] = record.geo;
       return ann;
     });

@@ -65,6 +65,23 @@
     return out.sort((x, y) => x.range.start - y.range.start);
   });
   const activeIdx = $derived(activeNoteIndex(cues.map((c) => c.range), currentTime));
+  // Whole-object (Object-level) Notes on this recording (ADR-0018): a bare-IRI / selectorless target
+  // carries NO time fragment, so `cues` drops it — yet it applies to the WHOLE recording. Render it as a
+  // persistent band (the AV analogue of the image frame-border) so an authored whole-track note is never
+  // invisible. `transcriptTextOf` reads its comment the same way a cue's text is read.
+  const wholeTrackNotes = $derived.by<{ id: string; text: string }[]>(() => {
+    const out: { id: string; text: string }[] = [];
+    for (const a of annotations) {
+      if (!a.id) continue;
+      const v = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
+      const f = v ? parseMediaFragment(v) : {};
+      if (!f.time) {
+        const text = transcriptTextOf(a);
+        if (text) out.push({ id: a.id, text });
+      }
+    }
+    return out;
+  });
   // Spatiotemporal regions visible at the current moment — each box shows while currentTime ∈ its window;
   // the active cue's box is emphasised. The read-side mirror of the Studio's frame-draw (ADR-0006).
   const videoBoxes = $derived.by(() =>
@@ -150,6 +167,14 @@
   </main>
 
   <aside>
+    {#if wholeTrackNotes.length > 0}
+      <!-- Whole-object Notes (ADR-0018): about the WHOLE recording (no time range) — the AV analogue of
+           the image frame-border, always shown above the time-anchored transcript. -->
+      <div class="whole-track" role="note">
+        <p class="eyebrow">About the whole recording</p>
+        {#each wholeTrackNotes as n (n.id)}<p class="wt-note">{n.text}</p>{/each}
+      </div>
+    {/if}
     <p class="eyebrow">Transcript · {cues.length} {cues.length === 1 ? "line" : "lines"}</p>
     {#if isVideo}<h1 class="vid-label">{object.label}</h1>{/if}
     <p class="hint">Select any line to jump there in the recording. As it plays, the line being spoken lights up.</p>
@@ -178,6 +203,11 @@
   /* Listening station: warm paper media ground (left) + warm paper transcript spine (right); the active
      line is a quiet signal — the NarrativeReader idiom, applied to time instead of space. */
   .player { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
+
+  /* Whole-object Note band (ADR-0018): a note about the WHOLE recording, persistent above the transcript
+     — the AV analogue of the image frame-border (accent-left-stripe, the apparatus idiom). */
+  .whole-track { margin: 0 0 var(--space-4); padding: var(--space-2) var(--space-3); border-left: 3px solid var(--accent-2); }
+  .wt-note { font-family: var(--font-body); font-size: 0.92rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: var(--space-1) 0 0; }
 
   /* Escape-out from an index-opened AV recording (ADR-0016 §137 precision-in/escape-out, §223 anti-trap):
      a quiet step back to the index grid, anchored canvas-relative (top-left of the media column). Cleared

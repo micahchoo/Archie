@@ -5,6 +5,7 @@
 // App's internals so the capability seam is isolated. Browser-verified (FSA / localStorage / download).
 
 import { parseRecents, serializeRecents, type Binding, type RecentProject, type ZipFilesystem } from "@render/core";
+import { isTauri, saveTauriFile } from "./tauri-fs.js";
 
 const RECENTS_KEY = "archie.recentProjects.v1";
 const BINDING_KEY = "archie.activeBinding.v1";
@@ -67,6 +68,13 @@ export type ZipSaveResult =
  */
 export async function saveZipToDisk(fs: ZipFilesystem, filename: string): Promise<ZipSaveResult> {
   const name = filename.endsWith(".archie.zip") ? filename : `${filename}.archie.zip`;
+  if (isTauri()) {
+    // Desktop: a native Save dialog → plugin-fs write. The webview has no blob-download handler, so
+    // the browser anchor-download path below silently no-ops there — this is the real save sink.
+    const path = await saveTauriFile(name, fs.toZip());
+    if (!path) return { kind: "cancelled" };
+    return { kind: "streamed", name: path.split("/").pop() || name };
+  }
   if (supportsFileStreamSave()) {
     let handle: FileSystemFileHandle;
     try {

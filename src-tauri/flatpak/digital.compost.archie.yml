@@ -17,6 +17,7 @@ command: archie
 finish-args:
   - --socket=wayland # show the window under Wayland
   - --socket=fallback-x11 # …or X11
+  - --socket=pulseaudio # audio in/out for AV notes (wavesurfer playback) — without it there is no sound device
   - --device=dri # GPU acceleration for the deep-zoom canvas
   - --share=ipc # required with X11
   - --share=network # remote-hosted templates (e.g. Bidar) + future sharing; local-first otherwise

@@ -57,3 +57,21 @@ export function isWholeObject(coverage: number, override?: boolean): boolean {
   if (override === true) return true;
   return coverage >= WHOLE_OBJECT_THRESHOLD;
 }
+
+/**
+ * The selector-aware whole-object decision (ADR-0018) — the single predicate the viewer should call.
+ * A bare-IRI target has NO spatial selector (`selector === null`), which IS the whole object by
+ * construction → `true`, no coverage computed. This fixes the seam where a bare-IRI Object/Exhibit
+ * note rendered invisible (the coverage of a null selector was 0, so {@link isWholeObject} returned
+ * false). When a selector IS present it falls back to {@link isWholeObject} exactly — the authored
+ * `override` (region-override, `archie:wholeObject`) or the ≥ {@link WHOLE_OBJECT_THRESHOLD} heuristic.
+ */
+export function isWholeObjectFor(
+  selector: W3CSelector | null,
+  canvasWidth: number,
+  canvasHeight: number,
+  override?: boolean,
+): boolean {
+  if (selector === null) return true;
+  return isWholeObject(spatialCoverage(selector, canvasWidth, canvasHeight), override);
+}
