@@ -6,7 +6,7 @@
   // one intent line shown (principle #1), kept compact. Rendered inside Reader's relative container.
   import type { Reading } from "@render/core";
 
-  let { readings, active, onselect, hidden = false, onhiddenchange }: {
+  let { readings, active, onselect, hidden = false, onhiddenchange, count }: {
     readings: Reading[];
     active: string | null;
     onselect: (id: string | null) => void;
@@ -14,6 +14,9 @@
      *  basemap itself. Orthogonal to which reading is active; picking any layer below restores them. */
     hidden?: boolean;
     onhiddenchange?: (hidden: boolean) => void;
+    /** Per-layer note count on the CURRENT object (id = null → General/base notes; else a reading's id).
+     *  Optional — omitted ⇒ no counts render. The host re-mints it per active object so counts stay live. */
+    count?: (id: string | null) => number;
   } = $props();
 
   // Picking a layer always means "show me markers" — un-hide, then select (the approved restore path).
@@ -29,11 +32,11 @@
     <span class="gloss">Compare interpretations</span>
     <div class="opts" class:dimmed={hidden} role="radiogroup" aria-label="Readings of this source">
       <button type="button" role="radio" aria-checked={active === null} class="opt" class:on={active === null && !hidden} style="--rd: var(--ink-canvas-muted)" onclick={() => pick(null)}>
-        <span class="sw base"></span><span class="nm">General notes</span>
+        <span class="sw base"></span><span class="nm">General notes</span>{#if count}<span class="ct" title="{count(null)} notes on this image">{count(null)}</span>{/if}
       </button>
       {#each readings as r (r.id)}
         <button type="button" role="radio" aria-checked={active === r.id} class="opt" class:on={active === r.id && !hidden} style="--rd:{r.colour ?? 'var(--accent)'}" onclick={() => pick(r.id)}>
-          <span class="sw" style="background:{r.colour ?? 'var(--accent)'}"></span><span class="nm">{r.name}</span>
+          <span class="sw" style="background:{r.colour ?? 'var(--accent)'}"></span><span class="nm">{r.name}</span>{#if count}<span class="ct" title="{count(r.id)} notes on this image">{count(r.id)}</span>{/if}
         </button>
       {/each}
     </div>
@@ -84,7 +87,12 @@
      as a discrete chip — the swatch is identity, so it must always be visible (#6 / system.md contrast rule). */
   .sw { flex: none; width: 11px; height: 11px; border-radius: 50%; box-shadow: var(--shadow-inset-fog), 0 0 0 1px var(--border-canvas-emphasis); }
   .sw.base { background: var(--ink-canvas-muted); }
-  .nm { white-space: nowrap; }
+  /* Name takes the row and may wrap — a long reading name (e.g. "Natural-language reading") must NOT
+     shove the count off the legend's capped width; min-width:0 lets it shrink/wrap instead of overflowing. */
+  .nm { flex: 1; min-width: 0; }
+  /* Per-layer note count on the current image — a quiet tabular figure pinned to the trailing edge
+     (flex:none so it never shrinks or gets pushed out). Tabular nums so multi-digit counts don't jitter. */
+  .ct { flex: none; padding-left: var(--space-3); font-family: var(--font-mono), monospace; font-variant-numeric: tabular-nums; font-size: 0.78rem; color: var(--ink-canvas-muted); }
   .desc {
     margin: var(--space-2) 0 0; padding-top: var(--space-2);
     border-top: 1px solid var(--border-canvas);
