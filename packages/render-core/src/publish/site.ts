@@ -19,6 +19,7 @@ import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest, sec
 import { rightsFromIIIF } from "../iiif/rights.js";
 import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.js";
 import type { Exhibit, AObject, Section, RightsFields } from "../model/model.js";
+import type { DziTileSource } from "../iiif/resolve.js";
 import type { PortableExhibit } from "./portable.js"; // type-only (erased) — the readings superset; type-cycle is harmless
 import { readExhibitTree, fsJsonSource } from "./read.js";
 import { libraryPageHtml, exhibitPageHtml, sitemapTxt, sitemapXml } from "./static-pages.js";
@@ -54,6 +55,16 @@ export interface PublishOptions {
    * the manifest never references a thumbnail that wasn't published (the grid then derives at runtime).
    */
   getThumbnail?: (slug: string, name: string) => Promise<ArrayBuffer | Blob | null>;
+  /**
+   * Generate a Deep Zoom (DZI) tile pyramid for an imported-asset object AT PUBLISH TIME (Q-9/Q-11).
+   * App-supplied: the slicer uses OffscreenCanvas (browser-only), so core stays browser-agnostic by
+   * injection — Node/tests simply omit it. Given the asset bytes, return the sliced tiles (keyed
+   * `{level}/{col}_{row}.{ext}`) plus the DZI descriptor, or null to leave the object a single image.
+   * publishLibrary writes the tiles to `{slug}/{name}_files/…` and stamps `tileSource` (its `filesPath`
+   * rewritten to the published pyramid) so the viewer deep-zooms from fast local tiles instead of the
+   * full master / a slow remote IIIF. The single-image `source` stays as a fallback. Keyed by (slug, name).
+   */
+  tileObject?: (slug: string, name: string, bytes: ArrayBuffer | Blob) => Promise<{ descriptor: DziTileSource; tiles: Map<string, Blob> } | null>;
   /**
    * The interactive Viewer's base URL (the canonical instance, ADR-0013) — when given, the static
    * archival pages (ADR-0014) link each exhibit/note out to the live experience. App-supplied;
@@ -133,6 +144,26 @@ async function writeText(dir: FsDirectory, name: string, text: string): Promise<
   await w.close();
 }
 
+/** Write a DZI tile pyramid into `filesDir` through the fs seam. Tile keys are `{level}/{col}_{row}.{ext}`;
+ *  each level subdirectory is created once and reused (the pyramid is hundreds–thousands of tiles). */
+async function writeTilePyramid(filesDir: FsDirectory, tiles: Map<string, Blob>): Promise<void> {
+  const levelDirs = new Map<string, FsDirectory>();
+  for (const [path, blob] of tiles) {
+    const slash = path.indexOf("/");
+    const level = path.slice(0, slash); // "{level}"
+    const fileName = path.slice(slash + 1); // "{col}_{row}.{ext}"
+    let dir = levelDirs.get(level);
+    if (!dir) {
+      dir = await filesDir.getDirectory(level, { create: true });
+      levelDirs.set(level, dir);
+    }
+    const file = await dir.getFile(fileName, { create: true });
+    const w = await file.writable();
+    await w.write(blob);
+    await w.close();
+  }
+}
+
 /**
  * Write the full published-site data tree into `fs`. Per-canvas heads pages are written at the
  * exact paths the Manifest's `canvas.annotations[].id` reference (the Phase-2 interop gate);
@@ -185,6 +216,17 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
           await w.write(bytes);
           await w.close();
           const next: AObject = { ...o, source: `${baseUrl}${exhibit.slug}/assets/${name}` };
+          // DZI tiling (Q-9): if the app supplies a slicer and it returns a pyramid for this asset, write
+          // the tiles to {slug}/{name}_files/… and stamp tileSource (filesPath → the published pyramid) so
+          // the viewer deep-zooms from fast local tiles. `source` stays a fallback (mount prefers tileSource).
+          if (opts.tileObject && !o.tileSource) {
+            const sliced = await opts.tileObject(exhibit.slug, name, bytes);
+            if (sliced && sliced.tiles.size > 0) {
+              const filesDirName = `${name}_files`;
+              await writeTilePyramid(await exDir.getDirectory(filesDirName, { create: true }), sliced.tiles);
+              next.tileSource = { ...sliced.descriptor, filesPath: `${baseUrl}${exhibit.slug}/${filesDirName}` };
+            }
+          }
           // Publish a baked thumbnail iff its bytes exist — else strip the working `/assets-thumb/` ref so
           // the manifest can't point at an unpublished file (gen-published has no thumbnails → all dropped).
           delete next.thumbnail;
