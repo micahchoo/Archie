@@ -11,11 +11,12 @@
 
   interface CmdEntry {
     id: string;
-    kind: "note" | "exhibit";
+    kind: "note" | "exhibit" | "object";
     exhibitSlug: string;
     exhibitTitle: string;
-    label: string; // the note's text lead, or the exhibit title
+    label: string; // the note's text lead, the object label, or the exhibit title
     ref: string;   // the encoded archie: URI to insert
+    thumb?: string; // optional preview image — feeds the Browse (tile) view
   }
 
   let {
@@ -32,6 +33,7 @@
 
   let query = $state("");
   let active = $state(0);
+  let view = $state<"search" | "browse">("search"); // Search = text list · Browse = thumbnail tiles (one picker, two views)
   let inputEl = $state<HTMLInputElement | null>(null);
 
   const filtered = $derived.by(() => {
@@ -42,8 +44,9 @@
 
   // Reset + focus each time the drawer opens; keep `active` in range as the filter narrows.
   $effect(() => {
-    if (open) { query = ""; active = 0; void tick().then(() => inputEl?.focus()); }
+    if (open) { query = ""; active = 0; view = "search"; void tick().then(() => inputEl?.focus()); }
   });
+  const kindLabel = (k: CmdEntry["kind"]) => (k === "exhibit" ? "exhibit" : k === "object" ? "object" : "note");
   $effect(() => { if (active >= filtered.length) active = Math.max(0, filtered.length - 1); });
 
   function onKeydown(e: KeyboardEvent) {
@@ -71,27 +74,48 @@
         <kbd>esc</kbd>
       </div>
 
-      <p class="lead">Links to a note or exhibit become clickable when you publish.</p>
+      <p class="lead">Links to a note, object, or exhibit become clickable when you publish.</p>
 
-      <ul class="results">
-        {#if filtered.length === 0}
-          <li class="empty">No notes or exhibits match — refine the text, or write the link by hand.</li>
-        {:else}
-          {#each filtered as e, i (e.id)}
-            <li>
-              <button
-                class:active={i === active}
-                onmouseenter={() => (active = i)}
-                onclick={() => onpick(e)}
-              >
-                <span class="kind" class:exhibit={e.kind === "exhibit"}>{e.kind === "exhibit" ? "exhibit" : "note"}</span>
-                <span class="label">{e.label}</span>
-                <span class="where">{e.exhibitTitle}</span>
-              </button>
-            </li>
+      <!-- One picker, two views (the merged "Cite" + "By image"): Search finds by text, Browse finds by image. -->
+      <div class="views" role="tablist" aria-label="Find a target by">
+        <button type="button" role="tab" class:on={view === "search"} aria-selected={view === "search"} onclick={() => (view = "search")}>¶ Search</button>
+        <button type="button" role="tab" class:on={view === "browse"} aria-selected={view === "browse"} onclick={() => (view = "browse")}>▦ Browse</button>
+      </div>
+
+      {#if view === "search"}
+        <ul class="results">
+          {#if filtered.length === 0}
+            <li class="empty">No notes, objects, or exhibits match — refine the text, or write the link by hand.</li>
+          {:else}
+            {#each filtered as e, i (e.id)}
+              <li>
+                <button
+                  class:active={i === active}
+                  onmouseenter={() => (active = i)}
+                  onclick={() => onpick(e)}
+                >
+                  <span class="kind" class:exhibit={e.kind === "exhibit"}>{kindLabel(e.kind)}</span>
+                  <span class="label">{e.label}</span>
+                  <span class="where">{e.exhibitTitle}</span>
+                </button>
+              </li>
+            {/each}
+          {/if}
+        </ul>
+      {:else if filtered.length === 0}
+        <p class="empty">No notes, objects, or exhibits match — refine the text, or write the link by hand.</p>
+      {:else}
+        <!-- Browse = eyes-first tiles (the old "▦ By image", now inside the one picker). Thumbs resolve for
+             the current exhibit; cross-exhibit targets show a labelled placeholder tile. -->
+        <div class="browse">
+          {#each filtered as e (e.id)}
+            <button type="button" class="tile" onclick={() => onpick(e)} title={`${kindLabel(e.kind)} · ${e.label} — ${e.exhibitTitle}`}>
+              <span class="tile-thumb" class:empty={!e.thumb} style={e.thumb ? `background-image:url(${e.thumb})` : ""} aria-hidden="true"><span class="tile-kind">{kindLabel(e.kind)}</span></span>
+              <span class="tile-label">{e.label}</span>
+            </button>
           {/each}
-        {/if}
-      </ul>
+        </div>
+      {/if}
 
       <p class="hint"><kbd>↑↓</kbd> move · <kbd>↵</kbd> insert link · it points to the target once you publish</p>
     </div>
@@ -157,6 +181,42 @@
   }
   .where { font-family: var(--font-ui); font-size: var(--text-ui-xs); color: var(--ink-paper-muted); white-space: nowrap; }
   .empty { padding: var(--space-5); font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
+
+  /* View tabs — Search vs Browse, the two doors of the one picker (quiet, paper idiom). */
+  .views { display: flex; gap: var(--space-2); padding: var(--space-2) var(--space-5) 0; }
+  .views button {
+    background: none; border: none; cursor: pointer; padding: var(--space-1) var(--space-2);
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--ink-paper-muted);
+    border-bottom: 2px solid transparent; transition: color 140ms ease, border-color 140ms ease;
+  }
+  .views button.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Browse — eyes-first tiles (the old "By image" surface, now a view). */
+  .browse {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3);
+    padding: var(--space-3); overflow-y: auto;
+  }
+  .tile {
+    display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer;
+    background: none; border: 1px solid transparent; border-radius: var(--radius-sm); padding: var(--space-1);
+    transition: border-color 140ms ease, background 140ms ease;
+  }
+  .tile:hover { border-color: var(--accent); background: var(--accent-muted); }
+  .tile-thumb {
+    position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-sm);
+    background-color: var(--surface-canvas); background-size: cover; background-position: center;
+    display: flex; align-items: flex-end;
+  }
+  .tile-thumb.empty { background-color: var(--surface-paper-hover); }
+  .tile-kind {
+    font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); opacity: 0.7; padding: 2px 5px;
+  }
+  .tile-label {
+    font-family: var(--font-body); font-size: 0.85rem; line-height: 1.25; color: var(--ink-paper-primary);
+    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+  }
 
   .hint {
     margin: 0; padding: var(--space-2) var(--space-5) var(--space-3);

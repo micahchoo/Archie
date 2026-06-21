@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { WHOLE_OBJECT_THRESHOLD, spatialCoverage, temporalCoverage, isWholeObject } from "./coverage.js";
+import { WHOLE_OBJECT_THRESHOLD, spatialCoverage, temporalCoverage, isWholeObject, isWholeObjectFor } from "./coverage.js";
 import type { W3CSelector } from "../wadm/types.js";
 
 // Coverage = how much of the whole media a single mark spans (7e1f). Drives the canvas-wide
@@ -97,5 +97,29 @@ describe("isWholeObject", () => {
     expect(isWholeObject(0.9, false)).toBe(true); // false does not force off
     expect(isWholeObject(0.9, undefined)).toBe(true);
     expect(isWholeObject(0.1, false)).toBe(false);
+  });
+});
+
+describe("isWholeObjectFor (selector-aware — ADR-0018)", () => {
+  it("NO selector (bare-IRI target) → true, regardless of canvas dims / override", () => {
+    // The keystone bug fix: a whole-object Note has no selector and IS the whole object.
+    expect(isWholeObjectFor(null, 100, 100)).toBe(true);
+    expect(isWholeObjectFor(null, 0, 0)).toBe(true); // dims irrelevant when there's no geometry
+    expect(isWholeObjectFor(null, 100, 100, false)).toBe(true);
+  });
+
+  it("a small region selector → false (no override)", () => {
+    // 10×10 over 100×100 = 0.01 < 0.75
+    expect(isWholeObjectFor(rect("xywh=pixel:0,0,10,10"), 100, 100)).toBe(false);
+  });
+
+  it("a region ≥ threshold → true via coverage", () => {
+    // 80×80 over 100×100 = 0.64 < 0.75 → false; 90×90 = 0.81 ≥ 0.75 → true
+    expect(isWholeObjectFor(rect("xywh=pixel:0,0,80,80"), 100, 100)).toBe(false);
+    expect(isWholeObjectFor(rect("xywh=pixel:0,0,90,90"), 100, 100)).toBe(true);
+  });
+
+  it("region-override forces a small region ON", () => {
+    expect(isWholeObjectFor(rect("xywh=pixel:0,0,10,10"), 100, 100, true)).toBe(true);
   });
 });

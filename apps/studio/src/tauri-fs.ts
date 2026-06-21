@@ -51,3 +51,35 @@ export async function pickTauriFolder(): Promise<string | null> {
 export async function makeTauriFilesystem(rootPath: string): Promise<TauriFilesystem> {
   return new TauriFilesystem(await tauriFsBridge(), rootPath);
 }
+
+/**
+ * Native "Save As" for a generated file (the .archie.zip export). The desktop replacement for the
+ * browser blob-`<a download>`, which a webview has no handler for. Returns the chosen path, or null
+ * if the user cancelled.
+ */
+/**
+ * Fetch a remote URL through Tauri's NATIVE http (no webview CORS / cross-origin-redirect rules)
+ * and hand back a same-origin blob: URL. For remote media (e.g. an archive.org MP3 that 302-redirects
+ * to a mirror host) the webview's own fetch fails with "Load failed"; the native fetch follows the
+ * redirect and returns the bytes. Caller owns revoking the returned object URL.
+ */
+export async function fetchRemoteAsBlobUrl(url: string): Promise<string> {
+  const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
+  const resp = await tauriFetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const buf = await resp.arrayBuffer();
+  const type = resp.headers.get("content-type") || "application/octet-stream";
+  return URL.createObjectURL(new Blob([buf], { type }));
+}
+
+export async function saveTauriFile(suggestedName: string, bytes: Uint8Array): Promise<string | null> {
+  const { save } = await import("@tauri-apps/plugin-dialog");
+  const path = await save({
+    defaultPath: suggestedName,
+    filters: [{ name: "Archie library", extensions: ["zip"] }],
+  });
+  if (!path) return null;
+  const { writeFile } = await import("@tauri-apps/plugin-fs");
+  await writeFile(path, bytes);
+  return path;
+}

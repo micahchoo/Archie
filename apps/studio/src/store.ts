@@ -198,6 +198,37 @@ export async function saveThumbFile(slug: string, name: string, file: Blob): Pro
   await writeInto(await assetsDir(slug, true, "assets-thumb"), name, file);
 }
 
+// --- audio waveform peak cache (Studio-only; NOT published — the viewer uses a native <audio>) ---
+// WaveSurfer must fetch + WebAudio-decode the WHOLE file to draw the waveform, and it re-decodes on
+// every open. Decoding ONCE and caching the peaks lets every later open render the waveform INSTANTLY
+// (peaks + duration handed to WaveSurfer.create → no fetch, no decode; the <audio> still streams for
+// playback). Stored as a JSON sidecar `{name}.json` in `assets-peaks/`, keyed by the asset's name.
+
+/** A decoded waveform's peaks + duration — all WaveSurfer needs to render without touching the audio. */
+export interface PeakCache {
+  v: 1;
+  /** Audio duration in seconds (WaveSurfer's `duration` option). */
+  duration: number;
+  /** Per-channel peak arrays (WaveSurfer's `peaks` option / `exportPeaks()` output). */
+  peaks: number[][];
+}
+
+/** Read an asset's cached waveform peaks. Null when absent, corrupt, or OPFS is unsupported (→ decode). */
+export async function readPeaks(slug: string, name: string): Promise<PeakCache | null> {
+  const f = await readAssetFile(slug, `${name}.json`, "assets-peaks");
+  if (!f) return null;
+  try {
+    const c = JSON.parse(await f.text()) as PeakCache;
+    if (c?.v === 1 && typeof c.duration === "number" && Array.isArray(c.peaks) && c.peaks.length > 0) return c;
+  } catch { /* corrupt sidecar → fall through and re-decode */ }
+  return null;
+}
+
+/** Persist an asset's waveform peaks (written once, after the first decode). No-op if unsupported. */
+export async function savePeaks(slug: string, name: string, cache: PeakCache): Promise<void> {
+  await writeInto(await assetsDir(slug, true, "assets-peaks"), `${name}.json`, new Blob([JSON.stringify(cache)], { type: "application/json" }));
+}
+
 // OPFS does NOT persist a file's MIME type — `getFile()` returns `type: ""`. Images sniff fine, but
 // `<video>`/`<audio>` (and WaveSurfer) can refuse a typeless blob: URL, so restore the type from the
 // extension on read. Zero-copy via `slice(…, type)` (no in-memory duplication of large media).

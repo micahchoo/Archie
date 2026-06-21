@@ -3,7 +3,7 @@
 // publishLibrary and reads it back per-exhibit, exactly as a static consumer would. One log per exhibit;
 // each note targets its object's canvas.
 import { appendNew, asClientId, asExhibitId, asLibraryId, type AObject, type AnnotationLog, type Library, type Section } from "@render/core";
-import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichSections, voynichCredits } from "./voynich.js";
+import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichSections, voynichCredits } from "./voynich.js";
 // Single source of truth lives in the viewer-owned base module (not this demo file), so the shell
 // can import canvasIdFor without pulling in demo fixtures. Re-exported for gen-published.mts.
 import { BASE, canvasIdFor } from "../src/published-base.js";
@@ -114,6 +114,15 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
         body: addBody(a.comment, a.tags), motivation: "commenting", lastEditor: author, now: ++now, rng, ...(a.reading ? { reading: a.reading } : {}),
       }));
     }
+  }
+  // Whole-object (Object-level) Notes — a BARE canvas IRI target, no selector (ADR-0018). Appended LAST
+  // so every existing note's deterministic logical id is unchanged. The Viewer frames the whole folio.
+  for (const n of voynichWholeObjectNotes) {
+    if (!keep(n.objectId)) continue;
+    ({ log } = appendNew(log, {
+      target: canvasIdFor(slug, n.objectId), // bare canvas IRI — no SpecificResource, no selector
+      body: addBody(n.comment), motivation: "commenting", lastEditor: author, now: ++now, rng,
+    }));
   }
   return log;
 }

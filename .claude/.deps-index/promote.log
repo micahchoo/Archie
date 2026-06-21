@@ -311,3 +311,51 @@ NODE_MODULE_VERSION 115. This version of Node.js requires
 NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
 the module (for instance, using `npm rebuild` or `npm install`).
 2026-06-20T23:15:07Z | failed tauri@dev — context add failed
+Cloning https://github.com/tauri-apps/tauri...
+Checking out dev...
+Using: tauri@dev
+✓ Reading from repository root
+✓ Found 48 markdown files
+Building package...
+Error: The module '/home/micah/.npm-global/lib/node_modules/@neuledge/context/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 115. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+2026-06-21T00:53:49Z | failed @tauri-apps/api@dev — context add failed
+Cloning https://github.com/tauri-apps/plugins-workspace...
+Checking out v2...
+Using: plugins-workspace@2
+✓ Reading from repository root
+✓ Found 66 markdown files
+Building package...
+Error: The module '/home/micah/.npm-global/lib/node_modules/@neuledge/context/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 115. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+2026-06-21T00:53:52Z | failed @tauri-apps/plugin-dialog@v2 — context add failed
+Cloning https://github.com/tauri-apps/plugins-workspace...
+Checking out v2...
+Using: plugins-workspace@2
+✓ Reading from repository root
+✓ Found 66 markdown files
+Building package...
+Error: The module '/home/micah/.npm-global/lib/node_modules/@neuledge/context/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 115. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+2026-06-21T00:53:55Z | failed @tauri-apps/plugin-fs@v2 — context add failed
+Cloning https://github.com/tauri-apps/plugins-workspace...
+Checking out v2...
+Using: plugins-workspace@2
+✓ Reading from repository root
+✓ Found 66 markdown files
+Building package...
+Error: The module '/home/micah/.npm-global/lib/node_modules/@neuledge/context/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 115. This version of Node.js requires
+NODE_MODULE_VERSION 137. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+2026-06-21T00:53:57Z | failed @tauri-apps/plugin-http@v2 — context add failed

@@ -8,7 +8,7 @@
   import { fade } from "svelte/transition";
   import {
     resolveLayout, overlay, selectorOf, asExhibitId,
-    spatialCoverage, isWholeObject, wholeObjectFlagOf, emphasisOf, readingMarkerStyle,
+    isWholeObjectFor, wholeObjectFlagOf, emphasisOf, readingMarkerStyle,
     type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation,
   } from "@render/core";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
@@ -24,9 +24,11 @@
   // `onnav` (dba2): publishes the object-nav snapshot up to ViewerShell, which renders the carousel in
   // the persistent top bar. `selectedObjectId` stays the source of truth here; ViewerShell only reflects
   // it. Emits null whenever the carousel shouldn't show (grid overview, AV, narrative, single object).
-  let { slug, noteId, onnav }: {
+  let { slug, noteId, objectId, onnav }: {
     slug: string;
     noteId?: string;
+    /** Object-cite arrival (#/<slug>/o/<id>, ADR-0018) — land on the whole Object, not the grid. */
+    objectId?: string;
     onnav?: (
       nav: { siblings: { id: string; label: string }[]; currentId: string; navigate: (id: string) => void; toOverview?: () => void } | null,
     ) => void;
@@ -69,6 +71,13 @@
       data = d;
       layout = l;
       selectedObjectId = l.type === "grid" ? null : (l.objects[0]?.id ?? null);
+      // Object-cite arrival (#/<slug>/o/<id>, ADR-0018): land on the whole Object, not the overview/spine.
+      // A narrative layout ignores selectedObjectId (it renders the spine), so open the object FROM the
+      // index instead (indexObjectId → its own Reader); grid/single consume selectedObjectId.
+      if (objectId && l.objects.some((o) => o.id === objectId)) {
+        if (l.type === "narrative") indexObjectId = objectId;
+        else selectedObjectId = objectId;
+      }
       status = "ready";
 
       // deep-link arrival (§82/§124): the shell parses #/<slug>/a/<id> and passes the note id here
@@ -197,15 +206,14 @@
   // TODO(0045): surface-aware contrast rescue to golden-amber (--accent-2 #d6a23e) — needs the actual
   // surface luminance under the frame (light-table vs grey overlay vs photo region), not a fixed pair.
   const frameColour = (colour: string): string => colour;
-  // The single mark that frames the WHOLE object (first qualifying), or null. Image objects only;
-  // skips if dims are unknown (can't measure spatial coverage) unless an authored override flags it.
+  // The single mark that frames the WHOLE object (first qualifying), or null. A bare-IRI Object-level
+  // Note (no selector — ADR-0018) ALWAYS frames (it has no geometry to measure, and IS the whole
+  // object); a region note frames via the ≥75% coverage heuristic or the authored region-override.
   const frameFor = (objectId: string, w?: number, h?: number): { markId: string; colour: string } | null => {
     const colourBy = readingColourById(objectId);
     for (const a of annotationsOf(objectId)) {
       if (!a.id) continue;
-      const sel = selectorOf(a);
-      const coverage = sel && w && h ? spatialCoverage(sel, w, h) : 0;
-      if (isWholeObject(coverage, wholeObjectFlagOf(a))) {
+      if (isWholeObjectFor(selectorOf(a), w ?? 0, h ?? 0, wholeObjectFlagOf(a))) {
         return { markId: a.id, colour: frameColour(colourBy[a.id] ?? ACCENT) };
       }
     }
