@@ -19,6 +19,7 @@
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
+  import TutorialModal from "./TutorialModal.svelte";
   // AddMapModal (map add) is lazy-loaded — see AddMapModalComp below.
   import NoteEditor from "./NoteEditor.svelte";
   import { matches, typingInField } from "./shortcuts.js";
@@ -1008,6 +1009,8 @@
     commentEl?.setSelectionRange(pos, pos);
   }
   let helpOpen = $state(false); // the `?` shortcuts cheat-sheet
+  let helpMenuOpen = $state(false); // the ? button's little menu (Tutorial / Shortcuts)
+  let tutorialOpen = $state(false); // the onboarding tutorial modal (embeds the learn decks)
   // Global + image-editor keyboard shortcuts (registry-driven; AV shortcuts live in AvEditor, palette in CmdK).
   function onGlobalKey(e: KeyboardEvent) {
     // ? toggles the cheat-sheet (not while typing); Esc closes it first.
@@ -1251,7 +1254,16 @@
       <button onclick={() => void save()} disabled={!sess.dirty}>Save</button>
     {/if}
     <button class="publish-signal" onclick={() => void ensurePub().then((p) => p.openDialog())}>Publish & share…</button>
-    <button class="help-btn" onclick={() => (helpOpen = true)} title="Keyboard shortcuts" aria-label="Keyboard shortcuts (press ?)">?</button>
+    <div class="help-wrap">
+      <button class="help-btn" onclick={() => (helpMenuOpen = !helpMenuOpen)} title="Help" aria-label="Help" aria-haspopup="menu" aria-expanded={helpMenuOpen}>?</button>
+      {#if helpMenuOpen}
+        <div class="help-backdrop" role="presentation" onclick={() => (helpMenuOpen = false)}></div>
+        <div class="help-menu" role="menu">
+          <button role="menuitem" onclick={() => { helpMenuOpen = false; tutorialOpen = true; }}>Start the tutorial</button>
+          <button role="menuitem" onclick={() => { helpMenuOpen = false; helpOpen = true; }}>Keyboard shortcuts <kbd>?</kbd></button>
+        </div>
+      {/if}
+    </div>
   </header>
 
   <ReadingsModal open={readingsOpen} readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => rdg.setActive(id)} onclose={() => (readingsOpen = false)} />
@@ -1590,7 +1602,9 @@
         {#key canvasId}
           {#if AvEditorComp}
             {@const Av = AvEditorComp}
-            <Av source={currentSource} label={current.label} mediaType={current.mediaType} {annotations} bind:selected oncreate={onCreateTime} onimport={onImportTranscript}
+            <Av source={currentSource} label={current.label} mediaType={current.mediaType}
+              slug={currentSlug} assetName={isAsset(current.source) ? current.source.slice(ASSET_PREFIX.length) : null}
+              {annotations} bind:selected oncreate={onCreateTime} onimport={onImportTranscript}
               onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
           {:else}
             <div class="no-canvas">Loading…</div>
@@ -1674,6 +1688,8 @@
 {/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
 <ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
+<!-- GLOBAL: the onboarding tutorial (embeds docs/learn decks from public/learn). -->
+<TutorialModal open={tutorialOpen} onclose={() => (tutorialOpen = false)} />
 </div>
 
 <style>
@@ -1718,7 +1734,22 @@
   .savestate.error { color: var(--semantic-error); }
   /* (.swatch / .you rules removed — that UI moved into ReadingsModal/IdentityPrompt; the rules were dead.) */
   /* The ? shortcuts button — a round, quiet affordance for the cheat-sheet. */
-  header > button.help-btn { border-radius: 50%; min-width: 1.9rem; padding: var(--space-1) 0; text-align: center; font-weight: 400; }
+  /* The ? help control — moored in the header; the menu drops down from it. */
+  header .help-wrap { position: relative; display: inline-flex; }
+  header .help-btn { border-radius: 50%; min-width: 1.9rem; padding: var(--space-1) 0; text-align: center; font-weight: 400; }
+  header .help-backdrop { position: fixed; inset: 0; z-index: 90; }
+  header .help-menu {
+    position: absolute; top: calc(100% + 0.4rem); right: 0; z-index: 91;
+    display: flex; flex-direction: column; min-width: 13rem; padding: var(--space-1);
+    background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-mid);
+  }
+  header .help-menu button {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
+    width: 100%; text-align: left; background: none; border: none; cursor: pointer;
+    padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+    font: inherit; font-size: 0.92rem; color: var(--ink-paper-primary);
+  }
+  header .help-menu button:hover { background: var(--surface-paper-hover, rgba(26, 60, 35, 0.06)); }
 
   /* Playground banner — honest ephemerality (§115). Warm clay-tinted card; the keep action stays a
      quiet .soft-btn (signal-orange is rationed to Publish, not spent here). */
