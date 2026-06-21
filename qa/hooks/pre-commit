@@ -1,0 +1,9 @@
+#!/bin/sh
+# Tracked QA pre-commit hook — keeps qa/features.csv in sync with the canonical
+# qa/features.jsonl on every commit. Install with: sh qa/hooks/install.sh
+[ -f qa/features.jsonl ] || exit 0
+node qa/sync-csv.mjs || {
+  echo "pre-commit: qa/sync-csv.mjs failed — fix qa/features.jsonl" >&2
+  exit 1
+}
+git add qa/features.csv
