@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3 · Where your work lives — Onboarding</title>
+<link rel="stylesheet" href="assets/lesson.css">
+<script defer src="assets/glossary.js"></script>
+<script defer src="assets/models.js"></script>
+</head>
+<body>
+<main class="wrap">
+  <p class="eyebrow">Archie Learn · Onboarding · Step 3 of 7</p>
+  <h1>Where your work lives</h1>
+  <p class="standfirst">There's no Save button to forget — Archie autosaves as you go. The one catch worth knowing up front: by default it saves only inside this browser. Here's how to keep your work safe.</p>
+
+  <div class="level-toggle" role="group" aria-label="Detail level">
+    <button data-level="simple">Simple</button>
+    <button data-level="advanced">Advanced</button>
+  </div>
+  <p class="level-note"><span class="for-simple">Plain and quick. Switch to <b>Advanced</b> for how storage actually works under the hood.</span><span class="for-adv">Scholar/maker mode: the storage backends and the on-disk format. Back to <b>Simple</b> any time.</span></p>
+
+  <h2>1. Autosave is on — but where does it save?</h2>
+  <p>Your <span class="term" data-term="library">Library</span> lives in exactly one home at a time. Autosave keeps that home current — so the only thing that matters is <em>which</em> home it is.</p>
+
+  <div class="flow">
+    <div class="node">Your library<small>autosaves constantly</small></div>
+    <div class="arrow">→</div>
+    <div class="stack">
+      <span class="tile">In this browser</span>
+      <span class="tile">A folder on disk</span>
+      <span class="tile">A <code>.archie.zip</code> file</span>
+    </div>
+  </div>
+
+  <figure class="real">
+    <img src="assets/img/studio-projectbar.png" alt="Studio bar reading 'This library lives only in this browser. Save it to disk to keep it safe — and to open it on another machine.' with Save to disk and Open a library buttons">
+    <figcaption><b>The default warning, in the app</b> — a new library is browser-only until you <b>Save to disk</b> (real screenshot).</figcaption>
+  </figure>
+
+  <div class="nouns">
+    <div class="noun"><b>In this browser</b><span class="flag">default</span>
+      <span class="rel">Autosaves instantly — but tied to <em>this</em> browser on <em>this</em> machine. Clear your browser data and it's gone. Great for trying things; not for keeping them.</span></div>
+    <div class="noun"><b>A folder on disk</b><span class="flag">do this</span>
+      <span class="rel">Hit <b>Save to disk</b> and pick a folder — Archie then autosaves into it as you work. Safe, and openable on another machine.</span></div>
+    <div class="noun"><b>A <span class="term" data-term="portable">.archie.zip</span> file</b>
+      <span class="rel">One self-contained file. Move it, back it up, or hand it to someone — they open it in the <span class="term" data-term="viewer">Viewer</span> with no server.</span></div>
+  </div>
+
+  <div class="aside-adv adv">
+    <span class="label">Under the hood</span>
+    Browser storage is OPFS; "Save to disk" uses a real folder via the File System Access API on Chromium, or a <code>.archie.zip</code> on other browsers. On disk a library is plain JSON plus your media — diff-able and Git-friendly. The same <code>.archie.zip</code> is also the unit of async collaboration: share a copy, import changes back, and edits merge by version history — no server.
+  </div>
+
+  <h2>2. Examples are Playgrounds — your work is a Project</h2>
+  <p>The <span class="term" data-term="exhibit">Exhibit</span>s shown as <b>Example</b> are <span class="term" data-term="playground">Playgrounds</span>: open one, poke around, but your changes aren't kept. "Keep a copy" turns it into a <span class="term" data-term="project">Project</span> of your own — saved, and yours to edit.</p>
+
+  <div class="flow">
+    <div class="node">Playground<small>a template; changes aren't kept</small></div>
+    <div class="arrow">→</div>
+    <div class="out">Your Project<small>saved &amp; yours</small></div>
+  </div>
+
+  <figure class="real">
+    <img src="assets/img/studio-example-card.png" alt="An Example exhibit card 'The Rosettes' reading 'Explore freely — changes aren't kept. Keep a copy to make it yours.'">
+    <figcaption><b>It tells you so</b> — every Example card says changes aren't kept until you keep a copy (real screenshot).</figcaption>
+  </figure>
+
+  <div class="try">
+    <h3>Your first move</h3>
+    <p>You imported media in Step 2 — now make it safe. On the Library home, click <b>Save to disk</b> and pick a folder (or save a <code>.archie.zip</code>). From then on it autosaves there, and you can reopen it anywhere with <b>Open a library…</b>.</p>
+  </div>
+
+  <p class="ask"><b>I'm your guide.</b> Unsure whether your work is saved, or which home it's in? Ask — I'll show you exactly where to look in the app.</p>
+
+  <div class="lesson-nav">
+    <a class="prev" href="0002-get-media-in.html"><span>Back</span>Step 2 · Get your media in</a>
+    <a class="next" href="#"><span>Next · coming</span>Step 4 · Annotation that isn't obvious</a>
+  </div>
+</main>
+</body>
+</html>
