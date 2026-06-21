@@ -11,6 +11,7 @@ import {
 } from "@render/core";
 import { supportsFileStreamSave, saveZipToDisk } from "./binding.js";
 import { pickFolderBinding } from "./folder-backend.js";
+import { sliceToDzi } from "./dzi-slicer.js";
 import { readAssetBlob, readOriginalBytes, readThumbBytes, assetSize, isAsset, ASSET_PREFIX, type ExhibitMeta } from "./store.js";
 // ADR-0014 (static archival pages): note bodies render through the SAME sanitize pipeline the
 // live Viewer uses (P-1 Q3 no-drift invariant) — renderMarkdown is canonical in @render/core now
@@ -52,6 +53,26 @@ export function createPublishFlows(deps: PublishDeps) {
   // Baked grid/overview thumbnails ride along every publish sink (folder / zip / GH / memory) so the
   // published viewer's overview loads small plates, not full masters. Absent → publishLibrary drops the ref.
   const getThumbnail = (slug: string, name: string) => readThumbBytes(slug, name);
+  // Publish-time DZI tiling (Q-9, Q-11): slice an oversized imported master into a Deep Zoom pyramid so the
+  // published viewer deep-zooms from fast LOCAL tiles instead of streaming the full master (or a slow remote
+  // IIIF). Browser-only (OffscreenCanvas) — injected into publishLibrary so render-core stays platform-free.
+  // Returns null (→ single image, unchanged) for small images or an undecodable blob.
+  const TILE_MIN_EDGE = 4096; // longer edge over this → deep-zoom pays off; smaller stays a single master
+  const tileObject = async (_slug: string, name: string, bytes: ArrayBuffer | Blob) => {
+    const blob = bytes instanceof Blob ? bytes : new Blob([bytes]);
+    let bmp: ImageBitmap;
+    try {
+      bmp = await createImageBitmap(blob);
+    } catch {
+      return null; // not a decodable raster (e.g. an svg/odd mime) — leave it a single source
+    }
+    try {
+      if (Math.max(bmp.width, bmp.height) <= TILE_MIN_EDGE) return null;
+      return await sliceToDzi(bmp, `${name}_files`, blob.type || "image/jpeg");
+    } finally {
+      bmp.close();
+    }
+  };
 
   // Metadata-only imported-asset byte estimate (File.size — never reads bytes).
   async function estimateLibraryBytes(): Promise<number> {
@@ -85,7 +106,7 @@ export function createPublishFlows(deps: PublishDeps) {
   async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[] }> {
     const logs = await deps.loadAllLogs();
     const fs = new MemoryFilesystem();
-    const { brokenLinks } = await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks } = await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     return { fs, brokenLinks };
   }
@@ -98,13 +119,13 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE zip builder for the three zip paths (project Save / dialog download / local publish).
   async function buildZipFs() {
     const logs = await deps.loadAllLogs();
-    return libraryToZipFs(deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, ...STATIC_PAGE_OPTS });
+    return libraryToZipFs(deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, ...STATIC_PAGE_OPTS });
   }
   // ONE folder writer for the two folder sinks (binding autosave/Save + local publish). Takes the
   // Filesystem seam directly (FSA or Tauri), so the caller owns capability selection (folder-backend).
   async function writeTree(fs: Filesystem) {
     const logs = await deps.loadAllLogs();
-    await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, ...STATIC_PAGE_OPTS });
+    await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, ...STATIC_PAGE_OPTS });
   }
   /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
   async function downloadProjectZip(): Promise<boolean> {
