@@ -9,6 +9,9 @@ node_modules/
 # ─────────────────────────────────────────────────────────────
 dist/
 build/
+# Onboarding tutorial decks, synced from docs/learn by apps/studio/scripts/sync-learn.mjs
+# (canonical source is docs/learn; this copy is a build artifact).
+apps/studio/public/learn/
 gh-pages-dist/
 .astro/
 .svelte-kit/

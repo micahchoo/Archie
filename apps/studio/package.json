@@ -6,8 +6,9 @@
   "description": "Studio — the authoring app. Svelte SPA via Vite (ADR-0002 / Q-2). Adopts anvil's editor shell / AnnotationForm / List / NarrativeEditor / PublishDialog as running code in Phase 2. Phase 0 = boundary shell.",
   "license": "GPL-3.0-only",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "sync:learn": "node scripts/sync-learn.mjs",
+    "dev": "node scripts/sync-learn.mjs && vite",
+    "build": "node scripts/sync-learn.mjs && vite build",
     "preview": "vite preview",
     "test": "vitest run"
   },
@@ -19,6 +20,7 @@
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-fs": "^2.5.1",
+    "@tauri-apps/plugin-http": "^2.5.9",
     "wavesurfer.js": "^7.8.6"
   },
   "devDependencies": {
