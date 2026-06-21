@@ -8,8 +8,16 @@
 // Deep Zoom overlap convention shortens edge tiles). The `{ Image }` shape makes OSD construct a real
 // DziTileSource so the overlap + edge geometry matches exactly how the slicer cut the tiles. OSD builds
 // each tile url as `{Url}{level}/{col}_{row}.{Format}` — the same scheme render-core's `tileUrl` emits.
-import { tileExt } from "@render/core";
 import type { DziTileSource } from "@render/core";
+
+// Tile extension from a tile MIME (image/jpeg → jpg, image/png → png). INLINED rather than imported
+// from @render/core: a stale dev-server barrel dropped the cross-package `tileExt` export and the
+// uncaught import error blanked the whole studio canvas (createMount → dzi.ts). A read-side module
+// this small stays self-contained — same one-line logic as render-core's tileExt.
+function tileExt(format: string): string {
+  const sub = (format.split("/").pop() ?? "jpeg").toLowerCase();
+  return sub === "jpeg" ? "jpg" : sub;
+}
 
 /** The OSD-native Deep Zoom descriptor object (the `{ Image }` form OSD recognises as DZI and parses with
  *  its DziTileSource — correct overlap + edge-tile sizing). Numeric fields are strings, per the DZI schema. */
