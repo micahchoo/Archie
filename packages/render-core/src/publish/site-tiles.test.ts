@@ -61,4 +61,39 @@ describe("publishLibrary DZI tiling (tileObject)", () => {
     const paths = Object.keys(await collectFiles(await fs.root()));
     expect(paths.some((p) => p.includes("_files"))).toBe(false);
   });
+
+  it("bakes a REMOTE IIIF object via tileRemote → persists {objId}_files + stamps tileSource", async () => {
+    const remoteLib: Library = {
+      id: asLibraryId("lib"),
+      exhibits: [{
+        id: asExhibitId("r"), slug: "r", title: "R",
+        objects: [{ id: asObjectId("o9"), source: "https://iiif.example/img/info.json", label: "Remote", width: 8000, height: 6000 }],
+      }],
+    };
+    const fs = new MemoryFilesystem();
+    let calledId: string | null = null;
+    await publishLibrary(fs, remoteLib, () => [], {
+      baseUrl: base,
+      tileRemote: async (_slug, obj) => { calledId = obj.id; return { descriptor, tiles: fakeTiles() }; },
+    });
+    const files = await collectFiles(await fs.root());
+    const paths = Object.keys(files);
+    expect(calledId).toBe("o9");
+    expect(paths).toContain("r/o9_files/0/0_0.jpg");
+    expect(paths).toContain("r/o9_files/13/1_0.jpg");
+    expect((files["r/manifest.json"] as { text: string }).text).toContain(`${base}r/o9_files`);
+  });
+
+  it("does NOT re-tile a just-published local /assets/ object as if remote (the /assets/ guard)", async () => {
+    const fs = new MemoryFilesystem();
+    let remoteCalled = false;
+    // lib's object is /assets/pic.jpg → the asset pass rewrites it to {base}c/assets/pic.jpg (an https url);
+    // tileRemote must NOT fire on that rewritten source.
+    await publishLibrary(fs, lib, () => [], {
+      baseUrl: base,
+      getAsset: async () => new Uint8Array([9]).buffer,
+      tileRemote: async () => { remoteCalled = true; return { descriptor, tiles: fakeTiles() }; },
+    });
+    expect(remoteCalled).toBe(false);
+  });
 });
