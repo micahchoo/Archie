@@ -59,14 +59,36 @@ export const escapeBody = (md: string): string =>
 // reading-label. System sans echoes LARAZ without shipping a webfont on this archival surface.
 const STYLE = `body{max-width:42rem;margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;color:#1A3C23;background:#F7F4EC}h1,h2{line-height:1.2}article{margin:1.5rem 0;padding:0.75rem 1rem;border-left:3px solid #2D5F3A;background:#EEF1E6}article .reading{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.06em;color:#9A7B39}article .tags,footer,.credit{color:#6B7D6A;font-size:0.9rem}a{color:#2D5F3A}`;
 
-function pageShell(title: string, body: string): string {
+/** The SEO head tags (Q-8): Open Graph + Twitter card + canonical + JSON-LD. Rendered only when a
+ *  page supplies `meta`; the bare shell (no meta) keeps the minimal charset/viewport/title head. */
+function metaTags(meta: PageMeta): string {
+  const lines = [
+    ...(meta.description ? [`<meta name="description" content="${esc(meta.description)}">`] : []),
+    `<link rel="canonical" href="${esc(meta.canonical)}">`,
+    `<meta property="og:type" content="${meta.ogType}">`,
+    `<meta property="og:title" content="${esc(meta.title)}">`,
+    ...(meta.description ? [`<meta property="og:description" content="${esc(meta.description)}">`] : []),
+    `<meta property="og:url" content="${esc(meta.canonical)}">`,
+    `<meta property="og:image" content="${esc(meta.ogImage)}">`,
+    `<meta name="twitter:card" content="summary_large_image">`,
+    `<meta name="twitter:title" content="${esc(meta.title)}">`,
+    ...(meta.description ? [`<meta name="twitter:description" content="${esc(meta.description)}">`] : []),
+    `<meta name="twitter:image" content="${esc(meta.ogImage)}">`,
+    // JSON.stringify already escapes the JSON; guard the one HTML-significant sequence that can break
+    // out of a <script> element (`</` → `<\/`).
+    `<script type="application/ld+json">${JSON.stringify(meta.jsonLd).replace(/<\//g, "<\\/")}</script>`,
+  ];
+  return lines.join("\n");
+}
+
+function pageShell(title: string, body: string, meta?: PageMeta): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title>
-<style>${STYLE}</style>
+${meta ? metaTags(meta) + "\n" : ""}<style>${STYLE}</style>
 </head>
 <body>
 ${body}
@@ -81,6 +103,27 @@ export function sitemapTxt(library: Library, baseUrl: string): string {
   return [`${baseUrl}index.html`, ...library.exhibits.map((e) => `${baseUrl}${e.slug}/index.html`)].map((u) => `${u}\n`).join("");
 }
 
+/** sitemap.xml — the same page set as sitemapTxt, in the sitemaps.org 0.9 schema so crawlers ingest
+ *  it directly (ABSOLUTE `<loc>`s, library first then exhibits in order). `lastmod` carries the
+ *  publish timestamp when known. */
+export function sitemapXml(library: Library, baseUrl: string, lastmod?: string): string {
+  const urls = [`${baseUrl}index.html`, ...library.exhibits.map((e) => `${baseUrl}${e.slug}/index.html`)];
+  const lm = lastmod ? `\n    <lastmod>${esc(lastmod)}</lastmod>` : "";
+  const body = urls.map((u) => `  <url>\n    <loc>${esc(u)}</loc>${lm}\n  </url>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>\n`;
+}
+
+/** schema.org `ImageObject` for one object, with REAL numeric pixel dims when the model carries them.
+ *  `contentUrl` is the absolute object source (or the published canvas image URL the publish step set). */
+function imageObjectFor(obj: Exhibit["objects"][number]): Record<string, unknown> {
+  return {
+    "@type": "ImageObject",
+    contentUrl: obj.source,
+    ...(typeof obj.width === "number" ? { width: obj.width } : {}),
+    ...(typeof obj.height === "number" ? { height: obj.height } : {}),
+  };
+}
+
 /** The library landing page — the human entry a published data repo never had. */
 export function libraryPageHtml(library: Library, opts: StaticPageOptions): string {
   const parts: string[] = [];
@@ -93,7 +136,33 @@ export function libraryPageHtml(library: Library, opts: StaticPageOptions): stri
     parts.push(`<li><a href="${esc(e.slug)}/index.html">${esc(e.title)}</a>${e.summary ? ` — ${esc(e.summary)}` : ""}</li>`);
   }
   parts.push("</ul>");
-  return pageShell(library.title ?? "Library", parts.join("\n"));
+
+  // schema.org CollectionPage (Q-8): one hasPart CreativeWork per exhibit. Honest — only modelled fields.
+  const title = library.title ?? "Library";
+  const jsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: title,
+    url: `${opts.baseUrl}index.html`,
+    ...(library.summary ? { description: library.summary } : {}),
+    ...(library.rights ? { license: library.rights } : {}),
+    ...(library.requiredStatement ? { creditText: library.requiredStatement.value } : {}),
+    hasPart: library.exhibits.map((e) => ({
+      "@type": "CreativeWork",
+      name: e.title,
+      url: `${opts.baseUrl}${e.slug}/index.html`,
+      ...(e.summary ? { description: e.summary } : {}),
+    })),
+  };
+  const meta: PageMeta = {
+    title,
+    ...(library.summary ? { description: library.summary } : {}),
+    ogImage: `${opts.baseUrl}og-card.png`,
+    canonical: `${opts.baseUrl}index.html`,
+    ogType: "website",
+    jsonLd,
+  };
+  return pageShell(title, parts.join("\n"), meta);
 }
 
 /**
@@ -147,5 +216,28 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
     parts.push(`<h2>Exhibit notes</h2>`);
     for (const r of rest) parts.push(noteHtml(r));
   }
-  return pageShell(`${exhibit.title}${" — archival text"}`, parts.join("\n"));
+
+  // schema.org CreativeWork (Q-8): map ONLY what the model carries. NO `author` — the model has no
+  // structured author. `image`/`hasPart` carry REAL pixel dims; multi-object → hasPart array.
+  const images = exhibit.objects.map(imageObjectFor);
+  const jsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: exhibit.title,
+    url: `${opts.baseUrl}${exhibit.slug}/index.html`,
+    ...(exhibit.summary ? { description: exhibit.summary } : {}),
+    ...(exhibit.rights ? { license: exhibit.rights } : {}),
+    ...(exhibit.requiredStatement ? { creditText: exhibit.requiredStatement.value } : {}),
+    ...(opts.publishedAt ? { datePublished: opts.publishedAt, dateModified: opts.publishedAt } : {}),
+    ...(images.length === 1 ? { image: images[0] } : images.length > 1 ? { hasPart: images } : {}),
+  };
+  const meta: PageMeta = {
+    title: exhibit.title,
+    ...(exhibit.summary ? { description: exhibit.summary } : {}),
+    ogImage: ogImageForExhibit(exhibit, opts.baseUrl),
+    canonical: `${opts.baseUrl}${exhibit.slug}/index.html`,
+    ogType: "article",
+    jsonLd,
+  };
+  return pageShell(`${exhibit.title}${" — archival text"}`, parts.join("\n"), meta);
 }

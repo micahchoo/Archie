@@ -21,7 +21,7 @@ import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.j
 import type { Exhibit, AObject, Section, RightsFields } from "../model/model.js";
 import type { PortableExhibit } from "./portable.js"; // type-only (erased) — the readings superset; type-cycle is harmless
 import { readExhibitTree, fsJsonSource } from "./read.js";
-import { libraryPageHtml, exhibitPageHtml, sitemapTxt } from "./static-pages.js";
+import { libraryPageHtml, exhibitPageHtml, sitemapTxt, sitemapXml } from "./static-pages.js";
 import { readAnnotations } from "../spine/persist.js";
 import { asExhibitId, asLibraryId } from "../wadm/brand.js";
 import { toHistory } from "../spine/serialize.js";
@@ -66,6 +66,13 @@ export interface PublishOptions {
    * sanitization policy cannot drift. Default: entity-escape everything (the non-DOM floor).
    */
   renderBody?: (md: string) => string;
+  /**
+   * The artifact's true publish time (ISO 8601, Q-8) — the static pages' JSON-LD `datePublished`/
+   * `dateModified` and the sitemap `<lastmod>`. App-supplied (the publish step's timestamp); absent =
+   * those fields are omitted (no fabricated date). Idempotency note: passing a fixed value keeps the
+   * pages byte-stable across republish; omitting it keeps the pre-Q-8 byte output.
+   */
+  publishedAt?: string;
 }
 
 const ASSET_PREFIX = "/assets/";
@@ -325,11 +332,14 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // archie:-link rewrite the JSON heads pages get; the throwaway sink keeps the brokenLinks
     // advisory counts identical to the JSON path (canvas-matched refs already reported above).
     const htmlRecords = heads.map((h) => rewriteHeadBodies(h, exhibit.slug, rw, []));
-    await writeText(exDir, "index.html", exhibitPageHtml(exhibit, htmlRecords, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}) }));
+    await writeText(exDir, "index.html", exhibitPageHtml(exhibit, htmlRecords, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
   }
   // Library landing + sitemap (ADR-0014): the human/crawler entry the data repo never had.
-  await writeText(root, "index.html", libraryPageHtml(library, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}) }));
+  await writeText(root, "index.html", libraryPageHtml(library, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
+  // Crawler sitemaps: keep sitemap.txt (the simple, already-cited surface) AND add the standard
+  // sitemap.xml (sitemaps.org 0.9) so search engines ingest it directly with <lastmod> (Q-8).
   await writeText(root, "sitemap.txt", sitemapTxt(library, baseUrl));
+  await writeText(root, "sitemap.xml", sitemapXml(library, baseUrl, opts.publishedAt));
   return { brokenLinks };
 }
 
