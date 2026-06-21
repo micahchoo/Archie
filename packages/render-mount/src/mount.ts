@@ -20,6 +20,7 @@ import { createFrameOverlay } from "./frame-overlay.js";
 import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
 import { xyzTileSource } from "./xyz.js";
+import { dziOsdSource } from "./dzi.js";
 import type { W3CSelector, TileSourceDescriptor } from "@render/core";
 import type { MountSurface, SelectionId, FrameOverlay } from "./surface.js";
 
@@ -74,10 +75,17 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
   // A structured tileSource descriptor (a map) classifies the surface; else the source string (ADR-0004).
   const ts = resolveTileSource(opts.tileSource ?? opts.source);
   const tileSources =
-    ts.kind === "image" ? { type: "image", url: ts.url } : ts.kind === "xyz" ? xyzTileSource(ts) : ts.infoUrl;
+    ts.kind === "image" ? { type: "image", url: ts.url }
+    : ts.kind === "xyz" ? xyzTileSource(ts)
+    : ts.kind === "dzi" ? dziOsdSource(ts) // a baked Deep Zoom pyramid (Q-9) — OSD reads it natively
+    : ts.infoUrl;
   // Annotation target identity: the canvas IRI if given, else the loaded image url (a map MUST set canvasId
   // — its tile template is not a canvas IRI; DESIGN.md canvas-identity note — so fall back to the source).
-  const sourceIRI = opts.canvasId ?? (ts.kind === "image" ? ts.url : ts.kind === "xyz" ? opts.source : ts.infoUrl);
+  // A dzi pyramid has no single image url either (its bytes are tiles), so it also falls back to the source.
+  const sourceIRI = opts.canvasId ?? (
+    ts.kind === "image" ? ts.url
+    : ts.kind === "xyz" || ts.kind === "dzi" ? opts.source
+    : ts.infoUrl);
 
   const viewer = OpenSeadragon({
     element: container,
