@@ -23,7 +23,7 @@
 
 * { box-sizing: border-box; }
 
-html { font-size: 17px; }
+html { font-size: 17px; height: 100%; }
 
 body {
   margin: 0;
@@ -34,6 +34,56 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
+
+/* ====================================================================
+   DECK MODE — slides for embedding in the app's help section.
+   The deck fills its container (works full-window OR inside a panel/iframe);
+   one slide visible at a time; ≤2 slides per step. ==================== */
+body.deck-mode { padding: 0; height: 100%; overflow: hidden; }
+.deck {
+  display: flex; flex-direction: column; height: 100%;
+  min-height: 24rem; /* embed fallback if the container has no fixed height */
+  max-width: 60rem; margin: 0 auto;
+}
+.deck-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.9rem 1.3rem; border-bottom: 1px solid var(--rule); flex: none;
+}
+.deck-top .eyebrow { margin: 0; }
+.deck-top .level-toggle { margin: 0; }
+
+.deck-stage { position: relative; flex: 1 1 auto; min-height: 0; }
+.slide {
+  position: absolute; inset: 0; overflow-y: auto;
+  display: grid; place-items: center; padding: 1.4rem 1.5rem;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.slide.active { opacity: 1; visibility: visible; pointer-events: auto; }
+.slide-inner { width: 100%; max-width: var(--measure); margin: auto; }
+.slide h1 { font-size: 1.85rem; margin: 0 0 0.5rem; }
+.slide h2 { font-size: 1.2rem; margin: 0 0 0.7rem; border: none; padding: 0; }
+.slide .standfirst { margin-bottom: 1.1rem; font-size: 1.05rem; }
+.slide > .slide-inner > :last-child { margin-bottom: 0; }
+
+.deck-nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.7rem 1.3rem; border-top: 1px solid var(--rule); flex: none;
+}
+.dnav {
+  font: inherit; font-size: 0.9rem; cursor: pointer; color: var(--ink);
+  background: #fff; border: 1px solid var(--rule); border-radius: 999px; padding: 0.4rem 1rem;
+}
+.dnav:hover:not(:disabled) { border-color: var(--accent); }
+.dnav.next { background: var(--accent); color: #fff; border-color: var(--accent); }
+.dnav:disabled { opacity: 0.35; cursor: default; }
+.dots { display: flex; gap: 0.45rem; }
+.dots button {
+  width: 0.6rem; height: 0.6rem; border-radius: 50%; padding: 0; cursor: pointer;
+  background: var(--rule); border: none;
+}
+.dots button.on { background: var(--accent); }
+@media (max-width: 32rem) { .deck-top { flex-wrap: wrap; } .deck-nav .dnav { padding: 0.4rem 0.7rem; } }
 
 .wrap { max-width: var(--measure); margin: 0 auto; }
 .wrap.wide { max-width: 52rem; }
