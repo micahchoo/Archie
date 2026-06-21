@@ -90,6 +90,12 @@ export interface AObject extends RightsFields {
    *     author-side slicer; the viewer hands it to OSD natively. ADDITIVE/OPTIONAL — no migration; objects
    *     without it read back unchanged. */
   tileSource?: TileSourceDescriptor;
+  /** Opt-in (Q-9): bake this object's REMOTE source into a LOCAL Deep Zoom pyramid at publish, so the
+   *  published viewer deep-zooms from local tiles instead of a slow / cross-origin IIIF service. OFF by
+   *  default — persisting a remote source's pixels is a one-time copy with storage + rights implications,
+   *  so the author chooses per object. Ignored for local `/assets/` imports (those tile by size already)
+   *  and for AV/maps. ADDITIVE/OPTIONAL — no migration. */
+  bakeTiles?: boolean;
   /** Pixel dimensions — required by IIIF for image/video canvases when known. */
   width?: number;
   height?: number;
