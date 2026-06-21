@@ -28,7 +28,7 @@
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
     tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary, resolveLayoutType,
-    isWholeObjectFor, wholeObjectFlagOf, selectorOf,
+    isWholeObjectFor, wholeObjectFlagOf, selectorOf, selectorBBox,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import type { DrawTool, MarkerStyle, FrameOverlay } from "@render/mount";
@@ -868,6 +868,30 @@
   // frame); a bare-IRI whole-object note has no rect, so this is a no-op for the common case.
   const canvasAnnotations = $derived(frameMark ? annotations.filter((a) => a.id !== frameMark!.markId) : annotations);
 
+  // Co-located notes — a "stack" of notes whose hitboxes overlap so much you can't separate them by
+  // clicking the canvas (e.g. the cipher/hoax/abjad reading notes share one region). The note editor cycles
+  // through them so every note at a spot is reachable. Overlap = bbox IoU ≥ 0.5 on the SAME object.
+  type Bx = { x: number; y: number; w: number; h: number };
+  const bboxOf = (t: unknown): Bx | null => { const s = selectorOf({ target: t }); return s ? selectorBBox(s) : null; };
+  const bboxIoU = (a: Bx, b: Bx): number => {
+    const ix = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+    const iy = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+    const inter = ix * iy, uni = a.w * a.h + b.w * b.h - inter;
+    return uni > 0 ? inter / uni : 0;
+  };
+  const coLocated = $derived.by<AnnotationRecord[]>(() => {
+    if (!sel) return [];
+    const sb = bboxOf(sel.target);
+    if (!sb) return []; // whole-object / no-region selected → no stack to step through
+    return objNotes.filter((r) => { const b = bboxOf(r.target); return !!b && bboxIoU(sb, b) >= 0.5; });
+  });
+  const coLocatedIndex = $derived(coLocated.findIndex((r) => r.logicalId === editing));
+  function cycleCoLocated(dir: 1 | -1) {
+    if (coLocated.length < 2) return;
+    const i = ((coLocatedIndex < 0 ? 0 : coLocatedIndex) + dir + coLocated.length) % coLocated.length;
+    selected = coLocated[i]!.logicalId;
+  }
+
   // --- canvas lifecycle ---
   function onCreate(a: W3CAnnotation) {
     if (framingSectionId) {
@@ -1424,7 +1448,8 @@
     {#snippet noteForm()}
       <NoteEditor sel={sel!} editing={editing!} {currentReadings} bind:commentEl
         {commentOf} {tagsOf} {timeOf}
-        {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {setNoteScope} {requestCite} {citeIntoComment} {closeNote} {onDelete} />
+        {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {setNoteScope} {requestCite} {citeIntoComment} {closeNote} {onDelete}
+        {coLocatedIndex} coLocatedCount={coLocated.length} {cycleCoLocated} />
     {/snippet}
     <aside class:collapsed={asideCollapsed} style:--studio-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
       <!-- The narrative spine is ALWAYS mounted (ADR-0016): a narrative exists iff sections.length>0, and

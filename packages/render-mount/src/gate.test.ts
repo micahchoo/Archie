@@ -35,22 +35,23 @@ const sheet: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: tru
 const sidebarOpen: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: false, detailOpen: true };
 
 describe("GATE — the new @render/mount fitBounds path matches the anvil-stock oracle", () => {
-  it("rect note: new path fits the exact rect the oracle (fitBoundsRect) computes", () => {
+  // The new path must fit the SAME image rect the anvil-stock oracle (fitBoundsRect) computes.
+  it("rect note: new path fits the oracle rect", () => {
     const { vp, calls } = mockViewport();
     expect(dispatchFitBounds(vp, annotations, "rect-note", sheet)).toBe(true);
-    expect(calls[0]).toEqual(fitBoundsRect(rectSel, sheet)); // SAME as the characterization
+    expect(calls[0]).toEqual(fitBoundsRect(rectSel, sheet)!);
   });
 
   it("polygon note (selector-as-array): new path fits the oracle's polygon bbox rect", () => {
     const { vp, calls } = mockViewport();
     expect(dispatchFitBounds(vp, annotations, "poly-note", sheet)).toBe(true);
-    expect(calls[0]).toEqual(fitBoundsRect(polySel, sheet));
+    expect(calls[0]).toEqual(fitBoundsRect(polySel, sheet)!);
   });
 
   it("sidebar-open: new path applies the SAME w/(1-f) expansion as the oracle", () => {
     const { vp, calls } = mockViewport();
     dispatchFitBounds(vp, annotations, "rect-note", sidebarOpen);
-    expect(calls[0]).toEqual(fitBoundsRect(rectSel, sidebarOpen));
+    expect(calls[0]).toEqual(fitBoundsRect(rectSel, sidebarOpen)!);
   });
 
   it("unknown id: no fit (the new path no-ops on a missing annotation)", () => {

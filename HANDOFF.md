@@ -1,30 +1,53 @@
-# HANDOFF — Object-level Notes + Rich Citation Rendering (ADR-0018)
+# HANDOFF — Object-level Notes + citation system (studio + viewer)
 
-**Status: feature COMPLETE + verified.** Built across this session from a grilling design → strategy → execution → adversarial review → fixes. Not committed (no commit requested). Studio + viewer dev servers were running on **5173** (studio) / **4321** (viewer).
+_Last updated: 2026-06-21. Branch: `main`. Last push: `5d501a8` (Merge: Object-level Notes + rich citation rendering, ADR-0018)._
 
-## Design source of truth
-- `docs/adr/0018-object-level-notes-bare-iri.md` — keystone identity (whole-object Note = bare resource IRI, no selector).
-- `.scratch/CONTEXT.md` → section **"Object-level Notes + rich citation rendering (2026-06-20 grilling)"** + its **"Implementation status + findings"** sub-section (the live status log — read this first).
-- `docs/plans/CITATION-OBJECT-NOTES-STRATEGY.md` — the 5-phase strategy.
+## State right now
 
-## What shipped (all verified)
-- **P0 data model** (render-core): `wholeObject` field + `ARCHIE_WHOLE_OBJECT` const + serialize/deserialize round-trip + `isWholeObjectFor(selector,w,h,override)` (bare-IRI ⇒ whole-object). Tests: `spine/wholeobject.test.ts`, `geometry/coverage.test.ts`.
-- **P1 viewer render**: `ExhibitView.frameFor` → `isWholeObjectFor` (frame border); **MediaPlayer whole-track band** for AV whole-object notes.
-- **P2 studio authoring**: `▣ Whole image/map` toolbar button (pure CREATE) + AvEditor `▣ Whole recording` (`oncreatewhole` prop); **studio canvas frame** wired (`App.svelte frameMark/studioFrame` → `CanvasComp frame=`); **Scope control** in `NoteEditor` (convert: "▣ Make whole-object" / "▭ Redraw bounds" / "▭ Draw a region" via App `setNoteScope` + `retargetingNoteId` flag in `onCreate`).
-- **P3 cite ladder**: `LinkTarget.objectId` + `#/{slug}/o/<id>` route + `classifyCite` + object-cite **arrival** (`ExhibitView` objectId prop; narrative→`indexObjectId`, grid→`selectedObjectId`).
-- **P3-UI cite-picker merge**: `NoteEditor` one `¶ Cite` button → `CmdK` with **Search / Browse** tabs (Browse = thumbnail tiles); `CmdEntry` gained `kind:"object"`+`thumb`; `buildCmdEntries` emits object entries + thumbs.
-- **P4 rich render**: type-driven `CiteCard`/`ExhibitCiteCard` dispatch in `ProseCites`; `iiif/image.ts` region/thumb URLs. **Fixed a pre-existing bug:** `splitProseCites` matched `<p><a>` but snarkdown emits `<br>` — rewrote against real `renderMarkdown` output (cite cards never formed in production before).
-- **Dogfood**: Voynich fixture has whole-object notes (o1 image, o9 image, o12 AV) + object cites in narrative s1/s4 prose; baked + lightpanda-confirmed (cards render, navigate, frames/bands show).
+**Shipped + pushed (`83b7b25` → `5d501a8`):** the whole Object-level Notes + rich citation feature — render-core
+WADM/`archie:wholeObject` model + read/write seam, viewer cite-cards/CiteCard/ProseCites + whole-track AV band,
+studio cite-picker Search/Browse merge, Scope-control convert affordance, dogfood seeds. 668 render-core / 39 viewer tests.
 
-## Verification
-render-core **668** tests · viewer **39** · studio **130** — all green. Viewer + studio `vite build` green. Live render confirmed via lightpanda (cards + navigation + AV band; OSD frame is build-verified only — lightpanda can't render WebGL). To see in-app: **hard-refresh 5173** (Vite HMR misses large .svelte edits), open an image object → notes panel.
+**Uncommitted on `main` (7 files, all verified green — READY TO COMMIT):**
+- `packages/render-mount/src/frame-overlay.ts` — whole-object frame now an **OSD overlay anchored to the image
+  bounds** (`viewer.addOverlay({element, location: world.getItemAt(0).getBounds()})`), so it tracks the object
+  through pan/zoom instead of sticking to the viewport edge. Restyled to a quiet thin border (halo + 1.5px colour
+  line, `non-scaling-stroke`, click-to-select); corner L-brackets removed.
+- `packages/render-mount/src/mount.ts` — `createFrameOverlay(viewer)` (was `(host)`).
+- `apps/studio/src/App.svelte` — studio canvas frame derives (`studioFrame`/`canvasAnnotations`, mirrors viewer
+  `frameFor`) passed to CanvasComp; **co-located note cycler** (`bboxIoU >= 0.5` → `coLocated`, `cycleCoLocated`);
+  Scope wiring (`setNoteScope`, `createWholeObjectNote`, onCreate retarget branch).
+- `apps/studio/src/NoteEditor.svelte` — Scope field (region↔whole-object convert + Redraw/Draw region) + stack-nav
+  ("‹ N of M here ›") for co-located notes.
+- `packages/render-mount/src/fitbounds.ts` + `fitbounds.test.ts` + `gate.test.ts` — **fitBounds auto-zoom cap
+  REVERTED** (see below). Back to the bare-oracle fit. 44 render-mount tests green.
 
-## Open items (none blocking)
-1. **[SNAG] (recorded as a seed):** the 3 Voynich exhibits share one RNG seed → `voynich`/`voynich-reading` mint identical note logicalIds → `buildLinkIndex` (first-seen-wins) mis-attributes them → cites whose slug is `voynich-reading`/`voynich-rosettes` silently degrade at publish (affects an existing fixture cite too). **Preferred fix:** validate non-note cites against the exhibit-slug SET, not the note index (no published-anchor churn).
-2. **Dead code:** App.svelte `requestVisualCite` + MediaPicker cite path now unused (one ★ warning) — optional removal (6 sites in the NUL-byte file: ~lines for `mediaPickerOpen`/`requestVisualCite`/`pickVisualCite`, the MediaPicker mount, the lazy-load effect, the Esc guard, the PickItem import).
-3. **Deferred:** build-time OffscreenCanvas crops for *local* (non-IIIF) objects + a publish step emitting `data-crop` for `CiteCard`'s region preview (IIIF URL path covers the examples today).
-4. **Pre-existing a11y warnings** on `CmdK.svelte:63` (drawer dialog click-away) — not introduced here.
+Verified this session: render-mount **44 tests green**, studio build **green (4.07s)**.
 
-## Notes
-- LSP shows many false positives in this monorepo (mulch `mx-9c7c9d`): `@render/*` module resolution, `isWholeObjectFor`/`objectId` "not exported", rights/tileSource on meta types. **The build is the gate** (svelte-check isn't installed; Svelte's plugin strips types). Verify studio/viewer via `pnpm build`, render-core via `pnpm exec vitest run` (per-app; root vitest fails rune tests).
-- `App.svelte` has NUL bytes → Bash grep unreliable; use `awk`/`sed`/Read.
+## ⚠ The fitBounds 50% cap — tried, reverted, DEFERRED
+
+User asked: "an auto-zoomed annotation should not fill more than 50% of the viewport." First attempt added
+`padForContext` (expand the fit rect ×2 about its centre) at the shared `applyFitBounds` dispatch. **This broke
+fitBounds — "does not work at all."** Root cause: expanding the rect zooms *out*, but OSD's viewport constraints
+(`visibilityRatio` / `constrainDuringPan`) refuse to show area past the image edge; for any non-tiny annotation the
+doubled rect spills past the image, OSD clamps it, and the view barely moves. **Rect-expansion fights OSD's own
+constraints — wrong mechanism.**
+
+Reverted fully (removed `padForContext`/`CONTEXT_DIVISOR`, restored the 6 characterization assertions to the bare
+oracle). The correct reimplementation is a **max-zoom ceiling**, not a rect expansion, and is only verifiable in a
+live OSD (headless can't confirm). If revisited: after `viewport.fitBounds(...)`, cap the resulting zoom so the
+annotation's on-screen size ≤ 50% — and test against OSD's constraint settings, not a mock. Live path is
+`MountSurface.fitBounds(id)` → `dispatchFitBounds` → `applyFitBounds` (mount.ts ~285, image branch).
+
+## Open items (not blocking)
+- **[SNAG] cite-degradation seed:** the 3 Voynich exhibits share one RNG seed → `voynich`/`voynich-reading` mint
+  identical logicalIds → `buildLinkIndex` first-seen-wins → cites to `voynich-reading`/`voynich-rosettes` degrade.
+  Preferred fix: validate non-note cites against the exhibit-slug set, not the note index. NOT fixed.
+- Dead `requestVisualCite` / MediaPicker cite path in App.svelte (★ unused — candidate for deletion).
+- Deferred build-time OffscreenCanvas crops for local objects + CiteCard `data-crop` publish step.
+- Pre-existing CmdK a11y warnings.
+
+## Next session
+1. Commit the 7-file batch (frame anchoring+restyle, co-located cycler, fitBounds revert). User chose
+   "Everything in the working tree" last time — confirm scope before committing (commit-only-when-asked).
+2. If the 50% cap is still wanted: implement as a post-fitBounds max-zoom ceiling, verify in the packaged app.

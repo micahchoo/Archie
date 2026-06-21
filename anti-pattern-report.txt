@@ -14,8 +14,8 @@
 [fire-and-forget] .agents/skills/teach/.scout/diag.mjs:3 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] .agents/skills/teach/.scout/shoot.mjs:12 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] .agents/skills/teach/.scout/shoot.mjs:13 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] apps/studio/src/AvEditor.svelte:227 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] apps/studio/src/AvEditor.svelte:313 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] apps/studio/src/AvEditor.svelte:230 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] apps/studio/src/AvEditor.svelte:316 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] apps/studio/src/bake.ts:35 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] apps/studio/src/binding-store.svelte.ts:52 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] apps/studio/src/binding.ts:74 -- await with no try/catch or .catch() in nearby context
@@ -214,9 +214,9 @@
 [fire-and-forget] packages/render-core/src/publish/site.ts:372 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:374 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:376 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/session/session.ts:226 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/session/session.ts:234 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/session/session.ts:75 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/session/session.ts:235 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/session/session.ts:243 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/session/session.ts:79 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/spine/persist.ts:18 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/spine/persist.ts:19 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/spine/persist.ts:20 -- await with no try/catch or .catch() in nearby context
@@ -290,23 +290,24 @@
 [fire-and-forget] scripts/verify-readings-rail.mjs:141 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] scripts/verify-readings-rail.mjs:146 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] scripts/verify-readings-rail.mjs:147 -- await with no try/catch or .catch() in nearby context
-[impact-scope] apps/studio/src/AvEditor.svelte:0 -- 4/5 importers of AvEditor have no tests (Tier 0: 5 direct callers, Tier 1: depth 2 transitive=92)
-[impact-scope] apps/studio/src/binding.ts:0 -- 9/24 importers of binding have no tests (Tier 0: 24 direct callers, Tier 1: depth 2 transitive=183)
-[impact-scope] apps/studio/src/store.ts:0 -- 22/75 importers of store have no tests (Tier 0: 75 direct callers, Tier 1: depth 2 transitive=332)
-[impact-scope] apps/studio/src/tauri-fs.ts:0 -- 2/7 importers of tauri-fs have no tests (Tier 0: 7 direct callers, Tier 1: depth 2 transitive=164)
-[impact-scope] src-tauri/src/lib.rs:0 -- 35/100 importers of lib have no tests (Tier 0: 100 direct callers, Tier 1: depth 2 transitive=352)
+[impact-scope] apps/studio/src/App.svelte:0 -- 24/45 importers of App have no tests (Tier 0: 45 direct callers, Tier 1: depth 2 transitive=302)
+[impact-scope] packages/render-mount/src/frame-overlay.ts:0 -- 1/2 importers of frame-overlay have no tests (Tier 0: 2 direct callers, Tier 1: depth 2 transitive=49)
+[impact-scope] packages/render-mount/src/gate.test.ts:0 -- 1/3 importers of gate.test have no tests (Tier 0: 3 direct callers, Tier 1: depth 2 transitive=50)
+[impact-scope] packages/render-mount/src/mount.ts:0 -- 19/45 importers of mount have no tests (Tier 0: 45 direct callers, Tier 1: depth 2 transitive=280)
 [silent-catch] apps/studio/src/ingest-flows.ts:201 -- catch body logs error but never surfaces to user
-[untested-churn] apps/studio/src/App.svelte:0 -- 42 commits (6mo), no test file
+[unpaired-resource] apps/studio/src/App.svelte:48001 -- 1 acquire calls but no release in file (lock/unlock)
+[untested-churn] apps/studio/src/App.svelte:0 -- 43 commits (6mo), no test file
 [untested-churn] apps/studio/src/ExhibitOverview.svelte:0 -- 12 commits (6mo), no test file
 [untested-churn] apps/studio/src/LibraryHome.svelte:0 -- 11 commits (6mo), no test file
 [untested-churn] apps/studio/src/NarrativeEditor.svelte:0 -- 9 commits (6mo), no test file
 [untested-churn] apps/studio/src/PublishDialog.svelte:0 -- 9 commits (6mo), no test file
-[untested-churn] apps/studio/src/store.ts:0 -- 9 commits (6mo), no test file
-[untested-churn] apps/viewer/src/components/ExhibitView.svelte:0 -- 15 commits (6mo), no test file
-[untested-churn] apps/viewer/src/components/MediaPlayer.svelte:0 -- 10 commits (6mo), no test file
-[untested-churn] apps/viewer/src/components/NarrativeReader.svelte:0 -- 16 commits (6mo), no test file
-[untested-churn] apps/viewer/src/components/Reader.svelte:0 -- 16 commits (6mo), no test file
-[untested-churn] apps/viewer/src/components/ViewerShell.svelte:0 -- 11 commits (6mo), no test file
+[untested-churn] apps/studio/src/store.ts:0 -- 10 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/ExhibitView.svelte:0 -- 17 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/MediaPlayer.svelte:0 -- 11 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/NarrativeReader.svelte:0 -- 17 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/Reader.svelte:0 -- 17 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/ReadingLegend.svelte:0 -- 9 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/ViewerShell.svelte:0 -- 12 commits (6mo), no test file
 [untested-churn] packages/render-svelte/src/Canvas.svelte:0 -- 12 commits (6mo), no test file
 
 === RISK SCORES ===
