@@ -232,10 +232,10 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     };
   };
 
-  // Coverage-border overlay (7e1f) — the canvas-wide SVG renderer is a standalone rendering concern
-  // (createFrameOverlay), appended over the OSD container. setFrame re-draws (replacing any current
-  // frame); null clears it. Annotorious is per-shape only, so this is a NEW mechanism (not a marker style).
-  const frameOverlay = createFrameOverlay(viewer.element);
+  // Coverage-border overlay (7e1f) — a standalone rendering concern (createFrameOverlay). It frames the
+  // WHOLE OBJECT: the SVG is added as an OSD overlay at the image's bounds, so it tracks the object through
+  // pan/zoom (not a fixed viewport border). setFrame re-draws (replacing any current frame); null clears it.
+  const frameOverlay = createFrameOverlay(viewer);
 
   // Shared rect math for markerScreenRect(s): selector bbox in image px → viewer-element coords +
   // the container's page offset, so a position:fixed anchor works regardless of layout (ADR-0006).

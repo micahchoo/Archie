@@ -30,6 +30,11 @@
     setNoteEmphasis: (emphasis: Emphasis) => void;
     /** Change this note's scope (ADR-0018): "whole" drops its region → whole-object; "region" arms a draw. */
     setNoteScope: (scope: "whole" | "region") => void;
+    /** Co-located note stack (overlapping hitboxes): 0-based index of the open note + total count at this
+     *  spot + a cycler — so stacked notes (e.g. the cipher/hoax/abjad reading notes on one region) are reachable. */
+    coLocatedIndex: number;
+    coLocatedCount: number;
+    cycleCoLocated: (dir: 1 | -1) => void;
     requestCite: (insert: (md: string) => void) => void;
     citeIntoComment: (md: string) => void;
     closeNote: () => void;
@@ -39,6 +44,7 @@
     sel, editing, currentReadings, commentEl = $bindable(null),
     commentOf, tagsOf, timeOf,
     applyForm, applyTime, setNoteReading, setNoteEmphasis, setNoteScope, requestCite, citeIntoComment, closeNote, onDelete,
+    coLocatedIndex, coLocatedCount, cycleCoLocated,
   }: Props = $props();
 
   // Scope (ADR-0018): a note is a "region" if its target carries a selector, else it's whole-object.
@@ -62,6 +68,15 @@
 
 <form class="wadm" onsubmit={(e) => { e.preventDefault(); }}>
   <h3>Edit note</h3>
+  {#if coLocatedCount > 1}
+    <!-- Stacked notes: several notes share this spot (overlapping hitboxes — e.g. rival reading notes on one
+         region) and can't be separated by clicking the canvas, so step between them here. -->
+    <div class="stack-nav" role="group" aria-label="Stacked notes at this spot">
+      <button type="button" onclick={() => cycleCoLocated(-1)} title="Previous note at this spot" aria-label="Previous note here">‹</button>
+      <span>{coLocatedIndex + 1} of {coLocatedCount} here</span>
+      <button type="button" onclick={() => cycleCoLocated(1)} title="Next note at this spot" aria-label="Next note here">›</button>
+    </div>
+  {/if}
   <label>
     <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note, object, or exhibit (⌘K) — search by text or browse by image">¶ Cite <kbd>⌘K</kbd></button></span>
     <textarea bind:this={commentEl} rows="3" value={comment} onchange={(e) => applyForm((e.currentTarget as HTMLTextAreaElement).value, tags)}></textarea>
@@ -116,6 +131,10 @@
   .scope-field .field-head { font-family: var(--font-ui); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
   .scope-row { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
   .scope-row .scope-now { font-family: var(--font-body); font-size: 0.9rem; letter-spacing: 0; text-transform: none; color: var(--ink-paper-secondary); }
+  /* Stacked-note stepper — reach notes whose hitboxes overlap (can't be separated by clicking the canvas). */
+  .stack-nav { display: flex; align-items: center; gap: var(--space-2); margin-top: calc(-1 * var(--space-1)); font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); letter-spacing: 0.04em; color: var(--ink-paper-secondary); }
+  .stack-nav button { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; background: none; border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); cursor: pointer; color: var(--accent-2); font-size: 1rem; line-height: 1; }
+  .stack-nav button:hover { border-color: var(--accent); color: var(--accent); }
   .wadm h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 400; letter-spacing: 0; color: var(--ink-paper-primary); }
   .wadm label { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
   /* Comment field header: label + the ⌘K "Cite" link affordance (cord-blue link tone). */
