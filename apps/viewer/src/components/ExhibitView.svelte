@@ -157,6 +157,15 @@
     if (activeReading === null) return base;
     return overlay(base, data?.readingAnnotationsByObject[objectId]?.[activeReading]);
   };
+  // Per-reading note count on a given object for the ReadingLegend (id=null → base / General notes). The
+  // count is per-OBJECT — the current image — matching the legend's per-canvas overlay action (Q: current
+  // image, not exhibit-wide). Reading-independent (it counts attachment, not what's active), so it's stable
+  // as you toggle readings and only re-mints when the object changes.
+  const readingCountOf = (objectId: string) => {
+    const base = data?.annotationsByObject[objectId] ?? noNotes;
+    const byR = data?.readingAnnotationsByObject[objectId] ?? {};
+    return (id: string | null): number => (id === null ? base.length : (byR[id]?.length ?? 0));
+  };
   // Canvas IRI from the published manifest (SNAG fix — matches annotation targets for any publish
   // origin); falls back to the demo BASE reconstruction only if the map lacks it.
   const canvasIdOf = (objectId: string): string => data?.canvasIdByObject[objectId] ?? canvasIdFor(slug, objectId);
@@ -310,6 +319,7 @@
           readings={data.readings}
           activeReading={activeReading}
           onreading={(id) => (activeReading = id)}
+          readingCount={readingCountOf(indexObject.id)}
           styleOf={readingStyleOf(indexObject.id)}
           frame={frameFor(indexObject.id, indexData?.width, indexData?.height)}
           onback={() => (indexObjectId = null)}
@@ -360,6 +370,7 @@
       readings={data.readings}
       activeReading={activeReading}
       onreading={(id) => (activeReading = id)}
+      readingCount={readingCountOf(activeObject.id)}
       styleOf={readingStyleOf(activeObject.id)}
       frame={frameFor(activeObject.id, activeData?.width, activeData?.height)}
       onback={isGrid ? () => (selectedObjectId = null) : undefined}

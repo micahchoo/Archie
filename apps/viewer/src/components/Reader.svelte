@@ -9,11 +9,10 @@
   import type { FrameOverlay } from "@render/svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import ReadingSheet from "./ReadingSheet.svelte";
-  import NoteMedia from "./NoteMedia.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import SidebarObjectNav from "./SidebarObjectNav.svelte";
+  import NotePopup from "./NotePopup.svelte";
   import Credit from "./Credit.svelte";
-  import ProseCites from "./ProseCites.svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { stripMarkdown } from "@render/core";
   import { type MarkerStyle } from "@render/svelte";
@@ -48,6 +47,7 @@
     currentId,
     onstep,
     onoverview,
+    readingCount,
   }: {
     object: { source: string; canvasId: string; label: string; summary?: string; tileSource?: TileSourceDescriptor };
     annotations?: W3CAnnotation[];
@@ -81,6 +81,9 @@
     currentId?: string;
     onstep?: (id: string) => void;
     onoverview?: () => void;
+    /** Per-reading note count on THIS object (ExhibitView computes it for the active object) — threaded
+     *  straight to the ReadingLegend so each layer shows how many notes it adds to this image. */
+    readingCount?: (id: string | null) => number;
   } = $props();
 
   // Show the sidebar object-nav only with real siblings to step AND the wiring to drive it. When present
@@ -88,9 +91,21 @@
   const objectNav = $derived(
     !!siblings && siblings.length > 1 && !!currentId && !!onstep && !!onoverview,
   );
-  // NOTE (dba2): the prev/next object carousel was lifted OUT of here into the persistent top bar
-  // (ViewerShell) so it stops occluding the image top-center and has one discoverable home. ExhibitView
-  // drives it from `selectedObjectId`; this island no longer owns sibling-nav props or markup.
+  // Index of the current object among siblings — drives the collapsed-mode popup's footer stepper (mirrors
+  // SidebarObjectNav). `stepIntoReading` is set just before a popup step so the object-change effect below
+  // re-selects the new object's first note instead of clearing — flip-and-read keeps the popup open.
+  const navIdx = $derived(siblings ? siblings.findIndex((s) => s.id === currentId) : -1);
+  let stepIntoReading = false;
+  function stepObject(delta: number) {
+    if (!siblings) return;
+    const i = navIdx + delta;
+    if (i < 0 || i >= siblings.length) return;
+    stepIntoReading = true;
+    onstep?.(siblings[i].id);
+  }
+  // NOTE (dba2): the prev/next carousel that occluded the image TOP-CENTER stays lifted out into the
+  // persistent top bar (ViewerShell) — its home for sidebar-open reading. The collapsed-mode popup's footer
+  // stepper is bottom-left, so it never re-creates that occlusion. ExhibitView drives both from `selectedObjectId`.
 
   // A note's Reading colour (from the registry) — accents its list card + marker (ADR-0007).
   const readingColourOf = (it: W3CAnnotation): string | undefined => {
@@ -117,7 +132,12 @@
   let prevCanvas: string | undefined;
   $effect(() => {
     const c = object.canvasId;
-    if (prevCanvas !== undefined && prevCanvas !== c) selected = null;
+    // Object actually changed: clear the selection — UNLESS a popup step asked to carry the reading, in
+    // which case land on the new object's first note (flip-and-read) so the collapsed-mode popup persists.
+    if (prevCanvas !== undefined && prevCanvas !== c) {
+      selected = stepIntoReading ? (annotations[0]?.id ?? null) : null;
+      stepIntoReading = false;
+    }
     prevCanvas = c;
     pulseMarks(); // every landing (first paint or carousel switch) gets the reveal
   });
@@ -181,74 +201,69 @@
   </main>
 
   {#if onreading && readings.length > 0}
-    <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} />
+    <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
   {/if}
 
   <!-- min/max match the aside's responsive clamp(320px … 560px) so a resize can't escape the designed
        reading-measure (#14) — the floor and ceiling are the same numbers the CSS clamp uses. -->
   <ResizeDivider side="right" label="notes" min={320} max={560} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={(s: AsideState) => saveAside(ASIDE_W_KEY, ASIDE_COLLAPSED_KEY, s)} />
-  <aside class:detail={!!current} class:collapsed={asideCollapsed} style:--reader-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
+  <!-- Collapsed = the floating card is the sole note + nav surface, so the clipped aside (width:0,
+       overflow:hidden) must leave the a11y tree + tab order too — `inert` stops its note list and
+       SidebarObjectNav being announced or tabbed as invisible duplicates of the card (and its footer
+       stepper). The ResizeDivider is a sibling, so un-collapsing stays reachable. -->
+  <aside class:collapsed={asideCollapsed} inert={asideCollapsed} style:--reader-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
     {#if onback && !objectNav}
       <button class="exhibit-back soft-btn" onclick={() => onback?.()}>← Back to Exhibit</button>
     {/if}
-    {#if current}
-      <!-- detail state (annomea drawer): the selected note -->
-      <button class="back soft-btn" onclick={() => (selected = null)}>← See all notes</button>
-      <!-- Eyebrow orients which object's note this is, restoring the eyebrow-first rhythm the list/grid/
-           narrative/transcript all share (#4) — a note no longer reads as a context-free fragment. -->
-      <p class="eyebrow note-home">{object.label}</p>
-      <article>
-        <!-- prose (media stripped) + the note's media as clickable tiles (image/audio/video) -->
-        {#if noteParts.text}<div class="body"><ProseCites text={noteParts.text} /></div>{/if}
-        <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
-        {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">{geoCoord}</p>{/if}
-        <!-- Tags are the cross-cutting discovery affordance (Q-4): click one to open the finder
-             pre-scoped with that tag as a facet. -->
-        <div class="tags">{#each tagsOf(current) as t}<button type="button" class="tag tag-btn" onclick={() => onopenfinder?.(t)}>#{t}</button>{/each}</div>
-      </article>
-    {:else}
-      <!-- list state -->
-      <!-- h1: the single-object page's top heading (axe page-has-heading-one); styling is class-keyed -->
-      <h1 class="object-label">{object.label}</h1>
-      {#if object.summary}<p class="object-summary">{object.summary}</p>{/if}
-      <p class="credit-row"><Credit {rights} tone="paper" /></p>
-      <h2 class="eyebrow">Notes · {annotations.length}</h2>
-      {#if annotations.length === 0}
-        <p class="empty">No notes on this image yet.</p>
-      {/if}
-      <ul>
-        {#each annotations as it (it.id)}
-          <li onmouseenter={() => onnotehover?.(it.id ?? null)} onmouseleave={() => onnotehover?.(null)}>
-            <!-- Solo the mark on FOCUS too, not just hover (#11): keyboard tab + touch-focus light the
-                 note's mark on the canvas before commit — the connect-note-to-region affordance was
-                 hover-only, invisible to tablet/phone readers. Reuses the same hoverNote/MarkerStyle path. -->
-            <button style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)} onfocus={() => onnotehover?.(it.id ?? null)} onblur={() => onnotehover?.(null)}>
-              <span class="card-preview">{stripMarkdown(commentOf(it))}</span>
-            </button>
-            <!-- Card tags live OUTSIDE the card button (no nested buttons) and are their own facet
-                 triggers (Q-4): click one to open the finder pre-scoped with that tag. -->
-            {#if tagsOf(it).length}<span class="card-tags">{#each tagsOf(it) as t}<button type="button" class="tag tag-btn" onclick={() => onopenfinder?.(t)}>#{t}</button>{/each}</span>{/if}
-          </li>
-        {/each}
-      </ul>
-      <p class="hint">Select a note, or a marker on the image. Markers stay pinned as you pan and zoom, and selecting one zooms in.</p>
+    <!-- The sidebar is ALWAYS the note list now (parity with the narrative spine): selecting a note floats
+         the shared NotePopup over the canvas rather than swapping this pane to a detail view. The selected
+         note's list card stays lit (.active) so the open list shows which note the floating card holds. -->
+    <h1 class="object-label">{object.label}</h1>
+    {#if object.summary}<p class="object-summary">{object.summary}</p>{/if}
+    <p class="credit-row"><Credit {rights} tone="paper" /></p>
+    <h2 class="eyebrow">Notes · {annotations.length}</h2>
+    {#if annotations.length === 0}
+      <p class="empty">No notes on this image yet.</p>
     {/if}
+    <ul>
+      {#each annotations as it (it.id)}
+        <li onmouseenter={() => onnotehover?.(it.id ?? null)} onmouseleave={() => onnotehover?.(null)}>
+          <!-- Solo the mark on FOCUS too, not just hover (#11): keyboard tab + touch-focus light the
+               note's mark on the canvas before commit — the connect-note-to-region affordance was
+               hover-only, invisible to tablet/phone readers. Reuses the same hoverNote/MarkerStyle path. -->
+          <button class:active={it.id === selected} style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)} onfocus={() => onnotehover?.(it.id ?? null)} onblur={() => onnotehover?.(null)}>
+            <span class="card-preview">{stripMarkdown(commentOf(it))}</span>
+          </button>
+          <!-- Card tags live OUTSIDE the card button (no nested buttons) and are their own facet
+               triggers (Q-4): click one to open the finder pre-scoped with that tag. -->
+          {#if tagsOf(it).length}<span class="card-tags">{#each tagsOf(it) as t}<button type="button" class="tag tag-btn" onclick={() => onopenfinder?.(t)}>#{t}</button>{/each}</span>{/if}
+        </li>
+      {/each}
+    </ul>
+    <p class="hint">Select a note, or a marker on the image. Markers stay pinned as you pan and zoom, and selecting one zooms in.</p>
     {#if objectNav && siblings && currentId}
       <SidebarObjectNav {siblings} {currentId} onstep={(id) => onstep?.(id)} onoverview={() => onoverview?.()} />
     {/if}
   </aside>
 
-  {#if current && asideCollapsed}
-    <!-- The selected note over the canvas — shown ONLY when the sidebar is collapsed, where it is the sole
-         note surface (#1). With the sidebar open, that pane IS the note's home ("selection state IS popup
-         open-state", system.md) so this echo is suppressed. Tap the body to expand (reading sheet for prose,
-         lightbox for a media-only note); × dismisses. -->
-    <div class="popup">
-      <button class="popup-body" onclick={() => { if (noteParts.text) readingSheet = { text: noteParts.text }; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }} title="Expand to read">
-        {stripMarkdown(noteParts.text) || `${noteParts.media.length} ${noteParts.media.length === 1 ? "media item" : "media items"}`}
-      </button>
-      <button class="popup-close" onclick={() => (selected = null)} aria-label="Close note">×</button>
-    </div>
+  {#if current}
+    <!-- The standalone note card (shared NotePopup), floating on ANY marker/note selection — parity with
+         the narrative. The footer stepper (steps OBJECTS, flip-and-read via stepObject) appears only when
+         the sidebar is COLLAPSED; with it open, SidebarObjectNav owns object stepping, so the card carries
+         no stepper then — one object-nav at a time, no duplicate "Objects in this exhibit" landmark. -->
+    <NotePopup
+      eyebrow={object.label}
+      text={noteParts.text}
+      media={noteParts.media}
+      tags={tagsOf(current)}
+      {geoCoord}
+      step={objectNav && siblings && asideCollapsed ? { index: navIdx, total: siblings.length, prevLabel: siblings[navIdx - 1]?.label, nextLabel: siblings[navIdx + 1]?.label, unit: "object", navLabel: "Objects in this exhibit" } : null}
+      onclose={() => (selected = null)}
+      onexpand={() => { if (noteParts.text) readingSheet = { text: noteParts.text }; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }}
+      onstep={(d) => stepObject(d)}
+      onopenfinder={(t) => onopenfinder?.(t)}
+      onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+    />
   {/if}
 
   {#if lightbox}
@@ -297,7 +312,7 @@
 
   /* Note card (list state) — warm paper, soft shadow, generous corners. The 3px left edge carries
      the note's Reading colour (inline binding) and turns to the quiet accent signal on hover. */
-  li button {
+  li > button {
     display: block; width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
@@ -307,7 +322,10 @@
     font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45;
     transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
-  li button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
+  li > button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
+  /* Selected note (parity with the narrative's active-section mark): the open list shows which note the
+     floating card currently holds. */
+  li > button.active { background: var(--accent-muted); box-shadow: var(--shadow-lift-mid); }
   /* 3-line preview clamp + a per-card tag row — the documented scan contract (system.md §Craft Notes):
      a dense list scans by shape, and tags (the cross-cutting discovery affordance) surface on the card. */
   .card-preview { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -320,27 +338,8 @@
   .object-summary { font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0 0 var(--space-2); }
   .credit-row { margin: 0 0 var(--space-3); }
 
-  /* Detail state (drawer) — quiet soft button (composes .soft-btn). */
-  .back { display: inline-block; margin-bottom: var(--space-4); font-size: var(--text-ui-md); padding: var(--space-2) var(--space-4); }
-  .note-home { margin: 0 0 var(--space-3); }
-  article .body { font-family: var(--font-body); font-size: 1.1875rem; line-height: 1.6; color: var(--ink-paper-primary); }
-  /* rendered-markdown children (sanitized HTML, so :global) */
-  article .body :global(p) { margin: 0 0 var(--space-3); }
-  article .body :global(p:last-child) { margin-bottom: 0; }
-  article .body :global(strong) { font-weight: 700; }
-  article .body :global(em) { font-style: italic; }
-  /* Links must LOOK clickable (underline + cursor; colour alone fails WCAG and reads as prose). An
-     intra-Library cite (a hash route back into this viewer) gets the same ¶ seal the author used to make
-     it (Studio's ¶ Cite / CmdK) — link-scent so a reader can tell a cross-link from an outbound one. */
-  article .body :global(a) { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; cursor: pointer; }
-  /* content alt-text `/ ""` keeps the ¶ visible but silent to screen readers (the link text already
-     conveys the target). Heuristic selector: real-publish cites are `…#/slug/a/id`; a rare external
-     `#/`-fragment link may also catch a ¶ — cosmetic only. */
-  article .body :global(a[href*="#/"]:not(.cite-card))::after { content: "¶" / ""; margin-left: 0.15em; font-size: 0.7em; vertical-align: 0.35em; opacity: 0.6; text-decoration: none; }
-  article .body :global(ul), article .body :global(ol) { margin: 0 0 var(--space-3); padding-left: var(--space-5); }
-  /* Note images render as thumbnails (not full-bleed) — click to open the lightbox. */
-  article .body :global(img) { display: block; max-width: 100%; max-height: 200px; height: auto; margin-top: var(--space-2); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); cursor: zoom-in; }
-  .tags { margin-top: var(--space-4); display: flex; flex-wrap: wrap; gap: var(--space-3); }
+  /* (Detail-state styles removed — the selected note now floats in the shared NotePopup, not an
+     in-sidebar drawer; the note prose / media / tag styles live in NotePopup.svelte.) */
   /* Quiet found-meta chips (mono, tinted) — not loud orange fills; the orange stays rationed. */
   .tag { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); padding: 2px var(--space-3); border-radius: var(--radius-sm); }
   /* Clickable tag chip (Q-4 facet trigger) — button reset over the chip look; hover signals the
@@ -350,24 +349,5 @@
   .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-5); }
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); background: var(--surface-paper-hover); border-radius: var(--radius-md); }
 
-  /* Popup — a hushed warm-paper callout floating over the canvas, carrying a quiet cord-blue
-     left-edge signal (the secondary connector accent, not the rationed orange). */
-  .popup {
-    /* Bottom-anchored, grows upward — cap its height (clear the topbar) and scroll, so a long note
-       never overflows the viewport top. */
-    position: absolute; left: var(--space-5); bottom: var(--space-5); max-width: 46%;
-    max-height: calc(100vh - var(--topbar-h) - var(--space-5) - var(--space-4)); overflow-y: auto;
-    display: flex; align-items: flex-start; gap: var(--space-2);
-    padding: var(--space-3) var(--space-4);
-    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
-    border: none; border-left: 3px solid var(--accent-2);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-mid);
-    font-family: var(--font-body); font-size: 1rem; line-height: 1.4;
-  }
-  /* The body IS the expand affordance (reading sheet for prose, lightbox for a media-only note); × dismisses. */
-  .popup-body { flex: 1; min-width: 0; text-align: left; background: none; border: none; cursor: pointer; color: inherit; font: inherit; line-height: inherit; transition: color 160ms ease; }
-  .popup-body:hover { color: var(--accent-2); }
-  .popup-close { flex: none; background: none; border: none; cursor: pointer; color: var(--ink-canvas-muted); font-size: 1.2rem; line-height: 1; padding: 0; transition: color 160ms ease; }
-  .popup-close:hover { color: var(--accent-2); }
+  /* The standalone note card's styles now live in the shared NotePopup.svelte component. */
 </style>
