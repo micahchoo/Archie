@@ -3,6 +3,7 @@
   // ALL the note's media (image / audio / video) with the note's text beside them. ← → / Esc navigate;
   // backdrop or × close. Audio/video play natively (consistent with MediaPlayer).
   import ProseCites from "./ProseCites.svelte";
+  import { dialog } from "../lib/dialog-a11y.js";
   import type { NoteMediaItem } from "@render/core";
 
   let {
@@ -22,9 +23,10 @@
   const cur = $derived(media[i]);
   function prev() { if (media.length) i = (i - 1 + media.length) % media.length; }
   function next() { if (media.length) i = (i + 1) % media.length; }
+  // Arrow-stepping stays on the window (it's a carousel-wide accelerator); ESC + focus-trap + return-focus
+  // are owned by the `use:dialog` action below (Q-5), so ESC is NOT bound here (no double-close).
   function onkey(e: KeyboardEvent) {
-    if (e.key === "Escape") onclose();
-    else if (e.key === "ArrowLeft") prev();
+    if (e.key === "ArrowLeft") prev();
     else if (e.key === "ArrowRight") next();
   }
 </script>
@@ -32,7 +34,9 @@
 <svelte:window onkeydown={onkey} />
 
 <div class="lb-scrim" role="presentation" onclick={onclose}></div>
-<div class="lb" role="dialog" aria-modal="true" aria-label="Note">
+<!-- Dialog a11y (Q-5): `use:dialog` traps Tab inside the lightbox, focuses the close button on open,
+     binds ESC, and returns focus to the trigger (the tile that opened it) on close. -->
+<div class="lb" role="dialog" aria-modal="true" aria-label="Note" use:dialog={{ onclose }}>
   <button class="lb-close" onclick={onclose} aria-label="Close">×</button>
 
   {#if cur}
