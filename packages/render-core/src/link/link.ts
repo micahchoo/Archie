@@ -17,6 +17,8 @@ export interface LinkTarget {
   exhibitSlug: string;
   /** Target a specific Note... */
   noteLogicalId?: LogicalId;
+  /** ...or a whole Object (the cite ladder's Object rung — "see this folio", ADR-0018)... */
+  objectId?: string;
   /** ...or a Range (narrative section)... */
   rangeId?: string;
   /** ...or a bare region on the exhibit's object. */
@@ -54,6 +56,7 @@ export function resolveLink(target: LinkTarget, opts: ResolveOptions = {}): stri
     const fragment = buildNoteDeepLink(target.noteLogicalId, target.xywh !== undefined ? { xywh: target.xywh } : {});
     return `${exhibitUrl}${fragment}`;
   }
+  if (target.objectId !== undefined) return `${exhibitUrl}#/o/${target.objectId}`;
   if (target.rangeId !== undefined) return `${exhibitUrl}#/s/${target.rangeId}`;
   return exhibitUrl;
 }
@@ -82,11 +85,15 @@ export function resolveViewerLink(target: LinkTarget, opts: ViewerLinkOptions = 
     const route: ViewerRoute =
       target.noteLogicalId !== undefined
         ? { view: "exhibit", slug: target.exhibitSlug, noteId: target.noteLogicalId, ...(target.xywh !== undefined ? { xywh: target.xywh } : {}) }
-        : { view: "exhibit", slug: target.exhibitSlug };
+        : target.objectId !== undefined
+          ? { view: "exhibit", slug: target.exhibitSlug, objectId: target.objectId }
+          : { view: "exhibit", slug: target.exhibitSlug };
     return `${opts.viewerBase}${routeToHash(route)}`;
   }
   const page = `${opts.dataBase ?? ""}${target.exhibitSlug}/index.html`;
-  return target.noteLogicalId !== undefined ? `${page}#note-${target.noteLogicalId}` : page;
+  if (target.noteLogicalId !== undefined) return `${page}#note-${target.noteLogicalId}`;
+  if (target.objectId !== undefined) return `${page}#object-${target.objectId}`;
+  return page;
 }
 
 /**
@@ -101,11 +108,64 @@ export function citedExhibitSlug(href: string, knownSlugs: ReadonlySet<string>):
   const hashAt = href.indexOf("#");
   if (hashAt !== -1) {
     const route = parseRoute(href.slice(hashAt));
-    return route.view === "exhibit" && route.noteId === undefined && knownSlugs.has(route.slug) ? route.slug : null;
+    // An OBJECT cite (`#/<slug>/o/<id>`) is NOT a bare-exhibit cite — it gets its own card (Phase 4),
+    // so exclude objectId here too (else it would wrongly promote to an exhibit card).
+    return route.view === "exhibit" && route.noteId === undefined && route.objectId === undefined && knownSlugs.has(route.slug) ? route.slug : null;
   }
   // Static-archival fallback (no-viewer publishes): `…/<slug>/index.html` or `…/<slug>/`.
   const m = href.match(/\/([a-z0-9_-]+)\/(?:index\.html)?$/i);
   return m && knownSlugs.has(m[1]!) ? m[1]! : null;
+}
+
+// ---- Rich cite rendering: classify a resolved cite href into its ladder type (ADR-0018 / Phase 4) ----
+//
+// The render-mode mapping (CONTEXT §"Object-level Notes + rich citation rendering") is a function of
+// the cite TYPE, so the viewer first needs the type. classifyCite reads a RESOLVED viewer href (the
+// publish-time rewrite output) — both the live SPA route (`#/<slug>[/a/<id>?xywh | /o/<id>]`) and the
+// static-archival fallback (`…/<slug>/index.html[#note-<id> | #object-<id>]`). A section cite folds to
+// `exhibit` (the v1 SPA has no section route — resolveViewerLink already lands it on the exhibit). An
+// href whose slug isn't known, or any external/cross-library link, is `external` (→ plain link).
+
+export type CiteKind = "exhibit" | "object" | "note" | "region" | "external";
+
+export interface ClassifiedCite {
+  kind: CiteKind;
+  slug?: string;
+  objectId?: string;
+  noteId?: string;
+  /** Present only for `region` — a note cite carrying a sub-region selector. */
+  xywh?: string;
+}
+
+/** Classify a resolved cite href into its ladder type for type-driven rendering. */
+export function classifyCite(href: string, knownSlugs: ReadonlySet<string>): ClassifiedCite {
+  if (typeof href !== "string" || href.length === 0) return { kind: "external" };
+  const hashAt = href.indexOf("#");
+  // Live SPA route: the fragment is the slug-qualified hash grammar parseRoute consumes.
+  if (hashAt !== -1 && href.slice(hashAt).startsWith("#/")) {
+    const route = parseRoute(href.slice(hashAt));
+    if (route.view === "exhibit" && knownSlugs.has(route.slug)) {
+      if (route.noteId !== undefined) {
+        return route.xywh !== undefined
+          ? { kind: "region", slug: route.slug, noteId: route.noteId, xywh: route.xywh }
+          : { kind: "note", slug: route.slug, noteId: route.noteId };
+      }
+      if (route.objectId !== undefined) return { kind: "object", slug: route.slug, objectId: route.objectId };
+      return { kind: "exhibit", slug: route.slug };
+    }
+    return { kind: "external" };
+  }
+  // Static-archival fallback: `…/<slug>/index.html[#note-<id> | #object-<id>]`.
+  const anchor = hashAt !== -1 ? href.slice(hashAt + 1) : "";
+  const pathPart = hashAt !== -1 ? href.slice(0, hashAt) : href;
+  const m = pathPart.match(/\/([a-z0-9_-]+)\/(?:index\.html)?$/i);
+  if (m && knownSlugs.has(m[1]!)) {
+    const slug = m[1]!;
+    if (anchor.startsWith("note-")) return { kind: "note", slug, noteId: anchor.slice("note-".length) };
+    if (anchor.startsWith("object-")) return { kind: "object", slug, objectId: anchor.slice("object-".length) };
+    return { kind: "exhibit", slug };
+  }
+  return { kind: "external" };
 }
 
 /** Publish-time validation: does the target resolve in the Library-wide index? */
@@ -155,6 +215,10 @@ export function parseLinkRef(uri: string): LinkTarget | null {
       noteLogicalId: note.logicalId as LogicalId,
       ...(note.xywh !== undefined ? { xywh: note.xywh } : {}),
     };
+  }
+  if (fragment.startsWith("#/o/")) {
+    const objectId = fragment.slice("#/o/".length);
+    return objectId.length > 0 ? { exhibitSlug, objectId } : null;
   }
   if (fragment.startsWith("#/s/")) {
     const rangeId = fragment.slice("#/s/".length);

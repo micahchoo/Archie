@@ -9,6 +9,7 @@ import {
   ARCHIE_LAYERS,
   ARCHIE_READING,
   ARCHIE_EMPHASIS,
+  ARCHIE_WHOLE_OBJECT,
   ARCHIE_GEO,
   ARCHIE_REV,
   ARCHIE_PARENT,
@@ -66,6 +67,7 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
   const reading = asString(a[ARCHIE_READING]);
   const emphRaw = a[ARCHIE_EMPHASIS];
   const emphasis = emphRaw === "muted" || emphRaw === "normal" || emphRaw === "strong" ? emphRaw : undefined;
+  const wholeObject = a[ARCHIE_WHOLE_OBJECT] === true ? true : undefined;
   const geo = asGeoAnchor(a[ARCHIE_GEO]);
   const target = (Array.isArray(ann.target) ? ann.target[0] : ann.target) as W3CTarget;
   const record: AnnotationRecord = {
@@ -82,6 +84,7 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
     ...(ann.motivation !== undefined ? { motivation: ann.motivation } : {}),
     ...(reading !== undefined ? { reading } : {}),
     ...(emphasis !== undefined ? { emphasis } : {}),
+    ...(wholeObject !== undefined ? { wholeObject } : {}),
     ...(geo !== undefined ? { geo } : {}),
   };
   // ADR-0007 contraction: legacy `archie:layers` (OLD persisted data) folds into Tags

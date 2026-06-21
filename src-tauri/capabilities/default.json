@@ -6,6 +6,10 @@
   "permissions": [
     "core:default",
     "dialog:default",
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://**" }, { "url": "http://**" }]
+    },
     "fs:default",
     "fs:allow-read-file",
     "fs:allow-write-file",

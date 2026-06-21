@@ -38,3 +38,7 @@ data. If `freshness` is `very-stale` and the answer is load-bearing, call
 | `http-proxy` | failed | context add failed |
 | `serde` | failed | context add failed |
 | `tauri` | failed | context add failed |
+| `@tauri-apps/api` | failed | context add failed |
+| `@tauri-apps/plugin-dialog` | failed | context add failed |
+| `@tauri-apps/plugin-fs` | failed | context add failed |
+| `@tauri-apps/plugin-http` | failed | context add failed |

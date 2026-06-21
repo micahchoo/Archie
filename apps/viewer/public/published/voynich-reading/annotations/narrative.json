@@ -34,7 +34,7 @@
         "archie:order": 0,
         "body": {
           "type": "TextualBody",
-          "value": "The book opens as a herbal: a plant to a page, text flowing around the drawing. None of these plants can be named with certainty — some look observed, some invented — and the writing has never been read.",
+          "value": "The book opens as a herbal: a plant to a page, text flowing around the drawing. None of these plants can be named with certainty — some look observed, some invented — and the writing has never been read. Step back, first, to the leaf entire:\n\n[Folio 1r, as a whole object.](https://micahchoo.github.io/Archie/viewer/#/voynich/o/o1)",
           "format": "text/html",
           "purpose": "describing"
         }
@@ -115,7 +115,7 @@
         "archie:order": 3,
         "body": {
           "type": "TextualBody",
-          "value": "The largest spread in the book unfolds into nine medallions joined by causeways, with castle-like and map-like forms. Whether it charts real places or imagined ones is part of what the page refuses to settle.",
+          "value": "The largest spread in the book unfolds into nine medallions joined by causeways, with castle-like and map-like forms. Whether it charts real places or imagined ones is part of what the page refuses to settle. The same foldout, alone and deep-zoomed, is its own study:\n\n[The Rosettes foldout, in the full grid.](https://micahchoo.github.io/Archie/viewer/#/voynich/o/o9)",
           "format": "text/html",
           "purpose": "describing"
         }

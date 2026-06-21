@@ -63,6 +63,8 @@ export interface NewNoteInput {
   reading?: string;
   /** Authored per-note emphasis (1489); omitted = default `"normal"`. Mirrors `reading`. */
   emphasis?: Emphasis;
+  /** Region-override (ADR-0018): force the whole-object frame on a region note; omitted/false = none. */
+  wholeObject?: boolean;
   /** Geographic anchor (geo-truth, ADR-0015) for a Map note; omitted = none. Mirrors `emphasis`. */
   geo?: GeoAnchor;
   lastEditor: ClientId;
@@ -93,6 +95,7 @@ export function appendNew(log: AnnotationLog, input: NewNoteInput): AppendResult
     ...(input.motivation !== undefined ? { motivation: input.motivation } : {}),
     ...(input.reading !== undefined ? { reading: input.reading } : {}),
     ...(input.emphasis !== undefined ? { emphasis: input.emphasis } : {}),
+    ...(input.wholeObject ? { wholeObject: true } : {}),
     ...(input.geo !== undefined ? { geo: input.geo } : {}),
   };
   return { log: append(log, record), record };
@@ -106,6 +109,8 @@ export interface EditInput {
   reading?: string | null;
   /** Emphasis (1489); omitted = carry forward, `null` = clear to default `"normal"`, value = set. */
   emphasis?: Emphasis | null;
+  /** Region-override (ADR-0018); omitted = carry forward, `null`/`false` = clear, `true` = set. */
+  wholeObject?: boolean | null;
   /** Geographic anchor (ADR-0015); omitted = carry forward, `null` = clear, value = set. Mirrors `emphasis`. */
   geo?: GeoAnchor | null;
   lastEditor: ClientId;
@@ -127,6 +132,9 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
   const motivation = input.motivation ?? head.motivation;
   const reading = input.reading === undefined ? head.reading : input.reading === null ? undefined : input.reading;
   const emphasis = input.emphasis === undefined ? head.emphasis : input.emphasis === null ? undefined : input.emphasis;
+  // wholeObject normalizes to true|undefined (only `true` is meaningful — emit-when-true): carry forward
+  // on undefined, clear on null/false.
+  const wholeObject = input.wholeObject === undefined ? head.wholeObject : input.wholeObject || undefined;
   const geo = input.geo === undefined ? head.geo : input.geo === null ? undefined : input.geo;
   const record: AnnotationRecord = {
     logicalId,
@@ -141,6 +149,7 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
     ...(motivation !== undefined ? { motivation } : {}),
     ...(reading !== undefined ? { reading } : {}),
     ...(emphasis !== undefined ? { emphasis } : {}),
+    ...(wholeObject ? { wholeObject: true } : {}),
     ...(geo !== undefined ? { geo } : {}),
   };
   return { log: append(log, record), record };

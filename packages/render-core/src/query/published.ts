@@ -5,13 +5,10 @@
 // must be read without filter.ts's record type. Body traversal is SHARED via query/body.ts — these
 // accessors earn their keep on the reading-key read + commentOf, not by re-typing the body list.
 
-import { ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_GEO, type Emphasis, type GeoAnchor, type W3CAnnotation, type W3CBody } from "../wadm/types.js";
+import { ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_WHOLE_OBJECT, ARCHIE_GEO, type Emphasis, type GeoAnchor, type W3CAnnotation, type W3CBody } from "../wadm/types.js";
 import { bodyList } from "./body.js";
 
 export type { Emphasis };
-
-/** JSON-LD annotation property `archie:wholeObject` (precedent: `archie:reading`, ADR-0007). */
-const ARCHIE_WHOLE_OBJECT = "archie:wholeObject";
 
 const purposeOf = (b: W3CBody): string | undefined => (b as { purpose?: string }).purpose;
 const valueOf = (b: W3CBody): string | undefined => {

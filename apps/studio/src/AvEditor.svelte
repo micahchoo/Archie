@@ -6,6 +6,8 @@
   // `t=…&xywh=percent:…` via core `mediaFragmentValue`. Notes edit in the marker popover (App); browser-only.
   import { parseMediaFragment, activeNoteIndex, type W3CAnnotation, type TimeRange } from "@render/core";
   import { matches, typingInField } from "./shortcuts.js";
+  import { isTauri, fetchRemoteAsBlobUrl } from "./tauri-fs.js";
+  import { readPeaks, savePeaks } from "./store.js";
 
   type Box = { x: number; y: number; w: number; h: number };
 
@@ -13,19 +15,28 @@
     source,
     label,
     mediaType,
+    slug,
+    assetName,
     annotations = [],
     selected = $bindable(null),
     oncreate,
+    oncreatewhole,
     onimport,
     onmarkerrect,
   }: {
     source: string;
     label: string;
     mediaType?: "image" | "sound" | "video";
+    /** Cache coordinates for the waveform peak sidecar — the exhibit slug and the OPFS asset name.
+     *  Present only for imported (/assets) audio; absent (remote URL / no OPFS) ⇒ no caching. */
+    slug?: string;
+    assetName?: string | null;
     annotations?: W3CAnnotation[];
     selected?: string | null;
     /** Create a time note (audio/video), optionally with a spatial frame region (video → spatiotemporal). */
     oncreate: (start: number, end: number, box?: Box) => void;
+    /** Create a whole-object Note on this recording — no time range (bare canvas IRI, ADR-0018). */
+    oncreatewhole?: () => void;
     onimport?: (text: string) => void;
     /** Screen-rect (VIEWPORT coords; host popover is position:fixed) of the selected cue's locus — an audio
      *  waveform region, or a video frame box. Null when nothing's selected / not resolvable (ADR-0006). */
@@ -43,6 +54,32 @@
 
   const isVideo = $derived(mediaType === "video");
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+  // Resolve the media URL ONCE for both the waveform and the <video>. The webview's own media loader
+  // (wavesurfer's fetch AND the <video> element) fails "Load failed" on remote hosts that cross-origin-
+  // redirect (e.g. archive.org → a mirror). On desktop, pull the bytes via NATIVE Tauri http and serve
+  // a same-origin blob: URL. Local / blob / data sources pass straight through (resolved === source).
+  let resolved = $state("");
+  let mediaError = $state<string | null>(null); // native-fetch failure (desktop remote media)
+  $effect(() => {
+    const src = source;
+    let blob: string | null = null;
+    let cancelled = false;
+    mediaError = null;
+    resolved = "";
+    void (async () => {
+      let url = src;
+      if (isTauri() && /^https?:\/\//i.test(src)) {
+        try {
+          blob = await fetchRemoteAsBlobUrl(src);
+          if (cancelled) { URL.revokeObjectURL(blob); return; }
+          url = blob;
+        } catch (e) { mediaError = e instanceof Error ? e.message : String(e); console.error("AV native media fetch failed:", e); }
+      }
+      if (!cancelled) resolved = url;
+    })();
+    return () => { cancelled = true; if (blob) URL.revokeObjectURL(blob); };
+  });
   // Parse the (possibly spatiotemporal) selector — one source for both the time range and the frame box.
   const fragOf = (a: W3CAnnotation) => {
     const v = (a.target as { selector?: { value?: string } } | undefined)?.selector?.value;
@@ -180,21 +217,32 @@
 
   // Initialise WaveSurfer for an audio object (dynamic import — never runs for video or during SSR).
   $effect(() => {
-    if (isVideo || !waveformEl || !source) return;
+    if (isVideo || !waveformEl || !resolved) return;
     wsReady = false;
     wsError = null;
     let disposed = false;
     let disableDrag: (() => void) | null = null;
+    const loadUrl = resolved; // already native-resolved (blob: on desktop for remote media)
+    const cacheSlug = slug;
+    const cacheName = assetName ?? null;
+    const canCache = !!cacheSlug && !!cacheName; // imported /assets audio → peaks are worth banking
     (async () => {
       const [{ default: WaveSurfer }, { default: RegionsPlugin }] = await Promise.all([
         import("wavesurfer.js"),
         import("wavesurfer.js/dist/plugins/regions.js"),
       ]);
       if (disposed || !waveformEl) return;
+      // Cached peaks → render the waveform INSTANTLY: WaveSurfer draws from `peaks` + `duration` and
+      // never fetches or decodes the audio (the <audio> element still streams it for playback). On a
+      // miss, WaveSurfer decodes once as before and we bank the peaks on `ready` so the NEXT open skips
+      // the decode. Remote/URL sources (no slug+name) keep the decode-every-open path unchanged.
+      const cached = canCache ? await readPeaks(cacheSlug!, cacheName!).catch(() => null) : null;
+      if (disposed || !waveformEl) return;
       const regions = RegionsPlugin.create();
       const instance = WaveSurfer.create({
         container: waveformEl,
-        url: source,
+        url: loadUrl,
+        ...(cached ? { peaks: cached.peaks, duration: cached.duration } : {}),
         height: 96,
         waveColor: "#6B7D6A",
         progressColor: "#3A8C5D",
@@ -210,11 +258,18 @@
       wsRegions = regions;
       instance.on("ready", () => {
         wsReady = true;
+        // First decode of an uncached asset → bank its peaks (1024 pts/channel is ample: the ~768px
+        // waveform only paints ~256 bars). Fire-and-forget: a cache-write failure never blocks editing.
+        if (canCache && !cached) {
+          try {
+            void savePeaks(cacheSlug!, cacheName!, { v: 1, duration: instance.getDuration(), peaks: instance.exportPeaks({ maxLength: 1024 }) });
+          } catch (e) { console.warn("AV peak-cache write failed:", e); }
+        }
         renderRegions();
         disableDrag = regions.enableDragSelection({ color: "rgba(240,99,28,0.20)" });
         emitRegionRect();
       });
-      instance.on("error", (err: unknown) => { wsError = err instanceof Error ? err.message : String(err); });
+      instance.on("error", (err: unknown) => { console.error("AV wavesurfer load failed:", err); wsError = err instanceof Error ? err.message : String(err); });
       instance.on("timeupdate", (t: number) => { currentTime = t; });
       instance.on("play", () => (isPlaying = true));
       instance.on("pause", () => (isPlaying = false));
@@ -296,7 +351,7 @@
   {#if isVideo}
     <div class="video-wrap" class:capturing={spatialDrawing}>
       <!-- svelte-ignore a11y_media_has_caption -->
-      <video bind:this={mediaEl} src={source} controls
+      <video bind:this={mediaEl} src={resolved} controls
         onloadedmetadata={() => (duration = mediaEl?.duration ?? 0)}
         ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
       <!-- Frame-draw overlay: pointer-events:none normally (so the video controls work); auto when drawing.
@@ -306,6 +361,7 @@
         {#if draftBox}<div class="frame-box draft" style={`left:${draftBox.x}%;top:${draftBox.y}%;width:${draftBox.w}%;height:${draftBox.h}%`}></div>{/if}
       </div>
       {#if spatialDrawing}<div class="capture-hint" aria-hidden="true">Drawing a box on the video</div>{/if}
+      {#if mediaError}<div class="capture-hint" role="status">Couldn't load this video. [fetch:{mediaError}]</div>{/if}
     </div>
     <!-- Annotation timeline (videojs affordance): notes as range bars; click to seek+select, hover for the
          text, ← → to step between them, playhead shows where you are. -->
@@ -328,7 +384,7 @@
       <div class="wave" bind:this={waveformEl}></div>
       <div class="transport">
         <button class="play" onclick={() => ws?.playPause?.()} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? "⏸ Pause" : "▶ Play"}</button>
-        <span class="wave-hint">{wsError ? "Couldn't load this audio. A file hosted elsewhere may block playback — try adding a local copy." : wsReady ? "The waveform is the audio timeline · drag to mark a moment for a note · click a marked stretch to edit it" : "Loading waveform…"}</span>
+        <span class="wave-hint">{(wsError || mediaError) ? `Couldn't load this audio. A file hosted elsewhere may block playback — try adding a local copy. [${mediaError ? "fetch:" + mediaError + " " : ""}${wsError ?? ""}]` : wsReady ? "The waveform is the audio timeline · drag to mark a moment for a note · click a marked stretch to edit it" : "Loading waveform…"}</span>
       </div>
     </div>
   {/if}
@@ -345,6 +401,10 @@
     {/if}
     <button class="mark" onclick={setIn} title="Marks the start of a time range — the note runs from here to where you are when you add it.">Mark start</button>
     <button class="add" onclick={addNote} title="Create a note covering this moment">{addLabel}</button>
+    {#if oncreatewhole}
+      <!-- Whole-object Note (ADR-0018): the whole recording, no time range — the AV analogue of "Whole image". -->
+      <button class="mark" onclick={() => oncreatewhole?.()} title="A note about the WHOLE recording — no time range">▣ Whole recording</button>
+    {/if}
     {#if onimport}
       <label class="import" title="Add captions (.vtt or .srt) — each line becomes a note at its time">⊕ Add captions<input type="file" accept=".vtt,.srt,text/vtt,application/x-subrip" onchange={loadTranscript} /></label>
     {/if}

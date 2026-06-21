@@ -70,5 +70,13 @@
     "status": "pending",
     "added_at": "2026-06-20T23:14:55Z",
     "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/src-tauri/Cargo.toml"
+  },
+  {
+    "name": "tauri-plugin-http",
+    "source": "unresolved",
+    "reason": "no repo URL in registry metadata",
+    "status": "pending",
+    "added_at": "2026-06-21T00:25:46Z",
+    "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/src-tauri/Cargo.toml"
   }
 ]

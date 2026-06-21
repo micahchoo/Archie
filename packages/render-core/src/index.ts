@@ -67,6 +67,8 @@ export * from "./url/route.js";
 export * from "./url/breadcrumb.js";
 export * from "./note/media.js";
 export * from "./iiif/resolve.js";
+// IIIF Image API region/thumb URLs — the free build-time crop path for IIIF-backed objects (ADR-0018 cites).
+export * from "./iiif/image.js";
 
 // Body sanitization (CONTEXT §151 XSS): HTML/markdown note bodies → safe HTML/plain text. Framework-agnostic.
 export * from "./text/sanitize.js";

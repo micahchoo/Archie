@@ -260,8 +260,8 @@
   {#await import("./ExhibitView.svelte")}
     <div class="state"><span class="dot"></span><span>Opening the exhibit…</span></div>
   {:then { default: ExhibitView }}
-    {#key `${route.slug}/${route.noteId ?? ""}`}
-      <ExhibitView slug={route.slug} noteId={route.noteId} onnav={(n) => (carousel = n)} />
+    {#key `${route.slug}/${route.noteId ?? ""}/${route.objectId ?? ""}`}
+      <ExhibitView slug={route.slug} noteId={route.noteId} objectId={route.objectId} onnav={(n) => (carousel = n)} />
     {/key}
   {:catch}
     <div class="state error"><span class="warn" aria-hidden="true">⚠</span><span>Couldn’t load the viewer. Reload to try again.</span></div>
