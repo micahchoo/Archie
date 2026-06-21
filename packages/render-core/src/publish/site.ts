@@ -66,6 +66,14 @@ export interface PublishOptions {
    */
   tileObject?: (slug: string, name: string, bytes: ArrayBuffer | Blob) => Promise<{ descriptor: DziTileSource; tiles: Map<string, Blob> } | null>;
   /**
+   * Bake a REMOTE IIIF/image object into a LOCAL DZI pyramid at publish time (Q-9) — so the published
+   * viewer deep-zooms from local tiles instead of depending on a slow / cross-origin IIIF service (e.g.
+   * a 504ing archive.org). App-supplied (browser): fetches the full-resolution source + slices. Given the
+   * object, return the tiles + descriptor, or null to leave the remote source as-is. publishLibrary writes
+   * the tiles to `{slug}/{objId}_files/…` and stamps `tileSource`; the remote `source` stays a fallback.
+   */
+  tileRemote?: (slug: string, obj: AObject) => Promise<{ descriptor: DziTileSource; tiles: Map<string, Blob> } | null>;
+  /**
    * The interactive Viewer's base URL (the canonical instance, ADR-0013) — when given, the static
    * archival pages (ADR-0014) link each exhibit/note out to the live experience. App-supplied;
    * core never hardcodes an origin.
@@ -164,6 +172,18 @@ async function writeTilePyramid(filesDir: FsDirectory, tiles: Map<string, Blob>)
   }
 }
 
+/** A remote image object eligible for publish-time DZI baking: an http(s) source that is NOT a local
+ *  `/assets/` import (the asset pass — which runs FIRST and rewrites those to published `…/assets/…` URLs —
+ *  owns its own tiling), no existing `tileSource` (a map/xyz/dzi is already structured), and image medium
+ *  (AV is never tiled). The `/assets/` guard is load-bearing: without it the asset pass's rewritten https
+ *  sources would be re-tiled here as if remote. */
+function isRemoteTileable(o: AObject): boolean {
+  return !o.tileSource
+    && /^https?:\/\//i.test(o.source)
+    && !/\/assets\//.test(o.source)
+    && (o.mediaType === undefined || o.mediaType === "image");
+}
+
 /**
  * Write the full published-site data tree into `fs`. Per-canvas heads pages are written at the
  * exact paths the Manifest's `canvas.annotations[].id` reference (the Phase-2 interop gate);
@@ -244,6 +264,24 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
         }),
       );
       manifestExhibit = { ...exhibit, objects };
+    }
+
+    // Remote-IIIF tiling (Q-9): bake a remote IIIF/image source into a LOCAL pyramid so the published
+    // viewer deep-zooms from local tiles instead of depending on a slow / cross-origin IIIF service.
+    // App-supplied tileRemote fetches the full-res image + slices (browser); writes {slug}/{objId}_files/
+    // and stamps tileSource. The remote `source` stays as a fallback if the local tiles ever 404.
+    if (opts.tileRemote && manifestExhibit.objects.some(isRemoteTileable)) {
+      const objects = await Promise.all(
+        manifestExhibit.objects.map(async (o) => {
+          if (!isRemoteTileable(o)) return o;
+          const sliced = await opts.tileRemote!(exhibit.slug, o);
+          if (!sliced || sliced.tiles.size === 0) return o;
+          const filesDirName = `${o.id}_files`;
+          await writeTilePyramid(await exDir.getDirectory(filesDirName, { create: true }), sliced.tiles);
+          return { ...o, tileSource: { ...sliced.descriptor, filesPath: `${baseUrl}${exhibit.slug}/${filesDirName}` } };
+        }),
+      );
+      manifestExhibit = { ...manifestExhibit, objects };
     }
     // Resolve in-body `archie:` cites in SECTION prose too — previously ONLY note bodies were rewritten
     // (rewriteHeadBodies below), so a cite inside a Narrative section shipped a raw `archie:` ref the

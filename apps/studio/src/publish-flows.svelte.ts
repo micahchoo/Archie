@@ -12,6 +12,7 @@ import {
 import { supportsFileStreamSave, saveZipToDisk } from "./binding.js";
 import { pickFolderBinding } from "./folder-backend.js";
 import { sliceToDzi } from "./dzi-slicer.js";
+import { resolveTileSource, type AObject } from "@render/core";
 import { readAssetBlob, readOriginalBytes, readThumbBytes, assetSize, isAsset, ASSET_PREFIX, type ExhibitMeta } from "./store.js";
 // ADR-0014 (static archival pages): note bodies render through the SAME sanitize pipeline the
 // live Viewer uses (P-1 Q3 no-drift invariant) — renderMarkdown is canonical in @render/core now
@@ -73,6 +74,42 @@ export function createPublishFlows(deps: PublishDeps) {
       bmp.close();
     }
   };
+  // The full-resolution image URL for a remote source: a IIIF service → `{base}/full/max/0/default.jpg`
+  // (Image API 3.0); a direct image URL → itself; structured xyz/dzi → null (not a remote raster).
+  const iiifFullImageUrl = (source: string): string | null => {
+    const ts = resolveTileSource(source);
+    if (ts.kind === "iiif") return `${ts.infoUrl.replace(/\/info\.json(\?.*)?$/i, "")}/full/max/0/default.jpg`;
+    if (ts.kind === "image") return ts.url;
+    return null;
+  };
+  // Remote-IIIF → local tiles (Q-9): ONE-TIME, one-way copy at publish — fetch the remote full-res image,
+  // slice it, and the published tree persists the pyramid locally so the viewer no longer depends on a slow
+  // / cross-origin IIIF service. Persisting a remote source's pixels is a rights consideration (the object's
+  // requiredStatement/rights ride along in the manifest). Returns null on fetch/decode failure or if small.
+  const tileRemote = async (_slug: string, obj: AObject) => {
+    const url = iiifFullImageUrl(obj.source);
+    if (!url) return null;
+    let blob: Blob;
+    try {
+      const r = await fetch(url, { mode: "cors" });
+      if (!r.ok) return null;
+      blob = await r.blob();
+    } catch {
+      return null; // remote down (e.g. archive.org 504) / CORS — leave the object pointing at the remote
+    }
+    let bmp: ImageBitmap;
+    try {
+      bmp = await createImageBitmap(blob);
+    } catch {
+      return null;
+    }
+    try {
+      if (Math.max(bmp.width, bmp.height) <= TILE_MIN_EDGE) return null;
+      return await sliceToDzi(bmp, `${obj.id}_files`, blob.type || "image/jpeg");
+    } finally {
+      bmp.close();
+    }
+  };
 
   // Metadata-only imported-asset byte estimate (File.size — never reads bytes).
   async function estimateLibraryBytes(): Promise<number> {
@@ -106,7 +143,7 @@ export function createPublishFlows(deps: PublishDeps) {
   async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[] }> {
     const logs = await deps.loadAllLogs();
     const fs = new MemoryFilesystem();
-    const { brokenLinks } = await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks } = await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     return { fs, brokenLinks };
   }
@@ -119,13 +156,13 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE zip builder for the three zip paths (project Save / dialog download / local publish).
   async function buildZipFs() {
     const logs = await deps.loadAllLogs();
-    return libraryToZipFs(deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, ...STATIC_PAGE_OPTS });
+    return libraryToZipFs(deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS });
   }
   // ONE folder writer for the two folder sinks (binding autosave/Save + local publish). Takes the
   // Filesystem seam directly (FSA or Tauri), so the caller owns capability selection (folder-backend).
   async function writeTree(fs: Filesystem) {
     const logs = await deps.loadAllLogs();
-    await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, ...STATIC_PAGE_OPTS });
+    await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS });
   }
   /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
   async function downloadProjectZip(): Promise<boolean> {
