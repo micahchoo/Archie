@@ -43,6 +43,7 @@
     notesHidden = false,
     onhiddenchange,
     onindex,
+    onopenfinder,
   }: {
     objects: AObject[];
     /** Resolve an object id to its published canvas IRI (the Viewer owns the slug). */
@@ -67,6 +68,9 @@
     /** Open the object grid as an index (ADR-0016 keystone): the narrative leads, but the grid stays
      *  reachable behind it — precision-in/escape-out (§137), never a dead-end takeover. Absent = hide it. */
     onindex?: () => void;
+    /** A tag chip in the note popup was clicked (Q-4): open the mode-independent finder pre-scoped with
+     *  that tag as a facet — the narrative's only discovery surface besides the finder itself. */
+    onopenfinder?: (tag: string) => void;
   } = $props();
 
   // Deep-link arrival → land on the section whose object owns the note (else section 0).
@@ -215,7 +219,8 @@
       {#if noteParts.text}<div class="note-body"><ProseCites text={noteParts.text} /></div>{/if}
       <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
       {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">{geoCoord}</p>{/if}
-      {#if tagsOf(current).length}<div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>{/if}
+      <!-- Tag chips are clickable (Q-4): open the finder pre-scoped with that tag as a facet. -->
+      {#if tagsOf(current).length}<div class="tags">{#each tagsOf(current) as t}<button type="button" class="tag tag-btn" onclick={() => onopenfinder?.(t)}>#{t}</button>{/each}</div>{/if}
     </div>
   {/if}
 
@@ -330,4 +335,8 @@
   .note-body :global(img) { display: block; max-width: 100%; max-height: 180px; height: auto; margin-top: var(--space-2); border-radius: var(--radius-sm); cursor: zoom-in; }
   .note-pop .tags { margin-top: var(--space-3); display: flex; gap: var(--space-3); }
   .note-pop .tag { font-family: var(--font-ui); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-secondary); }
+  /* Clickable tag chip (Q-4 facet trigger) — button reset over the chip look; hover lifts to the
+     connector accent (the cross-cutting discovery affordance). */
+  .note-pop .tag-btn { background: none; border: none; padding: 0; cursor: pointer; transition: color 160ms ease; }
+  .note-pop .tag-btn:hover { color: var(--accent-2); }
 </style>
