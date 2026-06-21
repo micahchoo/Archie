@@ -59,6 +59,9 @@ export * from "./geometry/panel-resize.js";
 export * from "./geometry/mediafragment.js";
 export * from "./geometry/coverage.js";
 export * from "./geometry/downscale.js";
+// DZI (Deep Zoom) descriptor + pyramid math (Phase B tiling; Q-9). Pure geometry/string assembly — the
+// author-side slicer worker and the viewer's OSD tile-source both build on this; no pixel encode here.
+export * from "./geometry/dzi.js";
 export * from "./url/deeplink.js";
 export * from "./url/route.js";
 export * from "./url/breadcrumb.js";
