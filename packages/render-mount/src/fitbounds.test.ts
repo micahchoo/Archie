@@ -67,6 +67,7 @@ describe("applyFitBounds — dispatch to an OSD-like viewport (the mockable gate
     return { vp, calls };
   }
 
+  // applyFitBounds fits the viewport to the oracle's image rect (round-tripped through the identity mock).
   it("computes the image rect and fits the viewport to it (rect selector, plain)", () => {
     const { vp, calls } = mockViewport();
     expect(applyFitBounds(vp, rect, sheet)).toBe(true);
