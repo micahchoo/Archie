@@ -43,6 +43,7 @@
     onnotehover,
     notesHidden = false,
     onhiddenchange,
+    onopenfinder,
     siblings,
     currentId,
     onstep,
@@ -71,6 +72,9 @@
      *  note's mark stays, so picking from the list still shows what you chose. The note list is intact. */
     notesHidden?: boolean;
     onhiddenchange?: (hidden: boolean) => void;
+    /** A tag chip was clicked (Q-4): open the mode-independent finder pre-scoped with that tag as a
+     *  facet. The chips become the discovery affordance everywhere they render. */
+    onopenfinder?: (tag: string) => void;
     /** Multi-object exhibit (R4): the sibling objects + this object's id drive a visible stepper pinned
      *  to the sidebar foot. Omitted for single-object / narrative-index readers (no sibling stepping). */
     siblings?: { id: string; label: string }[];
@@ -127,7 +131,10 @@
   let prevInitialSelected: string | null = initialSelected;
   $effect(() => {
     const next = initialSelected;
-    if (next !== null && next !== prevInitialSelected) selected = next;
+    // membership guard (review): only adopt a target that exists in THIS object's notes — defends a
+    // stale initialSelected on a manual carousel switch, and keeps the cross-object jump correct
+    // regardless of effect order (object-change clears, this re-selects the now-present note).
+    if (next !== null && next !== prevInitialSelected && annotations.some((a) => a.id === next)) selected = next;
     prevInitialSelected = next;
   });
 
@@ -195,7 +202,9 @@
         {#if noteParts.text}<div class="body"><ProseCites text={noteParts.text} /></div>{/if}
         <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
         {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">{geoCoord}</p>{/if}
-        <div class="tags">{#each tagsOf(current) as t}<span class="tag">#{t}</span>{/each}</div>
+        <!-- Tags are the cross-cutting discovery affordance (Q-4): click one to open the finder
+             pre-scoped with that tag as a facet. -->
+        <div class="tags">{#each tagsOf(current) as t}<button type="button" class="tag tag-btn" onclick={() => onopenfinder?.(t)}>#{t}</button>{/each}</div>
       </article>
     {:else}
       <!-- list state -->
@@ -215,8 +224,10 @@
                  hover-only, invisible to tablet/phone readers. Reuses the same hoverNote/MarkerStyle path. -->
             <button style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)} onfocus={() => onnotehover?.(it.id ?? null)} onblur={() => onnotehover?.(null)}>
               <span class="card-preview">{stripMarkdown(commentOf(it))}</span>
-              {#if tagsOf(it).length}<span class="card-tags">{#each tagsOf(it) as t}<span class="tag">#{t}</span>{/each}</span>{/if}
             </button>
+            <!-- Card tags live OUTSIDE the card button (no nested buttons) and are their own facet
+                 triggers (Q-4): click one to open the finder pre-scoped with that tag. -->
+            {#if tagsOf(it).length}<span class="card-tags">{#each tagsOf(it) as t}<button type="button" class="tag tag-btn" onclick={() => onopenfinder?.(t)}>#{t}</button>{/each}</span>{/if}
           </li>
         {/each}
       </ul>
@@ -332,6 +343,10 @@
   .tags { margin-top: var(--space-4); display: flex; flex-wrap: wrap; gap: var(--space-3); }
   /* Quiet found-meta chips (mono, tinted) — not loud orange fills; the orange stays rationed. */
   .tag { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); padding: 2px var(--space-3); border-radius: var(--radius-sm); }
+  /* Clickable tag chip (Q-4 facet trigger) — button reset over the chip look; hover signals the
+     cross-cutting discovery affordance with the rationed connector accent. */
+  .tag-btn { border: none; cursor: pointer; transition: color 160ms ease, background 160ms ease; }
+  .tag-btn:hover { color: var(--ink-paper-primary); background: var(--accent-muted); }
   .hint { font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-5); }
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); background: var(--surface-paper-hover); border-radius: var(--radius-md); }
 

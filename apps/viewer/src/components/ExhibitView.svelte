@@ -18,6 +18,7 @@
   import Reader from "./Reader.svelte";
   import NarrativeReader from "./NarrativeReader.svelte";
   import MediaPlayer from "./MediaPlayer.svelte";
+  import SearchOverlay from "./SearchOverlay.svelte";
   import type { MarkerStyle } from "@render/svelte";
 
   // `onnav` (dba2): publishes the object-nav snapshot up to ViewerShell, which renders the carousel in
@@ -46,6 +47,14 @@
   // opens that grid over the read; `indexObjectId` is an object opened FROM the index (its own Reader).
   let narrativeIndex = $state(false);
   let indexObjectId = $state<string | null>(null);
+
+  // Finder overlay (Q-3/Q-4): the ONE mode-independent discovery surface, mounted here so it works in
+  // grid AND narrative exhibits. `finderTag` pre-scopes it as a facet when a tag chip opened it; null =
+  // opened cold from the chrome affordance / accelerator. The overlay is a PURE finder — selecting a
+  // result routes through arriveAtNote (the A0 seam), so it never mutates canvas/reading state itself.
+  let finderOpen = $state(false);
+  let finderTag = $state<string | null>(null);
+  function openFinder(tag: string | null = null) { finderTag = tag; finderOpen = true; }
 
   onMount(async () => {
     try {
@@ -93,6 +102,24 @@
       linkMissing = true;
       chromeVisible = true;
       setTimeout(() => (chromeVisible = false), 8000);
+    }
+  }
+
+  // Finder accelerators (Q-4): Cmd/Ctrl-K and `/` open the finder from anywhere in the exhibit. `/` is
+  // suppressed while typing (input/textarea/select or any contenteditable) so it can't hijack search
+  // boxes or note prose. No URL state — the finder is transient (open → find → jump → close).
+  function onWindowKey(e: KeyboardEvent) {
+    if ((e.key === "k" || e.key === "K") && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      openFinder();
+      return;
+    }
+    if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey && !finderOpen) {
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t?.isContentEditable) return;
+      e.preventDefault();
+      openFinder();
     }
   }
 
@@ -236,6 +263,8 @@
   });
 </script>
 
+<svelte:window onkeydown={onWindowKey} />
+
 {#if status === "loading"}
   <div class="state"><span class="dot"></span><span>Loading the exhibit…</span></div>
 {:else if status === "error"}
@@ -280,6 +309,7 @@
           onnotehover={(id) => (hoverNote = id)}
           notesHidden={notesHidden}
           onhiddenchange={(v) => (notesHidden = v)}
+          onopenfinder={(tag) => openFinder(tag)}
         />
       {/if}
     {:else if narrativeIndex}
@@ -312,6 +342,7 @@
         notesHidden={notesHidden}
         onhiddenchange={(v) => (notesHidden = v)}
         onindex={() => (narrativeIndex = true)}
+        onopenfinder={(tag) => openFinder(tag)}
       />
     {/if}
   {:else if activeObject}
@@ -329,6 +360,7 @@
       onnotehover={(id) => (hoverNote = id)}
       notesHidden={notesHidden}
       onhiddenchange={(v) => (notesHidden = v)}
+      onopenfinder={(tag) => openFinder(tag)}
       siblings={gridSiblings ?? undefined}
       currentId={activeObject.id}
       onstep={(id) => (selectedObjectId = id)}
@@ -342,6 +374,24 @@
       countOf={(id) => annotationsOf(id).length}
       onselect={(id) => (selectedObjectId = id)}
       rights={exhibitRights}
+    />
+  {/if}
+
+  <!-- Finder affordance (Q-4): a quiet visible search trigger in the exhibit chrome — the discoverable
+       home for the Cmd/Ctrl-K + `/` accelerators, present in BOTH grid and narrative layouts. -->
+  <button class="finder-trigger" onclick={() => openFinder()} aria-label="Find a note (⌘K)">
+    <span class="glass" aria-hidden="true">⌕</span><span class="lbl">Find a note</span>
+    <span class="kbd" aria-hidden="true">⌘K</span>
+  </button>
+
+  <!-- The ONE mode-independent finder (Q-3/Q-4): a PURE finder over the flattened note tree. On select
+       it routes through arriveAtNote (A0 seam) — flips reading + object + fits camera — and closes. -->
+  {#if finderOpen}
+    <SearchOverlay
+      data={{ annotationsByObject: data.annotationsByObject, readingAnnotationsByObject: data.readingAnnotationsByObject }}
+      initialTag={finderTag}
+      onselect={(id) => arriveAtNote(id)}
+      onclose={() => (finderOpen = false)}
     />
   {/if}
 
@@ -403,6 +453,23 @@
     font-family: var(--font-body), sans-serif; font-size: 0.8125rem;
     letter-spacing: 0; text-transform: none;
   }
+  /* Finder trigger — a quiet warm-paper pill pinned bottom-right of the canvas, the discoverable home
+     for the ⌘K / `/` accelerators. Recedes (canvas inks, connector-blue hover) so the read stays the
+     star; rationed orange is left free for the one focal action. Below-band tokens keep it off the bar. */
+  .finder-trigger {
+    position: fixed; z-index: 30; right: var(--space-5); bottom: var(--space-5);
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
+    border: none; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low); cursor: pointer;
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); letter-spacing: 0.04em;
+    transition: color 160ms ease, box-shadow 160ms ease;
+  }
+  .finder-trigger:hover { color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
+  .finder-trigger .glass { font-size: 1rem; line-height: 1; }
+  .finder-trigger .kbd { font-family: var(--font-mono), monospace; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--ink-canvas-muted); }
+
   .arrival .seal { color: var(--accent-2); font-size: 1rem; }
   .arrival .dismiss {
     font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 500;

@@ -48,9 +48,58 @@ function toSearchDoc(a: W3CAnnotation): SearchDoc {
 export function buildSearchIndex(annotations: W3CAnnotation[]): MiniSearch<SearchDoc> {
   const index = new MiniSearch<SearchDoc>({
     fields: ["body", "tags"],
-    storeFields: ["id", "logicalId", "tags"],
+    storeFields: ["id", "logicalId", "tags", "body"],
     searchOptions: { prefix: true, fuzzy: 0.2 },
   });
   index.addAll(annotations.map(toSearchDoc));
   return index;
+}
+
+/** Pull EVERY note in the exhibit into one flat array — the base page per object PLUS every
+ *  per-reading page (Q-4): the finder is mode-independent and scopes ALL readings, so a note that
+ *  lives only in a non-active reading is still findable. A note id can repeat across the base + a
+ *  reading overlay; we de-dupe by id (first wins) so the index carries one doc per note. */
+export function flattenExhibitNotes(data: {
+  annotationsByObject: Record<string, W3CAnnotation[]>;
+  readingAnnotationsByObject: Record<string, Record<string, W3CAnnotation[]>>;
+}): W3CAnnotation[] {
+  const seen = new Set<string>();
+  const out: W3CAnnotation[] = [];
+  const take = (a: W3CAnnotation) => {
+    if (!a.id || seen.has(a.id)) return;
+    seen.add(a.id);
+    out.push(a);
+  };
+  for (const list of Object.values(data.annotationsByObject)) for (const a of list) take(a);
+  for (const byReading of Object.values(data.readingAnnotationsByObject))
+    for (const list of Object.values(byReading)) for (const a of list) take(a);
+  return out;
+}
+
+/** Stored search result — the index's `storeFields`, narrowed for callers. */
+export type StoredDoc = Pick<SearchDoc, "id" | "logicalId" | "tags" | "body">;
+
+/** PURE finder (Q-4): tags OR each other (union of any note carrying ≥1 active tag); a text query
+ *  ANDs that union (narrows it to notes also matching the prose/tag search). No active tags + no
+ *  query ⇒ everything (the open-overlay browse state). Extracted out of the overlay component so the
+ *  filter semantics are unit-tested in isolation, never re-derived from the rendered DOM. */
+export function filterResults(
+  index: MiniSearch<SearchDoc>,
+  query: string,
+  activeTags: string[],
+): StoredDoc[] {
+  const q = query.trim();
+  // Tag union: a note is in scope if it carries ANY active tag (OR), with case-insensitive match
+  // (tags are authored free-form). Empty tag set ⇒ no tag constraint (the whole index is in scope).
+  const tagSet = new Set(activeTags.map((t) => t.toLowerCase()));
+  const inTagScope = (doc: StoredDoc): boolean =>
+    tagSet.size === 0 || doc.tags.some((t) => tagSet.has(t.toLowerCase()));
+
+  if (q === "") {
+    // No query: return the tag union (or everything when no tags either). Drain the index via a
+    // match-all search so we get StoredDocs without holding a separate doc list.
+    return (index.search(MiniSearch.wildcard) as unknown as StoredDoc[]).filter(inTagScope);
+  }
+  // Query present: AND it onto the tag union — search hits intersected with the tag scope.
+  return (index.search(q) as unknown as StoredDoc[]).filter(inTagScope);
 }
