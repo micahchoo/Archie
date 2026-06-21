@@ -9,7 +9,7 @@
   import MediaPlayer from "./MediaPlayer.svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import ReadingSheet from "./ReadingSheet.svelte";
-  import NoteMedia from "./NoteMedia.svelte";
+  import NotePopup from "./NotePopup.svelte";
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import ProseCites from "./ProseCites.svelte";
@@ -121,8 +121,30 @@
   });
   const activeStyleOf = $derived(activeObject ? styleFor?.(activeObject.id) : undefined);
   const multiObject = $derived(new Set(sections.map((s) => s.objectId)).size > 1);
+  // Per-layer note count on the ACTIVE object for the legend (id=null → base / General notes). Re-mints
+  // when the active section's object changes, so the legend's counts track the canvas you're reading.
+  const readingCount = $derived.by(() => {
+    const oid = activeObject?.id;
+    const base = oid ? (annotationsByObject[oid] ?? []) : [];
+    const byR = oid ? (readingAnnotationsByObject[oid] ?? {}) : {};
+    return (id: string | null): number => (id === null ? base.length : (byR[id]?.length ?? 0));
+  });
 
   function activate(i: number) { activeIndex = i; selected = null; }
+
+  // Footer stepper (the note-pop's multi-object nav, in narrative form): step the SECTION — which switches
+  // the active object whenever the spine crosses to one. Unlike activate(), this CARRIES the reading: it
+  // selects the next section-object's first note so the note-pop stays open across the step (flip-and-read),
+  // instead of activate()'s selected=null unmounting it. Falls to null only when that object has no notes.
+  function stepSection(delta: number) {
+    const ni = activeIndex + delta;
+    if (ni < 0 || ni >= sections.length) return;
+    activeIndex = ni;
+    const obj = objects.find((o) => o.id === sections[ni]?.objectId);
+    let notes = obj ? (annotationsByObject[obj.id] ?? []) : [];
+    if (obj && activeReading !== null) notes = overlay(notes, readingAnnotationsByObject[obj.id]?.[activeReading]);
+    selected = notes[0]?.id ?? null;
+  }
 
   // Note popup on marker click (CONTEXT §123 "Both: annomea popup/drawer on marker click"). Narrative
   // was missing this entirely — a clicked marker selected but showed nothing, so notes never surfaced.
@@ -179,7 +201,7 @@
   </main>
 
   {#if onreading && readings.length > 0}
-    <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} />
+    <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
   {/if}
 
   <!-- Grid-index escape (ADR-0016 keystone): the narrative leads, but the object grid stays reachable
@@ -194,7 +216,11 @@
   <!-- min/max match the spine's responsive clamp(360px … 620px) so a resize can't escape the designed
        reading-measure (#14). -->
   <ResizeDivider side="right" label="narrative" min={360} max={620} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={(s: AsideState) => saveAside(ASIDE_W_KEY, ASIDE_COLLAPSED_KEY, s)} />
-  <aside class:collapsed={asideCollapsed} style:--narr-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
+  <!-- Collapsed = give the canvas the page; the note-pop (with its footer section-stepper) becomes the
+       sole reading + nav surface, so `inert` drops the clipped spine (its section list) out of the a11y
+       tree + tab order — no invisible duplicate of the stepper's section nav. The ResizeDivider is a
+       sibling, so re-expanding stays reachable (§223 anti-trap). -->
+  <aside class:collapsed={asideCollapsed} inert={asideCollapsed} style:--narr-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
     <p class="eyebrow">Narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}</p>
     <h1>{title}</h1>
     <p class="hint">Read down the page, or jump to any section. The image follows along, zooming to what each section is about{multiObject ? ", and switching between items as you go" : ""}.</p>
@@ -212,16 +238,22 @@
   </aside>
 
   {#if current}
-    <!-- annomea popup: the selected marker's note, floating over the canvas (CONTEXT §123) -->
-    <div class="note-pop">
-      <button class="close" onclick={() => (selected = null)} aria-label="Close note">×</button>
-      {#if noteParts.text}<button class="expand" onclick={() => (readingSheet = { text: noteParts.text })} title="Expand to read" aria-label="Expand note to a reading sheet">⤢</button>{/if}
-      {#if noteParts.text}<div class="note-body"><ProseCites text={noteParts.text} /></div>{/if}
-      <NoteMedia media={noteParts.media} onopen={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })} />
-      {#if geoCoord}<p class="geo-coord" title="Longitude / latitude">{geoCoord}</p>{/if}
-      <!-- Tag chips are clickable (Q-4): open the finder pre-scoped with that tag as a facet. -->
-      {#if tagsOf(current).length}<div class="tags">{#each tagsOf(current) as t}<button type="button" class="tag tag-btn" onclick={() => onopenfinder?.(t)}>#{t}</button>{/each}</div>{/if}
-    </div>
+    <!-- The standalone note card (shared NotePopup). Narrative form: the footer steps SECTIONS — which
+         switch objects as the spine crosses them — and stepSection carries the reading so the card stays
+         open across a step (flip-and-read) instead of activate()'s selected=null unmounting it. -->
+    <NotePopup
+      eyebrow={`${activeSection?.title ?? title}${multiObject && activeObject ? ` · ${activeObject.label}` : ""}`}
+      text={noteParts.text}
+      media={noteParts.media}
+      tags={tagsOf(current)}
+      {geoCoord}
+      step={sections.length > 1 && asideCollapsed ? { index: activeIndex, total: sections.length, prevLabel: sections[activeIndex - 1]?.title, nextLabel: sections[activeIndex + 1]?.title, unit: "section", navLabel: "Sections in this narrative" } : null}
+      onclose={() => (selected = null)}
+      onexpand={() => { if (noteParts.text) readingSheet = { text: noteParts.text }; }}
+      onstep={(d) => stepSection(d)}
+      onopenfinder={(t) => onopenfinder?.(t)}
+      onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+    />
   {/if}
 
   {#if readingSheet}
@@ -307,36 +339,5 @@
   .to-index .grid-mark { font-size: 0.95rem; line-height: 1; color: var(--ink-canvas-muted); transition: color 160ms ease; }
   .to-index:hover .grid-mark { color: var(--accent-2); }
 
-  /* Note popup — a warm paper callout floating over the ground (annomea popup; mirrors Reader's). */
-  .note-pop {
-    /* Bottom-anchored, grows upward — cap its height (clear the topbar) and scroll, so a long note
-       never overflows the viewport top. */
-    position: absolute; left: var(--space-5); bottom: var(--space-5); z-index: 5; max-width: min(44ch, 46%);
-    max-height: calc(100vh - var(--topbar-h) - var(--space-5) - var(--space-4)); overflow-y: auto;
-    padding: var(--space-4) var(--space-6) var(--space-4) var(--space-5);
-    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
-    border: none; border-left: 2px solid var(--accent);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-mid);
-  }
-  .note-pop .close { position: absolute; top: 8px; right: 12px; background: none; border: none; cursor: pointer; color: var(--ink-canvas-muted); font-size: 1.2rem; line-height: 1; transition: color 160ms ease; }
-  .note-pop .close:hover { color: var(--accent); }
-  /* Expand-to-read — quiet cord-blue affordance beside the close, opens the centred reading sheet. */
-  .note-pop .expand { position: absolute; top: 9px; right: 38px; background: none; border: none; cursor: pointer; color: var(--ink-canvas-muted); font-size: 0.95rem; line-height: 1; transition: color 160ms ease; }
-  .note-pop .expand:hover { color: var(--accent-2); }
-  .note-body { font-family: var(--font-body); font-size: 1rem; line-height: 1.65; color: var(--ink-canvas-primary); }
-  .note-body :global(p) { margin: 0 0 var(--space-2); }
-  .note-body :global(p:last-child) { margin-bottom: 0; }
-  .note-body :global(strong) { font-weight: 600; }
-  .note-body :global(em) { font-style: italic; }
-  .note-body :global(a) { color: var(--accent-2); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.15em; cursor: pointer; }
-  .note-body :global(a[href*="#/"]:not(.cite-card))::after { content: "¶" / ""; margin-left: 0.15em; font-size: 0.7em; vertical-align: 0.35em; opacity: 0.6; text-decoration: none; }
-  /* Note images render as thumbnails — click opens the lightbox. */
-  .note-body :global(img) { display: block; max-width: 100%; max-height: 180px; height: auto; margin-top: var(--space-2); border-radius: var(--radius-sm); cursor: zoom-in; }
-  .note-pop .tags { margin-top: var(--space-3); display: flex; gap: var(--space-3); }
-  .note-pop .tag { font-family: var(--font-ui); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-secondary); }
-  /* Clickable tag chip (Q-4 facet trigger) — button reset over the chip look; hover lifts to the
-     connector accent (the cross-cutting discovery affordance). */
-  .note-pop .tag-btn { background: none; border: none; padding: 0; cursor: pointer; transition: color 160ms ease; }
-  .note-pop .tag-btn:hover { color: var(--accent-2); }
+  /* The standalone note card's styles now live in the shared NotePopup.svelte component. */
 </style>
