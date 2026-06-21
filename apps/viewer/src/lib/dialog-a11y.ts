@@ -22,7 +22,8 @@ export function dialog(node: HTMLElement, opts: DialogOptions) {
 
   const focusables = (): HTMLElement[] =>
     Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-      (e) => e.offsetParent !== null || e === document.activeElement,
+      // getClientRects() covers position:fixed focusables too (offsetParent is null for those) — review
+      (e) => e.getClientRects().length > 0 || e === document.activeElement,
     );
 
   // Move focus INTO the dialog: prefer an explicit `[data-dialog-autofocus]` (e.g. a search input), else
@@ -39,6 +40,7 @@ export function dialog(node: HTMLElement, opts: DialogOptions) {
   function onkeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation(); // own the close — don't co-fire an ancestor window ESC handler (review)
       onclose();
       return;
     }

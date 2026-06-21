@@ -92,10 +92,12 @@
     labelRaf = requestAnimationFrame(() => {
       labelRaf = 0;
       const byId = new Map<string, string>();
+      let unlabelled = 0;
       for (const a of annotations) {
         if (!a.id) continue;
         const snippet = stripMarkdown(commentOfAnnotation(a)).trim();
-        byId.set(a.id, snippet ? snippet.slice(0, 120) : "Region");
+        // number media-only/empty notes so a screen-reader user can tell two unlabelled marks apart (review)
+        byId.set(a.id, snippet ? snippet.slice(0, 120) : `Region ${++unlabelled}`);
       }
       for (const node of el.querySelectorAll<SVGElement>(".a9s-annotation[data-id]")) {
         const id = node.getAttribute("data-id");
