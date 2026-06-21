@@ -5,7 +5,7 @@
   // NOT in the tsc/test gate (real OSD render = browser verification).
   import { onMount, onDestroy } from "svelte";
   import { createMount, type FitOptions, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
-  import type { W3CAnnotation, TileSourceDescriptor } from "@render/core";
+  import { commentOfAnnotation, stripMarkdown, type W3CAnnotation, type TileSourceDescriptor } from "@render/core";
   import { createCanvasController, type CanvasController } from "./controller.js";
 
   let {
@@ -79,6 +79,35 @@
     });
   }
 
+  // a11y marker labels (Q-5): Annotorious renders each region as an SVG `.a9s-annotation[data-id=<id>]`,
+  // owned deep in @render/mount — there's no per-marker label hook, so we post-pass the rendered DOM and
+  // stamp accessible names. Markers are role="img" with an aria-label (the note's prose snippet) but
+  // tabindex="-1": OUT of the tab order. The INDEX (note cards / section beats) is the keyboard surface —
+  // tabbing to off-screen markers would be a maze. Re-run after each setAnnotations (Annotorious re-renders
+  // async, so we wait one rAF). Best-effort: if the DOM/data-id contract ever changes, labels just don't
+  // apply — the index keyboard path is unaffected.
+  let labelRaf = 0;
+  function labelMarkers() {
+    if (!el || labelRaf) return;
+    labelRaf = requestAnimationFrame(() => {
+      labelRaf = 0;
+      const byId = new Map<string, string>();
+      for (const a of annotations) {
+        if (!a.id) continue;
+        const snippet = stripMarkdown(commentOfAnnotation(a)).trim();
+        byId.set(a.id, snippet ? snippet.slice(0, 120) : "Region");
+      }
+      for (const node of el.querySelectorAll<SVGElement>(".a9s-annotation[data-id]")) {
+        const id = node.getAttribute("data-id");
+        const label = id ? byId.get(id) : undefined;
+        if (!label) continue;
+        node.setAttribute("role", "img");
+        node.setAttribute("aria-label", label);
+        node.setAttribute("tabindex", "-1"); // index-driven nav (Q-5): markers stay out of the tab order
+      }
+    });
+  }
+
   let el: HTMLDivElement;
   let surface: MountSurface | undefined;
   let controller: CanvasController | undefined;
@@ -90,6 +119,7 @@
     try {
       surface = await createMount(el, { source, ...(tileSource ? { tileSource } : {}), ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}), ...(locator ? { locator } : {}) });
       surface.setAnnotations(annotations);
+      labelMarkers();
       if (styleOf) surface.setStyle(styleOf);
       if (frame !== undefined) surface.setFrame(frame);
       if (oncreate) surface.onCreate(oncreate);
@@ -124,7 +154,7 @@
   // Read the reactive props FIRST, before any `surface?.`/`if (surface)` guard — otherwise the
   // optional-chain short-circuits on the (async) initially-undefined surface and the effect never
   // subscribes to the prop, so it never re-runs when the prop changes (Svelte 5 dep-tracking gotcha).
-  $effect(() => { const a = annotations; if (surface) { surface.setAnnotations(a); emitRect(); } });
+  $effect(() => { const a = annotations; if (surface) { surface.setAnnotations(a); emitRect(); labelMarkers(); } });
   $effect(() => { void rectIds; void annotations; if (surface) emitRects(); });
   $effect(() => { const sf = styleOf; if (surface) surface.setStyle(sf); });
   // Coverage border (7e1f) — read `frame` first (dep-tracking gotcha); undefined = leave as-is, null clears.
@@ -135,7 +165,7 @@
   // A Section's camera target (not an annotation) → fit the region. Read `focus` first (dep-tracking gotcha).
   $effect(() => { const f = focus; if (f && surface) surface.fitRegion(f); });
 
-  onDestroy(() => { if (rectsRaf) cancelAnimationFrame(rectsRaf); offViewport?.(); controller?.destroy(); });
+  onDestroy(() => { if (rectsRaf) cancelAnimationFrame(rectsRaf); if (labelRaf) cancelAnimationFrame(labelRaf); offViewport?.(); controller?.destroy(); });
 </script>
 
 <div class="archie-canvas-wrap">

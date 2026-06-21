@@ -42,6 +42,24 @@ input:focus, textarea:focus, select:focus {
 }
 input::placeholder, textarea::placeholder { color: var(--ink-canvas-muted); }
 
+/* ── Keyboard-only focus ring (Q-5) ──
+   The index (note cards, section beats, finder results, tag chips) is the keyboard surface, so any
+   focused interactive element needs a VISIBLE ring — but only for keyboard users (:focus-visible), so a
+   mouse click never paints a ring on a button. A single connector-blue ring (the secondary nav signal,
+   not the rationed orange) reads on BOTH the dark canvas and the warm paper. Mouse :focus stays quiet. */
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible,
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+/* Form fields already carry the soft accent-muted glow on :focus; layer the keyboard ring over it
+   without doubling the offset border. */
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offset: 1px; }
+@media (prefers-reduced-motion: reduce) {
+  a:focus-visible, button:focus-visible, [tabindex]:focus-visible { outline-offset: 2px; }
+}
+
 /* ── Scrollbars — quiet warm ── */
 * { scrollbar-color: var(--mist-blue) transparent; scrollbar-width: thin; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }

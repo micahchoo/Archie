@@ -12,6 +12,7 @@
     flattenExhibitNotes,
     type StoredDoc,
   } from "../lib/search-index.js";
+  import { dialog } from "../lib/dialog-a11y.js";
 
   let { data, initialTag = null, onselect, onclose }: {
     /** The published exhibit's note tree — base notes + per-reading overlays, flattened into the index. */
@@ -58,20 +59,21 @@
 <!-- Scrim + panel as SIBLINGS (NoteLightbox/ReadingSheet pattern): the scrim is a click-to-close
      backdrop; Esc is wired by the dialog a11y pass (Q-5). -->
 <div class="finder-scrim" role="presentation" onclick={onclose}></div>
-<div class="finder">
+<!-- Dialog a11y (Q-5): role=dialog + aria-modal; `use:dialog` traps Tab inside the panel, moves focus
+     into it on open (lands on the search input), binds ESC, and returns focus to the trigger on close. -->
+<div class="finder" role="dialog" aria-modal="true" aria-labelledby="finder-title" use:dialog={{ onclose }}>
   <header class="finder-head">
     <span class="eyebrow" id="finder-title">Find a note</span>
     <button class="finder-close" onclick={onclose} aria-label="Close finder">×</button>
   </header>
 
-  <!-- svelte-ignore a11y_autofocus -->
   <input
     class="finder-input"
     type="search"
     placeholder="Search notes across every reading…"
     aria-label="Search notes"
+    data-dialog-autofocus
     bind:value={query}
-    autofocus
   />
 
   {#if allTags.length > 0}
