@@ -38,5 +38,37 @@
     "status": "pending",
     "added_at": "2026-05-25T02:51:11Z",
     "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/packages/render-svelte/package.json"
+  },
+  {
+    "name": "serde_json",
+    "source": "unresolved",
+    "reason": "no repo URL in registry metadata",
+    "status": "pending",
+    "added_at": "2026-06-20T23:14:55Z",
+    "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/src-tauri/Cargo.toml"
+  },
+  {
+    "name": "tauri-build",
+    "source": "unresolved",
+    "reason": "no repo URL in registry metadata",
+    "status": "pending",
+    "added_at": "2026-06-20T23:14:55Z",
+    "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/src-tauri/Cargo.toml"
+  },
+  {
+    "name": "tauri-plugin-dialog",
+    "source": "unresolved",
+    "reason": "no repo URL in registry metadata",
+    "status": "pending",
+    "added_at": "2026-06-20T23:14:55Z",
+    "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/src-tauri/Cargo.toml"
+  },
+  {
+    "name": "tauri-plugin-fs",
+    "source": "unresolved",
+    "reason": "no repo URL in registry metadata",
+    "status": "pending",
+    "added_at": "2026-06-20T23:14:55Z",
+    "manifest": "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/src-tauri/Cargo.toml"
   }
 ]

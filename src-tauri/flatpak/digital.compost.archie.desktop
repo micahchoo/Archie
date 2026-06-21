@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Archie Studio
+GenericName=Image Annotation Studio
+Comment=Author deep-zoom image annotations and exhibits
+Exec=archie
+Icon=digital.compost.archie
+Terminal=false
+Categories=Graphics;Education;Viewer;
+Keywords=annotation;image;deep-zoom;iiif;exhibit;

@@ -118,6 +118,19 @@
     pulseMarks(); // every landing (first paint or carousel switch) gets the reveal
   });
 
+  // Re-selection seam (A0): when ExhibitView's arriveAtNote re-fires on an ALREADY-mounted Reader
+  // (search jump Q-4, keyboard index Q-5), `initialSelected` changes to a new note — `selected` was
+  // only seeded once at $state init, so without this the re-selection did nothing. Track the previous
+  // value and adopt a new non-null target; `selected` is bound into Canvas (zoomOnSelect), so the
+  // camera fits the new mark just as it does on a marker click. Null clears (e.g. arrival dismissed)
+  // are NOT forced here — the object-change effect owns clearing, so this only drives positive jumps.
+  let prevInitialSelected: string | null = initialSelected;
+  $effect(() => {
+    const next = initialSelected;
+    if (next !== null && next !== prevInitialSelected) selected = next;
+    prevInitialSelected = next;
+  });
+
   // 7e1f: the canvas-wide frame overlay — its corners activate (select) the framed note, reusing the
   // same `selected` path a marker click uses. The framed mark's own overlay rect is suppressed below
   // (filtered out of the canvas annotations) so the whole-object border isn't double-drawn.

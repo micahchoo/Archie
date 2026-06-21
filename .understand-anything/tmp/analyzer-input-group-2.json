@@ -1,0 +1,339 @@
+{
+  "groupIndex": 2,
+  "batches": [
+    {
+      "batchIndex": 1,
+      "files": [
+        {
+          "path": ".github/workflows/deploy.yml",
+          "language": "yaml",
+          "sizeLines": 45,
+          "fileCategory": "infra"
+        }
+      ],
+      "batchImportData": {
+        ".github/workflows/deploy.yml": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 16,
+      "files": [
+        {
+          "path": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+          "language": "json",
+          "sizeLines": 36,
+          "fileCategory": "config"
+        },
+        {
+          "path": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+          "language": "json",
+          "sizeLines": 36,
+          "fileCategory": "config"
+        },
+        {
+          "path": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+          "language": "json",
+          "sizeLines": 29,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json": [],
+        "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json": [],
+        "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 52,
+      "files": [
+        {
+          "path": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+          "language": "json",
+          "sizeLines": 36,
+          "fileCategory": "config"
+        },
+        {
+          "path": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+          "language": "json",
+          "sizeLines": 46,
+          "fileCategory": "config"
+        },
+        {
+          "path": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+          "language": "json",
+          "sizeLines": 36,
+          "fileCategory": "config"
+        },
+        {
+          "path": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+          "language": "json",
+          "sizeLines": 29,
+          "fileCategory": "config"
+        }
+      ],
+      "batchImportData": {
+        "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json": [],
+        "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json": [],
+        "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json": [],
+        "apps/viewer/public/published/voynich/canvas/o3/annotations.json": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 63,
+      "files": [
+        {
+          "path": "docs/architecture/_meta.json",
+          "language": "json",
+          "sizeLines": 45,
+          "fileCategory": "config"
+        },
+        {
+          "path": "docs/architecture/domain.md",
+          "language": "markdown",
+          "sizeLines": 63,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/architecture/ecosystem.md",
+          "language": "markdown",
+          "sizeLines": 71,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/architecture/evolution.md",
+          "language": "markdown",
+          "sizeLines": 74,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/architecture/features.json",
+          "language": "json",
+          "sizeLines": 40,
+          "fileCategory": "config"
+        },
+        {
+          "path": "docs/architecture/infrastructure.md",
+          "language": "markdown",
+          "sizeLines": 86,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/architecture/overview.md",
+          "language": "markdown",
+          "sizeLines": 101,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/architecture/risk-map.md",
+          "language": "markdown",
+          "sizeLines": 55,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "docs/architecture/subsystems.md",
+          "language": "markdown",
+          "sizeLines": 99,
+          "fileCategory": "docs"
+        }
+      ],
+      "batchImportData": {
+        "docs/architecture/_meta.json": [],
+        "docs/architecture/domain.md": [],
+        "docs/architecture/ecosystem.md": [],
+        "docs/architecture/evolution.md": [],
+        "docs/architecture/features.json": [],
+        "docs/architecture/infrastructure.md": [],
+        "docs/architecture/overview.md": [],
+        "docs/architecture/risk-map.md": [],
+        "docs/architecture/subsystems.md": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 68,
+      "files": [
+        {
+          "path": "apps/studio/src/exhibit-session.svelte.ts",
+          "language": "typescript",
+          "sizeLines": 141,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/ExhibitOverview.svelte",
+          "language": "svelte",
+          "sizeLines": 466,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/folder-import.test.ts",
+          "language": "typescript",
+          "sizeLines": 130,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/folder-import.ts",
+          "language": "typescript",
+          "sizeLines": 103,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/geo-notes.test.ts",
+          "language": "typescript",
+          "sizeLines": 56,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/geo-notes.ts",
+          "language": "typescript",
+          "sizeLines": 45,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/handles-db.ts",
+          "language": "typescript",
+          "sizeLines": 74,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/IdentityPrompt.svelte",
+          "language": "svelte",
+          "sizeLines": 71,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/iiif-import.test.ts",
+          "language": "typescript",
+          "sizeLines": 117,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/iiif-import.ts",
+          "language": "typescript",
+          "sizeLines": 125,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/ingest-flows.ts",
+          "language": "typescript",
+          "sizeLines": 465,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/library-meta-reducers.test.ts",
+          "language": "typescript",
+          "sizeLines": 78,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/library-meta-reducers.ts",
+          "language": "typescript",
+          "sizeLines": 52,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/library-meta.svelte.test.ts",
+          "language": "typescript",
+          "sizeLines": 77,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/library-meta.svelte.ts",
+          "language": "typescript",
+          "sizeLines": 67,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/LibraryHome.svelte",
+          "language": "svelte",
+          "sizeLines": 381,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/main.ts",
+          "language": "typescript",
+          "sizeLines": 13,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/MediaPicker.svelte",
+          "language": "svelte",
+          "sizeLines": 110,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/MergeReview.svelte",
+          "language": "svelte",
+          "sizeLines": 97,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/narrative-cue-reducer.test.ts",
+          "language": "typescript",
+          "sizeLines": 43,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/narrative-cue-reducer.ts",
+          "language": "typescript",
+          "sizeLines": 34,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/NarrativeEditor.svelte",
+          "language": "svelte",
+          "sizeLines": 276,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/NoteEditor.svelte",
+          "language": "svelte",
+          "sizeLines": 138,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/PropsDrawer.svelte",
+          "language": "svelte",
+          "sizeLines": 45,
+          "fileCategory": "code"
+        },
+        {
+          "path": "apps/studio/src/publish-flows.svelte.ts",
+          "language": "typescript",
+          "sizeLines": 172,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "apps/studio/src/exhibit-session.svelte.ts": [],
+        "apps/studio/src/ExhibitOverview.svelte": [],
+        "apps/studio/src/folder-import.test.ts": [],
+        "apps/studio/src/folder-import.ts": [],
+        "apps/studio/src/geo-notes.test.ts": [],
+        "apps/studio/src/geo-notes.ts": [],
+        "apps/studio/src/handles-db.ts": [],
+        "apps/studio/src/IdentityPrompt.svelte": [],
+        "apps/studio/src/iiif-import.test.ts": [],
+        "apps/studio/src/iiif-import.ts": [],
+        "apps/studio/src/ingest-flows.ts": [],
+        "apps/studio/src/library-meta-reducers.test.ts": [],
+        "apps/studio/src/library-meta-reducers.ts": [],
+        "apps/studio/src/library-meta.svelte.test.ts": [],
+        "apps/studio/src/library-meta.svelte.ts": [],
+        "apps/studio/src/LibraryHome.svelte": [],
+        "apps/studio/src/main.ts": [],
+        "apps/studio/src/MediaPicker.svelte": [],
+        "apps/studio/src/MergeReview.svelte": [],
+        "apps/studio/src/narrative-cue-reducer.test.ts": [],
+        "apps/studio/src/narrative-cue-reducer.ts": [],
+        "apps/studio/src/NarrativeEditor.svelte": [],
+        "apps/studio/src/NoteEditor.svelte": [],
+        "apps/studio/src/PropsDrawer.svelte": [],
+        "apps/studio/src/publish-flows.svelte.ts": []
+      },
+      "neighborMap": {}
+    }
+  ]
+}

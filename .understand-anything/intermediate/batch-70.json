@@ -1,0 +1,1304 @@
+{
+  "batchIndex": 70,
+  "nodes": [
+    {
+      "id": "apps/viewer/public/fonts",
+      "type": "directory",
+      "label": "fonts",
+      "filePath": "apps/viewer/public/fonts",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published",
+      "type": "directory",
+      "label": "published",
+      "filePath": "apps/viewer/public/published",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/geo-map",
+      "type": "directory",
+      "label": "geo-map",
+      "filePath": "apps/viewer/public/published/geo-map",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/geo-map/canvas",
+      "type": "directory",
+      "label": "canvas",
+      "filePath": "apps/viewer/public/published/geo-map/canvas",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/geo-map/canvas/m1",
+      "type": "directory",
+      "label": "m1",
+      "filePath": "apps/viewer/public/published/geo-map/canvas/m1",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas",
+      "type": "directory",
+      "label": "language-atlas",
+      "filePath": "apps/viewer/public/published/language-atlas",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/annotations",
+      "type": "directory",
+      "label": "annotations",
+      "filePath": "apps/viewer/public/published/language-atlas/annotations",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/annotations/readings",
+      "type": "directory",
+      "label": "readings",
+      "filePath": "apps/viewer/public/published/language-atlas/annotations/readings",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/voynich-reading",
+      "type": "directory",
+      "label": "voynich-reading",
+      "filePath": "apps/viewer/public/published/voynich-reading",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/voynich-reading/annotations",
+      "type": "directory",
+      "label": "annotations",
+      "filePath": "apps/viewer/public/published/voynich-reading/annotations",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/voynich-reading/annotations/readings",
+      "type": "directory",
+      "label": "readings",
+      "filePath": "apps/viewer/public/published/voynich-reading/annotations/readings",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/scripts",
+      "type": "directory",
+      "label": "scripts",
+      "filePath": "apps/viewer/scripts",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/src",
+      "type": "directory",
+      "label": "src",
+      "filePath": "apps/viewer/src",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/src/components",
+      "type": "directory",
+      "label": "components",
+      "filePath": "apps/viewer/src/components",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "resource:apps/viewer/public/fonts/VinqueAntique-Bold.otf",
+      "type": "resource",
+      "label": "VinqueAntique-Bold.otf",
+      "filePath": "apps/viewer/public/fonts/VinqueAntique-Bold.otf",
+      "language": "otf",
+      "fileCategory": "code",
+      "sizeLines": 482,
+      "metadata": {
+        "description": "Vinque Antique decorative serif font \u2014 Bold weight"
+      }
+    },
+    {
+      "id": "resource:apps/viewer/public/fonts/VinqueAntique-BoldItalic.otf",
+      "type": "resource",
+      "label": "VinqueAntique-BoldItalic.otf",
+      "filePath": "apps/viewer/public/fonts/VinqueAntique-BoldItalic.otf",
+      "language": "otf",
+      "fileCategory": "code",
+      "sizeLines": 555,
+      "metadata": {
+        "description": "Vinque Antique decorative serif font \u2014 Bold-italic weight"
+      }
+    },
+    {
+      "id": "config:apps/viewer/public/published/geo-map/canvas/m1/annotations.json",
+      "type": "config",
+      "label": "annotations.json",
+      "filePath": "apps/viewer/public/published/geo-map/canvas/m1/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 127,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "@context",
+            "level": 1,
+            "line": 2
+          },
+          {
+            "heading": "id",
+            "level": 1,
+            "line": 3
+          },
+          {
+            "heading": "type",
+            "level": 1,
+            "line": 4
+          },
+          {
+            "heading": "items",
+            "level": 1,
+            "line": 5
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 4
+        },
+        "description": "W3C AnnotationPage for geo-map canvas m1"
+      }
+    },
+    {
+      "id": "markup:apps/viewer/public/published/geo-map/index.html",
+      "type": "markup",
+      "label": "index.html",
+      "filePath": "apps/viewer/public/published/geo-map/index.html",
+      "language": "html",
+      "fileCategory": "markup",
+      "sizeLines": 34,
+      "metadata": {
+        "description": "Static entry HTML for geo-map published exhibit (IIIF viewer bootstrap)"
+      }
+    },
+    {
+      "id": "config:apps/viewer/public/published/geo-map/manifest.json",
+      "type": "config",
+      "label": "manifest.json",
+      "filePath": "apps/viewer/public/published/geo-map/manifest.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 205,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "@context",
+            "level": 1,
+            "line": 2
+          },
+          {
+            "heading": "id",
+            "level": 1,
+            "line": 3
+          },
+          {
+            "heading": "type",
+            "level": 1,
+            "line": 4
+          },
+          {
+            "heading": "label",
+            "level": 1,
+            "line": 5
+          },
+          {
+            "heading": "summary",
+            "level": 1,
+            "line": 10
+          },
+          {
+            "heading": "requiredStatement",
+            "level": 1,
+            "line": 15
+          },
+          {
+            "heading": "items",
+            "level": 1,
+            "line": 27
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 7
+        },
+        "description": "IIIF Presentation API 3.0 manifest for geo-map exhibit"
+      }
+    },
+    {
+      "id": "config:apps/viewer/public/published/language-atlas/annotations/readings/community.json",
+      "type": "config",
+      "label": "community.json",
+      "filePath": "apps/viewer/public/published/language-atlas/annotations/readings/community.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 15,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "@context",
+            "level": 1,
+            "line": 2
+          },
+          {
+            "heading": "id",
+            "level": 1,
+            "line": 3
+          },
+          {
+            "heading": "type",
+            "level": 1,
+            "line": 4
+          },
+          {
+            "heading": "label",
+            "level": 1,
+            "line": 5
+          },
+          {
+            "heading": "summary",
+            "level": 1,
+            "line": 10
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        },
+        "description": "W3C AnnotationCollection \u2014 Community/anthropological reading for language-atlas"
+      }
+    },
+    {
+      "id": "config:apps/viewer/public/published/language-atlas/annotations/readings/linguist.json",
+      "type": "config",
+      "label": "linguist.json",
+      "filePath": "apps/viewer/public/published/language-atlas/annotations/readings/linguist.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 15,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "@context",
+            "level": 1,
+            "line": 2
+          },
+          {
+            "heading": "id",
+            "level": 1,
+            "line": 3
+          },
+          {
+            "heading": "type",
+            "level": 1,
+            "line": 4
+          },
+          {
+            "heading": "label",
+            "level": 1,
+            "line": 5
+          },
+          {
+            "heading": "summary",
+            "level": 1,
+            "line": 10
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        },
+        "description": "W3C AnnotationCollection \u2014 Linguist/technical reading for language-atlas"
+      }
+    },
+    {
+      "id": "config:apps/viewer/public/published/voynich-reading/annotations/narrative.json",
+      "type": "config",
+      "label": "narrative.json",
+      "filePath": "apps/viewer/public/published/voynich-reading/annotations/narrative.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 183,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "@context",
+            "level": 1,
+            "line": 2
+          },
+          {
+            "heading": "id",
+            "level": 1,
+            "line": 3
+          },
+          {
+            "heading": "type",
+            "level": 1,
+            "line": 4
+          },
+          {
+            "heading": "label",
+            "level": 1,
+            "line": 5
+          },
+          {
+            "heading": "total",
+            "level": 1,
+            "line": 10
+          },
+          {
+            "heading": "first",
+            "level": 1,
+            "line": 11
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 6
+        },
+        "description": "W3C AnnotationCollection for voynich-reading narrative prose-spine sections"
+      }
+    },
+    {
+      "id": "file:apps/viewer/scripts/gen-published.mts",
+      "type": "file",
+      "label": "gen-published.mts",
+      "filePath": "apps/viewer/scripts/gen-published.mts",
+      "language": "mts",
+      "fileCategory": "code",
+      "sizeLines": 134,
+      "metadata": {
+        "metrics": {},
+        "description": "Build script: publishLibrary -> MemoryFilesystem -> disk. Merge-preserving (Archie-9b93)."
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/aside-persistence.ts",
+      "type": "file",
+      "label": "aside-persistence.ts",
+      "filePath": "apps/viewer/src/aside-persistence.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 39,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 3,
+          "functionCount": 3,
+          "classCount": 0
+        },
+        "description": "localStorage persistence helpers for resizable/collapsible reader aside"
+      }
+    },
+    {
+      "id": "function:apps/viewer/src/aside-persistence.ts:loadAsideWidth",
+      "type": "function",
+      "name": "loadAsideWidth",
+      "filePath": "apps/viewer/src/aside-persistence.ts",
+      "lineRange": [
+        8,
+        15
+      ],
+      "summary": "Exported function loadAsideWidth(key) \u2014 localStorage aside persistence",
+      "tags": [
+        "function",
+        "exported"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/viewer/src/aside-persistence.ts:loadAsideCollapsed",
+      "type": "function",
+      "name": "loadAsideCollapsed",
+      "filePath": "apps/viewer/src/aside-persistence.ts",
+      "lineRange": [
+        18,
+        24
+      ],
+      "summary": "Exported function loadAsideCollapsed(key) \u2014 localStorage aside persistence",
+      "tags": [
+        "function",
+        "exported"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/viewer/src/aside-persistence.ts:saveAside",
+      "type": "function",
+      "name": "saveAside",
+      "filePath": "apps/viewer/src/aside-persistence.ts",
+      "lineRange": [
+        31,
+        39
+      ],
+      "summary": "Exported function saveAside(widthKey, collapsedKey, s) \u2014 localStorage aside persistence",
+      "tags": [
+        "function",
+        "exported"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/viewer/src/cite-cards.ts",
+      "type": "file",
+      "label": "cite-cards.ts",
+      "filePath": "apps/viewer/src/cite-cards.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 34,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 1,
+          "functionCount": 1,
+          "classCount": 0
+        },
+        "description": "Cite-card splitting: promotes block exhibit-cite paragraphs to rich preview cards. Pure + tested."
+      }
+    },
+    {
+      "id": "function:apps/viewer/src/cite-cards.ts:splitProseCites",
+      "type": "function",
+      "name": "splitProseCites",
+      "filePath": "apps/viewer/src/cite-cards.ts",
+      "lineRange": [
+        20,
+        34
+      ],
+      "summary": "Exported splitProseCites(html, knownSlugs) -> ProseSegment[]",
+      "tags": [
+        "function",
+        "exported"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:apps/viewer/src/cite-cards.test.ts",
+      "type": "file",
+      "label": "cite-cards.test.ts",
+      "filePath": "apps/viewer/src/cite-cards.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 41,
+      "metadata": {
+        "metrics": {
+          "importCount": 1,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0
+        },
+        "description": "Vitest tests for cite-cards.ts \u2014 pure-module tests"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/cite-context.ts",
+      "type": "file",
+      "label": "cite-context.ts",
+      "filePath": "apps/viewer/src/cite-context.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 12,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 1,
+          "functionCount": 0,
+          "classCount": 0
+        },
+        "description": "Shared Svelte context key (CITE_GALLERY) for cite-card layer"
+      }
+    },
+    {
+      "id": "export:apps/viewer/src/cite-context.ts:CITE_GALLERY",
+      "type": "export",
+      "name": "CITE_GALLERY",
+      "filePath": "apps/viewer/src/cite-context.ts",
+      "lineRange": [
+        7,
+        7
+      ],
+      "summary": "Symbol('cite-gallery') \u2014 Svelte context key for gallery index (ExhibitsJson)",
+      "tags": [
+        "export",
+        "symbol"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:apps/viewer/src/components/Credit.svelte",
+      "type": "file",
+      "label": "Credit.svelte",
+      "filePath": "apps/viewer/src/components/Credit.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 61,
+      "metadata": {
+        "metrics": {},
+        "description": "Attribution/credit display \u2014 renders rights+license fields with tone variants"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/EmptyHall.svelte",
+      "type": "file",
+      "label": "EmptyHall.svelte",
+      "filePath": "apps/viewer/src/components/EmptyHall.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 163,
+      "metadata": {
+        "metrics": {},
+        "description": "Empty-library landing state \u2014 file-pick + drag-drop to open .archie.zip"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/ExhibitCiteCard.svelte",
+      "type": "file",
+      "label": "ExhibitCiteCard.svelte",
+      "filePath": "apps/viewer/src/components/ExhibitCiteCard.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 47,
+      "metadata": {
+        "metrics": {},
+        "description": "Rich preview card for cited exhibit \u2014 cover+title+summary from gallery index"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/ExhibitView.svelte",
+      "type": "file",
+      "label": "ExhibitView.svelte",
+      "filePath": "apps/viewer/src/components/ExhibitView.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 409,
+      "metadata": {
+        "metrics": {},
+        "description": "Top-level exhibit renderer \u2014 resolves layout, orchestrates grid/reader/narrative/AV"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/Gallery.svelte",
+      "type": "file",
+      "label": "Gallery.svelte",
+      "filePath": "apps/viewer/src/components/Gallery.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 76,
+      "metadata": {
+        "metrics": {},
+        "description": "Library Gallery \u2014 renders exhibits.json as card grid, links via #/<slug>"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/MediaPlayer.svelte",
+      "type": "file",
+      "label": "MediaPlayer.svelte",
+      "filePath": "apps/viewer/src/components/MediaPlayer.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 263,
+      "metadata": {
+        "metrics": {},
+        "description": "AV media player with transcript spine + temporal marker map, onback escape"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/MediaThumbnail.svelte",
+      "type": "file",
+      "label": "MediaThumbnail.svelte",
+      "filePath": "apps/viewer/src/components/MediaThumbnail.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 93,
+      "metadata": {
+        "metrics": {},
+        "description": "Per-media-type thumbnail plate with baked raster or type motif fallback"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/NarrativeReader.svelte",
+      "type": "file",
+      "label": "NarrativeReader.svelte",
+      "filePath": "apps/viewer/src/components/NarrativeReader.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 316,
+      "metadata": {
+        "metrics": {},
+        "description": "Narrative layout (ADR-0005) \u2014 prose-spine beside canvas, section drives object"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/NoteLightbox.svelte",
+      "type": "file",
+      "label": "NoteLightbox.svelte",
+      "filePath": "apps/viewer/src/components/NoteLightbox.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 117,
+      "metadata": {
+        "metrics": {},
+        "description": "Annotation detail lightbox \u2014 full note body + media viewer, keyboard-dismissible"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/NoteMedia.svelte",
+      "type": "file",
+      "label": "NoteMedia.svelte",
+      "filePath": "apps/viewer/src/components/NoteMedia.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 66,
+      "metadata": {
+        "metrics": {},
+        "description": "Note media strip \u2014 clickable thumbnail tiles that open lightbox"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/ObjectGrid.svelte",
+      "type": "file",
+      "label": "ObjectGrid.svelte",
+      "filePath": "apps/viewer/src/components/ObjectGrid.svelte",
+      "language": "svelte",
+      "fileCategory": "code",
+      "sizeLines": 96,
+      "metadata": {
+        "metrics": {},
+        "description": "Exhibit object overview grid (Phase-2) \u2014 plain thumbnail grid, object-led reading"
+      }
+    },
+    {
+      "id": "file:apps/viewer/src/components/narrative-escape.test.ts",
+      "type": "file",
+      "label": "narrative-escape.test.ts",
+      "filePath": "apps/viewer/src/components/narrative-escape.test.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 100,
+      "metadata": {
+        "metrics": {},
+        "description": "Structural AST test verifying MediaPlayer onback prop + ExhibitView wiring"
+      }
+    },
+    {
+      "id": "function:apps/viewer/src/components/narrative-escape.test.ts:walk",
+      "type": "function",
+      "name": "walk",
+      "filePath": "apps/viewer/src/components/narrative-escape.test.ts",
+      "lineRange": [
+        23,
+        31
+      ],
+      "summary": "Test helper walk(node, visit) \u2014 Svelte AST walker",
+      "tags": [
+        "function",
+        "test-helper"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/viewer/src/components/narrative-escape.test.ts:propsOf",
+      "type": "function",
+      "name": "propsOf",
+      "filePath": "apps/viewer/src/components/narrative-escape.test.ts",
+      "lineRange": [
+        34,
+        50
+      ],
+      "summary": "Test helper propsOf(rel, filename) \u2014 Svelte AST walker",
+      "tags": [
+        "function",
+        "test-helper"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:apps/viewer/src/components/narrative-escape.test.ts:mediaPlayerInstances",
+      "type": "function",
+      "name": "mediaPlayerInstances",
+      "filePath": "apps/viewer/src/components/narrative-escape.test.ts",
+      "lineRange": [
+        53,
+        65
+      ],
+      "summary": "Test helper mediaPlayerInstances(rel, filename) \u2014 Svelte AST walker",
+      "tags": [
+        "function",
+        "test-helper"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e70_0",
+      "source": "apps/viewer/public/fonts",
+      "target": "resource:apps/viewer/public/fonts/VinqueAntique-Bold.otf",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_1",
+      "source": "apps/viewer/public/fonts",
+      "target": "resource:apps/viewer/public/fonts/VinqueAntique-BoldItalic.otf",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_2",
+      "source": "apps/viewer/public/published/geo-map/canvas/m1",
+      "target": "config:apps/viewer/public/published/geo-map/canvas/m1/annotations.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_3",
+      "source": "config:apps/viewer/public/published/geo-map/canvas/m1/annotations.json",
+      "target": "apps/viewer/public/published/geo-map/canvas/m1",
+      "type": "configures",
+      "label": "annotates geo-map canvas m1",
+      "metadata": {}
+    },
+    {
+      "id": "e70_4",
+      "source": "apps/viewer/public/published/geo-map",
+      "target": "markup:apps/viewer/public/published/geo-map/index.html",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_5",
+      "source": "markup:apps/viewer/public/published/geo-map/index.html",
+      "target": "apps/viewer/public/published/geo-map",
+      "type": "serves",
+      "label": "entry point for geo-map exhibit",
+      "metadata": {}
+    },
+    {
+      "id": "e70_6",
+      "source": "apps/viewer/public/published/geo-map",
+      "target": "config:apps/viewer/public/published/geo-map/manifest.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_7",
+      "source": "config:apps/viewer/public/published/geo-map/manifest.json",
+      "target": "apps/viewer/public/published/geo-map",
+      "type": "defines_schema",
+      "label": "IIIF manifest for geo-map exhibit",
+      "metadata": {}
+    },
+    {
+      "id": "e70_8",
+      "source": "apps/viewer/public/published/language-atlas/annotations/readings",
+      "target": "config:apps/viewer/public/published/language-atlas/annotations/readings/community.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_9",
+      "source": "config:apps/viewer/public/published/language-atlas/annotations/readings/community.json",
+      "target": "apps/viewer/public/published/language-atlas",
+      "type": "configures",
+      "label": "defines community reading",
+      "metadata": {}
+    },
+    {
+      "id": "e70_10",
+      "source": "apps/viewer/public/published/language-atlas/annotations/readings",
+      "target": "config:apps/viewer/public/published/language-atlas/annotations/readings/linguist.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_11",
+      "source": "config:apps/viewer/public/published/language-atlas/annotations/readings/linguist.json",
+      "target": "apps/viewer/public/published/language-atlas",
+      "type": "configures",
+      "label": "defines linguist reading",
+      "metadata": {}
+    },
+    {
+      "id": "e70_12",
+      "source": "apps/viewer/public/published/voynich-reading/annotations",
+      "target": "config:apps/viewer/public/published/voynich-reading/annotations/narrative.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_13",
+      "source": "config:apps/viewer/public/published/voynich-reading/annotations/narrative.json",
+      "target": "apps/viewer/public/published/voynich-reading",
+      "type": "configures",
+      "label": "defines narrative sections for voynich-reading",
+      "metadata": {}
+    },
+    {
+      "id": "e70_14",
+      "source": "apps/viewer/scripts",
+      "target": "file:apps/viewer/scripts/gen-published.mts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_15",
+      "source": "file:apps/viewer/scripts/gen-published.mts",
+      "target": "apps/viewer/public/published",
+      "type": "generates",
+      "label": "bakes published/ tree from library zip or sample-data",
+      "metadata": {}
+    },
+    {
+      "id": "e70_16",
+      "source": "apps/viewer/src",
+      "target": "file:apps/viewer/src/aside-persistence.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_17",
+      "source": "file:apps/viewer/src/aside-persistence.ts",
+      "target": "function:apps/viewer/src/aside-persistence.ts:loadAsideWidth",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_18",
+      "source": "function:apps/viewer/src/aside-persistence.ts:loadAsideWidth",
+      "target": "file:apps/viewer/src/aside-persistence.ts",
+      "type": "exports",
+      "label": "exports",
+      "metadata": {}
+    },
+    {
+      "id": "e70_19",
+      "source": "file:apps/viewer/src/aside-persistence.ts",
+      "target": "function:apps/viewer/src/aside-persistence.ts:loadAsideCollapsed",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_20",
+      "source": "function:apps/viewer/src/aside-persistence.ts:loadAsideCollapsed",
+      "target": "file:apps/viewer/src/aside-persistence.ts",
+      "type": "exports",
+      "label": "exports",
+      "metadata": {}
+    },
+    {
+      "id": "e70_21",
+      "source": "file:apps/viewer/src/aside-persistence.ts",
+      "target": "function:apps/viewer/src/aside-persistence.ts:saveAside",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_22",
+      "source": "function:apps/viewer/src/aside-persistence.ts:saveAside",
+      "target": "file:apps/viewer/src/aside-persistence.ts",
+      "type": "exports",
+      "label": "exports",
+      "metadata": {}
+    },
+    {
+      "id": "e70_23",
+      "source": "apps/viewer/src",
+      "target": "file:apps/viewer/src/cite-cards.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_24",
+      "source": "file:apps/viewer/src/cite-cards.ts",
+      "target": "function:apps/viewer/src/cite-cards.ts:splitProseCites",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_25",
+      "source": "function:apps/viewer/src/cite-cards.ts:splitProseCites",
+      "target": "file:apps/viewer/src/cite-cards.ts",
+      "type": "exports",
+      "label": "exports",
+      "metadata": {}
+    },
+    {
+      "id": "e70_26",
+      "source": "apps/viewer/src",
+      "target": "file:apps/viewer/src/cite-cards.test.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_27",
+      "source": "file:apps/viewer/src/cite-cards.test.ts",
+      "target": "file:apps/viewer/src/cite-cards.ts",
+      "type": "tested_by",
+      "label": "tests splitProseCites cite-card splitting",
+      "metadata": {}
+    },
+    {
+      "id": "e70_28",
+      "source": "apps/viewer/src",
+      "target": "file:apps/viewer/src/cite-context.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_29",
+      "source": "file:apps/viewer/src/cite-context.ts",
+      "target": "export:apps/viewer/src/cite-context.ts:CITE_GALLERY",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_30",
+      "source": "export:apps/viewer/src/cite-context.ts:CITE_GALLERY",
+      "target": "file:apps/viewer/src/cite-context.ts",
+      "type": "exports",
+      "label": "exports",
+      "metadata": {}
+    },
+    {
+      "id": "e70_31",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/Credit.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_32",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/EmptyHall.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_33",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/ExhibitCiteCard.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_34",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/ExhibitView.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_35",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/Gallery.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_36",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/MediaPlayer.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_37",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/MediaThumbnail.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_38",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/NarrativeReader.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_39",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/NoteLightbox.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_40",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/NoteMedia.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_41",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/ObjectGrid.svelte",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_42",
+      "source": "apps/viewer/src/components",
+      "target": "file:apps/viewer/src/components/narrative-escape.test.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_43",
+      "source": "file:apps/viewer/src/components/narrative-escape.test.ts",
+      "target": "function:apps/viewer/src/components/narrative-escape.test.ts:walk",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_44",
+      "source": "file:apps/viewer/src/components/narrative-escape.test.ts",
+      "target": "function:apps/viewer/src/components/narrative-escape.test.ts:propsOf",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_45",
+      "source": "file:apps/viewer/src/components/narrative-escape.test.ts",
+      "target": "function:apps/viewer/src/components/narrative-escape.test.ts:mediaPlayerInstances",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e70_46",
+      "source": "file:apps/viewer/src/components/narrative-escape.test.ts",
+      "target": "file:apps/viewer/src/components/MediaPlayer.svelte",
+      "type": "tested_by",
+      "label": "verifies onback prop declaration",
+      "metadata": {}
+    },
+    {
+      "id": "e70_47",
+      "source": "file:apps/viewer/src/components/narrative-escape.test.ts",
+      "target": "file:apps/viewer/src/components/ExhibitView.svelte",
+      "type": "tested_by",
+      "label": "verifies onback wiring in index-AV branch",
+      "metadata": {}
+    },
+    {
+      "id": "e70_48",
+      "source": "file:apps/viewer/src/components/ExhibitView.svelte",
+      "target": "file:apps/viewer/src/components/ObjectGrid.svelte",
+      "type": "depends_on",
+      "label": "renders grid layout",
+      "metadata": {}
+    },
+    {
+      "id": "e70_49",
+      "source": "file:apps/viewer/src/components/ExhibitView.svelte",
+      "target": "file:apps/viewer/src/components/NarrativeReader.svelte",
+      "type": "depends_on",
+      "label": "renders narrative layout",
+      "metadata": {}
+    },
+    {
+      "id": "e70_50",
+      "source": "file:apps/viewer/src/components/ExhibitView.svelte",
+      "target": "file:apps/viewer/src/components/MediaPlayer.svelte",
+      "type": "depends_on",
+      "label": "renders AV objects in narrative index",
+      "metadata": {}
+    },
+    {
+      "id": "e70_51",
+      "source": "file:apps/viewer/src/components/NarrativeReader.svelte",
+      "target": "file:apps/viewer/src/components/MediaPlayer.svelte",
+      "type": "depends_on",
+      "label": "imports MediaPlayer",
+      "metadata": {}
+    },
+    {
+      "id": "e70_52",
+      "source": "file:apps/viewer/src/components/NarrativeReader.svelte",
+      "target": "file:apps/viewer/src/components/NoteLightbox.svelte",
+      "type": "depends_on",
+      "label": "imports NoteLightbox",
+      "metadata": {}
+    },
+    {
+      "id": "e70_53",
+      "source": "file:apps/viewer/src/components/NarrativeReader.svelte",
+      "target": "file:apps/viewer/src/components/NoteMedia.svelte",
+      "type": "depends_on",
+      "label": "imports NoteMedia",
+      "metadata": {}
+    },
+    {
+      "id": "e70_54",
+      "source": "file:apps/viewer/src/components/NarrativeReader.svelte",
+      "target": "file:apps/viewer/src/components/Credit.svelte",
+      "type": "depends_on",
+      "label": "imports Credit",
+      "metadata": {}
+    },
+    {
+      "id": "e70_55",
+      "source": "file:apps/viewer/src/components/NarrativeReader.svelte",
+      "target": "file:apps/viewer/src/aside-persistence.ts",
+      "type": "depends_on",
+      "label": "imports aside persistence helpers",
+      "metadata": {}
+    },
+    {
+      "id": "e70_56",
+      "source": "file:apps/viewer/src/components/Gallery.svelte",
+      "target": "file:apps/viewer/src/components/Credit.svelte",
+      "type": "depends_on",
+      "label": "renders exhibit credit line",
+      "metadata": {}
+    },
+    {
+      "id": "e70_57",
+      "source": "file:apps/viewer/src/components/ObjectGrid.svelte",
+      "target": "file:apps/viewer/src/components/Credit.svelte",
+      "type": "depends_on",
+      "label": "renders exhibit credit",
+      "metadata": {}
+    },
+    {
+      "id": "e70_58",
+      "source": "file:apps/viewer/src/components/ObjectGrid.svelte",
+      "target": "file:apps/viewer/src/components/MediaThumbnail.svelte",
+      "type": "depends_on",
+      "label": "renders per-object thumbnail",
+      "metadata": {}
+    },
+    {
+      "id": "e70_59",
+      "source": "file:apps/viewer/src/components/MediaPlayer.svelte",
+      "target": "file:apps/viewer/src/components/Credit.svelte",
+      "type": "depends_on",
+      "label": "renders AV exhibit credit",
+      "metadata": {}
+    },
+    {
+      "id": "e70_60",
+      "source": "file:apps/viewer/src/components/Credit.svelte",
+      "target": "file:apps/viewer/src/cite-context.ts",
+      "type": "related",
+      "label": "credit display shares exhibit metadata context",
+      "metadata": {}
+    },
+    {
+      "id": "e70_61",
+      "source": "file:apps/viewer/scripts/gen-published.mts",
+      "target": "config:apps/viewer/public/published/geo-map/manifest.json",
+      "type": "generates",
+      "label": "bakes geo-map IIIF manifest",
+      "metadata": {}
+    },
+    {
+      "id": "e70_62",
+      "source": "file:apps/viewer/scripts/gen-published.mts",
+      "target": "config:apps/viewer/public/published/geo-map/canvas/m1/annotations.json",
+      "type": "generates",
+      "label": "bakes geo-map canvas annotations",
+      "metadata": {}
+    },
+    {
+      "id": "e70_63",
+      "source": "config:apps/viewer/public/published/voynich-reading/annotations/narrative.json",
+      "target": "apps/viewer/public/published/voynich-reading/annotations/readings",
+      "type": "related",
+      "label": "narrative references reading-filtered annotation pages",
+      "metadata": {}
+    }
+  ]
+}

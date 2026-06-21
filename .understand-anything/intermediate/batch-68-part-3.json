@@ -1,0 +1,857 @@
+{
+  "batchIndex": 68,
+  "partIndex": 3,
+  "nodes": [
+    {
+      "id": "apps",
+      "type": "directory",
+      "label": "apps",
+      "filePath": "apps",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio",
+      "type": "directory",
+      "label": "studio",
+      "filePath": "apps/studio",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio/src",
+      "type": "directory",
+      "label": "src",
+      "filePath": "apps/studio/src",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/studio/src/iiif-import.ts",
+      "type": "file",
+      "label": "iiif-import.ts",
+      "filePath": "apps/studio/src/iiif-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 125,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 3,
+          "functionCount": 9,
+          "classCount": 1
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/iiif-import.ts:fetchManifest",
+      "type": "function",
+      "label": "fetchManifest",
+      "filePath": "apps/studio/src/iiif-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 10,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "src"
+        ],
+        "startLine": 13,
+        "endLine": 22
+      }
+    },
+    {
+      "id": "apps/studio/src/iiif-import.ts:extractObjects",
+      "type": "function",
+      "label": "extractObjects",
+      "filePath": "apps/studio/src/iiif-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 20,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "manifest"
+        ],
+        "startLine": 36,
+        "endLine": 55
+      }
+    },
+    {
+      "id": "apps/studio/src/iiif-import.ts:planIIIFImportGroups",
+      "type": "function",
+      "label": "planIIIFImportGroups",
+      "filePath": "apps/studio/src/iiif-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 12,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "manifest"
+        ],
+        "startLine": 59,
+        "endLine": 70
+      }
+    },
+    {
+      "id": "apps/studio/src/iiif-import.ts:importManifest",
+      "type": "function",
+      "label": "importManifest",
+      "filePath": "apps/studio/src/iiif-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 24,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "src",
+          "lib"
+        ],
+        "startLine": 74,
+        "endLine": 97
+      }
+    },
+    {
+      "id": "apps/studio/src/iiif-import.ts:importFromURL",
+      "type": "function",
+      "label": "importFromURL",
+      "filePath": "apps/studio/src/iiif-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 12,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "url",
+          "lib"
+        ],
+        "startLine": 101,
+        "endLine": 112
+      }
+    },
+    {
+      "id": "apps/studio/src/iiif-import.ts:IIIFManifestError",
+      "type": "class",
+      "label": "IIIFManifestError",
+      "filePath": "apps/studio/src/iiif-import.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 3,
+      "metadata": {
+        "metrics": {},
+        "methods": [
+          "constructor"
+        ],
+        "startLine": 123,
+        "endLine": 125
+      }
+    },
+    {
+      "id": "apps/studio/src/handles-db.ts",
+      "type": "file",
+      "label": "handles-db.ts",
+      "filePath": "apps/studio/src/handles-db.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 74,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 5,
+          "functionCount": 8,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/handles-db.ts:hasIDB",
+      "type": "function",
+      "label": "hasIDB",
+      "filePath": "apps/studio/src/handles-db.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 1,
+      "metadata": {
+        "metrics": {},
+        "params": [],
+        "startLine": 12,
+        "endLine": 12
+      }
+    },
+    {
+      "id": "apps/studio/src/handles-db.ts:openDb",
+      "type": "function",
+      "label": "openDb",
+      "filePath": "apps/studio/src/handles-db.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 8,
+      "metadata": {
+        "metrics": {},
+        "params": [],
+        "startLine": 14,
+        "endLine": 21
+      }
+    },
+    {
+      "id": "apps/studio/src/handles-db.ts:putHandle",
+      "type": "function",
+      "label": "putHandle",
+      "filePath": "apps/studio/src/handles-db.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 7,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "kind",
+          "handle"
+        ],
+        "startLine": 41,
+        "endLine": 47
+      }
+    },
+    {
+      "id": "apps/studio/src/handles-db.ts:getHandle",
+      "type": "function",
+      "label": "getHandle",
+      "filePath": "apps/studio/src/handles-db.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 7,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "kind"
+        ],
+        "startLine": 49,
+        "endLine": 55
+      }
+    },
+    {
+      "id": "apps/studio/src/handles-db.ts:removeHandle",
+      "type": "function",
+      "label": "removeHandle",
+      "filePath": "apps/studio/src/handles-db.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 7,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "kind"
+        ],
+        "startLine": 57,
+        "endLine": 63
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta.svelte.ts",
+      "type": "file",
+      "label": "library-meta.svelte.ts",
+      "filePath": "apps/studio/src/library-meta.svelte.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 67,
+      "metadata": {
+        "metrics": {
+          "importCount": 3,
+          "exportCount": 1,
+          "functionCount": 2,
+          "classCount": 0
+        }
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta.svelte.ts:libraryMeta",
+      "type": "function",
+      "label": "libraryMeta",
+      "filePath": "apps/studio/src/library-meta.svelte.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 24,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "lib"
+        ],
+        "startLine": 14,
+        "endLine": 37
+      }
+    },
+    {
+      "id": "apps/studio/src/library-meta.svelte.ts:enqueueSave",
+      "type": "function",
+      "label": "enqueueSave",
+      "filePath": "apps/studio/src/library-meta.svelte.ts",
+      "language": "typescript",
+      "fileCategory": "code",
+      "sizeLines": 18,
+      "metadata": {
+        "metrics": {},
+        "params": [
+          "lib"
+        ],
+        "startLine": 40,
+        "endLine": 57
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e68p3_0",
+      "source": "apps",
+      "target": "apps/studio",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_1",
+      "source": "apps/studio",
+      "target": "apps/studio/src",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_2",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/iiif-import.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_3",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts:fetchManifest",
+      "type": "contains",
+      "label": "iiif-import.ts contains fetchManifest",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_4",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts:extractObjects",
+      "type": "contains",
+      "label": "iiif-import.ts contains extractObjects",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_5",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts:planIIIFImportGroups",
+      "type": "contains",
+      "label": "iiif-import.ts contains planIIIFImportGroups",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_6",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts:importManifest",
+      "type": "contains",
+      "label": "iiif-import.ts contains importManifest",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_7",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts:importFromURL",
+      "type": "contains",
+      "label": "iiif-import.ts contains importFromURL",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_8",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts:IIIFManifestError",
+      "type": "contains",
+      "label": "iiif-import.ts contains IIIFManifestError",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_9",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts:importManifest",
+      "type": "export",
+      "label": "exports importManifest",
+      "metadata": {
+        "isDefault": false,
+        "line": 74
+      }
+    },
+    {
+      "id": "e68p3_10",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts:importFromURL",
+      "type": "export",
+      "label": "exports importFromURL",
+      "metadata": {
+        "isDefault": false,
+        "line": 101
+      }
+    },
+    {
+      "id": "e68p3_11",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts:IIIFManifestError",
+      "type": "export",
+      "label": "exports IIIFManifestError",
+      "metadata": {
+        "isDefault": false,
+        "line": 123
+      }
+    },
+    {
+      "id": "e68p3_12",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/handles-db.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_13",
+      "source": "apps/studio/src/handles-db.ts",
+      "target": "apps/studio/src/handles-db.ts:hasIDB",
+      "type": "contains",
+      "label": "handles-db.ts contains hasIDB",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_14",
+      "source": "apps/studio/src/handles-db.ts",
+      "target": "apps/studio/src/handles-db.ts:openDb",
+      "type": "contains",
+      "label": "handles-db.ts contains openDb",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_15",
+      "source": "apps/studio/src/handles-db.ts",
+      "target": "apps/studio/src/handles-db.ts:putHandle",
+      "type": "contains",
+      "label": "handles-db.ts contains putHandle",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_16",
+      "source": "apps/studio/src/handles-db.ts",
+      "target": "apps/studio/src/handles-db.ts:getHandle",
+      "type": "contains",
+      "label": "handles-db.ts contains getHandle",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_17",
+      "source": "apps/studio/src/handles-db.ts",
+      "target": "apps/studio/src/handles-db.ts:removeHandle",
+      "type": "contains",
+      "label": "handles-db.ts contains removeHandle",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_18",
+      "source": "apps/studio/src/handles-db.ts",
+      "target": "apps/studio/src/handles-db.ts:hasIDB",
+      "type": "export",
+      "label": "exports hasIDB",
+      "metadata": {
+        "isDefault": false,
+        "line": 12
+      }
+    },
+    {
+      "id": "e68p3_19",
+      "source": "apps/studio/src/handles-db.ts",
+      "target": "apps/studio/src/handles-db.ts:openDb",
+      "type": "export",
+      "label": "exports openDb",
+      "metadata": {
+        "isDefault": false,
+        "line": 14
+      }
+    },
+    {
+      "id": "e68p3_20",
+      "source": "apps/studio/src/handles-db.ts",
+      "target": "apps/studio/src/handles-db.ts:putHandle",
+      "type": "export",
+      "label": "exports putHandle",
+      "metadata": {
+        "isDefault": false,
+        "line": 41
+      }
+    },
+    {
+      "id": "e68p3_21",
+      "source": "apps/studio/src/handles-db.ts",
+      "target": "apps/studio/src/handles-db.ts:getHandle",
+      "type": "export",
+      "label": "exports getHandle",
+      "metadata": {
+        "isDefault": false,
+        "line": 49
+      }
+    },
+    {
+      "id": "e68p3_22",
+      "source": "apps/studio/src/handles-db.ts",
+      "target": "apps/studio/src/handles-db.ts:removeHandle",
+      "type": "export",
+      "label": "exports removeHandle",
+      "metadata": {
+        "isDefault": false,
+        "line": 57
+      }
+    },
+    {
+      "id": "e68p3_23",
+      "source": "apps/studio/src",
+      "target": "apps/studio/src/library-meta.svelte.ts",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_24",
+      "source": "apps/studio/src/library-meta.svelte.ts",
+      "target": "apps/studio/src/library-meta.svelte.ts:libraryMeta",
+      "type": "contains",
+      "label": "library-meta.svelte.ts contains libraryMeta",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_25",
+      "source": "apps/studio/src/library-meta.svelte.ts",
+      "target": "apps/studio/src/library-meta.svelte.ts:enqueueSave",
+      "type": "contains",
+      "label": "library-meta.svelte.ts contains enqueueSave",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_26",
+      "source": "apps/studio/src/library-meta.svelte.ts",
+      "target": "apps/studio/src/library-meta.svelte.ts:libraryMeta",
+      "type": "export",
+      "label": "exports libraryMeta",
+      "metadata": {
+        "isDefault": false,
+        "line": 14
+      }
+    },
+    {
+      "id": "e68p3_27",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts",
+      "type": "calls",
+      "label": "iiifInfoUrl calls src.replace",
+      "metadata": {
+        "caller": "iiifInfoUrl",
+        "callee": "src.replace",
+        "internal": true,
+        "line": 8
+      }
+    },
+    {
+      "id": "e68p3_28",
+      "source": "apps/studio/src/iiif-import.ts:fetchManifest",
+      "target": "apps/studio/src/iiif-import.ts",
+      "type": "calls",
+      "label": "fetchManifest calls iiifInfoUrl",
+      "metadata": {
+        "callee": "iiifInfoUrl",
+        "external": true,
+        "line": 14
+      }
+    },
+    {
+      "id": "e68p3_29",
+      "source": "apps/studio/src/iiif-import.ts:fetchManifest",
+      "target": "apps/studio/src/iiif-import.ts",
+      "type": "calls",
+      "label": "fetchManifest calls fetch",
+      "metadata": {
+        "callee": "fetch",
+        "external": true,
+        "line": 16
+      }
+    },
+    {
+      "id": "e68p3_30",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts",
+      "type": "calls",
+      "label": "mediaTypeFromSource calls src.includes",
+      "metadata": {
+        "caller": "mediaTypeFromSource",
+        "callee": "src.includes",
+        "internal": true,
+        "line": 27
+      }
+    },
+    {
+      "id": "e68p3_31",
+      "source": "apps/studio/src/iiif-import.ts:extractObjects",
+      "target": "apps/studio/src/iiif-import.ts",
+      "type": "calls",
+      "label": "extractObjects calls manifest.sequences",
+      "metadata": {
+        "callee": "manifest.sequences",
+        "external": true,
+        "line": 38
+      }
+    },
+    {
+      "id": "e68p3_32",
+      "source": "apps/studio/src/iiif-import.ts:extractObjects",
+      "target": "apps/studio/src/iiif-import.ts",
+      "type": "calls",
+      "label": "extractObjects calls canvas.images",
+      "metadata": {
+        "callee": "canvas.images",
+        "external": true,
+        "line": 41
+      }
+    },
+    {
+      "id": "e68p3_33",
+      "source": "apps/studio/src/iiif-import.ts:planIIIFImportGroups",
+      "target": "apps/studio/src/iiif-import.ts:extractObjects",
+      "type": "calls",
+      "label": "planIIIFImportGroups calls extractObjects",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_34",
+      "source": "apps/studio/src/iiif-import.ts:planIIIFImportGroups",
+      "target": "apps/studio/src/iiif-import.ts",
+      "type": "calls",
+      "label": "planIIIFImportGroups calls groups.map",
+      "metadata": {
+        "callee": "groups.map",
+        "external": true,
+        "line": 62
+      }
+    },
+    {
+      "id": "e68p3_35",
+      "source": "apps/studio/src/iiif-import.ts:importManifest",
+      "target": "apps/studio/src/iiif-import.ts:fetchManifest",
+      "type": "calls",
+      "label": "importManifest calls fetchManifest",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_36",
+      "source": "apps/studio/src/iiif-import.ts:importManifest",
+      "target": "apps/studio/src/iiif-import.ts:planIIIFImportGroups",
+      "type": "calls",
+      "label": "importManifest calls planIIIFImportGroups",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_37",
+      "source": "apps/studio/src/iiif-import.ts:importManifest",
+      "target": "apps/studio/src/iiif-import.ts",
+      "type": "calls",
+      "label": "importManifest calls lib.addExhibit",
+      "metadata": {
+        "callee": "lib.addExhibit",
+        "external": true,
+        "line": 82
+      }
+    },
+    {
+      "id": "e68p3_38",
+      "source": "apps/studio/src/iiif-import.ts:importFromURL",
+      "target": "apps/studio/src/iiif-import.ts:fetchManifest",
+      "type": "calls",
+      "label": "importFromURL calls fetchManifest",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_39",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts",
+      "type": "calls",
+      "label": "importFromFile calls JSON.parse",
+      "metadata": {
+        "caller": "importFromFile",
+        "callee": "JSON.parse",
+        "internal": true,
+        "line": 117
+      }
+    },
+    {
+      "id": "e68p3_40",
+      "source": "apps/studio/src/iiif-import.ts",
+      "target": "apps/studio/src/iiif-import.ts:importManifest",
+      "type": "calls",
+      "label": "importFromFile calls importManifest",
+      "metadata": {
+        "caller": "importFromFile",
+        "internal": true,
+        "line": 119
+      }
+    },
+    {
+      "id": "e68p3_41",
+      "source": "apps/studio/src/handles-db.ts:openDb",
+      "target": "apps/studio/src/handles-db.ts",
+      "type": "calls",
+      "label": "openDb calls indexedDB.open",
+      "metadata": {
+        "callee": "indexedDB.open",
+        "external": true,
+        "line": 15
+      }
+    },
+    {
+      "id": "e68p3_42",
+      "source": "apps/studio/src/handles-db.ts:putHandle",
+      "target": "apps/studio/src/handles-db.ts:openDb",
+      "type": "calls",
+      "label": "putHandle calls openDb",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_43",
+      "source": "apps/studio/src/handles-db.ts:putHandle",
+      "target": "apps/studio/src/handles-db.ts",
+      "type": "calls",
+      "label": "putHandle calls storeName",
+      "metadata": {
+        "callee": "storeName",
+        "external": true,
+        "line": 44
+      }
+    },
+    {
+      "id": "e68p3_44",
+      "source": "apps/studio/src/handles-db.ts:getHandle",
+      "target": "apps/studio/src/handles-db.ts:openDb",
+      "type": "calls",
+      "label": "getHandle calls openDb",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_45",
+      "source": "apps/studio/src/handles-db.ts:getHandle",
+      "target": "apps/studio/src/handles-db.ts",
+      "type": "calls",
+      "label": "getHandle calls storeName",
+      "metadata": {
+        "callee": "storeName",
+        "external": true,
+        "line": 52
+      }
+    },
+    {
+      "id": "e68p3_46",
+      "source": "apps/studio/src/handles-db.ts:removeHandle",
+      "target": "apps/studio/src/handles-db.ts:openDb",
+      "type": "calls",
+      "label": "removeHandle calls openDb",
+      "metadata": {}
+    },
+    {
+      "id": "e68p3_47",
+      "source": "apps/studio/src/handles-db.ts:removeHandle",
+      "target": "apps/studio/src/handles-db.ts",
+      "type": "calls",
+      "label": "removeHandle calls storeName",
+      "metadata": {
+        "callee": "storeName",
+        "external": true,
+        "line": 60
+      }
+    },
+    {
+      "id": "e68p3_48",
+      "source": "apps/studio/src/library-meta.svelte.ts:libraryMeta",
+      "target": "apps/studio/src/library-meta.svelte.ts",
+      "type": "calls",
+      "label": "libraryMeta calls $state",
+      "metadata": {
+        "callee": "$state",
+        "external": true,
+        "line": 16
+      }
+    },
+    {
+      "id": "e68p3_49",
+      "source": "apps/studio/src/library-meta.svelte.ts:libraryMeta",
+      "target": "apps/studio/src/library-meta.svelte.ts",
+      "type": "calls",
+      "label": "libraryMeta calls lib.meta.exhibits.map",
+      "metadata": {
+        "callee": "lib.meta.exhibits.map",
+        "external": true,
+        "line": 19
+      }
+    },
+    {
+      "id": "e68p3_50",
+      "source": "apps/studio/src/library-meta.svelte.ts:libraryMeta",
+      "target": "apps/studio/src/library-meta.svelte.ts",
+      "type": "calls",
+      "label": "libraryMeta calls lib.meta.exhibits.findIndex",
+      "metadata": {
+        "callee": "lib.meta.exhibits.findIndex",
+        "external": true,
+        "line": 20
+      }
+    },
+    {
+      "id": "e68p3_51",
+      "source": "apps/studio/src/library-meta.svelte.ts:libraryMeta",
+      "target": "apps/studio/src/library-meta.svelte.ts",
+      "type": "calls",
+      "label": "libraryMeta calls $derived",
+      "metadata": {
+        "callee": "$derived",
+        "external": true,
+        "line": 25
+      }
+    },
+    {
+      "id": "e68p3_52",
+      "source": "apps/studio/src/library-meta.svelte.ts:enqueueSave",
+      "target": "apps/studio/src/library-meta.svelte.ts",
+      "type": "calls",
+      "label": "enqueueSave calls $effect",
+      "metadata": {
+        "callee": "$effect",
+        "external": true,
+        "line": 42
+      }
+    },
+    {
+      "id": "e68p3_53",
+      "source": "apps/studio/src/library-meta.svelte.ts:enqueueSave",
+      "target": "apps/studio/src/library-meta.svelte.ts",
+      "type": "calls",
+      "label": "enqueueSave calls lib.save",
+      "metadata": {
+        "callee": "lib.save",
+        "external": true,
+        "line": 44
+      }
+    }
+  ],
+  "stats": {
+    "nodeCount": 19,
+    "edgeCount": 54,
+    "fileCount": 3,
+    "totalParts": 4
+  }
+}

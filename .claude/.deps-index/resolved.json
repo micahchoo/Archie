@@ -133,5 +133,21 @@
     "status": "failed",
     "indexed_at": "2026-06-18T06:20:14Z",
     "error": "context add failed"
+  },
+  {
+    "name": "serde",
+    "url": "https://github.com/rossmacarthur/serde",
+    "ref": "master",
+    "status": "failed",
+    "indexed_at": "2026-06-20T23:15:04Z",
+    "error": "context add failed"
+  },
+  {
+    "name": "tauri",
+    "url": "https://github.com/tauri-apps/tauri",
+    "ref": "dev",
+    "status": "failed",
+    "indexed_at": "2026-06-20T23:15:07Z",
+    "error": "context add failed"
   }
 ]

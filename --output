@@ -1,0 +1,4036 @@
+{
+  "scriptCompleted": true,
+  "files": [
+    {
+      "path": ".agents/skills/domain-modeling/ADR-FORMAT.md",
+      "language": "markdown",
+      "sizeLines": 47,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/domain-modeling/CONTEXT-FORMAT.md",
+      "language": "markdown",
+      "sizeLines": 60,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/domain-modeling/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 74,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/teach/GLOSSARY-FORMAT.md",
+      "language": "markdown",
+      "sizeLines": 35,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/teach/LEARNING-RECORD-FORMAT.md",
+      "language": "markdown",
+      "sizeLines": 46,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/teach/MISSION-FORMAT.md",
+      "language": "markdown",
+      "sizeLines": 31,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/teach/MISSION.md",
+      "language": "markdown",
+      "sizeLines": 27,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/teach/RESOURCES-FORMAT.md",
+      "language": "markdown",
+      "sizeLines": 32,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".agents/skills/teach/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 140,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/.deps-index/pending.json",
+      "language": "json",
+      "sizeLines": 42,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".claude/.deps-index/resolved.json",
+      "language": "json",
+      "sizeLines": 137,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".claude/.skill-invocation-log",
+      "language": "unknown",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".claude/goals/goal.md",
+      "language": "markdown",
+      "sizeLines": 74,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/rules/deps-index.md",
+      "language": "markdown",
+      "sizeLines": 38,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/settings.json",
+      "language": "json",
+      "sizeLines": 5,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".claude/skills/librarian/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 194,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/skills/product-copy/SKILL.md",
+      "language": "markdown",
+      "sizeLines": 105,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".claude/SUGGESTED_SKILLS.md",
+      "language": "markdown",
+      "sizeLines": 24,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".gitattributes",
+      "language": "unknown",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".github/workflows/deploy.yml",
+      "language": "yaml",
+      "sizeLines": 45,
+      "fileCategory": "infra"
+    },
+    {
+      "path": ".interface-design/system.md",
+      "language": "markdown",
+      "sizeLines": 323,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".mulch/decisions/archie-av.q-counter",
+      "language": "q-counter",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/decisions/archie-linkability.q-counter",
+      "language": "q-counter",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/decisions/archie-narrative.q-counter",
+      "language": "q-counter",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/decisions/archie-persistence.q-counter",
+      "language": "q-counter",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/decisions/archie-ux.q-counter",
+      "language": "q-counter",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/decisions/archie.q-counter",
+      "language": "q-counter",
+      "sizeLines": 1,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/expertise/archie.jsonl",
+      "language": "jsonl",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/expertise/architecture.jsonl",
+      "language": "jsonl",
+      "sizeLines": 5,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/expertise/decisions.jsonl",
+      "language": "jsonl",
+      "sizeLines": 48,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/expertise/infrastructure.jsonl",
+      "language": "jsonl",
+      "sizeLines": 14,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/expertise/meta.jsonl",
+      "language": "jsonl",
+      "sizeLines": 14,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/expertise/product-research.jsonl",
+      "language": "jsonl",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".mulch/mulch.config.yaml",
+      "language": "yaml",
+      "sizeLines": 16,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".mulch/README.md",
+      "language": "markdown",
+      "sizeLines": 21,
+      "fileCategory": "docs"
+    },
+    {
+      "path": ".seeds/config.yaml",
+      "language": "yaml",
+      "sizeLines": 2,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".seeds/issues.jsonl",
+      "language": "jsonl",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".seeds/templates.jsonl",
+      "language": "jsonl",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".understand-anything/.understandignore",
+      "language": "unknown",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": ".understand-anything/domain-graph.json",
+      "language": "json",
+      "sizeLines": 894,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".understand-anything/fingerprints.json",
+      "language": "json",
+      "sizeLines": 8089,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".understand-anything/knowledge-graph.json",
+      "language": "json",
+      "sizeLines": 13882,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".understand-anything/meta.json",
+      "language": "json",
+      "sizeLines": 6,
+      "fileCategory": "config"
+    },
+    {
+      "path": ".understand-anything/tmp/changed-files.txt",
+      "language": "txt",
+      "sizeLines": 693,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "anti-pattern-report.txt",
+      "language": "txt",
+      "sizeLines": 267,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "apps/studio/.gitkeep",
+      "language": "unknown",
+      "sizeLines": 0,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/index.html",
+      "language": "html",
+      "sizeLines": 14,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/studio/package.json",
+      "language": "json",
+      "sizeLines": 26,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/studio/public/fonts/fonts.css",
+      "language": "css",
+      "sizeLines": 9,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/studio/public/fonts/VinqueAntique-Bold.otf",
+      "language": "otf",
+      "sizeLines": 481,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/public/fonts/VinqueAntique-BoldItalic.otf",
+      "language": "otf",
+      "sizeLines": 554,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/README.md",
+      "language": "markdown",
+      "sizeLines": 39,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "apps/studio/src/AddMapModal.svelte",
+      "language": "svelte",
+      "sizeLines": 236,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/App.svelte",
+      "language": "svelte",
+      "sizeLines": 2009,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/atmosphere.css",
+      "language": "css",
+      "sizeLines": 93,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/studio/src/AvEditor.svelte",
+      "language": "svelte",
+      "sizeLines": 413,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/bake.ts",
+      "language": "typescript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/binding-store.svelte.ts",
+      "language": "typescript",
+      "sizeLines": 194,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/binding.test.ts",
+      "language": "typescript",
+      "sizeLines": 78,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/binding.ts",
+      "language": "typescript",
+      "sizeLines": 135,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/CmdK.svelte",
+      "language": "svelte",
+      "sizeLines": 167,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/collab.test.ts",
+      "language": "typescript",
+      "sizeLines": 42,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/collab.ts",
+      "language": "typescript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/csv-import.test.ts",
+      "language": "typescript",
+      "sizeLines": 177,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/csv-import.ts",
+      "language": "typescript",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/DetailsEditor.svelte",
+      "language": "svelte",
+      "sizeLines": 94,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/exhibit-session.svelte.ts",
+      "language": "typescript",
+      "sizeLines": 141,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/ExhibitOverview.svelte",
+      "language": "svelte",
+      "sizeLines": 466,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/folder-import.test.ts",
+      "language": "typescript",
+      "sizeLines": 130,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/folder-import.ts",
+      "language": "typescript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/geo-notes.test.ts",
+      "language": "typescript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/geo-notes.ts",
+      "language": "typescript",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/handles-db.ts",
+      "language": "typescript",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/IdentityPrompt.svelte",
+      "language": "svelte",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/iiif-import.test.ts",
+      "language": "typescript",
+      "sizeLines": 117,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/iiif-import.ts",
+      "language": "typescript",
+      "sizeLines": 125,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/ingest-flows.ts",
+      "language": "typescript",
+      "sizeLines": 465,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/library-meta-reducers.test.ts",
+      "language": "typescript",
+      "sizeLines": 78,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/library-meta-reducers.ts",
+      "language": "typescript",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/library-meta.svelte.test.ts",
+      "language": "typescript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/library-meta.svelte.ts",
+      "language": "typescript",
+      "sizeLines": 67,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/LibraryHome.svelte",
+      "language": "svelte",
+      "sizeLines": 381,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/main.ts",
+      "language": "typescript",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/markers.css",
+      "language": "css",
+      "sizeLines": 33,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/studio/src/MediaPicker.svelte",
+      "language": "svelte",
+      "sizeLines": 110,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/MergeReview.svelte",
+      "language": "svelte",
+      "sizeLines": 97,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/narrative-cue-reducer.test.ts",
+      "language": "typescript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/narrative-cue-reducer.ts",
+      "language": "typescript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/NarrativeEditor.svelte",
+      "language": "svelte",
+      "sizeLines": 276,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/NoteEditor.svelte",
+      "language": "svelte",
+      "sizeLines": 138,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/PropsDrawer.svelte",
+      "language": "svelte",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/publish-flows.svelte.ts",
+      "language": "typescript",
+      "sizeLines": 172,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/Publish.svelte",
+      "language": "svelte",
+      "sizeLines": 213,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/PublishDialog.svelte",
+      "language": "svelte",
+      "sizeLines": 260,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/reading-state.svelte.test.ts",
+      "language": "typescript",
+      "sizeLines": 96,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/reading-state.svelte.ts",
+      "language": "typescript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/ReadingsEditor.svelte",
+      "language": "svelte",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/ReadingsModal.svelte",
+      "language": "svelte",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/ReadingsRail.svelte",
+      "language": "svelte",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/RightsEditor.svelte",
+      "language": "svelte",
+      "sizeLines": 85,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/save-queue.svelte.test.ts",
+      "language": "typescript",
+      "sizeLines": 78,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/save-queue.svelte.ts",
+      "language": "typescript",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/seed-data.ts",
+      "language": "typescript",
+      "sizeLines": 145,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/shortcuts.ts",
+      "language": "typescript",
+      "sizeLines": 56,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/ShortcutsHelp.svelte",
+      "language": "svelte",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/store.ts",
+      "language": "typescript",
+      "sizeLines": 329,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/tokens.css",
+      "language": "css",
+      "sizeLines": 122,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/studio/src/wadm-import.test.ts",
+      "language": "typescript",
+      "sizeLines": 83,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/src/wadm-import.ts",
+      "language": "typescript",
+      "sizeLines": 127,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/vite.config.ts",
+      "language": "typescript",
+      "sizeLines": 38,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/studio/vitest.config.ts",
+      "language": "typescript",
+      "sizeLines": 14,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/astro.config.mjs",
+      "language": "javascript",
+      "sizeLines": 30,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/fixtures/atlas.ts",
+      "language": "typescript",
+      "sizeLines": 109,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/fixtures/geo.ts",
+      "language": "typescript",
+      "sizeLines": 58,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/fixtures/sample-data.ts",
+      "language": "typescript",
+      "sizeLines": 198,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/fixtures/voynich.ts",
+      "language": "typescript",
+      "sizeLines": 214,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/libraries/README.md",
+      "language": "markdown",
+      "sizeLines": 23,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "apps/viewer/package.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/fonts/fonts.css",
+      "language": "css",
+      "sizeLines": 9,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/viewer/public/fonts/VinqueAntique-Bold.otf",
+      "language": "otf",
+      "sizeLines": 481,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/public/fonts/VinqueAntique-BoldItalic.otf",
+      "language": "otf",
+      "sizeLines": 554,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/public/published/collection.json",
+      "language": "json",
+      "sizeLines": 91,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/exhibits.json",
+      "language": "json",
+      "sizeLines": 45,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/geo-map/annotations/history/0000000001Q1E2RFF58H62PFSW.json",
+      "language": "json",
+      "sizeLines": 40,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/geo-map/annotations/history/0000000002Q00FVKNSJJ2BGTDE.json",
+      "language": "json",
+      "sizeLines": 40,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/geo-map/annotations/history/00000000032HVBH9EHJCR5YMRR.json",
+      "language": "json",
+      "sizeLines": 40,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/geo-map/annotations/history/0000000004CK4MH8W1V2DW0N39.json",
+      "language": "json",
+      "sizeLines": 40,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/geo-map/annotations/history/index.json",
+      "language": "json",
+      "sizeLines": 5,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/geo-map/canvas/m1/annotations.json",
+      "language": "json",
+      "sizeLines": 126,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/geo-map/index.html",
+      "language": "html",
+      "sizeLines": 34,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/viewer/public/published/geo-map/manifest.json",
+      "language": "json",
+      "sizeLines": 204,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/index.html",
+      "language": "html",
+      "sizeLines": 22,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/0000000001QA9HWMFBS3S6DTJ4.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/00000000021G31YS0Z2ZG6N1RX.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/0000000003EB0YAESVXD6MKPY6.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/0000000004P0QSM9AM36QZM3JY.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/00000000056XKG648T6Z7TAAQX.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000689W361NNJSBV1NNV.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/00000000073MHG0BGX4NK51FTH.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/0000000008DGND2JNBFKR1YW4B.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/00000000093KM2FAXA5WQDQ82Q.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000AN029WSZ324T8AK3J.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000BTCT9T76FKBHTEJK4.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000C36QGH1EA6FN8ZNXN.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000D9Z2PS1FE0YRQNX28.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000EHP928C5GZ7MJ1KGS.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000FV4ZR6350WQCQE3BN.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000GK82XFVPQDZNMX4KC.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000HDQ0N6DX74Q43Q9SG.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000JTC0PHRKF5DWSN6JR.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000KRK6BRR71P6PX20V0.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000MG36QD4YX5V1YJ8HW.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000NXQ7R2V1N9674N2QK.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000PZN8JWP0A1HSVXMJM.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000QRY7P4XVEGX7X1XCA.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/000000000R8Y311HDC71SWDHVT.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/history/index.json",
+      "language": "json",
+      "sizeLines": 25,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/readings/community.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/annotations/readings/linguist.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o1/annotations-community.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o1/annotations-linguist.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o1/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o2/annotations-community.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o2/annotations-linguist.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o2/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o3/annotations-community.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o3/annotations-linguist.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o3/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o5/annotations-community.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o5/annotations-linguist.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o5/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o6/annotations-community.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o6/annotations-linguist.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o6/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o7/annotations-community.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o7/annotations-linguist.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o7/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o8/annotations-community.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o8/annotations-linguist.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/canvas/o8/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/index.html",
+      "language": "html",
+      "sizeLines": 137,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/manifest.json",
+      "language": "json",
+      "sizeLines": 1508,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/language-atlas/readings.json",
+      "language": "json",
+      "sizeLines": 13,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/sitemap.txt",
+      "language": "txt",
+      "sizeLines": 6,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000001M0GZY8KQDZEF4C74.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000002QERZ7R4AD74QJ481.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000003V9WGXP5NY4Z5C3CA.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000004429NM3GG6S8ZYV05.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000005W9XVMN7C968XY5A2.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000616MM0ADVMBBK0XHJ.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000007GCR82ZZ0V3CKGCP4.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000008MSMNY0VX0THJB32N.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000009P1SYAXVMEKD64YM1.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000AZ5MWJJCKJSVCRP75.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000BQ1719XADN4MSNF3D.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000CGES9SXD5HHBYMGF1.json",
+      "language": "json",
+      "sizeLines": 54,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000D5SH6F04BJZCKGCC2.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000EBTVCRTK515MFGEAM.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000FQ49APBGFAPPZ2Z93.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000GD9N71MHZSCFJM2MB.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000HTMR0MJ171Q2W6C1M.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000JV4R2HB536DH4YA1E.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000KN9BECJFQPP1EDDVP.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000M8K248PTFFZR2Y36H.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000NSFASYX2TFC4DE7GZ.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000PHK5Q5G86C31C1M59.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000Q47KB1X12V54QJQ7N.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000RPZP2N8FCZGDY2CSY.json",
+      "language": "json",
+      "sizeLines": 49,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000SPZ8YDM9SEQKNS8A9.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000T5N0B9CP2EE6P6Z5W.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000VJPMVWXVNE66V47J0.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000W8BQMN0WT7K65A25J.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000XAGKZA0P14VWSNZ0Q.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000YTTF352G3HGS6SAGC.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000000ZKTQFJWBE5DHG6CEX.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/00000000103N8G97G375T4RR47.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000011YTBN4W131SCZKA7M.json",
+      "language": "json",
+      "sizeLines": 49,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000012RSQD9VZQ7601ZAA6.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000013E2ZHQMTVKKYX844Z.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000014RM3WBR0S55GK9QKA.json",
+      "language": "json",
+      "sizeLines": 49,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000015XBMQ294BD4FB74XX.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000016PE2QB9MW3RR9FE5K.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/00000000174012M3JVECQ4CWZJ.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000001876WEDG0CY9Q9PFNG.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/0000000019PGCFHGFQM3XPC4YF.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000001AYSHEDSMARM8NK98D.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000001BASS5X8QB9YS79JAD.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000001C9W0J2BKMJA125KR2.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000001DKSXRNKR02TMX11VZ.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000001EM5QNPFCQ5A2K3W6H.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000001FHXMQBYHST49K7EYG.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/000000001G39GVAR3H0FA56RD5.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/history/index.json",
+      "language": "json",
+      "sizeLines": 49,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/narrative.json",
+      "language": "json",
+      "sizeLines": 182,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/readings/abjad.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/readings/cipher.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/annotations/readings/hoax.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o1/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o1/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 56,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o1/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o1/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o10/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o10/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o10/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o10/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o11/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o11/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o11/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o11/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o12/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 11,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o12/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 11,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o12/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 11,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o12/annotations.json",
+      "language": "json",
+      "sizeLines": 98,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o2/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o2/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o2/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o2/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o3/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o3/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o3/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o3/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o4/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o4/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o4/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o4/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o5/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o5/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 51,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o5/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o5/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o6/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o6/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o6/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o6/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o7/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o7/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o7/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o7/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o8/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o8/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 51,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o8/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o8/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o9/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o9/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 51,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o9/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/canvas/o9/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/index.html",
+      "language": "html",
+      "sizeLines": 265,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/manifest.json",
+      "language": "json",
+      "sizeLines": 3085,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-reading/readings.json",
+      "language": "json",
+      "sizeLines": 19,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/annotations/history/0000000001M0GZY8KQDZEF4C74.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/annotations/history/0000000002QERZ7R4AD74QJ481.json",
+      "language": "json",
+      "sizeLines": 49,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/annotations/history/0000000003V9WGXP5NY4Z5C3CA.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/annotations/history/0000000004429NM3GG6S8ZYV05.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/annotations/history/index.json",
+      "language": "json",
+      "sizeLines": 5,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/annotations/readings/abjad.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/annotations/readings/cipher.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/annotations/readings/hoax.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/canvas/o9/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/canvas/o9/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 51,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/canvas/o9/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/canvas/o9/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/index.html",
+      "language": "html",
+      "sizeLines": 38,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/manifest.json",
+      "language": "json",
+      "sizeLines": 274,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich-rosettes/readings.json",
+      "language": "json",
+      "sizeLines": 19,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000001M0GZY8KQDZEF4C74.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000002QERZ7R4AD74QJ481.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000003V9WGXP5NY4Z5C3CA.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000004429NM3GG6S8ZYV05.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000005W9XVMN7C968XY5A2.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000616MM0ADVMBBK0XHJ.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000007GCR82ZZ0V3CKGCP4.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000008MSMNY0VX0THJB32N.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000009P1SYAXVMEKD64YM1.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000AZ5MWJJCKJSVCRP75.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000BQ1719XADN4MSNF3D.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000CGES9SXD5HHBYMGF1.json",
+      "language": "json",
+      "sizeLines": 54,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000D5SH6F04BJZCKGCC2.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000EBTVCRTK515MFGEAM.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000FQ49APBGFAPPZ2Z93.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000GD9N71MHZSCFJM2MB.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000HTMR0MJ171Q2W6C1M.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000JV4R2HB536DH4YA1E.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000KN9BECJFQPP1EDDVP.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000M8K248PTFFZR2Y36H.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000NSFASYX2TFC4DE7GZ.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000PHK5Q5G86C31C1M59.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000Q47KB1X12V54QJQ7N.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000RPZP2N8FCZGDY2CSY.json",
+      "language": "json",
+      "sizeLines": 49,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000SPZ8YDM9SEQKNS8A9.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000T5N0B9CP2EE6P6Z5W.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000VJPMVWXVNE66V47J0.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000W8BQMN0WT7K65A25J.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000XAGKZA0P14VWSNZ0Q.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000YTTF352G3HGS6SAGC.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000000ZKTQFJWBE5DHG6CEX.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/00000000103N8G97G375T4RR47.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000011YTBN4W131SCZKA7M.json",
+      "language": "json",
+      "sizeLines": 49,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000012RSQD9VZQ7601ZAA6.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000013E2ZHQMTVKKYX844Z.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000014RM3WBR0S55GK9QKA.json",
+      "language": "json",
+      "sizeLines": 49,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000015XBMQ294BD4FB74XX.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000016PE2QB9MW3RR9FE5K.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/00000000174012M3JVECQ4CWZJ.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000001876WEDG0CY9Q9PFNG.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/0000000019PGCFHGFQM3XPC4YF.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000001AYSHEDSMARM8NK98D.json",
+      "language": "json",
+      "sizeLines": 44,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000001BASS5X8QB9YS79JAD.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000001C9W0J2BKMJA125KR2.json",
+      "language": "json",
+      "sizeLines": 34,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000001DKSXRNKR02TMX11VZ.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000001EM5QNPFCQ5A2K3W6H.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000001FHXMQBYHST49K7EYG.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/000000001G39GVAR3H0FA56RD5.json",
+      "language": "json",
+      "sizeLines": 33,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/history/index.json",
+      "language": "json",
+      "sizeLines": 49,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/readings/abjad.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/readings/cipher.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/annotations/readings/hoax.json",
+      "language": "json",
+      "sizeLines": 14,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o1/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o1/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 56,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o1/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o1/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o10/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o10/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o10/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o10/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o11/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o11/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o11/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o11/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o12/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 11,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o12/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 11,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o12/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 11,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o12/annotations.json",
+      "language": "json",
+      "sizeLines": 98,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o2/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o2/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o2/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o2/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o3/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o3/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o3/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o3/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o4/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o4/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o4/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o4/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o5/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o5/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 51,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o5/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o5/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o6/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o6/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o6/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o6/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o7/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o7/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 46,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o7/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o7/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o8/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o8/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 51,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o8/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o8/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o9/annotations-abjad.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o9/annotations-cipher.json",
+      "language": "json",
+      "sizeLines": 51,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o9/annotations-hoax.json",
+      "language": "json",
+      "sizeLines": 36,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/canvas/o9/annotations.json",
+      "language": "json",
+      "sizeLines": 29,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/index.html",
+      "language": "html",
+      "sizeLines": 265,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/manifest.json",
+      "language": "json",
+      "sizeLines": 2915,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/public/published/voynich/readings.json",
+      "language": "json",
+      "sizeLines": 19,
+      "fileCategory": "config"
+    },
+    {
+      "path": "apps/viewer/README.md",
+      "language": "markdown",
+      "sizeLines": 43,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "apps/viewer/scripts/gen-published.mts",
+      "language": "mts",
+      "sizeLines": 134,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/aside-persistence.ts",
+      "language": "typescript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/atmosphere.css",
+      "language": "css",
+      "sizeLines": 93,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/viewer/src/cite-cards.test.ts",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/cite-cards.ts",
+      "language": "typescript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/cite-context.ts",
+      "language": "typescript",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/Credit.svelte",
+      "language": "svelte",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/EmptyHall.svelte",
+      "language": "svelte",
+      "sizeLines": 163,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/ExhibitCiteCard.svelte",
+      "language": "svelte",
+      "sizeLines": 47,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/ExhibitView.svelte",
+      "language": "svelte",
+      "sizeLines": 409,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/Gallery.svelte",
+      "language": "svelte",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/MediaPlayer.svelte",
+      "language": "svelte",
+      "sizeLines": 263,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/MediaThumbnail.svelte",
+      "language": "svelte",
+      "sizeLines": 93,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/narrative-escape.test.ts",
+      "language": "typescript",
+      "sizeLines": 100,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/NarrativeReader.svelte",
+      "language": "svelte",
+      "sizeLines": 316,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/NoteLightbox.svelte",
+      "language": "svelte",
+      "sizeLines": 117,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/NoteMedia.svelte",
+      "language": "svelte",
+      "sizeLines": 66,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/ObjectGrid.svelte",
+      "language": "svelte",
+      "sizeLines": 96,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/ProseCites.svelte",
+      "language": "svelte",
+      "sizeLines": 20,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/Reader.svelte",
+      "language": "svelte",
+      "sizeLines": 345,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/ReadingLegend.svelte",
+      "language": "svelte",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/ReadingSheet.svelte",
+      "language": "svelte",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/SidebarObjectNav.svelte",
+      "language": "svelte",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/components/ViewerShell.svelte",
+      "language": "svelte",
+      "sizeLines": 383,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/markers.css",
+      "language": "css",
+      "sizeLines": 33,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/viewer/src/og-image.ts",
+      "language": "typescript",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/pages/[slug].astro",
+      "language": "astro",
+      "sizeLines": 122,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/pages/index.astro",
+      "language": "astro",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/pages/robots.txt.ts",
+      "language": "typescript",
+      "sizeLines": 7,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/pages/sitemap.xml.ts",
+      "language": "typescript",
+      "sizeLines": 12,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/published-base.ts",
+      "language": "typescript",
+      "sizeLines": 32,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/published.test.ts",
+      "language": "typescript",
+      "sizeLines": 169,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/published.ts",
+      "language": "typescript",
+      "sizeLines": 290,
+      "fileCategory": "code"
+    },
+    {
+      "path": "apps/viewer/src/tokens.css",
+      "language": "css",
+      "sizeLines": 143,
+      "fileCategory": "markup"
+    },
+    {
+      "path": "apps/viewer/tsconfig.json",
+      "language": "json",
+      "sizeLines": 9,
+      "fileCategory": "config"
+    },
+    {
+      "path": "archie.config.json",
+      "language": "json",
+      "sizeLines": 6,
+      "fileCategory": "config"
+    },
+    {
+      "path": "CLAUDE.md",
+      "language": "markdown",
+      "sizeLines": 62,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "design/fonts/licenses/FOPVHS - font by lirkiv.txt",
+      "language": "txt",
+      "sizeLines": 11,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "design/fonts/licenses/License LARAZ Font.txt",
+      "language": "txt",
+      "sizeLines": 2,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "design/fonts/VinqueAntique-Bold.otf",
+      "language": "otf",
+      "sizeLines": 481,
+      "fileCategory": "code"
+    },
+    {
+      "path": "design/fonts/VinqueAntique-BoldItalic.otf",
+      "language": "otf",
+      "sizeLines": 554,
+      "fileCategory": "code"
+    },
+    {
+      "path": "docs/adr/0001-objects-are-exhibit-nested.md",
+      "language": "markdown",
+      "sizeLines": 23,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0002-rendering-and-framework.md",
+      "language": "markdown",
+      "sizeLines": 25,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0003-annotation-spine-append-only-version-dag.md",
+      "language": "markdown",
+      "sizeLines": 41,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0004-no-wasm-vips-tiling.md",
+      "language": "markdown",
+      "sizeLines": 10,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0005-narrative-section-model.md",
+      "language": "markdown",
+      "sizeLines": 17,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0006-edit-at-locus-spatiotemporal-selectors.md",
+      "language": "markdown",
+      "sizeLines": 79,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0007-readings-as-annotationpages.md",
+      "language": "markdown",
+      "sizeLines": 31,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0008-viewer-one-shell-dual-mode.md",
+      "language": "markdown",
+      "sizeLines": 15,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0009-canonical-hosted-instance-for-src.md",
+      "language": "markdown",
+      "sizeLines": 19,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0010-portable-viewer-read-seam.md",
+      "language": "markdown",
+      "sizeLines": 22,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0011-gesture-initiated-creation.md",
+      "language": "markdown",
+      "sizeLines": 71,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0012-self-hosted-fonts.md",
+      "language": "markdown",
+      "sizeLines": 31,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0013-canonical-origin-github-pages.md",
+      "language": "markdown",
+      "sizeLines": 35,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0014-self-describing-published-artifact.md",
+      "language": "markdown",
+      "sizeLines": 48,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0015-map-medium-bounded-extent.md",
+      "language": "markdown",
+      "sizeLines": 16,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0016-narrative-as-emergent-reading-mode.md",
+      "language": "markdown",
+      "sizeLines": 49,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/adr/0017-section-as-supplementing-annotation.md",
+      "language": "markdown",
+      "sizeLines": 42,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/_meta.json",
+      "language": "json",
+      "sizeLines": 45,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/architecture/cross-cutting/patterns.md",
+      "language": "markdown",
+      "sizeLines": 88,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/domain.md",
+      "language": "markdown",
+      "sizeLines": 63,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/ecosystem.md",
+      "language": "markdown",
+      "sizeLines": 71,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/evolution.md",
+      "language": "markdown",
+      "sizeLines": 74,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/features.json",
+      "language": "json",
+      "sizeLines": 40,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/architecture/infrastructure.md",
+      "language": "markdown",
+      "sizeLines": 86,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/overview.md",
+      "language": "markdown",
+      "sizeLines": 101,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/risk-map.md",
+      "language": "markdown",
+      "sizeLines": 55,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems.md",
+      "language": "markdown",
+      "sizeLines": 99,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/annotation-spine/components.md",
+      "language": "markdown",
+      "sizeLines": 91,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/annotation-spine/contracts.md",
+      "language": "markdown",
+      "sizeLines": 81,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/publish/AUDIT-gh-publish.md",
+      "language": "markdown",
+      "sizeLines": 78,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/publish/components.md",
+      "language": "markdown",
+      "sizeLines": 61,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/publish/contracts.md",
+      "language": "markdown",
+      "sizeLines": 76,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/rendering/components.md",
+      "language": "markdown",
+      "sizeLines": 104,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/rendering/contracts.md",
+      "language": "markdown",
+      "sizeLines": 56,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/storage/components.md",
+      "language": "markdown",
+      "sizeLines": 53,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/storage/contracts.md",
+      "language": "markdown",
+      "sizeLines": 83,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/studio/components.md",
+      "language": "markdown",
+      "sizeLines": 76,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/studio/contracts.md",
+      "language": "markdown",
+      "sizeLines": 82,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/viewer/components.md",
+      "language": "markdown",
+      "sizeLines": 82,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/architecture/subsystems/viewer/contracts.md",
+      "language": "markdown",
+      "sizeLines": 86,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/bundle-size.json",
+      "language": "json",
+      "sizeLines": 31,
+      "fileCategory": "config"
+    },
+    {
+      "path": "docs/decisions/archie-av.md",
+      "language": "markdown",
+      "sizeLines": 15,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/decisions/archie-linkability.md",
+      "language": "markdown",
+      "sizeLines": 15,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/decisions/archie-narrative.md",
+      "language": "markdown",
+      "sizeLines": 15,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/decisions/archie-persistence.md",
+      "language": "markdown",
+      "sizeLines": 16,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/decisions/archie-ux.md",
+      "language": "markdown",
+      "sizeLines": 15,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/decisions/archie.md",
+      "language": "markdown",
+      "sizeLines": 20,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/decisions/PROPOSALS.md",
+      "language": "markdown",
+      "sizeLines": 107,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/GOAL.md",
+      "language": "markdown",
+      "sizeLines": 248,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/IMPLEMENTATION-STRATEGY.md",
+      "language": "markdown",
+      "sizeLines": 307,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "docs/screenshots/auto/manifest.json",
+      "language": "json",
+      "sizeLines": 57,
+      "fileCategory": "config"
+    },
+    {
+      "path": "package.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "packages/render-core/package.json",
+      "language": "json",
+      "sizeLines": 23,
+      "fileCategory": "config"
+    },
+    {
+      "path": "packages/render-core/src/av/time.test.ts",
+      "language": "typescript",
+      "sizeLines": 69,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/av/time.ts",
+      "language": "typescript",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/av/transcript.test.ts",
+      "language": "typescript",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/av/transcript.ts",
+      "language": "typescript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/exif/orientation.test.ts",
+      "language": "typescript",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/exif/orientation.ts",
+      "language": "typescript",
+      "sizeLines": 46,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/exif/read.test.ts",
+      "language": "typescript",
+      "sizeLines": 142,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/exif/read.ts",
+      "language": "typescript",
+      "sizeLines": 148,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/binding.test.ts",
+      "language": "typescript",
+      "sizeLines": 98,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/binding.ts",
+      "language": "typescript",
+      "sizeLines": 109,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/conformance.test.ts",
+      "language": "typescript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/conformance.ts",
+      "language": "typescript",
+      "sizeLines": 96,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/fsa.ts",
+      "language": "typescript",
+      "sizeLines": 50,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/memory.ts",
+      "language": "typescript",
+      "sizeLines": 71,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/seam.test.ts",
+      "language": "typescript",
+      "sizeLines": 97,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/seam.ts",
+      "language": "typescript",
+      "sizeLines": 40,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/zip.streaming.test.ts",
+      "language": "typescript",
+      "sizeLines": 159,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/zip.test.ts",
+      "language": "typescript",
+      "sizeLines": 67,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/fs/zip.ts",
+      "language": "typescript",
+      "sizeLines": 156,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/coverage.test.ts",
+      "language": "typescript",
+      "sizeLines": 101,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/coverage.ts",
+      "language": "typescript",
+      "sizeLines": 59,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/downscale.test.ts",
+      "language": "typescript",
+      "sizeLines": 75,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/downscale.ts",
+      "language": "typescript",
+      "sizeLines": 23,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/geo.test.ts",
+      "language": "typescript",
+      "sizeLines": 133,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/geo.ts",
+      "language": "typescript",
+      "sizeLines": 127,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/marginalia.test.ts",
+      "language": "typescript",
+      "sizeLines": 137,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/marginalia.ts",
+      "language": "typescript",
+      "sizeLines": 134,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/mediafragment.test.ts",
+      "language": "typescript",
+      "sizeLines": 88,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/mediafragment.ts",
+      "language": "typescript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/panel-resize.test.ts",
+      "language": "typescript",
+      "sizeLines": 65,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/panel-resize.ts",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/selector.test.ts",
+      "language": "typescript",
+      "sizeLines": 109,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/geometry/selector.ts",
+      "language": "typescript",
+      "sizeLines": 128,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/canvasid.test.ts",
+      "language": "typescript",
+      "sizeLines": 41,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/canvasid.ts",
+      "language": "typescript",
+      "sizeLines": 16,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/collection.ts",
+      "language": "typescript",
+      "sizeLines": 29,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/exhibits.ts",
+      "language": "typescript",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/gallery.test.ts",
+      "language": "typescript",
+      "sizeLines": 91,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/manifest-geo.test.ts",
+      "language": "typescript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/manifest.test.ts",
+      "language": "typescript",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/manifest.ts",
+      "language": "typescript",
+      "sizeLines": 369,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/presentation.ts",
+      "language": "typescript",
+      "sizeLines": 148,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/resolve.test.ts",
+      "language": "typescript",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/resolve.ts",
+      "language": "typescript",
+      "sizeLines": 102,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/rights.test.ts",
+      "language": "typescript",
+      "sizeLines": 191,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/iiif/rights.ts",
+      "language": "typescript",
+      "sizeLines": 85,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/index.test.ts",
+      "language": "typescript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/index.ts",
+      "language": "typescript",
+      "sizeLines": 87,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/link/link.test.ts",
+      "language": "typescript",
+      "sizeLines": 155,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/link/link.ts",
+      "language": "typescript",
+      "sizeLines": 202,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/migrate/migrate.test.ts",
+      "language": "typescript",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/migrate/migrate.ts",
+      "language": "typescript",
+      "sizeLines": 89,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/model/layout.test.ts",
+      "language": "typescript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/model/layout.ts",
+      "language": "typescript",
+      "sizeLines": 36,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/model/library.test.ts",
+      "language": "typescript",
+      "sizeLines": 31,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/model/model.test.ts",
+      "language": "typescript",
+      "sizeLines": 42,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/model/model.ts",
+      "language": "typescript",
+      "sizeLines": 195,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/note/media.test.ts",
+      "language": "typescript",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/note/media.ts",
+      "language": "typescript",
+      "sizeLines": 73,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/__snapshots__/voynich-readings.test.ts.snap",
+      "language": "snap",
+      "sizeLines": 234,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/ghpages.test.ts",
+      "language": "typescript",
+      "sizeLines": 159,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/ghpages.ts",
+      "language": "typescript",
+      "sizeLines": 209,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/interop.test.ts",
+      "language": "typescript",
+      "sizeLines": 102,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/merge.test.ts",
+      "language": "typescript",
+      "sizeLines": 53,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/merge.ts",
+      "language": "typescript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/portable.test.ts",
+      "language": "typescript",
+      "sizeLines": 200,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/portable.ts",
+      "language": "typescript",
+      "sizeLines": 188,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/preview.test.ts",
+      "language": "typescript",
+      "sizeLines": 86,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/read.test.ts",
+      "language": "typescript",
+      "sizeLines": 110,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/read.ts",
+      "language": "typescript",
+      "sizeLines": 103,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/site-geo.test.ts",
+      "language": "typescript",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/site.test.ts",
+      "language": "typescript",
+      "sizeLines": 286,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/site.ts",
+      "language": "typescript",
+      "sizeLines": 420,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/static-pages.test.ts",
+      "language": "typescript",
+      "sizeLines": 155,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/static-pages.ts",
+      "language": "typescript",
+      "sizeLines": 125,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/voynich-readings.test.ts",
+      "language": "typescript",
+      "sizeLines": 125,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/working.test.ts",
+      "language": "typescript",
+      "sizeLines": 159,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/publish/working.ts",
+      "language": "typescript",
+      "sizeLines": 275,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/query/body.ts",
+      "language": "typescript",
+      "sizeLines": 10,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/query/filter.test.ts",
+      "language": "typescript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/query/filter.ts",
+      "language": "typescript",
+      "sizeLines": 54,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/query/marker-style.test.ts",
+      "language": "typescript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/query/marker-style.ts",
+      "language": "typescript",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/query/published.test.ts",
+      "language": "typescript",
+      "sizeLines": 76,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/query/published.ts",
+      "language": "typescript",
+      "sizeLines": 105,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/query/reading.test.ts",
+      "language": "typescript",
+      "sizeLines": 187,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/session/session.test.ts",
+      "language": "typescript",
+      "sizeLines": 188,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/session/session.ts",
+      "language": "typescript",
+      "sizeLines": 237,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/deserialize.test.ts",
+      "language": "typescript",
+      "sizeLines": 130,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/deserialize.ts",
+      "language": "typescript",
+      "sizeLines": 110,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/geo-persist.test.ts",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/heads.test.ts",
+      "language": "typescript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/heads.ts",
+      "language": "typescript",
+      "sizeLines": 33,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/index.ts",
+      "language": "typescript",
+      "sizeLines": 8,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/interop.test.ts",
+      "language": "typescript",
+      "sizeLines": 115,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/log.test.ts",
+      "language": "typescript",
+      "sizeLines": 121,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/log.ts",
+      "language": "typescript",
+      "sizeLines": 172,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/merge.test.ts",
+      "language": "typescript",
+      "sizeLines": 141,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/merge.ts",
+      "language": "typescript",
+      "sizeLines": 218,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/persist.test.ts",
+      "language": "typescript",
+      "sizeLines": 110,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/persist.ts",
+      "language": "typescript",
+      "sizeLines": 72,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/resolve.test.ts",
+      "language": "typescript",
+      "sizeLines": 62,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/serialize.test.ts",
+      "language": "typescript",
+      "sizeLines": 140,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/spine/serialize.ts",
+      "language": "typescript",
+      "sizeLines": 236,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/text/sanitize.test.ts",
+      "language": "typescript",
+      "sizeLines": 74,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/text/sanitize.ts",
+      "language": "typescript",
+      "sizeLines": 45,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/url/breadcrumb.test.ts",
+      "language": "typescript",
+      "sizeLines": 37,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/url/breadcrumb.ts",
+      "language": "typescript",
+      "sizeLines": 43,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/url/deeplink.test.ts",
+      "language": "typescript",
+      "sizeLines": 52,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/url/deeplink.ts",
+      "language": "typescript",
+      "sizeLines": 90,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/url/route.test.ts",
+      "language": "typescript",
+      "sizeLines": 99,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/url/route.ts",
+      "language": "typescript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/wadm/brand.test.ts",
+      "language": "typescript",
+      "sizeLines": 81,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/wadm/brand.ts",
+      "language": "typescript",
+      "sizeLines": 144,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/wadm/index.ts",
+      "language": "typescript",
+      "sizeLines": 3,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/wadm/types.test.ts",
+      "language": "typescript",
+      "sizeLines": 116,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/src/wadm/types.ts",
+      "language": "typescript",
+      "sizeLines": 248,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-core/test/fixtures/exif/manifest.json",
+      "language": "json",
+      "sizeLines": 18,
+      "fileCategory": "config"
+    },
+    {
+      "path": "packages/render-core/test/fixtures/exif/README.md",
+      "language": "markdown",
+      "sizeLines": 25,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "packages/render-core/tsconfig.json",
+      "language": "json",
+      "sizeLines": 8,
+      "fileCategory": "config"
+    },
+    {
+      "path": "packages/render-mount/package.json",
+      "language": "json",
+      "sizeLines": 25,
+      "fileCategory": "config"
+    },
+    {
+      "path": "packages/render-mount/src/fitbounds.test.ts",
+      "language": "typescript",
+      "sizeLines": 127,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/fitbounds.ts",
+      "language": "typescript",
+      "sizeLines": 110,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/frame-overlay.ts",
+      "language": "typescript",
+      "sizeLines": 95,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/gate.test.ts",
+      "language": "typescript",
+      "sizeLines": 61,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/gesture-guard.test.ts",
+      "language": "typescript",
+      "sizeLines": 51,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/gesture-guard.ts",
+      "language": "typescript",
+      "sizeLines": 44,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/index.test.ts",
+      "language": "typescript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/index.ts",
+      "language": "typescript",
+      "sizeLines": 17,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/mount-guard.test.ts",
+      "language": "typescript",
+      "sizeLines": 60,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/mount.ts",
+      "language": "typescript",
+      "sizeLines": 352,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/surface.ts",
+      "language": "typescript",
+      "sizeLines": 77,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/xyz.test.ts",
+      "language": "typescript",
+      "sizeLines": 27,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/xyz.ts",
+      "language": "typescript",
+      "sizeLines": 34,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/zoom-band.test.ts",
+      "language": "typescript",
+      "sizeLines": 22,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/src/zoom-band.ts",
+      "language": "typescript",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-mount/tsconfig.json",
+      "language": "json",
+      "sizeLines": 8,
+      "fileCategory": "config"
+    },
+    {
+      "path": "packages/render-mount/vitest.config.ts",
+      "language": "typescript",
+      "sizeLines": 11,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-svelte/package.json",
+      "language": "json",
+      "sizeLines": 30,
+      "fileCategory": "config"
+    },
+    {
+      "path": "packages/render-svelte/src/Canvas.svelte",
+      "language": "svelte",
+      "sizeLines": 184,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-svelte/src/controller.test.ts",
+      "language": "typescript",
+      "sizeLines": 108,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-svelte/src/controller.ts",
+      "language": "typescript",
+      "sizeLines": 64,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-svelte/src/index.ts",
+      "language": "typescript",
+      "sizeLines": 13,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-svelte/src/MarginColumn.svelte",
+      "language": "svelte",
+      "sizeLines": 138,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-svelte/src/ResizeDivider.svelte",
+      "language": "svelte",
+      "sizeLines": 172,
+      "fileCategory": "code"
+    },
+    {
+      "path": "packages/render-svelte/tsconfig.json",
+      "language": "json",
+      "sizeLines": 8,
+      "fileCategory": "config"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "language": "yaml",
+      "sizeLines": 18,
+      "fileCategory": "config"
+    },
+    {
+      "path": "README.md",
+      "language": "markdown",
+      "sizeLines": 341,
+      "fileCategory": "docs"
+    },
+    {
+      "path": "scripts/build-gh-pages.sh",
+      "language": "shell",
+      "sizeLines": 79,
+      "fileCategory": "script"
+    },
+    {
+      "path": "scripts/bundle-size.mjs",
+      "language": "javascript",
+      "sizeLines": 84,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/capture-screenshots.mjs",
+      "language": "javascript",
+      "sizeLines": 170,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/dev-proxy.mjs",
+      "language": "javascript",
+      "sizeLines": 39,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/dev.sh",
+      "language": "shell",
+      "sizeLines": 31,
+      "fileCategory": "script"
+    },
+    {
+      "path": "scripts/import-voynich.mjs",
+      "language": "javascript",
+      "sizeLines": 104,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/start.mjs",
+      "language": "javascript",
+      "sizeLines": 284,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/verify-marginalia.mjs",
+      "language": "javascript",
+      "sizeLines": 132,
+      "fileCategory": "code"
+    },
+    {
+      "path": "scripts/verify-readings-rail.mjs",
+      "language": "javascript",
+      "sizeLines": 171,
+      "fileCategory": "code"
+    },
+    {
+      "path": "skills-lock.json",
+      "language": "json",
+      "sizeLines": 17,
+      "fileCategory": "config"
+    },
+    {
+      "path": "start.cmd",
+      "language": "batch",
+      "sizeLines": 18,
+      "fileCategory": "script"
+    },
+    {
+      "path": "start.command",
+      "language": "command",
+      "sizeLines": 4,
+      "fileCategory": "code"
+    },
+    {
+      "path": "start.sh",
+      "language": "shell",
+      "sizeLines": 17,
+      "fileCategory": "script"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "language": "json",
+      "sizeLines": 19,
+      "fileCategory": "config"
+    }
+  ],
+  "totalFiles": 666,
+  "filteredByIgnore": 0,
+  "estimatedComplexity": "very-large",
+  "stats": {
+    "filesScanned": 666,
+    "byCategory": {
+      "docs": 74,
+      "config": 309,
+      "code": 263,
+      "infra": 1,
+      "markup": 15,
+      "script": 4
+    },
+    "byLanguage": {
+      "markdown": 69,
+      "json": 306,
+      "unknown": 4,
+      "yaml": 4,
+      "q-counter": 6,
+      "jsonl": 8,
+      "txt": 5,
+      "html": 7,
+      "css": 8,
+      "otf": 6,
+      "svelte": 40,
+      "typescript": 186,
+      "javascript": 8,
+      "mts": 1,
+      "astro": 2,
+      "snap": 1,
+      "shell": 3,
+      "batch": 1,
+      "command": 1
+    }
+  }
+}

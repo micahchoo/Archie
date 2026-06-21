@@ -6,9 +6,9 @@
 // publish-side concerns — cut 2 moves them to a publish module; the binding store won't change).
 // A `.svelte.ts` rune module (cf. library-meta.svelte.ts): the $state container is never
 // reassigned, so getters stay live across the module boundary.
-import { loadLibrary, FsaFilesystem, recentFromBinding, addRecent, removeRecent, bindingLabel, type Binding, type RecentProject } from "@render/core";
-import { supportsFolderPicker, pickFolder, loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
-import { putHandle, getHandle, deleteHandle, requestPermission } from "./handles-db.js";
+import { loadLibrary, recentFromBinding, addRecent, removeRecent, bindingLabel, type Filesystem, type Binding, type RecentProject } from "@render/core";
+import { loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
+import { folderSinkSupported, pickFolderBinding, reopenFolderBinding, forgetFolderBinding } from "./folder-backend.js";
 import { enqueueSave } from "./save-queue.svelte.js";
 
 export type LoadedLibrary = Awaited<ReturnType<typeof loadLibrary>>;
@@ -16,8 +16,8 @@ export type LoadedLibrary = Awaited<ReturnType<typeof loadLibrary>>;
 export interface BindingDeps {
   /** Flush the CURRENT exhibit's edits to OPFS (App's save()) so a whole-library write is current. */
   flushExhibit: () => Promise<void>;
-  /** Write the whole published tree into a bound folder (the git / GH-Pages on-ramp). */
-  writeToFolder: (handle: FileSystemDirectoryHandle) => Promise<void>;
+  /** Write the whole published tree into the bound folder's Filesystem (FSA or Tauri — the seam). */
+  writeToFolder: (fs: Filesystem) => Promise<void>;
   /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
   downloadProjectZip: () => Promise<boolean>;
   /** Replace the OPFS project from a loaded library (the shared open-zip/open-folder body). */
@@ -27,7 +27,7 @@ export interface BindingDeps {
 }
 
 export function createBindingStore(deps: BindingDeps) {
-  const canFolder = supportsFolderPicker();
+  const canFolder = folderSinkSupported();
   const s = $state<{
     binding: Binding;
     recents: RecentProject[];
@@ -36,7 +36,7 @@ export function createBindingStore(deps: BindingDeps) {
     error: string | null; // a bound location couldn't be used (lost-binding / failed-save recovery)
   }>({ binding: { kind: "unbound" }, recents: [], dirty: false, busy: false, error: null });
 
-  let folderHandle: FileSystemDirectoryHandle | null = null; // cached so autosave doesn't re-hit IndexedDB
+  let folderFs: Filesystem | null = null; // cached so autosave doesn't re-acquire each tick
   let autosaving = false;
 
   function rememberBinding() {
@@ -44,14 +44,15 @@ export function createBindingStore(deps: BindingDeps) {
     const rec = recentFromBinding(s.binding, Date.now());
     if (rec) { s.recents = addRecent(s.recents, rec); saveRecents(s.recents); }
   }
-  /** Re-acquire a folder binding's handle + permission (needs a user gesture). Null + error if lost. */
-  async function reacquireFolder(): Promise<FileSystemDirectoryHandle | null> {
+  /** Re-acquire the folder binding's Filesystem (FSA needs a permission gesture; Tauri is direct).
+   *  Null + error if lost / declined. */
+  async function reacquireFolder(): Promise<Filesystem | null> {
     if (s.binding.kind !== "folder") return null;
-    const handle = folderHandle ?? (s.binding.handleKey ? await getHandle(s.binding.handleKey) : null);
-    if (!handle) { s.error = `Couldn't find "${s.binding.name}". Save as a new library to keep working.`; return null; }
-    if ((await requestPermission(handle)) !== "granted") { s.error = `Access to "${s.binding.name}" was declined. Grant it, or save as a new library.`; return null; }
-    folderHandle = handle;
-    return handle;
+    if (folderFs) return folderFs;
+    const reb = s.binding.handleKey ? await reopenFolderBinding(s.binding.handleKey, s.binding.name ?? "") : null;
+    if (!reb) { s.error = `Couldn't reach "${s.binding.name}". Grant access again, or save as a new library.`; return null; }
+    folderFs = reb.fs;
+    return folderFs;
   }
 
   return {
@@ -90,20 +91,19 @@ export function createBindingStore(deps: BindingDeps) {
         await deps.flushExhibit(); // flush the current exhibit's edits so the published tree is current
         if (s.binding.kind === "unbound") {
           if (canFolder) {
-            const handle = await pickFolder();
-            if (!handle) return;
-            folderHandle = handle;
-            s.binding = { kind: "folder", name: handle.name, handleKey: crypto.randomUUID() };
-            await putHandle(s.binding.handleKey!, handle);
-            await deps.writeToFolder(handle);
+            const fb = await pickFolderBinding();
+            if (!fb) return;
+            folderFs = fb.fs;
+            s.binding = { kind: "folder", name: fb.name, handleKey: fb.key };
+            await deps.writeToFolder(fb.fs);
           } else {
             s.binding = { kind: "file", name: deps.zipName() };
             if (!(await deps.downloadProjectZip())) return; // declined the large-library zip → stay unsaved
           }
         } else if (s.binding.kind === "folder") {
-          const handle = await reacquireFolder();
-          if (!handle) return;
-          await deps.writeToFolder(handle);
+          const fs = await reacquireFolder();
+          if (!fs) return;
+          await deps.writeToFolder(fs);
         } else {
           if (!(await deps.downloadProjectZip())) return; // declined the large-library zip → stay unsaved
         }
@@ -116,22 +116,21 @@ export function createBindingStore(deps: BindingDeps) {
       } finally { s.busy = false; }
     },
 
-    /** Open a folder as the project (Chromium): pick → loadLibrary ← FsaFilesystem → replace OPFS project. */
+    /** Open a folder as the project: pick → loadLibrary ← FolderBinding.fs (FSA or Tauri) → replace OPFS project. */
     async openProjectFolder() {
       if (s.busy) return;
-      const handle = await pickFolder();
-      if (!handle) return;
+      const fb = await pickFolderBinding();
+      if (!fb) return;
       s.busy = true; s.error = null;
       try {
         let loaded: LoadedLibrary;
-        try { loaded = await loadLibrary(new FsaFilesystem(handle)); }
+        try { loaded = await loadLibrary(fb.fs); }
         catch { window.alert("That folder isn't an Archie library."); return; }
         if (loaded.library.exhibits.length === 0) { window.alert("That folder has no exhibits."); return; }
         if (!window.confirm("Open this folder as your library? Your current library will be replaced.")) return;
         await deps.replaceProjectFrom(loaded);
-        folderHandle = handle;
-        s.binding = { kind: "folder", name: handle.name, handleKey: crypto.randomUUID() };
-        await putHandle(s.binding.handleKey!, handle);
+        folderFs = fb.fs;
+        s.binding = { kind: "folder", name: fb.name, handleKey: fb.key };
         s.dirty = false; rememberBinding();
       } finally { s.busy = false; }
     },
@@ -143,17 +142,15 @@ export function createBindingStore(deps: BindingDeps) {
       if (!(r.kind === "folder" && r.reopenable)) { fallbackToPicker(); return; }
       s.busy = true; s.error = null;
       try {
-        const handle = await getHandle(r.id);
-        if (!handle || (await requestPermission(handle)) !== "granted") {
-          s.error = `Couldn't reopen "${r.name}" — grant access again to reconnect it.`; return;
-        }
+        const reb = await reopenFolderBinding(r.id, r.name);
+        if (!reb) { s.error = `Couldn't reopen "${r.name}" — grant access again to reconnect it.`; return; }
         let loaded: LoadedLibrary;
-        try { loaded = await loadLibrary(new FsaFilesystem(handle)); }
+        try { loaded = await loadLibrary(reb.fs); }
         catch { s.error = `"${r.name}" is no longer an Archie library.`; return; }
         if (!window.confirm(`Open "${r.name}"? Your current library will be replaced.`)) return;
         await deps.replaceProjectFrom(loaded);
-        folderHandle = handle;
-        s.binding = { kind: "folder", name: handle.name, handleKey: r.id };
+        folderFs = reb.fs;
+        s.binding = { kind: "folder", name: reb.name, handleKey: r.id };
         s.dirty = false; rememberBinding();
       } finally { s.busy = false; }
     },
@@ -161,13 +158,13 @@ export function createBindingStore(deps: BindingDeps) {
     forgetRecent(r: RecentProject) {
       s.recents = removeRecent(s.recents, r.id);
       saveRecents(s.recents);
-      if (r.kind === "folder") void deleteHandle(r.id);
+      if (r.kind === "folder") void forgetFolderBinding(r.id);
     },
 
     /** Detach from disk → back to this-browser-only. Keeps the OPFS working copy (Close ≠ delete). */
     closeProject() {
-      if (s.binding.kind === "folder" && s.binding.handleKey) void deleteHandle(s.binding.handleKey);
-      folderHandle = null;
+      if (s.binding.kind === "folder" && s.binding.handleKey) void forgetFolderBinding(s.binding.handleKey);
+      folderFs = null;
       s.binding = { kind: "unbound" };
       s.error = null; s.dirty = false;
       saveLastBinding(s.binding);
@@ -180,13 +177,13 @@ export function createBindingStore(deps: BindingDeps) {
       if (s.binding.kind !== "folder" || autosaving) return;
       autosaving = true;
       try {
-        const handle = folderHandle ?? (s.binding.handleKey ? await getHandle(s.binding.handleKey) : null);
-        if (handle && (await requestPermission(handle)) === "granted") {
-          folderHandle = handle;
-          if (await enqueueSave("folder-mirror", "Folder autosave", () => deps.writeToFolder(handle)))
+        const fs = folderFs ?? (s.binding.handleKey ? (await reopenFolderBinding(s.binding.handleKey, s.binding.name ?? ""))?.fs ?? null : null);
+        if (fs) {
+          folderFs = fs;
+          if (await enqueueSave("folder-mirror", "Folder autosave", () => deps.writeToFolder(fs)))
             s.dirty = false;
         }
-      } catch { /* permission not yet granted — keep dirty; explicit Save will ask */ }
+      } catch { /* not yet reacquirable (FSA permission needs a gesture) — keep dirty; explicit Save asks */ }
       finally { autosaving = false; }
     },
   };

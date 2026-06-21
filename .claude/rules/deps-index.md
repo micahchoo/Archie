@@ -36,3 +36,5 @@ data. If `freshness` is `very-stale` and the answer is load-bearing, call
 |---------|--------|-------|
 | `happy-dom` | failed | context add failed |
 | `http-proxy` | failed | context add failed |
+| `serde` | failed | context add failed |
+| `tauri` | failed | context add failed |

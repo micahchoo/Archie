@@ -2,183 +2,313 @@
   "version": "1.0.0",
   "project": {
     "name": "archie",
-    "languages": ["TypeScript", "Svelte", "Astro"],
-    "frameworks": ["Svelte", "Astro", "Vite", "OpenSeadragon", "Annotorious"],
-    "description": "Static-publishable, multi-media exhibit annotation platform. Users annotate deep-zoom images, audio, and video in a browser-based Studio (Svelte SPA), then publish self-contained static sites (Astro Viewer). Notes are W3C Web Annotation records, exhibits are IIIF Presentation 3 manifests.",
-    "analyzedAt": "2026-05-28T04:00:00Z",
-    "gitCommitHash": ""
+    "languages": [
+      "typescript",
+      "svelte",
+      "javascript",
+      "json",
+      "markdown",
+      "html",
+      "css",
+      "yaml",
+      "shell",
+      "astro"
+    ],
+    "frameworks": [
+      "astro",
+      "svelte",
+      "vite",
+      "vitest"
+    ],
+    "description": "Static-publishable, multi-media exhibit annotation platform",
+    "analyzedAt": "2026-06-20T23:22:55.399Z",
+    "gitCommitHash": "b5a877c00d2244c79662d6d28deb5df55cd75fc4"
   },
   "nodes": [
     {
       "id": "domain:exhibit-authoring",
       "type": "domain",
       "name": "Exhibit Authoring",
-      "summary": "The Studio SPA domain where authors create and manage libraries, exhibits, and media objects. Provides a visual environment for importing media, arranging objects into exhibits, setting layout types (single/grid/narrative), and organizing narrative sections.",
-      "tags": ["authoring", "studio", "svelte", "ui"],
+      "summary": "Browser-based Studio for creating libraries and exhibits: import media (images, maps, audio, video), arrange objects on a canvas, draw spatial and temporal annotation regions, write notes, organize narrative sections, and manage competing interpretive Readings.",
+      "tags": [
+        "authoring",
+        "studio",
+        "editor",
+        "annotation",
+        "canvas"
+      ],
       "complexity": "complex",
       "domainMeta": {
-        "entities": ["Library", "Exhibit", "AObject", "Section", "LayoutType", "Project"],
-        "businessRules": ["Exhibit owns its Objects -- no shared object pool", "Layout = reading-intent declaration, inferred from exhibit structure", "Single source of truth: three persistence configs behind one Project seam"],
-        "crossDomainInteractions": ["Records annotations via Annotation Spine", "Consumes baked media from Media Processing", "Initiates IIIF Publishing for static site export"]
+        "entities": [
+          "Library",
+          "Exhibit",
+          "Object",
+          "Note",
+          "Reading",
+          "Section",
+          "Canvas",
+          "Region",
+          "Map",
+          "Basemap"
+        ],
+        "businessRules": [
+          "One exhibit holds many objects (images, maps, audio, video)",
+          "Readings are mutually exclusive interpretive passes over an object",
+          "Playground vs Project is per-exhibit (example=template/playground, user-created=project)",
+          "Notes target library, exhibit, object, region, time-range, or geographic region",
+          "Map regions use longitude/latitude as source of truth (geo-truth)"
+        ],
+        "crossDomainInteractions": [
+          "Feeds annotations into the Annotation Spine for persistence",
+          "Reads from IIIF Publishing to project exhibits for preview",
+          "Uses Rendering Adapters for canvas display in the editor viewport"
+        ]
       }
     },
     {
       "id": "domain:annotation-spine",
       "type": "domain",
       "name": "Annotation Spine",
-      "summary": "Core append-only annotation log system that stores, serializes, and merges W3C Web Annotation records. Provides CRUD operations (appendNew, appendEdit, appendDelete), WADM-compliant serialization to AnnotationPages, history deserialization, conflict detection, and head projection for multi-branch reconciliation.",
-      "tags": ["annotations", "spine", "wadm", "crud", "serialization"],
+      "summary": "Append-only annotation log with version-parent DAG enabling non-destructive edits, concurrent merge, and full version history. Every create, edit, and delete produces a new append entry; annotations are versioned and linkable with cite-from-cite support.",
+      "tags": [
+        "annotations",
+        "versioning",
+        "append-only",
+        "dag",
+        "wadm"
+      ],
       "complexity": "complex",
       "domainMeta": {
-        "entities": ["AnnotationRecord", "AnnotationLog", "HistoryPage", "HeadsPage", "ClientId", "W3CAnnotation"],
-        "businessRules": ["Append-only log -- never mutate in place", "WADM-compliant: motivation, body, target structure", "Multi-layer: layers = per-note membership, tags = purpose:tagging bodies", "Three-tier degradation: Archie viewer filters, pure WADM shows all"],
-        "crossDomainInteractions": ["Annotations projected into IIIF AnnotationPages for publishing", "Annotations queried and filtered for Viewer consumption", "Annotations created by Exhibit Authoring domain"]
+        "entities": [
+          "Annotation",
+          "AnnotationPage",
+          "AnnotationLog",
+          "VersionEntry",
+          "DAG",
+          "Session",
+          "WADM Body",
+          "WADM Target"
+        ],
+        "businessRules": [
+          "All edits are non-destructive — they produce new append entries",
+          "Version-parent DAG enables concurrent merge without data loss",
+          "W3C Web Annotation Data Model (WADM) is the canonical format",
+          "Session wraps the log in transactional CRUD with conflict detection",
+          "@context appears ONLY at AnnotationPage level, never on individual Annotations"
+        ],
+        "crossDomainInteractions": [
+          "Receives create/edit/delete operations from Exhibit Authoring",
+          "Fed into IIIF Publishing to produce IIIF AnnotationPages",
+          "Read by Viewer Presentation to display annotations on the canvas"
+        ]
       }
     },
     {
       "id": "domain:iiif-publishing",
       "type": "domain",
       "name": "IIIF Publishing",
-      "summary": "Projects exhibit data into IIIF Presentation 3 manifests, collections, and exhibits listings. Generates IIIF Canvases per media object, attaches annotation pages with rights statements, resolves thumbnails, and produces the final hierarchical static site tree on a Zip filesystem for deployment.",
-      "tags": ["iiif", "publish", "manifest", "collection", "static-site"],
-      "complexity": "moderate",
+      "summary": "Projects exhibits to IIIF Presentation 3 manifests and collections, builds the static site tree, and exports portable .archie.zip archives. Bridges Archie's internal model to the interoperable IIIF standard for third-party tool compatibility.",
+      "tags": [
+        "publishing",
+        "iiif",
+        "manifest",
+        "interoperability",
+        "static-site"
+      ],
+      "complexity": "complex",
       "domainMeta": {
-        "entities": ["IIIFManifest", "IIIFCollection", "IIIFCanvas", "AnnotationPage", "RightsStatement", "PublishedSite"],
-        "businessRules": ["IIIF Presentation 3 conformance", "Annotations serialized as W3C AnnotationPages within IIIF structure", "Published output is purely static -- no server required", "Media assets bundled or referenced via IIIF Image API"],
-        "crossDomainInteractions": ["Consumes annotation output from Annotation Spine", "Provides published static tree for Viewer Presentation", "Initiated by Exhibit Authoring publish command"]
+        "entities": [
+          "Manifest",
+          "Canvas",
+          "Collection",
+          "AnnotationPage",
+          "TileSource",
+          "RightsStatement",
+          "PublishedArtifact"
+        ],
+        "businessRules": [
+          "Exhibits become IIIF Presentation 3 manifests",
+          "Libraries become IIIF Collections",
+          "Published artifact is self-describing: static per-exhibit HTML with per-note anchors",
+          "Portable .archie.zip contains the entire published artifact",
+          "Published site has no backend — static HTML + JSON + media files"
+        ],
+        "crossDomainInteractions": [
+          "Consumes annotations from Annotation Spine",
+          "Consumes exhibit structure from Exhibit Authoring",
+          "Output consumed by Viewer Presentation for display"
+        ]
       }
     },
     {
       "id": "domain:viewer-presentation",
       "type": "domain",
       "name": "Viewer Presentation",
-      "summary": "The Astro-based static viewer that renders published exhibits for end-users. Handles hash-based routing (gallery/exhibit/deep-link), loading exhibits from hosted or portable (zip) sources, resolving layout types, mounting OpenSeadragon deep-zoom canvases, and filtering annotations by layer, tag, or reading.",
-      "tags": ["viewer", "astro", "routing", "deep-zoom", "exhibit"],
-      "complexity": "moderate",
+      "summary": "Astro-built static shell that renders any published library at runtime — gallery browse, deep-zoom reading with annotation overlays, hash-based deep-linking, narrative reading mode, and portable zip mode. Supports hosted (GitHub Pages) and offline (zip) deployments.",
+      "tags": [
+        "viewer",
+        "static-site",
+        "gallery",
+        "deep-zoom",
+        "narrative"
+      ],
+      "complexity": "complex",
       "domainMeta": {
-        "entities": ["ViewerRoute", "PublishedExhibit", "Library", "LayoutDescriptor", "MountSurface", "SelectionId"],
-        "businessRules": ["Single viewer shell owns all exhibits -- slug-qualified hash routing", "Two data sources behind one API: hosted (HTTP) and portable (ZipFilesystem)", "Breadcrumb navigation: gallery -> exhibit -> section", "Canonical deeplink grammar: #/<slug>/a/<noteId>[?xywh=]"],
-        "crossDomainInteractions": ["Reads published output from IIIF Publishing", "Filters annotations via Annotation Spine query layer", "Consumes media processed by Media Processing domain"]
+        "entities": [
+          "ViewerShell",
+          "ExhibitView",
+          "Gallery",
+          "NarrativeReader",
+          "MediaPlayer",
+          "NoteLightbox",
+          "Reading",
+          "Route"
+        ],
+        "businessRules": [
+          "Viewer reads the working store live — one canonical store, two same-origin apps",
+          "Publish = durability only; Viewer projects working store through the same pipeline",
+          "One shell handles both hosted and portable (zip) modes",
+          "Hash-based routing enables deep-linking to specific exhibits, objects, and notes",
+          "Readings are presented as a radio legend — reader picks one, canvas re-frames"
+        ],
+        "crossDomainInteractions": [
+          "Reads published exhibits from IIIF Publishing output",
+          "Uses Rendering Adapters for OpenSeadragon/Annotorious canvas",
+          "Shares same-origin store with Exhibit Authoring (Studio) in dev mode"
+        ]
       }
     },
     {
       "id": "domain:media-processing",
       "type": "domain",
       "name": "Media Processing",
-      "summary": "Handles media import and transformation including EXIF orientation normalization (baking upright display masters from phone photos) and AV transcript ingestion (converting WebVTT/SRT timed text into annotation notes with media-fragments temporal selectors).",
-      "tags": ["media", "exif", "transcript", "av", "import"],
-      "complexity": "simple",
-      "domainMeta": {
-        "entities": ["OrientationTransform", "TimeRange", "TranscriptNote", "VttCue", "DisplayMaster"],
-        "businessRules": ["ZERO orientation-awareness in coordinate layer -- always bake upright master on import", "Transcript import is import-only v1 -- no client-side ASR", "Temporal selectors use media-fragments t=start,end grammar"],
-        "crossDomainInteractions": ["Provides baked display masters to Exhibit Authoring for object source references", "Produces annotation notes appended to Annotation Spine log"]
-      }
-    },
-    {
-      "id": "flow:manage-library",
-      "type": "flow",
-      "name": "Manage Library",
-      "summary": "Create, open, browse, and persist authoring projects. Uses OPFS for working storage, File System Access API for folder-bound projects, and IndexedDB for handle persistence across reloads.",
-      "tags": ["library", "project", "persistence", "opfs"],
+      "summary": "Handles EXIF orientation normalization (bakes upright display masters on import) and AV transcript import (WebVTT/SRT → timed annotation notes). Classifies image sources and resolves tile-source descriptors for IIIF Image API services.",
+      "tags": [
+        "media",
+        "exif",
+        "transcript",
+        "import",
+        "vtt"
+      ],
       "complexity": "moderate",
       "domainMeta": {
-        "entryPoint": "Svelte App mount -> LibraryHome view",
-        "entryType": "http"
+        "entities": [
+          "MediaFragment",
+          "Transcript",
+          "TileSource",
+          "ImageService",
+          "AudioTrack",
+          "VideoFrame"
+        ],
+        "businessRules": [
+          "EXIF orientation is normalized on import to produce upright display masters",
+          "WebVTT/SRT transcripts are imported as timed annotation notes",
+          "Image sources classified as direct URLs vs IIIF Image API services",
+          "Audio and video objects play inline with a transcript spine",
+          "Combined spatiotemporal selector for video annotation (box + time window)"
+        ],
+        "crossDomainInteractions": [
+          "Used by Exhibit Authoring during media import",
+          "Used by IIIF Publishing for tile-source resolution",
+          "Used by Viewer Presentation for media playback"
+        ]
       }
     },
     {
-      "id": "flow:author-exhibit-structure",
+      "id": "flow:create-exhibit",
       "type": "flow",
-      "name": "Author Exhibit Structure",
-      "summary": "Import media objects into an exhibit, arrange reading order, set layout type, and organize objects into narrative sections.",
-      "tags": ["exhibit", "objects", "layout", "sections"],
+      "name": "Create Exhibit",
+      "summary": "Author creates a new exhibit: selects media, arranges objects on the overview canvas, configures the layout type, and sets exhibit metadata.",
+      "tags": [
+        "exhibit",
+        "authoring",
+        "creation"
+      ],
       "complexity": "moderate",
       "domainMeta": {
-        "entryPoint": "ExhibitOverview.svelte component mount",
+        "entryPoint": "Studio UI — App.svelte orchestrator",
         "entryType": "manual"
       }
     },
     {
-      "id": "flow:annotate-media",
+      "id": "flow:annotate-object",
       "type": "flow",
-      "name": "Annotate Media",
-      "summary": "Select a media object on the canvas, draw annotation regions (rectangle/polygon), write note content, attach tags/layers/readings, and save to the annotation spine.",
-      "tags": ["annotation", "region", "canvas", "osd"],
+      "name": "Annotate Object",
+      "summary": "Author opens an object in the editor, draws spatial (rectangle/polygon) or temporal (time-range) regions, writes notes in the popover, and manages Readings.",
+      "tags": [
+        "annotation",
+        "editor",
+        "region"
+      ],
       "complexity": "complex",
       "domainMeta": {
-        "entryPoint": "Annotorious selectionChanged / createAnnotation events",
-        "entryType": "event"
-      }
-    },
-    {
-      "id": "flow:record-annotation",
-      "type": "flow",
-      "name": "Record Annotation",
-      "summary": "Append new, edit, or delete annotation records to the append-only log. Serialize to WADM-compliant AnnotationPages and deserialize from history pages.",
-      "tags": ["annotation", "spine", "log", "wadm"],
-      "complexity": "complex",
-      "domainMeta": {
-        "entryPoint": "spine/log.ts: appendNew / appendEdit / appendDelete",
+        "entryPoint": "Studio editor — NoteEditor.svelte",
         "entryType": "manual"
       }
     },
     {
-      "id": "flow:merge-and-resolve",
+      "id": "flow:build-narrative",
       "type": "flow",
-      "name": "Merge and Resolve",
-      "summary": "Load concurrent annotation histories, detect conflicting edits, apply merge strategy, and rebuild head projections for multi-branch reconciliation.",
-      "tags": ["merge", "conflict", "spine", "history"],
-      "complexity": "complex",
-      "domainMeta": {
-        "entryPoint": "spine/merge.ts merge functions",
-        "entryType": "manual"
-      }
-    },
-    {
-      "id": "flow:generate-iiif-manifest",
-      "type": "flow",
-      "name": "Generate IIIF Manifest",
-      "summary": "Project an exhibit into a IIIF Presentation 3 Manifest with Canvases per media object, annotation pages, rights statements, and thumbnail resolution.",
-      "tags": ["iiif", "manifest", "canvas", "presentation"],
+      "name": "Build Narrative",
+      "summary": "Author organizes sections into a narrative spine that walks readers from object to object, with prose interspersed between annotation views.",
+      "tags": [
+        "narrative",
+        "sections",
+        "spine"
+      ],
       "complexity": "moderate",
       "domainMeta": {
-        "entryPoint": "iiif/manifest.ts manifest generation functions",
+        "entryPoint": "Studio — NarrativeEditor.svelte",
         "entryType": "manual"
       }
     },
     {
-      "id": "flow:build-iiif-collection",
+      "id": "flow:append-annotation",
       "type": "flow",
-      "name": "Build IIIF Collection",
-      "summary": "Gather all exhibits from a library and generate a IIIF Presentation 3 Collection referencing each exhibit's manifest.",
-      "tags": ["iiif", "collection", "library"],
-      "complexity": "simple",
-      "domainMeta": {
-        "entryPoint": "iiif/exhibits.ts exhibits collection functions",
-        "entryType": "manual"
-      }
-    },
-    {
-      "id": "flow:publish-static-site",
-      "type": "flow",
-      "name": "Publish Static Site",
-      "summary": "Serializes a Library + annotation log into a IIIF-based static site on a Zip filesystem with asset bundling, annotation body rewriting, and IIIF tree generation.",
-      "tags": ["publish", "static", "iiif", "zip"],
+      "name": "Append Annotation",
+      "summary": "Annotation log receives create/edit/delete operations, produces properly sequenced entries with version-parent references, and resolves concurrent edits via DAG merge.",
+      "tags": [
+        "annotation",
+        "log",
+        "versioning",
+        "merge"
+      ],
       "complexity": "complex",
       "domainMeta": {
-        "entryPoint": "Publish.svelte -> site.ts: publishLibrary",
+        "entryPoint": "spine/log.ts — appendNew, appendEdit, appendDelete",
         "entryType": "manual"
       }
     },
     {
-      "id": "flow:export-portable-archive",
+      "id": "flow:project-to-iiif",
       "type": "flow",
-      "name": "Export Portable Archive",
-      "summary": "Create a self-contained .archie.zip archive with bundled media assets, library metadata, and annotation data for offline or portable viewing.",
-      "tags": ["publish", "portable", "zip", "archive"],
+      "name": "Project to IIIF",
+      "summary": "Exhibit and its annotations are projected to IIIF Presentation 3: Canvases for each object, painting Annotations, tile-source descriptors, and rights statements.",
+      "tags": [
+        "iiif",
+        "manifest",
+        "projection",
+        "standards"
+      ],
+      "complexity": "complex",
+      "domainMeta": {
+        "entryPoint": "iiif/manifest.ts — objectsFromManifest, annotationsFromManifest",
+        "entryType": "manual"
+      }
+    },
+    {
+      "id": "flow:build-static-site",
+      "type": "flow",
+      "name": "Build Static Site",
+      "summary": "Publishing pipeline serializes the IIIF Collection and Manifests to disk, writes per-exhibit annotation pages, and assembles the complete directory structure for deployment.",
+      "tags": [
+        "publishing",
+        "static-site",
+        "deploy"
+      ],
       "complexity": "moderate",
       "domainMeta": {
-        "entryPoint": "site.ts: libraryToZip / portable.ts functions",
+        "entryPoint": "publish/site.ts — serialize IIIF tree to disk",
         "entryType": "manual"
       }
     },
@@ -186,11 +316,15 @@
       "id": "flow:browse-gallery",
       "type": "flow",
       "name": "Browse Gallery",
-      "summary": "Parse viewer hash route to gallery view, load the published library, render exhibit cards, and navigate to selected exhibit.",
-      "tags": ["viewer", "gallery", "library", "routing"],
-      "complexity": "simple",
+      "summary": "Visitor lands on the library gallery, browses published exhibits with cover thumbnails, and selects an exhibit to view.",
+      "tags": [
+        "gallery",
+        "browse",
+        "navigation"
+      ],
+      "complexity": "moderate",
       "domainMeta": {
-        "entryPoint": "ASTRO page load -> route.ts: parseRoute(#/)",
+        "entryPoint": "ViewerShell.svelte → Gallery.svelte",
         "entryType": "http"
       }
     },
@@ -198,696 +332,931 @@
       "id": "flow:read-exhibit",
       "type": "flow",
       "name": "Read Exhibit",
-      "summary": "Load a published exhibit by slug, resolve layout type, mount the deep-zoom canvas with annotations, and navigate between objects.",
-      "tags": ["viewer", "exhibit", "canvas", "deep-zoom"],
-      "complexity": "moderate",
+      "summary": "Visitor views an exhibit: deep-zoom canvas with annotation overlays, Readings legend for switching interpretations, narrative spine for prose-led reading, media playback for audio/video.",
+      "tags": [
+        "reading",
+        "deep-zoom",
+        "narrative",
+        "media"
+      ],
+      "complexity": "complex",
       "domainMeta": {
-        "entryPoint": "route.ts: parseRoute(#/<slug>) -> published.ts: loadExhibit",
+        "entryPoint": "ExhibitView.svelte layout orchestrator",
         "entryType": "http"
       }
     },
     {
-      "id": "flow:open-portable-archive",
+      "id": "flow:import-media",
       "type": "flow",
-      "name": "Open Portable Archive",
-      "summary": "Accept an .archie.zip file, initialize an in-memory ZipFilesystem, switch viewer mode from hosted to portable, and resolve embedded media to blob URLs.",
-      "tags": ["viewer", "portable", "zip", "filesystem"],
+      "name": "Import Media",
+      "summary": "Media files are imported: EXIF orientation is normalized for images, transcripts are parsed from WebVTT/SRT into timed annotation notes, and image sources are classified for IIIF resolution.",
+      "tags": [
+        "import",
+        "media",
+        "exif",
+        "transcript"
+      ],
       "complexity": "moderate",
       "domainMeta": {
-        "entryPoint": "published.ts: openPortableLibrary(fs)",
+        "entryPoint": "MediaPicker.svelte → media.ts / mediafragment.ts",
         "entryType": "manual"
       }
     },
     {
-      "id": "flow:ingest-image-with-exif",
-      "type": "flow",
-      "name": "Ingest Image with EXIF",
-      "summary": "Read EXIF orientation from a JPEG image, compute the geometric transform for upright normalization, and bake an orientation-blind display master for downstream consumption.",
-      "tags": ["exif", "orientation", "image", "bake"],
+      "id": "flow:create-exhibit:initialize-library",
+      "type": "step",
+      "name": "Initialize Library",
+      "summary": "LibraryHome.svelte presents the library shell; store.ts initializes the OPFS working store for exhibit metadata persistence.",
+      "tags": [
+        "step",
+        "authoring"
+      ],
       "complexity": "simple",
-      "domainMeta": {
-        "entryPoint": "bake.ts: bakeDisplayMaster / exif/read.ts: readExifOrientation",
-        "entryType": "manual"
-      }
+      "filePath": "apps/studio/src/LibraryHome.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "flow:import-transcript",
-      "type": "flow",
-      "name": "Import Transcript",
-      "summary": "Parse a WebVTT or SRT transcript file, convert each timed cue into a W3C Annotation with motivation:supplementing targeting the AV media time range, and append to the annotation spine.",
-      "tags": ["av", "transcript", "vtt", "srt", "import"],
+      "id": "flow:create-exhibit:import-media",
+      "type": "step",
+      "name": "Import Media",
+      "summary": "MediaPicker.svelte imports image folders, IIIF manifest URLs, or pastes external IIIF sources. EXIF normalization runs on import.",
+      "tags": [
+        "step",
+        "authoring"
+      ],
       "complexity": "simple",
-      "domainMeta": {
-        "entryPoint": "av/transcript.ts: importTranscript",
-        "entryType": "manual"
-      }
+      "filePath": "apps/studio/src/MediaPicker.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:manage-library:open-project",
+      "id": "flow:create-exhibit:arrange-objects",
       "type": "step",
-      "name": "Open Project",
-      "summary": "Pick a folder (FSA showDirectoryPicker) or create a new project, restore handle from IndexedDB, and initialize the working store.",
-      "tags": ["project", "folder", "picker", "persistence"],
-      "complexity": "moderate",
-      "filePath": "apps/studio/src/binding.ts",
-      "lineRange": [1, 135]
-    },
-    {
-      "id": "step:manage-library:browse-exhibits",
-      "type": "step",
-      "name": "Browse Exhibit List",
-      "summary": "Load library metadata from OPFS and display the list of exhibits in the LibraryHome view.",
-      "tags": ["library", "exhibits", "list"],
+      "name": "Arrange Objects",
+      "summary": "ExhibitOverview.svelte renders the zoomable overview canvas where objects are placed by drag; layout type is auto-detected.",
+      "tags": [
+        "step",
+        "authoring"
+      ],
       "complexity": "simple",
-      "filePath": "apps/studio/src/store.ts",
-      "lineRange": [1, 232]
+      "filePath": "apps/studio/src/ExhibitOverview.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:manage-library:edit-metadata",
+      "id": "flow:create-exhibit:set-metadata",
       "type": "step",
-      "name": "Edit Exhibit Metadata",
-      "summary": "Edit exhibit title, summary, slug, and rights information through the DetailsEditor and RightsEditor components.",
-      "tags": ["metadata", "edit", "rights"],
+      "name": "Set Metadata",
+      "summary": "DetailsEditor.svelte configures exhibit title, description, rights, and attribution metadata.",
+      "tags": [
+        "step",
+        "authoring"
+      ],
       "complexity": "simple",
-      "filePath": "apps/studio/src/store.ts",
-      "lineRange": [1, 232]
+      "filePath": "apps/studio/src/DetailsEditor.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:manage-library:save-project",
+      "id": "flow:annotate-object:open-object-editor",
       "type": "step",
-      "name": "Save Project",
-      "summary": "Persist the working library to OPFS, download as a zip, or save to the user-picked folder via the File System Access API.",
-      "tags": ["save", "persist", "opfs", "download"],
-      "complexity": "moderate",
-      "filePath": "apps/studio/src/binding.ts",
-      "lineRange": [1, 135]
-    },
-    {
-      "id": "step:author-exhibit-structure:add-objects",
-      "type": "step",
-      "name": "Add Media Objects",
-      "summary": "Import new media objects into an exhibit, running EXIF orientation bake if needed to produce upright display masters.",
-      "tags": ["media", "import", "object", "exif"],
-      "complexity": "moderate",
-      "filePath": "apps/studio/src/bake.ts",
-      "lineRange": [1, 77]
-    },
-    {
-      "id": "step:author-exhibit-structure:arrange-objects",
-      "type": "step",
-      "name": "Arrange Reading Order",
-      "summary": "Reorder exhibit objects via drag-and-drop on the ExhibitOverview canvas to set the desired reading sequence.",
-      "tags": ["arrange", "order", "reading"],
+      "name": "Open Object Editor",
+      "summary": "App.svelte routes to the object editor; Canvas.svelte renders the deep-zoom surface with Annotorious overlay.",
+      "tags": [
+        "step",
+        "annotation"
+      ],
       "complexity": "simple",
-      "filePath": "apps/studio/src/store.ts",
-      "lineRange": [1, 232]
+      "filePath": "apps/studio/src/App.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:author-exhibit-structure:configure-layout",
+      "id": "flow:annotate-object:draw-region",
       "type": "step",
-      "name": "Configure Layout",
-      "summary": "Set the exhibit layout type (single/grid/narrative) which declares the reading intent -- explicit choice wins, otherwise inferred from structure.",
-      "tags": ["layout", "type", "configuration"],
+      "name": "Draw Region",
+      "summary": "Author draws a rectangle, polygon, or time-range selector on the canvas; DrawTool and SelectionId from render-mount provide the tool primitives.",
+      "tags": [
+        "step",
+        "annotation"
+      ],
+      "complexity": "simple",
+      "filePath": "packages/render-mount/src/mount.ts",
+      "lineRange": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "flow:annotate-object:write-note",
+      "type": "step",
+      "name": "Write Note",
+      "summary": "NoteEditor.svelte popover appears anchored to the marker; author writes body, sets motivation (describing, commenting, etc.), and saves.",
+      "tags": [
+        "step",
+        "annotation"
+      ],
+      "complexity": "simple",
+      "filePath": "apps/studio/src/NoteEditor.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "flow:annotate-object:append-to-spine",
+      "type": "step",
+      "name": "Append to Spine",
+      "summary": "Spine session.ts wraps the log append; annotation enters the version DAG with conflict detection.",
+      "tags": [
+        "step",
+        "annotation"
+      ],
+      "complexity": "simple",
+      "filePath": "packages/render-core/src/session/session.ts",
+      "lineRange": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "flow:annotate-object:manage-readings",
+      "type": "step",
+      "name": "Manage Readings",
+      "summary": "ReadingsEditor.svelte assigns annotations to mutually exclusive Readings; ReadingsRail.svelte shows the toggleable legend.",
+      "tags": [
+        "step",
+        "annotation"
+      ],
+      "complexity": "simple",
+      "filePath": "apps/studio/src/ReadingsEditor.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "flow:build-narrative:create-sections",
+      "type": "step",
+      "name": "Create Sections",
+      "summary": "NarrativeEditor.svelte creates Section objects; each Section is a self-contained third layer (not a tour of Notes).",
+      "tags": [
+        "step",
+        "narrative"
+      ],
+      "complexity": "simple",
+      "filePath": "apps/studio/src/NarrativeEditor.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "flow:build-narrative:arrange-order",
+      "type": "step",
+      "name": "Arrange Order",
+      "summary": "Sections are ordered in the narrative spine; the ordering drives the Viewer navigation flow.",
+      "tags": [
+        "step",
+        "narrative"
+      ],
       "complexity": "simple",
       "filePath": "packages/render-core/src/model/layout.ts",
-      "lineRange": [1, 24]
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:author-exhibit-structure:define-sections",
+      "id": "flow:build-narrative:serialize-as-annotation",
       "type": "step",
-      "name": "Define Narrative Sections",
-      "summary": "Organize objects into named narrative sections with optional prose, creating a structured reading path through the exhibit.",
-      "tags": ["narrative", "sections", "structure"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/model/model.ts",
-      "lineRange": [1, 179]
-    },
-    {
-      "id": "step:annotate-media:select-object",
-      "type": "step",
-      "name": "Select Canvas Object",
-      "summary": "Click to focus a media object on the canvas, activating it for annotation. For grid layout, the selected object opens in the editor panel.",
-      "tags": ["select", "canvas", "object"],
+      "name": "Serialize as Annotation",
+      "summary": "Each Section serializes as a supplementing WADM annotation (additive; Range stays canonical) — ships twice: IIIF Range + derived annotation.",
+      "tags": [
+        "step",
+        "narrative"
+      ],
       "complexity": "simple",
-      "filePath": "packages/render-svelte/src/controller.ts",
-      "lineRange": [1, 55]
-    },
-    {
-      "id": "step:annotate-media:draw-region",
-      "type": "step",
-      "name": "Draw Annotation Region",
-      "summary": "Draw a rectangle or polygon region on the deep-zoom image using Annotorious, producing a W3C ImageAnnotation with SVG or fragment selector.",
-      "tags": ["region", "draw", "annotorious", "selector"],
-      "complexity": "moderate",
-      "filePath": "packages/render-mount/src/mount.ts",
-      "lineRange": [125, 140]
-    },
-    {
-      "id": "step:annotate-media:write-note",
-      "type": "step",
-      "name": "Write Note Content",
-      "summary": "Enter annotation text and optional formatted body content through the canvas-anchored popover editor.",
-      "tags": ["note", "body", "text"],
-      "complexity": "simple",
-      "filePath": "packages/render-core/src/wadm/types.ts",
-      "lineRange": [1, 200]
-    },
-    {
-      "id": "step:annotate-media:attach-properties",
-      "type": "step",
-      "name": "Attach Properties",
-      "summary": "Assign tags (purpose:tagging bodies), layers (per-note membership), and readings to the annotation record for filtering and organization.",
-      "tags": ["tags", "layers", "readings", "properties"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/query/filter.ts",
-      "lineRange": [1, 70]
-    },
-    {
-      "id": "step:annotate-media:save-annotation",
-      "type": "step",
-      "name": "Save to Spine",
-      "summary": "Append the new annotation record to the append-only annotation log via appendNew.",
-      "tags": ["save", "spine", "append"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/spine/log.ts",
-      "lineRange": [1, 100]
-    },
-    {
-      "id": "step:annotate-media:edit-or-delete",
-      "type": "step",
-      "name": "Edit or Delete Annotation",
-      "summary": "Modify the body or target of an existing annotation (appendEdit) or mark an annotation as deleted (appendDelete).",
-      "tags": ["edit", "delete", "update"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/spine/log.ts",
-      "lineRange": [1, 100]
-    },
-    {
-      "id": "step:record-annotation:append-new",
-      "type": "step",
-      "name": "Append New Annotation",
-      "summary": "Create a new AnnotationRecord with generated ClientId, body, target, and motivation, then append to the log.",
-      "tags": ["create", "append", "annotation"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/spine/log.ts",
-      "lineRange": [1, 100]
-    },
-    {
-      "id": "step:record-annotation:append-edit",
-      "type": "step",
-      "name": "Append Edit",
-      "summary": "Record an edit to an existing annotation by appending a new record with wasRevisionOf pointing to the prior version.",
-      "tags": ["edit", "revision", "history"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/spine/log.ts",
-      "lineRange": [1, 100]
-    },
-    {
-      "id": "step:record-annotation:append-delete",
-      "type": "step",
-      "name": "Append Delete",
-      "summary": "Record a deletion tombstone for an annotation, marking it as removed without erasing history.",
-      "tags": ["delete", "tombstone", "history"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/spine/log.ts",
-      "lineRange": [1, 100]
-    },
-    {
-      "id": "step:record-annotation:serialize-to-wadm",
-      "type": "step",
-      "name": "Serialize to WADM",
-      "summary": "Convert the internal log format to W3C Web Annotation Data Model AnnotationPages and HeadsPages with prov:wasRevisionOf provenance chains.",
-      "tags": ["serialize", "wadm", "annotation-page"],
-      "complexity": "complex",
       "filePath": "packages/render-core/src/spine/serialize.ts",
-      "lineRange": [1, 200]
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:record-annotation:deserialize-from-wadm",
+      "id": "flow:append-annotation:append-operation",
       "type": "step",
-      "name": "Deserialize from WADM",
-      "summary": "Read WADM-formatted history annotation pages back into the internal append-only log format for reconstruction.",
-      "tags": ["deserialize", "wadm", "history"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/spine/deserialize.ts",
-      "lineRange": [1, 80]
-    },
-    {
-      "id": "step:merge-and-resolve:load-histories",
-      "type": "step",
-      "name": "Load Concurrent Histories",
-      "summary": "Load multiple log branches or history pages from different sessions for conflict detection.",
-      "tags": ["load", "history", "branches"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/spine/merge.ts",
-      "lineRange": [1, 100]
-    },
-    {
-      "id": "step:merge-and-resolve:detect-conflicts",
-      "type": "step",
-      "name": "Detect Conflicts",
-      "summary": "Compare concurrent log entries to identify conflicting edits on the same annotation record.",
-      "tags": ["conflict", "detect", "compare"],
-      "complexity": "complex",
-      "filePath": "packages/render-core/src/spine/merge.ts",
-      "lineRange": [1, 100]
-    },
-    {
-      "id": "step:merge-and-resolve:apply-merge",
-      "type": "step",
-      "name": "Apply Merge Strategy",
-      "summary": "Resolve conflicting edits using the merge strategy rules to produce a unified history.",
-      "tags": ["merge", "resolve", "strategy"],
-      "complexity": "complex",
-      "filePath": "packages/render-core/src/spine/merge.ts",
-      "lineRange": [1, 100]
-    },
-    {
-      "id": "step:merge-and-resolve:rebuild-heads",
-      "type": "step",
-      "name": "Rebuild Heads",
-      "summary": "Regenerate head projections from the merged history, producing the current-state view of all annotations.",
-      "tags": ["heads", "rebuild", "projection"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/spine/heads.ts",
-      "lineRange": [1, 50]
-    },
-    {
-      "id": "step:generate-iiif-manifest:build-canvases",
-      "type": "step",
-      "name": "Build IIIF Canvases",
-      "summary": "Create IIIF Canvas resources for each media object in the exhibit, with dimensions, thumbnail, and image service references.",
-      "tags": ["iiif", "canvas", "build"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/iiif/manifest.ts",
-      "lineRange": [1, 150]
-    },
-    {
-      "id": "step:generate-iiif-manifest:add-annotation-pages",
-      "type": "step",
-      "name": "Add Annotation Pages",
-      "summary": "Attach W3C AnnotationPages to each Canvas, serializing the annotation spine records into the IIIF structure.",
-      "tags": ["annotation-page", "attach", "iiif"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/iiif/manifest.ts",
-      "lineRange": [1, 150]
-    },
-    {
-      "id": "step:generate-iiif-manifest:attach-rights",
-      "type": "step",
-      "name": "Attach Rights Statements",
-      "summary": "Add requiredStatement, rights logo, and attribution information to the IIIF manifest per the exhibit's rights configuration.",
-      "tags": ["rights", "attribution", "iiif"],
+      "name": "Append Operation",
+      "summary": "log.ts appendNew/appendEdit/appendDelete produce new log entries; each references its version parent in the DAG.",
+      "tags": [
+        "step",
+        "spine"
+      ],
       "complexity": "simple",
-      "filePath": "packages/render-core/src/iiif/rights.ts",
-      "lineRange": [1, 50]
+      "filePath": "packages/render-core/src/spine/log.ts",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:generate-iiif-manifest:resolve-thumbnails",
+      "id": "flow:append-annotation:conflict-detection",
       "type": "step",
-      "name": "Resolve Thumbnails",
-      "summary": "Resolve and attach thumbnails for each Canvas from the IIIF Image API or inline media reference.",
-      "tags": ["thumbnail", "resolve", "iiif"],
+      "name": "Conflict Detection",
+      "summary": "session.ts wraps the log in transactional CRUD; detects concurrent edit conflicts and merges safely.",
+      "tags": [
+        "step",
+        "spine"
+      ],
+      "complexity": "simple",
+      "filePath": "packages/render-core/src/session/session.ts",
+      "lineRange": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "flow:append-annotation:serialize-annotation",
+      "type": "step",
+      "name": "Serialize Annotation",
+      "summary": "serialize.ts converts internal annotation records to W3C WADM JSON, handling body/target/motivation serialization.",
+      "tags": [
+        "step",
+        "spine"
+      ],
+      "complexity": "simple",
+      "filePath": "packages/render-core/src/spine/serialize.ts",
+      "lineRange": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "flow:project-to-iiif:build-canvases",
+      "type": "step",
+      "name": "Build Canvases",
+      "summary": "manifest.ts maps each Exhibit Object to a IIIF Canvas with dimensions, media type, and painting annotations.",
+      "tags": [
+        "step",
+        "iiif"
+      ],
+      "complexity": "simple",
+      "filePath": "packages/render-core/src/iiif/manifest.ts",
+      "lineRange": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "flow:project-to-iiif:resolve-tile-sources",
+      "type": "step",
+      "name": "Resolve Tile Sources",
+      "summary": "resolve.ts classifies image sources (direct URL vs IIIF Image API) and generates tile-source descriptors with XYZ template URLs.",
+      "tags": [
+        "step",
+        "iiif"
+      ],
       "complexity": "simple",
       "filePath": "packages/render-core/src/iiif/resolve.ts",
-      "lineRange": [1, 50]
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:build-iiif-collection:collect-exhibits",
+      "id": "flow:project-to-iiif:project-annotations",
       "type": "step",
-      "name": "Collect Exhibits",
-      "summary": "Gather all exhibits from the Library structure to create an exhibit listing.",
-      "tags": ["exhibits", "collect", "library"],
+      "name": "Project Annotations",
+      "summary": "Annotations are projected as IIIF AnnotationPages; each Reading becomes an AnnotationPage grouped by AnnotationCollection.",
+      "tags": [
+        "step",
+        "iiif"
+      ],
       "complexity": "simple",
-      "filePath": "packages/render-core/src/iiif/exhibits.ts",
-      "lineRange": [1, 50]
+      "filePath": "packages/render-core/src/iiif/manifest.ts",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:build-iiif-collection:generate-collection",
+      "id": "flow:project-to-iiif:attach-rights",
       "type": "step",
-      "name": "Generate Collection Manifest",
-      "summary": "Build the IIIF Presentation 3 Collection wrapper that references each exhibit's manifest.",
-      "tags": ["collection", "iiif", "manifest"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/iiif/collection.ts",
-      "lineRange": [1, 60]
-    },
-    {
-      "id": "step:build-iiif-collection:link-manifests",
-      "type": "step",
-      "name": "Link Manifests",
-      "summary": "Reference each exhibit's Manifest URL within the items array of the Collection.",
-      "tags": ["link", "manifest", "reference"],
+      "name": "Attach Rights",
+      "summary": "rights.ts attaches IIIF rights and requiredStatement metadata with attribution and license details.",
+      "tags": [
+        "step",
+        "iiif"
+      ],
       "complexity": "simple",
-      "filePath": "packages/render-core/src/iiif/collection.ts",
-      "lineRange": [1, 60]
+      "filePath": "packages/render-core/src/iiif/rights.ts",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:publish-static-site:collect-assets",
+      "id": "flow:build-static-site:serialize-site-tree",
       "type": "step",
-      "name": "Collect Files",
-      "summary": "Gather all media assets, annotation records, and library metadata from the working store for publication.",
-      "tags": ["assets", "collect", "media"],
-      "complexity": "moderate",
+      "name": "Serialize Site Tree",
+      "summary": "site.ts writes IIIF Collection and Manifests to disk, builds the per-exhibit annotation pages directory, assembles the complete deployable tree.",
+      "tags": [
+        "step",
+        "publish"
+      ],
+      "complexity": "simple",
       "filePath": "packages/render-core/src/publish/site.ts",
-      "lineRange": [1, 250]
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:publish-static-site:build-iiif-tree",
+      "id": "flow:build-static-site:generate-html-entry-points",
       "type": "step",
-      "name": "Build IIIF Static Tree",
-      "summary": "Generate the complete IIIF static site hierarchy: manifests, exhibits.json, annotation pages, and asset references.",
-      "tags": ["iiif", "tree", "static"],
-      "complexity": "complex",
-      "filePath": "packages/render-core/src/publish/site.ts",
-      "lineRange": [1, 250]
-    },
-    {
-      "id": "step:publish-static-site:rewrite-annotation-bodies",
-      "type": "step",
-      "name": "Rewrite Annotation Bodies",
-      "summary": "Rewrite annotation body content for static deployment, including Archie link resolution and media URL rewriting.",
-      "tags": ["rewrite", "bodies", "links", "urls"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/publish/site.ts",
-      "lineRange": [1, 250]
-    },
-    {
-      "id": "step:publish-static-site:write-output",
-      "type": "step",
-      "name": "Write to Filesystem",
-      "summary": "Write the complete published site tree to the output Zip filesystem or disk location.",
-      "tags": ["write", "filesystem", "zip"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/publish/site.ts",
-      "lineRange": [1, 250]
-    },
-    {
-      "id": "step:export-portable-archive:create-zip-fs",
-      "type": "step",
-      "name": "Create Zip Filesystem",
-      "summary": "Initialize an in-memory ZipFilesystem to hold the portable archive contents.",
-      "tags": ["zip", "filesystem", "create"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/fs/zip.ts",
-      "lineRange": [1, 120]
-    },
-    {
-      "id": "step:export-portable-archive:bundle-media",
-      "type": "step",
-      "name": "Bundle Media Assets",
-      "summary": "Copy all media assets into the portable zip archive so it is self-contained.",
-      "tags": ["media", "bundle", "portable"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/publish/portable.ts",
-      "lineRange": [1, 80]
-    },
-    {
-      "id": "step:export-portable-archive:write-library-meta",
-      "type": "step",
-      "name": "Write Library Metadata",
-      "summary": "Save the publishable library.json and exhibit metadata into the portable archive.",
-      "tags": ["metadata", "library", "write"],
+      "name": "Generate HTML Entry Points",
+      "summary": "gen-published.mts generates per-exhibit HTML entry points with embedded navigation and annotation displays.",
+      "tags": [
+        "step",
+        "publish"
+      ],
       "complexity": "simple",
-      "filePath": "packages/render-core/src/publish/portable.ts",
-      "lineRange": [1, 80]
+      "filePath": "apps/viewer/scripts/gen-published.mts",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:export-portable-archive:produce-bytes",
+      "id": "flow:build-static-site:package-portable-zip",
       "type": "step",
-      "name": "Produce Archive Bytes",
-      "summary": "Serialize the ZipFilesystem to bytes and trigger download of .archie.zip file.",
-      "tags": ["serialize", "download", "zip"],
+      "name": "Package Portable Zip",
+      "summary": "ghpages.ts / portable.ts create the self-contained .archie.zip with all manifests, annotations, media references, and HTML.",
+      "tags": [
+        "step",
+        "publish"
+      ],
       "complexity": "simple",
-      "filePath": "apps/studio/src/binding.ts",
-      "lineRange": [1, 135]
+      "filePath": "packages/render-core/src/publish/ghpages.ts",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:browse-gallery:parse-gallery-route",
+      "id": "flow:browse-gallery:load-library-index",
       "type": "step",
-      "name": "Parse Gallery Route",
-      "summary": "Parse the empty/base hash route (#/) to determine the gallery view should be shown.",
-      "tags": ["route", "parse", "hash"],
+      "name": "Load Library Index",
+      "summary": "ViewerShell detects deployment mode (hosted vs portable), loads the library index, and routes to the gallery view.",
+      "tags": [
+        "step",
+        "gallery"
+      ],
       "complexity": "simple",
-      "filePath": "packages/render-core/src/url/route.ts",
-      "lineRange": [1, 64]
+      "filePath": "apps/viewer/src/components/ViewerShell.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:browse-gallery:load-library",
+      "id": "flow:browse-gallery:render-exhibit-cards",
       "type": "step",
-      "name": "Load Library",
-      "summary": "Fetch the published library data from the hosted static tree or portable zip.",
-      "tags": ["library", "load", "fetch"],
-      "complexity": "moderate",
-      "filePath": "apps/viewer/src/published.ts",
-      "lineRange": [1, 176]
+      "name": "Render Exhibit Cards",
+      "summary": "Gallery.svelte renders published exhibits as cards with thumbnails, titles, descriptions, and Reading labels.",
+      "tags": [
+        "step",
+        "gallery"
+      ],
+      "complexity": "simple",
+      "filePath": "apps/viewer/src/components/Gallery.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:browse-gallery:render-gallery",
-      "type": "step",
-      "name": "Render Gallery",
-      "summary": "Display all exhibits as cards with thumbnails, titles, and summaries in the gallery view.",
-      "tags": ["gallery", "render", "cards"],
-      "complexity": "simple"
-    },
-    {
-      "id": "step:browse-gallery:select-exhibit",
+      "id": "flow:browse-gallery:select-exhibit",
       "type": "step",
       "name": "Select Exhibit",
-      "summary": "Navigate to an exhibit view by updating the hash route to #/<slug>.",
-      "tags": ["navigate", "select", "exhibit"],
+      "summary": "Hash-based route.ts parses the selection into a structured ViewerRoute, deep-linking to the specific exhibit.",
+      "tags": [
+        "step",
+        "gallery"
+      ],
       "complexity": "simple",
-      "filePath": "packages/render-core/src/url/route.ts",
-      "lineRange": [1, 64]
+      "filePath": "apps/viewer/src/components/ViewerShell.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:read-exhibit:load-exhibit",
+      "id": "flow:read-exhibit:load-exhibit",
       "type": "step",
       "name": "Load Exhibit",
-      "summary": "Fetch the exhibit manifest and annotations from the published data source using the exhibit slug.",
-      "tags": ["exhibit", "load", "fetch"],
-      "complexity": "moderate",
-      "filePath": "apps/viewer/src/published.ts",
-      "lineRange": [1, 176]
-    },
-    {
-      "id": "step:read-exhibit:resolve-layout",
-      "type": "step",
-      "name": "Resolve Layout",
-      "summary": "Determine the exhibit layout (single/grid/narrative) from explicit setting or structure inference.",
-      "tags": ["layout", "resolve", "type"],
+      "summary": "ExhibitView.svelte loads published exhibit data, resolves layout type (single, grid, narrative), and initializes the appropriate view.",
+      "tags": [
+        "step",
+        "viewer"
+      ],
       "complexity": "simple",
-      "filePath": "packages/render-core/src/model/layout.ts",
-      "lineRange": [1, 24]
+      "filePath": "apps/viewer/src/components/ExhibitView.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:read-exhibit:render-canvas",
+      "id": "flow:read-exhibit:render-canvas",
       "type": "step",
       "name": "Render Canvas",
-      "summary": "Mount the OpenSeadragon deep-zoom viewer for the current media object, handling tile source initialization.",
-      "tags": ["osd", "canvas", "deep-zoom"],
-      "complexity": "moderate",
-      "filePath": "packages/render-mount/src/mount.ts",
-      "lineRange": [1, 140]
-    },
-    {
-      "id": "step:read-exhibit:display-annotations",
-      "type": "step",
-      "name": "Display Annotations",
-      "summary": "Load and render annotation shapes on the canvas via Annotorious, filtered by layer, tag, or reading.",
-      "tags": ["annotations", "render", "annotorious"],
-      "complexity": "moderate",
-      "filePath": "packages/render-mount/src/mount.ts",
-      "lineRange": [1, 140]
-    },
-    {
-      "id": "step:read-exhibit:navigate-objects",
-      "type": "step",
-      "name": "Navigate Objects",
-      "summary": "Move between exhibit objects within the layout, updating the canvas and annotation display.",
-      "tags": ["navigate", "objects", "pagination"],
+      "summary": "Canvas.svelte instantiates OpenSeadragon viewer via createCanvasController, overlays Annotorious annotation layer, and renders regions.",
+      "tags": [
+        "step",
+        "viewer"
+      ],
       "complexity": "simple",
-      "filePath": "packages/render-svelte/src/controller.ts",
-      "lineRange": [1, 55]
+      "filePath": "packages/render-svelte/src/Canvas.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:open-portable-archive:receive-zip",
+      "id": "flow:read-exhibit:show-annotations",
       "type": "step",
-      "name": "Receive Zip File",
-      "summary": "Accept an .archie.zip file via file input or drag-and-drop in the viewer.",
-      "tags": ["zip", "file", "input"],
-      "complexity": "simple"
+      "name": "Show Annotations",
+      "summary": "NoteLightbox.svelte displays annotation bodies in a modal; NoteMedia.svelte renders attached media; Credit.svelte shows IIIF attribution.",
+      "tags": [
+        "step",
+        "viewer"
+      ],
+      "complexity": "simple",
+      "filePath": "apps/viewer/src/components/NoteLightbox.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:open-portable-archive:initialize-zip-fs",
+      "id": "flow:read-exhibit:switch-reading",
       "type": "step",
-      "name": "Initialize ZipFilesystem",
-      "summary": "Load the zip file into an in-memory ZipFilesystem using fflate for decompression.",
-      "tags": ["zip", "filesystem", "load"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/fs/zip.ts",
-      "lineRange": [1, 120]
+      "name": "Switch Reading",
+      "summary": "Visitor toggles the Readings legend (radio); canvas re-frames to show only the selected Reading's annotations.",
+      "tags": [
+        "step",
+        "viewer"
+      ],
+      "complexity": "simple",
+      "filePath": "apps/viewer/src/components/ExhibitView.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:open-portable-archive:switch-viewer-mode",
+      "id": "flow:read-exhibit:follow-narrative",
       "type": "step",
-      "name": "Switch Viewer Mode",
-      "summary": "Toggle the viewer from hosted mode to portable mode, changing the read path from HTTP to in-memory filesystem.",
-      "tags": ["mode", "switch", "portable"],
-      "complexity": "moderate",
-      "filePath": "apps/viewer/src/published.ts",
-      "lineRange": [1, 176]
+      "name": "Follow Narrative",
+      "summary": "NarrativeReader.svelte renders the prose spine; selecting a beat drives the canvas to that region.",
+      "tags": [
+        "step",
+        "viewer"
+      ],
+      "complexity": "simple",
+      "filePath": "apps/viewer/src/components/NarrativeReader.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:open-portable-archive:resolve-media-urls",
+      "id": "flow:read-exhibit:play-media",
       "type": "step",
-      "name": "Resolve Media URLs",
-      "summary": "Create blob URLs for embedded media assets in the portable archive so the OSD viewer and media players can consume them.",
-      "tags": ["media", "blob", "url", "resolve"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/publish/portable.ts",
-      "lineRange": [1, 80]
+      "name": "Play Media",
+      "summary": "MediaPlayer.svelte plays audio/video objects inline with transcript spine; each transcript line seeks the media to its time.",
+      "tags": [
+        "step",
+        "viewer"
+      ],
+      "complexity": "simple",
+      "filePath": "apps/viewer/src/components/MediaPlayer.svelte",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:ingest-image-with-exif:read-orientation",
+      "id": "flow:import-media:normalize-exif",
       "type": "step",
-      "name": "Read EXIF Orientation",
-      "summary": "Scan the JPEG file's APP1/Exif segment for the Orientation tag (0x0112) and return value 1-8.",
-      "tags": ["exif", "orientation", "jpeg"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/exif/read.ts",
-      "lineRange": [1, 68]
+      "name": "Normalize EXIF",
+      "summary": "Image import reads EXIF orientation and bakes an upright display master so the Viewer always renders correctly.",
+      "tags": [
+        "step",
+        "media"
+      ],
+      "complexity": "simple",
+      "filePath": "packages/render-core/src/note/media.ts",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:ingest-image-with-exif:compute-transform",
-      "type": "step",
-      "name": "Compute Orientation Transform",
-      "summary": "Map the EXIF Orientation tag (1-8) to the geometric transform needed for upright normalization and compute normalized dimensions.",
-      "tags": ["orientation", "transform", "geometry"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/exif/orientation.ts",
-      "lineRange": [1, 46]
-    },
-    {
-      "id": "step:ingest-image-with-exif:bake-master",
-      "type": "step",
-      "name": "Bake Display Master",
-      "summary": "Use createImageBitmap and canvas to re-encode the image as an upright orientation-blind display master that everything downstream consumes.",
-      "tags": ["bake", "display-master", "canvas"],
-      "complexity": "moderate",
-      "filePath": "apps/studio/src/bake.ts",
-      "lineRange": [1, 77]
-    },
-    {
-      "id": "step:import-transcript:parse-transcript",
+      "id": "flow:import-media:parse-transcript",
       "type": "step",
       "name": "Parse Transcript",
-      "summary": "Parse WebVTT or SRT format into structured cue objects with start/end timestamps and text content.",
-      "tags": ["vtt", "srt", "parse", "cue"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/av/transcript.ts",
-      "lineRange": [1, 102]
+      "summary": "WebVTT/SRT files are parsed into timed annotation notes; mediafragment.ts handles the fragment selectors for time ranges.",
+      "tags": [
+        "step",
+        "media"
+      ],
+      "complexity": "simple",
+      "filePath": "packages/render-core/src/geometry/mediafragment.ts",
+      "lineRange": [
+        0,
+        0
+      ]
     },
     {
-      "id": "step:import-transcript:convert-cues-to-notes",
+      "id": "flow:import-media:classify-image-source",
       "type": "step",
-      "name": "Convert Cues to Notes",
-      "summary": "Transform each transcript cue into a W3C Annotation with motivation:supplementing targeting the media time range via FragmentSelector.",
-      "tags": ["cues", "notes", "conversion"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/av/transcript.ts",
-      "lineRange": [1, 102]
-    },
-    {
-      "id": "step:import-transcript:append-to-spine",
-      "type": "step",
-      "name": "Append Notes to Spine",
-      "summary": "Append all generated annotation records to the annotation spine log via appendNew.",
-      "tags": ["spine", "append", "annotations"],
-      "complexity": "moderate",
-      "filePath": "packages/render-core/src/av/transcript.ts",
-      "lineRange": [1, 102]
+      "name": "Classify Image Source",
+      "summary": "resolve.ts determines if an image is a direct URL or IIIF Image API service; generates appropriate tile-source descriptors.",
+      "tags": [
+        "step",
+        "media"
+      ],
+      "complexity": "simple",
+      "filePath": "packages/render-core/src/iiif/resolve.ts",
+      "lineRange": [
+        0,
+        0
+      ]
     }
   ],
   "edges": [
-    { "source": "domain:exhibit-authoring", "target": "domain:annotation-spine", "type": "cross_domain", "direction": "forward", "description": "Studio records annotations via spine appendNew/appendEdit/appendDelete", "weight": 0.9 },
-    { "source": "domain:exhibit-authoring", "target": "domain:media-processing", "type": "cross_domain", "direction": "forward", "description": "Studio consumes baked display masters and imported transcript annotations", "weight": 0.7 },
-    { "source": "domain:exhibit-authoring", "target": "domain:iiif-publishing", "type": "cross_domain", "direction": "forward", "description": "Studio initiates publish of authored exhibits into IIIF static sites", "weight": 0.8 },
-    { "source": "domain:annotation-spine", "target": "domain:iiif-publishing", "type": "cross_domain", "direction": "forward", "description": "Annotation spine records serialized into IIIF AnnotationPages for published manifests", "weight": 0.9 },
-    { "source": "domain:iiif-publishing", "target": "domain:viewer-presentation", "type": "cross_domain", "direction": "forward", "description": "Viewer reads published IIIF static tree (manifests, annotation pages, assets)", "weight": 0.9 },
-    { "source": "domain:annotation-spine", "target": "domain:viewer-presentation", "type": "cross_domain", "direction": "forward", "description": "Viewer filters annotations by layer, tag, and reading via query/filter layer", "weight": 0.6 },
-    { "source": "domain:media-processing", "target": "domain:annotation-spine", "type": "cross_domain", "direction": "forward", "description": "Transcript import produces annotation records appended to the spine", "weight": 0.6 },
-    { "source": "domain:exhibit-authoring", "target": "flow:manage-library", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:exhibit-authoring", "target": "flow:author-exhibit-structure", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:exhibit-authoring", "target": "flow:annotate-media", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:annotation-spine", "target": "flow:record-annotation", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:annotation-spine", "target": "flow:merge-and-resolve", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:iiif-publishing", "target": "flow:generate-iiif-manifest", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:iiif-publishing", "target": "flow:build-iiif-collection", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:iiif-publishing", "target": "flow:publish-static-site", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:iiif-publishing", "target": "flow:export-portable-archive", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:viewer-presentation", "target": "flow:browse-gallery", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:viewer-presentation", "target": "flow:read-exhibit", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:viewer-presentation", "target": "flow:open-portable-archive", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:media-processing", "target": "flow:ingest-image-with-exif", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "domain:media-processing", "target": "flow:import-transcript", "type": "contains_flow", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:manage-library", "target": "step:manage-library:open-project", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:manage-library", "target": "step:manage-library:browse-exhibits", "type": "flow_step", "direction": "forward", "weight": 0.5 },
-    { "source": "flow:manage-library", "target": "step:manage-library:edit-metadata", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:manage-library", "target": "step:manage-library:save-project", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:author-exhibit-structure", "target": "step:author-exhibit-structure:add-objects", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:author-exhibit-structure", "target": "step:author-exhibit-structure:arrange-objects", "type": "flow_step", "direction": "forward", "weight": 0.5 },
-    { "source": "flow:author-exhibit-structure", "target": "step:author-exhibit-structure:configure-layout", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:author-exhibit-structure", "target": "step:author-exhibit-structure:define-sections", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:annotate-media", "target": "step:annotate-media:select-object", "type": "flow_step", "direction": "forward", "weight": 0.2 },
-    { "source": "flow:annotate-media", "target": "step:annotate-media:draw-region", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:annotate-media", "target": "step:annotate-media:write-note", "type": "flow_step", "direction": "forward", "weight": 0.5 },
-    { "source": "flow:annotate-media", "target": "step:annotate-media:attach-properties", "type": "flow_step", "direction": "forward", "weight": 0.7 },
-    { "source": "flow:annotate-media", "target": "step:annotate-media:save-annotation", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:annotate-media", "target": "step:annotate-media:edit-or-delete", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:record-annotation", "target": "step:record-annotation:append-new", "type": "flow_step", "direction": "forward", "weight": 0.2 },
-    { "source": "flow:record-annotation", "target": "step:record-annotation:append-edit", "type": "flow_step", "direction": "forward", "weight": 0.4 },
-    { "source": "flow:record-annotation", "target": "step:record-annotation:append-delete", "type": "flow_step", "direction": "forward", "weight": 0.6 },
-    { "source": "flow:record-annotation", "target": "step:record-annotation:serialize-to-wadm", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:record-annotation", "target": "step:record-annotation:deserialize-from-wadm", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:merge-and-resolve", "target": "step:merge-and-resolve:load-histories", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:merge-and-resolve", "target": "step:merge-and-resolve:detect-conflicts", "type": "flow_step", "direction": "forward", "weight": 0.5 },
-    { "source": "flow:merge-and-resolve", "target": "step:merge-and-resolve:apply-merge", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:merge-and-resolve", "target": "step:merge-and-resolve:rebuild-heads", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:generate-iiif-manifest", "target": "step:generate-iiif-manifest:build-canvases", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:generate-iiif-manifest", "target": "step:generate-iiif-manifest:add-annotation-pages", "type": "flow_step", "direction": "forward", "weight": 0.5 },
-    { "source": "flow:generate-iiif-manifest", "target": "step:generate-iiif-manifest:attach-rights", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:generate-iiif-manifest", "target": "step:generate-iiif-manifest:resolve-thumbnails", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:build-iiif-collection", "target": "step:build-iiif-collection:collect-exhibits", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:build-iiif-collection", "target": "step:build-iiif-collection:generate-collection", "type": "flow_step", "direction": "forward", "weight": 0.7 },
-    { "source": "flow:build-iiif-collection", "target": "step:build-iiif-collection:link-manifests", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:publish-static-site", "target": "step:publish-static-site:collect-assets", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:publish-static-site", "target": "step:publish-static-site:build-iiif-tree", "type": "flow_step", "direction": "forward", "weight": 0.5 },
-    { "source": "flow:publish-static-site", "target": "step:publish-static-site:rewrite-annotation-bodies", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:publish-static-site", "target": "step:publish-static-site:write-output", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:export-portable-archive", "target": "step:export-portable-archive:create-zip-fs", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:export-portable-archive", "target": "step:export-portable-archive:bundle-media", "type": "flow_step", "direction": "forward", "weight": 0.5 },
-    { "source": "flow:export-portable-archive", "target": "step:export-portable-archive:write-library-meta", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:export-portable-archive", "target": "step:export-portable-archive:produce-bytes", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:browse-gallery", "target": "step:browse-gallery:parse-gallery-route", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:browse-gallery", "target": "step:browse-gallery:load-library", "type": "flow_step", "direction": "forward", "weight": 0.5 },
-    { "source": "flow:browse-gallery", "target": "step:browse-gallery:render-gallery", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:browse-gallery", "target": "step:browse-gallery:select-exhibit", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:read-exhibit", "target": "step:read-exhibit:load-exhibit", "type": "flow_step", "direction": "forward", "weight": 0.2 },
-    { "source": "flow:read-exhibit", "target": "step:read-exhibit:resolve-layout", "type": "flow_step", "direction": "forward", "weight": 0.4 },
-    { "source": "flow:read-exhibit", "target": "step:read-exhibit:render-canvas", "type": "flow_step", "direction": "forward", "weight": 0.6 },
-    { "source": "flow:read-exhibit", "target": "step:read-exhibit:display-annotations", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:read-exhibit", "target": "step:read-exhibit:navigate-objects", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:open-portable-archive", "target": "step:open-portable-archive:receive-zip", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:open-portable-archive", "target": "step:open-portable-archive:initialize-zip-fs", "type": "flow_step", "direction": "forward", "weight": 0.5 },
-    { "source": "flow:open-portable-archive", "target": "step:open-portable-archive:switch-viewer-mode", "type": "flow_step", "direction": "forward", "weight": 0.8 },
-    { "source": "flow:open-portable-archive", "target": "step:open-portable-archive:resolve-media-urls", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:ingest-image-with-exif", "target": "step:ingest-image-with-exif:read-orientation", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:ingest-image-with-exif", "target": "step:ingest-image-with-exif:compute-transform", "type": "flow_step", "direction": "forward", "weight": 0.7 },
-    { "source": "flow:ingest-image-with-exif", "target": "step:ingest-image-with-exif:bake-master", "type": "flow_step", "direction": "forward", "weight": 1.0 },
-    { "source": "flow:import-transcript", "target": "step:import-transcript:parse-transcript", "type": "flow_step", "direction": "forward", "weight": 0.3 },
-    { "source": "flow:import-transcript", "target": "step:import-transcript:convert-cues-to-notes", "type": "flow_step", "direction": "forward", "weight": 0.7 },
-    { "source": "flow:import-transcript", "target": "step:import-transcript:append-to-spine", "type": "flow_step", "direction": "forward", "weight": 1.0 }
+    {
+      "source": "domain:exhibit-authoring",
+      "target": "flow:create-exhibit",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:create-exhibit",
+      "target": "flow:create-exhibit:initialize-library",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.25
+    },
+    {
+      "source": "flow:create-exhibit",
+      "target": "flow:create-exhibit:import-media",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "flow:create-exhibit",
+      "target": "flow:create-exhibit:arrange-objects",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.75
+    },
+    {
+      "source": "flow:create-exhibit",
+      "target": "flow:create-exhibit:set-metadata",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:exhibit-authoring",
+      "target": "flow:annotate-object",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:annotate-object",
+      "target": "flow:annotate-object:open-object-editor",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.2
+    },
+    {
+      "source": "flow:annotate-object",
+      "target": "flow:annotate-object:draw-region",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.4
+    },
+    {
+      "source": "flow:annotate-object",
+      "target": "flow:annotate-object:write-note",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "flow:annotate-object",
+      "target": "flow:annotate-object:append-to-spine",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "flow:annotate-object",
+      "target": "flow:annotate-object:manage-readings",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:exhibit-authoring",
+      "target": "flow:build-narrative",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:build-narrative",
+      "target": "flow:build-narrative:create-sections",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3333333333333333
+    },
+    {
+      "source": "flow:build-narrative",
+      "target": "flow:build-narrative:arrange-order",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.6666666666666666
+    },
+    {
+      "source": "flow:build-narrative",
+      "target": "flow:build-narrative:serialize-as-annotation",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:annotation-spine",
+      "target": "flow:append-annotation",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:append-annotation",
+      "target": "flow:append-annotation:append-operation",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3333333333333333
+    },
+    {
+      "source": "flow:append-annotation",
+      "target": "flow:append-annotation:conflict-detection",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.6666666666666666
+    },
+    {
+      "source": "flow:append-annotation",
+      "target": "flow:append-annotation:serialize-annotation",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:iiif-publishing",
+      "target": "flow:project-to-iiif",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:project-to-iiif",
+      "target": "flow:project-to-iiif:build-canvases",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.25
+    },
+    {
+      "source": "flow:project-to-iiif",
+      "target": "flow:project-to-iiif:resolve-tile-sources",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "flow:project-to-iiif",
+      "target": "flow:project-to-iiif:project-annotations",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.75
+    },
+    {
+      "source": "flow:project-to-iiif",
+      "target": "flow:project-to-iiif:attach-rights",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:iiif-publishing",
+      "target": "flow:build-static-site",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:build-static-site",
+      "target": "flow:build-static-site:serialize-site-tree",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3333333333333333
+    },
+    {
+      "source": "flow:build-static-site",
+      "target": "flow:build-static-site:generate-html-entry-points",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.6666666666666666
+    },
+    {
+      "source": "flow:build-static-site",
+      "target": "flow:build-static-site:package-portable-zip",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:viewer-presentation",
+      "target": "flow:browse-gallery",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:browse-gallery",
+      "target": "flow:browse-gallery:load-library-index",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3333333333333333
+    },
+    {
+      "source": "flow:browse-gallery",
+      "target": "flow:browse-gallery:render-exhibit-cards",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.6666666666666666
+    },
+    {
+      "source": "flow:browse-gallery",
+      "target": "flow:browse-gallery:select-exhibit",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:viewer-presentation",
+      "target": "flow:read-exhibit",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:read-exhibit",
+      "target": "flow:read-exhibit:load-exhibit",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.16666666666666666
+    },
+    {
+      "source": "flow:read-exhibit",
+      "target": "flow:read-exhibit:render-canvas",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3333333333333333
+    },
+    {
+      "source": "flow:read-exhibit",
+      "target": "flow:read-exhibit:show-annotations",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "flow:read-exhibit",
+      "target": "flow:read-exhibit:switch-reading",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.6666666666666666
+    },
+    {
+      "source": "flow:read-exhibit",
+      "target": "flow:read-exhibit:follow-narrative",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.8333333333333334
+    },
+    {
+      "source": "flow:read-exhibit",
+      "target": "flow:read-exhibit:play-media",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:media-processing",
+      "target": "flow:import-media",
+      "type": "contains_flow",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "flow:import-media",
+      "target": "flow:import-media:normalize-exif",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.3333333333333333
+    },
+    {
+      "source": "flow:import-media",
+      "target": "flow:import-media:parse-transcript",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 0.6666666666666666
+    },
+    {
+      "source": "flow:import-media",
+      "target": "flow:import-media:classify-image-source",
+      "type": "flow_step",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "domain:exhibit-authoring",
+      "target": "domain:annotation-spine",
+      "type": "cross_domain",
+      "direction": "forward",
+      "weight": 0.6,
+      "description": "Studio writes annotations through the spine for persistence and versioning"
+    },
+    {
+      "source": "domain:exhibit-authoring",
+      "target": "domain:media-processing",
+      "type": "cross_domain",
+      "direction": "forward",
+      "weight": 0.6,
+      "description": "Studio triggers media import, EXIF normalization, and transcript parsing"
+    },
+    {
+      "source": "domain:annotation-spine",
+      "target": "domain:iiif-publishing",
+      "type": "cross_domain",
+      "direction": "forward",
+      "weight": 0.6,
+      "description": "Annotated exhibits are projected to IIIF manifests for publication"
+    },
+    {
+      "source": "domain:iiif-publishing",
+      "target": "domain:viewer-presentation",
+      "type": "cross_domain",
+      "direction": "forward",
+      "weight": 0.6,
+      "description": "Published IIIF manifests and static site are consumed by the Viewer"
+    },
+    {
+      "source": "domain:media-processing",
+      "target": "domain:iiif-publishing",
+      "type": "cross_domain",
+      "direction": "forward",
+      "weight": 0.6,
+      "description": "Resolved tile sources and normalized media feed into IIIF manifest generation"
+    },
+    {
+      "source": "domain:exhibit-authoring",
+      "target": "domain:viewer-presentation",
+      "type": "cross_domain",
+      "direction": "forward",
+      "weight": 0.6,
+      "description": "Studio working store is read live by Viewer on same origin (dev loop)"
+    }
   ],
   "layers": [],
   "tour": []

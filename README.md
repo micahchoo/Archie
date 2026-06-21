@@ -6,6 +6,12 @@
 
 *A published Archie library. You author in the browser; visitors get plain HTML, JSON, and media files that work offline and never phone home.*
 
+**Start here — three ways in:**
+
+- **I want to use it** → [Quickstart](#quickstart) · [Author locally, see it live](#author-locally-see-it-live) · [user guide](docs/guide/)
+- **I'm evaluating it for my work** → [Who it's for](#who-its-for) · [What you can build](#what-you-can-build) · [See it in action](#see-it-in-action)
+- **I want to build on it** → [Architecture](#architecture) · [Where to start in the code](#where-to-start-in-the-code) · [Contributing](#contributing)
+
 ---
 
 ## Contents
@@ -13,15 +19,19 @@
 - [What it is](#what-it-is)
 - [How it works](#how-it-works)
 - [What you can build](#what-you-can-build)
+- [Who it's for](#who-its-for)
 - [See it in action](#see-it-in-action)
 - [Archie in use — a real project](#archie-in-use--a-real-project)
+- [Installation](#installation)
 - [Quickstart](#quickstart)
+- [Author locally, see it live](#author-locally-see-it-live)
 - [The bundled demo](#the-bundled-demo)
 - [Core concepts](#core-concepts)
 - [Features](#features)
 - [Publishing & deploying](#publishing--deploying)
 - [Architecture](#architecture)
 - [Status & roadmap](#status--roadmap)
+- [Development & testing](#development--testing)
 - [Documentation](#documentation)
 - [Contributing](#contributing) · [License](#license)
 
@@ -59,6 +69,21 @@ Archie has five domains that form the author's arc — from blank canvas to publ
 | **Create a scholarly edition** | Transcribe and annotate pages, cite notes from notes, credit sources with IIIF rights metadata. Export readable in any IIIF tool. |
 | **Publish without a server** | Author in the browser; publish a folder of HTML + JSON + media to any static host. |
 
+## Who it's for
+
+Archie began as a tool for digital-humanities scholars and has broadened to anyone who annotates visual or time-based primary sources and wants to keep their data. The import gate that once required a IIIF server is now open: you can start from a **local image folder**, paste a **IIIF manifest URL**, or fork a bundled **template**.
+
+| If you're a… | You want to… | Archie gives you |
+|---|---|---|
+| **DH scholar / paleographer** *(the original core)* | publish a citable annotation of a manuscript, papyrus, or map that rivals can fork and read in any IIIF tool | competing [**Readings**](#core-concepts) on deep-zoom IIIF, <kbd>Cmd</kbd>+<kbd>K</kbd> [citation](#features), `.archie.zip` to fork and extend |
+| **GLAM curator** *(museum / library / archive)* | turn a digitised collection into a rights-attributed web exhibit with no server and no subscription | [local-folder or IIIF-URL import](#features), [IIIF rights & metadata](#features), token-based [GitHub Pages publish](#publishing--deploying) |
+| **Educator** | have students annotate a shared source and hand their work back — without per-student accounts | a [Playground](#the-bundled-demo) template students copy, async `.archie.zip` submission, **Readings** as rival student takes |
+| **Community / local-history archivist** | put a neighbourhood photo collection online and keep it *yours*, not a platform's | drag-in [image-folder import](#features), [portable `.archie.zip`](#features), [`?src=` zip publishing](#publishing--deploying) with no GitHub account |
+| **Journalist / visual storyteller** | build an annotated visual narrative you own end to end | [Narrative](#features) reading mode, geo-anchored map regions, self-contained static output that never phones home |
+| **Genealogist · photographer · fieldworker** | annotate family photos or map a site with notes pinned to the real world | EXIF-aware [image import](#features), the [Map medium](#core-concepts) with **geo-truth** regions, inline audio/video notes |
+
+> The personas above and the evidence behind them are documented in [`docs/research/contributor-appeal/`](docs/research/contributor-appeal/) — nine contributor segments, ranked by reach. The features that opened the funnel to the non-scholar segments (local-image import, IIIF-URL paste, diverse templates, zip-URL publish) all shipped in v1.
+
 ## See it in action
 
 **Studio — authoring.** Your library holds every exhibit. Open one and you land on a zoomable overview of its objects (drag to set the reading order); click an object to annotate it up close.
@@ -81,7 +106,7 @@ Archie has five domains that form the author's arc — from blank canvas to publ
 
 > The [**user guide**](docs/guide/) walks the whole arc — library → annotate → publish — using the bundled exhibits as worked examples.
 
-## Archie in use
+## Archie in use — a real project
 
 ![Archie Viewer: "Techno-Futures from Bidar", a narrative exhibit — an annotated map with photo-region markers and a prose spine](docs/screenshots/Screenshot%202026-05-26%20at%2017-40-28%20Archie.png)
 
@@ -95,27 +120,30 @@ Archie has five domains that form the author's arc — from blank canvas to publ
 
 *Authoring an audio note: drag across the waveform to mark a stretch, write the note, and import a VTT/SRT transcript.*
 
-## Quickstart
+## Installation
 
-**Easiest way (no command-line experience needed):** after cloning or downloading the repo, run the launcher for your system — `start.cmd` on Windows (double-click), `start.command` on macOS (double-click), `start.sh` on Linux. It checks your Node.js version, installs everything on first run, and offers a menu to start the Studio, the Viewer, or both — opening each in your browser when ready. The only prerequisite is [Node.js](https://nodejs.org) 22 or newer.
-
-**Manual way:**
-
-**Prerequisites:** Node.js 22 or newer (CI builds on Node 24) and pnpm 10.
+**Prerequisites:** Node.js 22 or newer (CI builds on Node 24) and pnpm 9 or newer (the workspace uses lockfile v9). If you prefer not to use the command line, the launcher scripts (`start.cmd`, `start.command`, `start.sh`) check Node for you on first run.
 
 ```bash
 pnpm install            # install the whole workspace
 pnpm typecheck          # type-check every package + app
-pnpm test               # run the test suite (~550 tests)
+pnpm test               # run the test suite (~770 tests)
 ```
 
-**Run both apps (recommended):**
+> [!IMPORTANT]
+> The repo needs Node.js 22+. Older versions fail with a `node:sqlite` engine error inside pnpm. Switch first — e.g. `fnm use 24` or `nvm install 24 && nvm use 24`.
+
+## Quickstart
+
+The fastest way to see Archie is to start both apps behind one front door:
 
 ```bash
 node scripts/start.mjs both           # or: bash scripts/dev.sh
 ```
 
 One front door at **http://localhost:5173** — the Studio at [`/studio/`](http://localhost:5173/studio/), the Viewer at [`/viewer/`](http://localhost:5173/viewer/), mirroring the deployed layout. Running both on **one origin** is what makes the live loop work (see [Author locally, see it live](#author-locally-see-it-live) below). Don't start the two dev servers separately if you want that loop — separate ports are separate origins, and the Viewer can't see the Studio's working store across origins.
+
+**No command line?** Double-click `start.cmd` (Windows), `start.command` (macOS), or `start.sh` (Linux). It checks Node, installs everything on first run, and offers a menu to start the Studio, the Viewer, or both — opening each in your browser when ready.
 
 **Run one app alone:**
 
@@ -125,9 +153,6 @@ pnpm --filter @archie/viewer dev      # Viewer only → http://localhost:4321 (g
 ```
 
 Pick or create an exhibit, draw a region, attach a note. Target a single workspace with `--filter`, e.g. `pnpm --filter @render/core test`.
-
-> [!IMPORTANT]
-> The repo needs Node.js 22+. Older versions fail with a `node:sqlite` engine error inside pnpm. Switch first — e.g. `fnm use 24` or `nvm install 24 && nvm use 24`.
 
 ## Author locally, see it live
 
@@ -145,13 +170,13 @@ Caveats: the live loop reads the browser-private (OPFS) working store, so it cov
 
 ## The bundled demo
 
-Archie ships with **The Archie Library**: the Voynich manuscript (Beinecke MS 408) reframed as a *contested object* — the same undeciphered marks read three ways (cipher, grille, natural-language) across three exhibits, one per layout:
+Archie ships with **The Archie Library**: the Voynich manuscript (Beinecke MS 408) reframed as a *contested object* — the same undeciphered marks read three ways (cipher, grille, natural-language) across three exhibits, one for each way an exhibit can lead. The leading surface is *derived from the content*, not a picked template — a one-object exhibit auto-opens, and a narrative appears the moment an exhibit has sections ([ADR-0016](docs/adr/0016-narrative-as-emergent-reading-mode.md)).
 
-| Exhibit | Layout | What it shows |
+| Exhibit | Leads with | What it shows |
 |---|---|---|
-| **The Rosettes** | Single | One deep-zoom folio (the Rosettes foldout), read three ways over one canvas. |
-| **The Whole Manuscript** | Grid | All eleven folios across six sections, each readable three ways, plus a sounded page (audio). |
-| **Reading the Unreadable** | Narrative | A prose walk through the manuscript's divisions, pausing to read each page three ways. |
+| **The Rosettes** | One object | One deep-zoom folio (the Rosettes foldout), read three ways over one canvas; the exhibit auto-opens it. |
+| **The Whole Manuscript** | Object grid | All eleven folios across six sections, each readable three ways, plus a sounded page (audio). |
+| **Reading the Unreadable** | Narrative spine | A prose walk through the manuscript's divisions (it has sections, so the narrative leads), pausing to read each page three ways. |
 
 > [!NOTE]
 > **IIIF manifest URLs.** The three bundled exhibits are published as IIIF Presentation 3 manifests. Paste these URLs into [Mirador](https://projectmirador.org/), [Universal Viewer](https://universalviewer.io/), [Clover](https://samvera-labs.github.io/clover-iiif/), or any IIIF viewer — they resolve to the live GitHub Pages deployment:
@@ -193,7 +218,7 @@ Archie uses a precise vocabulary. One-sentence definitions below; the full gloss
 | **IIIF** | Exhibit → `Manifest`, object → `Canvas`, per-canvas `AnnotationPage`; Readings as `AnnotationCollection`; sections as `Range`; Presentation 3 on disk |
 | **Storage** | Three backends behind one seam — OPFS (browser), `.archie.zip` (portable), File System Access (Chromium folder autosave) |
 | **Linking** | <kbd>Cmd</kbd> + <kbd>K</kbd> cite/insert across the library; deep-link arrival (`#/a/<id>`); broken-link detection at publish |
-| **Reading modes** | Single (deep-zoom), Grid (thumbnail gallery), Narrative (prose spine with camera framing); overview-as-canvas with drag-to-reorder |
+| **Arrangement & reading** | Grid is the sole spatial arrangement; a one-object exhibit auto-opens (the *single* case), and a **narrative** (prose spine with camera framing) leads as soon as an exhibit has sections — emergent from the content, never a picked template ([ADR-0016](docs/adr/0016-narrative-as-emergent-reading-mode.md)); overview-as-canvas with drag-to-reorder |
 | **Publish** | Whole-library → `.archie.zip`, GitHub Pages, or a local folder (Chromium); opt-in source-originals for citation |
 | **Portable Viewer** | One Viewer shell, two modes — render a hosted published tree, or open an `.archie.zip` a recipient was handed, entirely in-browser |
 | **EXIF** | Read orientation, bake an upright display master, preserve the original with provenance metadata |
@@ -255,17 +280,35 @@ graph TD
 - **How it wires together:** `packages/render-core/src/index.ts` (barrel export), `fs/seam.ts` (three storage backends, one interface), `apps/studio/src/binding.ts` (the three-config persistence system), `publish/site.ts` (the publishing engine).
 - **The map medium (geo-annotation, [ADR-0015](docs/adr/0015-map-medium-bounded-extent.md)):** `geometry/geo.ts` (lng/lat ↔ world-pixel, bounded extent), `iiif/resolve.ts` (XYZ tile source), with the `archie:geo` anchor threaded through the spine and the IIIF manifest; `apps/studio/src/AddMapModal.svelte` is the add-map flow.
 
-**Additional maps:** [`docs/architecture/`](docs/architecture/), [`docs/adr/`](docs/adr/) (ADRs 0001–0015), [`docs/decisions/`](docs/decisions/) (Q-N decision records), and a generated knowledge graph in [`.understand-anything/`](.understand-anything/).
+**Additional maps:** [`docs/architecture/`](docs/architecture/), [`docs/adr/`](docs/adr/) (ADRs 0001–0017), [`docs/decisions/`](docs/decisions/) (Q-N decision records), and a generated knowledge graph in [`.understand-anything/`](.understand-anything/).
 
 ## Status & roadmap
 
-**Tests:** ~550 across the workspace (≈490 `@render/core`, 31 `@render/mount`, 19 `@render/svelte`, plus Viewer tests). Run `pnpm test`.
+**Tests:** ~770 across the workspace (≈568 `@render/core`, 43 `@render/mount`, 7 `@render/svelte`, 127 `@archie/studio`, 24 `@archie/viewer`). Run `pnpm test`.
 
 **v1 — complete and dogfooded.** The data layer, both apps, and all major features are built and verified on the Voynich (Beinecke MS 408) demo and a real Bidar fieldwork project. Both apps build clean.
 
 **Shipped:** image / audio / video annotation · **map annotation** (geo-regions anchored by true lng/lat — [ADR-0015](docs/adr/0015-map-medium-bounded-extent.md)) · Readings & Tags · IIIF rights & metadata · narrative section authoring · overview-as-canvas with drag-to-reorder · <kbd>Cmd</kbd> + <kbd>K</kbd> intra-library linking · EXIF display-master bake · three-config persistence (OPFS / folder / zip) · portable Viewer · playground-vs-project model · streaming-zip save and import downscale for large media.
 
 **On the v1.1 frontier:** progressive marker reveal in narrative reading · reading modes (scrollytelling, compare, slideshow) · ellipse / freehand shapes · image-aware overlay contrast. The canonical remaining-work list is the deferred-work registry in [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md).
+
+**Known limitations (v1):**
+
+- **Folder autosave is Chromium-only.** The File System Access backend (save straight to a folder on disk) needs a Chromium browser. Firefox/Safari authors use the OPFS (browser-private) or `.archie.zip` backends instead.
+- **The live Studio→Viewer loop covers unbound projects.** It reads the browser-private (OPFS) working store; a project bound to a folder or `.archie.zip` appears in the Viewer after a publish rather than live.
+- **GitHub publish is token-based, not OAuth.** You paste a fine-grained token once (and may need to toggle Pages on yourself the first time); it is never stored.
+- **Async collaboration is per-copy zip exchange.** There is no central submission inbox — collaborators hand zips back and forth, and the DAG merges them. A class/team inbox is server-shaped and deferred.
+
+## Development & testing
+
+```bash
+pnpm typecheck          # type-check every package + app
+pnpm test               # run the full suite (~770 tests)
+pnpm --filter @render/core test     # target one workspace
+pnpm --filter @render/core test src/spine/log.test.ts   # one file (path is a vitest filter)
+```
+
+Tests live alongside source (`*.test.ts`), not in a separate directory. For new features, include tests and run both `pnpm typecheck` and `pnpm test` before opening a pull request.
 
 ## Documentation
 
@@ -275,7 +318,7 @@ graph TD
 | [`CONTEXT.md`](CONTEXT.md) | Domain language, locked design frames, full glossary |
 | [`docs/README.md`](docs/README.md) | Index to all design & architecture docs |
 | [`docs/architecture/overview.md`](docs/architecture/overview.md) | Architecture map (start here as a developer) |
-| [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0015) |
+| [`docs/adr/`](docs/adr/) | Architecture Decision Records (0001–0017) |
 | [`docs/decisions/`](docs/decisions/) | Citable decision records (Q-N) |
 | [`docs/geo-annotation/`](docs/geo-annotation/) | The geo-annotation extension — design + phasing (Map medium, geo-truth) |
 | [`docs/IMPLEMENTATION-STRATEGY.md`](docs/IMPLEMENTATION-STRATEGY.md) | Phasing, sequencing, validation gates, deferred work |
@@ -293,4 +336,6 @@ See [`docs/architecture/overview.md`](docs/architecture/overview.md) for the sub
 
 ## License
 
-No license file is present yet. Until a `LICENSE` is added, all rights are reserved by the authors; contact the maintainers before reuse.
+This project is licensed under the [GNU General Public License v3.0](LICENSE) (SPDX: `GPL-3.0-only`).
+
+Copyright © 2026 Micah Choo.

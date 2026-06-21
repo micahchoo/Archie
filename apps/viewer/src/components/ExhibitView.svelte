@@ -13,6 +13,7 @@
   } from "@render/core";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
   import { canvasIdFor } from "../published-base.js";
+  import { resolveNoteArrival } from "../note-arrival.js";
   import ObjectGrid from "./ObjectGrid.svelte";
   import Reader from "./Reader.svelte";
   import NarrativeReader from "./NarrativeReader.svelte";
@@ -62,36 +63,38 @@
       status = "ready";
 
       // deep-link arrival (§82/§124): the shell parses #/<slug>/a/<id> and passes the note id here
-      // (the hash is slug-qualified now, so ExhibitView no longer reads location.hash itself).
-      if (noteId) {
-        let foundReading: string | null = null;
-        const owner = l.objects.find((o) => {
-          if ((d.annotationsByObject[o.id] ?? []).some((a) => a.id === noteId)) return true;
-          for (const [rid, notes] of Object.entries(d.readingAnnotationsByObject[o.id] ?? {})) {
-            if (notes.some((a) => a.id === noteId)) { foundReading = rid; return true; }
-          }
-          return false;
-        });
-        if (owner) {
-          if (foundReading) activeReading = foundReading; // a deep-link into a reading opens that reading
-          selectedObjectId = owner.id; // land on the object (not the grid overview)
-          arrivedNote = noteId; // → Reader/NarrativeReader initialSelected → fitBounds
-          chromeVisible = true;
-          setTimeout(() => (chromeVisible = false), 6000);
-        } else {
-          // The cited note is gone — notes are append-only/tombstoned (ADR-0003), so old citation links
-          // outlive their targets. Don't strand a link-follower silently (#8): still raise the arrival
-          // chrome, honestly, and land them on the exhibit instead of somewhere generic with no word.
-          linkMissing = true;
-          chromeVisible = true;
-          setTimeout(() => (chromeVisible = false), 8000);
-        }
-      }
+      // (the hash is slug-qualified now, so ExhibitView no longer reads location.hash itself). Same
+      // path the search overlay (Q-4) and keyboard index activation (Q-5) take — see arriveAtNote.
+      if (noteId) arriveAtNote(noteId);
     } catch (e) {
       errorMsg = e instanceof Error ? e.message : "Couldn’t load this exhibit. Reload to try again.";
       status = "error";
     }
   });
+
+  // The selection seam (A0): resolve a note id to its owner+reading and apply the land-in-context state
+  // (active reading · selected object · arrived note · arrival chrome). Called from onMount for a deep
+  // link AND exposed for imperative use — the search overlay (Q-4) and keyboard index (Q-5) jump to a
+  // note by calling this, so every "go to this note" path lands identically. No-ops before load (no data).
+  function arriveAtNote(targetNote: string) {
+    if (!data || !layout) return;
+    const arrival = resolveNoteArrival(targetNote, layout.objects, data);
+    if (arrival) {
+      if (arrival.reading) activeReading = arrival.reading; // a jump into a reading opens that reading
+      selectedObjectId = arrival.objectId; // land on the object (not the grid overview)
+      arrivedNote = targetNote; // → Reader/NarrativeReader initialSelected → fitBounds
+      linkMissing = false;
+      chromeVisible = true;
+      setTimeout(() => (chromeVisible = false), 6000);
+    } else {
+      // The cited note is gone — notes are append-only/tombstoned (ADR-0003), so old citation links
+      // outlive their targets. Don't strand a link-follower silently (#8): still raise the arrival
+      // chrome, honestly, and land them on the exhibit instead of somewhere generic with no word.
+      linkMissing = true;
+      chromeVisible = true;
+      setTimeout(() => (chromeVisible = false), 8000);
+    }
+  }
 
   const isGrid = $derived(layout?.type === "grid");
   // Sibling objects for the visible sidebar stepper (R4) — non-narrative multi-object exhibits only (the

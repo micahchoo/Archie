@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { publishLibrary } from "./site.js";
+import { sitemapXml } from "./static-pages.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { appendNew, appendDelete } from "../spine/log.js";
 import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
@@ -40,6 +41,7 @@ function fixture() {
     exhibits: [
       {
         id: asExhibitId("exA"), slug: "a", title: "Exhibit Alpha", summary: "Alpha summary",
+        rights: "https://creativecommons.org/licenses/by/4.0/",
         requiredStatement: { label: "Attribution", value: "Alpha exhibit credit" },
         objects: [{ id: asObjectId("o1"), source: "https://img/a.jpg", label: "Folio 1", width: 10, height: 10 }],
         readings: [{ id: "cipher", name: "Cipher", colour: "#aa3333" }],
@@ -151,5 +153,69 @@ describe("static pages — the self-describing artifact (ADR-0014, frozen contra
     expect(html).toContain('href="a/index.html"');
     expect(html).toContain('href="b/index.html"');
     expect(html).toContain("A library summary");
+  });
+});
+
+// SEO surface (Task 2 / decision Q-8): every published page is self-describing to a crawler/social
+// unfurl — Open Graph + Twitter card + a canonical link + schema.org JSON-LD. The JSON-LD is HONEST:
+// it maps ONLY fields the model actually carries (no fabricated author), and image dimensions are the
+// REAL numeric pixels. All emitted URLs are ABSOLUTE (canonical origin + path = the publish baseUrl).
+describe("SEO meta — og/twitter/canonical + schema.org JSON-LD (Q-8)", () => {
+  const jsonLd = (html: string): unknown => {
+    const m = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    if (!m) throw new Error("no JSON-LD script found");
+    return JSON.parse(m[1]!);
+  };
+
+  it("the exhibit page carries og:title, og:type, an ABSOLUTE og:image, twitter:card and a canonical link", async () => {
+    const { fs } = await publishToMem();
+    const html = await readText(fs, ["a", "index.html"]);
+    expect(html).toContain('property="og:title"');
+    expect(html).toContain('property="og:type"');
+    expect(html).toMatch(/property="og:image" content="https?:\/\/[^"]+"/);
+    expect(html).toContain('name="twitter:card"');
+    expect(html).toMatch(new RegExp(`<link rel="canonical" href="${BASE}a/index.html"`));
+  });
+
+  it("the exhibit page emits a CreativeWork with license, creditText, datePublished and a numeric-dim ImageObject — and NO author", async () => {
+    const { fs } = await publishToMem({ publishedAt: "2026-06-20T00:00:00.000Z" });
+    const ld = jsonLd(await readText(fs, ["a", "index.html"])) as Record<string, unknown>;
+    expect(ld["@type"]).toBe("CreativeWork");
+    expect(ld["name"]).toBe("Exhibit Alpha");
+    expect(ld["license"]).toBe("https://creativecommons.org/licenses/by/4.0/");
+    expect(ld["creditText"]).toBe("Alpha exhibit credit");
+    expect(ld["datePublished"]).toBe("2026-06-20T00:00:00.000Z");
+    expect(ld).not.toHaveProperty("author");
+    const img = (ld["image"] ?? (ld["hasPart"] as unknown[])?.[0]) as Record<string, unknown>;
+    expect(img["@type"]).toBe("ImageObject");
+    expect(img["width"]).toBe(10);
+    expect(img["height"]).toBe(10);
+    expect(typeof img["contentUrl"]).toBe("string");
+  });
+
+  it("the library page emits a CollectionPage with one hasPart entry per exhibit", async () => {
+    const { fs } = await publishToMem();
+    const ld = jsonLd(await readText(fs, ["index.html"])) as Record<string, unknown>;
+    expect(ld["@type"]).toBe("CollectionPage");
+    expect(Array.isArray(ld["hasPart"])).toBe(true);
+    expect((ld["hasPart"] as unknown[]).length).toBe(2);
+  });
+
+  it("emits sitemap.xml — well-formed, one <loc> per page (library root + each exhibit), ABSOLUTE, with <lastmod>", async () => {
+    const { fs } = await publishToMem({ publishedAt: "2026-06-20T00:00:00.000Z" });
+    const xml = await readText(fs, ["sitemap.xml"]);
+    expect(xml.startsWith('<?xml version="1.0" encoding="UTF-8"?>')).toBe(true);
+    expect(xml).toContain('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">');
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!);
+    expect(locs).toEqual([`${BASE}index.html`, `${BASE}a/index.html`, `${BASE}b/index.html`]);
+    for (const u of locs) expect(u.startsWith("https://")).toBe(true);
+    expect(xml).toContain("<lastmod>2026-06-20T00:00:00.000Z</lastmod>");
+  });
+
+  it("sitemapXml builder is well-formed and lists library-first then exhibits in order", () => {
+    const { library } = fixture();
+    const xml = sitemapXml(library, BASE, "2026-06-20T00:00:00.000Z");
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!);
+    expect(locs).toEqual([`${BASE}index.html`, `${BASE}a/index.html`, `${BASE}b/index.html`]);
   });
 });

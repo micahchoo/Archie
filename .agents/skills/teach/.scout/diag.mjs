@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const b = await chromium.launch({ headless: true });
+const p = await b.newPage({ viewport: { width: 1280, height: 820 } });
+p.on('console', m => console.log('CONSOLE', m.type(), m.text().slice(0,200)));
+p.on('pageerror', e => console.log('PAGEERR', e.message.slice(0,300)));
+p.on('requestfailed', r => console.log('REQFAIL', r.url().slice(0,120), r.failure()?.errorText));
+await p.goto('http://localhost:8792/', { waitUntil: 'load', timeout: 20000 }).catch(e=>console.log('GOTO',e.message));
+await p.waitForTimeout(4000);
+console.log('BODYLEN', (await p.content()).length);
+console.log('BODYTEXT', (await p.evaluate(()=>document.body?.innerText||'').catch(()=>'')).slice(0,200));
+console.log('SCRIPTS', await p.$$eval('script[src]', els=>els.map(e=>e.getAttribute('src'))).catch(()=>[]));
+await b.close();

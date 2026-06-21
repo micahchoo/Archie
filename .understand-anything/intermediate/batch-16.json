@@ -1,0 +1,568 @@
+{
+  "batchIndex": 16,
+  "nodes": [
+    {
+      "id": "apps",
+      "type": "directory",
+      "label": "apps",
+      "filePath": "apps",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer",
+      "type": "directory",
+      "label": "viewer",
+      "filePath": "apps/viewer",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public",
+      "type": "directory",
+      "label": "public",
+      "filePath": "apps/viewer/public",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published",
+      "type": "directory",
+      "label": "published",
+      "filePath": "apps/viewer/public/published",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas",
+      "type": "directory",
+      "label": "language-atlas",
+      "filePath": "apps/viewer/public/published/language-atlas",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas",
+      "type": "directory",
+      "label": "canvas",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4",
+      "type": "directory",
+      "label": "o4",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "type": "file",
+      "label": "annotations-community.json",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 36,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        }
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "type": "file",
+      "label": "annotations-linguist.json",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 36,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        }
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "type": "file",
+      "label": "annotations.json",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 29,
+      "metadata": {
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 4
+        }
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json_section-_context",
+      "type": "section",
+      "label": "@context",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 2
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json_section-id",
+      "type": "section",
+      "label": "id",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 3
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json_section-type",
+      "type": "section",
+      "label": "type",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 4
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json_section-items",
+      "type": "section",
+      "label": "items",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 5
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json_section-partOf",
+      "type": "section",
+      "label": "partOf",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 31
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json_section-_context",
+      "type": "section",
+      "label": "@context",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 2
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json_section-id",
+      "type": "section",
+      "label": "id",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 3
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json_section-type",
+      "type": "section",
+      "label": "type",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 4
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json_section-items",
+      "type": "section",
+      "label": "items",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 5
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json_section-partOf",
+      "type": "section",
+      "label": "partOf",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 31
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json_section-_context",
+      "type": "section",
+      "label": "@context",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 2
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json_section-id",
+      "type": "section",
+      "label": "id",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 3
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json_section-type",
+      "type": "section",
+      "label": "type",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 4
+      }
+    },
+    {
+      "id": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json_section-partOf",
+      "type": "section",
+      "label": "partOf",
+      "filePath": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 0,
+      "metadata": {
+        "metrics": {},
+        "level": 1,
+        "line": 24
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e16_0",
+      "source": "apps",
+      "target": "apps/viewer",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e16_1",
+      "source": "apps/viewer",
+      "target": "apps/viewer/public",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e16_2",
+      "source": "apps/viewer/public",
+      "target": "apps/viewer/public/published",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e16_3",
+      "source": "apps/viewer/public/published",
+      "target": "apps/viewer/public/published/language-atlas",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e16_4",
+      "source": "apps/viewer/public/published/language-atlas",
+      "target": "apps/viewer/public/published/language-atlas/canvas",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e16_5",
+      "source": "apps/viewer/public/published/language-atlas/canvas",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e16_6",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e16_7",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e16_8",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e16_9",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4",
+      "type": "configures",
+      "label": "configures",
+      "metadata": {}
+    },
+    {
+      "id": "e16_10",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4",
+      "type": "configures",
+      "label": "configures",
+      "metadata": {}
+    },
+    {
+      "id": "e16_11",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4",
+      "type": "configures",
+      "label": "configures",
+      "metadata": {}
+    },
+    {
+      "id": "e16_12",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json_section-_context",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "@context"
+      }
+    },
+    {
+      "id": "e16_13",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json_section-id",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "id"
+      }
+    },
+    {
+      "id": "e16_14",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json_section-type",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "type"
+      }
+    },
+    {
+      "id": "e16_15",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json_section-items",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "items"
+      }
+    },
+    {
+      "id": "e16_16",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-community.json_section-partOf",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "partOf"
+      }
+    },
+    {
+      "id": "e16_17",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json_section-_context",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "@context"
+      }
+    },
+    {
+      "id": "e16_18",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json_section-id",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "id"
+      }
+    },
+    {
+      "id": "e16_19",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json_section-type",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "type"
+      }
+    },
+    {
+      "id": "e16_20",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json_section-items",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "items"
+      }
+    },
+    {
+      "id": "e16_21",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations-linguist.json_section-partOf",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "partOf"
+      }
+    },
+    {
+      "id": "e16_22",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json_section-_context",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "@context"
+      }
+    },
+    {
+      "id": "e16_23",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json_section-id",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "id"
+      }
+    },
+    {
+      "id": "e16_24",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json_section-type",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "type"
+      }
+    },
+    {
+      "id": "e16_25",
+      "source": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json",
+      "target": "apps/viewer/public/published/language-atlas/canvas/o4/annotations.json_section-partOf",
+      "type": "documents",
+      "label": "documents",
+      "metadata": {
+        "section": "partOf"
+      }
+    }
+  ],
+  "stats": {
+    "nodeCount": 24,
+    "edgeCount": 26,
+    "fileCount": 3
+  }
+}

@@ -82,6 +82,9 @@ export * from "./fs/seam.js";
 export * from "./fs/memory.js";
 export * from "./fs/zip.js";
 export * from "./fs/fsa.js";
+// tauri (TauriFilesystem, desktop folder backend). Pure over a path-based TauriFsBridge; the real
+// @tauri-apps/plugin-fs binding lives in apps/studio/src/tauri-fs.ts (headless-core / app-glue split).
+export * from "./fs/tauri.js";
 // Library-binding model (CONTEXT three-configs persistence, invention #3): pure shapes + recent-projects
 // algebra + tolerant localStorage (de)serialize. Browser glue lives in apps/studio (kept headless-testable).
 export * from "./fs/binding.js";

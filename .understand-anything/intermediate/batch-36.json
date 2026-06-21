@@ -1,0 +1,294 @@
+{
+  "batchIndex": 36,
+  "nodes": [
+    {
+      "id": "apps/viewer/public/published/voynich-reading/canvas",
+      "type": "directory",
+      "label": "canvas",
+      "filePath": "apps/viewer/public/published/voynich-reading/canvas",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "apps/viewer/public/published/voynich-reading/canvas/o8",
+      "type": "directory",
+      "label": "o8",
+      "filePath": "apps/viewer/public/published/voynich-reading/canvas/o8",
+      "language": null,
+      "fileCategory": "directory",
+      "sizeLines": 0,
+      "metadata": {}
+    },
+    {
+      "id": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-abjad.json",
+      "type": "config",
+      "label": "annotations-abjad.json",
+      "filePath": "apps/viewer/public/published/voynich-reading/canvas/o8/annotations-abjad.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 37,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "@context",
+            "level": 1,
+            "line": 2
+          },
+          {
+            "heading": "id",
+            "level": 1,
+            "line": 3
+          },
+          {
+            "heading": "type",
+            "level": 1,
+            "line": 4
+          },
+          {
+            "heading": "items",
+            "level": 1,
+            "line": 5
+          },
+          {
+            "heading": "partOf",
+            "level": 1,
+            "line": 31
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        },
+        "description": "W3C AnnotationPage \u2014 abjad-filtered AnnotationPage for canvas o8"
+      }
+    },
+    {
+      "id": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-cipher.json",
+      "type": "config",
+      "label": "annotations-cipher.json",
+      "filePath": "apps/viewer/public/published/voynich-reading/canvas/o8/annotations-cipher.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 52,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "@context",
+            "level": 1,
+            "line": 2
+          },
+          {
+            "heading": "id",
+            "level": 1,
+            "line": 3
+          },
+          {
+            "heading": "type",
+            "level": 1,
+            "line": 4
+          },
+          {
+            "heading": "items",
+            "level": 1,
+            "line": 5
+          },
+          {
+            "heading": "partOf",
+            "level": 1,
+            "line": 31
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        },
+        "description": "W3C AnnotationPage \u2014 cipher-filtered AnnotationPage for canvas o8"
+      }
+    },
+    {
+      "id": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-hoax.json",
+      "type": "config",
+      "label": "annotations-hoax.json",
+      "filePath": "apps/viewer/public/published/voynich-reading/canvas/o8/annotations-hoax.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 37,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "@context",
+            "level": 1,
+            "line": 2
+          },
+          {
+            "heading": "id",
+            "level": 1,
+            "line": 3
+          },
+          {
+            "heading": "type",
+            "level": 1,
+            "line": 4
+          },
+          {
+            "heading": "items",
+            "level": 1,
+            "line": 5
+          },
+          {
+            "heading": "partOf",
+            "level": 1,
+            "line": 31
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 5
+        },
+        "description": "W3C AnnotationPage \u2014 hoax-filtered AnnotationPage for canvas o8"
+      }
+    },
+    {
+      "id": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations.json",
+      "type": "config",
+      "label": "annotations.json",
+      "filePath": "apps/viewer/public/published/voynich-reading/canvas/o8/annotations.json",
+      "language": "json",
+      "fileCategory": "config",
+      "sizeLines": 30,
+      "metadata": {
+        "sections": [
+          {
+            "heading": "@context",
+            "level": 1,
+            "line": 2
+          },
+          {
+            "heading": "id",
+            "level": 1,
+            "line": 3
+          },
+          {
+            "heading": "type",
+            "level": 1,
+            "line": 4
+          },
+          {
+            "heading": "items",
+            "level": 1,
+            "line": 5
+          }
+        ],
+        "metrics": {
+          "importCount": 0,
+          "exportCount": 0,
+          "functionCount": 0,
+          "classCount": 0,
+          "sectionCount": 4
+        },
+        "description": "W3C AnnotationPage \u2014 unfiltered AnnotationPage (all readings) for canvas o8"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e36_0",
+      "source": "apps/viewer/public/published/voynich-reading/canvas/o8",
+      "target": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-abjad.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e36_1",
+      "source": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-abjad.json",
+      "target": "apps/viewer/public/published/voynich-reading/canvas/o8",
+      "type": "configures",
+      "label": "annotates canvas o8",
+      "metadata": {}
+    },
+    {
+      "id": "e36_2",
+      "source": "apps/viewer/public/published/voynich-reading/canvas/o8",
+      "target": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-cipher.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e36_3",
+      "source": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-cipher.json",
+      "target": "apps/viewer/public/published/voynich-reading/canvas/o8",
+      "type": "configures",
+      "label": "annotates canvas o8",
+      "metadata": {}
+    },
+    {
+      "id": "e36_4",
+      "source": "apps/viewer/public/published/voynich-reading/canvas/o8",
+      "target": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-hoax.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e36_5",
+      "source": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-hoax.json",
+      "target": "apps/viewer/public/published/voynich-reading/canvas/o8",
+      "type": "configures",
+      "label": "annotates canvas o8",
+      "metadata": {}
+    },
+    {
+      "id": "e36_6",
+      "source": "apps/viewer/public/published/voynich-reading/canvas/o8",
+      "target": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations.json",
+      "type": "contains",
+      "label": "contains",
+      "metadata": {}
+    },
+    {
+      "id": "e36_7",
+      "source": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations.json",
+      "target": "apps/viewer/public/published/voynich-reading/canvas/o8",
+      "type": "configures",
+      "label": "annotates canvas o8",
+      "metadata": {}
+    },
+    {
+      "id": "e36_8",
+      "source": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-abjad.json",
+      "target": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations.json",
+      "type": "derives_from",
+      "label": "reading-filtered subset",
+      "metadata": {}
+    },
+    {
+      "id": "e36_9",
+      "source": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-cipher.json",
+      "target": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations.json",
+      "type": "derives_from",
+      "label": "reading-filtered subset",
+      "metadata": {}
+    },
+    {
+      "id": "e36_10",
+      "source": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations-hoax.json",
+      "target": "config:apps/viewer/public/published/voynich-reading/canvas/o8/annotations.json",
+      "type": "derives_from",
+      "label": "reading-filtered subset",
+      "metadata": {}
+    }
+  ]
+}

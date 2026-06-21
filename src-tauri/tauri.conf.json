@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Archie Studio",
+  "version": "1.0.0",
+  "identifier": "digital.compost.archie",
+  "build": {
+    "frontendDist": "frontend",
+    "devUrl": "http://localhost:5174/studio/",
+    "beforeDevCommand": "pnpm --filter @archie/studio dev",
+    "beforeBuildCommand": "bash scripts/build-tauri-frontend.sh"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Archie Studio",
+        "width": 1400,
+        "height": 900,
+        "minWidth": 900,
+        "minHeight": 600
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-eval'; worker-src 'self' blob:; img-src 'self' asset: http://asset.localhost blob: data: https:; media-src 'self' asset: http://asset.localhost blob: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' ipc: http://ipc.localhost asset: http://asset.localhost https:;",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$APPDATA/**", "$HOME/**"]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}
