@@ -13,21 +13,22 @@ const d: DziTileSource = {
 };
 
 describe("dziOsdSource", () => {
-  it("maps a dzi descriptor to the OSD custom-tile-source config", () => {
-    const c = dziOsdSource(d);
-    expect(c.width).toBe(8000);
-    expect(c.height).toBe(6000);
-    expect(c.tileSize).toBe(254);
-    expect(c.tileOverlap).toBe(1); // OSD's spelling of DZI Overlap
+  it("emits OSD's NATIVE DZI descriptor (the { Image } form, so OSD uses correct edge/overlap geometry)", () => {
+    const s = dziOsdSource(d);
+    expect(s.Image.xmlns).toBe("http://schemas.microsoft.com/deepzoom/2008");
+    expect(s.Image.Size).toEqual({ Width: "8000", Height: "6000" });
+    expect(s.Image.TileSize).toBe("254");
+    expect(s.Image.Overlap).toBe("1");
   });
 
-  it("builds the DZI level/col/row tile url via render-core's owned scheme", () => {
-    // jpeg → jpg ext; {filesPath}/{level}/{col}_{row}.{ext}
-    expect(dziOsdSource(d).getTileUrl(13, 2, 3)).toBe("voynich-f1r_files/13/2_3.jpg");
-    expect(dziOsdSource({ ...d, format: "image/png" }).getTileUrl(0, 0, 0)).toBe("voynich-f1r_files/0/0_0.png");
+  it("Url + Format produce the same tile scheme the slicer writes ({Url}{level}/{col}_{row}.{ext})", () => {
+    const s = dziOsdSource(d);
+    expect(s.Image.Url).toBe("voynich-f1r_files/"); // trailing slash; OSD appends level/col_row.format
+    expect(s.Image.Format).toBe("jpg"); // extension, not MIME
+    expect(dziOsdSource({ ...d, format: "image/png" }).Image.Format).toBe("png");
   });
 
-  it("tolerates a trailing slash on filesPath", () => {
-    expect(dziOsdSource({ ...d, filesPath: "x_files/" }).getTileUrl(5, 1, 0)).toBe("x_files/5/1_0.jpg");
+  it("normalises a trailing slash on filesPath to a single one", () => {
+    expect(dziOsdSource({ ...d, filesPath: "x_files/" }).Image.Url).toBe("x_files/");
   });
 });
