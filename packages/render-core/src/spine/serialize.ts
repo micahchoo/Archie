@@ -24,6 +24,7 @@ import {
   ARCHIE_LOGICAL_ID,
   ARCHIE_READING,
   ARCHIE_EMPHASIS,
+  ARCHIE_WHOLE_OBJECT,
   ARCHIE_GEO,
   ARCHIE_REV,
   ARCHIE_PARENT,
@@ -112,6 +113,7 @@ function withDagMeta(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnn
   if (record.deleted) a[ARCHIE_DELETED] = true;
   if (record.reading !== undefined) a[ARCHIE_READING] = record.reading;
   if (record.emphasis !== undefined) a[ARCHIE_EMPHASIS] = record.emphasis;
+  if (record.wholeObject === true) a[ARCHIE_WHOLE_OBJECT] = true;
   if (record.geo !== undefined) a[ARCHIE_GEO] = record.geo;
   return ann;
 }
@@ -128,6 +130,7 @@ function withExtensions(ann: ArchieAnnotation, record: AnnotationRecord): Archie
   const a = ann as ArchieAnnotation & Record<string, unknown>;
   if (record.reading !== undefined) a[ARCHIE_READING] = record.reading;
   if (record.emphasis !== undefined) a[ARCHIE_EMPHASIS] = record.emphasis;
+  if (record.wholeObject === true) a[ARCHIE_WHOLE_OBJECT] = true;
   if (record.geo !== undefined) a[ARCHIE_GEO] = record.geo;
   return ann;
 }

@@ -59,6 +59,22 @@ the user-facing lessons + assets ship to the repo at **`docs/learn/`**.
 - **Verify interactivity before declaring done**: serve `docs/learn/`, drive the models in
   Playwright/lightpanda (click → assert DOM changed). Quizzes are gone — interactivity is the product.
 
+## SLIDE-DECK FORMAT + EMBED IN APP HELP (user directive 2026-06-20)
+Lessons are **slide decks**, not long-scroll docs. Rules:
+- **Each step = a deck of AT MOST 2 slides**, one idea per slide. Hard cap forces real cuts
+  (Step 1 dropped the journey pipeline + layers to fit two slides).
+- **Embeds in the app's help section** → must fill its CONTAINER, never assume the full window.
+  `body.deck-mode` + `.deck{height:100%}` fills an iframe/panel; `min-height:24rem` fallback for
+  auto-height embeds. Self-contained HTML per step = drop into an iframe in help.
+- Framework: `assets/deck.js` + deck CSS in `lesson.css`. Markup: `.deck[data-prev][data-next]`
+  › `.deck-top` (eyebrow + level-toggle) › `.deck-stage` › `.slide`(.active) › `.deck-nav`
+  (`.dnav.prev`, `.dots`, `.dnav.next`). Back/Next + ←/→ keys + dots; at the deck edge Back/Next
+  flow to the prev/next STEP file (so the 7 steps read as one continuous tour).
+- Per-slide chrome: `.slide-inner` (max-width measure, centered). Slides scroll internally if a
+  slide overflows the panel. Drop long ask-blocks; use a compact `.callout` "Try it" on last slide.
+- Reused inside slides unchanged: `.flow`/`.pipeline`/`.layers` infographics, `.model.drill`,
+  glossary `.term` popovers, Simple/Advanced toggle, `figure.real` screenshots.
+
 ## GROUND DEMOS IN THE REAL UI (user directive 2026-06-20)
 Demos must reflect Archie's actual interface, not abstractions. Two ways, both used:
 1. **Real screenshots** of the running Viewer, embedded in `docs/learn/assets/img/`.
@@ -76,23 +92,31 @@ Demos must reflect Archie's actual interface, not abstractions. Two ways, both u
 - Screenshots used so far: `gallery.png`, `grid-led.png`, `narrative-led.png` (1280×820 @2x).
 - The `.model.flip` widget now swaps `<figure class="shot" data-mode="grid|narr">` real images;
   `figure.real` is a plain captioned real screenshot for hero/illustration use.
-- TODO for later steps: capture real **Studio** screens (Overview light-table, Object editor
-  3-pane, draw-a-Note, Readings rail) — Studio needs the Vite dev server (`pnpm dev`, :5173/studio/),
-  not the static dist.
+- **Studio also has a prebuilt static dist** at `apps/studio/dist` — base is `/studio/`, so mount
+  it under that path (symlink `/tmp/sroot/studio -> apps/studio/dist`, serve `/tmp/sroot`, open
+  `/studio/`). No dev server needed. It ships the seed EXAMPLE exhibits, so the Library home renders
+  fully. Captured `studio-home.png`, `studio-create-tile.png` this way. (Dev server `pnpm dev`
+  :5173/studio/ only needed for live-author flows, not screenshots.)
 
 ## Planned spine — RE-SCOPED to "non-obvious only" (CONFIRMED by user 2026-06-20)
 Old plan was feature-by-feature; much of it was discoverable. Leaner, denser steps:
-1. ✅ Orientation — the model (four nouns) + the path  *(shipped)*
-2. ☐ Get media in — the four onramps (folder / IIIF / CSV / blank). Non-obvious you even can.
-3. ☐ Where your work lives — Playground vs Project, browser storage, autosave, export zip.
-     (Anxiety-reducing; getting it wrong loses work.)
-4. ☐ Annotation that isn't obvious — Readings vs Tags, emphasis, citing/links.
-     (NOT "how to draw a box on an image" — that's discoverable.)
-5. ☐ Narrative — Sections + the emergent grid⇄narrative point (reuse the flip demo + screenshots here).
-6. ☐ Bulk import done right — CSV + the pending-notes placement workflow.
-7. ☐ Publish — portable `.archie.zip` first; GitHub Pages as Advanced.
-Advanced-layer asides thread through: IIIF/WADM mapping, async collaboration (share-zip/merge),
-durable citation. Discoverable mechanics (pan/zoom, drag-reorder, click-to-open) are NOT steps.
+1. ✅ Orientation — the model (four nouns) + the path  *(shipped: 0001)*
+2. ✅ Get media in — THREE real create onramps: blank title / image folder / IIIF link
+     (CSV is annotation-import inside an exhibit, NOT a create path — corrected). *(shipped: 0002)*
+3. ✅ Where your work lives — autosave + three homes (browser/folder/zip), Playground vs
+     Project. Grounded in studio-projectbar + studio-example-card screenshots. *(shipped: 0003)*
+4. ✅ Reading layers — Readings (exclusive) vs Tags (additive), cite ⌘K, emphasis. *(0004)*
+5. ✅ Narrative — the grid⇄narrative flip demo + what a Section is. *(0005)*
+6. ✅ Bulk import — CSV columns → notes; pending-notes "Set area" pipeline. *(0006)*
+7. ✅ Publish — portable `.archie.zip` first, then GitHub Pages (real gallery). *(0007)*
+SPINE COMPLETE 2026-06-20. Discoverable mechanics (pan/zoom, drag-reorder, click-to-open) are NOT steps.
+
+## SIMPLE REGISTER DROPPED 2026-06-20 (user directive "drop the simple version")
+No more Simple/Advanced toggle. Single register — the fuller depth is shown to everyone:
+`.adv`/`.adv-inline` are now always visible (CSS), `.level-toggle` removed from all decks.
+The old depth asides (IIIF/WADM mapping, async collaboration, durable citation) are now just
+inline "deeper note" callouts (`.aside-adv`), always on. (Supersedes the dual-register plan in
+LR-0005; newcomer voice from LR-0004 still governs the single register.)
 
 (Old feature-by-feature list retired 2026-06-20 per LR-0006.)
 

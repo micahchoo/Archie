@@ -28,8 +28,9 @@
     applyTime: (start: number, end: number) => void;
     setNoteReading: (reading: string | null) => void;
     setNoteEmphasis: (emphasis: Emphasis) => void;
+    /** Change this note's scope (ADR-0018): "whole" drops its region → whole-object; "region" arms a draw. */
+    setNoteScope: (scope: "whole" | "region") => void;
     requestCite: (insert: (md: string) => void) => void;
-    requestVisualCite: (insert: (md: string) => void) => void;
     citeIntoComment: (md: string) => void;
     closeNote: () => void;
     onDelete: (id: string) => void;
@@ -37,8 +38,11 @@
   let {
     sel, editing, currentReadings, commentEl = $bindable(null),
     commentOf, tagsOf, timeOf,
-    applyForm, applyTime, setNoteReading, setNoteEmphasis, requestCite, requestVisualCite, citeIntoComment, closeNote, onDelete,
+    applyForm, applyTime, setNoteReading, setNoteEmphasis, setNoteScope, requestCite, citeIntoComment, closeNote, onDelete,
   }: Props = $props();
+
+  // Scope (ADR-0018): a note is a "region" if its target carries a selector, else it's whole-object.
+  const isRegion = $derived(typeof sel.target !== "string" && !!(sel.target as { selector?: unknown }).selector);
 
   const comment = $derived(commentOf(sel));
   const tags = $derived(tagsOf(sel).join(", "));
@@ -59,7 +63,7 @@
 <form class="wadm" onsubmit={(e) => { e.preventDefault(); }}>
   <h3>Edit note</h3>
   <label>
-    <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button><button type="button" class="cite" onclick={() => requestVisualCite(citeIntoComment)} title="Cite a note by its image">▦ By image</button></span>
+    <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note, object, or exhibit (⌘K) — search by text or browse by image">¶ Cite <kbd>⌘K</kbd></button></span>
     <textarea bind:this={commentEl} rows="3" value={comment} onchange={(e) => applyForm((e.currentTarget as HTMLTextAreaElement).value, tags)}></textarea>
   </label>
   {#if trange}
@@ -69,6 +73,20 @@
       <label class="t">End<input type="text" inputmode="numeric" placeholder="m:ss" value={fmtMMSS(trange.end ?? trange.start)} onchange={(e) => applyTime(trange.start, parseMMSS((e.currentTarget as HTMLInputElement).value))} /></label>
     </fieldset>
   {/if}
+  <!-- Scope (ADR-0018): the explicit region↔whole-object conversion, on the note it acts on. Eyebrow label
+       (like the other fields) over a read-out + contextual action buttons — no overloaded create button. -->
+  <div class="scope-field">
+    <span class="field-head">Scope</span>
+    <div class="scope-row">
+      <span class="scope-now">{isRegion ? "A region of this object" : "The whole object (no region)"}</span>
+      {#if isRegion}
+        <button type="button" class="cite" onclick={() => setNoteScope("whole")} title="Drop the region — make this note apply to the whole object">▣ Make whole-object</button>
+        <button type="button" class="cite" onclick={() => setNoteScope("region")} title="Re-draw this note's region — draw a new box or outline on the object">▭ Redraw bounds</button>
+      {:else}
+        <button type="button" class="cite" onclick={() => setNoteScope("region")} title="Give this note a region — draw a box or outline on the object">▭ Draw a region</button>
+      {/if}
+    </div>
+  </div>
   <label>Tags (comma-separated)<input value={tags} onchange={(e) => applyForm(comment, (e.currentTarget as HTMLInputElement).value)} /></label>
   <label>Reading
     <select value={reading ?? ""} onchange={(e) => setNoteReading((e.currentTarget as HTMLSelectElement).value || null)}>
@@ -92,6 +110,12 @@
 <style>
   /* WADM form — editing on paper. Labels are quiet mono eyebrows; the one focal action (Save) is the signal. */
   .wadm { margin-top: var(--space-5); border-top: 1px solid var(--border-paper); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
+  /* Scope control — eyebrow label (matching the other fields) over a read-out + contextual actions (ADR-0018).
+     The `.field-head` here is NOT inside a <label>, so it needs the eyebrow type explicitly. */
+  .scope-field { display: flex; flex-direction: column; gap: var(--space-1); }
+  .scope-field .field-head { font-family: var(--font-ui); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  .scope-row { display: flex; align-items: baseline; gap: var(--space-3); flex-wrap: wrap; }
+  .scope-row .scope-now { font-family: var(--font-body); font-size: 0.9rem; letter-spacing: 0; text-transform: none; color: var(--ink-paper-secondary); }
   .wadm h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 400; letter-spacing: 0; color: var(--ink-paper-primary); }
   .wadm label { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
   /* Comment field header: label + the ⌘K "Cite" link affordance (cord-blue link tone). */

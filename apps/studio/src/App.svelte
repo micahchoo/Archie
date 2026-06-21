@@ -28,9 +28,10 @@
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
     tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary, resolveLayoutType,
+    isWholeObjectFor, wholeObjectFlagOf, selectorOf,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
-  import type { DrawTool, MarkerStyle } from "@render/mount";
+  import type { DrawTool, MarkerStyle, FrameOverlay } from "@render/mount";
   import { openExhibitAnnotationsDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus } from "./save-queue.svelte.js";
@@ -587,6 +588,9 @@
   // shape = "draw the next region, then disarm". Narrative camera framing (framingSectionId) shares the
   // same draw path. The two are mutually exclusive. No persistent Select|Rect|Polygon palette anymore.
   let creating = $state<DrawTool | null>(null);
+  // When set, the NEXT drawn box/outline re-targets THIS note (Scope control's "Draw a region" / "Redraw
+  // bounds", ADR-0018) instead of creating a new note. Cleared after the draw. null = ordinary create.
+  let retargetingNoteId = $state<string | null>(null);
   // Coordinate-free CSV imports (Archie-79c0 sub-cycle B): notes whose TEXT arrived without a region,
   // staged exhibit-scoped (persisted via the pending-notes sidecar) until the author draws each box.
   // `placingPendingId` arms that draw — geometry comes from onCreate, exactly like narrative framing.
@@ -839,6 +843,31 @@
     });
   }
 
+  // Whole-object frame for the STUDIO canvas (ADR-0018): the first note that frames the WHOLE object —
+  // a bare-IRI note (no selector) or a ≥75%/override region note. Mirrors the viewer's ExhibitView.frameFor
+  // so a created/converted whole-object note is VISIBLE while authoring (it has no marker of its own). AV
+  // objects have no OSD canvas, so no frame there (their whole-track band lives in the viewer's MediaPlayer).
+  const frameMark = $derived.by<{ markId: string; colour: string } | null>(() => {
+    if (isAvCurrent) return null;
+    const w = current?.width, h = current?.height;
+    for (const a of annotations) {
+      if (!a.id) continue;
+      if (isWholeObjectFor(selectorOf(a), w ?? 0, h ?? 0, wholeObjectFlagOf(a))) {
+        const rid = (a as Record<string, unknown>)["archie:reading"] as string | undefined;
+        const colour = (rid ? currentReadings.find((r) => r.id === rid)?.colour : undefined) ?? BASE_MARKER;
+        return { markId: a.id, colour };
+      }
+    }
+    return null;
+  });
+  // The OSD frame overlay; its corners activate (select) the framed note, like a marker click.
+  const studioFrame = $derived<FrameOverlay | null>(
+    frameMark ? { colour: frameMark.colour, onActivate: () => (selected = frameMark.markId) } : null,
+  );
+  // Drop the framed note's own rect from the canvas array (a ≥75% region note would otherwise draw rect +
+  // frame); a bare-IRI whole-object note has no rect, so this is a no-op for the common case.
+  const canvasAnnotations = $derived(frameMark ? annotations.filter((a) => a.id !== frameMark!.markId) : annotations);
+
   // --- canvas lifecycle ---
   function onCreate(a: W3CAnnotation) {
     if (framingSectionId) {
@@ -870,6 +899,17 @@
       placingPendingId = null;
       return;
     }
+    // Re-target the OPEN note (ADR-0018): the Scope control's "Draw a region" (whole→region) and "Redraw
+    // bounds" (replace a region's geometry) arm a draw that EDITS the open note's target instead of making a
+    // new note. Only fires when explicitly armed (retargetingNoteId), so an ordinary draw still creates.
+    if (retargetingNoteId) {
+      const cgeo = isMapCurrent ? geoForTarget(a.target, currentTileSource) ?? null : undefined;
+      sess.session.editNote(retargetingNoteId as LogicalId, { target: a.target, ...(cgeo !== undefined ? { geo: cgeo } : {}) });
+      bump();
+      retargetingNoteId = null;
+      creating = null;
+      return;
+    }
     // On a Map, capture the region's geo-truth (lng/lat) alongside the pixel selector (Q4/ADR-0015).
     const geo = isMapCurrent ? geoForTarget(a.target, currentTileSource) : undefined;
     const id = sess.session.createNote({ target: a.target, ...(geo ? { geo } : {}), ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
@@ -877,6 +917,36 @@
     selected = id;
     creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
     openPanelTo("notes"); // auto-expand: the new note lands in the present-notes list
+  }
+  // Is the open note a region note (has a spatial/temporal selector)? Drives the note-form Scope control.
+  const selHasSelector = (r: AnnotationRecord | undefined): boolean =>
+    !!r && typeof r.target !== "string" && (r.target as { selector?: unknown }).selector != null;
+  // Whole-object (Object-level) Note — a BARE canvas IRI target, no selector (ADR-0018). The toolbar toggle
+  // CREATES one (there's no region to draw). CONVERTING an existing note is a separate, EXPLICIT affordance
+  // in the note's own form (`setNoteScope`) — not an overload of this create button.
+  function createWholeObjectNote() {
+    const id = sess.session.createNote({ target: canvasId, ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) });
+    bump();
+    selected = id;
+    creating = null;
+    openPanelTo("notes");
+  }
+  // Change the OPEN note's scope (ADR-0018) — the explicit conversion affordance, surfaced in the note form
+  // beside the note it acts on. "whole" drops the selector → bare IRI (clearing any geo); "region" arms a box
+  // so the next draw gives the note geometry (onCreate's whole→region branch performs the edit). Both are
+  // versioned `target` edits, reversible.
+  function setNoteScope(scope: "whole" | "region") {
+    if (!editing) return;
+    if (scope === "whole") {
+      if (!selHasSelector(sel)) return; // already whole-object — no-op
+      sess.session.editNote(editing as LogicalId, { target: srcOf(sel!.target) ?? canvasId, ...(isMapCurrent ? { geo: null } : {}) });
+      bump();
+    } else {
+      // "Draw a region" (whole→region) OR "Redraw bounds" (replace a region): arm a draw that re-targets
+      // THIS note. Default to a box; the toolbar can switch to Outline before drawing (retarget persists).
+      retargetingNoteId = editing;
+      creating = "rectangle";
+    }
   }
   // Geometry edit on canvas → re-derive geo-truth on a Map (null clears it if the new shape is unparseable).
   const onUpdate = (a: W3CAnnotation) => { sess.session.editNote(a.id as LogicalId, { target: a.target, ...(isMapCurrent ? { geo: geoForTarget(a.target, currentTileSource) ?? null } : {}) }); bump(); };
@@ -933,7 +1003,7 @@
   // mm:ss ⇄ seconds for the AV time fieldset moved into NoteEditor.svelte (the WADM form owns them now).
 
   // --- ⌘K intra-Library linking (CONTEXT §95): cite another note/exhibit into the Comment ---
-  interface CmdEntry { id: string; kind: "note" | "exhibit"; exhibitSlug: string; exhibitTitle: string; label: string; ref: string; }
+  interface CmdEntry { id: string; kind: "note" | "exhibit" | "object"; exhibitSlug: string; exhibitTitle: string; label: string; ref: string; thumb?: string; }
   let cmdkOpen = $state(false);
   let cmdkEntries = $state<CmdEntry[]>([]);
   let commentEl = $state<HTMLTextAreaElement | null>(null);
@@ -946,12 +1016,26 @@
     const logsById = await loadAllLogs();
     const out: CmdEntry[] = [];
     for (const ex of lib.meta.exhibits) {
-      out.push({ id: `ex:${ex.slug}`, kind: "exhibit", exhibitSlug: ex.slug, exhibitTitle: ex.title, label: linkLabel(ex.title), ref: encodeLinkRef({ exhibitSlug: ex.slug }) });
+      // Thumbnails feed the picker's Browse (tile) view. Resolve them for the CURRENT exhibit only —
+      // thumbSrc works against the live OBJECTS there (the same set requestVisualCite used); cross-exhibit
+      // objects stay text-only in Browse (no thumb), matching the prior visual-cite scope.
+      const isCur = ex.slug === currentSlug;
+      const objThumb = (objId: string): string => {
+        if (!isCur || !objId) return "";
+        const obj = OBJECTS.find((o) => o.id === objId);
+        return obj ? thumbSrc(obj) : "";
+      };
+      out.push({ id: `ex:${ex.slug}`, kind: "exhibit", exhibitSlug: ex.slug, exhibitTitle: ex.title, label: linkLabel(ex.title), ref: encodeLinkRef({ exhibitSlug: ex.slug }), thumb: isCur && OBJECTS[0] ? thumbSrc(OBJECTS[0]) : "" });
+      // Whole-Object cites (ADR-0018) — each object is a Browse tile and a Search row ("cite this folio").
+      for (const obj of ex.objects ?? []) {
+        out.push({ id: `o:${ex.slug}:${obj.id}`, kind: "object", exhibitSlug: ex.slug, exhibitTitle: ex.title, label: linkLabel(obj.label ?? obj.id), ref: encodeLinkRef({ exhibitSlug: ex.slug, objectId: obj.id }), thumb: objThumb(obj.id) });
+      }
       const heads = new Map<string, AnnotationRecord>();
       for (const r of logsById[ex.id] ?? []) heads.set(r.logicalId, r); // append-only → last wins
       for (const r of heads.values()) {
         if (r.deleted) continue;
-        out.push({ id: `n:${ex.slug}:${r.logicalId}`, kind: "note", exhibitSlug: ex.slug, exhibitTitle: ex.title, label: linkLabel(stripMarkdown(commentOf(r))), ref: encodeLinkRef({ exhibitSlug: ex.slug, noteLogicalId: r.logicalId }) });
+        const objId = (srcOf(r.target) ?? "").split("/canvas/")[1] ?? "";
+        out.push({ id: `n:${ex.slug}:${r.logicalId}`, kind: "note", exhibitSlug: ex.slug, exhibitTitle: ex.title, label: linkLabel(stripMarkdown(commentOf(r))), ref: encodeLinkRef({ exhibitSlug: ex.slug, noteLogicalId: r.logicalId }), thumb: objThumb(objId) });
       }
     }
     return out;
@@ -1340,7 +1424,7 @@
     {#snippet noteForm()}
       <NoteEditor sel={sel!} editing={editing!} {currentReadings} bind:commentEl
         {commentOf} {tagsOf} {timeOf}
-        {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {requestCite} {requestVisualCite} {citeIntoComment} {closeNote} {onDelete} />
+        {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {setNoteScope} {requestCite} {citeIntoComment} {closeNote} {onDelete} />
     {/snippet}
     <aside class:collapsed={asideCollapsed} style:--studio-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
       <!-- The narrative spine is ALWAYS mounted (ADR-0016): a narrative exists iff sections.length>0, and
@@ -1457,6 +1541,9 @@
                 <!-- Geo-annotations reuse Box/Outline on a Map (no pin tool — 2026-06-18 grilling Q4); geo-truth is captured on draw. -->
                 <button type="button" onclick={() => (creating = "rectangle")} title={isMapCurrent ? "Draw a rectangular region on the map" : "Draw a rectangular region"}>▭ Box</button>
                 <button type="button" onclick={() => (creating = "polygon")} title={isMapCurrent ? "Trace an irregular region on the map" : "Trace an irregular outline"}>⬠ Outline</button>
+                <!-- Whole-object Note (ADR-0018): no region — targets the bare canvas IRI, frames the whole
+                     object. (Converting an EXISTING note is the Scope control in the note form, not here.) -->
+                <button type="button" onclick={() => createWholeObjectNote()} title={isMapCurrent ? "Note on the whole map (no region)" : "Note on the whole image (no region)"}>▣ Whole {isMapCurrent ? "map" : "image"}</button>
               </div>
             {/if}
           {/if}
@@ -1597,7 +1684,7 @@
             {@const Av = AvEditorComp}
             <Av source={currentSource} label={current.label} mediaType={current.mediaType}
               slug={currentSlug} assetName={isAsset(current.source) ? current.source.slice(ASSET_PREFIX.length) : null}
-              {annotations} bind:selected oncreate={onCreateTime} onimport={onImportTranscript}
+              {annotations} bind:selected oncreate={onCreateTime} oncreatewhole={createWholeObjectNote} onimport={onImportTranscript}
               onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
           {:else}
             <div class="no-canvas">Loading…</div>
@@ -1606,7 +1693,7 @@
       {:else if current && assetsReady}
         {#key canvasId}
           {#if CanvasComp}
-            <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} {annotations} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
+            <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}
               onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
           {:else}
             <div class="no-canvas">Loading…</div>

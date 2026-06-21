@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Archie · Publish to the web — UX prototype</title>
+<!--
+  Clickable prototype of the redesigned GitHub-Pages publish dialog (docs/plans/GHPAGES-PUBLISH-UX.md).
+  Self-contained: real Archie "Verdant Clearing" tokens inlined (apps/studio/src/tokens.css), the
+  device-flow handshake MOCKED (no real GitHub / no Rust backend). Custom fonts fall back to system.
+  Drive any screen directly with ?state=NAME&runtime=desktop|web  (see STATES below).
+-->
+<style>
+:root{
+  --surface-canvas:#F7F4EC; --surface-canvas-raised:#FDFCF5; --surface-canvas-overlay:#ECF0E3;
+  --ink-paper-primary:#1A3C23; --ink-paper-secondary:rgba(26,60,35,.62); --ink-paper-muted:rgba(26,60,35,.45);
+  --surface-paper-card:#FDFCF5; --surface-paper-hover:#ECF0E3;
+  --border-canvas:rgba(26,60,35,.10); --border-canvas-emphasis:rgba(26,60,35,.18);
+  --accent:#3A8C5D; --accent-hover:#46A06E; --accent-muted:rgba(58,140,93,.14); --ink-on-accent:#F7F4EC;
+  --accent-2:#9A7B39;
+  --semantic-success:#5E9648; --semantic-warning:#C68A3E; --semantic-error:#BC4A36;
+  --font-display:"FOP VHS","Arial Black",sans-serif; --font-body:"LARAZ",system-ui,sans-serif;
+  --font-ui:"LARAZ",system-ui,sans-serif; --font-mono:"LARAZ",ui-monospace,monospace;
+  --space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-5:20px;--space-6:24px;--space-8:32px;
+  --radius-sm:10px;--radius-md:16px;--radius-lg:20px;
+  --shadow-lift-low:0 24px 48px -24px rgba(26,60,35,.30);
+  --shadow-lift-mid:0 40px 80px -32px rgba(26,60,35,.38);
+  --shadow-signal-glow:0 18px 60px -12px rgba(58,140,93,.50);
+  --shadow-text-haze:0 2px 24px rgba(26,60,35,.18);
+  --shadow-inset-fog:inset 0 0 120px 40px rgba(168,230,207,.30);
+  --ground-gradient:linear-gradient(180deg,#E9EEDF 0%,#CDD8C2 34%,#C8D5C0 50%,#88A98F 78%,#2D5F3A 100%);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font-family:var(--font-body);color:var(--ink-paper-primary);background:var(--ground-gradient);background-attachment:fixed;min-height:100vh}
+
+/* ── Prototype chrome (NOT part of the real dialog) ───────────────────────── */
+.proto-bar{position:fixed;top:0;left:0;right:0;z-index:80;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:8px 14px;background:rgba(26,60,35,.92);color:#EAF1E4;font:13px/1.3 system-ui,sans-serif;backdrop-filter:blur(4px)}
+.proto-bar b{font-weight:700;letter-spacing:.02em}
+.proto-bar .sp{flex:1}
+.proto-bar select,.proto-bar button{font:12px system-ui,sans-serif;padding:4px 8px;border-radius:7px;border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.10);color:#EAF1E4;cursor:pointer}
+.proto-bar .seg button.on{background:#3A8C5D;border-color:#46A06E;color:#fff;font-weight:600}
+.proto-note{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:80;
+  font:11px system-ui,sans-serif;color:rgba(26,60,35,.6);background:rgba(253,252,245,.7);padding:4px 12px;border-radius:20px}
+
+/* ── The dialog (mirrors Publish.svelte / PublishDialog.svelte) ───────────── */
+.scrim{position:fixed;inset:0;background:rgba(59,49,56,.45);backdrop-filter:blur(2px);z-index:40}
+.dialog{position:fixed;z-index:41;top:calc(50% + 18px);left:50%;transform:translate(-50%,-50%);
+  width:min(34rem,calc(100vw - var(--space-8)));box-sizing:border-box;
+  background:var(--surface-canvas-raised);color:var(--ink-paper-primary);
+  border-radius:var(--radius-lg);box-shadow:var(--shadow-lift-mid);padding:var(--space-6)}
+header{margin-bottom:var(--space-5)}
+.eyebrow{font-family:var(--font-ui);font-size:.75rem;font-weight:400;letter-spacing:.26em;text-transform:uppercase;color:rgba(26,60,35,.55);margin:0}
+.who{float:right;font-family:var(--font-ui);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-paper-muted)}
+h2{font-family:var(--font-display);font-size:1.7rem;font-weight:400;line-height:1.12;margin:var(--space-1) 0 var(--space-2);color:var(--ink-paper-primary);text-shadow:var(--shadow-text-haze)}
+.lede{font-family:var(--font-body);font-size:1.0625rem;line-height:1.6;color:var(--ink-paper-secondary);margin:0}
+
+.choices{display:flex;flex-direction:column;gap:var(--space-3)}
+.choice{display:flex;flex-direction:column;gap:var(--space-1);text-align:left;cursor:pointer;
+  padding:var(--space-4) var(--space-5);background:var(--surface-paper-card);border:none;border-radius:var(--radius-md);
+  box-shadow:var(--shadow-lift-low);transition:background .16s,transform .16s,box-shadow .16s;width:100%}
+.choice:hover{background:var(--surface-paper-hover);transform:translateY(-1px);box-shadow:var(--shadow-lift-mid)}
+.choice.feature{outline:2px solid var(--accent-muted)}
+.c-title{font-family:var(--font-display);font-size:1.2rem;font-weight:400;color:var(--ink-paper-primary)}
+.c-desc{font-family:var(--font-body);font-size:.875rem;line-height:1.5;color:var(--ink-paper-secondary)}
+
+.body,.result{display:flex;flex-direction:column;gap:var(--space-3)}
+.line{font-family:var(--font-body);font-size:.92rem;line-height:1.6;color:var(--ink-paper-secondary);margin:0}
+.line.muted{color:var(--ink-paper-muted);font-size:.82rem}
+.center{text-align:center}
+code{font-family:var(--font-mono);font-size:.8rem;color:var(--ink-paper-primary)}
+
+/* big device code */
+.code-box{margin:var(--space-3) auto var(--space-2);display:flex;align-items:center;justify-content:center;gap:14px}
+.code{font-family:var(--font-mono);font-weight:700;letter-spacing:.22em;font-size:2.2rem;color:var(--ink-paper-primary);
+  background:var(--surface-canvas-overlay);box-shadow:var(--shadow-inset-fog);border-radius:var(--radius-md);padding:14px 26px}
+.spin{display:inline-flex;align-items:center;gap:8px;color:var(--ink-paper-secondary);font-size:.86rem}
+.spin .dot{width:14px;height:14px;border:2px solid var(--accent-muted);border-top-color:var(--accent);border-radius:50%;animation:rot .9s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* form bits */
+label.fld{display:flex;flex-direction:column;gap:var(--space-1);font-family:var(--font-ui);font-size:.7rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-paper-muted)}
+input[type=text],input[type=password]{font-family:var(--font-body);font-size:1rem;padding:var(--space-2) var(--space-3);
+  background:var(--surface-paper-card);color:var(--ink-paper-primary);border:1px solid var(--border-canvas);border-radius:var(--radius-sm)}
+input:focus{outline:none;border-color:var(--accent-2)}
+.help{font-family:var(--font-body);font-size:.78rem;color:var(--ink-paper-muted);margin:0}
+.preview{font-family:var(--font-body);font-size:.92rem;color:var(--ink-paper-secondary);background:var(--surface-canvas-overlay);
+  border-radius:var(--radius-sm);padding:var(--space-3) var(--space-4);box-shadow:var(--shadow-inset-fog)}
+.preview .url{font-family:var(--font-mono);color:var(--accent-2);font-weight:600;word-break:break-all}
+.cb{display:flex;align-items:flex-start;gap:var(--space-2);font-family:var(--font-body);font-size:.86rem;color:var(--ink-paper-primary);cursor:pointer}
+.cb input{margin-top:2px;accent-color:var(--accent)}
+.cb .sub{color:var(--ink-paper-secondary)}
+
+/* publishing checklist */
+.steps{display:flex;flex-direction:column;gap:var(--space-2);margin:var(--space-2) 0}
+.step{display:flex;align-items:center;gap:10px;font-family:var(--font-body);font-size:.92rem;color:var(--ink-paper-muted)}
+.step .mk{width:18px;height:18px;border-radius:50%;border:2px solid var(--border-canvas-emphasis);flex:none;display:grid;place-items:center;font-size:11px}
+.step.done{color:var(--ink-paper-primary)}
+.step.done .mk{background:var(--semantic-success);border-color:var(--semantic-success);color:#fff}
+.step.active{color:var(--ink-paper-primary);font-weight:600}
+.step.active .mk{border-color:var(--accent)}
+
+/* success */
+.ok{font-family:var(--font-display);font-size:1.6rem;font-weight:400;color:var(--semantic-success);margin:0}
+.hero-url{font-family:var(--font-mono);font-size:1.05rem;font-weight:700;color:var(--accent-2);word-break:break-all;
+  background:var(--surface-canvas-overlay);border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);text-align:center;box-shadow:var(--shadow-inset-fog)}
+.deets{font-family:var(--font-ui);font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-paper-muted);cursor:pointer;background:none;border:none;padding:0;text-align:left}
+
+/* warning / error blocks */
+.warn{padding:var(--space-3) var(--space-4);background:var(--surface-canvas-overlay);border-left:3px solid var(--semantic-warning);border-radius:var(--radius-sm);box-shadow:var(--shadow-lift-low)}
+.warn .h{margin:0 0 4px;font-family:var(--font-ui);font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.16em;color:var(--ink-paper-secondary)}
+.err{font-family:var(--font-ui);font-size:.84rem;line-height:1.5;color:var(--semantic-error);margin:0}
+ol.steps-num{margin:0;padding-left:1.2em;color:var(--ink-paper-secondary);font-size:.9rem;line-height:1.7}
+
+/* actions */
+.actions{display:flex;justify-content:flex-end;gap:var(--space-3);margin-top:var(--space-4);flex-wrap:wrap}
+.actions.center{justify-content:center}
+.actions.split{justify-content:space-between;align-items:center}
+.primary{font-family:var(--font-body);font-size:.95rem;font-weight:600;letter-spacing:.01em;padding:var(--space-3) var(--space-6);
+  border-radius:var(--radius-sm);cursor:pointer;background:var(--accent);color:var(--ink-on-accent);border:none;box-shadow:var(--shadow-signal-glow);transition:background .16s,box-shadow .16s}
+.primary:hover{background:var(--accent-hover);box-shadow:var(--shadow-lift-mid)}
+.primary.lg{width:100%;padding:var(--space-4);font-size:1rem}
+.primary:disabled{background:var(--accent-muted);color:var(--ink-paper-muted);box-shadow:none;cursor:default}
+.ghost{font-family:var(--font-body);font-size:.92rem;font-weight:500;padding:var(--space-3) var(--space-5);border-radius:var(--radius-sm);
+  cursor:pointer;background:var(--surface-paper-card);color:var(--ink-paper-primary);border:1px solid var(--border-canvas);transition:background .16s,border-color .16s}
+.ghost:hover{background:var(--surface-paper-hover);border-color:var(--border-canvas-emphasis)}
+.linkbtn{background:none;border:none;color:var(--accent-2);font-family:var(--font-body);font-size:.88rem;cursor:pointer;padding:2px 0;text-align:left;text-decoration:underline;text-underline-offset:3px}
+.quiet-links{display:flex;flex-direction:column;gap:6px;margin-top:var(--space-4);align-items:center}
+.toast{font-family:var(--font-body);font-size:.9rem;color:var(--semantic-success);text-align:center;margin:0}
+.toggle-tab{position:fixed;right:14px;top:46px;z-index:60}
+</style>
+</head>
+<body>
+
+<div class="proto-bar">
+  <b>Archie publish UX · prototype</b>
+  <span class="seg" id="runtimeSeg">
+    <button data-rt="desktop" class="on">Desktop (Tauri)</button>
+    <button data-rt="web">Web (browser)</button>
+  </span>
+  <span class="sp"></span>
+  <label style="opacity:.85">Jump to state:
+    <select id="stateSel"></select>
+  </label>
+  <button id="restart">↻ Restart flow</button>
+</div>
+
+<div class="scrim"></div>
+<div class="dialog" id="dlg" role="dialog" aria-modal="true" aria-label="Publish"></div>
+<div class="proto-note">Prototype — device-flow handshake is mocked (no real GitHub). Custom display font falls back to system.</div>
+
+<script>
+const S = {
+  handle: "micah",
+  title: "Voynich Folios",
+  slug: "voynich-folios",
+  isPublic: true,
+  stayIn: true,
+  uploaded: 12, total: 40,
+};
+const runtime = { mode: "desktop" };
+
+function siteUrl(slug){
+  const s = (slug||"").trim();
+  if(!s) return "https://"+S.handle+".github.io/…/";
+  if(s.toLowerCase() === S.handle.toLowerCase()+".github.io") return "https://"+S.handle+".github.io/";
+  return "https://"+S.handle+".github.io/"+s+"/";
+}
+function esc(x){return (x||"").replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+
+// ── State renderers ─────────────────────────────────────────────────────────
+const STATES = {};
+
+STATES["chooser"] = ()=>`
+  <header>
+    <p class="eyebrow">Publish</p>
+    <h2>Where should this go?</h2>
+    <p class="lede">Archie builds the same finished site each way — pick where to put it.</p>
+  </header>
+  <div class="choices">
+    <button class="choice feature" onclick="go('intro')">
+      <span class="c-title">Publish to the web →</span>
+      <span class="c-desc">A real website on GitHub Pages — free, permanent, and the address is yours. Sign in once; Archie sets the rest up for you.</span>
+    </button>
+    <button class="choice" onclick="go('advanced')">
+      <span class="c-title">Locally / advanced</span>
+      <span class="c-desc">Write the site to a folder, or publish with your own GitHub token (for power users).</span>
+    </button>
+    <button class="choice" onclick="alert('(prototype) existing zip + share-link path')">
+      <span class="c-title">Save a copy — or share a link</span>
+      <span class="c-desc">Keep a copy or share a link, packed into one <code>.archie.zip</code>.</span>
+    </button>
+  </div>
+  <div class="actions"><button class="ghost" onclick="alert('(prototype) close')">Cancel</button></div>`;
+
+STATES["intro"] = ()=>`
+  <header><p class="eyebrow">Publish</p><h2>Put this on the web — free, and it's yours.</h2>
+    <p class="lede">Archie publishes your library as a real website on GitHub Pages. It's free, permanent, and the address belongs to you.</p>
+  </header>
+  <button class="primary lg" onclick="go('device')">Continue with GitHub</button>
+  <div class="quiet-links">
+    <button class="linkbtn" onclick="alert('(prototype) opens github.com/signup')">No GitHub account? Make one free</button>
+    <button class="linkbtn" onclick="go('advanced')">I already use GitHub →</button>
+  </div>`;
+
+STATES["device"] = ()=>`
+  <header><p class="eyebrow">Connect</p><h2>One quick step to connect.</h2></header>
+  <div class="body center">
+    <div class="code-box"><span class="code">WDJB-MJHT</span><button class="ghost" onclick="this.textContent='Copied'">Copy code</button></div>
+    <button class="primary" style="margin:0 auto" onclick="afterAuthorize()">Open GitHub to enter it</button>
+    <p class="line">Paste the code there and click <strong>Authorize</strong>. We'll pick it up automatically — come back here.</p>
+    <p class="spin" style="justify-content:center"><span class="dot"></span> Waiting for you to authorize on GitHub… <span class="line muted" style="font-size:.8rem">(expires in 14:52)</span></p>
+    <p class="line muted">This code works for 15 minutes.</p>
+  </div>
+  <div class="actions"><button class="ghost" onclick="go('intro')">Cancel</button>
+    <button class="ghost" onclick="afterAuthorize()" title="prototype shortcut">▶ Simulate authorize</button></div>`;
+
+STATES["connected"] = ()=>`
+  <header><p class="eyebrow">Connect</p><h2>You're connected.</h2></header>
+  <div class="body center">
+    <p class="toast">✓ You're connected as <strong>@${S.handle}</strong>.</p>
+    <label class="cb" style="justify-content:center"><input type="checkbox" ${S.stayIn?"checked":""} onchange="S.stayIn=this.checked"><span>Stay signed in on this computer <span class="sub">— so re-publishing is one click</span></span></label>
+  </div>
+  <div class="actions center"><button class="primary" onclick="go('name')">Continue</button></div>`;
+
+STATES["name"] = ()=>`
+  <header><p class="who">@${S.handle}</p><p class="eyebrow">Publish</p><h2>Name your site.</h2></header>
+  <div class="body">
+    <label class="fld">Site name
+      <input id="slug" type="text" value="${esc(S.slug)}" oninput="onSlug(this.value)" autocomplete="off">
+    </label>
+    <p class="help">Letters, numbers and dashes. This becomes part of your web address.</p>
+    <div class="preview">Your site will live at<br><span class="url" id="prev">${siteUrl(S.slug)}</span><span class="line muted" id="prevtip"></span></div>
+    <label class="cb"><input type="checkbox" ${S.isPublic?"checked":""} onchange="S.isPublic=this.checked"><span>Anyone with the link can see it</span></label>
+  </div>
+  <div class="actions"><button class="ghost" onclick="go('device')">← Back</button><button class="primary" onclick="startPublish()">Publish</button></div>`;
+
+STATES["publishing"] = ()=>{
+  const steps = [
+    ["Creating your site's home on GitHub","done"],
+    ["Uploading your library — "+S.uploaded+" of "+S.total+" images","active"],
+    ["Saving everything","todo"],
+    ["Switching your site on","todo"],
+  ];
+  return `<header><p class="who">@${S.handle}</p><p class="eyebrow">Publishing</p><h2>Publishing your site…</h2></header>
+  <div class="steps">${steps.map(([t,k])=>`
+    <div class="step ${k}"><span class="mk">${k==="done"?"✓":""}</span>${esc(t)}…</div>`).join("")}</div>
+  <p class="line muted">This usually takes under a minute. You can leave this open.</p>`;
+};
+
+STATES["success"] = ()=>`
+  <header><p class="who">@${S.handle}</p><p class="eyebrow">Published</p></header>
+  <div class="result">
+    <p class="ok">Your site is live.</p>
+    <div class="hero-url">${siteUrl(S.slug)}</div>
+    <div class="actions center">
+      <button class="primary" onclick="alert('(prototype) opens your live site')">Open my site</button>
+      <button class="ghost" onclick="this.textContent='Copied'">Copy link</button>
+    </div>
+    <p class="line muted">GitHub may take a minute to finish the first build — if it's blank, refresh in a moment.</p>
+    <p class="line muted">Made changes? Just hit <strong>Publish to the web</strong> again — it updates the same site.</p>
+    <details><summary class="deets">▸ Details</summary><p class="line" style="margin-top:8px">Commit · <a style="color:var(--accent-2)" href="#">github.com/${S.handle}/${S.slug}/commit/a1b2c3d</a></p></details>
+  </div>`;
+
+STATES["update"] = ()=>`
+  <header><p class="who">@${S.handle}</p><p class="eyebrow">Publish</p><h2>Update your site?</h2></header>
+  <div class="body">
+    <p class="line">Update <code>${S.handle}.github.io/${S.slug}</code> with your latest changes?</p>
+  </div>
+  <div class="actions split">
+    <button class="linkbtn" onclick="go('name')">Publish somewhere else…</button>
+    <button class="primary" onclick="startPublish()">Publish update</button>
+  </div>`;
+
+STATES["manual"] = ()=>`
+  <header><p class="who">@${S.handle}</p><p class="eyebrow">Almost done</p><h2>One quick switch on GitHub.</h2></header>
+  <div class="body">
+    <p class="line">Your files are uploaded. GitHub needs you to flip Pages on for this repository — just once:</p>
+    <ol class="steps-num">
+      <li>Open <a style="color:var(--accent-2)" href="#">Settings › Pages</a> for this repo</li>
+      <li>Under <em>Build and deployment</em>, choose <em>Deploy from a branch</em></li>
+      <li>Pick the <code>gh-pages</code> branch, then <em>Save</em></li>
+    </ol>
+    <p class="line muted">Your site then appears at <span class="url" style="color:var(--accent-2)">${siteUrl(S.slug)}</span></p>
+  </div>
+  <div class="actions"><button class="ghost" onclick="go('success')">I did it — recheck</button></div>`;
+
+STATES["error"] = ()=>`
+  <header><p class="who">@${S.handle}</p><p class="eyebrow">Publish</p><h2>That didn't go through.</h2></header>
+  <div class="body">
+    <div class="warn" style="border-left-color:var(--semantic-error)">
+      <p class="err">Couldn't publish: GitHub is rate-limiting your account right now, or that name is taken by another kind of repo. Wait a moment and try again.</p>
+    </div>
+    <p class="line muted">Nothing was changed on your live site.</p>
+  </div>
+  <div class="actions"><button class="ghost" onclick="go('intro')">Sign in again</button><button class="primary" onclick="startPublish()">Try again</button></div>`;
+
+STATES["nametaken"] = ()=>`
+  <header><p class="who">@${S.handle}</p><p class="eyebrow">Publish</p><h2>You already have that site.</h2></header>
+  <div class="body">
+    <p class="line">You already have a site called <code>${S.slug}</code>. Pick another name, or update the existing one.</p>
+  </div>
+  <div class="actions split">
+    <button class="ghost" onclick="go('name')">Use a new name</button>
+    <button class="primary" onclick="go('update')">Update the existing site</button>
+  </div>`;
+
+STATES["advanced"] = ()=>`
+  <header><p class="eyebrow">Publish · Advanced</p><h2>Connect to GitHub</h2>
+    <p class="lede">Publish your whole library to a GitHub Pages branch. Your token is used once to publish and is never stored.</p>
+  </header>
+  <div class="body">
+    <div style="display:flex;gap:12px">
+      <label class="fld" style="flex:1">Owner<input type="text" placeholder="your-username"></label>
+      <label class="fld" style="flex:1">Repository<input type="text" placeholder="my-exhibit"></label>
+    </div>
+    <label class="fld">Branch<input type="text" value="gh-pages"></label>
+    <p class="help">Publishing <strong>replaces everything</strong> on this branch with the current library.</p>
+    <label class="fld">Access token (fine-grained, with Contents and Pages write access)
+      <input type="password" placeholder="github_pat_…"></label>
+    <label class="cb"><input type="checkbox"><span>Include source originals for citation</span></label>
+    <p class="help">Kept reachable for power users, air-gapped/enterprise setups, and the web build — the friendly path lives behind “Publish to the web”.</p>
+  </div>
+  <div class="actions"><button class="ghost" onclick="go(runtime.mode==='web'?'web':'intro')">← Back</button><button class="primary">Publish</button></div>`;
+
+STATES["web"] = ()=>`
+  <header><p class="eyebrow">Publish</p><h2>Share your library.</h2>
+    <p class="lede">In a browser tab, Archie can package your library as a shareable link instantly.</p>
+  </header>
+  <div class="choices">
+    <button class="choice feature" onclick="alert('(prototype) builds .archie.zip + ?src= link')">
+      <span class="c-title">Get a shareable link</span>
+      <span class="c-desc">Packs your library into one file and gives you a link into the Archie viewer. Best for a draft — the link lasts as long as the file stays hosted.</span>
+    </button>
+    <button class="choice" onclick="go('advanced')">
+      <span class="c-title">I have a GitHub token →</span>
+      <span class="c-desc">Publish to GitHub Pages by pasting your own access token.</span>
+    </button>
+  </div>
+  <div class="warn" style="margin-top:16px">
+    <p class="h">Want a permanent site you own?</p>
+    <p class="line">Open Archie on your <strong>desktop</strong> to publish straight to GitHub with one click — no token, no setup. (GitHub sign-in can't run safely from a browser tab, so the one-click path is desktop-only.)</p>
+  </div>`;
+
+// ── Engine ──────────────────────────────────────────────────────────────────
+function render(state){
+  const fn = STATES[state] || STATES["chooser"];
+  document.getElementById("dlg").innerHTML = fn();
+  document.getElementById("stateSel").value = state;
+  history.replaceState(null,"", "?state="+state+"&runtime="+runtime.mode);
+}
+function go(state){ render(state); }
+function onSlug(v){ S.slug=v; const u=siteUrl(v); document.getElementById("prev").textContent=u;
+  const tip=document.getElementById("prevtip");
+  tip.textContent = v.trim().toLowerCase()===S.handle+".github.io" ? "  — your main site (top-level address)" : "";
+}
+function afterAuthorize(){ go("connected"); }
+function startPublish(){
+  render("publishing");
+  let n = S.uploaded;
+  const t = setInterval(()=>{
+    n = Math.min(S.total, n + 7); S.uploaded = n;
+    if(document.querySelector(".step.active")) render("publishing");
+    if(n>=S.total){ clearInterval(t); setTimeout(()=>go("success"), 700); }
+  }, 650);
+}
+
+// runtime + state controls
+function setRuntime(m){ runtime.mode=m;
+  document.querySelectorAll("#runtimeSeg button").forEach(b=>b.classList.toggle("on", b.dataset.rt===m));
+  go(m==="web" ? "web" : "chooser");
+}
+document.querySelectorAll("#runtimeSeg button").forEach(b=>b.onclick=()=>setRuntime(b.dataset.rt));
+document.getElementById("restart").onclick=()=>{ S.uploaded=12; go(runtime.mode==="web"?"web":"chooser"); };
+
+const order = ["chooser","intro","device","connected","name","publishing","success","update","manual","error","nametaken","advanced","web"];
+const labels = {chooser:"0 · Chooser",intro:"1 · Intro (sign-in)",device:"2 · Device code",connected:"3 · Connected",name:"4 · Name your site",publishing:"5 · Publishing",success:"6 · Success",update:"7 · Update (return)",manual:"8 · Manual Pages",error:"9 · Error",nametaken:"10 · Name taken",advanced:"11 · Advanced (legacy form)",web:"W · Web fallback"};
+const sel=document.getElementById("stateSel");
+order.forEach(s=>{ const o=document.createElement("option"); o.value=s; o.textContent=labels[s]; sel.appendChild(o); });
+sel.onchange=()=>go(sel.value);
+
+// boot — honor ?state / ?runtime for deterministic screenshots
+const q=new URLSearchParams(location.search);
+if(q.get("runtime")){ runtime.mode=q.get("runtime"); document.querySelectorAll("#runtimeSeg button").forEach(b=>b.classList.toggle("on", b.dataset.rt===runtime.mode)); }
+render(q.get("state") || (runtime.mode==="web"?"web":"chooser"));
+</script>
+</body>
+</html>
