@@ -83,8 +83,12 @@ export interface AObject extends RightsFields {
   summary?: string;
   /** Defaults to "image". */
   mediaType?: MediaType;
-  /** Geo-annotation extension (DESIGN.md): a slippy-map basemap descriptor. When set, the object mounts
-   *  as a bounded OSD pixel raster (a map) rather than an image/IIIF `source`. Absent for normal media. */
+  /** A structured tile-source descriptor that CLASSIFIES the surface, overriding the `source` string when
+   *  set (absent for normal image/IIIF/AV media). Two variants (TileSourceDescriptor union):
+   *   • `xyz` — geo-annotation extension (DESIGN.md): a slippy-map basemap; mounts as a bounded OSD raster.
+   *   • `dzi` — Phase B tiling (Q-8/Q-9): a baked Deep Zoom pyramid for an oversized import, emitted by the
+   *     author-side slicer; the viewer hands it to OSD natively. ADDITIVE/OPTIONAL — no migration; objects
+   *     without it read back unchanged. */
   tileSource?: TileSourceDescriptor;
   /** Pixel dimensions — required by IIIF for image/video canvases when known. */
   width?: number;

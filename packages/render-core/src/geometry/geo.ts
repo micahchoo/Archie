@@ -9,7 +9,7 @@
 // FOR FREE (annotorious already re-anchors pixel coords on every OSD viewport event — that IS the
 // coordinate-sync atlasdraw needed MapLibre for, already shipped here in pixel space).
 
-import type { TileSourceDescriptor } from "../iiif/resolve.js";
+import type { XyzTileSource } from "../iiif/resolve.js";
 import type { GeoAnchor } from "../wadm/types.js";
 
 export interface LngLat {
@@ -35,7 +35,7 @@ export interface PixelRect {
 /** The Web-Mercator latitude limit — beyond ±this the projection diverges (the square map clips here). */
 export const MERCATOR_MAX_LAT = 85.05112878;
 
-type Extentish = Pick<TileSourceDescriptor, "tileSize" | "maxZoom">;
+type Extentish = Pick<XyzTileSource, "tileSize" | "maxZoom">;
 
 /** Full-resolution pixel edge of the basemap (the slippy world size at `maxZoom`). */
 export function mercatorExtent(d: Extentish): number {

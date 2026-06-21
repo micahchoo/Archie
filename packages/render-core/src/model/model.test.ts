@@ -1,5 +1,33 @@
 import { describe, it, expect } from "vitest";
-import { mediaTypeFromSource, readingFamily, isValidMode } from "./model.js";
+import { mediaTypeFromSource, readingFamily, isValidMode, type AObject } from "./model.js";
+import type { DziTileSource } from "../iiif/resolve.js";
+import type { ObjectId } from "../wadm/brand.js";
+
+describe("AObject.tileSource — additive optional DZI descriptor (Q-8, no migration)", () => {
+  it("an object WITHOUT tileSource round-trips unchanged (no migration)", () => {
+    const plain: AObject = { id: "o1" as ObjectId, source: "photo.jpg", label: "A photo", width: 800, height: 600 };
+    const back = JSON.parse(JSON.stringify(plain)) as AObject;
+    expect(back).toEqual(plain);
+    expect("tileSource" in back).toBe(false); // the field is genuinely absent, not null
+  });
+
+  it("an object WITH a dzi tileSource serializes and reads back structurally identical", () => {
+    const dzi: DziTileSource = {
+      kind: "dzi",
+      width: 8000,
+      height: 6000,
+      tileSize: 254,
+      overlap: 1,
+      format: "image/jpeg",
+      filesPath: "assets-tiles/o1_files",
+    };
+    const obj: AObject = { id: "o1" as ObjectId, source: "huge.jpg", label: "Oversized", width: 8000, height: 6000, tileSource: dzi };
+    const back = JSON.parse(JSON.stringify(obj)) as AObject;
+    expect(back).toEqual(obj);
+    expect(back.tileSource).toEqual(dzi);
+    expect(back.tileSource?.kind).toBe("dzi");
+  });
+});
 
 describe("isValidMode — the §43 family-binding rule + guard for untrusted JSON (v1: only 'no mode')", () => {
   it("accepts the absence of a mode for any layout", () => {
