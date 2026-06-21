@@ -12,6 +12,7 @@
   import type { Binding, RecentProject, RightsFields } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
+  import HelpMenu from "./HelpMenu.svelte";
   import { saveStatus } from "./save-queue.svelte.js";
 
   let {
@@ -41,11 +42,13 @@
     onsummary,
     onpatchexhibit,
     onremoveexhibit,
+    ontutorial,
+    onshortcuts,
   }: {
     exhibits: ExhibitMeta[];
     onopen: (slug: string) => void;
     oncreate: (title: string) => void;
-    /** A whole image folder becomes a new exhibit (contributor-broadening ① — Archie-e1d6). */
+    /** A whole media folder (images, audio, video) becomes a new exhibit (contributor-broadening ① — Archie-e1d6). */
     oncreatefromfolder: (files: File[]) => void;
     /** A pasted IIIF manifest URL becomes a new exhibit (contributor-broadening ② — Archie-bc01). */
     oncreatefrommanifest: (url: string) => void;
@@ -79,6 +82,9 @@
     /** Per-card pencil CRUD (Archie-79be): patch any exhibit's metadata, or remove it, without opening it. */
     onpatchexhibit: (slug: string, fields: Partial<ExhibitMeta>) => void;
     onremoveexhibit: (slug: string) => void;
+    /** Help menu actions (threaded from App): open the onboarding tutorial / the shortcuts cheat-sheet. */
+    ontutorial: () => void;
+    onshortcuts: () => void;
   } = $props();
 
   let rightsOpen = $state(false);
@@ -101,7 +107,7 @@
     newTitle = "";
   }
 
-  // The hidden directory input behind "… or import an image folder".
+  // The hidden directory input behind "… or add a media folder".
   let dirEl: HTMLInputElement | null = null;
 
   // A human "x ago" for a recent project's last-opened stamp.
@@ -119,7 +125,10 @@
     <p class="eyebrow">Library · {exhibits.length} {exhibits.length === 1 ? "exhibit" : "exhibits"}</p>
     <div class="title-row">
       <h1>{libTitle && libTitle.trim() ? libTitle : "Library"}</h1>
-      <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
+      <div class="hdr-actions">
+        <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
+        <HelpMenu {ontutorial} {onshortcuts} />
+      </div>
     </div>
     <p class="lede">An exhibit is a collection of annotated media — images, audio, video, or maps you mark up with notes. Create one any time; your work saves as you go.</p>
 
@@ -229,9 +238,9 @@
         <span class="plus">+</span>
         <input bind:value={newTitle} placeholder="New exhibit title…" aria-label="New exhibit title" />
         <button type="submit" disabled={newTitle.trim() === ""}>Create</button>
-        <!-- Folder → exhibit in one gesture: the folder names the exhibit, its images become the
-             objects (reading order). webkitdirectory over showDirectoryPicker: cross-browser + testable. -->
-        <button type="button" class="alt-create" onclick={() => dirEl?.click()}>… or add an image folder</button>
+        <!-- Folder → exhibit in one gesture: the folder names the exhibit, its media (images, audio,
+             video) become the objects (reading order). webkitdirectory over showDirectoryPicker: cross-browser + testable. -->
+        <button type="button" class="alt-create" onclick={() => dirEl?.click()}>… or add a media folder</button>
         <!-- One paste bootstraps from any institutional IIIF collection (50k+ manifests in the wild).
              prompt() matches the app's alert/confirm chrome convention — a quiet escape, not a form. -->
         <button type="button" class="alt-create" onclick={() => { const u = window.prompt("Paste a IIIF manifest link"); if (u) oncreatefrommanifest(u); }}>… or paste a IIIF link</button>
@@ -240,7 +249,7 @@
           type="file"
           webkitdirectory
           style="display:none"
-          aria-label="Add a folder of images as a new exhibit"
+          aria-label="Add a folder of media as a new exhibit"
           onchange={(e) => { const el = e.currentTarget as HTMLInputElement; if (el.files?.length) oncreatefromfolder(Array.from(el.files)); el.value = ""; }}
         />
       </form>
@@ -255,6 +264,7 @@
   /* Eyebrow: the quiet tracked-mono signal-chrome (composes the global .eyebrow). */
   .eyebrow { color: var(--ink-canvas-muted); }
   .title-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
+  .hdr-actions { display: inline-flex; align-items: center; gap: var(--space-2); flex: none; }
   .librights {
     flex: none; align-self: center; display: inline-flex; align-items: center; gap: var(--space-1);
     font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer;

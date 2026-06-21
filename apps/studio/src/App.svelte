@@ -20,6 +20,7 @@
   import PropsDrawer from "./PropsDrawer.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
   import TutorialModal from "./TutorialModal.svelte";
+  import HelpMenu from "./HelpMenu.svelte";
   // AddMapModal (map add) is lazy-loaded — see AddMapModalComp below.
   import NoteEditor from "./NoteEditor.svelte";
   import { matches, typingInField } from "./shortcuts.js";
@@ -1009,7 +1010,6 @@
     commentEl?.setSelectionRange(pos, pos);
   }
   let helpOpen = $state(false); // the `?` shortcuts cheat-sheet
-  let helpMenuOpen = $state(false); // the ? button's little menu (Tutorial / Shortcuts)
   let tutorialOpen = $state(false); // the onboarding tutorial modal (embeds the learn decks)
   // Global + image-editor keyboard shortcuts (registry-driven; AV shortcuts live in AvEditor, palette in CmdK).
   function onGlobalKey(e: KeyboardEvent) {
@@ -1194,6 +1194,8 @@
     onsummary={setLibrarySummary}
     onpatchexhibit={patchExhibitMeta}
     onremoveexhibit={(slug) => void removeExhibitById(slug)}
+    ontutorial={() => (tutorialOpen = true)}
+    onshortcuts={() => (helpOpen = true)}
   />
 {:else if view === "overview"}
   <div class="overview-stage">
@@ -1254,16 +1256,7 @@
       <button onclick={() => void save()} disabled={!sess.dirty}>Save</button>
     {/if}
     <button class="publish-signal" onclick={() => void ensurePub().then((p) => p.openDialog())}>Publish & share…</button>
-    <div class="help-wrap">
-      <button class="help-btn" onclick={() => (helpMenuOpen = !helpMenuOpen)} title="Help" aria-label="Help" aria-haspopup="menu" aria-expanded={helpMenuOpen}>?</button>
-      {#if helpMenuOpen}
-        <div class="help-backdrop" role="presentation" onclick={() => (helpMenuOpen = false)}></div>
-        <div class="help-menu" role="menu">
-          <button role="menuitem" onclick={() => { helpMenuOpen = false; tutorialOpen = true; }}>Start the tutorial</button>
-          <button role="menuitem" onclick={() => { helpMenuOpen = false; helpOpen = true; }}>Keyboard shortcuts <kbd>?</kbd></button>
-        </div>
-      {/if}
-    </div>
+    <HelpMenu ontutorial={() => (tutorialOpen = true)} onshortcuts={() => (helpOpen = true)} />
   </header>
 
   <ReadingsModal open={readingsOpen} readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => rdg.setActive(id)} onclose={() => (readingsOpen = false)} />
@@ -1734,22 +1727,7 @@
   .savestate.error { color: var(--semantic-error); }
   /* (.swatch / .you rules removed — that UI moved into ReadingsModal/IdentityPrompt; the rules were dead.) */
   /* The ? shortcuts button — a round, quiet affordance for the cheat-sheet. */
-  /* The ? help control — moored in the header; the menu drops down from it. */
-  header .help-wrap { position: relative; display: inline-flex; }
-  header .help-btn { border-radius: 50%; min-width: 1.9rem; padding: var(--space-1) 0; text-align: center; font-weight: 400; }
-  header .help-backdrop { position: fixed; inset: 0; z-index: 90; }
-  header .help-menu {
-    position: absolute; top: calc(100% + 0.4rem); right: 0; z-index: 91;
-    display: flex; flex-direction: column; min-width: 13rem; padding: var(--space-1);
-    background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-mid);
-  }
-  header .help-menu button {
-    display: flex; align-items: center; justify-content: space-between; gap: var(--space-3);
-    width: 100%; text-align: left; background: none; border: none; cursor: pointer;
-    padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
-    font: inherit; font-size: 0.92rem; color: var(--ink-paper-primary);
-  }
-  header .help-menu button:hover { background: var(--surface-paper-hover, rgba(26, 60, 35, 0.06)); }
+  /* The ? help control is now the shared <HelpMenu> component (used here + on the library home). */
 
   /* Playground banner — honest ephemerality (§115). Warm clay-tinted card; the keep action stays a
      quiet .soft-btn (signal-orange is rationed to Publish, not spent here). */
