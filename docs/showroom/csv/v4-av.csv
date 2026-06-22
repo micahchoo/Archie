@@ -1,0 +1,6 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+V4 · AV & transcript,"Audio and video read with a transcript spine — the words beside the sound, each line a moment you can jump to.",,,,,transcript spine,viewer,"Box the transcript column."
+V4 · AV & transcript,"Click a transcript line to seek there; as it plays, the active line highlights and follows along.",,,,,seek highlight,viewer,"Box the active line."
+V4 · AV & transcript,"The waveform doubles as a map of annotated moments.",,,,,waveform map,viewer,"Box the waveform."
+V4 · AV & transcript,"Open at a shared timestamp and the player lands there, paused — no autoplay surprise.",,,,,deep-link paused,power,"Mount internal; tag power."
+V4 · AV & transcript,"Step between sibling tracks from the carousel in a multi-object AV exhibit.",,,,,sibling nav,viewer,"Box the carousel."

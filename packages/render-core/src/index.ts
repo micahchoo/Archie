@@ -18,6 +18,8 @@ export * from "./publish/site.js";
 export * from "./publish/ghpages.js";
 // Portable read seam (ADR-0010): read a published tree out of an opened `.archie.zip`, media → blob URLs.
 export * from "./publish/portable.js";
+// ADR-0020: L1 `.archie.zip` self-ID marker — write (publishLibrary stamps archie.json) + read (validateArchieMarker).
+export * from "./publish/marker.js";
 // Working-store read seam (Q-3 archie-persistence): cold-read the Studio's working copy — the Viewer's live source.
 export * from "./publish/working.js";
 // Merge-preserving regen (Archie-9b93): regenerate owned exhibits, CARRY committed ones — index merge.

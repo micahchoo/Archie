@@ -21,6 +21,18 @@ describe("parseRoute", () => {
     expect(parseRoute("#/voynich/a/n7")).toEqual({ view: "exhibit", slug: "voynich", noteId: "n7" });
   });
 
+  it("#/<slug>/o/<objectId> → exhibit landing on a whole Object", () => {
+    expect(parseRoute("#/voynich/o/obj-2")).toEqual({ view: "exhibit", slug: "voynich", objectId: "obj-2" });
+  });
+
+  it("#/<slug>/s/<sectionId> → exhibit landing on a Section (ADR-0021 cite ladder)", () => {
+    expect(parseRoute("#/voynich/s/sec-3")).toEqual({ view: "exhibit", slug: "voynich", sectionId: "sec-3" });
+  });
+
+  it("empty section id degrades to plain exhibit, never throws", () => {
+    expect(parseRoute("#/voynich/s/")).toEqual({ view: "exhibit", slug: "voynich" });
+  });
+
   it("carries ?xywh alongside a note", () => {
     expect(parseRoute("#/voynich/a/n7?xywh=10,20,30,40")).toEqual({
       view: "exhibit", slug: "voynich", noteId: "n7", xywh: "10,20,30,40",
@@ -33,6 +45,22 @@ describe("parseRoute", () => {
 
   it("empty note id degrades to plain exhibit, never throws", () => {
     expect(parseRoute("#/voynich/a/")).toEqual({ view: "exhibit", slug: "voynich" });
+  });
+
+  it("carries ?t time fragment alongside a note (mirrors xywh)", () => {
+    expect(parseRoute("#/voynich/a/n7?t=10,20")).toEqual({
+      view: "exhibit", slug: "voynich", noteId: "n7", t: "10,20",
+    });
+  });
+
+  it("carries ?t and ?xywh together on a note", () => {
+    expect(parseRoute("#/voynich/a/n7?xywh=1,2,3,4&t=10,20")).toEqual({
+      view: "exhibit", slug: "voynich", noteId: "n7", xywh: "1,2,3,4", t: "10,20",
+    });
+  });
+
+  it("ignores t without a note (it is meaningless there, like xywh)", () => {
+    expect(parseRoute("#/voynich?t=10,20")).toEqual({ view: "exhibit", slug: "voynich" });
   });
 
   it("garbage never throws — double slash collapses to gallery", () => {
@@ -51,6 +79,10 @@ describe("routeToHash (inverse)", () => {
     { view: "exhibit", slug: "voynich" },
     { view: "exhibit", slug: "voynich", noteId: "n7" },
     { view: "exhibit", slug: "voynich", noteId: "n7", xywh: "10,20,30,40" },
+    { view: "exhibit", slug: "voynich", noteId: "n7", t: "10,20" },
+    { view: "exhibit", slug: "voynich", noteId: "n7", xywh: "10,20,30,40", t: "10,20" },
+    { view: "exhibit", slug: "voynich", objectId: "obj-2" },
+    { view: "exhibit", slug: "voynich", sectionId: "sec-3" },
   ];
   it("round-trips: parseRoute(routeToHash(r)) === r", () => {
     for (const r of cases) expect(parseRoute(routeToHash(r))).toEqual(r);

@@ -1,0 +1,5 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+S5 · Narrative composer,"A narrative is a spine of sections — ordered prose that walks a reader through your objects, one framed view at a time.",,,,,narrative spine,studio,"Box the section list."
+S5 · Narrative composer,"Each section points at an object; draw a region and that becomes the camera the reader lands on.",,,,,framing camera,studio,"For AV sections the frame is a timestamp, not a box — mention both."
+S5 · Narrative composer,"Write the section's prose beside it — markdown, with live cites to other notes.",,,,,prose,studio,"Show a cite inside the prose to link S8."
+S5 · Narrative composer,"Reorder sections to retell the story; the reader follows your order.",,,,,reorder,studio,"Capture a drag to show reordering."

@@ -1,0 +1,6 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+S11 · Publish dialog,"Publish turns your exhibit into a static site — shareable, indexable, hostable anywhere.",,,,,publish,studio,"Box the dialog."
+S11 · Publish dialog,"Choose where it goes: a local folder, a downloadable zip, or straight to GitHub Pages.",,,,,destinations,studio,"Three destinations; box the tabs."
+S11 · Publish dialog,"For GitHub, give a repo, a branch, and a personal access token; Archie pushes the built pages.",,,,,github pat,studio,"Box the repo/branch/PAT fields."
+S11 · Publish dialog,"Each step reports its status — working, done, or the exact error if something fails.",,,,,status steps,power,"Capture a mid-publish 'working' state."
+S11 · Publish dialog,"Published pages carry SEO metadata — OpenGraph and Twitter tags, schema.org JSON-LD, a sitemap — so links preview richly and search engines index them.",,,,,seo metadata,viewer,"Invisible in UI; box the SEO note, or pair with a link-preview card screenshot."

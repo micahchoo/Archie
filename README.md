@@ -29,6 +29,7 @@
 - [Core concepts](#core-concepts)
 - [Features](#features)
 - [Publishing & deploying](#publishing--deploying)
+- [Embed an exhibit](#embed-an-exhibit)
 - [Architecture](#architecture)
 - [Status & roadmap](#status--roadmap)
 - [Development & testing](#development--testing)
@@ -243,6 +244,44 @@ You can also publish a portable **`.archie.zip`** (no host at all) and hand it t
 
 > [!TIP]
 > A published Pages site is **read-only**: visitors read and navigate, but can't author. For the best experience while building, run the Studio and Viewer locally; publish to share a public snapshot.
+
+## Embed an exhibit
+
+Drop a published Archie exhibit into any web page with `<archie-viewer>` — a read-only Web Component (about half the studio bundle, no build step) that a single `<script>` tag and one element render. Full guide: [`recipes/EMBED.md`](recipes/EMBED.md); runnable page: [`recipes/example.html`](recipes/example.html).
+
+> [!NOTE]
+> `<archie-viewer>` is **read-only** — visitors read and navigate, never author — and ships with **no `unsafe-eval`**, so it satisfies a strict embedding CSP.
+
+Load the runtime from jsDelivr serving the pinned `@v1` git tag, then place one element:
+
+```html
+<script
+  type="module"
+  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
+  crossorigin="anonymous"></script>
+
+<archie-viewer src="https://yourname.github.io/yourrepo/viewer/"></archie-viewer>
+```
+
+Pin `@v1` so an upstream change can't silently alter your embed. The public surface is three attributes (frozen — [ADR-0021](docs/adr/0021-archie-viewer-target-contract.md)):
+
+| Attribute | What it does |
+|---|---|
+| **`src`** | A hosted `.archie.zip` URL, a published-tree base URL, or absent → a local drop screen where the visitor drops their own `.archie.zip` (nothing fetched). |
+| **`target`** | A native-route address (the exact string the viewer shows in its address bar) that opens to a specific place; an unresolvable target degrades upward, never errors. |
+| **`offline`** | Boolean; present blocks all remote tile/media fetch (kiosk / air-gapped / privacy). Pair with a `src` whose tiles are bundled locally. |
+
+**Deep-link to a place.** `target` carries the cite ladder — Exhibit `#/{slug}` · Object `#/{slug}/o/<id>` · Note `#/{slug}/a/<id>` (add `?xywh=x,y,w,h` for a region) · Section `#/{slug}/s/<id>`:
+
+```html
+<archie-viewer
+  src="https://yourname.github.io/yourrepo/viewer/"
+  target="#/voynich/a/n3"></archie-viewer>
+```
+
+**IIIF interop.** Point an IIIF Presentation 3 **Content State** (base64url) at the embed via the additive `iiif-content` attribute; the native `target` route stays the primary contract.
+
+**iframe fallback.** Script-stripping CMSes (Notion, Substack, Squarespace, locked-down WordPress) strip `<script>` and custom elements — host a tiny page with the script + element and point an `<iframe>` at it (per anvil **ADR-0006**, "Web Component + iframe, nothing else").
 
 ## Architecture
 

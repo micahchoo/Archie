@@ -1,0 +1,5 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+S6a · Audio annotation,"Annotate sound the way you annotate images — by marking moments on the waveform.",,,,,audio annotation,studio,"Box the waveform."
+S6a · Audio annotation,"Drag across the waveform to mark a time range; the note anchors to those seconds.",,,,,time range,studio,"Box a selected range."
+S6a · Audio annotation,"Or drop a point marker at a single instant.",,,,,point marker,studio,"AV notes can't come from CSV (regions are image-only) — author these in the editor."
+S6a · Audio annotation,"The marker bar shows every annotated moment along the track.",,,,,markbar,studio,"Box the markbar."

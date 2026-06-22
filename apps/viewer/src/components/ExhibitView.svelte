@@ -14,6 +14,7 @@
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
   import { canvasIdFor } from "../published-base.js";
   import { resolveNoteArrival } from "../note-arrival.js";
+  import { resolveSectionIndex } from "../section-landing.js";
   import ObjectGrid from "./ObjectGrid.svelte";
   import Reader from "./Reader.svelte";
   import NarrativeReader from "./NarrativeReader.svelte";
@@ -24,14 +25,25 @@
   // `onnav` (dba2): publishes the object-nav snapshot up to ViewerShell, which renders the carousel in
   // the persistent top bar. `selectedObjectId` stays the source of truth here; ViewerShell only reflects
   // it. Emits null whenever the carousel shouldn't show (grid overview, AV, narrative, single object).
-  let { slug, noteId, objectId, onnav }: {
+  let { slug, noteId, objectId, sectionId, xywh, t, onnav, ondegrade }: {
     slug: string;
     noteId?: string;
     /** Object-cite arrival (#/<slug>/o/<id>, ADR-0018) — land on the whole Object, not the grid. */
     objectId?: string;
+    /** Section-cite arrival (#/<slug>/s/<id>, ADR-0021) — land the narrative spine on a Section (4.6). */
+    sectionId?: string;
+    /** Sub-region fragment off a note deep-link (#/<slug>/a/<id>?xywh=…) — fits the camera to that region
+     *  rather than the note's default mark bounds (Phase 3 / 4.2). */
+    xywh?: string;
+    /** Temporal offset off a note deep-link (#/<slug>/a/<id>?t=…) — seeks a recording to that moment,
+     *  PAUSED (section-142), on landing (Phase 3 / 4.2 + 4.7). */
+    t?: string;
     onnav?: (
       nav: { siblings: { id: string; label: string }[]; currentId: string; navigate: (id: string) => void; toOverview?: () => void } | null,
     ) => void;
+    /** Slug-level degrade-upward (Phase 3 / 4.3): a load failure (slug absent from the library) calls this
+     *  so the shell falls back to the Gallery / the single exhibit, instead of this view's dead error screen. */
+    ondegrade?: () => void;
   } = $props();
 
   let status = $state<"loading" | "ready" | "error">("loading");
@@ -40,8 +52,16 @@
   let layout = $state<LayoutDescriptor | null>(null);
   let selectedObjectId = $state<string | null>(null);
   let arrivedNote = $state<string | null>(null); // deep-link target id (land-in-context)
+  let arrivedRegion = $state<string | null>(null); // xywh sub-region off the note link → camera fit (4.2)
   let chromeVisible = $state(false); // cold-arrival chrome (§124), fades after a few seconds
   let linkMissing = $state(false); // the deep-linked note resolved to no owner (tombstoned cite) — be honest (#8)
+  // Object-announce (4.4): an #/<slug>/o/<id> deep-link whose object isn't in the exhibit used to degrade
+  // to the overview SILENTLY. Surface the honest "couldn't find that" chrome, exactly like the note path.
+  let objectMissing = $state(false);
+  // Section landing (4.6): a #/<slug>/s/<id> cite resolves to a spine index here (floored to range); a
+  // miss raises the arrival chrome honestly. null = no section cite / unresolved.
+  let arrivedSection = $state<number | null>(null);
+  let sectionMissing = $state(false);
   let activeReading = $state<string | null>(null); // ADR-0007 / Q16: base-only by default; null = base
   let notesHidden = $state(false); // ReadingLegend "Hide all" — declutter the canvas to the bare basemap/image
   // Grid-index escape (ADR-0016 keystone): when a narrative LEADS, the object grid stays reachable BEHIND
@@ -74,17 +94,42 @@
       // Object-cite arrival (#/<slug>/o/<id>, ADR-0018): land on the whole Object, not the overview/spine.
       // A narrative layout ignores selectedObjectId (it renders the spine), so open the object FROM the
       // index instead (indexObjectId → its own Reader); grid/single consume selectedObjectId.
-      if (objectId && l.objects.some((o) => o.id === objectId)) {
-        if (l.type === "narrative") indexObjectId = objectId;
-        else selectedObjectId = objectId;
+      if (objectId) {
+        if (l.objects.some((o) => o.id === objectId)) {
+          if (l.type === "narrative") indexObjectId = objectId;
+          else selectedObjectId = objectId;
+        } else {
+          // Object-announce (4.4): the cited object isn't in the exhibit — degrade to the overview, but
+          // SAY SO (the note path's honest "couldn't find that" chrome), never silently.
+          objectMissing = true;
+          chromeVisible = true;
+          setTimeout(() => (chromeVisible = false), 8000);
+        }
+      }
+
+      // Section-cite arrival (#/<slug>/s/<id>, ADR-0021 / 4.6): floor an out-of-range target to the
+      // nearest valid section; an unknown id raises the chrome honestly. Only meaningful for a spine.
+      if (sectionId && secs.length) {
+        const idx = resolveSectionIndex(sectionId, secs);
+        if (idx !== null) arrivedSection = idx;
+        else {
+          sectionMissing = true;
+          chromeVisible = true;
+          setTimeout(() => (chromeVisible = false), 8000);
+        }
       }
       status = "ready";
 
       // deep-link arrival (§82/§124): the shell parses #/<slug>/a/<id> and passes the note id here
       // (the hash is slug-qualified now, so ExhibitView no longer reads location.hash itself). Same
       // path the search overlay (Q-4) and keyboard index activation (Q-5) take — see arriveAtNote.
-      if (noteId) arriveAtNote(noteId);
+      // The xywh sub-region (4.2) rides along so the camera fits the cited region, not the note's bounds.
+      if (noteId) { arrivedRegion = xywh ?? null; arriveAtNote(noteId); }
     } catch (e) {
+      // Slug-level degrade-upward (4.3): a load failure (most commonly a slug absent from the library →
+      // readExhibitTree 404) hands UP to the shell, which falls back to the Gallery / single exhibit —
+      // never this view's dead full-screen error. Only when the shell wired no handler do we error here.
+      if (ondegrade) { ondegrade(); return; }
       errorMsg = e instanceof Error ? e.message : "Couldn’t load this exhibit. Reload to try again.";
       status = "error";
     }
@@ -249,6 +294,18 @@
       : { obj: activeObject, set: (id: string) => (selectedObjectId = id) },
   );
 
+  // The one honest arrival line — note/object/section misses each say what wasn't found and where we
+  // landed instead (4.4 / 4.6 surface the same honest chrome the note path (#8) established).
+  const arrivalMessage = $derived(
+    linkMissing
+      ? "That note isn’t here anymore — showing the exhibit instead"
+      : objectMissing
+        ? "That item isn’t in this exhibit — showing the exhibit instead"
+        : sectionMissing
+          ? "That section isn’t in this exhibit — showing the exhibit instead"
+          : "You followed a link to this note",
+  );
+
   // The Exhibit breadcrumb's "natural start" (CONTEXT §142) for a multi-object exhibit = the overview;
   // lifted to the top bar so the un-routed object selection resets on a crumb click (ViewerShell wiring).
   // Narrative's overview is the leading read (close any index-opened object); grid's is the object grid.
@@ -296,6 +353,7 @@
         object={activeData}
         annotations={annotationsOf(activeData.id)}
         rights={objectRightsOf(activeData.id)}
+        initialSeek={t}
         siblings={gridSiblings ?? undefined}
         currentId={activeData.id}
         onstep={(id) => (selectedObjectId = id)}
@@ -310,7 +368,7 @@
       {#if indexIsAV && indexData}
         <!-- Keyed like the grid-AV player: stepping the carousel between AV index objects must remount. -->
         {#key indexData.id}
-          <MediaPlayer object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} onback={() => (indexObjectId = null)} />
+          <MediaPlayer object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} initialSeek={t} onback={() => (indexObjectId = null)} />
         {/key}
       {:else}
         <Reader
@@ -324,6 +382,8 @@
           frame={frameFor(indexObject.id, indexData?.width, indexData?.height)}
           onback={() => (indexObjectId = null)}
           rights={objectRightsOf(indexObject.id)}
+          initialSelected={arrivedNote}
+          initialRegion={arrivedRegion}
           onnotehover={(id) => (hoverNote = id)}
           notesHidden={notesHidden}
           onhiddenchange={(v) => (notesHidden = v)}
@@ -357,6 +417,7 @@
         onreading={(id) => (activeReading = id)}
         styleFor={readingStyleOf}
         initialSelected={arrivedNote}
+        initialSection={arrivedSection}
         notesHidden={notesHidden}
         onhiddenchange={(v) => (notesHidden = v)}
         onindex={() => (narrativeIndex = true)}
@@ -376,6 +437,7 @@
       onback={isGrid ? () => (selectedObjectId = null) : undefined}
       rights={objectRightsOf(activeObject.id)}
       initialSelected={arrivedNote}
+      initialRegion={arrivedRegion}
       onnotehover={(id) => (hoverNote = id)}
       notesHidden={notesHidden}
       onhiddenchange={(v) => (notesHidden = v)}
@@ -417,8 +479,8 @@
   <!-- Cold-arrival chrome (§124): orient a link-follower, then fade. Transparent, no gate. -->
   {#if chromeVisible}
     <button class="arrival" transition:fade={{ duration: 400 }} onclick={() => (chromeVisible = false)}>
-      <span class="seal" aria-hidden="true">{linkMissing ? "⚐" : "↪"}</span>
-      <span class="msg">{linkMissing ? "That note isn’t here anymore — showing the exhibit instead" : "You followed a link to this note"}</span>
+      <span class="seal" aria-hidden="true">{linkMissing || objectMissing || sectionMissing ? "⚐" : "↪"}</span>
+      <span class="msg">{arrivalMessage}</span>
       <span class="dismiss">Dismiss</span>
     </button>
   {/if}

@@ -145,6 +145,18 @@ describe("entry vectors (file + ?src=)", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 403, headers: { get: () => null }, arrayBuffer: async () => new ArrayBuffer(0) } as unknown as Response)));
     await expect(openLibraryFromSrc("https://h/x.archie.zip")).rejects.toThrow(/couldn't open the library/i);
   });
+
+  it("ADR-0020: rejects a zip WITHOUT the marker with a friendly Error, never entering portable mode", async () => {
+    // a non-Archie zip: a bare exhibits.json, no archie.json marker.
+    const fs = new ZipFilesystem();
+    const f = await (await fs.root()).getFile("exhibits.json", { create: true });
+    const w = await f.writable();
+    await w.write(JSON.stringify({ library: { id: "x" }, exhibits: [] }));
+    await w.close();
+    const bytes = fs.toZip();
+    await expect(openLibraryFromFile(new Blob([new Uint8Array(bytes)]))).rejects.toThrow(/isn't an archie library/i);
+    expect(isPortable()).toBe(false); // rejected by the marker gate before openPortableLibrary
+  });
 });
 
 // Live source (Q-3): the hall-merge invariants. The OPFS probe itself is browser-only

@@ -1,0 +1,4 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+S7 · Map layer,"Add a map as an object — a basemap you pan and zoom like any image, for notes about places.",,,,,map layer,studio,"Box the map; mention it sits alongside images in the same exhibit."
+S7 · Map layer,"Frame a lat/lng extent and anchor a note to that patch of the world.",,,,,geo extent,studio,"Geo-truth (lat/lng) isn't a CSV pixel box; draw it on the map."
+S7 · Map layer,"Basemap tiles stream from an XYZ template as you pan — standard web-map tiling.",,,,,xyz tiles,embed,"Mount internal; box the basemap."

@@ -39,6 +39,7 @@
     onback,
     rights,
     initialSelected = null,
+    initialRegion = null,
     onnotehover,
     notesHidden = false,
     onhiddenchange,
@@ -65,6 +66,11 @@
     frame?: { markId: string; colour: string } | null;
     onback?: () => void;
     initialSelected?: string | null; // deep-link arrival: land selected on this note (→ fitBounds)
+    /** Deep-link sub-region (#/<slug>/a/<id>?xywh=…, Phase 3 / 4.2): the raw xywh fragment VALUE (e.g.
+     *  `pixel:100,50,200,80` or `percent:…`) off the note link. When present the camera fits THIS region
+     *  instead of the note's default mark bounds — a cite can frame a detail tighter than the whole mark.
+     *  null = no region (the note's own bounds drive the camera). */
+    initialRegion?: string | null;
     /** Hovering a note in the list solos its mark on the canvas (the legend's hover affordance,
      *  per-note). The host owns the state so the styleOf identity re-mints. null = hover ended. */
     onnotehover?: (id: string | null) => void;
@@ -114,6 +120,14 @@
   };
 
   let selected = $state<string | null>(initialSelected);
+
+  // Deep-link sub-region (4.2): the camera target fragment for Canvas's `focus`. The route gives the raw
+  // xywh VALUE (no `xywh=` prefix); fitRegion's parser needs the prefixed form, so add it when absent. A
+  // `percent:` value parses to null in fitRegion → a safe no-op (the note's own bounds then drive the
+  // camera), so an unsupported region never breaks the landing. null = no region cite.
+  const focusRegion = $derived(
+    initialRegion ? (initialRegion.startsWith("xywh=") ? initialRegion : `xywh=${initialRegion}`) : null,
+  );
 
   // Worklist 1.3 (arrival moment): on first paint — and again when the carousel lands on another
   // object — the marks pulse twice, then settle to their quiet A2 weight. Answers "where do I
@@ -196,7 +210,7 @@
     <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
          objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
     {#key object.canvasId}
-      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} {styleOf} frame={canvasFrame} zoomOnSelect locator bind:selected />
+      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} {styleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected />
     {/key}
   </main>
 

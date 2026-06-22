@@ -16,6 +16,7 @@
   import { type MarkerStyle } from "@render/svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
+  import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
 
   // Resizable / collapsible narrative spine (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
   // responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom. Drag math
@@ -40,6 +41,7 @@
     onreading,
     styleFor,
     initialSelected = null,
+    initialSection = null,
     notesHidden = false,
     onhiddenchange,
     onindex,
@@ -62,6 +64,10 @@
     /** Per-object marker styler (objectId → (annId → style)); colours markers by Reading. */
     styleFor?: (objectId: string) => (id: string) => MarkerStyle | undefined;
     initialSelected?: string | null; // deep-link arrival: land on the section whose object owns this note
+    /** Section-cite arrival (#/<slug>/s/<id>, ADR-0021 / 4.6): the resolved (in-range) section index to
+     *  land the spine on. Takes precedence over a note's owning-section when both are present (an explicit
+     *  section cite wins). null = no section cite. */
+    initialSection?: number | null;
     /** Hide-all (ReadingLegend declutter): canvas draws no markers except the SELECTED one. */
     notesHidden?: boolean;
     onhiddenchange?: (hidden: boolean) => void;
@@ -73,12 +79,13 @@
     onopenfinder?: (tag: string) => void;
   } = $props();
 
-  // Deep-link arrival → land on the section whose object owns the note (else section 0).
+  // Deep-link arrival → land on the right section. An explicit section cite (4.6) wins; else land on the
+  // section whose object OWNS the note. The owner search now scans BASE + per-reading pages (4.9) via the
+  // shared resolver — a note that lives ONLY on a reading overlay used to fall to section 0.
+  const objectIds = objects.map((o) => o.id);
   const arrivalSection = (() => {
-    if (!initialSelected) return 0;
-    const ownerId = objects.find((o) => (annotationsByObject[o.id] ?? []).some((a) => a.id === initialSelected))?.id;
-    const idx = sections.findIndex((s) => s.objectId === ownerId);
-    return idx >= 0 ? idx : 0;
+    if (initialSection !== null) return initialSection;
+    return arrivalSectionIndex(initialSelected, objectIds, sections, { annotationsByObject, readingAnnotationsByObject });
   })();
 
   let activeIndex = $state(arrivalSection);
@@ -94,7 +101,8 @@
     const next = initialSelected;
     if (next !== null && next !== prevInitialSelected) {
       selected = next;
-      const ownerId = objects.find((o) => (annotationsByObject[o.id] ?? []).some((a) => a.id === next))?.id;
+      // Owner search scans BASE + per-reading pages (4.9) — a reading-only note now lands on its section.
+      const ownerId = ownerObjectOf(next, objectIds, { annotationsByObject, readingAnnotationsByObject });
       const idx = sections.findIndex((s) => s.objectId === ownerId);
       if (idx >= 0) activeIndex = idx;
     }

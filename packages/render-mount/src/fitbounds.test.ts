@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fitBoundsRect, applyFitBounds, clampedFitRect, type FitOptions, type ViewportLike } from "./fitbounds.js";
+import { fitBoundsRect, applyFitBounds, clampedFitRect, clampToContentBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import type { W3CFragmentSelector, W3CSvgSelector } from "@render/core";
 
 // Characterization test (the Phase-1 acceptance ORACLE). Pins anvil's fitForSidebar behavior
@@ -92,6 +92,81 @@ describe("applyFitBounds — dispatch to an OSD-like viewport (the mockable gate
     const { vp, calls } = mockViewport();
     expect(applyFitBounds(vp, { type: "SvgSelector", value: "<polygon points='NaN'/>" }, sheet)).toBe(false);
     expect(calls).toHaveLength(0);
+  });
+});
+
+// clampToContentBounds — image-pixel out-of-bounds clamp (strategy 4.5). A hand-edited zip can swap
+// a smaller image under an annotation whose xywh now lies partly or wholly off the image. We intersect
+// the region rect with the image content bounds (0,0..width,height); an EMPTY intersection degrades to
+// the WHOLE-image fit instead of panning to a blank/edge view. NOT the bounded-MAP clamp (clampedFitRect).
+describe("clampToContentBounds (image-pixel out-of-bounds clamp, strategy 4.5)", () => {
+  const content = { width: 1000, height: 800 };
+
+  it("leaves a fully in-bounds rect unchanged (no regression to the oracle's rect)", () => {
+    const rect = { x: 100, y: 50, w: 200, h: 80 };
+    expect(clampToContentBounds(rect, content)).toEqual(rect);
+  });
+
+  it("an in-bounds rect flush to the image edge is unchanged", () => {
+    const rect = { x: 0, y: 0, w: 1000, h: 800 };
+    expect(clampToContentBounds(rect, content)).toEqual(rect);
+  });
+
+  it("a wholly off-image rect degrades to the whole-image fit", () => {
+    const rect = { x: 5000, y: 5000, w: 100, h: 100 }; // entirely past a 1000×800 image
+    expect(clampToContentBounds(rect, content)).toEqual({ x: 0, y: 0, w: 1000, h: 800 });
+  });
+
+  it("a negative-origin rect that misses the image entirely degrades to whole-image", () => {
+    const rect = { x: -500, y: -500, w: 100, h: 100 };
+    expect(clampToContentBounds(rect, content)).toEqual({ x: 0, y: 0, w: 1000, h: 800 });
+  });
+
+  it("a rect spilling off the right edge is intersected to the on-image part", () => {
+    const rect = { x: 900, y: 100, w: 400, h: 100 }; // 900..1300, image ends at 1000
+    expect(clampToContentBounds(rect, content)).toEqual({ x: 900, y: 100, w: 100, h: 100 });
+  });
+
+  it("a rect straddling the top-left origin is clipped to the visible quadrant", () => {
+    const rect = { x: -50, y: -50, w: 200, h: 200 }; // -50..150 → 0..150
+    expect(clampToContentBounds(rect, content)).toEqual({ x: 0, y: 0, w: 150, h: 150 });
+  });
+
+  it("an unknown content size (0×0) leaves the rect untouched (no info to clamp against)", () => {
+    const rect = { x: 100, y: 50, w: 200, h: 80 };
+    expect(clampToContentBounds(rect, { width: 0, height: 0 })).toEqual(rect);
+  });
+});
+
+// applyFitBounds wired with content bounds — the clamp at the fit seam (strategy 4.5).
+describe("applyFitBounds + content bounds (the wired out-of-bounds clamp)", () => {
+  function mockViewport() {
+    const calls: Array<{ x: number; y: number; w: number; h: number }> = [];
+    const vp: ViewportLike = {
+      imageToViewportRectangle: (x, y, w, h) => ({ x, y, w, h }),
+      fitBounds: (rect) => calls.push(rect as { x: number; y: number; w: number; h: number }),
+    };
+    return { vp, calls };
+  }
+
+  it("an in-bounds annotation is unchanged when content is supplied (no regression)", () => {
+    const { vp, calls } = mockViewport();
+    // rect selector = xywh=pixel:100,50,200,80; image 1000×800 fully contains it.
+    expect(applyFitBounds(vp, rect, sheet, { width: 1000, height: 800 })).toBe(true);
+    expect(calls[0]).toEqual({ x: 100, y: 50, w: 200, h: 80 });
+  });
+
+  it("an off-image annotation (smaller swapped image) degrades to the whole-image fit", () => {
+    const { vp, calls } = mockViewport();
+    // The same rect (x=100..300) lies entirely past a 50×50 image → whole-image fit.
+    expect(applyFitBounds(vp, rect, sheet, { width: 50, height: 50 })).toBe(true);
+    expect(calls[0]).toEqual({ x: 0, y: 0, w: 50, h: 50 });
+  });
+
+  it("omitting content matches the legacy oracle exactly (additive, no behavior change)", () => {
+    const { vp, calls } = mockViewport();
+    applyFitBounds(vp, rect, sheet);
+    expect(calls[0]).toEqual(fitBoundsRect(rect, sheet)!);
   });
 });
 

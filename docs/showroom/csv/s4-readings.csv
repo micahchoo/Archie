@@ -1,0 +1,6 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+S4 · Readings rail & editor,"Readings are competing interpretations of the same image — a 'cipher' reading, a 'botanical' reading — each its own coloured pass over the marks.",,,,,readings,studio,"Box the rail; the showroom itself uses four readings (studio/viewer/embed/power) — point that out."
+S4 · Readings rail & editor,"The rail lists every reading. The eye toggles a reading's marks on or off; the pen picks which reading you're authoring into.",,,,,rail visibility filter,studio,"Two controls, two boxes if you want to split them."
+S4 · Readings rail & editor,"Give each reading a colour — its identity in the legend and on the canvas.",,,,,colour swatch,studio,"Box a swatch."
+S4 · Readings rail & editor,"Describe a reading in a line so readers know what lens they're looking through.",,,,,description,studio,"Optional field; worth surfacing."
+S4 · Readings rail & editor,"Hover a reading to solo it — isolate one interpretation, or compare two side by side.",,,,,solo compare,viewer,"Solo-on-hover also works in the Viewer legend (V7)."

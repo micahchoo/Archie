@@ -58,10 +58,28 @@
       .then(() => { copied = true; setTimeout(() => (copied = false), 1500); })
       .catch(() => { copied = false; }); // permission denied — the link is still selectable above
   }
-  // Embed snippet (contributor-broadening ⑩ slice A): the same ?src= link as an <iframe>, for
-  // blogs / LMS pages / Omeka-style sites. The custom <archie-viewer> element is a later slice.
+  // Embed snippet (contributor-broadening ⑩ slice A): TWO ways to embed, per the locked v1
+  // contract (ADR-0021) and the iframe floor (anvil ADR-0006).
+  //  • Web Component — the canonical embed: a pinned-tag CDN <script type="module"> + an
+  //    <archie-viewer src=…> element. src points DIRECTLY at the hosted .archie.zip (the
+  //    src grammar in recipes/README.md §"src — which library" / recipe 02). No ?src= wrapper:
+  //    the element fetches the zip itself.
+  //  • iframe — the fallback for hosts that strip <script>/custom elements (Notion, Substack,
+  //    Squarespace, locked-down WP). Wraps the SAME ?src= canonical-viewer link the dialog mints.
+  const CDN_RUNTIME = "https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js";
+  // The closing script tag is split (`</scr" + "ipt>`) so the literal doesn't terminate THIS
+  // Svelte <script> block — the snippet text is identical to recipes/README.md §1.
+  const wcSnippet = $derived(zipUrl.trim() === "" ? "" :
+`<script type="module" src="${CDN_RUNTIME}" crossorigin="anonymous"></scr` + `ipt>
+<archie-viewer src="${zipUrl.trim()}"></archie-viewer>`);
   const embedSnippet = $derived(shareLink === "" ? "" : `<iframe src="${shareLink}" width="100%" height="600" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer" title="Archie exhibit"></iframe>`);
+  let copiedWc = $state(false);
   let copiedEmbed = $state(false);
+  function copyWc() {
+    navigator.clipboard.writeText(wcSnippet)
+      .then(() => { copiedWc = true; setTimeout(() => (copiedWc = false), 1500); })
+      .catch(() => { copiedWc = false; });
+  }
   function copyEmbed() {
     navigator.clipboard.writeText(embedSnippet)
       .then(() => { copiedEmbed = true; setTimeout(() => (copiedEmbed = false), 1500); })
@@ -132,12 +150,16 @@
         <input class="share-url" type="url" placeholder="https://…/my-library.archie.zip" bind:value={zipUrl} aria-label="Public URL of the uploaded .archie.zip" />
         {#if shareLink}
           <pre class="cmd"><code>{shareLink}</code></pre>
-          <p class="line">Or embed the exhibit in a blog, LMS page, or site <span class="muted">(some platforms strip iframes — paste into an HTML/embed block)</span>:</p>
+          <p class="line">Or embed the exhibit in a blog, LMS page, or site. Two ways:</p>
+          <p class="line"><strong>Web Component</strong> <span class="muted">— the recommended embed: a one-time script tag plus an <code>&lt;archie-viewer&gt;</code> element. Paste both into an HTML/code block.</span></p>
+          <pre class="cmd"><code>{wcSnippet}</code></pre>
+          <p class="line"><strong>iframe</strong> <span class="muted">— the fallback for hosts that strip scripts / custom elements (Notion, Substack, Squarespace, locked-down WordPress).</span></p>
           <pre class="cmd"><code>{embedSnippet}</code></pre>
           {#if canCopy}
             <div class="actions share-actions">
               <button type="button" class="ghost" onclick={copyShareLink}>{copied ? "Copied" : "Copy link"}</button>
-              <button type="button" class="ghost" onclick={copyEmbed}>{copiedEmbed ? "Copied" : "Copy embed code"}</button>
+              <button type="button" class="ghost" onclick={copyWc}>{copiedWc ? "Copied" : "Copy Web Component"}</button>
+              <button type="button" class="ghost" onclick={copyEmbed}>{copiedEmbed ? "Copied" : "Copy iframe"}</button>
             </div>
           {:else}
             <p class="line muted">Select the link or embed code above to copy it.</p>

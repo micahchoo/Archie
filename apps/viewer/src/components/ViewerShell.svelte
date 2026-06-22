@@ -59,6 +59,22 @@
     }
   }
 
+  // Slug-level degrade-upward (Phase 3 / 4.3): a deep-link to an exhibit slug ABSENT from the loaded
+  // library used to throw a full-screen error (loadPublishedExhibit → readExhibitTree 404 → status=error).
+  // Mirror the note-rung degrade (ExhibitView.arriveAtNote linkMissing): never a dead error screen — fall
+  // back to the Gallery, or, when the library holds exactly ONE exhibit, straight into that exhibit. The
+  // load lives in ExhibitView; it calls this on a load failure instead of rendering its error state.
+  function degradeToGallery() {
+    const exhibits = gallery?.exhibits ?? [];
+    if (exhibits.length === 1 && exhibits[0]) {
+      // One-exhibit library: a bad slug can only have meant the single real exhibit — land in it.
+      route = { view: "exhibit", slug: exhibits[0].slug };
+    } else {
+      route = { view: "gallery" };
+    }
+    if (location.hash !== "#/" && route.view === "gallery") location.hash = "#/";
+  }
+
   // Live refresh (no reload): re-probe the working store + reload the gallery IN PLACE so a newly-
   // authored exhibit appears without a restart. Doesn't touch route/phase (the open exhibit is
   // undisturbed). Guarded against overlap; skips portable mode (an opened .archie.zip is static). From
@@ -260,8 +276,21 @@
   {#await import("./ExhibitView.svelte")}
     <div class="state"><span class="dot"></span><span>Opening the exhibit…</span></div>
   {:then { default: ExhibitView }}
-    {#key `${route.slug}/${route.noteId ?? ""}/${route.objectId ?? ""}`}
-      <ExhibitView slug={route.slug} noteId={route.noteId} objectId={route.objectId} onnav={(n) => (carousel = n)} />
+    <!-- Thread the URL-level sub-region/time/section precision (route.ts parses xywh + t + sectionId) so it
+         reaches the canvas / MediaPlayer — was dropped here, stranding deep-links at the object's default
+         camera/playhead (Phase 3 / 4.2). The {#key} now folds them in so a same-slug hashchange that only
+         changes the sub-target still remounts ExhibitView onto the new landing. -->
+    {#key `${route.slug}/${route.noteId ?? ""}/${route.objectId ?? ""}/${route.sectionId ?? ""}/${route.xywh ?? ""}/${route.t ?? ""}`}
+      <ExhibitView
+        slug={route.slug}
+        noteId={route.noteId}
+        objectId={route.objectId}
+        sectionId={route.sectionId}
+        xywh={route.xywh}
+        t={route.t}
+        onnav={(n) => (carousel = n)}
+        ondegrade={degradeToGallery}
+      />
     {/key}
   {:catch}
     <div class="state error"><span class="warn" aria-hidden="true">⚠</span><span>Couldn’t load the viewer. Reload to try again.</span></div>

@@ -1,0 +1,54 @@
+<!doctype html>
+<!--
+  Recipe 05 — Offline mode (no remote fetch)
+  ==========================================
+  Scenario: a kiosk, an air-gapped display, a privacy-conscious page, or a classroom that
+  must not phone home. The boolean `offline` attribute tells the element to BLOCK remote
+  tile/media fetch — a network-egress mitigation (ADR-0020 hardening).
+
+  Pair `offline` with a source whose pixels live LOCALLY, or the images won't load:
+    - the local drop screen (no src) — the dropped .archie.zip carries its own tiles/media,
+      so everything renders from the file the visitor opened; OR
+    - a src whose media is genuinely local/bundled.
+  An `offline` embed pointed at a src whose tiles are remote IIIF will render the structure
+  but cannot fetch those remote tiles — by design.
+
+  Contract: ADR-0021 (offline = boolean attr, block remote tile/media fetch).
+  Delivered by: Phase 2 (offline mode, alongside hosted-src).
+
+  `offline` is a BOOLEAN attribute — its mere PRESENCE turns it on. `offline="false"` would
+  still be ON (that's how HTML boolean attributes work); to turn it off, REMOVE the attribute.
+
+  REPLACE:
+    sha384-PLACEHOLDER...  ->  the real SRI hash from the @v1 release
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Archie viewer — offline kiosk</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    archie-viewer { display: block; width: 100%; height: 80vh; }
+    header { padding: 1rem 1.25rem; border-bottom: 1px solid #ddd; }
+    p.hint { padding: 0 1.25rem; color: #555; }
+  </style>
+
+  <script
+    type="module"
+    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
+    integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+    crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <header><h1>Kiosk — offline</h1></header>
+  <p class="hint">No network fetch: drop a self-contained <code>.archie.zip</code> below.</p>
+
+  <!--
+    `offline` present = remote fetch blocked. No src here, so the visitor opens a local
+    self-contained zip; everything renders from that file, nothing leaves the machine.
+  -->
+  <archie-viewer offline></archie-viewer>
+</body>
+</html>

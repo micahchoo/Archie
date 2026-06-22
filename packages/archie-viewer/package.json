@@ -1,0 +1,24 @@
+{
+  "name": "@render/archie-viewer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The <archie-viewer> embeddable custom element (ADR-0019). Shadow-DOM read-only viewer: open a .archie.zip (drop / src=URL / published-tree base), render the gallery → object grid → lazy deep-zoom reader (createReadOnlyMount — OSD, no Annotorious/pixi, no unsafe-eval). All load state lives on the element INSTANCE (Phase-4 per-element seam), never module globals.",
+  "license": "GPL-3.0-only",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "build": "node build.mjs",
+    "bundle:check": "node build.mjs --check"
+  },
+  "dependencies": {
+    "@render/core": "workspace:*",
+    "@render/mount": "workspace:*"
+  },
+  "devDependencies": {
+    "happy-dom": "^20.9.0"
+  }
+}
