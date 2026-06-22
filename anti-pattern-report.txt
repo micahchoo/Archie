@@ -90,10 +90,10 @@
 [fire-and-forget] apps/studio/src/tauri-fs.ts:77 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] apps/studio/src/tauri-fs.ts:82 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] apps/studio/src/tauri-fs.ts:83 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] apps/viewer/src/components/ViewerShell.svelte:260 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] apps/viewer/src/components/ViewerShell.svelte:276 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] apps/viewer/src/published.ts:26 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] apps/viewer/src/published.ts:278 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] apps/viewer/src/published.ts:287 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] apps/viewer/src/published.ts:306 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] apps/viewer/src/published.ts:315 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/fs/conformance.ts:43 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/fs/conformance.ts:50 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/fs/conformance.ts:51 -- await with no try/catch or .catch() in nearby context
@@ -137,11 +137,11 @@
 [fire-and-forget] packages/render-core/src/fs/tauri.ts:79 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/fs/tauri.ts:93 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/fs/tauri.ts:94 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/fs/zip.ts:135 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/fs/zip.ts:142 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/fs/zip.ts:146 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/fs/zip.ts:147 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/fs/zip.ts:41 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/fs/zip.ts:161 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/fs/zip.ts:168 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/fs/zip.ts:172 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/fs/zip.ts:173 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/fs/zip.ts:67 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/ghpages.ts:164 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/ghpages.ts:166 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/ghpages.ts:173 -- await with no try/catch or .catch() in nearby context
@@ -161,59 +161,60 @@
 [fire-and-forget] packages/render-core/src/publish/read.ts:87 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/read.ts:90 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/read.ts:91 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:142 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:143 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:144 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:145 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:149 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:146 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:150 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:151 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:152 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:165 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:168 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:153 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:166 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:169 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:170 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:171 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:195 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:172 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:196 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:198 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:217 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:224 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:199 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:200 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:202 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:221 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:228 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:229 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:232 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:233 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:235 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:236 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:237 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:238 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:244 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:247 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:255 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:257 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:258 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:239 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:240 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:241 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:242 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:248 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:251 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:259 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:260 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:275 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:278 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:281 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:317 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:319 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:261 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:262 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:263 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:264 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:279 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:282 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:285 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:321 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:322 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:323 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:324 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:336 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:337 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:338 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:343 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:350 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:351 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:353 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:364 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:365 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:372 -- await with no try/catch or .catch() in nearby context
-[fire-and-forget] packages/render-core/src/publish/site.ts:374 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:325 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:326 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:327 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:328 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:340 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:341 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:342 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:347 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:354 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:355 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:357 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:368 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:369 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/site.ts:376 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:378 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/site.ts:380 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/session/session.ts:235 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/session/session.ts:243 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/session/session.ts:79 -- await with no try/catch or .catch() in nearby context
@@ -290,13 +291,25 @@
 [fire-and-forget] scripts/verify-readings-rail.mjs:141 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] scripts/verify-readings-rail.mjs:146 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] scripts/verify-readings-rail.mjs:147 -- await with no try/catch or .catch() in nearby context
-[impact-scope] apps/studio/src/App.svelte:0 -- 24/45 importers of App have no tests (Tier 0: 45 direct callers, Tier 1: depth 2 transitive=302)
-[impact-scope] packages/render-mount/src/frame-overlay.ts:0 -- 1/2 importers of frame-overlay have no tests (Tier 0: 2 direct callers, Tier 1: depth 2 transitive=49)
-[impact-scope] packages/render-mount/src/gate.test.ts:0 -- 1/3 importers of gate.test have no tests (Tier 0: 3 direct callers, Tier 1: depth 2 transitive=50)
-[impact-scope] packages/render-mount/src/mount.ts:0 -- 19/45 importers of mount have no tests (Tier 0: 45 direct callers, Tier 1: depth 2 transitive=280)
+[impact-scope] apps/viewer/fixtures/sample-data.ts:0 -- 4/8 importers of sample-data have no tests (Tier 0: 8 direct callers, Tier 1: depth 2 transitive=150)
+[impact-scope] apps/viewer/src/components/ExhibitView.svelte:0 -- 9/14 importers of ExhibitView have no tests (Tier 0: 14 direct callers, Tier 1: depth 2 transitive=139)
+[impact-scope] apps/viewer/src/components/MediaPlayer.svelte:0 -- 5/8 importers of MediaPlayer have no tests (Tier 0: 8 direct callers, Tier 1: depth 2 transitive=114)
+[impact-scope] apps/viewer/src/components/NarrativeReader.svelte:0 -- 11/13 importers of NarrativeReader have no tests (Tier 0: 13 direct callers, Tier 1: depth 2 transitive=115)
+[impact-scope] apps/viewer/src/components/Reader.svelte:0 -- 20/29 importers of Reader have no tests (Tier 0: 29 direct callers, Tier 1: depth 2 transitive=184)
+[impact-scope] apps/viewer/src/components/ViewerShell.svelte:0 -- 8/11 importers of ViewerShell have no tests (Tier 0: 11 direct callers, Tier 1: depth 2 transitive=153)
+[impact-scope] apps/viewer/src/published.test.ts:0 -- 1/2 importers of published.test have no tests (Tier 0: 2 direct callers, Tier 1: depth 2 transitive=3)
+[impact-scope] apps/viewer/src/published.ts:0 -- 34/85 importers of published have no tests (Tier 0: 85 direct callers, Tier 1: depth 2 transitive=381)
+[impact-scope] packages/render-core/src/fs/zip.ts:0 -- 23/56 importers of zip have no tests (Tier 0: 56 direct callers, Tier 1: depth 2 transitive=333)
+[impact-scope] packages/render-core/src/index.ts:0 -- 54/92 importers of index have no tests (Tier 0: 92 direct callers, Tier 1: depth 2 transitive=377)
+[impact-scope] packages/render-core/src/publish/site.ts:0 -- 13/41 importers of site have no tests (Tier 0: 41 direct callers, Tier 1: depth 2 transitive=318)
+[impact-scope] packages/render-core/src/url/route.ts:0 -- 28/41 importers of route have no tests (Tier 0: 41 direct callers, Tier 1: depth 2 transitive=255)
+[impact-scope] packages/render-mount/src/fitbounds.test.ts:0 -- 1/1 importers of fitbounds.test have no tests (Tier 0: 1 direct callers, Tier 1: depth 1 transitive=1)
+[impact-scope] packages/render-mount/src/fitbounds.ts:0 -- 5/10 importers of fitbounds have no tests (Tier 0: 10 direct callers, Tier 1: depth 2 transitive=182)
+[impact-scope] packages/render-mount/src/index.ts:0 -- 54/93 importers of index have no tests (Tier 0: 93 direct callers, Tier 1: depth 2 transitive=379)
+[impact-scope] scripts/bundle-size.mjs:0 -- 1/1 importers of bundle-size have no tests (Tier 0: 1 direct callers, Tier 1: depth 2 transitive=79)
 [silent-catch] apps/studio/src/ingest-flows.ts:201 -- catch body logs error but never surfaces to user
 [unpaired-resource] apps/studio/src/App.svelte:48001 -- 1 acquire calls but no release in file (lock/unlock)
-[untested-churn] apps/studio/src/App.svelte:0 -- 43 commits (6mo), no test file
+[untested-churn] apps/studio/src/App.svelte:0 -- 44 commits (6mo), no test file
 [untested-churn] apps/studio/src/ExhibitOverview.svelte:0 -- 12 commits (6mo), no test file
 [untested-churn] apps/studio/src/LibraryHome.svelte:0 -- 11 commits (6mo), no test file
 [untested-churn] apps/studio/src/NarrativeEditor.svelte:0 -- 9 commits (6mo), no test file

@@ -29,6 +29,7 @@ import { toHistory } from "../spine/serialize.js";
 import { projectHeads } from "../spine/heads.js";
 import { headsPageFromRecords, headsPagesByReading, citationIdMap, targetSource } from "../spine/serialize.js";
 import { stamp } from "../migrate/migrate.js";
+import { ARCHIE_LIBRARY_MARKER } from "./marker.js";
 
 export interface PublishOptions {
   /** Absolute base for ids, e.g. `https://user.github.io/lib/`. */
@@ -193,6 +194,9 @@ function isRemoteTileable(o: AObject): boolean {
 export async function publishLibrary(fs: Filesystem, library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<PublishResult> {
   const baseUrl = opts.baseUrl ?? "";
   const root = await fs.root();
+  // ADR-0020: stamp the L1 self-ID marker at the tree root so a consumer can identify (and reject a
+  // non-Archie / wrong-schema) `.archie.zip` BEFORE opening it as a library — beside collection/exhibits.
+  await writeJson(root, "archie.json", ARCHIE_LIBRARY_MARKER);
   await writeJson(root, "collection.json", toCollection(library, { baseUrl }));
   // Stamp the Gallery source with the schema version so it stays migratable (orphan gap §39).
   await writeJson(root, "exhibits.json", stamp(toExhibitsJson(library)));

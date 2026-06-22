@@ -27,6 +27,21 @@ function seededRng(seed: number): () => number {
   };
 }
 
+// §258 SNAG — the three Voynich exhibits share ONE seed (./voynich.ts) built three times by
+// buildVoynichLog. logicalId = encodeTime(now) + encodeRandom(rng) (wadm/brand.ts): with the SAME `now`
+// run (1,2,3…) AND a constant rng seed, all three exhibits minted IDENTICAL logicalIds, so buildLinkIndex
+// (first-seen-wins) mis-attributed cross-exhibit cites. Deriving the rng seed from the SLUG makes each
+// exhibit's logicalId set DISJOINT while staying reproducible per-slug (ADR-0014 durable anchors) — a
+// deterministic FNV-1a string hash, NOT Math.random.
+function slugSeed(slug: string): number {
+  let h = 0x811c9dc5; // FNV-1a 32-bit offset basis
+  for (let i = 0; i < slug.length; i++) {
+    h ^= slug.charCodeAt(i);
+    h = Math.imul(h, 0x01000193); // FNV prime
+  }
+  return h >>> 0;
+}
+
 // ADR-0007 — the Voynich reconceived as a genuinely-plural Readings exhibit: rival scholarly camps
 // read the SAME marks incompatibly (the demo's payoff). The authored content (readings, the per-region
 // reading/tag notes, the AV notes, the narrative sections) lives in the SHARED ./voynich.ts as the
@@ -83,7 +98,7 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
   const keep = (objectId: string) => !opts.objectIds || opts.objectIds.has(objectId);
   let log: AnnotationLog = [];
   let now = 0; // running `now` — appendNew needs monotonic, distinct timestamps
-  const rng = seededRng(1); // per-builder seed — reproducible ids (ADR-0014 durable anchors)
+  const rng = seededRng(slugSeed(slug)); // PER-SLUG seed — distinct logicalIds per exhibit, reproducible (ADR-0014; §258 SNAG)
   const addBody = (comment: string, tags?: string[]) => [
     { type: "TextualBody" as const, value: comment, purpose: "commenting" as const },
     ...(tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" as const })),

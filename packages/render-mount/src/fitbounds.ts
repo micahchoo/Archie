@@ -76,6 +76,32 @@ export function clampedFitRect(note: Box, viewportAspect: number, region: Box): 
   return { x: cx - w / 2, y: cy - h / 2, w, h };
 }
 
+/** Image content size in source pixels (OSD world item width/height). 0×0 = unknown. */
+export interface ContentSize {
+  width: number;
+  height: number;
+}
+
+/**
+ * Clamp an image-pixel rect to the image content bounds (strategy 4.5). A hand-edited `.archie.zip`
+ * can swap a SMALLER image under an annotation, leaving its xywh partly or wholly off-image — fitting
+ * that raw rect pans OSD to a blank/edge view. We intersect `rect` with the content box (0,0..w,h):
+ *  - partial overlap → the on-image sub-rect (so we still frame the visible part of the region),
+ *  - EMPTY intersection (the box lies entirely off-image) → DEGRADE to the whole-image fit,
+ *  - unknown content size (0×0) → leave the rect untouched (nothing to clamp against).
+ * Pure; the fit path calls it just before imageToViewportRectangle. This is the IMAGE-pixel clamp —
+ * distinct from clampedFitRect (the bounded-MAP viewport clamp, ADR-0015), which it never touches.
+ */
+export function clampToContentBounds(rect: Box, content: ContentSize): Box {
+  if (content.width <= 0 || content.height <= 0) return rect;
+  const x0 = Math.max(rect.x, 0);
+  const y0 = Math.max(rect.y, 0);
+  const x1 = Math.min(rect.x + rect.w, content.width);
+  const y1 = Math.min(rect.y + rect.h, content.height);
+  if (x1 <= x0 || y1 <= y0) return { x: 0, y: 0, w: content.width, h: content.height };
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
 /** The minimal OSD viewport surface fitBounds dispatch needs (mockable; real one is osd.viewport). */
 export interface ViewportLike {
   imageToViewportRectangle(x: number, y: number, w: number, h: number): unknown;
@@ -89,9 +115,13 @@ export interface ViewportLike {
  * Returns false (no-op) when the selector has no parseable region. Pure dispatch — testable
  * with a mock viewport, so it is the Phase-1 acceptance ORACLE without needing a real OSD.
  */
-export function applyFitBounds(viewport: ViewportLike, selector: W3CSelector, opts: FitOptions): boolean {
-  const box = fitBoundsRect(selector, opts);
-  if (box === null) return false;
+export function applyFitBounds(viewport: ViewportLike, selector: W3CSelector, opts: FitOptions, content?: ContentSize): boolean {
+  const raw = fitBoundsRect(selector, opts);
+  if (raw === null) return false;
+  // When the image content size is known, intersect the image-pixel rect with the image bounds and
+  // degrade an off-image box to the whole-image fit (strategy 4.5). Omitting `content` is a no-op,
+  // so the existing oracle (no content) is unchanged.
+  const box = content ? clampToContentBounds(raw, content) : raw;
   viewport.fitBounds(viewport.imageToViewportRectangle(box.x, box.y, box.w, box.h), false);
   return true;
 }
@@ -102,9 +132,9 @@ export function applyFitBounds(viewport: ViewportLike, selector: W3CSelector, op
  * mockable — this is the Phase-1 GATE: it must produce the same rect as `fitBoundsRect`
  * (the anvil-stock characterization). createMount wires real OSD viewport + getAnnotations() in.
  */
-export function dispatchFitBounds(viewport: ViewportLike, annotations: readonly AnnotationLike[], id: string, opts: FitOptions): boolean {
+export function dispatchFitBounds(viewport: ViewportLike, annotations: readonly AnnotationLike[], id: string, opts: FitOptions, content?: ContentSize): boolean {
   const ann = annotations.find((a) => a.id === id);
   const sel = selectorOf(ann);
   if (sel === null) return false;
-  return applyFitBounds(viewport, sel, opts);
+  return applyFitBounds(viewport, sel, opts, content);
 }

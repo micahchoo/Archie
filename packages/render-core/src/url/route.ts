@@ -14,7 +14,7 @@
 
 export type ViewerRoute =
   | { view: "gallery"; src?: string }
-  | { view: "exhibit"; slug: string; noteId?: string; objectId?: string; xywh?: string; src?: string };
+  | { view: "exhibit"; slug: string; noteId?: string; objectId?: string; sectionId?: string; xywh?: string; t?: string; src?: string };
 
 /**
  * Parse a location hash into a ViewerRoute. Structural only — an empty/garbage path falls back to
@@ -36,15 +36,21 @@ export function parseRoute(hash: string): ViewerRoute {
   if (parts.length === 0) return src ? { view: "gallery", src } : { view: "gallery" };
 
   const slug = parts[0]!;
-  const route: { view: "exhibit"; slug: string; noteId?: string; objectId?: string; xywh?: string; src?: string } = { view: "exhibit", slug };
-  // `/a/<noteId>` tail → land on a note; xywh only meaningful alongside a note.
+  const route: { view: "exhibit"; slug: string; noteId?: string; objectId?: string; sectionId?: string; xywh?: string; t?: string; src?: string } = { view: "exhibit", slug };
+  // `/a/<noteId>` tail → land on a note; xywh (spatial) and t (temporal, e.g. audio offset)
+  // are only meaningful alongside a note target.
   if (parts.length >= 3 && parts[1] === "a" && parts[2]) {
     route.noteId = parts[2];
     const xywh = params?.get("xywh");
     if (xywh) route.xywh = xywh;
+    const t = params?.get("t");
+    if (t) route.t = t;
   } else if (parts.length >= 3 && parts[1] === "o" && parts[2]) {
     // `/o/<objectId>` tail → land on a whole Object (cite ladder, ADR-0018).
     route.objectId = parts[2];
+  } else if (parts.length >= 3 && parts[1] === "s" && parts[2]) {
+    // `/s/<sectionId>` tail → land on a Section (cite ladder, ADR-0021).
+    route.sectionId = parts[2];
   }
   if (src) route.src = src;
   return route;
@@ -59,9 +65,15 @@ export function routeToHash(route: ViewerRoute): string {
     h = `#/${route.slug}`;
     if (route.noteId) {
       h += `/a/${route.noteId}`;
-      if (route.xywh) h += `?xywh=${route.xywh}`;
+      // xywh + t are independent query params; either or both may ride along.
+      const q: string[] = [];
+      if (route.xywh) q.push(`xywh=${route.xywh}`);
+      if (route.t) q.push(`t=${route.t}`);
+      if (q.length) h += `?${q.join("&")}`;
     } else if (route.objectId) {
       h += `/o/${route.objectId}`;
+    } else if (route.sectionId) {
+      h += `/s/${route.sectionId}`;
     }
   }
   // ?src= is appended last and percent-encoded (its :/?& would otherwise break the outer hash).

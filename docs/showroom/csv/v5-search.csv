@@ -1,0 +1,4 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+V5 · Search finder,"Find anything across the exhibit — open the finder with Cmd-K or just '/'.",,,,,finder,viewer,"Box the overlay."
+V5 · Search finder,"Search note text and filter by tag; results update as you type.",,,,,search tags,viewer,"Box the tag facets."
+V5 · Search finder,"Pick a result and the reader jumps straight to that note, whatever mode you're in.",,,,,jump,viewer,"Mode-independent; client-side minisearch index, no server."

@@ -1,0 +1,4 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+V3 · Narrative reader,"A narrative exhibit reads as prose beside a canvas — the story on one side, the object it's about on the other.",,,,,prose spine,viewer,"Box the prose column and the canvas together."
+V3 · Narrative reader,"Click a section and the canvas switches to its object and fits the framed view; the active section lights up in the spine.",,,,,section switch fit,viewer,"Box the active (highlighted) section."
+V3 · Narrative reader,"Scroll the spine and the canvas follows along.",,,,,follow,viewer,"Resizable aside; collapse it for a canvas-first read."

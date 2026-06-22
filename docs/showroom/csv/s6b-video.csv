@@ -1,0 +1,4 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+S6b · Video frame annotation,"Video gets both axes: pause on a frame, draw a box on it, and the note anchors to that spot at that moment.",,,,,video frame,studio,"Box the frame overlay rectangle."
+S6b · Video frame annotation,"The selector carries time and space together (t=… plus xywh=…), so the mark appears only while that frame is on screen.",,,,,spatiotemporal,power,"Mount internal; explains how the box knows when to show."
+S6b · Video frame annotation,"Scrub the markbar to jump between annotated frames.",,,,,markbar,studio,"Box the markbar under the video."

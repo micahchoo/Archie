@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  Recipe 03 — Local drop screen (no src)
+  ======================================
+  Scenario: you want the visitor to open a `.archie.zip` FROM THEIR OWN MACHINE — a
+  classroom handout, a reviewer copy, an offline kiosk loaded from USB. With NO `src`
+  attribute, the element shows its drop-a-zip starting screen ("EmptyHall"). Nothing is
+  fetched from the network; the visitor drops (or picks) a file and it opens locally.
+
+  Contract: ADR-0021 (src absent -> local drop screen).
+  Delivered by: Phase 1 (the element + local-zip drop, the first thing that works).
+
+  The dropped zip is validated against the L1 marker (archie.json — ADR-0020) and a
+  decompression cap before parsing, so a non-Archie file or a zip-bomb is refused cleanly.
+
+  No CORS or HTTPS concerns here — there is no remote fetch. This page even works opened
+  directly from `file://`.
+
+  REPLACE:
+    sha384-PLACEHOLDER...  ->  the real SRI hash from the @v1 release
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Archie viewer — open your own library</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    archie-viewer { display: block; width: 100%; height: 80vh; }
+    header { padding: 1rem 1.25rem; border-bottom: 1px solid #ddd; }
+    p.hint { padding: 0 1.25rem; color: #555; }
+  </style>
+
+  <script
+    type="module"
+    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
+    integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+    crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <header><h1>Open a library</h1></header>
+  <p class="hint">Drop an <code>.archie.zip</code> file onto the viewer below.</p>
+
+  <!--
+    No src attribute at all -> the drop screen. This is the whole recipe.
+  -->
+  <archie-viewer></archie-viewer>
+</body>
+</html>

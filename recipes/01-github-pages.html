@@ -1,0 +1,52 @@
+<!doctype html>
+<!--
+  Recipe 01 — Embed a library published to GitHub Pages
+  =====================================================
+  Scenario: you ran Studio's "Publish" and pushed the resulting static tree to a
+  GitHub Pages site. The published tree is just static files (one folder per exhibit),
+  so `src` points at the TREE BASE URL — the viewer reads the library straight from it.
+
+  Contract: ADR-0021 (src = a published-tree base URL).
+  Delivered by: Phase 2 (hosted-tree src).
+
+  GitHub Pages already sends permissive CORS headers, so this works cross-origin with
+  no extra configuration — your page can live on any other origin.
+
+  REPLACE:
+    yourname.github.io/yourrepo  ->  your actual GitHub Pages base
+    sha384-PLACEHOLDER...        ->  the real SRI hash from the @v1 release
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Archie viewer — GitHub Pages library</title>
+  <style>
+    /* The element is display:inline by default — give it a box to fill. */
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    archie-viewer { display: block; width: 100%; height: 80vh; }
+    header { padding: 1rem 1.25rem; border-bottom: 1px solid #ddd; }
+  </style>
+
+  <!--
+    The runtime, from jsDelivr serving the pinned @v1 git tag, with SRI.
+    crossorigin="anonymous" is required for SRI to validate cross-origin.
+  -->
+  <script
+    type="module"
+    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
+    integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+    crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <header><h1>Our collection</h1></header>
+
+  <!--
+    src = the published-tree base URL (note the trailing slash on the viewer path).
+    The viewer opens the library's gallery; click through to any exhibit.
+  -->
+  <archie-viewer
+    src="https://yourname.github.io/yourrepo/viewer/"></archie-viewer>
+</body>
+</html>

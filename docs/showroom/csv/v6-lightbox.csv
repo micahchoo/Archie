@@ -1,0 +1,4 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+V6 · Note media lightbox,"A note can carry its own media — click a thumbnail and it opens full-screen.",,,,,note media,viewer,"Box the thumbnail and the opened lightbox."
+V6 · Note media lightbox,"Step through a note's images, audio, or video in a carousel with the arrow keys.",,,,,carousel arrows,viewer,"Box the arrow controls."
+V6 · Note media lightbox,"The note's text sits beside the media; Esc or the backdrop closes it.",,,,,text beside close,viewer,"Box the text panel."

@@ -1,0 +1,4 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+"V7 · Reading sheet, legend & cites","Expand a long note into a centred sheet over a dimmed backdrop — distraction-free reading.",,,,,reading sheet,viewer,"Box the centred sheet."
+"V7 · Reading sheet, legend & cites","The legend toggles readings: the plain base pass, or the colour-coded interpretations, with a hide-all to declutter entirely.",,,,,legend toggle hide-all,viewer,"Box the legend; mirrors the Studio rail (S4)."
+"V7 · Reading sheet, legend & cites","Hover an in-library cite link and a rich preview card floats in — peek at the cited note without leaving the page.",,,,,cite hovercard,viewer,"Links back to S8 (authoring the cite)."

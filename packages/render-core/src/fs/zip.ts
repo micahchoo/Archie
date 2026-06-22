@@ -6,6 +6,32 @@
 import { zipSync, unzipSync, strToU8, Zip, ZipPassThrough } from "fflate";
 import type { Filesystem, FsDirectory, FsFile, FsWritable } from "./seam.js";
 
+/**
+ * Decompression caps for `fromZip` — zip-bomb defense on the file-drop path (strategy 5.1). The
+ * file-drop flow (`apps/studio/src/ingest-flows.ts`, `apps/viewer/src/published.ts`) feeds
+ * attacker-controlled bytes straight into `unzipSync`; without a ceiling a few-KB archive that
+ * DECLARES gigabytes uncompressed would OOM the tab. The `?src=` fetch path already had a 256MB
+ * byte cap at the network layer; these caps close the matching gap on the drop path, where the
+ * bytes never traverse the network.
+ *
+ * Defaults (deliberately generous — a real .archie.zip is media-heavy but bounded):
+ *  - `maxTotalBytes` 512 MB — total DECLARED uncompressed bytes across all entries. 2× the 256MB
+ *    network cap, because a legitimately large library opened from local disk has no download cost.
+ *  - `maxEntries` 50 000 — a published library is folios + sidecars; 50k is far above any real tree
+ *    yet cheap to exceed with a malicious "lots of tiny files" inode/handle-exhaustion archive.
+ *  - `maxRatio` 100 — per-entry decompressed:compressed. Deflate tops out near ~1032:1 on pathological
+ *    input; 100:1 admits all real text/JSON/media while rejecting the classic single-entry bomb.
+ *
+ * Enforced from the CENTRAL DIRECTORY (via fflate's `filter`) BEFORE any entry is decompressed —
+ * the declared `originalSize` / compressed `size` are read from directory headers, so a bomb is
+ * rejected without paying to inflate it.
+ */
+export const ZIP_LIMITS = {
+  maxTotalBytes: 512 * 1024 * 1024,
+  maxEntries: 50_000,
+  maxRatio: 100,
+} as const;
+
 /** A chunk sink for streaming serialization (A.1). Mirrors the slice of FileSystemWritableFileStream
  *  we need; `write` may be async (the browser sink awaits disk) and is drained serially. */
 export interface ZipSink {
@@ -146,10 +172,47 @@ export class ZipFilesystem implements Filesystem {
     await drain();
     await sink.close();
   }
-  /** Load a ZipFilesystem from `.archie.zip` bytes (the Open flow). */
+  /**
+   * Load a ZipFilesystem from `.archie.zip` bytes (the Open / file-drop flow). Capped against zip
+   * bombs (strategy 5.1 — see {@link ZIP_LIMITS}): rejects, with a clear error, an archive that
+   * declares too many total uncompressed bytes, too many entries, or any single entry whose
+   * decompression ratio is implausibly high. The checks run from the central directory (fflate's
+   * `filter`, invoked per entry BEFORE decompression), so a bomb is refused without inflating it.
+   */
   static fromZip(bytes: Uint8Array): ZipFilesystem {
     const fs = new ZipFilesystem();
-    const unzipped = unzipSync(bytes);
+    let entries = 0;
+    let totalBytes = 0;
+    // fflate calls `filter` once per central-directory entry, before decompressing. We don't drop
+    // anything (always extract); we use it purely as a pre-decompression gate that throws on breach.
+    const unzipped = unzipSync(bytes, {
+      filter: (file) => {
+        entries++;
+        if (entries > ZIP_LIMITS.maxEntries) {
+          throw new Error(
+            `archie.zip rejected: too many entries (> ${ZIP_LIMITS.maxEntries.toLocaleString()}) — possible zip bomb`,
+          );
+        }
+        const declared = file.originalSize; // uncompressed size from the directory header
+        const compressed = file.size;
+        // Per-entry ratio: a small compressed blob declaring a huge uncompressed size is the classic
+        // single-file bomb. Guard only when there's something to compare against (compressed > 0).
+        if (compressed > 0 && declared / compressed > ZIP_LIMITS.maxRatio) {
+          throw new Error(
+            `archie.zip rejected: entry "${file.name}" has an implausible compression ratio ` +
+              `(${Math.round(declared / compressed)}× > ${ZIP_LIMITS.maxRatio}×) — possible zip bomb`,
+          );
+        }
+        totalBytes += declared;
+        if (totalBytes > ZIP_LIMITS.maxTotalBytes) {
+          throw new Error(
+            `archie.zip rejected: total uncompressed size exceeds the ` +
+              `${(ZIP_LIMITS.maxTotalBytes / (1024 * 1024)).toFixed(0)} MB cap — possible zip bomb`,
+          );
+        }
+        return true;
+      },
+    });
     for (const [k, v] of Object.entries(unzipped)) fs.store.files.set(k, v);
     return fs;
   }

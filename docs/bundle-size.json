@@ -1,31 +1,36 @@
 {
-  "measuredAt": "2026-06-11T20:39:20.658Z",
+  "measuredAt": "2026-06-22T00:53:38.346Z",
   "note": "gz = minified+gzipped. Renderer floor has no tree-shaking applied. appBundles = the built apps (the ratchet baseline; check with `node scripts/bundle-size.mjs --check`). No aspirational budget — the baseline IS a measurement (retro 2026-06-11).",
   "rows": [
     {
       "label": "@render/core (fflate external)",
-      "minKB": 51.3,
-      "gzKB": 17.6
+      "minKB": 107.5,
+      "gzKB": 37.5
     },
     {
       "label": "@render/core + fflate",
-      "minKB": 65.3,
-      "gzKB": 24.4
+      "minKB": 121.7,
+      "gzKB": 44.4
     },
     {
       "label": "OSD + Annotorious + plugin-tools",
       "minKB": 790.4,
       "gzKB": 223.7
+    },
+    {
+      "label": "read-only mount (OSD, NO Annotorious/pixi)",
+      "minKB": 304.8,
+      "gzKB": 79.3
     }
   ],
   "appBundles": [
     {
       "label": "apps/studio dist (js+css gz)",
-      "gzKB": 388.3
+      "gzKB": 443.9
     },
     {
       "label": "apps/viewer dist (js+css gz)",
-      "gzKB": 319.3
+      "gzKB": 356.6
     }
   ]
 }

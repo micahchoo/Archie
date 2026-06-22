@@ -1,0 +1,6 @@
+object,comment,x,y,w,h,tags,reading,_showoff
+S1 · Library & save status,"Your library is every exhibit you're authoring, gathered in one place. Open one to keep editing, or start a fresh exhibit.",,,,,library home,studio,"Box the whole grid; mention a single library can hold many exhibits that publish together."
+S1 · Library & save status,"Bind your work to disk however you like — a folder, one portable .archie.zip, or stay browser-only. The current binding shows here and you can switch anytime.",,,,,save binding,studio,"Three bindings = three rows if you want to split them out."
+S1 · Library & save status,"Save status, always visible: Saved, Saving…, or Unsaved. Browser-only work persists in the browser; bind to a file for a copy you can move or back up.",,,,,save status,studio,"Capture a second shot mid-save to show the 'Saving…' state."
+S1 · Library & save status,"Start an exhibit by bringing in media — images, audio, video, or a IIIF manifest URL.",,,,,ingest,studio,"Links forward to S10 (full ingest dialog)."
+S1 · Library & save status,"Open a local image straight from the OS file dialog and annotate it offline — no server, no upload.",,,,,offline local,power,"This is a desktop-app (Tauri) superpower; tag it power and note the Flatpak build."

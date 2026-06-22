@@ -1,0 +1,108 @@
+<!doctype html>
+<!--
+  Recipe 08 — Two embeds on one page
+  ==================================
+  Scenario: a comparison view, a syllabus page, or a catalogue that shows two (or more)
+  Archie libraries side by side. You load the runtime ONCE (one <script> tag) and place
+  several <archie-viewer> elements.
+
+  ⚠ MULTI-INSTANCE IS PHASE 4 — READ THIS BEFORE SHIPPING TWO ON A LIVE PAGE ⚠
+  ------------------------------------------------------------------------------
+  Today, the viewer's load context lives in MODULE-LEVEL GLOBALS (published.ts) — there is
+  one shared decoded-library / route / pending-target state for the whole page. So before
+  Phase 4 lands, two <archie-viewer> elements on the same page would CLOBBER each other:
+  the second to load overwrites the first's state. This is item 7 in
+  docs/plans/EMBED-VIEWER-IMPLEMENTATION-STRATEGY.md (Phase 4 — Multi-instance):
+
+    7.1  instance-scoped refactor: module-globals -> per-element context
+    7.2  decoded-library-by-URL cache, ref-counted vs blob-revoke
+         (so a shared src fetches/decodes ONCE; one element closing doesn't
+          revoke another's live blob URLs)
+    7.3  explicit pending-target state machine
+
+  Until Phase 4:
+    - ONE <archie-viewer> per page is the supported configuration.
+    - For two-on-a-page TODAY, isolate each in its own IFRAME (each iframe is a fresh
+      document with its own module globals — no shared state). The iframe fallback (anvil
+      ADR-0006, see recipes 06/07) doubles as the pre-Phase-4 multi-instance workaround.
+
+  The markup below is the FINISHED Phase-4 contract — correct once 7.x ships, and it doubles
+  as the Phase-4 integration fixture. The iframe variant beneath it is what works right now.
+
+  REPLACE:
+    yourname.github.io/yourrepo  ->  your published tree base
+    voynich / atlas              ->  your exhibit slugs
+    sha384-PLACEHOLDER...        ->  the real SRI hash from the @v1 release
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Archie viewer — two on one page</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem; }
+    archie-viewer, iframe { display: block; width: 100%; height: 70vh; border: 0; }
+    h2 { margin: 0 0 .25rem; }
+    .note { padding: 0 1rem; color: #8a5300; background: #fff8e6; }
+  </style>
+
+  <!-- Runtime loaded ONCE for the whole page. -->
+  <script
+    type="module"
+    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
+    integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+    crossorigin="anonymous"></script>
+</head>
+
+<body>
+
+  <!-- ============================================================
+       PHASE 4 contract (correct once item 7.x ships). Two direct
+       elements, one shared runtime. DO NOT ship on a live page yet
+       — pre-Phase-4 they share global state and clobber each other.
+       ============================================================ -->
+  <p class="note">
+    Multi-instance is <strong>Phase 4</strong>. The two direct elements below are the
+    finished contract; until 7.x ships, use the iframe variant at the bottom.
+  </p>
+
+  <div class="grid">
+    <section>
+      <h2>Voynich</h2>
+      <archie-viewer
+        src="https://yourname.github.io/yourrepo/viewer/"
+        target="#/voynich"></archie-viewer>
+    </section>
+    <section>
+      <h2>Atlas</h2>
+      <archie-viewer
+        src="https://yourname.github.io/yourrepo/viewer/"
+        target="#/atlas"></archie-viewer>
+    </section>
+  </div>
+
+  <hr>
+
+  <!-- ============================================================
+       WORKS TODAY (pre-Phase-4): each embed in its own iframe.
+       Each iframe is a separate document -> separate module globals
+       -> no shared-state clobbering. Host one tiny wrapper page per
+       library (see recipes 06/07 for the wrapper HTML), then iframe
+       each. This is the supported two-on-a-page path until 7.x lands.
+       ============================================================ -->
+  <div class="grid">
+    <section>
+      <h2>Voynich (iframe — works today)</h2>
+      <iframe src="https://yourmuseum.org/embed-voynich.html"
+              loading="lazy" title="Voynich — Archie viewer"></iframe>
+    </section>
+    <section>
+      <h2>Atlas (iframe — works today)</h2>
+      <iframe src="https://yourmuseum.org/embed-atlas.html"
+              loading="lazy" title="Atlas — Archie viewer"></iframe>
+    </section>
+  </div>
+
+</body>
+</html>

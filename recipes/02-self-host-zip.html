@@ -1,0 +1,57 @@
+<!doctype html>
+<!--
+  Recipe 02 — Embed a hosted .archie.zip
+  ======================================
+  Scenario: you exported a single self-contained `.archie.zip` from Studio and uploaded
+  it to your own static hosting. `src` points directly at the zip URL; the element
+  fetches it, validates its L1 marker (archie.json — ADR-0020), and renders.
+
+  Contract: ADR-0021 (src = a hosted .archie.zip URL).
+  Delivered by: Phase 2 (remote-zip src, reuses openLibraryFromSrc).
+
+  ⚠ CORS — READ THIS:
+    The zip lives on a DIFFERENT origin than this page (yourmuseum.org vs. wherever this
+    page is served). For the browser to fetch it cross-origin, the server hosting the zip
+    MUST send an Access-Control-Allow-Origin header covering this page's origin
+    (use `*` for a fully public library). Without it the browser blocks the read and the
+    viewer shows "Couldn't load this media item."
+
+  ⚠ HTTPS:
+    Both the page and the zip must be https. A browser on an https page refuses to fetch
+    an http resource (mixed content), and the strict host CSPs these embeds run under
+    only permit https:.
+
+  REPLACE:
+    yourmuseum.org           ->  your own hosting
+    codex.archie.zip         ->  your exported library file
+    sha384-PLACEHOLDER...    ->  the real SRI hash from the @v1 release
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Archie viewer — self-hosted .archie.zip</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    archie-viewer { display: block; width: 100%; height: 80vh; }
+    header { padding: 1rem 1.25rem; border-bottom: 1px solid #ddd; }
+  </style>
+
+  <script
+    type="module"
+    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
+    integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+    crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <header><h1>The Codex</h1></header>
+
+  <!--
+    src = the absolute URL of the hosted zip. The server at yourmuseum.org must send
+    `Access-Control-Allow-Origin: *` (or your page's origin) for this cross-origin fetch.
+  -->
+  <archie-viewer
+    src="https://yourmuseum.org/libraries/codex.archie.zip"></archie-viewer>
+</body>
+</html>

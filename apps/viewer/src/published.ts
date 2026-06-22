@@ -7,7 +7,7 @@
 //    (ADR-0010 seam). Both sources return the SAME shapes, so ViewerShell/ExhibitView are source-agnostic.
 import {
   ZipFilesystem, FsaFilesystem, MemoryFilesystem, loadPortableExhibit, loadPortableGallery, readExhibitTree,
-  loadWorkingLibrary, publishLibrary, asClientId, WORKING_IRI_BASE,
+  loadWorkingLibrary, publishLibrary, validateArchieMarker, asClientId, WORKING_IRI_BASE,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit,
 } from "@render/core";
 
@@ -154,9 +154,37 @@ export async function probeViewerMode(): Promise<ViewerMode> {
 // ----------------------------------------------------------------------------------------------
 
 // --- entry vectors (ADR-0008): open a `.archie.zip` into portable mode -------------------------
+/**
+ * Friendly default for an Error thrown on the open path — `ZipFilesystem.fromZip`'s zip-bomb caps
+ * (zip.ts) and `validateArchieMarker`'s ADR-0020 rejects already carry user-facing messages, so we
+ * surface the thrown message verbatim. A non-Error throw (shouldn't happen) degrades to a generic line.
+ * Mirrors studio's openZip try/catch+alert (apps/studio/src/ingest-flows.ts:445) — no raw Error escapes
+ * the viewer's drop / `?src=` open path uncaught. The thrown Error is re-thrown so the shell's catch
+ * can set its open-error UI; this only normalizes the MESSAGE (so a bare object never reaches the user).
+ */
+function openError(e: unknown): never {
+  throw e instanceof Error
+    ? e
+    : new Error("That file couldn't be opened. Choose a published .archie.zip exported from Archie.");
+}
+
+/** Decode + ADR-0020-validate a `.archie.zip`'s bytes, then enter portable mode. Shared by the file
+ *  and `?src=` vectors so the zip-bomb cap (fromZip) AND the marker reject both surface as a clear,
+ *  thrown user-facing Error — never a raw parse failure deep in the tree reader. */
+async function openZipBytes(bytes: Uint8Array): Promise<void> {
+  let fs: ZipFilesystem;
+  try {
+    fs = ZipFilesystem.fromZip(bytes); // throws on a zip-bomb cap breach (zip.ts) — friendly message
+    await validateArchieMarker(fs); // ADR-0020: reject a non-Archie / wrong-schema zip before opening it
+  } catch (e) {
+    openError(e);
+  }
+  openPortableLibrary(fs);
+}
+
 /** Open a picked/dropped `.archie.zip` (the file-open + drag-drop vector). */
 export async function openLibraryFromFile(file: Blob): Promise<void> {
-  openPortableLibrary(ZipFilesystem.fromZip(new Uint8Array(await file.arrayBuffer())));
+  await openZipBytes(new Uint8Array(await file.arrayBuffer()));
 }
 
 /** Default cap on a fetched `?src=` zip — guards the canonical host against a giant payload OOMing
@@ -177,7 +205,7 @@ export async function openLibraryFromSrc(url: string, maxBytes: number = SRC_MAX
   if (Number.isFinite(declared) && declared > maxBytes) throw new Error("That library is too large to open here.");
   const bytes = new Uint8Array(await res.arrayBuffer());
   if (bytes.byteLength > maxBytes) throw new Error("That library is too large to open here.");
-  openPortableLibrary(ZipFilesystem.fromZip(bytes));
+  await openZipBytes(bytes); // decode + ADR-0020 marker-validate before entering portable mode
 }
 // ----------------------------------------------------------------------------------------------
 

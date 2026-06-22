@@ -8,6 +8,7 @@
   // temporal MAP — a marker strip under the media showing WHERE on the recording each note falls
   // (read-only mirror of the Studio annotation timeline; HANDOFF "AV affordance pareto-hybrid").
   import { parseMediaFragment, activeNoteIndex, transcriptTextOf, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
+  import { clampSeekStart } from "../av-landing.js";
   import Credit from "./Credit.svelte";
   import SidebarObjectNav from "./SidebarObjectNav.svelte";
 
@@ -15,6 +16,7 @@
     object,
     annotations = [],
     rights,
+    initialSeek,
     onback,
     siblings,
     currentId,
@@ -25,6 +27,10 @@
     annotations?: W3CAnnotation[];
     /** The recording's credit/license (Q5) — AV is MUST-display too; shown by the title. */
     rights?: RightsFields;
+    /** Deep-link time offset (#/<slug>/a/<id>?t=…, Phase 3 / 4.7): on `loadedmetadata` the playhead seeks
+     *  to this clamped offset PAUSED — section-142: landing seeks but must NOT auto-play, so this does NOT
+     *  go through `seekTo` (which couples play()). Garbage / out-of-range → head (0). */
+    initialSeek?: string;
     /** Escape-out (ADR-0016 §137/§223): an AV object opened FROM the narrative index needs a step back
      *  to that index, else it dead-end-traps the visitor (the carousel/breadcrumb don't serve it). Optional
      *  + back-compat — absent (single AV, AV-in-grid carry their own nav) hides the affordance. */
@@ -98,6 +104,25 @@
     mediaEl.currentTime = Math.max(0, dur ? Math.min(dur, t) : t);
     void mediaEl.play();
   }
+  // Deep-link landing seek (4.7): once metadata is in (duration known), place the playhead at the route's
+  // `t=` offset — clamped to the real duration — and LEAVE IT PAUSED. This is the section-142 split: it
+  // does NOT call `seekTo` (which auto-plays for the in-read affordance); it sets currentTime directly.
+  // Fired once per metadata load; a garbage / absent offset resolves to 0 (head), so this is a safe no-op
+  // for an ordinary (no-`t=`) landing. The remount-on-step `{#key}` (ExhibitView) gives each AV sibling a
+  // fresh mount, so this can't replay a stale offset onto the wrong recording.
+  let didLandSeek = false;
+  function landSeek() {
+    if (didLandSeek || !mediaEl) return;
+    didLandSeek = true;
+    if (!initialSeek) return; // ordinary landing — leave the playhead at 0, paused
+    const at = clampSeekStart(initialSeek, mediaDuration);
+    if (at > 0) { mediaEl.currentTime = at; currentTime = at; } // paused — no play() (section-142)
+  }
+  function onMeta() {
+    mediaDuration = mediaEl?.duration ?? 0;
+    mediaReady = true;
+    landSeek(); // after mediaDuration is set, so the clamp uses the real length
+  }
   // Click the bare strip (not a mark) → travel to that point in the recording (scrub the time axis).
   function trackSeek(e: MouseEvent, el: HTMLElement) {
     if (!dur) return;
@@ -130,7 +155,7 @@
       {:else if isVideo}
         <div class="video-wrap">
           <!-- svelte-ignore a11y_media_has_caption -->
-          <video bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={() => { mediaDuration = mediaEl?.duration ?? 0; mediaReady = true; }} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
+          <video bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={onMeta} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
           <!-- Spatiotemporal note regions (ADR-0006): the box appears on the frame during its time window. -->
           <div class="box-overlay" aria-hidden="true">
             {#each videoBoxes as b (b.id)}<div class="rbox" class:active={b.active} style={`left:${b.box.x}%;top:${b.box.y}%;width:${b.box.w}%;height:${b.box.h}%`}></div>{/each}
@@ -140,7 +165,7 @@
         <div class="audio-stage">
           <span class="now">Now playing</span>
           <h1>{object.label}</h1>
-          <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={() => { mediaDuration = mediaEl?.duration ?? 0; mediaReady = true; }} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
+          <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={onMeta} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
         </div>
       {/if}
     </div>

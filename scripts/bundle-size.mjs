@@ -35,6 +35,12 @@ rows.push(await measureEntry("@render/core (fflate external)", `${root}/packages
 rows.push(await measureEntry("@render/core + fflate", `${root}/packages/render-core/src/index.ts`));
 // The renderer floor: OSD + Annotorious (the 240KB-budget concern, BEFORE any Archie code).
 rows.push(await measureStdin("OSD + Annotorious + plugin-tools", `import "openseadragon"; import "@annotorious/openseadragon"; import "@annotorious/plugin-tools";`, `${root}/packages/render-mount`));
+// The READ-ONLY mount entry (ADR-0019 keystone): OSD kept, @annotorious/* + pixi ABSENT (DOM-SVG
+// overlay, no unsafe-eval). Measured next to the OSD+Annotorious floor so the drop is visible — this
+// gz number MUST be lower than that floor (the eval-causing dep is gone). P0-10 asserts the absence at
+// the source level; this records the bundle-level number. Live strict-CSP browser run = Phase-1.
+// `globalThis.X =` keeps the named export live so esbuild can't tree-shake the side-effect-free import.
+rows.push(await measureStdin("read-only mount (OSD, NO Annotorious/pixi)", `import { createReadOnlyMount } from "${root}/packages/render-mount/src/read-mount.ts"; globalThis.__readonly = createReadOnlyMount;`, `${root}/packages/render-mount`));
 
 // --- app-dist measurement + ratchet (worklist 4.3): the BUILT apps are the numbers that matter.
 // Baseline = a real measurement, never an aspirational figure (the 240KB budget was retired as
