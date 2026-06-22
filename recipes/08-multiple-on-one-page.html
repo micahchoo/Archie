@@ -29,10 +29,9 @@
   The markup below is the FINISHED Phase-4 contract — correct once 7.x ships, and it doubles
   as the Phase-4 integration fixture. The iframe variant beneath it is what works right now.
 
-  REPLACE:
-    yourname.github.io/yourrepo  ->  your published tree base
-    voynich / atlas              ->  your exhibit slugs
-    sha384-PLACEHOLDER...        ->  the real SRI hash from the @v1 release
+  REPLACE (if you fork):
+    micahchoo.github.io/Archie  ->  your published tree base
+    voynich / language-atlas     ->  your exhibit slugs
 -->
 <html lang="en">
 <head>
@@ -50,8 +49,7 @@
   <!-- Runtime loaded ONCE for the whole page. -->
   <script
     type="module"
-    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
-    integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
     crossorigin="anonymous"></script>
 </head>
 
@@ -67,18 +65,19 @@
     finished contract; until 7.x ships, use the iframe variant at the bottom.
   </p>
 
+  <!-- replace with your own published-tree base URL if you fork -->
   <div class="grid">
     <section>
       <h2>Voynich</h2>
       <archie-viewer
-        src="https://yourname.github.io/yourrepo/viewer/"
+        src="https://micahchoo.github.io/Archie/viewer/published/"
         target="#/voynich"></archie-viewer>
     </section>
     <section>
-      <h2>Atlas</h2>
+      <h2>Language Atlas</h2>
       <archie-viewer
-        src="https://yourname.github.io/yourrepo/viewer/"
-        target="#/atlas"></archie-viewer>
+        src="https://micahchoo.github.io/Archie/viewer/published/"
+        target="#/language-atlas"></archie-viewer>
     </section>
   </div>
 
@@ -98,9 +97,9 @@
               loading="lazy" title="Voynich — Archie viewer"></iframe>
     </section>
     <section>
-      <h2>Atlas (iframe — works today)</h2>
-      <iframe src="https://yourmuseum.org/embed-atlas.html"
-              loading="lazy" title="Atlas — Archie viewer"></iframe>
+      <h2>Language Atlas (iframe — works today)</h2>
+      <iframe src="https://yourmuseum.org/embed-language-atlas.html"
+              loading="lazy" title="Language Atlas — Archie viewer"></iframe>
     </section>
   </div>
 

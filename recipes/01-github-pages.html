@@ -12,9 +12,8 @@
   GitHub Pages already sends permissive CORS headers, so this works cross-origin with
   no extra configuration — your page can live on any other origin.
 
-  REPLACE:
-    yourname.github.io/yourrepo  ->  your actual GitHub Pages base
-    sha384-PLACEHOLDER...        ->  the real SRI hash from the @v1 release
+  REPLACE (if you fork):
+    micahchoo.github.io/Archie  ->  your actual GitHub Pages base
 -->
 <html lang="en">
 <head>
@@ -34,8 +33,7 @@
   -->
   <script
     type="module"
-    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
-    integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
     crossorigin="anonymous"></script>
 </head>
 
@@ -46,7 +44,8 @@
     src = the published-tree base URL (note the trailing slash on the viewer path).
     The viewer opens the library's gallery; click through to any exhibit.
   -->
+  <!-- replace with your own published-tree base URL if you fork -->
   <archie-viewer
-    src="https://yourname.github.io/yourrepo/viewer/"></archie-viewer>
+    src="https://micahchoo.github.io/Archie/viewer/published/"></archie-viewer>
 </body>
 </html>

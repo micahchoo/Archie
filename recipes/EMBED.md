@@ -9,14 +9,16 @@ A `<script>` tag pulls the runtime from a CDN and one element renders the exhibi
 ```html
 <script
   type="module"
-  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
+  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
   crossorigin="anonymous"></script>
 
-<archie-viewer src="https://yourname.github.io/yourrepo/viewer/"></archie-viewer>
+<!-- replace with your own published-tree base URL if you fork -->
+<archie-viewer src="https://micahchoo.github.io/Archie/viewer/published/"></archie-viewer>
 ```
 
 `@v1` is a pinned git tag — pin it so an upstream change can't silently alter your embed.
-`crossorigin="anonymous"` is required if you add the published `integrity="sha384-…"` SRI hash.
+
+For production integrity (optional), add `integrity="sha384-2kT6KuVJkm08Btoug0L+OxGYjUhlH7ro/4VY4nLSB9Ysc0youBLptzrp7A4UevNl" crossorigin="anonymous"` — the SHA-384 of v1's `dist/archie-viewer.js`. An SRI hash must be re-computed if the bundle is re-released.
 
 ### Attributes (the whole public surface — ADR-0021, frozen)
 
@@ -34,7 +36,7 @@ Note `#/{slug}/a/<id>` (add `?xywh=x,y,w,h` for a region) · Section `#/{slug}/s
 
 ```html
 <archie-viewer
-  src="https://yourname.github.io/yourrepo/viewer/"
+  src="https://micahchoo.github.io/Archie/viewer/published/"
   target="#/voynich/a/n3"></archie-viewer>
 ```
 
@@ -46,7 +48,7 @@ stays the primary contract — `iiif-content` is the additive bridge from IIIF t
 
 ```html
 <archie-viewer
-  src="https://yourname.github.io/yourrepo/viewer/"
+  src="https://micahchoo.github.io/Archie/viewer/published/"
   iiif-content="JTdCJTIyJTQwY29udGV4dCUyMi..."></archie-viewer>
 ```
 

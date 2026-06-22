@@ -21,9 +21,25 @@ Add a **Level-1 validation marker**, not a cryptographic seal:
 
 - **Write side:** `publishLibrary` emits `archie.json = { format: "archie-library", version, generator,
   derivedFrom? }` at the zip root (reuse `SCHEMA_VERSION`, `publish/migrate.ts:12`).
-- **Read side:** `openLibraryFromFile` / `openLibraryFromSrc` read + assert `archie.json` (format +
-  version) and that `exhibits.json` parses, BEFORE `openPortableLibrary`; throw the existing user-facing
-  error otherwise. Apply a byte / entry-count / uncompressed-ratio cap to the file-drop path too.
+- **Read side (LENIENT-ON-ABSENT):** the marker check (`validateArchieMarker`, shared by the apps/viewer
+  file-drop, the `<archie-viewer>` zip path, and `openLibraryFromTree`) runs BEFORE the library is
+  opened, with this rule:
+  - `archie.json` **PRESENT** → it MUST be a current-schema Archie marker: assert `format ===
+    "archie-library"` and `version === SCHEMA_VERSION`, and that `exhibits.json` parses. A
+    forged/foreign/wrong-version marker is rejected with the existing user-facing error.
+  - `archie.json` **ABSENT** → accept iff the archive is STRUCTURALLY an Archie library: `collection.json`
+    OR `exhibits.json` parses as JSON. Reject only when NEITHER exists/parses (a genuinely non-Archie zip).
+
+  Apply a byte / entry-count / uncompressed-ratio cap to the file-drop path too.
+
+  **Why absent-lenient (added 2026-06-21):** the marker is a sanity/version GATE, not the security
+  boundary (the decompression cap + sanitization are — see Consequences). A strict marker-required read
+  was a regression: a real Archie export made BEFORE the marker landed (`collection.json` +
+  `exhibits.json`, no `archie.json`) was rejected with "This file isn't an Archie library." Lenient-on-
+  absent keeps such pre-marker exports openable while still rejecting genuine junk, and it matches the
+  hosted-tree path (`openLibraryFromTree`), which was already absent-lenient (some static hosts strip
+  dotted/unknown files, so a tree need not ship a marker). A PRESENT-but-foreign marker is still rejected
+  on both the zip and tree paths.
 
 The marker is **validation, not authentication**: it identifies "a current-version Archie library" and
 catches accidents + version drift. **Integrity hashing / signatures (L2/L3) are rejected** because they
@@ -35,7 +51,8 @@ edited, re-exported zip is a **derivative** (new identity + `derivedFrom`), neve
 
 - The marker + version field is baked into every export forever (the hard-to-reverse part) and doubles
   as the version-compat gate: a pinned-`@v1` `<archie-viewer>` reading a future `v2` zip refuses cleanly
-  instead of rendering garbage.
+  instead of rendering garbage. The absent-lenient rule does NOT weaken this gate — it applies only when
+  there is NO marker to read; a marker that IS present (every current export) is still version-checked.
 - **The marker is a sanity gate, NOT a security boundary** — an attacker forges it trivially. Defence
   against hostile zips is the separate hardening checklist (the decompression bomb is the one live High;
   the geometry-only SVG overlay and typed-JSON reads already close XSS / prototype-pollution; an

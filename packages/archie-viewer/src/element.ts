@@ -31,6 +31,8 @@ import {
   type LoadedLibrary,
 } from "./load.js";
 import { OfflineRemoteBlockedError } from "./reader.js";
+import type { AvPlayerSurface } from "./av-player.js";
+import { createNoteCard, noteBodyHtml, type NoteCard } from "./note-card.js";
 import { resolveExhibitTarget, type ResolvedTarget } from "./target-resolve.js";
 import { resolveContentState } from "./content-state.js";
 import { encodeContentState } from "@render/core";
@@ -77,6 +79,10 @@ export class ArchieViewerElement extends HTMLElement {
   #library: LoadedLibrary | null = null;
   #view: View = { kind: "empty" };
   #surface: ReadOnlyMountSurface | null = null;
+  /** The AV player surface for a sound/video object — mounted instead of OSD, torn down like #surface. */
+  #avSurface: AvPlayerSurface | null = null;
+  /** The text-only note card for the open reader — shown on overlay selection, torn down with the surface. */
+  #noteCard: NoteCard | null = null;
   /** Monotonic load token — a newer load() invalidates an in-flight older one (rapid src changes). */
   #loadSeq = 0;
   /** Set once connected, so attribute changes BEFORE connection don't double-load on connect. */
@@ -278,21 +284,72 @@ export class ArchieViewerElement extends HTMLElement {
     const host = this.#root.querySelector<HTMLElement>(".reader-surface");
     if (!host) return;
 
+    // MEDIUM BRANCH (ADR-0019 AV): a sound/video object mounts the plain-DOM AV player (native
+    // <audio>/<video> + cue band + note-card), NOT OSD. image (and unknown) → the OSD reader below.
+    // Both paths are LAZY-imported so the gallery bundle ships neither until an object opens.
+    if (object.mediaType === "sound" || object.mediaType === "video") {
+      await this.#openAvObject(host, exhibit, object, resolved);
+      return;
+    }
+
     const { openObject } = await import("./reader.js"); // LAZY: OSD weight deferred to this point
     const annotations = exhibit.annotationsByObject?.[object.id] ?? [];
     const canvasId = exhibit.canvasIdByObject?.[object.id];
+
+    // The TEXT-ONLY note card: floats on the reader surface, shows the SELECTED annotation's body
+    // (commentOfAnnotation → renderMarkdown, the SANITIZED pipeline the full viewer uses). Created
+    // before the mount so the overlay's first onSelect has a card to drive; torn down with the surface.
+    this.#noteCard = createNoteCard(host);
+    const onSelect = (id: string | null): void => {
+      // noteBodyHtml returns "" for null/unknown ids → show() hides the card.
+      this.#noteCard?.show(noteBodyHtml(annotations, id));
+    };
+
     try {
       this.#surface = await openObject(host, {
         object,
         annotations,
         ...(canvasId ? { canvasId } : {}),
         offline: this.offline,
+        onSelect,
       });
       if (resolved) this.#applyFragment(this.#surface, resolved);
     } catch (e) {
+      // The mount failed (offline-blocked / load error): drop the card with the surface — the error
+      // notice replaces the host content, so the card node is gone; clear the handle too.
+      this.#noteCard?.destroy();
+      this.#noteCard = null;
       const msg = e instanceof OfflineRemoteBlockedError
         ? e.message
         : "Couldn't load this media item.";
+      host.innerHTML = `<p class="notice">${escapeHtml(msg)}</p>`;
+    }
+  }
+
+  // --- AV READER: lazy-import the native-media player only when a sound/video object opens ----------
+  // The plain-DOM analogue of #openObject's OSD path: mount a native <audio>/<video> + a cue band that
+  // seeks-and-shows-notes (reusing the same note-card pipeline). A resolved `t=` fragment becomes the
+  // initialSeek (seek-paused on loadedmetadata, section-142). Offline-blocked / load errors render the
+  // same notice idiom as the image path; the AV surface tears down with #teardownSurface.
+  async #openAvObject(
+    host: HTMLElement,
+    _exhibit: PortableExhibit,
+    object: AObject,
+    resolved?: ResolvedTarget,
+  ): Promise<void> {
+    const { mountAvPlayer, OfflineAvBlockedError } = await import("./av-player.js"); // LAZY: AV weight deferred
+    const annotations = _exhibit.annotationsByObject?.[object.id] ?? [];
+    // The resolved cite-ladder fragment carries a `t=` offset for an AV landing → seek-paused on load.
+    const initialSeek = resolved?.fragment?.kind === "t" ? resolved.fragment.value : undefined;
+    try {
+      this.#avSurface = mountAvPlayer(host, {
+        object,
+        annotations,
+        ...(initialSeek ? { initialSeek } : {}),
+        offline: this.offline,
+      });
+    } catch (e) {
+      const msg = e instanceof OfflineAvBlockedError ? e.message : "Couldn't load this media item.";
       host.innerHTML = `<p class="notice">${escapeHtml(msg)}</p>`;
     }
   }
@@ -322,8 +379,13 @@ export class ArchieViewerElement extends HTMLElement {
   }
 
   #teardownSurface(): void {
+    this.#noteCard?.destroy();
+    this.#noteCard = null;
     this.#surface?.destroy();
     this.#surface = null;
+    // The AV player owns its OWN note-card (created inside mountAvPlayer); destroy() drops both.
+    this.#avSurface?.destroy();
+    this.#avSurface = null;
   }
 
   // --- REVERSE interop: a IIIF Content State for the CURRENTLY-open object (ADR-0022 codec) -----------

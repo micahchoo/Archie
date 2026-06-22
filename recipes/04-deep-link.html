@@ -23,11 +23,10 @@
 
   Two live examples below. They share one library (src) and differ only in `target`.
 
-  REPLACE:
-    yourname.github.io/yourrepo  ->  your published tree base
+  REPLACE (if you fork):
+    micahchoo.github.io/Archie  ->  your published tree base
     voynich                      ->  your exhibit slug
     n3 / obj-folio-1             ->  your note logicalId / objectId
-    sha384-PLACEHOLDER...        ->  the real SRI hash from the @v1 release
 -->
 <html lang="en">
 <head>
@@ -43,33 +42,38 @@
 
   <script
     type="module"
-    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
-    integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
     crossorigin="anonymous"></script>
 </head>
 
 <body>
 
-  <!-- EXAMPLE A: open straight to a specific NOTE.
-       target = #/{slug}/a/{logicalId}. Append ?xywh=x,y,w,h to also frame a sub-region.
-       The note's Reading auto-activates so its marker shows (ADR-0021 — reused free). -->
+  <!-- EXAMPLE A: open straight to a specific OBJECT (a whole item in the exhibit).
+       target = #/{slug}/o/{objectId}. This is the PRIMARY working deep-link — an object id
+       resolves directly against the published tree. -->
   <section>
-    <h2>A — Land on a note</h2>
-    <p>target = <code>#/voynich/a/n3</code></p>
+    <h2>A — Land on an object</h2>
+    <p>target = <code>#/voynich/o/o1</code></p>
+    <!-- replace with your own published-tree base URL if you fork -->
     <archie-viewer
-      src="https://yourname.github.io/yourrepo/viewer/"
-      target="#/voynich/a/n3"></archie-viewer>
+      src="https://micahchoo.github.io/Archie/viewer/published/"
+      target="#/voynich/o/o1"></archie-viewer>
   </section>
 
-  <!-- EXAMPLE B: open straight to a specific OBJECT (a whole item in the exhibit).
-       target = #/{slug}/o/{objectId}. -->
+  <!-- EXAMPLE B: open straight to a specific NOTE.
+       target = #/{slug}/a/{logicalId}. Append ?xywh=x,y,w,h to also frame a sub-region.
+
+       note-level deep-link — resolves only when the published annotations carry a bare
+       logicalId (slash-free); otherwise degrades to the object. Uncomment to try:
+
   <section>
-    <h2>B — Land on an object</h2>
-    <p>target = <code>#/voynich/o/obj-folio-1</code></p>
+    <h2>B — Land on a note</h2>
+    <p>target = <code>#/voynich/a/n3</code></p>
     <archie-viewer
-      src="https://yourname.github.io/yourrepo/viewer/"
-      target="#/voynich/o/obj-folio-1"></archie-viewer>
+      src="https://micahchoo.github.io/Archie/viewer/published/"
+      target="#/voynich/a/n3"></archie-viewer>
   </section>
+  -->
 
 </body>
 </html>

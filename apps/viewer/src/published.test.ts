@@ -146,16 +146,31 @@ describe("entry vectors (file + ?src=)", () => {
     await expect(openLibraryFromSrc("https://h/x.archie.zip")).rejects.toThrow(/couldn't open the library/i);
   });
 
-  it("ADR-0020: rejects a zip WITHOUT the marker with a friendly Error, never entering portable mode", async () => {
-    // a non-Archie zip: a bare exhibits.json, no archie.json marker.
+  it("ADR-0020: rejects a JUNK zip (no collection.json/exhibits.json) with a friendly Error, never entering portable mode", async () => {
+    // A genuinely non-Archie zip: neither marker NOR a structural index file. Lenient-on-absent
+    // accepts an UNMARKED real export (collection.json/exhibits.json present); only a zip with
+    // neither is rejected.
     const fs = new ZipFilesystem();
-    const f = await (await fs.root()).getFile("exhibits.json", { create: true });
+    const f = await (await fs.root()).getFile("hello.txt", { create: true });
     const w = await f.writable();
-    await w.write(JSON.stringify({ library: { id: "x" }, exhibits: [] }));
+    await w.write("not archie");
     await w.close();
     const bytes = fs.toZip();
     await expect(openLibraryFromFile(new Blob([new Uint8Array(bytes)]))).rejects.toThrow(/isn't an archie library/i);
     expect(isPortable()).toBe(false); // rejected by the marker gate before openPortableLibrary
+  });
+
+  it("ADR-0020 lenient-on-absent: ACCEPTS an UNMARKED real export (exhibits.json, no archie.json)", async () => {
+    // The regression: a pre-marker real export has exhibits.json but no archie.json — it must still open.
+    const fs = new ZipFilesystem();
+    const f = await (await fs.root()).getFile("exhibits.json", { create: true });
+    const w = await f.writable();
+    await w.write(JSON.stringify({ library: { id: "x", title: "Recovered" }, exhibits: [] }));
+    await w.close();
+    const bytes = fs.toZip();
+    await openLibraryFromFile(new Blob([new Uint8Array(bytes)]));
+    expect(isPortable()).toBe(true); // accepted — structurally a valid Archie library
+    closePortableLibrary();
   });
 });
 
