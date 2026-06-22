@@ -1,0 +1,98 @@
+<!doctype html>
+<!--
+  recipes/try.html — local same-origin smoke page for <archie-viewer>
+  ==================================================================
+  EVERYTHING here is served from the REPO ROOT, so there is NO CORS, NO internet
+  needed: the bundle is /dist/archie-viewer.js and the library is the baked
+  published tree under /apps/viewer/public/published/.
+
+  Run it two ways:
+    • Manual:    cd <repo root> && python3 -m http.server 8000
+                 open http://localhost:8000/recipes/try.html
+    • Headless:  node recipes/smoke.mjs   (spins up its own server + Chromium)
+
+  What you should see: the gallery — a grid of exhibit cards ("The Rosettes",
+  "The Whole Manuscript", …). Click a card → its object grid. Click an object →
+  the deep-zoom reader (an OpenSeadragon canvas).
+
+  See recipes/TESTING.md for the full walkthrough (deep-link / offline / drop).
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>archie-viewer — local try</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    .note { padding: .6rem 1rem; background: #f6efe9; color: #6b5d52; font-size: .9rem; }
+  </style>
+
+  <!-- The local same-origin bundle. It auto-registers the <archie-viewer> element
+       and lazily imports ./reader-*.js (the deep-zoom mount) when an object opens.
+       The ./chunk-*.js / ./reader-*.js refs resolve relative to /dist/, so an
+       absolute /dist/ src is the only thing that keeps them reachable. -->
+  <script type="module" src="/dist/archie-viewer.js"></script>
+</head>
+
+<body>
+  <p class="note">Local same-origin: bundle = <code>/dist/archie-viewer.js</code>,
+     library = the baked tree at <code>/apps/viewer/public/published/</code>.</p>
+
+  <!-- LIVE: load the published tree base. A trailing slash matters — the loader
+       treats a non-.zip src as a published-TREE BASE and fetches exhibits.json. -->
+  <archie-viewer
+    src="/apps/viewer/public/published/"
+    style="display:block;height:90vh"></archie-viewer>
+
+
+  <!-- ============================================================================
+       COMMENTED-OUT VARIANTS — swap one in for the live element above to try it.
+       ============================================================================ -->
+
+  <!-- (a) DEEP-LINK target — land on a real published note (cite ladder, ADR-0018/0021).
+       `0000000001SEBWXFTSHHP00TVY` is a REAL note logicalId in this tree (object o1,
+       region xywh=pixel:260,240,2400,3300 — the f1r opening-page note).
+
+       HONEST NOTE on THIS published tree: its inline annotations carry only their
+       full-URL `id` (no inline `archie:logicalId`), and parseRoute splits the hash on
+       "/", so a full-URL noteId can't ride the hash. This short logicalId therefore
+       DEGRADES UPWARD (ADR-0021, note-not-found) to the voynich object grid — it never
+       errors, it lands on the nearest ancestor. To land ON the object instead, use the
+       `/o/<objectId>` rung, which resolves cleanly here (object id = o1):
+
+  <archie-viewer
+    src="/apps/viewer/public/published/"
+    target="#/voynich/a/0000000001SEBWXFTSHHP00TVY"
+    style="display:block;height:90vh"></archie-viewer>
+
+       clean object landing (no degrade):
+  <archie-viewer
+    src="/apps/viewer/public/published/"
+    target="#/voynich/o/o1"
+    style="display:block;height:90vh"></archie-viewer>
+  -->
+
+  <!-- (b) OFFLINE — boolean attribute (presence = on). Blocks remote tile/media fetch
+       on object open. The gallery/grid still render from the local tree; opening an
+       object whose tiles live on a remote IIIF service shows the offline notice. -->
+  <!--
+  <archie-viewer
+    src="/apps/viewer/public/published/"
+    offline
+    style="display:block;height:90vh"></archie-viewer>
+  -->
+
+  <!-- (c) NO-SRC drop screen — omit src entirely → the "Open a library" drop/pick zone.
+       Drop a .archie.zip onto it, or click "Open a library…". -->
+  <!--
+  <archie-viewer style="display:block;height:90vh"></archie-viewer>
+  -->
+
+  <!-- (d) PRODUCTION script line — the published jsDelivr bundle (replace the local
+       <script> in <head> with this for a CDN-hosted embed):
+  <script type="module"
+    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"></script>
+  -->
+
+</body>
+</html>

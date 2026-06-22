@@ -257,10 +257,11 @@ Load the runtime from jsDelivr serving the pinned `@v1` git tag, then place one 
 ```html
 <script
   type="module"
-  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
+  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
   crossorigin="anonymous"></script>
 
-<archie-viewer src="https://yourname.github.io/yourrepo/viewer/"></archie-viewer>
+<!-- replace with your own published-tree base URL if you fork -->
+<archie-viewer src="https://micahchoo.github.io/Archie/viewer/published/"></archie-viewer>
 ```
 
 Pin `@v1` so an upstream change can't silently alter your embed. The public surface is three attributes (frozen — [ADR-0021](docs/adr/0021-archie-viewer-target-contract.md)):
@@ -275,7 +276,7 @@ Pin `@v1` so an upstream change can't silently alter your embed. The public surf
 
 ```html
 <archie-viewer
-  src="https://yourname.github.io/yourrepo/viewer/"
+  src="https://micahchoo.github.io/Archie/viewer/published/"
   target="#/voynich/a/n3"></archie-viewer>
 ```
 

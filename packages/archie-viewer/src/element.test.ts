@@ -220,6 +220,46 @@ describe("target ladder degrade-upward (ADR-0021, integration through a real lib
   });
 });
 
+describe("AV medium branch (ADR-0019): a sound/video object mounts the native player, not OSD", () => {
+  // A one-exhibit library whose single object is a SOUND recording (blob: source so the offline gate is
+  // moot) → opening it must mount the NATIVE <audio> player, not the OSD reader. (Cue RENDERING from a
+  // note list is covered exhaustively in av-player.test.ts; here we prove the element's MEDIUM BRANCH.)
+  async function buildSoundLibraryBytes(): Promise<Uint8Array> {
+    const objId = asObjectId("o12");
+    const library: Library = {
+      id: asLibraryId("L"),
+      title: "Sound Lib",
+      exhibits: [
+        {
+          id: asExhibitId("e1"),
+          slug: "sonic",
+          title: "Sonic Exhibit",
+          objects: [{ id: objId, source: "blob:fake-audio", label: "Field recording", mediaType: "sound" }],
+        },
+      ],
+    };
+    const fs = new ZipFilesystem();
+    await publishLibrary(fs, library, () => [], { baseUrl: "https://u.gh.io/lib/" });
+    return fs.toZip();
+  }
+
+  it("opening a sound object mounts a native <audio> (not the OSD reader / not an error notice)", async () => {
+    const bytes = await buildSoundLibraryBytes();
+    const el = mount();
+    el.setAttribute("target", "#/sonic/o/o12"); // object rung → opens o12
+    await el.openFile(new Blob([bytes as BlobPart]));
+    // The AV player is LAZY-imported (import("./av-player.js")) — a real module-resolution macrotask, so
+    // microtask flushes aren't enough; tick the macrotask queue until the audio element mounts.
+    for (let i = 0; i < 20; i++) await new Promise((r) => setTimeout(r, 0));
+    const sr = el.shadowRoot!;
+    expect(sr.querySelector("audio")).not.toBeNull();
+    expect(sr.querySelector("video")).toBeNull();
+    expect((sr.querySelector("audio") as HTMLMediaElement).getAttribute("src")).toBe("blob:fake-audio");
+    // The reader-surface host holds the AV player, NOT an OSD error notice ("Couldn't load this media item").
+    expect(sr.querySelector(".notice")).toBeNull();
+  });
+});
+
 describe("iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library)", () => {
   // buildArchiveBytes publishes with baseUrl "https://u.gh.io/lib/", object id "o1" → the canvas IRI is
   // `https://u.gh.io/lib/{slug}/canvas/o1`. We encode Content States against THAT via the donor codec.

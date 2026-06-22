@@ -21,12 +21,12 @@ elements.
    ```html
    <script
      type="module"
-     src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
-     integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+     src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
      crossorigin="anonymous"></script>
 
+   <!-- replace with your own published-tree base URL if you fork -->
    <archie-viewer
-     src="https://yourname.github.io/yourrepo/viewer/"
+     src="https://micahchoo.github.io/Archie/viewer/published/"
      style="display:block;width:100%;height:600px"></archie-viewer>
    ```
 
@@ -57,8 +57,7 @@ iframe is the universal floor.
 <meta charset="utf-8">
 <style>html,body{margin:0;height:100%}archie-viewer{display:block;height:100%}</style>
 <script type="module"
-  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
-  integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
   crossorigin="anonymous"></script>
 <archie-viewer src="https://yourmuseum.org/libraries/codex.archie.zip"></archie-viewer>
 ```

@@ -11,10 +11,11 @@
 // seam the test drives without a live OSD (mirrors how gate.test.ts mocks the viewport, not OSD).
 
 import OpenSeadragon from "openseadragon";
-import { resolveTileSource } from "@render/core";
-import type { TileSourceDescriptor, W3CAnnotation } from "@render/core";
+import { resolveTileSource, selectorOf, wholeObjectFlagOf } from "@render/core";
+import type { TileSourceDescriptor, W3CAnnotation, AnnotationLike } from "@render/core";
 import { dispatchFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import { createReadOnlyOverlay, type LabelFor } from "./read-overlay.js";
+import { createFrameOverlay } from "./frame-overlay.js";
 import { xyzTileSource } from "./xyz.js";
 import { dziOsdSource } from "./dzi.js";
 import type { SelectionId } from "./surface.js";
@@ -65,6 +66,36 @@ export interface ReadOnlyOverlayLike {
   clear(): void;
 }
 
+/** The frame-overlay subset this surface drives for whole-object notes (donor: frame-overlay.ts). The
+ *  frame is a clickable object-spanning border whose `onActivate` routes the note id through onSelect —
+ *  the SAME path region shapes use, so the element's note-card opens identically. Minimal so the seam
+ *  is test-injectable (a fake frame controller mirrors the fake overlay). */
+export interface ReadOnlyFrameLike {
+  draw(frame: { colour: string; onActivate: () => void }): void;
+  clear(): void;
+}
+
+/**
+ * PURE partition of a published note list into the REGION shapes the SVG overlay draws and the
+ * WHOLE-OBJECT notes the frame draws. A note is whole-object when it has NO renderable region
+ * geometry — either a bare-canvas-target / null selector (`selectorOf == null`, the voynich/o1 case)
+ * OR the authored `archie:wholeObject: true` override (`wholeObjectFlagOf`). This is the read-path
+ * fix for read-overlay.ts:197-201 warn-and-dropping the null-selector case: instead of vanishing, a
+ * whole-object note becomes a clickable frame (mirrors the editor's frameFor partition, mount.ts).
+ */
+export function partitionWholeObject(annotations: W3CAnnotation[]): {
+  regions: W3CAnnotation[];
+  wholeObjects: W3CAnnotation[];
+} {
+  const regions: W3CAnnotation[] = [];
+  const wholeObjects: W3CAnnotation[] = [];
+  for (const ann of annotations) {
+    const isWhole = selectorOf(ann as AnnotationLike) === null || wholeObjectFlagOf(ann);
+    (isWhole ? wholeObjects : regions).push(ann);
+  }
+  return { regions, wholeObjects };
+}
+
 /**
  * PURE overlay-wiring seam (no OSD construction): wire a viewport + a read-only overlay into the
  * ReadOnlyMountSurface contract. `getAnnotations` is the live annotation list (the surface's one source
@@ -77,19 +108,26 @@ export function wireReadOnlySurface(
   overlay: ReadOnlyOverlayLike,
   getAnnotations: () => W3CAnnotation[],
   getFitOptions?: () => FitOptions,
-): ReadOnlyMountSurface {
+): ReadOnlyMountSurface & { emitSelect(id: SelectionId | null): void } {
   const selectSubs = new Set<(id: SelectionId | null) => void>();
 
   const fitBounds = (id: SelectionId): void => {
     dispatchFitBounds(viewport, getAnnotations(), id, getFitOptions?.() ?? PLAIN_FIT);
   };
 
-  // The overlay is the hit-test source: a shape click (or background → null) flows here, where we
-  // notify subscribers AND select-then-fit (the nav contract). One subscription to the overlay.
-  overlay.onSelect((id) => {
+  // The single selection entry point: notify subscribers AND select-then-fit (the nav contract). A
+  // region shape click reaches it via overlay.onSelect; a whole-object FRAME click reaches it via the
+  // exposed `emitSelect` — both route through the SAME subscriber set, so the element note-card opens
+  // identically. A whole-object note has no region → fitBounds is a no-op (dispatchFitBounds finds the
+  // record but its null selector yields no rect), which is correct: nothing to frame.
+  const emitSelect = (id: SelectionId | null): void => {
     for (const cb of selectSubs) cb(id);
     if (id !== null) fitBounds(id);
-  });
+  };
+
+  // The overlay is the hit-test source for region shapes: a shape click (or background → null) flows
+  // here. One subscription to the overlay.
+  overlay.onSelect(emitSelect);
 
   return {
     setAnnotations(annotations: W3CAnnotation[]): void {
@@ -99,6 +137,7 @@ export function wireReadOnlySurface(
       overlay.setSelected(id);
     },
     fitBounds,
+    emitSelect,
     onSelect(cb: (id: SelectionId | null) => void): () => void {
       selectSubs.add(cb);
       return () => selectSubs.delete(cb);
@@ -145,6 +184,11 @@ export async function createReadOnlyMount(
   const viewer = OpenSeadragon({
     element: container,
     tileSources,
+    // OSD 5 CanvasDrawer (not the default WebGL drawer): each WebGL drawer holds a scarce WebGL
+    // context, and several embeds on one page exhaust the browser's context cap ("WebGL context lost"
+    // on recipes/08). The 2D canvas drawer has no such cap. The SVG region overlay + whole-object
+    // frame are DOM addOverlay layers (drawer-independent), so they still position over the canvas.
+    drawer: "canvas",
     crossOriginPolicy: "Anonymous",
     timeout: 60000,
     showNavigationControl: false,
@@ -187,10 +231,19 @@ export async function createReadOnlyMount(
     });
   });
 
-  // The DOM-SVG overlay replaces the Annotorious annotator (no @annotorious/* / pixi here).
+  // The DOM-SVG overlay replaces the Annotorious annotator (no @annotorious/* / pixi here). Both the
+  // region overlay AND the whole-object frame are DOM addOverlay layers — drawer-independent, so they
+  // position over the canvas drawer's pixels exactly as they did over the WebGL drawer.
   const overlay = createReadOnlyOverlay(
     viewer as unknown as Parameters<typeof createReadOnlyOverlay>[0],
     opts.labelFor ? { labelFor: opts.labelFor } : {},
+  );
+  // The object-spanning clickable frame for WHOLE-OBJECT notes (donor: frame-overlay.ts, already wired
+  // into the editor mount). A whole-object note has no region geometry, so instead of read-overlay
+  // warn-and-dropping it (invisible + unclickable), it gets a frame whose click routes its id through
+  // the same onSelect path the region shapes use.
+  const frame: ReadOnlyFrameLike = createFrameOverlay(
+    viewer as unknown as Parameters<typeof createFrameOverlay>[0],
   );
 
   // The surface's one source of truth for the annotation list (fitBounds resolves ids against it).
@@ -205,16 +258,35 @@ export async function createReadOnlyMount(
 
   if (opts.onSelect) surface.onSelect(opts.onSelect);
 
+  /** Split the list: region shapes → the SVG overlay; a whole-object note → the clickable frame whose
+   *  onActivate emits that record id through the SAME onSelect path region clicks use. */
+  const applyAnnotations = (annotations: W3CAnnotation[]): void => {
+    const { regions, wholeObjects } = partitionWholeObject(annotations);
+    surface.setAnnotations(regions);
+    // The frame is a single object-spanning border; an object carries at most one whole-object note
+    // (the bare-canvas-target case). Draw the first; clear when none.
+    const whole = wholeObjects[0];
+    if (whole) {
+      const id = String((whole as AnnotationLike).id ?? "");
+      // currentColor inherits the host's accent (same as the region shapes' stroke), since the read
+      // path has no Reading-colour registry the editor's frameFor draws from.
+      frame.draw({ colour: "currentColor", onActivate: () => surface.emitSelect(id) });
+    } else {
+      frame.clear();
+    }
+  };
+
   return {
     setAnnotations(annotations: W3CAnnotation[]): void {
       current = annotations;
-      surface.setAnnotations(annotations);
+      applyAnnotations(annotations);
     },
     setSelected: surface.setSelected,
     fitBounds: surface.fitBounds,
     onSelect: surface.onSelect,
     destroy(): void {
       surface.destroy();
+      frame.clear();
       try { viewer.destroy(); } catch { /* already destroyed */ }
     },
   };

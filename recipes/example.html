@@ -17,11 +17,10 @@
             An unresolvable target DEGRADES UPWARD, never errors.
     offline boolean; present blocks all remote tile/media fetch (kiosk / air-gapped).
 
-  REPLACE:
-    yourname.github.io/yourrepo  ->  your published tree base
+  REPLACE (if you fork):
+    micahchoo.github.io/Archie  ->  your published tree base
     voynich                      ->  your exhibit slug
     n3                           ->  your note logicalId
-    sha384-PLACEHOLDER...        ->  the real SRI hash from the @v1 tagged release
 -->
 <html lang="en">
 <head>
@@ -33,28 +32,31 @@
     archie-viewer { display: block; width: 100%; height: 100%; }
   </style>
 
-  <!-- 1. Load the runtime once, from jsDelivr serving the pinned @v1 git tag.
-          crossorigin="anonymous" is required for the SRI integrity hash to work. -->
+  <!-- 1. Load the runtime once, from jsDelivr serving the pinned @v1 git tag. -->
   <script
     type="module"
-    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
-    integrity="sha384-PLACEHOLDER_replace_with_real_hash_from_v1_release"
+    src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
     crossorigin="anonymous"></script>
 </head>
 
 <body>
 
-  <!-- 2. One element. src = the published library; target = open to note n3. -->
+  <!-- 2. One element. src = the published library; target = open to object o1.
+          An object target resolves directly against the published tree (the PRIMARY
+          working deep-link). For a note-level target use #/voynich/a/<logicalId> —
+          note-level deep-link — resolves only when the published annotations carry a
+          bare logicalId (slash-free); otherwise degrades to the object. -->
+  <!-- replace with your own published-tree base URL if you fork -->
   <archie-viewer
-    src="https://yourname.github.io/yourrepo/viewer/"
-    target="#/voynich/a/n3"></archie-viewer>
+    src="https://micahchoo.github.io/Archie/viewer/published/"
+    target="#/voynich/o/o1"></archie-viewer>
 
   <!-- IIIF Content State variant (new, additive interop) — uncomment to use INSTEAD of
        `target`. Point an IIIF Presentation 3 Content State (base64url) at the embed; it is
        decoded by @render/core deeplink.ts. The native `target` route stays primary.
 
   <archie-viewer
-    src="https://yourname.github.io/yourrepo/viewer/"
+    src="https://micahchoo.github.io/Archie/viewer/published/"
     iiif-content="JTdCJTIyJTQwY29udGV4dCUyMi..."></archie-viewer>
   -->
 

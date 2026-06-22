@@ -44,7 +44,7 @@ Integrity so the host page can't be served tampered code:
 ```html
 <script
   type="module"
-  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
+  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
   crossorigin="anonymous"></script>
 ```
 
@@ -72,7 +72,7 @@ renaming or removing these is not (ADR-0021 — frozen public API).
 |-------------|---------|
 | *(absent)* | **Local drop screen** — the visitor drops a `.archie.zip` from their own machine. Nothing is fetched. |
 | a `.archie.zip` URL | Fetch + open that hosted zip (e.g. `https://yourmuseum.org/libraries/codex.archie.zip`). |
-| a **published-tree base URL** | Open a tree the Studio published to static hosting (e.g. `https://yourname.github.io/yourrepo/viewer/`). |
+| a **published-tree base URL** | Open a tree the Studio published to static hosting (e.g. `https://micahchoo.github.io/Archie/viewer/published/` — replace with your own published-tree base URL if you fork). |
 
 A `.archie.zip` carries the **L1 self-identification marker** (`archie.json`, ADR-0020); the
 element validates it before parsing and refuses a non-Archie or version-mismatched zip cleanly
@@ -120,7 +120,7 @@ art Archie's embed design adopts), is the **iframe**. Host a tiny page that itse
 <meta charset="utf-8">
 <style>html,body{margin:0;height:100%}archie-viewer{display:block;height:100%}</style>
 <script type="module"
-  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js"
+  src="https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js"
   crossorigin="anonymous"></script>
 <archie-viewer src="https://yourmuseum.org/libraries/codex.archie.zip"></archie-viewer>
 ```
@@ -174,6 +174,7 @@ When `src` points at **another origin** than the host page (the common case — 
 | `07-ghost.md` | An HTML card; iframe fallback. |
 | `08-multiple-on-one-page.html` | Two embeds on one page (multi-instance = **Phase 4**). |
 
-**Placeholders to replace** in every file: `yourname.github.io/yourrepo` (your GitHub Pages site),
+**Replace if you fork** (the recipes resolve live against `micahchoo.github.io/Archie/viewer/published/`):
+`micahchoo.github.io/Archie` (your own GitHub Pages published-tree base),
 `yourmuseum.org` (your own hosting), `codex` / `voynich` (your library's exhibit slug),
 `sha384-PLACEHOLDER…` (the real SRI hash from the tagged release).

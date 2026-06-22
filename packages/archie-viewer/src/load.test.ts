@@ -91,7 +91,7 @@ describe("load seam — open vectors (no module globals)", () => {
     expect(lib.gallery.exhibits[0]?.title).toBe("Alpha Exhibit");
   });
 
-  it("rejects a zip that isn't an Archie library (ADR-0020 marker)", async () => {
+  it("rejects a zip that isn't an Archie library (ADR-0020 marker — neither collection.json nor exhibits.json)", async () => {
     const zfs = new ZipFilesystem();
     const root = await zfs.root();
     const w = await (await root.getFile("hello.txt", { create: true })).writable();
@@ -99,6 +99,23 @@ describe("load seam — open vectors (no module globals)", () => {
     await w.close();
     const bytes = await zfs.toZip();
     await expect(openZipBytes(bytes)).rejects.toThrow(/isn't an archie library/i);
+  });
+
+  it("ACCEPTS an UNMARKED real export zip (collection.json + exhibits.json, NO archie.json) — the regression", async () => {
+    // The bug: a user's real pre-marker export has collection.json + exhibits.json but NO archie.json.
+    // ADR-0020 is lenient-on-absent — a structurally-valid Archie zip with no marker must still open.
+    const zfs = new ZipFilesystem();
+    const root = await zfs.root();
+    const writeJson = async (name: string, data: unknown) => {
+      const w = await (await root.getFile(name, { create: true })).writable();
+      await w.write(JSON.stringify(data));
+      await w.close();
+    };
+    await writeJson("collection.json", { type: "Collection" });
+    await writeJson("exhibits.json", { library: { title: "Recovered" }, exhibits: [] });
+    const lib = await openZipBytes(await zfs.toZip());
+    expect(lib.gallery.library.title).toBe("Recovered");
+    expect(lib.gallery.exhibits).toEqual([]);
   });
 
   it("two opens produce INDEPENDENT libraries (instance-context seam — no shared global)", async () => {

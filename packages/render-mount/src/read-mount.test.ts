@@ -5,9 +5,10 @@
 // an id; fitBounds routes through the SAME dispatchFitBounds oracle createMount uses; select-then-fit;
 // destroy clears.
 import { describe, it, expect, vi } from "vitest";
-import { wireReadOnlySurface, guardOpenedImageSource, type ReadOnlyOverlayLike } from "./read-mount.js";
+import { wireReadOnlySurface, guardOpenedImageSource, partitionWholeObject, type ReadOnlyOverlayLike } from "./read-mount.js";
 import { MAX_DECODE_DIM } from "./image-cap.js";
 import { fitBoundsRect, type ViewportLike, type FitOptions } from "./fitbounds.js";
+import { ARCHIE_WHOLE_OBJECT } from "@render/core";
 import type { W3CAnnotation, W3CSelector } from "@render/core";
 
 // gate.test.ts mock viewport: imageToViewportRectangle is identity, fitBounds records the rect.
@@ -154,5 +155,52 @@ describe("wireReadOnlySurface.fitBounds — the SHARED dispatchFitBounds oracle 
     const s = wireReadOnlySurface(viewport, fakeOverlay(), () => annotations, () => sidebar);
     s.fitBounds("rect-note");
     expect(calls[0]).toEqual(fitBoundsRect(rectSel, sidebar)!);
+  });
+});
+
+// FIX 1 — whole-object notes get a clickable frame instead of being warn-and-dropped (the voynich/o1
+// case: a bare-canvas-target note with no region geometry). The partition is pure; the frame routing
+// is exercised through the same emitSelect path region clicks use.
+const wholeObjBareTarget: W3CAnnotation =
+  ({ id: "whole-note", target: { type: "SpecificResource", source: "c1" } }) as unknown as W3CAnnotation;
+const wholeObjFlagged: W3CAnnotation =
+  ({ id: "flagged-note", [ARCHIE_WHOLE_OBJECT]: true, target: { type: "SpecificResource", source: "c1", selector: rectSel } }) as unknown as W3CAnnotation;
+
+describe("partitionWholeObject — region vs whole-object split (FIX 1)", () => {
+  it("a bare-canvas-target note (null selector) → whole-object, not a region", () => {
+    const { regions, wholeObjects } = partitionWholeObject([annotations[0]!, wholeObjBareTarget]);
+    expect(regions.map((a) => (a as { id: string }).id)).toEqual(["rect-note"]);
+    expect(wholeObjects.map((a) => (a as { id: string }).id)).toEqual(["whole-note"]);
+  });
+
+  it("an archie:wholeObject:true override → whole-object even WITH a region selector", () => {
+    const { regions, wholeObjects } = partitionWholeObject([wholeObjFlagged]);
+    expect(regions).toHaveLength(0);
+    expect(wholeObjects.map((a) => (a as { id: string }).id)).toEqual(["flagged-note"]);
+  });
+
+  it("a plain region note stays a region", () => {
+    const { regions, wholeObjects } = partitionWholeObject([annotations[0]!, annotations[1]!]);
+    expect(regions).toHaveLength(2);
+    expect(wholeObjects).toHaveLength(0);
+  });
+});
+
+describe("wireReadOnlySurface.emitSelect — the shared select path the frame reuses (FIX 1)", () => {
+  it("emitSelect notifies onSelect subscribers (so the note-card opens like a region click)", () => {
+    const { viewport } = mockViewport();
+    const overlay = fakeOverlay();
+    const s = wireReadOnlySurface(viewport, overlay, () => [wholeObjBareTarget]);
+    const cb = vi.fn();
+    s.onSelect(cb);
+    s.emitSelect("whole-note");
+    expect(cb).toHaveBeenCalledWith("whole-note");
+  });
+
+  it("a whole-object emit fits nothing (no region geometry to frame)", () => {
+    const { viewport, calls } = mockViewport();
+    const s = wireReadOnlySurface(viewport, fakeOverlay(), () => [wholeObjBareTarget]);
+    s.emitSelect("whole-note");
+    expect(calls).toHaveLength(0); // dispatchFitBounds finds the record but its null selector → no rect
   });
 });
