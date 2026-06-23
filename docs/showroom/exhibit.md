@@ -18,8 +18,11 @@ Plan + inventory: [`../plans/SHOWROOM-EXHIBIT-PLAN.md`](../plans/SHOWROOM-EXHIBI
 
 ## Objects (label → source screenshot → CSV)
 
-The `object` column in each CSV matches the **label** (case-insensitive). Source PNGs are
-harness output in `../screenshots/auto/<source>.desktop.png`. `(new)` = harness flow to add.
+The `object` column in each CSV matches the **label** (case-insensitive). The canonical asset
+for each object is `screenshots/<csv-stem>.png` (e.g. `screenshots/s1-library.png` pairs with
+`csv/s1-library.csv`) — a self-contained snapshot. The `source` column below is the harness
+origin in `../screenshots/auto/<source>.desktop.png`; `(new)` = harness flow added this session.
+Refresh the snapshot after a fresh harness run with `bash sync-screenshots.sh`.
 
 ### Act 1 — Studio
 | label | source | CSV |

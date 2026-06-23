@@ -39,6 +39,13 @@
       "cover": "https://tile.openstreetmap.org/0/0/0.png",
       "description": "Drop pins on a live map — each one stays on its place as you zoom and pan, anchored to a longitude and latitude. An early look at annotating maps in Archie.",
       "order": 4
+    },
+    {
+      "slug": "sampler",
+      "title": "Showroom Sampler",
+      "cover": "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg",
+      "description": "A tiny demo exhibit: a video to annotate frame-by-frame, an audio recording with a transcript, and a note that carries its own picture.",
+      "order": 5
     }
   ],
   "presentation": {},

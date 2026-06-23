@@ -1,5 +1,5 @@
 object,comment,x,y,w,h,tags,reading,_showoff
-S8 · Cite palette (Cmd-K),"Cite another note, object, or exhibit from inside a note — your library cross-links itself.",,,,,citation,studio,"Box the palette."
-S8 · Cite palette (Cmd-K),"Press Cmd-K and search by text to find what to cite.",,,,,cmd-k search,power,"Box the search field."
-S8 · Cite palette (Cmd-K),"Or browse thumbnails when you'd rather recognise than recall.",,,,,thumbnail browse,studio,"Box the thumbnail grid."
-S8 · Cite palette (Cmd-K),"Insert the cite and it renders as a live link — readers hover it for a preview card.",,,,,live cite,viewer,"Links to V7 (cite hovercard)."
+,"Cite another note, object, or exhibit from inside a note — your library cross-links itself.",,,,,citation,studio,"Box the palette."
+,"Press Cmd-K and search by text to find what to cite.",,,,,cmd-k search,power,"Box the search field."
+,"Or browse thumbnails when you'd rather recognise than recall.",,,,,thumbnail browse,studio,"Box the thumbnail grid."
+,"Insert the cite and it renders as a live link — readers hover it for a preview card.",,,,,live cite,viewer,"Links to V7 (cite hovercard)."

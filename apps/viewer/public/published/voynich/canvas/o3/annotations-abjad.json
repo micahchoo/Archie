@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000M8K248PTFFZR2Y36H/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000MHEF5135Q5KRX196F/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -25,7 +25,7 @@
       ],
       "motivation": "commenting",
       "archie:reading": "abjad",
-      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000M8K248PTFFZR2Y36H.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000MHEF5135Q5KRX196F.json"
     }
   ],
   "partOf": [

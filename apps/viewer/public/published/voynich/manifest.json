@@ -87,7 +87,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000001M0GZY8KQDZEF4C74/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000001SEBWXFTSHHP00TVY/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -107,10 +107,10 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000001M0GZY8KQDZEF4C74.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000001SEBWXFTSHHP00TVY.json"
             },
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001HFAH0M12TN8R3QYPE/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001HZRM9NQJ7RS6HH4PQ/v1",
               "type": "Annotation",
               "target": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o1",
               "modified": "1970-01-01T00:00:00.049Z",
@@ -122,7 +122,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001HFAH0M12TN8R3QYPE.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001HZRM9NQJ7RS6HH4PQ.json"
             }
           ],
           "label": {
@@ -136,7 +136,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000CGES9SXD5HHBYMGF1/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000C5M05B5H33KBKENTM/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -177,7 +177,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000CGES9SXD5HHBYMGF1.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000C5M05B5H33KBKENTM.json"
             }
           ],
           "partOf": [
@@ -202,7 +202,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000D5SH6F04BJZCKGCC2/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000DKQD59F90D974X5WA/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -223,7 +223,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000D5SH6F04BJZCKGCC2.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000DKQD59F90D974X5WA.json"
             }
           ],
           "partOf": [
@@ -248,7 +248,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000EBTVCRTK515MFGEAM/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000EZ2GX4QGJ9FNE2B6F/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -269,7 +269,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000EBTVCRTK515MFGEAM.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000EZ2GX4QGJ9FNE2B6F.json"
             }
           ],
           "partOf": [
@@ -353,7 +353,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000002QERZ7R4AD74QJ481/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000002PNFACD4MNDPM9VAP/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -373,7 +373,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000002QERZ7R4AD74QJ481.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000002PNFACD4MNDPM9VAP.json"
             }
           ],
           "label": {
@@ -387,7 +387,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000FQ49APBGFAPPZ2Z93/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000FE50KW4748NGA2KYD/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -418,7 +418,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000FQ49APBGFAPPZ2Z93.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000FE50KW4748NGA2KYD.json"
             }
           ],
           "partOf": [
@@ -443,7 +443,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000GD9N71MHZSCFJM2MB/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000G436SZYRM7SJAE27C/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -464,7 +464,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000GD9N71MHZSCFJM2MB.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000G436SZYRM7SJAE27C.json"
             }
           ],
           "partOf": [
@@ -489,7 +489,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000HTMR0MJ171Q2W6C1M/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000HY1WADHAMBE6MCBNE/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -510,7 +510,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000HTMR0MJ171Q2W6C1M.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000HY1WADHAMBE6MCBNE.json"
             }
           ],
           "partOf": [
@@ -594,7 +594,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000003V9WGXP5NY4Z5C3CA/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000003PQ6V55D5Z1D18V9C/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -614,7 +614,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000003V9WGXP5NY4Z5C3CA.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000003PQ6V55D5Z1D18V9C.json"
             }
           ],
           "label": {
@@ -628,7 +628,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000JV4R2HB536DH4YA1E/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000JFNHTRNFTF2DY3CDW/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -659,7 +659,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000JV4R2HB536DH4YA1E.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000JFNHTRNFTF2DY3CDW.json"
             }
           ],
           "partOf": [
@@ -684,7 +684,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000KN9BECJFQPP1EDDVP/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000KYYPDPDJWC5NB5GC8/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -705,7 +705,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000KN9BECJFQPP1EDDVP.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000KYYPDPDJWC5NB5GC8.json"
             }
           ],
           "partOf": [
@@ -730,7 +730,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000M8K248PTFFZR2Y36H/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000MHEF5135Q5KRX196F/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -751,7 +751,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000M8K248PTFFZR2Y36H.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000MHEF5135Q5KRX196F.json"
             }
           ],
           "partOf": [
@@ -835,7 +835,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000004429NM3GG6S8ZYV05/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000004GBAH24KSG4V3RSHM/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -855,7 +855,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000004429NM3GG6S8ZYV05.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000004GBAH24KSG4V3RSHM.json"
             }
           ],
           "label": {
@@ -869,7 +869,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000NSFASYX2TFC4DE7GZ/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000NG4F6028SPW29955T/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -900,7 +900,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000NSFASYX2TFC4DE7GZ.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000NG4F6028SPW29955T.json"
             }
           ],
           "partOf": [
@@ -925,7 +925,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000PHK5Q5G86C31C1M59/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000PDGPWFVGVN3CC6EMA/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -946,7 +946,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000PHK5Q5G86C31C1M59.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000PDGPWFVGVN3CC6EMA.json"
             }
           ],
           "partOf": [
@@ -971,7 +971,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000Q47KB1X12V54QJQ7N/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000QWBG4NZWFZNXHQT6G/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -992,7 +992,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000Q47KB1X12V54QJQ7N.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000QWBG4NZWFZNXHQT6G.json"
             }
           ],
           "partOf": [
@@ -1076,7 +1076,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000005W9XVMN7C968XY5A2/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000005CF2T3QMEE31ES9F2/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1096,7 +1096,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000005W9XVMN7C968XY5A2.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000005CF2T3QMEE31ES9F2.json"
             }
           ],
           "label": {
@@ -1110,7 +1110,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000RPZP2N8FCZGDY2CSY/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000RNTQ3V249WJ79A5FZ/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1146,7 +1146,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000RPZP2N8FCZGDY2CSY.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000RNTQ3V249WJ79A5FZ.json"
             }
           ],
           "partOf": [
@@ -1171,7 +1171,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000SPZ8YDM9SEQKNS8A9/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000SF0RA69D1AEDPS92K/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1192,7 +1192,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000SPZ8YDM9SEQKNS8A9.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000SF0RA69D1AEDPS92K.json"
             }
           ],
           "partOf": [
@@ -1217,7 +1217,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000T5N0B9CP2EE6P6Z5W/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000T0XB8RZ1YNFM23KZB/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1238,7 +1238,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000T5N0B9CP2EE6P6Z5W.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000T0XB8RZ1YNFM23KZB.json"
             }
           ],
           "partOf": [
@@ -1322,7 +1322,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000616MM0ADVMBBK0XHJ/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000006S77HDTPH81NP53N7/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1342,7 +1342,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000616MM0ADVMBBK0XHJ.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000006S77HDTPH81NP53N7.json"
             }
           ],
           "label": {
@@ -1356,7 +1356,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000VJPMVWXVNE66V47J0/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000VKG82BA5ZSFEY2FTQ/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1387,7 +1387,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000VJPMVWXVNE66V47J0.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000VKG82BA5ZSFEY2FTQ.json"
             }
           ],
           "partOf": [
@@ -1412,7 +1412,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000W8BQMN0WT7K65A25J/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000WGKNWDZXHKB22A3ST/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1433,7 +1433,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000W8BQMN0WT7K65A25J.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000WGKNWDZXHKB22A3ST.json"
             }
           ],
           "partOf": [
@@ -1458,7 +1458,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000XAGKZA0P14VWSNZ0Q/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000XRA5BNY6QAT2HA232/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1479,7 +1479,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000XAGKZA0P14VWSNZ0Q.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000XRA5BNY6QAT2HA232.json"
             }
           ],
           "partOf": [
@@ -1563,7 +1563,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000007GCR82ZZ0V3CKGCP4/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000007MWQ9YKRF08XFYKVY/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1583,7 +1583,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000007GCR82ZZ0V3CKGCP4.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000007MWQ9YKRF08XFYKVY.json"
             }
           ],
           "label": {
@@ -1597,7 +1597,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000YTTF352G3HGS6SAGC/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000YQK89P2KV9HVRR38G/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1628,7 +1628,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000YTTF352G3HGS6SAGC.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000YQK89P2KV9HVRR38G.json"
             }
           ],
           "partOf": [
@@ -1653,7 +1653,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000ZKTQFJWBE5DHG6CEX/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000ZGXTAAFT6XTG2RT90/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1674,7 +1674,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000ZKTQFJWBE5DHG6CEX.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000ZGXTAAFT6XTG2RT90.json"
             }
           ],
           "partOf": [
@@ -1699,7 +1699,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/00000000103N8G97G375T4RR47/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000010S2ZQ3DEVF3085WT9/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1720,7 +1720,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/00000000103N8G97G375T4RR47.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000010S2ZQ3DEVF3085WT9.json"
             }
           ],
           "partOf": [
@@ -1804,7 +1804,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000008MSMNY0VX0THJB32N/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000008Y2AH240G0XN2MWM5/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1824,7 +1824,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000008MSMNY0VX0THJB32N.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000008Y2AH240G0XN2MWM5.json"
             }
           ],
           "label": {
@@ -1838,7 +1838,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000011YTBN4W131SCZKA7M/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/00000000117E4BNKCXE4VVRZMZ/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1874,7 +1874,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000011YTBN4W131SCZKA7M.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/00000000117E4BNKCXE4VVRZMZ.json"
             }
           ],
           "partOf": [
@@ -1899,7 +1899,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000012RSQD9VZQ7601ZAA6/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000012GE6PD2GXHQT97QRP/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1920,7 +1920,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000012RSQD9VZQ7601ZAA6.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000012GE6PD2GXHQT97QRP.json"
             }
           ],
           "partOf": [
@@ -1945,7 +1945,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000013E2ZHQMTVKKYX844Z/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000013GWFH6C0NQGSEMZAR/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -1966,7 +1966,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000013E2ZHQMTVKKYX844Z.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000013GWFH6C0NQGSEMZAR.json"
             }
           ],
           "partOf": [
@@ -2050,7 +2050,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000009P1SYAXVMEKD64YM1/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000009XRYSFH35VWAC69FV/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2070,10 +2070,10 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000009P1SYAXVMEKD64YM1.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000009XRYSFH35VWAC69FV.json"
             },
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001JHT508FAY0X5JVM7S/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001JPVQXJ8KWYHKWFCZA/v1",
               "type": "Annotation",
               "target": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o9",
               "modified": "1970-01-01T00:00:00.050Z",
@@ -2085,7 +2085,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001JHT508FAY0X5JVM7S.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001JPVQXJ8KWYHKWFCZA.json"
             }
           ],
           "label": {
@@ -2099,7 +2099,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000014RM3WBR0S55GK9QKA/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000014TTFB8JQD3TJZXQP5/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2135,7 +2135,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000014RM3WBR0S55GK9QKA.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000014TTFB8JQD3TJZXQP5.json"
             }
           ],
           "partOf": [
@@ -2160,7 +2160,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000015XBMQ294BD4FB74XX/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001593P1SMMCBTNKFBY8/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2181,7 +2181,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000015XBMQ294BD4FB74XX.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001593P1SMMCBTNKFBY8.json"
             }
           ],
           "partOf": [
@@ -2206,7 +2206,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000016PE2QB9MW3RR9FE5K/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001679CRY8HDE68SGJYD/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2227,7 +2227,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000016PE2QB9MW3RR9FE5K.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001679CRY8HDE68SGJYD.json"
             }
           ],
           "partOf": [
@@ -2311,7 +2311,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000AZ5MWJJCKJSVCRP75/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000AMXE4WG1X54PPBDJX/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2331,7 +2331,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000AZ5MWJJCKJSVCRP75.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000AMXE4WG1X54PPBDJX.json"
             }
           ],
           "label": {
@@ -2345,7 +2345,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/00000000174012M3JVECQ4CWZJ/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/00000000178YRD8K083X2R1ZAP/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2376,7 +2376,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/00000000174012M3JVECQ4CWZJ.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/00000000178YRD8K083X2R1ZAP.json"
             }
           ],
           "partOf": [
@@ -2401,7 +2401,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001876WEDG0CY9Q9PFNG/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/00000000182PPJRSQD27G3ABSS/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2422,7 +2422,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001876WEDG0CY9Q9PFNG.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/00000000182PPJRSQD27G3ABSS.json"
             }
           ],
           "partOf": [
@@ -2447,7 +2447,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000019PGCFHGFQM3XPC4YF/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/0000000019SSWKP8YK68S9VDKR/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2468,7 +2468,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000019PGCFHGFQM3XPC4YF.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000019SSWKP8YK68S9VDKR.json"
             }
           ],
           "partOf": [
@@ -2552,7 +2552,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000BQ1719XADN4MSNF3D/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000BYTP7TPG5V4D9DPJJ/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2572,7 +2572,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000BQ1719XADN4MSNF3D.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000BYTP7TPG5V4D9DPJJ.json"
             }
           ],
           "label": {
@@ -2586,7 +2586,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001AYSHEDSMARM8NK98D/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001A887SGR8A6T0X4W71/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2617,7 +2617,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "cipher",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001AYSHEDSMARM8NK98D.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001A887SGR8A6T0X4W71.json"
             }
           ],
           "partOf": [
@@ -2642,7 +2642,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001BASS5X8QB9YS79JAD/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001BVGJV1ZWJDXXPQ9N5/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2663,7 +2663,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "hoax",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001BASS5X8QB9YS79JAD.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001BVGJV1ZWJDXXPQ9N5.json"
             }
           ],
           "partOf": [
@@ -2688,7 +2688,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001C9W0J2BKMJA125KR2/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001CN6PM1BKMW882JETG/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2709,7 +2709,7 @@
               ],
               "motivation": "commenting",
               "archie:reading": "abjad",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001C9W0J2BKMJA125KR2.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001CN6PM1BKMW882JETG.json"
             }
           ],
           "partOf": [
@@ -2779,7 +2779,7 @@
           "type": "AnnotationPage",
           "items": [
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001DKSXRNKR02TMX11VZ/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001DFPWFPFGJ595GZAEF/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2794,15 +2794,15 @@
               "body": [
                 {
                   "type": "TextualBody",
-                  "value": "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. Read the manuscript through, page by page. (03 §4 cross-link AV→the narrative walk; `archie:` ref resolves to the voynich-reading exhibit — the spoken/read metaphor matches the narrative spine. A note-precise `…/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)",
+                  "value": "The machine reads the page aloud, letter for letter. Under the cipher reading you are hearing enciphered speech; under the grille reading you are hearing the rhythm a table-and-overlay produces; under the abjad reading you are hearing a real language you simply don't know. Same sound, three claims. [Read the manuscript through, page by page.](https://micahchoo.github.io/Archie/viewer/#/voynich-reading) (03 §4 cross-link AV→the narrative walk; `archie:` ref resolves to the voynich-reading exhibit — the spoken/read metaphor matches the narrative spine. A note-precise `…/#/a/<logicalId>` target awaits a stable R2 note id — human/Studio follow-up.)",
                   "purpose": "commenting"
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001DKSXRNKR02TMX11VZ.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001DFPWFPFGJ595GZAEF.json"
             },
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001EM5QNPFCQ5A2K3W6H/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001EAKR8CK72QS39B2GR/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2822,10 +2822,10 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001EM5QNPFCQ5A2K3W6H.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001EAKR8CK72QS39B2GR.json"
             },
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001FHXMQBYHST49K7EYG/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001F81TR8PT6F3DP2W59/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2845,10 +2845,10 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001FHXMQBYHST49K7EYG.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001F81TR8PT6F3DP2W59.json"
             },
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001G39GVAR3H0FA56RD5/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001GM6W8WT9HYJF7G88C/v1",
               "type": "Annotation",
               "target": {
                 "type": "SpecificResource",
@@ -2868,10 +2868,10 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001G39GVAR3H0FA56RD5.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001GM6W8WT9HYJF7G88C.json"
             },
             {
-              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001KMH9JA1A795GT6HGX/v1",
+              "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001KF44F5CVRY6CV4YPM/v1",
               "type": "Annotation",
               "target": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o12",
               "modified": "1970-01-01T00:00:00.051Z",
@@ -2883,7 +2883,7 @@
                 }
               ],
               "motivation": "commenting",
-              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001KMH9JA1A795GT6HGX.json"
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001KF44F5CVRY6CV4YPM.json"
             }
           ],
           "label": {

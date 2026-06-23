@@ -1,0 +1,34 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000BYTP7TPG5V4D9DPJJ.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000BYTP7TPG5V4D9DPJJ/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o11",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:200,240,2280,3200"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.011Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The manuscript's final page: short starred paragraphs and, set apart from the unknown script, a few lines in ordinary Latin written by a later hand.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000000BYTP7TPG5V4D9DPJJ",
+      "archie:rev": "000000000BABQ8VZQJBT961S7X",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

@@ -1,0 +1,330 @@
+{
+  "@context": "https://iiif.io/api/presentation/3/context.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/manifest.json",
+  "type": "Manifest",
+  "label": {
+    "none": [
+      "Showroom Sampler"
+    ]
+  },
+  "summary": {
+    "none": [
+      "A tiny demo exhibit: a video to annotate frame-by-frame, an audio recording with a transcript, and a note that carries its own picture."
+    ]
+  },
+  "requiredStatement": {
+    "label": {
+      "none": [
+        "Source"
+      ]
+    },
+    "value": {
+      "none": [
+        "Video: “Big Buck Bunny” © Blender Foundation, CC BY 3.0 (peach.blender.org). Audio: Kryptogramm — “04-f18v” (Elias Schwerdtfeger), CC BY-NC-SA 3.0. Image: Beinecke Rare Book & Manuscript Library, Yale University — MS 408 (public domain)."
+      ]
+    }
+  },
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Big Buck Bunny (10s clip) — annotate a frame"
+        ]
+      },
+      "rights": "https://creativecommons.org/licenses/by/3.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Video"
+          ]
+        },
+        "value": {
+          "none": [
+            "“Big Buck Bunny” © Blender Foundation, CC BY 3.0"
+          ]
+        }
+      },
+      "width": 640,
+      "height": 360,
+      "duration": 10,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4",
+                "type": "Video",
+                "format": "video/mp4",
+                "width": 640,
+                "height": 360,
+                "duration": 10
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000001XA727G2ZKPRBQWGQ/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "t=0,3"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.001Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The title card fades in — the moment to frame for a cover still.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000001XA727G2ZKPRBQWGQ.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000002R3SCAH1K8H4YVXB5/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "t=4,8"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.002Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The first character appears; a frame box here would isolate the subject.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000002R3SCAH1K8H4YVXB5.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "Kryptogramm recording — listen with a transcript"
+        ]
+      },
+      "rights": "http://creativecommons.org/licenses/by-nc-sa/3.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Audio"
+          ]
+        },
+        "value": {
+          "none": [
+            "Kryptogramm — Elias Schwerdtfeger, CC BY-NC-SA 3.0"
+          ]
+        }
+      },
+      "duration": 296,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://archive.org/download/kryptogramm/04-f18v.mp3",
+                "type": "Sound",
+                "format": "audio/mpeg",
+                "duration": 296
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/000000000307GSV2EMZK8PR9YR/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "t=0,30"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.003Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The recording opens: the page is read aloud, letter by letter.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/000000000307GSV2EMZK8PR9YR.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000004CNX7MQKVXP3NV49Q/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "t=45,80"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.004Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A repeated cadence surfaces — a rhythm under the spoken marks.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000004CNX7MQKVXP3NV49Q.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000005C9YZA2R2TAEK4VDW/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "t=120,160"
+                }
+              },
+              "modified": "1970-01-01T00:00:00.005Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Here the sounds cluster like labels, as if naming the drawings.",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000005C9YZA2R2TAEK4VDW.json"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "A page with a note that carries a picture"
+        ]
+      },
+      "rights": "http://creativecommons.org/publicdomain/mark/1.0/",
+      "requiredStatement": {
+        "label": {
+          "none": [
+            "Source"
+          ]
+        },
+        "value": {
+          "none": [
+            "Beinecke Rare Book & Manuscript Library, Yale University — MS 408 (public domain)"
+          ]
+        }
+      },
+      "width": 2972,
+      "height": 3766,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://collections.library.yale.edu/iiif/2/1006076",
+                "type": "Image",
+                "width": 2972,
+                "height": 3766,
+                "service": [
+                  {
+                    "id": "https://collections.library.yale.edu/iiif/2/1006076",
+                    "type": "ImageService2",
+                    "profile": "level2"
+                  }
+                ]
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1"
+            }
+          ]
+        }
+      ],
+      "thumbnail": [
+        {
+          "id": "https://collections.library.yale.edu/iiif/2/1006076/full/240,/0/default.jpg",
+          "type": "Image"
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1/annotations.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000006J6BPCAHWFMCT6BW1/v1",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1",
+              "modified": "1970-01-01T00:00:00.006Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "This note carries its own picture — a detail held beside the page. Click the thumbnail to see it full-screen. ![f1r — a related folio](https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg)",
+                  "purpose": "commenting"
+                }
+              ],
+              "motivation": "commenting",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000006J6BPCAHWFMCT6BW1.json"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

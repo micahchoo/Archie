@@ -1,4 +1,4 @@
 object,comment,x,y,w,h,tags,reading,_showoff
-S12 · Keyboard shortcuts,"Archie is keyboard-first — a shortcut for every common move, listed in this overlay.",,,,,shortcuts,power,"Open the overlay with ? to capture it."
-S12 · Keyboard shortcuts,"Save, cite (Cmd-K), and dismiss without leaving the keyboard.",,,,,save cite dismiss,power,"Box that group of rows."
-S12 · Keyboard shortcuts,"Step between objects and open this help from anywhere with a key.",,,,,object nav help,power,"Box the navigation group."
+,"Archie is keyboard-first — a shortcut for every common move, listed in this overlay.",,,,,shortcuts,power,"Open the overlay with ? to capture it."
+,"Save, cite (Cmd-K), and dismiss without leaving the keyboard.",,,,,save cite dismiss,power,"Box that group of rows."
+,"Step between objects and open this help from anywhere with a key.",,,,,object nav help,power,"Box the navigation group."

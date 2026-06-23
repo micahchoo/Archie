@@ -4,55 +4,153 @@
     "viewport": "desktop",
     "status": "captured",
     "detail": "docs/screenshots/auto/viewer-home.desktop.png",
-    "at": "2026-05-27T05:01:49.999Z"
+    "at": "2026-06-22T03:12:44.521Z"
   },
   {
     "name": "viewer-voynich",
     "viewport": "desktop",
     "status": "captured",
     "detail": "docs/screenshots/auto/viewer-voynich.desktop.png",
-    "at": "2026-05-27T05:01:51.726Z"
-  },
-  {
-    "name": "viewer-av",
-    "viewport": "desktop",
-    "status": "captured",
-    "detail": "docs/screenshots/auto/viewer-av.desktop.png",
-    "at": "2026-05-27T05:01:53.517Z"
+    "at": "2026-06-22T03:12:47.740Z"
   },
   {
     "name": "viewer-bidar",
     "viewport": "desktop",
     "status": "captured",
     "detail": "docs/screenshots/auto/viewer-bidar.desktop.png",
-    "at": "2026-05-27T05:01:55.218Z"
+    "at": "2026-06-22T03:12:49.364Z"
+  },
+  {
+    "name": "viewer-narrative",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/viewer-narrative.desktop.png",
+    "at": "2026-06-22T03:12:52.763Z"
+  },
+  {
+    "name": "viewer-search",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/viewer-search.desktop.png",
+    "at": "2026-06-22T03:12:59.652Z"
+  },
+  {
+    "name": "viewer-sheet",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/viewer-sheet.desktop.png",
+    "at": "2026-06-22T03:13:07.481Z"
+  },
+  {
+    "name": "viewer-av",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/viewer-av.desktop.png",
+    "at": "2026-06-22T03:13:12.356Z"
+  },
+  {
+    "name": "viewer-lightbox",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/viewer-lightbox.desktop.png",
+    "at": "2026-06-22T03:13:20.236Z"
   },
   {
     "name": "studio-library",
     "viewport": "desktop",
     "status": "captured",
     "detail": "docs/screenshots/auto/studio-library.desktop.png",
-    "at": "2026-05-27T05:01:57.896Z"
+    "at": "2026-06-22T03:13:22.818Z"
   },
   {
     "name": "studio-overview",
     "viewport": "desktop",
     "status": "captured",
     "detail": "docs/screenshots/auto/studio-overview.desktop.png",
-    "at": "2026-05-27T05:01:59.288Z"
+    "at": "2026-06-22T03:13:24.261Z"
   },
   {
     "name": "studio-editor-image",
     "viewport": "desktop",
     "status": "captured",
     "detail": "docs/screenshots/auto/studio-editor-image.desktop.png",
-    "at": "2026-05-27T05:02:01.070Z"
+    "at": "2026-06-22T03:13:26.100Z"
   },
   {
     "name": "studio-editor-av",
     "viewport": "desktop",
     "status": "captured",
     "detail": "docs/screenshots/auto/studio-editor-av.desktop.png",
-    "at": "2026-05-27T05:02:06.711Z"
+    "at": "2026-06-22T03:13:32.970Z"
+  },
+  {
+    "name": "studio-meta",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-meta.desktop.png",
+    "at": "2026-06-22T03:13:36.438Z"
+  },
+  {
+    "name": "studio-shortcuts",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-shortcuts.desktop.png",
+    "at": "2026-06-22T03:13:39.612Z"
+  },
+  {
+    "name": "studio-publish",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-publish.desktop.png",
+    "at": "2026-06-22T03:13:46.342Z"
+  },
+  {
+    "name": "studio-readings",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-readings.desktop.png",
+    "at": "2026-06-22T03:13:52.507Z"
+  },
+  {
+    "name": "studio-narrative",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-narrative.desktop.png",
+    "at": "2026-06-22T03:13:58.626Z"
+  },
+  {
+    "name": "studio-map",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-map.desktop.png",
+    "at": "2026-06-22T03:14:04.918Z"
+  },
+  {
+    "name": "studio-ingest",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-ingest.desktop.png",
+    "at": "2026-06-22T03:14:10.979Z"
+  },
+  {
+    "name": "studio-cite",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-cite.desktop.png",
+    "at": "2026-06-22T03:14:18.062Z"
+  },
+  {
+    "name": "studio-editor-video",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/studio-editor-video.desktop.png",
+    "at": "2026-06-22T03:14:23.971Z"
+  },
+  {
+    "name": "embed-host",
+    "viewport": "desktop",
+    "status": "captured",
+    "detail": "docs/screenshots/auto/embed-host.desktop.png",
+    "at": "2026-06-22T03:14:29.602Z"
   }
 ]

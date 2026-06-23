@@ -1,0 +1,45 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000000JFNHTRNFTF2DY3CDW.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000000JFNHTRNFTF2DY3CDW/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/o3",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:200,260,2400,3200"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.018Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Under the cipher reading, drawing and text are a matched entry — the picture keys the cipher, the way a known herbal's illustration would hint at the enciphered plant-name.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "botanical",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "currier-hand-A",
+          "purpose": "tagging"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000000JFNHTRNFTF2DY3CDW",
+      "archie:rev": "000000000JKFSZ80CT1KWH6MF5",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null,
+      "archie:reading": "cipher"
+    }
+  ]
+}

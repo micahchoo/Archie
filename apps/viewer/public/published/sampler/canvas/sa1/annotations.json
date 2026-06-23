@@ -1,0 +1,76 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1/annotations.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/000000000307GSV2EMZK8PR9YR/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=0,30"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.003Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The recording opens: the page is read aloud, letter by letter.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/000000000307GSV2EMZK8PR9YR.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000004CNX7MQKVXP3NV49Q/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=45,80"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.004Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A repeated cadence surfaces — a rhythm under the spoken marks.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000004CNX7MQKVXP3NV49Q.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000005C9YZA2R2TAEK4VDW/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sa1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=120,160"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.005Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Here the sounds cluster like labels, as if naming the drawings.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000005C9YZA2R2TAEK4VDW.json"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
 object,comment,x,y,w,h,tags,reading,_showoff
-S10 · Ingest & IIIF import,"Populate an exhibit with media — drop in images, audio, or video from your machine.",,,,,ingest media,studio,"Box the picker."
-S10 · Ingest & IIIF import,"Paste a IIIF manifest URL and Archie pulls in its folios as objects, ready to annotate.",,,,,iiif import,studio,"Box the URL field; the default Voynich seed loads folios from Yale's IIIF service."
-S10 · Ingest & IIIF import,"Remote images deep-zoom in place — tiles load with anonymous CORS and a 60-second timeout, no copy required.",,,,,remote deep-zoom,embed,"Mount internal; tag embed/power."
+,"Populate an exhibit with media — drop in images, audio, or video from your machine.",,,,,ingest media,studio,"Box the picker."
+,"Paste a IIIF manifest URL and Archie pulls in its folios as objects, ready to annotate.",,,,,iiif import,studio,"Box the URL field; the default Voynich seed loads folios from Yale's IIIF service."
+,"Remote images deep-zoom in place — tiles load with anonymous CORS and a 60-second timeout, no copy required.",,,,,remote deep-zoom,embed,"Mount internal; tag embed/power."

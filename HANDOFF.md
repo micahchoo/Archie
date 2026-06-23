@@ -4,6 +4,40 @@
 **Active goal:** plan → execute → review this work, plus examples in a `recipes/` folder.
 (Supersedes the prior Object-level-Notes handoff — that shipped in `5d501a8`.)
 
+## ⟢ PARALLEL WORKSTREAM — Showroom exhibit ("Archie annotates Archie") — IN PROGRESS 2026-06-22
+Self-documenting exhibit: 21 screenshots of Archie's own UI, annotated to demo all 42 user-story
+features (Studio + Viewer + Embed). Doubles as feature list / tutorial / showroom.
+- **DONE (verified):** `docs/showroom/` — `exhibit.md` (manifest: 4 readings as feature tracks
+  studio/viewer/embed/power; object→source→CSV map; 21-section tour spine) · `csv/*.csv` (21 CSVs,
+  schema `object,comment,x,y,w,h,tags,reading,_showoff`; ALL coordinate-free → pending notes; the
+  `_showoff` column = inline extra-feature hints, ignored by importer) · `SHOWROOM-NOTES.md` · `verify.mjs`.
+  **Verified:** `node --experimental-strip-types docs/showroom/verify.mjs` → 87 rows → 87 pending, 0 skipped,
+  all object/reading resolve. Plan+coverage: `docs/plans/SHOWROOM-EXHIBIT-PLAN.md`.
+- **Decisions:** coordinate-free (curator draws boxes via "Set area", dogfoods CSV import + placement);
+  exhaustive scope (21 screens, all 42 stories). CSV import path = `apps/studio/src/csv-import.ts`.
+- **HARNESS EXTENDED + RUN (2026-06-22):** `scripts/capture-screenshots.mjs` extended additively (new
+  `captureViewerStates`/`captureStudioStates`/`captureEmbed` + helpers; EXHIBITS regexes retargeted to exact
+  seed TITLES `^The Whole Manuscript$`/`^Reading the Unreadable$` — `/voynich/` matched the slug-subtitle
+  span, wrong card). Studio mounts at `/studio/` (pass `STUDIO_URL=…/studio/`); run servers standalone via
+  per-app `.bin/{astro,vite}` under nvm Node 22 after `vite-node apps/viewer/scripts/gen-published.mts`.
+  **21/21 valid PNGs in `docs/screenshots/auto/`** (1440×900, all >16KB; verified). The final 3 were
+  unblocked by ADDITIVE seed fixtures (no shared-fixture mutation, all tests green — viewer 63, studio 148):
+  - **NEW `apps/viewer/fixtures/sampler.ts`** — "Showroom Sampler" exhibit `ex-sampler`: `sv1` video (Big Buck
+    Bunny, CC BY 3.0, 1MB MP4), `sa1` audio (Kryptogramm master) + 3 transcript `t=` notes, `si1` image with a
+    media-bearing note (NoteMedia tile). Wired into `apps/viewer/fixtures/sample-data.ts` (buildSamplerLog rng=4,
+    logsById), `apps/viewer/src/pages/[slug].astro` (sampler route), `apps/studio/src/seed-data.ts` (seededSampler,
+    DEFAULT_EXHIBITS). Re-baked published tree (309 files, `sampler/` live).
+  - Harness: `viewer-av` retargeted to the sampler audio object (MediaPlayer+transcript); new `viewer-lightbox`
+    flow (si1 image note → tile → NoteLightbox — tiles render in grid Reader, NOT MediaPlayer); new
+    `studio-editor-video` flow (sv1 plate → AvEditor video mode). `viewer-bidar` still a pre-existing /bidar 404
+    (no bidar exhibit; not a showroom source).
+- **NEXT — ASSEMBLE (recipe in `docs/showroom/ASSEMBLE.md`):** build the showroom exhibit from the 21 PNGs (21
+  objects), create the 4 readings (studio/viewer/embed/power + colours from exhibit.md), import the 21 CSVs via
+  Studio CSV import (each → pending notes), draw the pending regions with "Set area", wire the 21-section
+  narrative tour, set metadata, publish. Largely a human-in-Studio session (coordinate-free was chosen so the
+  curator draws boxes). Open question for that phase: does the showroom live as a permanent seed fixture or a
+  hand-built exhibit ingested from the PNGs.
+
 ## What this is
 The "Recipes for institutional buy-in" ask resolved (via grill-with-docs) to ONE artifact: a
 single **read-only `<archie-viewer>` Web Component** that drops an Archie exhibit into any page.

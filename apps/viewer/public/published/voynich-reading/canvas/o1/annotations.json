@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/0000000001M0GZY8KQDZEF4C74/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/0000000001MQK4A3GK8ATT2SRX/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -24,10 +24,10 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/0000000001M0GZY8KQDZEF4C74.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/0000000001MQK4A3GK8ATT2SRX.json"
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001HFAH0M12TN8R3QYPE/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001HTW6DFPNF6ZHQQ78B/v1",
       "type": "Annotation",
       "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o1",
       "modified": "1970-01-01T00:00:00.049Z",
@@ -39,7 +39,7 @@
         }
       ],
       "motivation": "commenting",
-      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001HFAH0M12TN8R3QYPE.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001HTW6DFPNF6ZHQQ78B.json"
     }
   ]
 }

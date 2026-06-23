@@ -22,6 +22,9 @@ import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voy
 // consumers (geo-notes.test.ts) keep importing them from here while the definitions live in one place.
 import { geoRights, geoTitle, geoSummary, geoObjects, geoNotes } from "../../viewer/fixtures/geo.js";
 export { GEO_TEMPLATE, geoBasemap } from "../../viewer/fixtures/geo.js";
+// The Showroom Sampler — a NEW shared fixture (video + audio + a media-bearing note) consumed by both
+// Studio (here) and the Viewer (sample-data.ts). Additive: it does NOT touch the voynich object set.
+import { samplerTitle, samplerSummary, samplerObjects, samplerVideoNotes, samplerAudioNotes, samplerMediaNotes } from "../../viewer/fixtures/sampler.js";
 
 /** The working-store IRI base — every authored/seeded note targets `${BASE}{slug}/canvas/{objId}`.
  *  Sourced from core's WORKING_IRI_BASE (the ONE namespace the Viewer's live source projects with), so
@@ -44,6 +47,10 @@ export const timeSel = (canvas: string, start: number, end: number) => ({
 // §B object set: 11 IIIF-direct images + 1 sound (o12). Spread width/height/mediaType/duration
 // conditionally — o12 (sound) carries no dims, and exactOptionalPropertyTypes forbids `width: undefined`.
 const voynichObjMeta = voynichObjects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}) }));
+// Sampler object set: sv1 (video) + sa1 (sound). WorkingObjectMeta has no `format` field, so carry only
+// mediaType/duration — `mediaType === "video"` is the load-bearing field that opens sv1 in AvEditor's
+// VIDEO (frame-draw) mode.
+const samplerObjMeta = samplerObjects.map((o) => ({ id: o.id, source: o.source, label: o.label, ...(o.width !== undefined ? { width: o.width } : {}), ...(o.height !== undefined ? { height: o.height } : {}), ...(o.mediaType ? { mediaType: o.mediaType } : {}), ...(o.duration !== undefined ? { duration: o.duration } : {}) }));
 
 // The default exhibits on first run: the imported Voynich manuscript (../../viewer/src/voynich.ts),
 // one shared seed rendered three ways (rosettes / grid / narrative), the atlas, and the geo-map.
@@ -70,6 +77,11 @@ export const DEFAULT_EXHIBITS: ExhibitMeta[] = [
   // ../../viewer/fixtures/geo.ts (single source of truth) — the SAME source the Viewer's published bake reads,
   // so the Studio playground and the published demo can't drift.
   { id: "ex-geo", slug: "geo-map", title: geoTitle, summary: geoSummary, seedVersion: 1, ...geoRights, objects: geoObjects.map((o) => ({ ...o, ...geoRights })) },
+  // SAMPLER — the AV + note-media demo: a VIDEO object (sv1 → AvEditor frame mode) + an AUDIO object
+  // (sa1). >1 object, no sections → grid. A NEW exhibit from the SHARED ../../viewer/fixtures/sampler.ts
+  // (same source the Viewer bakes), so Studio and the published demo can't drift. Additive — the voynich
+  // object set is untouched.
+  { id: "ex-sampler", slug: "sampler", title: samplerTitle, summary: samplerSummary, seedVersion: 1, objects: samplerObjMeta },
 ];
 
 // Seed a default exhibit's notes so it isn't empty on first run (pre-OPFS). Per-slug because the
@@ -140,6 +152,27 @@ function seededGeo(author: ClientId): AnnotationSession {
   return s;
 }
 
+// Seed the Sampler with its transcript notes (time-ranged, on sv1/sa1) + the media-bearing whole-object
+// note, from the SHARED ../../viewer/fixtures/sampler.ts — so the Studio seed and the Viewer's published
+// bake carry the same notes. The video frame note gives the AvEditor a marker to land on in video mode.
+function seededSampler(author: ClientId): AnnotationSession {
+  const s = new AnnotationSession(author);
+  for (const n of [...samplerVideoNotes, ...samplerAudioNotes]) {
+    const [start, end] = n.t.split(",").map(Number) as [number, number];
+    s.createNote({
+      target: timeSel(canvasIdFor(BASE, "sampler", n.objectId), start, end),
+      body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
+    });
+  }
+  for (const n of samplerMediaNotes) {
+    s.createNote({
+      target: canvasIdFor(BASE, "sampler", n.objectId), // bare canvas IRI — whole-object note
+      body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
+    });
+  }
+  return s;
+}
+
 /** The per-slug seed factory: returns a thunk that builds the seed session for a default slug, or null
  *  for a user-created exhibit (no seed). The `author` is threaded so seeded notes stamp the live identity. */
 export const seededFor = (author: ClientId, slug: string): (() => AnnotationSession) | null =>
@@ -148,4 +181,5 @@ export const seededFor = (author: ClientId, slug: string): (() => AnnotationSess
   : slug === "voynich-reading" ? () => seededVoynich(author, "voynich-reading", { includeAv: true })
   : slug === "language-atlas" ? () => seededAtlas(author)
   : slug === "geo-map" ? () => seededGeo(author)
+  : slug === "sampler" ? () => seededSampler(author)
   : null;

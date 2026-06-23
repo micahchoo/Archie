@@ -1,4 +1,4 @@
 object,comment,x,y,w,h,tags,reading,_showoff
-V1 · Gallery,"Published exhibits greet visitors as a wall of cards — cover image, title, and how many notes wait inside.",,,,,gallery cards,viewer,"Box the card grid."
-V1 · Gallery,"Cards sit in the order you set, so the most important exhibit leads.",,,,,order,viewer,"Box two cards to show ordering."
-V1 · Gallery,"One card per exhibit; click through to read.",,,,,open exhibit,viewer,"Box a single card; arrow it to V2."
+,"Published exhibits greet visitors as a wall of cards — cover image, title, and how many notes wait inside.",,,,,gallery cards,viewer,"Box the card grid."
+,"Cards sit in the order you set, so the most important exhibit leads.",,,,,order,viewer,"Box two cards to show ordering."
+,"One card per exhibit; click through to read.",,,,,open exhibit,viewer,"Box a single card; arrow it to V2."

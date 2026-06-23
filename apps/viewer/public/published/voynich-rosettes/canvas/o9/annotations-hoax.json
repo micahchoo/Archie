@@ -4,7 +4,7 @@
   "type": "AnnotationPage",
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/0000000003V9WGXP5NY4Z5C3CA/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/0000000003MKZ4541MWQXH9NZ5/v1",
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
@@ -25,7 +25,7 @@
       ],
       "motivation": "commenting",
       "archie:reading": "hoax",
-      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000003V9WGXP5NY4Z5C3CA.json"
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich-rosettes/annotations/history/0000000003MKZ4541MWQXH9NZ5.json"
     }
   ],
   "partOf": [

@@ -1,0 +1,26 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/history/000000001KX2F342E3KYEVTEC0.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/000000001KX2F342E3KYEVTEC0/v1",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/o12",
+      "modified": "1970-01-01T00:00:00.051Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "This note is about the whole recording, not any moment in it: the Kryptogramm sonification reads folio 18v end to end. Whether you hear enciphered speech, a grille's rhythm, or an unknown real language is the manuscript's whole condition — so the claim attaches to the track entire.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "000000001KX2F342E3KYEVTEC0",
+      "archie:rev": "000000001KT4AXJ7F56WSHS8BE",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

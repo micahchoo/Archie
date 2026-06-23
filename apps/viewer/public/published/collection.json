@@ -87,6 +87,21 @@
           "type": "Image"
         }
       ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/manifest.json",
+      "type": "Manifest",
+      "label": {
+        "none": [
+          "Showroom Sampler"
+        ]
+      },
+      "thumbnail": [
+        {
+          "id": "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg",
+          "type": "Image"
+        }
+      ]
     }
   ]
 }

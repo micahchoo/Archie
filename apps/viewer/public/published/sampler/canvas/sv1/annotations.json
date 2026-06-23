@@ -1,0 +1,53 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1/annotations.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000001XA727G2ZKPRBQWGQ/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=0,3"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.001Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The title card fades in — the moment to frame for a cover still.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000001XA727G2ZKPRBQWGQ.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000002R3SCAH1K8H4YVXB5/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "t=4,8"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.002Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The first character appears; a frame box here would isolate the subject.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000002R3SCAH1K8H4YVXB5.json"
+    }
+  ]
+}

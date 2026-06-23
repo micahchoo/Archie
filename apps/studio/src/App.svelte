@@ -1380,8 +1380,10 @@
     </div>
   {/if}
 
-  <!-- Object rail — the exhibit's objects on the light table; pick which one to annotate. -->
-  <nav class="objects" aria-label="Exhibit objects">
+  <!-- Object rail — the exhibit's objects on the light table; pick which one to annotate.
+       Horizontal overflow scrolls; map a vertical wheel onto it so a mouse (no shift) can scroll the rail. -->
+  <nav class="objects" aria-label="Exhibit objects"
+    onwheel={(e) => { const el = e.currentTarget as HTMLElement; if (el.scrollWidth <= el.clientWidth || e.deltaY === 0) return; el.scrollLeft += e.deltaY; e.preventDefault(); }}>
     {#if OBJECTS.length === 0}
       <span class="no-objects">No media yet — add one below to start adding notes.</span>
     {/if}
@@ -1410,16 +1412,22 @@
       <button class="add-obj-toggle" onclick={() => { mapModalOpen = true; void import("./AddMapModal.svelte").then((m) => (AddMapModalComp = m.default)); }} title="Add a map (geo-annotation)">+ Map</button>
     {/if}
     {#if mapModalOpen && AddMapModalComp}{@const AddMap = AddMapModalComp}<AddMap onadd={(m) => { void flows.addMapObject(m); }} onclose={() => (mapModalOpen = false)} />{/if}
+  </nav>
+
+  <!-- Toast layer — transient import feedback floats free of the rail. Inside .objects (a horizontal
+       overflow-x flex row) these got squeezed to min-content and wrapped one word per line; a fixed
+       layer lets the text breathe. -->
+  <div class="toast-layer" aria-live="polite">
     {#if importStatus}
-      <span class="import-status" role="status" aria-live="polite">
+      <span class="import-status" role="status">
         <span class="import-spinner" aria-hidden="true"></span>
         Adding “{importStatus.name}”…{#if importStatus.total > 1} ({importStatus.index} of {importStatus.total}){/if}
       </span>
     {/if}
     {#if importNote}
-      <span class="import-note" role="status" aria-live="polite">{importNote}<button type="button" class="import-note-x" onclick={() => (importNote = "")} aria-label="Dismiss">✕</button></span>
+      <span class="import-note" role="status">{importNote}<button type="button" class="import-note-x" onclick={() => (importNote = "")} aria-label="Dismiss">✕</button></span>
     {/if}
-  </nav>
+  </div>
 
   {#if framingSectionId}
     <!-- Loud cue that the canvas is in camera-framing mode, not note-drawing — with the way out. -->
@@ -1994,13 +2002,22 @@
   .add-obj button:disabled { background: var(--surface-canvas-raised); color: var(--ink-canvas-muted); box-shadow: none; cursor: default; }
   .add-obj .cancel { background: none; color: var(--ink-canvas-secondary); }
   .add-obj .cancel:hover { color: var(--ink-canvas-primary); }
-  /* Import feedback on the rail (AV ingest/upload UX): understated, floating on the warm ground. The
-     spinner is the accent; the note is a quiet soft card you can dismiss. */
-  .import-status { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-canvas-secondary); overflow-wrap: anywhere; }
-  .import-spinner { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent-muted); border-top-color: var(--accent); animation: import-spin 0.7s linear infinite; }
+  /* Toast layer — import feedback (AV ingest/upload UX) floats in its own fixed corner, free of the
+     rail's horizontal flex squeeze. The layer is click-through; each toast re-enables pointer events.
+     The spinner is the accent; the note is a quiet soft card you can dismiss. */
+  .toast-layer {
+    position: fixed; right: var(--space-5); bottom: var(--space-5); z-index: 60;
+    display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2);
+    width: min(22rem, calc(100vw - 2 * var(--space-5)));
+    pointer-events: none;
+  }
+  .toast-layer > * { pointer-events: auto; }
+  /* Small body-text toasts — compact soft cards, not the loud rail spans they used to be. */
+  .import-status { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-body); font-size: 0.8125rem; line-height: 1.45; color: var(--ink-canvas-secondary); overflow-wrap: anywhere; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low); }
+  .import-spinner { flex-shrink: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent-muted); border-top-color: var(--accent); animation: import-spin 0.7s linear infinite; }
   @keyframes import-spin { to { transform: rotate(360deg); } }
-  .import-note { display: inline-flex; align-items: center; gap: var(--space-2); max-width: 30rem; font-family: var(--font-body); font-size: var(--text-ui-sm); line-height: 1.5; color: var(--ink-canvas-secondary); padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low); white-space: normal; }
-  .import-note-x { flex-shrink: 0; cursor: pointer; background: none; border: none; color: var(--ink-canvas-muted); font-size: var(--text-ui-xs); padding: 0 var(--space-1); }
+  .import-note { display: inline-flex; align-items: flex-start; gap: var(--space-2); font-family: var(--font-body); font-size: 0.8125rem; line-height: 1.45; color: var(--ink-canvas-secondary); padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low); white-space: normal; overflow-wrap: anywhere; }
+  .import-note-x { flex-shrink: 0; cursor: pointer; background: none; border: none; color: var(--ink-canvas-muted); font-size: var(--text-ui-xs); line-height: 1.45; padding: 0 var(--space-1); }
   .import-note-x:hover { color: var(--ink-canvas-primary); }
   /* File-pick button (hides the native input) + the "or" separator */
   .file-btn { display: inline-flex; align-items: center; cursor: pointer; padding: var(--space-2) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: color 160ms ease, box-shadow 160ms ease; }

@@ -1,4 +1,4 @@
 object,comment,x,y,w,h,tags,reading,_showoff
-S9 · Exhibit metadata & rights,"Set the exhibit's display title and summary — the name and blurb readers meet first.",,,,,title summary,studio,"Box both fields."
-S9 · Exhibit metadata & rights,"Credit the work with an attribution statement.",,,,,attribution,studio,"Box the attribution field."
-S9 · Exhibit metadata & rights,"Choose a license — Creative Commons or RightsStatements.org — so reuse terms travel with the exhibit.",,,,,license,studio,"Credit renders in the Viewer on every object and note (see V-act)."
+,"Set the exhibit's display title and summary — the name and blurb readers meet first.",,,,,title summary,studio,"Box both fields."
+,"Credit the work with an attribution statement.",,,,,attribution,studio,"Box the attribution field."
+,"Choose a license — Creative Commons or RightsStatements.org — so reuse terms travel with the exhibit.",,,,,license,studio,"Credit renders in the Viewer on every object and note (see V-act)."

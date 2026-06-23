@@ -259,7 +259,11 @@
 
 <style>
   /* The curator's table — exhibits as warm paper plates on the gradient ground (Soft Static). */
-  .library { min-height: 100vh; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); padding: var(--space-12) var(--space-8); }
+  /* flex-shrink:0 — .library is a flex child of the fixed-height (.app { height:100vh }) shell. Without it,
+     the flex parent clamps .library to the viewport, so a grid taller than the screen overflows the warm box
+     and the last rows spill onto the fixed green ground. Keeping full content height makes the warm surface
+     cover every row (solid warm page, no green bleed). */
+  .library { min-height: 100vh; flex-shrink: 0; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); padding: var(--space-12) var(--space-8); }
   header { max-width: 60rem; margin: 0 auto var(--space-10); }
   /* Eyebrow: the quiet tracked-mono signal-chrome (composes the global .eyebrow). */
   .eyebrow { color: var(--ink-canvas-muted); }

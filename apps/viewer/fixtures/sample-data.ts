@@ -9,6 +9,7 @@ import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voy
 import { BASE, canvasIdFor } from "../src/published-base.js";
 import { atlasTitle, atlasSummary, atlasRights, atlasReadings, atlasObjects, atlasNotes } from "./atlas.js";
 import { geoTitle, geoSummary, geoRights, geoObjects, geoCover, geoNotes } from "./geo.js";
+import { samplerTitle, samplerSummary, samplerCredits, samplerObjects, samplerVideoNotes, samplerAudioNotes, samplerMediaNotes } from "./sampler.js";
 export { BASE, canvasIdFor };
 
 const author = asClientId("curator");
@@ -88,6 +89,33 @@ function buildGeoLog(slug: string): AnnotationLog {
       target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `xywh=pixel:${n.x},${n.y},${n.w},${n.h}` } },
       body: [{ type: "TextualBody" as const, value: n.comment, purpose: "commenting" as const }],
       geo: n.geo, // geo-truth (Q4) → archie:geo on the published canvas annotation
+      motivation: "commenting", lastEditor: author, now: ++now, rng,
+    }));
+  }
+  return log;
+}
+
+// "Showroom Sampler" — the AV + note-media demo log. Time-ranged notes on the video (sv1) and audio
+// (sa1) objects (→ MediaPlayer transcript), then a whole-object media-bearing note on the audio (→
+// NoteMedia tile → NoteLightbox). Same seeded-rng / monotonic-now contract (ADR-0014). Distinct seed
+// (4) keeps its logicalIds disjoint from the other builders.
+function buildSamplerLog(slug: string): AnnotationLog {
+  let log: AnnotationLog = [];
+  let now = 0;
+  const rng = seededRng(4); // per-builder seed — reproducible ids, disjoint from voynich/atlas/geo
+  for (const n of [...samplerVideoNotes, ...samplerAudioNotes]) {
+    ({ log } = appendNew(log, {
+      target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `t=${n.t}` } },
+      body: [{ type: "TextualBody" as const, value: n.comment, purpose: "commenting" as const }],
+      motivation: "commenting", lastEditor: author, now: ++now, rng,
+    }));
+  }
+  // Media-bearing whole-object note (bare canvas IRI, no selector) — splitNoteMedia lifts the embedded
+  // image into a NoteMedia tile.
+  for (const n of samplerMediaNotes) {
+    ({ log } = appendNew(log, {
+      target: canvasIdFor(slug, n.objectId),
+      body: [{ type: "TextualBody" as const, value: n.comment, purpose: "commenting" as const }],
       motivation: "commenting", lastEditor: author, now: ++now, rng,
     }));
   }
@@ -212,11 +240,16 @@ export const library: Library = {
     // pins all come from the SHARED ./geo.js — the same source Studio's seed reads (no drift). cover = the
     // whole-world tile (z0/0/0). No readings: this prototype carries one reading of place, not rival camps.
     { id: asExhibitId("ex-geo"), slug: "geo-map", title: geoTitle, summary: geoSummary, cover: geoCover, objects: geoObjects.map((o) => ({ ...o, ...geoRights })), requiredStatement: geoRights.requiredStatement },
+    // SAMPLER — "Showroom Sampler": a small AV + note-media demo (a video to frame-annotate, an audio
+    // recording with a transcript, a note that carries a picture). >1 object, no sections → grid.
+    // Additive: a NEW slug, so no existing exhibit's object/note counts change.
+    { id: asExhibitId("ex-sampler"), slug: "sampler", title: samplerTitle, summary: samplerSummary, cover: "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg", objects: samplerObjects, requiredStatement: { label: "Source", value: samplerCredits } },
   ],
 };
 
 const atlasLog = buildAtlasLog("language-atlas");
 const geoLog = buildGeoLog("geo-map");
-const logsById: Record<string, AnnotationLog> = { "ex-voynich-rosettes": rosettesLog, "ex-voynich": voynichLog, "ex-voynich-reading": readingLog, "ex-atlas": atlasLog, "ex-geo": geoLog };
+const samplerLog = buildSamplerLog("sampler");
+const logsById: Record<string, AnnotationLog> = { "ex-voynich-rosettes": rosettesLog, "ex-voynich": voynichLog, "ex-voynich-reading": readingLog, "ex-atlas": atlasLog, "ex-geo": geoLog, "ex-sampler": samplerLog };
 /** Log lookup for publishLibrary, by exhibit id. */
 export const getLog = (exhibitId: string): AnnotationLog => logsById[exhibitId] ?? [];

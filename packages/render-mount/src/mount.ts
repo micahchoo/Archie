@@ -169,6 +169,19 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
   viewer.addHandler("zoom", updateZoomBand);
   updateZoomBand();
 
+  // Quick path to fit (zoom level 0): five consecutive zoom-OUT wheel notches snap the viewport home.
+  // OSD's canvas-scroll `scroll` is the wheel delta (positive = zoom in, negative = zoom out; it normalizes
+  // rapid devices via minScrollDeltaTime, so one event ≈ one notch). A zoom-IN notch breaks the streak, so
+  // it only fires on a deliberate run of scroll-outs. For a bounded map, "home" is the authored region.
+  let outNotches = 0;
+  viewer.addHandler("canvas-scroll", (e: { scroll?: number }) => {
+    if ((e.scroll ?? 0) >= 0) { outNotches = 0; return; } // zoom-in (or a no-op) resets the streak
+    if (++outNotches < 5) return;
+    outNotches = 0;
+    if (mapRegion) viewer.viewport.fitBounds(new OpenSeadragon.Rect(mapRegion.x, mapRegion.y, mapRegion.w, mapRegion.h), false);
+    else viewer.viewport.goHome(false);
+  });
+
   const annotator = createOSDAnnotator<ImageAnnotation, W3CImageAnnotation>(viewer, {
     adapter: W3CImageFormat(sourceIRI),
     drawingEnabled: opts.drawingEnabled ?? false,

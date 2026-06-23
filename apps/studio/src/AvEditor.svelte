@@ -105,7 +105,10 @@
 
   // --- VIDEO frame-draw (donor: video-canvas.html). The overlay box is PERCENT of the frame (resolution-
   // independent). Saved boxes show only while currentTime ∈ their [start,end]; the draft box previews the next. ---
-  let spatialDrawing = $state(false); // toggled by "+ Add region on frame"
+  // Draw-first: the frame overlay is ALWAYS the draw surface (no arm-toggle) — drag draws a box, a plain
+  // click does nothing (play is the spacebar / transport button, not a frame click). isDragging lights the
+  // "you're drawing" outline only while a drag is in flight.
+  let isDragging = $state(false);
   let draftBox = $state<Box | null>(null); // the pending region for the next note
   let spatialDrag: { startX: number; startY: number } | null = null;
   const frameBoxes = $derived.by(() => {
@@ -152,9 +155,10 @@
     seek(Math.max(0, Math.min(duration, ((e.clientX - r.left) / r.width) * duration)));
   }
   function overlayDown(e: MouseEvent) {
-    if (!spatialDrawing || !overlayEl) return;
+    if (!overlayEl) return; // draw-first: the overlay is always armed; a drag draws, a plain click is a no-op
     const r = overlayEl.getBoundingClientRect();
     spatialDrag = { startX: ((e.clientX - r.left) / r.width) * 100, startY: ((e.clientY - r.top) / r.height) * 100 };
+    isDragging = true;
     e.preventDefault();
   }
   function overlayMove(e: MouseEvent) {
@@ -166,7 +170,11 @@
     draftBox = { x: Math.min(spatialDrag.startX, x), y: Math.min(spatialDrag.startY, y), w: Math.abs(x - spatialDrag.startX), h: Math.abs(y - spatialDrag.startY) };
   }
   function onWindowMouseUp() {
-    if (spatialDrag) { spatialDrag = null; spatialDrawing = false; } // auto-exit drawing after one box (donor)
+    if (!spatialDrag) return;
+    spatialDrag = null;
+    isDragging = false;
+    // A plain click (no real drag) leaves a zero/sliver box — discard it so a stray click never sets a region.
+    if (draftBox && (draftBox.w < 1 || draftBox.h < 1)) draftBox = null;
   }
 
   // --- WaveSurfer (audio only): the waveform IS the temporal draw surface. Regions = the `t=` cues. ---
@@ -341,7 +349,7 @@
     else if (matches(e, "→") && !onMedia) { e.preventDefault(); stepMarker(1); }
     else if (matches(e, "I")) { e.preventDefault(); setIn(); }
     else if (matches(e, "N")) { e.preventDefault(); addNote(); }
-    else if (matches(e, "B") && isVideo) { e.preventDefault(); spatialDrawing = !spatialDrawing; }
+    else if (matches(e, "B") && isVideo && draftBox) { e.preventDefault(); draftBox = null; } // clear the pending frame box
   }
 </script>
 
@@ -349,19 +357,27 @@
 
 <div class="av" class:video={isVideo}>
   {#if isVideo}
-    <div class="video-wrap" class:capturing={spatialDrawing}>
+    <div class="video-wrap" class:capturing={isDragging || draftBox}>
       <!-- svelte-ignore a11y_media_has_caption -->
-      <video bind:this={mediaEl} src={resolved} controls
+      <!-- No native `controls`: the frame is draw-first, so the overlay owns the whole frame. Playback is the
+           spacebar / transport button below; seeking is the notes timeline. -->
+      <video bind:this={mediaEl} src={resolved}
         onloadedmetadata={() => (duration = mediaEl?.duration ?? 0)}
-        ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
-      <!-- Frame-draw overlay: pointer-events:none normally (so the video controls work); auto when drawing.
-           Boxes are PERCENT of the frame; saved boxes show only during their time window (donor). -->
-      <div class="frame-overlay" class:drawing={spatialDrawing} bind:this={overlayEl} role="presentation" onmousedown={overlayDown} onmousemove={overlayMove}>
+        ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}
+        onplay={() => (isPlaying = true)} onpause={() => (isPlaying = false)}></video>
+      <!-- Frame-draw overlay: ALWAYS the draw surface (draw-first) — drag draws a box. Boxes are PERCENT of
+           the frame; saved boxes show only during their time window (donor). -->
+      <div class="frame-overlay" bind:this={overlayEl} role="presentation" onmousedown={overlayDown} onmousemove={overlayMove}>
         {#each frameBoxes as fb}<div class="frame-box" class:sel={fb.sel} style={`left:${fb.box.x}%;top:${fb.box.y}%;width:${fb.box.w}%;height:${fb.box.h}%`}></div>{/each}
         {#if draftBox}<div class="frame-box draft" style={`left:${draftBox.x}%;top:${draftBox.y}%;width:${draftBox.w}%;height:${draftBox.h}%`}></div>{/if}
       </div>
-      {#if spatialDrawing}<div class="capture-hint" aria-hidden="true">Drawing a box on the video</div>{/if}
+      {#if isDragging}<div class="capture-hint" aria-hidden="true">Drawing a box on the video</div>{/if}
       {#if mediaError}<div class="capture-hint" role="status">Couldn't load this video. [fetch:{mediaError}]</div>{/if}
+    </div>
+    <!-- Video transport (frame is draw-first, so play lives here, not on the frame). -->
+    <div class="transport video-transport">
+      <button class="play" onclick={togglePlay} aria-label={isPlaying ? "Pause" : "Play"}>{isPlaying ? "⏸ Pause" : "▶ Play"}</button>
+      <span class="wave-hint">Drag on the video to draw a box · <kbd>Space</kbd> plays · the timeline below seeks · <kbd>←</kbd> <kbd>→</kbd> step notes</span>
     </div>
     <!-- Annotation timeline (videojs affordance): notes as range bars; click to seek+select, hover for the
          text, ← → to step between them, playhead shows where you are. -->
@@ -396,8 +412,8 @@
     {#if markedIn !== null}
       <span class="chip" title="The note will run from here to the current time">from {fmt(markedIn)}<button class="x" title="Clear the start mark" onclick={() => (markedIn = null)}>✕</button></span>
     {/if}
-    {#if isVideo}
-      <button class="region-toggle" class:on={spatialDrawing} onclick={() => (spatialDrawing = !spatialDrawing)} title="Draw a box on this frame — the note will cover that spot.">{spatialDrawing ? "Drawing… drag on the video" : draftBox ? "▭ box set · draw again" : "▭ Draw a box on the video"}</button>
+    {#if isVideo && draftBox}
+      <span class="chip" title="The note will cover this spot on the frame. Drag again to redraw.">▭ box set<button class="x" title="Clear the frame box" onclick={() => (draftBox = null)}>✕</button></span>
     {/if}
     <button class="mark" onclick={setIn} title="Marks the start of a time range — the note runs from here to where you are when you add it.">Mark start</button>
     <button class="add" onclick={addNote} title="Create a note covering this moment">{addLabel}</button>
@@ -423,8 +439,8 @@
   /* Video + its frame-draw overlay (the overlay sits exactly over the video box). */
   .video-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
   .video-wrap video { width: 100%; height: 100%; object-fit: contain; background: var(--moss-shadow); border-radius: var(--radius-md); }
-  .frame-overlay { position: absolute; inset: 0; pointer-events: none; }
-  .frame-overlay.drawing { pointer-events: auto; cursor: cell; }
+  /* Draw-first: the overlay is always the draw surface (no native controls underneath to protect). */
+  .frame-overlay { position: absolute; inset: 0; pointer-events: auto; cursor: crosshair; }
   .frame-box { position: absolute; box-sizing: border-box; border: 1.5px solid var(--accent); background: rgba(240, 99, 28, 0.10); border-radius: var(--radius-sm); pointer-events: none; }
   .frame-box.sel { border-color: var(--accent); box-shadow: var(--shadow-signal-glow); }
   .frame-box.draft { border-style: dashed; border-color: var(--accent-2); background: rgba(92, 107, 190, 0.08); }
@@ -463,9 +479,6 @@
   .markbar .mark:hover { background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); }
   .markbar .add { background: var(--accent); color: var(--ink-on-accent); font-family: var(--font-ui); font-weight: 500; letter-spacing: 0.02em; border: none; box-shadow: var(--shadow-signal-glow); }
   .markbar .add:hover { background: var(--accent-hover); }
-  .markbar .region-toggle { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); box-shadow: var(--shadow-lift-low); }
-  .markbar .region-toggle:hover { border-color: var(--accent-2); color: var(--accent-2); }
-  .markbar .region-toggle.on { background: var(--accent-2-muted); color: var(--accent-2); border-color: var(--accent-2); }
   .markbar .import { display: inline-flex; align-items: center; cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.02em; padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); box-shadow: var(--shadow-lift-low); transition: border-color 0.18s ease, color 0.18s ease; }
   .markbar .import:hover { color: var(--accent-2); border-color: var(--accent-2); }
   .markbar .import input { display: none; }

@@ -1,0 +1,26 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000006J6BPCAHWFMCT6BW1.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/0000000006J6BPCAHWFMCT6BW1/v1",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/si1",
+      "modified": "1970-01-01T00:00:00.006Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "This note carries its own picture — a detail held beside the page. Click the thumbnail to see it full-screen. ![f1r — a related folio](https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg)",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "archie:logicalId": "0000000006J6BPCAHWFMCT6BW1",
+      "archie:rev": "0000000006245GMCP5RM03JYJ1",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
+    }
+  ]
+}

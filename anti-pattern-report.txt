@@ -5,11 +5,25 @@
 [catch-all] apps/studio/src/store.ts:298 -- bare catch-all with no rethrow/reject/error-return/logging in body
 [catch-all] docs/learn/assets/models.js:115 -- bare catch-all with no rethrow/reject/error-return/logging in body
 [catch-all] docs/learn/assets/models.js:121 -- bare catch-all with no rethrow/reject/error-return/logging in body
-[catch-all] scripts/capture-screenshots.mjs:50 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:113 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:127 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:178 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:201 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:246 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:278 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:304 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:342 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:386 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:399 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:400 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:420 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:515 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[catch-all] scripts/capture-screenshots.mjs:70 -- bare catch-all with no rethrow/reject/error-return/logging in body
 [catch-all] scripts/verify-marginalia.mjs:27 -- bare catch-all with no rethrow/reject/error-return/logging in body
 [catch-all] scripts/verify-readings-rail.mjs:148 -- bare catch-all with no rethrow/reject/error-return/logging in body
 [catch-all] scripts/verify-readings-rail.mjs:154 -- bare catch-all with no rethrow/reject/error-return/logging in body
 [catch-all] scripts/verify-readings-rail.mjs:28 -- bare catch-all with no rethrow/reject/error-return/logging in body
+[console-only-error] packages/archie-viewer/src/element.ts:257 -- console.error with no UI feedback in surrounding context
 [fire-and-forget] .agents/skills/teach/.scout/diag.mjs:2 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] .agents/skills/teach/.scout/diag.mjs:3 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] .agents/skills/teach/.scout/shoot.mjs:12 -- await with no try/catch or .catch() in nearby context
@@ -94,6 +108,8 @@
 [fire-and-forget] apps/viewer/src/published.ts:26 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] apps/viewer/src/published.ts:306 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] apps/viewer/src/published.ts:315 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/archie-viewer/src/reader.ts:5 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/archie-viewer/src/reader.ts:65 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/fs/conformance.ts:43 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/fs/conformance.ts:50 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/fs/conformance.ts:51 -- await with no try/catch or .catch() in nearby context
@@ -152,6 +168,7 @@
 [fire-and-forget] packages/render-core/src/publish/ghpages.ts:184 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/ghpages.ts:191 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/ghpages.ts:201 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-core/src/publish/marker.ts:53 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/portable.ts:141 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/portable.ts:88 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/publish/read.ts:37 -- await with no try/catch or .catch() in nearby context
@@ -229,6 +246,23 @@
 [fire-and-forget] packages/render-core/src/spine/persist.ts:39 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-core/src/spine/persist.ts:51 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] packages/render-mount/src/mount.ts:111 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] packages/render-mount/src/read-mount.ts:206 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:158 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:159 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:160 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:162 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:164 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:165 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:166 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:172 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:173 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:175 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:176 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:340 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:373 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:374 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:58 -- await with no try/catch or .catch() in nearby context
+[fire-and-forget] scripts/capture-screenshots.mjs:59 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] scripts/verify-marginalia.mjs:101 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] scripts/verify-marginalia.mjs:102 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] scripts/verify-marginalia.mjs:103 -- await with no try/catch or .catch() in nearby context
@@ -291,36 +325,27 @@
 [fire-and-forget] scripts/verify-readings-rail.mjs:141 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] scripts/verify-readings-rail.mjs:146 -- await with no try/catch or .catch() in nearby context
 [fire-and-forget] scripts/verify-readings-rail.mjs:147 -- await with no try/catch or .catch() in nearby context
-[impact-scope] apps/viewer/fixtures/sample-data.ts:0 -- 4/8 importers of sample-data have no tests (Tier 0: 8 direct callers, Tier 1: depth 2 transitive=150)
-[impact-scope] apps/viewer/src/components/ExhibitView.svelte:0 -- 9/14 importers of ExhibitView have no tests (Tier 0: 14 direct callers, Tier 1: depth 2 transitive=139)
-[impact-scope] apps/viewer/src/components/MediaPlayer.svelte:0 -- 5/8 importers of MediaPlayer have no tests (Tier 0: 8 direct callers, Tier 1: depth 2 transitive=114)
-[impact-scope] apps/viewer/src/components/NarrativeReader.svelte:0 -- 11/13 importers of NarrativeReader have no tests (Tier 0: 13 direct callers, Tier 1: depth 2 transitive=115)
-[impact-scope] apps/viewer/src/components/Reader.svelte:0 -- 20/29 importers of Reader have no tests (Tier 0: 29 direct callers, Tier 1: depth 2 transitive=184)
-[impact-scope] apps/viewer/src/components/ViewerShell.svelte:0 -- 8/11 importers of ViewerShell have no tests (Tier 0: 11 direct callers, Tier 1: depth 2 transitive=153)
-[impact-scope] apps/viewer/src/published.test.ts:0 -- 1/2 importers of published.test have no tests (Tier 0: 2 direct callers, Tier 1: depth 2 transitive=3)
-[impact-scope] apps/viewer/src/published.ts:0 -- 34/85 importers of published have no tests (Tier 0: 85 direct callers, Tier 1: depth 2 transitive=381)
-[impact-scope] packages/render-core/src/fs/zip.ts:0 -- 23/56 importers of zip have no tests (Tier 0: 56 direct callers, Tier 1: depth 2 transitive=333)
-[impact-scope] packages/render-core/src/index.ts:0 -- 54/92 importers of index have no tests (Tier 0: 92 direct callers, Tier 1: depth 2 transitive=377)
-[impact-scope] packages/render-core/src/publish/site.ts:0 -- 13/41 importers of site have no tests (Tier 0: 41 direct callers, Tier 1: depth 2 transitive=318)
-[impact-scope] packages/render-core/src/url/route.ts:0 -- 28/41 importers of route have no tests (Tier 0: 41 direct callers, Tier 1: depth 2 transitive=255)
-[impact-scope] packages/render-mount/src/fitbounds.test.ts:0 -- 1/1 importers of fitbounds.test have no tests (Tier 0: 1 direct callers, Tier 1: depth 1 transitive=1)
-[impact-scope] packages/render-mount/src/fitbounds.ts:0 -- 5/10 importers of fitbounds have no tests (Tier 0: 10 direct callers, Tier 1: depth 2 transitive=182)
-[impact-scope] packages/render-mount/src/index.ts:0 -- 54/93 importers of index have no tests (Tier 0: 93 direct callers, Tier 1: depth 2 transitive=379)
-[impact-scope] scripts/bundle-size.mjs:0 -- 1/1 importers of bundle-size have no tests (Tier 0: 1 direct callers, Tier 1: depth 2 transitive=79)
+[impact-scope] apps/studio/src/seed-data.ts:0 -- 3/5 importers of seed-data have no tests (Tier 0: 5 direct callers, Tier 1: depth 2 transitive=79)
+[impact-scope] apps/viewer/fixtures/sample-data.ts:0 -- 4/9 importers of sample-data have no tests (Tier 0: 9 direct callers, Tier 1: depth 2 transitive=159)
+[impact-scope] packages/archie-viewer/src/element.ts:0 -- 14/38 importers of element have no tests (Tier 0: 38 direct callers, Tier 1: depth 2 transitive=306)
+[impact-scope] packages/render-core/src/publish/marker.ts:0 -- 15/45 importers of marker have no tests (Tier 0: 45 direct callers, Tier 1: depth 2 transitive=339)
+[impact-scope] packages/render-mount/src/read-mount.test.ts:0 -- 1/2 importers of read-mount.test have no tests (Tier 0: 2 direct callers, Tier 1: depth 2 transitive=6)
+[impact-scope] packages/render-mount/src/read-mount.ts:0 -- 2/7 importers of read-mount have no tests (Tier 0: 7 direct callers, Tier 1: depth 2 transitive=130)
 [silent-catch] apps/studio/src/ingest-flows.ts:201 -- catch body logs error but never surfaces to user
+[silent-catch] packages/archie-viewer/src/element.ts:254 -- catch body logs error but never surfaces to user
 [unpaired-resource] apps/studio/src/App.svelte:48001 -- 1 acquire calls but no release in file (lock/unlock)
 [untested-churn] apps/studio/src/App.svelte:0 -- 44 commits (6mo), no test file
 [untested-churn] apps/studio/src/ExhibitOverview.svelte:0 -- 12 commits (6mo), no test file
 [untested-churn] apps/studio/src/LibraryHome.svelte:0 -- 11 commits (6mo), no test file
 [untested-churn] apps/studio/src/NarrativeEditor.svelte:0 -- 9 commits (6mo), no test file
-[untested-churn] apps/studio/src/PublishDialog.svelte:0 -- 9 commits (6mo), no test file
+[untested-churn] apps/studio/src/PublishDialog.svelte:0 -- 10 commits (6mo), no test file
 [untested-churn] apps/studio/src/store.ts:0 -- 10 commits (6mo), no test file
-[untested-churn] apps/viewer/src/components/ExhibitView.svelte:0 -- 17 commits (6mo), no test file
-[untested-churn] apps/viewer/src/components/MediaPlayer.svelte:0 -- 11 commits (6mo), no test file
-[untested-churn] apps/viewer/src/components/NarrativeReader.svelte:0 -- 17 commits (6mo), no test file
-[untested-churn] apps/viewer/src/components/Reader.svelte:0 -- 17 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/ExhibitView.svelte:0 -- 18 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/MediaPlayer.svelte:0 -- 12 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/NarrativeReader.svelte:0 -- 18 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/Reader.svelte:0 -- 18 commits (6mo), no test file
 [untested-churn] apps/viewer/src/components/ReadingLegend.svelte:0 -- 9 commits (6mo), no test file
-[untested-churn] apps/viewer/src/components/ViewerShell.svelte:0 -- 12 commits (6mo), no test file
+[untested-churn] apps/viewer/src/components/ViewerShell.svelte:0 -- 13 commits (6mo), no test file
 [untested-churn] packages/render-svelte/src/Canvas.svelte:0 -- 12 commits (6mo), no test file
 
 === RISK SCORES ===

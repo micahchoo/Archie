@@ -73,6 +73,15 @@ export const getStaticPaths = (() => {
       jsonLdDescription:
         "Eight map pages from UNESCO's Atlas of the World's Languages in Danger (2010), annotated with a linguist's reading and a community reading.",
     },
+    sampler: {
+      title: "Showroom Sampler",
+      ogTitle: "Showroom Sampler",
+      description:
+        "A small demo exhibit: a short video to annotate frame-by-frame, an audio recording with a transcript, and a note that carries its own picture.",
+      jsonLdType: "CreativeWork",
+      aboutName: "Archie Showroom Sampler",
+      license: "https://creativecommons.org/licenses/by/3.0/",
+    },
   };
   return Object.keys(META).map((slug) => ({ params: { slug }, props: META[slug]! }));
 }) satisfies GetStaticPaths;

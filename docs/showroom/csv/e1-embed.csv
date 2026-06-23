@@ -1,7 +1,7 @@
 object,comment,x,y,w,h,tags,reading,_showoff
-E1 · Embedded viewer,"Archie's reader drops into any web page as a single <archie-viewer> custom element — no framework, no build step on the host.",,,,,web embed,embed,"Box the embed framed inside the host page chrome."
-E1 · Embedded viewer,"Point it at a published library by URL, or at a local .archie.zip to browse exhibits with no internet at all.",,,,,src offline zip,embed,"Two attributes; mention the offline path."
-E1 · Embedded viewer,"Deep-zoom still works inside the embed; tiles stream on demand.",,,,,embedded deep-zoom,embed,"Box the canvas."
-E1 · Embedded viewer,"A pre-baked DZI pyramid streams tiles straight to the canvas; a bare source string auto-detects the right tile handler — IIIF, DZI, or plain image.",,,,,dzi auto-detect,power,"Mount internal; the auto-detect is the 'mount creator passes a source string' story."
-E1 · Embedded viewer,"Malformed or empty region selectors are skipped safely — a broken box never breaks the read.",,,,,safe skip,power,"Mount internal; invisible robustness worth a callout."
-E1 · Embedded viewer,"Multiple embeds on one page stay independent — each tag carries its own library.",,,,,instance context,embed,"Capture two embeds side by side to show it."
+,"Archie's reader drops into any web page as a single <archie-viewer> custom element — no framework, no build step on the host.",,,,,web embed,embed,Box the embed framed inside the host page chrome.
+,"Point it at a published library by URL, or at a local .archie.zip to browse exhibits with no internet at all.",,,,,src offline zip,embed,Two attributes; mention the offline path.
+,Deep-zoom still works inside the embed; tiles stream on demand.,,,,,embedded deep-zoom,embed,Box the canvas.
+,"A pre-baked DZI pyramid streams tiles straight to the canvas; a bare source string auto-detects the right tile handler — IIIF, DZI, or plain image.",,,,,dzi auto-detect,power,Mount internal; the auto-detect is the 'mount creator passes a source string' story.
+,Malformed or empty region selectors are skipped safely — a broken box never breaks the read.,,,,,safe skip,power,Mount internal; invisible robustness worth a callout.
+,Multiple embeds on one page stay independent — each tag carries its own library.,,,,,instance context,embed,Capture two embeds side by side to show it.
