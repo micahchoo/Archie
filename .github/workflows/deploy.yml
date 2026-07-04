@@ -19,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # apps/viewer/libraries/*.archie.zip is LFS-tracked; without this the
+          # prebuild (gen-published.mts) unzips the pointer file and fails.
+          lfs: true
 
       - uses: pnpm/action-setup@v4
         with:
