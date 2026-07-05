@@ -62,7 +62,12 @@ to fail once.
 
 ## Issue 2 — The operational docs actively misdirect
 
-**Status:** running — ledger: ledgers/CLAIMS.md
+**Status:** done 2026-07-05 — ledger: ledgers/CLAIMS.md (HANDOFF.md rewritten to current state;
+README's stale test count fixed; IMPLEMENTATION-STRATEGY.md's deferred-work registry synced —
+4 items removed as shipped, 4 stale figures/claims corrected. One row left blocked-on-verdict
+[README's Collaboration claim, per this issue's own instruction — see Direction 1] and one
+left unconfirmed [a marker-highlight bugfix with no evidence either way]. The doc's own
+process/methodology sections, out of this issue's scope, logged as new Issue 10.)
 
 **Symptom.** Three documents contradict the code they describe:
 - `HANDOFF.md` (2026-06-21) says the embed feature is UNCOMMITTED on
