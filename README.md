@@ -348,7 +348,7 @@ graph TD
 
 ```bash
 pnpm typecheck          # type-check every package + app
-pnpm test               # run the full suite (~770 tests)
+pnpm test               # run the full suite (~1150 tests)
 pnpm --filter @render/core test     # target one workspace
 pnpm --filter @render/core test src/spine/log.test.ts   # one file (path is a vitest filter)
 ```
