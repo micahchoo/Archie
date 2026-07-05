@@ -41,7 +41,7 @@ type View =
   | { kind: "empty"; error?: string; cold?: boolean }
   | { kind: "loading" }
   | { kind: "gallery"; cold?: boolean }
-  | { kind: "exhibit"; exhibit: PortableExhibit }
+  | { kind: "exhibit"; exhibit: PortableExhibit; error?: string }
   | { kind: "reader"; exhibit: PortableExhibit; object: AObject };
 
 const TEMPLATE_STYLES = `
@@ -210,8 +210,12 @@ export class ArchieViewerElement extends HTMLElement {
         this.#library = nextLib; // thread the (possibly blob-augmented) library forward, like #openExhibit
         return exhibit;
       });
-    } catch {
-      route = null; // any unexpected failure in the resolve degrades upward, never throws out
+    } catch (e) {
+      // Any unexpected failure in the resolve degrades upward, never throws out — the degrade itself
+      // is correct, but it was previously silent (SILENCE row, tend Issue 4): log so a malformed
+      // iiif-content address is at least debuggable.
+      console.warn("archie-viewer: couldn't resolve the IIIF Content State address", e);
+      route = null;
     }
     if (seq !== this.#loadSeq) return; // superseded by a newer address/load
     if (!route || route.view === "gallery") {
@@ -256,7 +260,11 @@ export class ArchieViewerElement extends HTMLElement {
       this.#applyResolved(exhibit, resolved);
     } catch (e) {
       if (seq !== this.#loadSeq) return;
-      this.#setView({ kind: "exhibit", exhibit: { slug, title: slug, objects: [] } as unknown as PortableExhibit });
+      // Previously logged-and-lost (SILENCE row, tend Issue 4): console.error only, the visitor saw a
+      // bare empty grid with no indication anything failed. Carry the message into the view itself,
+      // same as the top-level open failure (kind:"empty").
+      const message = e instanceof Error ? e.message : "Couldn't open this exhibit.";
+      this.#setView({ kind: "exhibit", exhibit: { slug, title: slug, objects: [] } as unknown as PortableExhibit, error: message });
       console.error("archie-viewer: couldn't open exhibit", slug, e);
     }
   }
@@ -420,7 +428,7 @@ export class ArchieViewerElement extends HTMLElement {
     if (v.kind === "empty") { this.#renderEmpty(style, v.error, v.cold); return; }
     if (v.kind === "loading") { this.#root.innerHTML = `${style}<div class="wrap"><p class="notice">Opening…</p></div>`; return; }
     if (v.kind === "gallery") { this.#renderGallery(style, v.cold); return; }
-    if (v.kind === "exhibit") { this.#renderExhibit(style, v.exhibit); return; }
+    if (v.kind === "exhibit") { this.#renderExhibit(style, v.exhibit, v.error); return; }
     if (v.kind === "reader") { this.#renderReader(style, v.exhibit, v.object); return; }
   }
 
@@ -478,13 +486,14 @@ export class ArchieViewerElement extends HTMLElement {
     }
   }
 
-  #renderExhibit(style: string, exhibit: PortableExhibit): void {
+  #renderExhibit(style: string, exhibit: PortableExhibit, error?: string): void {
     const objects = exhibit.objects ?? [];
     const countOf = (id: string): number => (exhibit.annotationsByObject?.[id] ?? []).length;
     this.#root.innerHTML = `${style}
       <div class="wrap">
         <div class="topbar"><button type="button" data-act="back">← Gallery</button></div>
         <header class="intro"><h1>${escapeHtml(exhibit.title)}</h1></header>
+        ${error ? `<p class="err">${escapeHtml(error)}</p>` : ""}
         <ul class="grid">
           ${objects.map((o) => `
             <li><button type="button" data-obj="${escapeAttr(o.id)}">
