@@ -431,6 +431,12 @@
   .list-hint { max-width: 48rem; margin: var(--space-6) auto 0; padding: 0 var(--space-6); font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
   .list { list-style: none; margin: 0; padding: var(--space-4) var(--space-6) var(--space-6); overflow-y: auto; flex: 1; max-width: 48rem; }
   .list li { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+  /* PERF (SCALE-GALLERY Phase 1.3): skip layout/paint/decode of off-screen rows in a large list — the
+     same treatment the Viewer's ObjectGrid uses (ObjectGrid.svelte). `auto` remembers each row's real
+     height after first render so the scrollbar never jumps; the fixed estimate covers never-seen rows.
+     Scoped OFF the zero-height drop sentinels (dropstart-row / end) — reserving a row's height for them
+     would break the insert-line affordance. */
+  .list li:not(.dropstart-row):not(.end) { content-visibility: auto; contain-intrinsic-size: auto 3.5rem; }
   .list li.dragging { opacity: 0.4; }
   .list li.over { box-shadow: 0 -3px 0 var(--accent); } /* insert-before line */
   /* Leading "insert before first" drop zone (list): collapsed until a drag is active. */

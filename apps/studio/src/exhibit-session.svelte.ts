@@ -37,9 +37,10 @@ export interface ExhibitSessionDeps {
  *  the post-swap view routing) so the WHOLE transition lands atomically from a subscriber's view. */
 export interface OpenRequest {
   slug: string;
-  /** Resolve the incoming exhibit's OPFS assets → blob URLs. Awaited BEFORE the swap (so the canvas
-   *  mounts against resolved sources). App owns assetUrls/assetsReady + the editor cursor; this returns
-   *  when ready. (The cursor — currentObjectId/selected/… — is set by App, not threaded through here.) */
+  /** Resolve the incoming exhibit's EAGER assets (the grid/rail thumb blob URLs) BEFORE the swap, so the
+   *  overview paints resolved plates. The current object's canvas MASTER is minted separately, on-demand
+   *  (App's `assets` store — masters-on-demand, Phase 1.2). App owns that store + the editor cursor; this
+   *  returns when ready. (The cursor — currentObjectId/selected/… — is set by App, not threaded here.) */
   resolveAssets: () => Promise<void>;
 }
 
@@ -104,7 +105,8 @@ export function createExhibitSession(deps: ExhibitSessionDeps) {
       // 1) Flush the outgoing exhibit against the CURRENT session/dir (Archie-788e) before anything moves.
       cancelPendingSave();
       await save(prevSlug);
-      // 2) Resolve the incoming exhibit's assets (App owns assetUrls; awaited so the canvas mounts ready).
+      // 2) Resolve the incoming exhibit's eager thumbs (App owns the assets store; awaited so the overview
+      //    paints resolved plates — the current object's master is minted on-demand, separately).
       await req.resolveAssets();
       // 3) Compute the incoming session + dir into LOCALS — all awaits happen here, BEFORE any state write.
       const author = deps.author();

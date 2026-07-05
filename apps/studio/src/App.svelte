@@ -51,6 +51,7 @@
   import { buildCsvTemplate, type CsvPendingNote } from "./csv-import.js";
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
+  import { createAssetUrls } from "./asset-urls.svelte.js";
 
   // Local display name → the clientId stamped as lastEditor in the merge DAG (CONTEXT invention #6).
   // Persisted in localStorage (metadata, not content). null = never prompted (ask on first Import);
@@ -121,35 +122,15 @@
 
   // --- imported-image assets: stored in OPFS, source "/assets/{name}", resolved to blob: URLs ---
   // ASSET_PREFIX / isAsset live in store.ts now (one definition — App + publish flows share it).
-  let assetUrls = $state<Record<string, string>>({}); // objId -> full MASTER blob: URL (the canvas/OSD source)
-  let thumbUrls = $state<Record<string, string>>({}); // objId -> baked THUMBNAIL blob: URL (overview/rail plates)
-  let assetsReady = $state(false);
-  function revokeAssetUrls() {
-    for (const u of Object.values(assetUrls)) URL.revokeObjectURL(u);
-    for (const u of Object.values(thumbUrls)) URL.revokeObjectURL(u);
-    assetUrls = {};
-    thumbUrls = {};
-  }
-  async function resolveAssets(slug: string, objs: ReadonlyArray<{ id: string; source: string }>) {
-    revokeAssetUrls();
-    // PERF: resolve every object's OPFS asset to a blob URL CONCURRENTLY — opening a multi-object exhibit
-    // was a per-object read waterfall (one OPFS read + createObjectURL at a time). Independent files keyed
-    // by object id, so fan them out; order doesn't matter. Masters (canvas/OSD source) AND baked thumbnails
-    // (overview/rail plates) resolve in the same wave — the overview then DECODES small thumbs, not full
-    // masters (a thumb is absent only for a pre-baked-feature import / an already-small image → master).
-    const assets = objs.filter((o) => isAsset(o.source));
-    const entry = (resolve: (slug: string, name: string) => Promise<string | null>) =>
-      Promise.all(assets.map(async (o) => {
-        const url = await resolve(slug, o.source.slice(ASSET_PREFIX.length));
-        return url ? ([o.id, url] as const) : null;
-      }));
-    const keep = (es: ReadonlyArray<readonly [string, string] | null>) =>
-      Object.fromEntries(es.filter((e): e is readonly [string, string] => e !== null));
-    const [masters, thumbs] = await Promise.all([entry(readAssetUrl), entry(readThumbUrl)]);
-    assetUrls = keep(masters);
-    thumbUrls = keep(thumbs);
-    assetsReady = true;
-  }
+  // Masters-on-demand (SCALE-GALLERY Phase 1.2 — asset-urls.svelte.ts): thumbs resolve EAGERLY for the
+  // whole exhibit (the grid needs every plate); the full-res master (canvas/OSD source) is minted only
+  // for the object in view. Injected readers/revoke keep the mint lifecycle unit-testable.
+  const assets = createAssetUrls({
+    readMaster: readAssetUrl,
+    readThumb: readThumbUrl,
+    revoke: (u) => URL.revokeObjectURL(u),
+    assetName: (src) => (isAsset(src) ? src.slice(ASSET_PREFIX.length) : null),
+  });
 
   // --- per-exhibit annotation SESSION state machine (the DOMINO cut — exhibit-session.svelte.ts).
   // Owns session / annDir / storeReady / dirty + the autosave lifecycle + the ATOMIC open transition
@@ -232,15 +213,15 @@
     void loadPendingNotes().then((m) => { pendingNotes = m[slug] ?? []; }); // this exhibit's coordinate-free imports awaiting a box
     rdg.resetForExhibit(); // fresh exhibit = everything visible, pen on base (fixes the cross-exhibit leak)
     firstAddCueSlug = null; pendingClear = null; clearedSlug = null; // drop any narrative-staging cue from the outgoing exhibit
-    assetsReady = false;
     // The SESSION swap is now one ATOMIC transition (fix #3): exhibit-session.open flushes the OUTGOING
-    // exhibit, resolves THIS exhibit's assets, then loads/seeds + installs session/annDir/storeReady in a
+    // exhibit, resolves THIS exhibit's thumbs, then loads/seeds + installs session/annDir/storeReady in a
     // single synchronous batch — no subscriber ever sees a half-opened exhibit (the old inline version
-    // interleaved 7 mutations across 2 awaits). Asset resolution stays App-owned (assetUrls/assetsReady),
-    // injected into the transition so it lands inside the same atomic open.
+    // interleaved 7 mutations across 2 awaits). Thumb resolution stays App-owned (the `assets` store),
+    // injected into the transition so it lands inside the same atomic open. The current object's MASTER is
+    // minted separately, on `current` change (the $effect below) — masters-on-demand, Phase 1.2.
     await sess.open(prevSlug, {
       slug,
-      resolveAssets: () => resolveAssets(slug, ex?.objects ?? []), // OPFS /assets → blob: URLs (sets assetsReady)
+      resolveAssets: () => assets.resolveThumbs(slug, ex?.objects ?? []), // OPFS /assets → thumb blob: URLs
     });
     rev += 1;
     // Land at the exhibit's OVERVIEW scale (invention #1) UNLESS it's exactly one object, which goes
@@ -254,8 +235,7 @@
   async function backToLibrary() {
     sess.cancelPendingSave();
     await save();
-    revokeAssetUrls(); // free the previous exhibit's blob: URLs
-    assetsReady = false;
+    assets.revokeAll(); // free the previous exhibit's blob: URLs (thumbs + master slot)
     editingObjectId = null; // drop any overview pencil edit-cursor as we leave the overview
     view = "library";
   }
@@ -309,7 +289,7 @@
     if (isLoaded) sess.forgetCurrent();
     await clearExhibitAnnotations(slug); // wipe its annotation log on disk (do NOT re-save it via backToLibrary)
     await lib.removeExhibit(slug);
-    if (isLoaded) { revokeAssetUrls(); assetsReady = false; }
+    if (isLoaded) assets.revokeAll();
   }
   async function removeCurrentExhibit() {
     await removeExhibitById(currentSlug);
@@ -642,15 +622,19 @@
   // Canvas. The pin tool + lng/lat readout are gated on this.
   const currentTileSource = $derived(current?.tileSource);
   const isMapCurrent = $derived(!!current?.tileSource);
-  // The image URL the Canvas mounts: imported (/assets) objects resolve to their blob: URL.
-  const currentSource = $derived(current ? (isAsset(current.source) ? (assetUrls[current.id] ?? current.source) : current.source) : "");
-  // Resolved image URL for an object's rail thumbnail (asset → blob: URL; else a RENDERABLE derivative —
-  // a bare IIIF service base isn't an image, so thumbnailUrl derives a sized JPEG; plain files pass through).
+  // The image URL the Canvas mounts: imported (/assets) objects resolve to their on-demand master blob;
+  // non-asset (IIIF/remote) objects use their source directly (the `assets` store owns the distinction).
+  const currentSource = $derived(assets.canvasSource(currentSlug, current));
+  // Mint the CURRENT object's master ON DEMAND (Phase 1.2). Thumbs are resolved eagerly for the whole
+  // exhibit at open; the full-res master (canvas/OSD source) is read only for the object in view, and
+  // re-read on object/exhibit switch. ensureMaster id-guards so a rapid switch commits only the last mint.
+  $effect(() => { void assets.ensureMaster(currentSlug, current); });
+  // Resolved image URL for an object's rail thumbnail (asset → baked-thumb blob, or a master fallback for
+  // a legacy no-thumb import; else a RENDERABLE derivative — a bare IIIF service base isn't an image, so
+  // thumbnailUrl derives a sized JPEG; plain files pass through).
   const thumbSrc = (o: { id: string; source: string; tileSource?: TileSourceDescriptor }): string => (
     o.tileSource ? thumbnailUrl(o.tileSource, 240) // a Map → its z0 world tile (thumbnailUrl handles the descriptor)
-    // Prefer the baked thumbnail blob (small) over the full master — the overview/rail decode a shrunk
-    // plate, not a ~2048px master. Falls back to the master when no thumbnail was baked.
-    : isAsset(o.source) ? (thumbUrls[o.id] ?? assetUrls[o.id] ?? "") : thumbnailUrl(o.source, 240)
+    : isAsset(o.source) ? assets.thumbFor(o.id) : thumbnailUrl(o.source, 240)
   );
   function switchObject(id: string) {
     if (id === currentObjectId) return;
@@ -1226,7 +1210,8 @@
     currentObjectId: () => currentObjectId,
     currentReadings: () => currentReadings,
     session: () => sess.session,
-    setAssetUrl: (id, url) => { assetUrls = { ...assetUrls, [id]: url }; },
+    seedMaster: (slug, id, url) => assets.seedMaster(slug, id, url),
+    setPlate: (id, url) => assets.setPlate(id, url),
     setCurrentObjectId: (id) => { currentObjectId = id; },
     setImportStatus: (s) => { importStatus = s; },
     setImportNote: (s) => { importNote = s; },
@@ -1740,8 +1725,9 @@
     >
       <!-- {#key} forces a fresh mount when the object changes: Canvas reads `source` only in
            onMount (no source $effect), so switching objects must remount to load the new image.
-           Gated on assetsReady so an OPFS-backed source is resolved before mount. -->
-      {#if current && isAvCurrent}
+           Gated on sourceReadyFor(current) so the object's on-demand master (Phase 1.2) is minted AND
+           in the slot before mount — a non-asset (IIIF) source is ready at once. -->
+      {#if current && isAvCurrent && assets.sourceReadyFor(currentSlug, current)}
         <!-- AV object → temporal editor (remount on object switch so the media element reloads). -->
         {#key canvasId}
           {#if AvEditorComp}
@@ -1755,7 +1741,7 @@
             <div class="no-canvas">Loading…</div>
           {/if}
         {/key}
-      {:else if current && assetsReady}
+      {:else if current && assets.sourceReadyFor(currentSlug, current)}
         {#key canvasId}
           {#if CanvasComp}
             <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete}

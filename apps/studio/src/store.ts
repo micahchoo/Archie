@@ -109,7 +109,7 @@ export async function savePendingNotes(map: Record<string, PendingNote[]>): Prom
 
 // --- imported-image assets (binary; raw OPFS handles, NOT the JSON-oriented Filesystem seam) ---
 // Imported files persist at {PROJECT}/exhibits/{slug}/assets/{name}; an object stores
-// source "/assets/{name}" and resolves to a blob: URL at load time (see App.svelte assetUrls).
+// source "/assets/{name}" and resolves to a blob: URL at load time (see asset-urls.svelte.ts).
 
 /** The source prefix marking an object as an OPFS-imported asset (vs an external URL). */
 export const ASSET_PREFIX = "/assets/";

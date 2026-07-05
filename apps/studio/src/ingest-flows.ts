@@ -58,7 +58,13 @@ export interface IngestContext {
   currentReadings: () => ReadonlyArray<{ id: string; name: string }>;
   session: () => AnnotationSession;
   // State writers (the $state setters live in App).
-  setAssetUrl: (objId: string, url: string) => void;
+  /** Seed a just-imported object's MASTER blob into the on-demand slot before it becomes current, so the
+   *  canvas mounts against the blob (not the `/assets/` path) — closes the first-import OSD race. The
+   *  slug keys the slot (object ids repeat across exhibits). */
+  seedMaster: (slug: string, objId: string, url: string) => void;
+  /** Register a just-imported IMAGE object's rail/overview plate (its baked thumb, or its master when no
+   *  thumb baked) so the grid shows it before the next exhibit reopen re-runs the eager thumb wave. */
+  setPlate: (objId: string, url: string) => void;
   setCurrentObjectId: (id: string) => void;
   setImportStatus: (s: { name: string; index: number; total: number } | null) => void;
   setImportNote: (s: string) => void;
@@ -114,12 +120,12 @@ export function createIngestFlows(ctx: IngestContext) {
   // Issue 7, ledgers/NEGSPACE.md — mid-flow-interruption rows). Only steer the view to this object
   // when the target is still the one open; a background loop must not yank the user back.
   async function appendObject(obj: ObjectMeta, blobUrl?: string, targetSlug: string = ctx.currentSlug()) {
-    // Register the blob URL BEFORE the awaited persist (Archie-9db6): lib.appendObject sync-mutates the
+    // Seed the master blob BEFORE the awaited persist (Archie-9db6): lib.appendObject sync-mutates the
     // store then awaits the OPFS write, and Svelte flushes the reactive graph during that await — so
-    // `current` flips to this object before the await resolves. Setting assetUrls first means
+    // `current` flips to this object before the await resolves. Seeding the master slot first means
     // `currentSource` resolves to the blob (not the raw /assets/ path) the instant Canvas mounts,
     // closing the first-import OSD open-failed race.
-    if (blobUrl) ctx.setAssetUrl(obj.id, blobUrl);
+    if (blobUrl) ctx.seedMaster(targetSlug, obj.id, blobUrl);
     await ctx.lib.appendObject(targetSlug, obj);
     if (targetSlug === ctx.currentSlug()) {
       ctx.setCurrentObjectId(obj.id);
@@ -216,15 +222,20 @@ export function createIngestFlows(ctx: IngestContext) {
     // THUMB_DIM). A thumbnail is a PURE optimization — its failure must NEVER block an import (the grid
     // falls back to the master via thumbnailUrl). Same name, sibling assets-thumb/ dir.
     let thumbnail: string | undefined;
+    let plateBlob: Blob = master; // the rail/overview plate: the baked thumb when we get one, else the master
     try {
       const thumb = await bakeThumbnail(master, THUMB_DIM, masterMime);
       if (thumb) {
         await saveThumbFile(slug, name, thumb);
         thumbnail = `${ASSET_THUMB_PREFIX}${name}`;
+        plateBlob = thumb;
       }
     } catch (e) {
       console.warn(`[ingest] thumbnail bake skipped for ${name}`, e);
     }
+    // Register the plate under a SEPARATE blob URL from the master slot: the slot is revoked on the next
+    // object switch, but the grid plate must survive until the exhibit is left (masters-on-demand, 1.2).
+    ctx.setPlate(id, URL.createObjectURL(plateBlob));
     await appendObject(
       { id, source: `${ASSET_PREFIX}${name}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(thumbnail ? { thumbnail } : {}), ...(provenance ? { provenance } : {}) },
       blobUrl,
