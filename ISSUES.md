@@ -175,7 +175,7 @@ accident rows and every deliberate row carrying its reason.
 
 ## Issue 4 — Silent failure on the persistence path
 
-**Status:** running — ledger: ledgers/SILENCE.md
+**Status:** done 2026-07-05 — ledger: ledgers/SILENCE.md
 
 **Symptom.** Bare or degrading catches sit exactly where a local-first tool can
 least afford them: `apps/studio/src/binding.ts:95`, `save-queue.svelte.ts:47`,
@@ -240,6 +240,19 @@ user-facing strings), and an HTTP-JSON source with the identical degrade comment
 Each file's header names the other as "donor." HANDOFF logged it as "tech debt —
 not blocking." The divergence (instance-scoped vs module-global) is real but
 bounded.
+
+**Additional evidence (2026-07-05, from the Issue 4 silence audit, `ledgers/SILENCE.md`):**
+a THIRD studio-side open path — `apps/studio/src/ingest-flows.ts`'s `openZip` — calls
+`loadLibrary` (`render-core/publish/site.ts`) directly and never calls
+`validateArchieMarker` at all, unlike the viewer's twin (`published.ts`'s
+`openZipBytes` explicitly calls it after `ZipFilesystem.fromZip`). A wrong-schema
+`.archie.zip` opened via the Studio's drag-drop gets whatever generic/parse error
+`exhibits.json` produces instead of `NotAnArchieLibraryError`'s specific "different
+version of Archie" message. Also: comparing the two `openError`-shaped functions
+during that audit found they've already drifted in one more way — the viewer's
+version passes `e.message` through for `instanceof Error`; the studio's did not
+(now fixed locally in Issue 4's ledger, `a587471`, without merging the paths —
+that's this issue's job).
 
 **Rungs.** L3↔L4: one security-relevant concern (opening untrusted zips, with its
 size caps and marker validation) implemented twice — a fix to one copy can
