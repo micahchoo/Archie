@@ -3,10 +3,10 @@
   // permit static-site embedding, attribution baked in → resolves D6), set the bounded extent on a
   // pan/zoom world locator (drag the box / drag handles to clamp · drag the map to pan · wheel/± to zoom),
   // name it; emits a tileSource descriptor + label. Bounds fields + presets remain for precision.
-  import { lngLatToPixel, pixelToLngLat, type TileSourceDescriptor } from "@render/core";
+  import { lngLatToPixel, pixelToLngLat, type XyzTileSource } from "@render/core";
 
   let { onadd, onclose }: {
-    onadd: (m: { label: string; tileSource: TileSourceDescriptor }) => void;
+    onadd: (m: { label: string; tileSource: XyzTileSource }) => void;
     onclose: () => void;
   } = $props();
 
@@ -130,7 +130,7 @@
   function submit() {
     if (!valid) return;
     const base = { kind: "xyz" as const, tileSize: 256, minZoom: 0, maxZoom, bounds: [west, south, east, north] as [number, number, number, number] };
-    const tileSource: TileSourceDescriptor = useCustom
+    const tileSource: XyzTileSource = useCustom
       ? { ...base, template: customTemplate.trim(), ...(customAttribution.trim() ? { attribution: customAttribution.trim() } : {}) }
       : { ...base, template: provider.template, attribution: provider.attribution };
     onadd({ label: label.trim() || `${provider.name} map`, tileSource });

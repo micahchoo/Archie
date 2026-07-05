@@ -10,7 +10,7 @@ import {
   AnnotationSession, loadLibrary, ZipFilesystem, libraryToWorking,
   mediaTypeFromSource, readExifOrientation, isOrientationNoop, orientationTransform, MAX_MASTER_DIM,
   readExifCaptureDate,
-  type Library, type ClientId, type TileSourceDescriptor, type W3CTextualBody,
+  type Library, type ClientId, type XyzTileSource, type W3CTextualBody,
   type WorkingObjectMeta as ObjectMeta,
 } from "@render/core";
 import { bakeDisplayMaster, downscaleIfNeeded, bakeThumbnail } from "./bake.js";
@@ -120,7 +120,7 @@ export function createIngestFlows(ctx: IngestContext) {
   }
   // Add-map modal (Phase 3 / Q3 — invented UX, human-gated): a Map is an Object whose source is its tile
   // template and which carries the tileSource descriptor (medium = Map). The modal supplies template + bounds.
-  async function addMapObject(m: { label: string; tileSource: TileSourceDescriptor }) {
+  async function addMapObject(m: { label: string; tileSource: XyzTileSource }) {
     const ex = exhibit();
     if (!ex) return;
     const id = nextObjectId(ex);

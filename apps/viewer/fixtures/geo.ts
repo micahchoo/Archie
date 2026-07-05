@@ -8,14 +8,14 @@
 // ONLY here. Both the Studio (seed-data.ts → seededGeo / DEFAULT_EXHIBITS) and the Viewer's published library
 // (sample-data.ts → buildGeoLog) import this file; neither redefines the basemap or recomputes the pin
 // geometry, so the authored Studio seed and the published bake cannot drift. Mirrors voynich.ts / atlas.ts.
-import { asObjectId, lngLatToPixel, pixelToLngLat, thumbnailUrl, type AObject, type RightsFields, type TileSourceDescriptor } from "@render/core";
+import { asObjectId, lngLatToPixel, pixelToLngLat, thumbnailUrl, type AObject, type RightsFields, type XyzTileSource } from "@render/core";
 
 /** OSM raster XYZ template — `{z}/{x}/{y}` slippy tiles, fetched live. */
 export const GEO_TEMPLATE = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 /** The basemap descriptor: whole-world Web-Mercator, maxZoom 6 (world→continent, light to demo). The full
  *  pixel extent is tileSize·2^maxZoom = 256·2^6 = 16384px square — the coordinate frame every pin lives in. */
-export const geoBasemap: TileSourceDescriptor = { kind: "xyz", template: GEO_TEMPLATE, tileSize: 256, minZoom: 0, maxZoom: 6, attribution: "© OpenStreetMap contributors" };
+export const geoBasemap: XyzTileSource = { kind: "xyz", template: GEO_TEMPLATE, tileSize: 256, minZoom: 0, maxZoom: 6, attribution: "© OpenStreetMap contributors" };
 
 /** The OSM tile usage policy REQUIRES attribution — surfaced as a credit on the Map canvas. */
 export const geoRights: RightsFields = { rights: "https://opendatacommons.org/licenses/odbl/", requiredStatement: { label: "Basemap", value: "© OpenStreetMap contributors, ODbL." } };
