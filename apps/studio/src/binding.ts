@@ -88,7 +88,10 @@ export async function saveZipToDisk(fs: ZipFilesystem, filename: string): Promis
     const writable = await handle.createWritable();
     try {
       await fs.streamZip({
-        write: (chunk) => writable.write(chunk as unknown as ArrayBufferView),
+        // fflate's zip stream always hands back a freshly-allocated (never SharedArrayBuffer-backed)
+        // Uint8Array; FileSystemWritableFileStream.write's type is narrower than Uint8Array's default
+        // generic (which allows ArrayBufferLike, i.e. SharedArrayBuffer too).
+        write: (chunk) => writable.write(chunk as Uint8Array<ArrayBuffer>),
         close: () => writable.close(),
       });
     } catch (e) {
