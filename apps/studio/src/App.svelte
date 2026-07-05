@@ -1003,7 +1003,15 @@
     const cued = importTranscript([], text, { source: canvasId, lastEditor: author });
     let n = 0;
     for (const r of cued) { sess.session.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; }
-    if (n > 0) { bump(); openPanelTo("notes"); } // auto-expand: reveal the imported transcript time-notes (mirrors CSV/WADM)
+    if (n > 0) {
+      bump(); openPanelTo("notes"); // auto-expand: reveal the imported transcript time-notes (mirrors CSV/WADM)
+      importNote = `Added ${n} note${n === 1 ? "" : "s"} from your captions.`;
+    } else {
+      // parseCues found no `-->` cue lines — a malformed file or the wrong format entirely. Without
+      // this, an unparseable .vtt/.srt gave zero feedback: no alert, no toast (tend Issue 7, NEGSPACE
+      // row 1/2) — the user couldn't tell the import from a no-op success.
+      importNote = "That file didn't have any usable captions — check it's a valid .vtt or .srt file.";
+    }
   }
 
   // --- WADM form helpers ---

@@ -348,7 +348,7 @@ behavior-asserting test sibling and every bug row reads pass.
 
 ## Issue 7 — The ingest boundary's negative space
 
-**Status:** queued
+**Status:** running — ledger: ledgers/NEGSPACE.md
 
 **Symptom.** The zip path is capped (`ZIP_LIMITS` 512 MB / 50k entries / 100×
 ratio, `fs/zip.ts:29`) and `?src=` is capped (`SRC_MAX_BYTES`), but the remote
