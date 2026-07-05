@@ -651,7 +651,7 @@
   }
   // IngestContext hook: stage coordinate-free CSV rows, deduped by (object, comment). Returns the NEW count.
   function addPendingNotes(incoming: CsvPendingNote[]): number {
-    const key = (p: { objectId: string; comment: string }) => `${p.objectId} ${p.comment}`;
+    const key = (p: { objectId: string; comment: string }) => `${p.objectId}\0${p.comment}`;
     const seen = new Set(pendingNotes.map(key));
     let added = 0;
     for (const n of incoming) {
