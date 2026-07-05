@@ -264,6 +264,11 @@ Load the runtime from jsDelivr serving the pinned `@v1` git tag, then place one 
 <archie-viewer src="https://micahchoo.github.io/Archie/viewer/published/"></archie-viewer>
 ```
 
+> [!TIP]
+> Maintainer note: that URL resolves at the **repo root** `dist/`, a hand-synced copy of
+> `packages/archie-viewer/dist/` (ADR-0019 amendment). Before tagging a new `@vN`, run
+> `pnpm --filter archie-viewer build && pnpm sync-dist && pnpm sync-dist:check`.
+
 Pin `@v1` so an upstream change can't silently alter your embed. The public surface is three attributes (frozen — [ADR-0021](docs/adr/0021-archie-viewer-target-contract.md)):
 
 | Attribute | What it does |

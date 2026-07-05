@@ -55,6 +55,13 @@ already-pure `render-core` selectors (`geometry/selector.ts`), reusing the in-re
   read-only path WITHOUT regressing the editor mount (shared by both apps via `@render/svelte`).
 - The element name + attribute schema become a frozen public API (annomea shipped this inconsistently —
   `<anvil-viewer>` vs `<annotated-image>`, its `EMBED-AUDIT.md`); locked in a follow-on grill before code.
+- **Amendment (2026-07-05, tend Issue 3):** jsDelivr's `/gh/` serving resolves paths at the **repo
+  root**, not inside a package subpath, so `packages/archie-viewer/dist/` — the actual build output —
+  is hand-mirrored to a root-level `dist/` (`a656cda`). This is a second copy that can silently diverge
+  from the package build; there is no repo-root build step to replace it with. Rule: after
+  `pnpm --filter archie-viewer build` and before tagging a new `@vN`, run `pnpm sync-dist`
+  (`scripts/sync-dist.mjs`) to resync the root copy, and `pnpm sync-dist:check` to verify it before
+  release — it diffs both trees and exits 1 on drift.
 
 ## Alternatives rejected
 
