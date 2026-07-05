@@ -520,7 +520,11 @@ explicitly parked with its reason recorded in docs/plans/SHOWROOM-EXHIBIT-PLAN.m
 
 ## Issue 10 — The implementation-strategy doc describes a methodology that no longer exists
 
-**Status:** queued
+**Status:** done 2026-07-05 — ledger: ledgers/METHOD.md (every named dead tool renamed to its current
+equivalent — `code-review`, `verify`, `tdd`, the Agent/Workflow tools — or, where nothing replaced it
+(`sd`/seeds DAG enforcement, `mulch`, `qmd`, `foxhound`, `record-extractor`), rewritten to describe the
+underlying idea honestly instead of a tool that isn't there. The three ordering principles, phase
+definitions, and reducibility classifier — the doc's actual load-bearing content — are untouched.)
 
 **Symptom.** `docs/IMPLEMENTATION-STRATEGY.md` lines 1-261 (everything above its "Deferred-work
 registry") describe an entire operating methodology — a decomposer/wave/leaf-task schema, a

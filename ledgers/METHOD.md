@@ -39,6 +39,8 @@ decomposition", "Pre/post review per task/wave/phase", and "Context-load per ste
 sections carried nearly every dead-tool reference, since they're where the doc gets concrete about
 *how* to execute rather than *what* to build.
 
-**Done 2026-07-05**: every named tool/skill from the issue's list is confirmed live, renamed to its
-current equivalent, or removed with a one-line note on what (if anything) replaced it. No structural
-content deleted — every rewritten passage keeps the same claim, pointed at what's actually here today.
+**Done 2026-07-05** (`8047626`): every named tool/skill from the issue's list is confirmed live,
+renamed to its current equivalent, or removed with a one-line note on what (if anything) replaced it.
+No structural content deleted — every rewritten passage keeps the same claim, pointed at what's
+actually here today. Recheck: `grep` for every named dead tool across lines 1-261 post-edit returns
+zero hits.
