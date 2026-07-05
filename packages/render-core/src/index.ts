@@ -20,6 +20,9 @@ export * from "./publish/ghpages.js";
 export * from "./publish/portable.js";
 // ADR-0020: L1 `.archie.zip` self-ID marker — write (publishLibrary stamps archie.json) + read (validateArchieMarker).
 export * from "./publish/marker.js";
+// The untrusted-archive open seam (ISSUES.md Issue 5): the ONE place ZipFilesystem.fromZip +
+// validateArchieMarker compose — every app funnels an untrusted .archie.zip through here.
+export * from "./publish/open.js";
 // Working-store read seam (Q-3 archie-persistence): cold-read the Studio's working copy — the Viewer's live source.
 export * from "./publish/working.js";
 // Merge-preserving regen (Archie-9b93): regenerate owned exhibits, CARRY committed ones — index merge.
