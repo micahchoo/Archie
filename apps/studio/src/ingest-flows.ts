@@ -7,7 +7,7 @@
 // an explicit IngestContext — store handles, reactive getters, and state setters — so nothing closes
 // over App's module scope. App constructs the context once and spreads the returned flows.
 import {
-  AnnotationSession, loadLibrary, ZipFilesystem, libraryToWorking,
+  AnnotationSession, loadLibrary, openArchieLibrary, libraryToWorking,
   mediaTypeFromSource, readExifOrientation, isOrientationNoop, orientationTransform, MAX_MASTER_DIM,
   readExifCaptureDate,
   type Library, type ClientId, type XyzTileSource, type W3CTextualBody,
@@ -442,12 +442,14 @@ export function createIngestFlows(ctx: IngestContext) {
   async function openZip(file: File): Promise<{ loaded: Awaited<ReturnType<typeof loadLibrary>> } | null> {
     let loaded: Awaited<ReturnType<typeof loadLibrary>>;
     try {
-      loaded = await loadLibrary(ZipFilesystem.fromZip(new Uint8Array(await file.arrayBuffer())));
+      // openArchieLibrary (@render/core) is the canonical untrusted-zip open seam (ISSUES.md Issue 5):
+      // ZipFilesystem.fromZip's zip-bomb caps (ZIP_LIMITS) AND validateArchieMarker's ADR-0020 reject
+      // both throw a specific, user-facing message, surfaced verbatim below (SILENCE row, tend Issue 4).
+      // Before this migration, this call skipped validateArchieMarker entirely — a wrong-schema zip fell
+      // through to loadLibrary's generic parse failure instead of the specific "different version of
+      // Archie" message the other two open paths (load.ts, published.ts) already surfaced.
+      loaded = await loadLibrary(await openArchieLibrary(file));
     } catch (e) {
-      // ZipFilesystem.fromZip's zip-bomb caps (ZIP_LIMITS) already throw a specific, user-facing
-      // message ("too many entries" / ratio / size — possible zip bomb); collapsing every cause into
-      // one generic line discarded it (SILENCE row, tend Issue 4). Mirrors apps/viewer/src/published.ts's
-      // openError, which already surfaces e.message verbatim for this exact reason.
       ctx.alert(e instanceof Error ? e.message : "Couldn't open that file — choose a published .archie.zip file.");
       return null;
     }
