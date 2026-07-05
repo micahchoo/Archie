@@ -367,3 +367,34 @@ export function toManifest(exhibit: Exhibit, opts: ManifestOptions = {}): IIIFMa
     ...(ranges.length > 0 ? { structures: ranges } : {}),
   };
 }
+
+/** A Canvas whose painting body is an Image but which has no `width`/`height` — IIIF Presentation 3
+ *  §5.3 (https://iiif.io/api/presentation/3.0/#53-canvas): "A Canvas must have a rectangular aspect
+ *  ratio (described with the `height` and `width` properties) and/or a duration". A Canvas painting
+ *  only an Image (no AV, no `duration`) that lacks both dimensions violates this outright. Archie's
+ *  `toCanvas` only sets them `if obj.width !== undefined` (above); `obj.width`/`height` come from the
+ *  Studio's best-effort ingest-time probe (`ingest-flows.ts` `imageDims`), which resolves `null` —
+ *  silently, by design there — on a load failure. Neither of the reference implementations checked
+ *  (iiif-prezi3's `add_image()`, `@iiif/parser`'s `Canvas` type) catch this either — Archie has no
+ *  prior art to lean on here, so this scans an already-built Manifest to surface the gap post-hoc
+ *  rather than at ingest, so `publishLibrary` can report it (site.ts `IncompleteCanvas`) instead of
+ *  shipping a spec-non-conformant Canvas with no one told. */
+export interface CanvasMissingDimensions {
+  canvasId: string;
+  /** The Object's authored label, for a human-readable warning. */
+  label: string;
+}
+
+/** Image-body canvases in `manifest` with no `width`/`height`. AV canvases (Sound/Video bodies) are
+ *  correctly dimensionless — spec requires `duration` for those instead, not width/height — so only
+ *  `Image` bodies are checked. */
+export function findCanvasesMissingDimensions(manifest: IIIFManifest): CanvasMissingDimensions[] {
+  const out: CanvasMissingDimensions[] = [];
+  for (const c of manifest.items) {
+    const body = c.items[0]?.items[0]?.body;
+    if (body?.type === "Image" && (c.width === undefined || c.height === undefined)) {
+      out.push({ canvasId: c.id, label: unLang(c.label ?? langMap("")) });
+    }
+  }
+  return out;
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toManifest, sectionsFromManifest, sectionToAnnotation, sectionsToAnnotationCollection } from "./manifest.js";
+import { toManifest, sectionsFromManifest, sectionToAnnotation, sectionsToAnnotationCollection, findCanvasesMissingDimensions } from "./manifest.js";
 import type { Exhibit } from "../model/model.js";
 import type { W3CSpecificResource, W3CTextualBody } from "../wadm/types.js";
 import { asExhibitId, asObjectId } from "../wadm/brand.js";
@@ -183,5 +183,25 @@ describe("Section → WADM annotation (ADR-0017: additive, all-round-compatible 
     const m = toManifest(narrative, { baseUrl: base });
     const collId = `${base}story/annotations/narrative.json`;
     for (const r of m.structures!) expect(r.supplementary).toEqual({ id: collId, type: "AnnotationCollection" });
+  });
+});
+
+describe("findCanvasesMissingDimensions (IIIF Pres 3 §5.3 — Canvas must have height/width and/or duration)", () => {
+  it("flags an Image-body canvas whose object had no width/height (e.g. a failed ingest-time dims probe)", () => {
+    const ex: Exhibit = {
+      id: asExhibitId("e6"), slug: "gap", title: "Gap",
+      objects: [{ id: asObjectId("no-dims"), source: "https://img/broken.jpg", label: "Undimensioned" }],
+    };
+    const m = toManifest(ex, { baseUrl: base });
+    expect(findCanvasesMissingDimensions(m)).toEqual([{ canvasId: `${base}gap/canvas/no-dims`, label: "Undimensioned" }]);
+  });
+
+  it("does not flag an Image-body canvas that has width/height", () => {
+    expect(findCanvasesMissingDimensions(toManifest(imgExhibit, { baseUrl: base }))).toEqual([]);
+  });
+
+  it("does not flag a Sound/Video canvas lacking width/height — duration satisfies §5.3 for AV", () => {
+    const av: Exhibit = { id: asExhibitId("e7"), slug: "audio2", title: "Audio", objects: [{ id: asObjectId("s1"), source: "https://a/clip.mp3", label: "Clip", mediaType: "sound", duration: 90 }] };
+    expect(findCanvasesMissingDimensions(toManifest(av, { baseUrl: base }))).toEqual([]);
   });
 });
