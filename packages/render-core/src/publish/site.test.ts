@@ -284,3 +284,18 @@ describe("publishLibrary — Readings emit per-reading AnnotationPages + collect
     expect(coll.label.en[0]).toBe("Cipher");
   });
 });
+
+describe("publishLibrary — incompleteCanvases (IIIF Pres 3 §5.3 dimensions advisory)", () => {
+  it("reports an Image object published with no width/height, alongside a normal exhibit that reports none", async () => {
+    const gapLib: Library = {
+      id: asLibraryId("lib"),
+      exhibits: [
+        { id: asExhibitId("gap"), slug: "gap", title: "Gap", objects: [{ id: asObjectId("no-dims"), source: "https://img/broken.jpg", label: "Undimensioned" }] },
+        exA, // has width/height — contributes no rows
+      ],
+    };
+    const fs = new MemoryFilesystem();
+    const { incompleteCanvases } = await publishLibrary(fs, gapLib, getLog, { baseUrl: "https://u.gh.io/lib/" });
+    expect(incompleteCanvases).toEqual([{ exhibitSlug: "gap", canvasId: "https://u.gh.io/lib/gap/canvas/no-dims", label: "Undimensioned" }]);
+  });
+});

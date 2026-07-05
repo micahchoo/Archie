@@ -7,7 +7,7 @@
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
   MemoryFilesystem, publishLibrary, libraryToZipFs, collectFiles, publishToGitHub, renderMarkdown,
-  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type GitHubTarget, type PublishProgress,
+  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type GitHubTarget, type PublishProgress,
 } from "@render/core";
 import { supportsFileStreamSave, saveZipToDisk } from "./binding.js";
 import { pickFolderBinding } from "./folder-backend.js";
@@ -43,10 +43,11 @@ export interface PublishDeps {
 const ZIP_WARN_BYTES = 250 * 1024 * 1024; // ~250 MB
 
 export function createPublishFlows(deps: PublishDeps) {
-  const s = $state<{ publishOpen: boolean; dialogOpen: boolean; brokenLinks: BrokenLink[] }>({
+  const s = $state<{ publishOpen: boolean; dialogOpen: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }>({
     publishOpen: false, // the GitHub publish dialog
     dialogOpen: false, // the unified Publish & Share menu
     brokenLinks: [], // intra-Library links that degrade to plain text on publish (dialog advisory)
+    incompleteCanvases: [], // Image objects publishing with no width/height (IIIF Pres 3 §5.3; dialog advisory)
   });
   let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish
 
@@ -140,12 +141,13 @@ export function createPublishFlows(deps: PublishDeps) {
   }
   // Project the Library into the static site tree (in a MemoryFilesystem). Same projection the zip
   // uses — different sink. withOriginals (opt-in) re-projects with preserved source files included.
-  async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[] }> {
+  async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }> {
     const logs = await deps.loadAllLogs();
     const fs = new MemoryFilesystem();
-    const { brokenLinks } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks, incompleteCanvases } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
-    return { fs, brokenLinks };
+    if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
+    return { fs, brokenLinks, incompleteCanvases };
   }
   // Flatten the projected tree to the path→FileContent map the git-trees push consumes. A no-originals
   // publish reuses the tree openPublish already built; an originals publish re-projects (rare, opt-in).
@@ -177,6 +179,7 @@ export function createPublishFlows(deps: PublishDeps) {
     get publishOpen(): boolean { return s.publishOpen; },
     get dialogOpen(): boolean { return s.dialogOpen; },
     get brokenLinks(): BrokenLink[] { return s.brokenLinks; },
+    get incompleteCanvases(): IncompleteCanvas[] { return s.incompleteCanvases; },
     openDialog() { s.dialogOpen = true; },
     closeDialog() { s.dialogOpen = false; },
     closePublish() { s.publishOpen = false; },
@@ -189,8 +192,9 @@ export function createPublishFlows(deps: PublishDeps) {
      *  whether a save actually HAPPENED — done-download must not claim a save the user cancelled. */
     async download(): Promise<boolean> {
       if (!supportsFileStreamSave() && !(await zipSizeOk())) return false; // large-library guard, eager path only
-      const { fs, brokenLinks } = await buildZipFs();
+      const { fs, brokenLinks, incompleteCanvases } = await buildZipFs();
       if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
+      if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
       try {
         await saveZipToDisk(fs, deps.currentZipName());
         return true;
@@ -207,11 +211,13 @@ export function createPublishFlows(deps: PublishDeps) {
     async openPublish() {
       if (!(await publishSizeOk())) return; // size guard before the network push (its confirm IS the feedback)
       s.brokenLinks = [];
+      s.incompleteCanvases = [];
       cachedSiteFs = null;
       s.publishOpen = true;
-      const { fs, brokenLinks: bl } = await projectSite(false);
+      const { fs, brokenLinks: bl, incompleteCanvases: ic } = await projectSite(false);
       cachedSiteFs = fs;
       s.brokenLinks = bl;
+      s.incompleteCanvases = ic;
     },
     /** Local flow: pick a folder + write the published tree; returns the folder name (null = cancelled). */
     async localPublishFolder(): Promise<string | null> {

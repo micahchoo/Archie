@@ -298,7 +298,11 @@ lives in one module; never copy it. Done at zero call sites and the lock recorde
 
 ## Issue 6 — The IIIF projection core is untested
 
-**Status:** queued
+**Status:** done 2026-07-05 — ledger: ledgers/COVERAGE.md (2 of the 4 flagged files were
+false positives, already covered by `gallery.test.ts`; the real gaps — `presentation.ts`,
+`query/body.ts` — got direct tests. Prior-art research also surfaced one real cross-scope
+finding pursued to a tested fix: Canvas dimensions missing on a failed ingest-time probe,
+IIIF Pres 3 §5.3 — see the ledger's "Row 1 resolution".)
 
 **Symptom.** In `render-core`, the files with no test sibling include
 `iiif/presentation.ts` (148 lines — the Presentation-3 Manifest/Collection

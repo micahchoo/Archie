@@ -4,19 +4,22 @@
   // @render/core `publishToGitHub`; this is the thin form + state machine. The PAT is paste-each-
   // publish and NEVER persisted (CONTEXT: token not stored) — it lives only in this component's
   // local state for the duration of one publish, never written to OPFS/localStorage.
-  import type { GitHubTarget, BrokenLink, GitHubPublishResult, PublishProgress } from "@render/core";
+  import type { GitHubTarget, BrokenLink, IncompleteCanvas, GitHubPublishResult, PublishProgress } from "@render/core";
 
   let {
     open = false,
     onclose,
     onpublish,
     brokenLinks = [],
+    incompleteCanvases = [],
   }: {
     open?: boolean;
     onclose: () => void;
     onpublish: (target: GitHubTarget, opts: { includeOriginals: boolean }, onProgress: (p: PublishProgress) => void) => Promise<GitHubPublishResult>;
     /** Intra-Library links that won't resolve in the published site — they degrade to plain text. */
     brokenLinks?: BrokenLink[];
+    /** Image objects publishing with no width/height (IIIF Pres 3 §5.3) — usually a failed ingest-time probe. */
+    incompleteCanvases?: IncompleteCanvas[];
   } = $props();
 
   let includeOriginals = $state(false); // opt-in: ship preserved source originals for citation (CONTEXT §89.1)
@@ -111,6 +114,18 @@
                 <li>in <code>/{b.exhibitSlug}</code>{#if tgt(b).exhibitSlug} → <code>/{tgt(b).exhibitSlug}</code>{/if}{#if tgt(b).noteLogicalId} · a cited note{/if}</li>
               {/each}
               {#if brokenLinks.length > 5}<li class="more">…and {brokenLinks.length - 5} more</li>{/if}
+            </ul>
+          </div>
+        {/if}
+        {#if incompleteCanvases.length > 0}
+          <div class="broken" role="status">
+            <p class="b-head">{incompleteCanvases.length} {incompleteCanvases.length === 1 ? "image has" : "images have"} no known width/height</p>
+            <p class="b-sub">Some IIIF viewers need an image's pixel dimensions to display it — these will still publish, but may not render correctly outside Archie. This usually means the image couldn't be loaded when added; try re-adding it.</p>
+            <ul>
+              {#each incompleteCanvases.slice(0, 5) as c}
+                <li>{c.label}</li>
+              {/each}
+              {#if incompleteCanvases.length > 5}<li class="more">…and {incompleteCanvases.length - 5} more</li>{/if}
             </ul>
           </div>
         {/if}

@@ -15,7 +15,7 @@ import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CAnnotationPage 
 import { buildLinkIndex, resolveViewerLink, validateLink, rewriteArchieLinks, type LinkTarget } from "../link/link.js";
 import { toCollection } from "../iiif/collection.js";
 import { toExhibitsJson, toReadingCollection, type ExhibitsJson } from "../iiif/exhibits.js";
-import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest, sectionsToAnnotationCollection, embedHeadsIntoManifest, type HeadsEmbed } from "../iiif/manifest.js";
+import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest, sectionsToAnnotationCollection, embedHeadsIntoManifest, findCanvasesMissingDimensions, type HeadsEmbed } from "../iiif/manifest.js";
 import { rightsFromIIIF } from "../iiif/rights.js";
 import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.js";
 import type { Exhibit, AObject, Section, RightsFields } from "../model/model.js";
@@ -107,9 +107,20 @@ export interface BrokenLink {
   target: LinkTarget;
 }
 
-/** What publishLibrary reports back — currently the broken intra-Library links it degraded. */
+/** A published Canvas with an Image body but no `width`/`height` — spec-non-conformant (IIIF
+ *  Presentation 3 §Canvas); usually a failed ingest-time dimension probe (see manifest.ts
+ *  `findCanvasesMissingDimensions`). */
+export interface IncompleteCanvas {
+  exhibitSlug: string;
+  canvasId: string;
+  label: string;
+}
+
+/** What publishLibrary reports back: the broken intra-Library links it degraded, and any
+ *  spec-non-conformant Canvases (missing dimensions) it shipped anyway. */
 export interface PublishResult {
   brokenLinks: BrokenLink[];
+  incompleteCanvases: IncompleteCanvas[];
 }
 
 interface LinkRewrite {
@@ -216,6 +227,7 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     validate: (t) => validateLink(t, linkIndex),
   };
   const brokenLinks: BrokenLink[] = [];
+  const incompleteCanvases: IncompleteCanvas[] = [];
 
   for (const exhibit of library.exhibits) {
     const exDir = await root.getDirectory(exhibit.slug, { create: true });
@@ -310,6 +322,9 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // into `embeds`; `embedHeadsIntoManifest` folds them in afterward as a pure transform (no in-place
     // mutation of the manifest — the byte contract is pinned by publish/voynich-readings.test.ts).
     const bareManifest = toManifest(manifestExhibit, { baseUrl });
+    for (const ic of findCanvasesMissingDimensions(bareManifest)) {
+      incompleteCanvases.push({ exhibitSlug: exhibit.slug, canvasId: ic.canvasId, label: ic.label });
+    }
     const embeds = new Map<string, HeadsEmbed>();
 
     // Opt-in: publish preserved ORIGINALS for citation (CONTEXT §89.1). Written beside the tree at
@@ -425,22 +440,22 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   // sitemap.xml (sitemaps.org 0.9) so search engines ingest it directly with <lastmod> (Q-8).
   await writeText(root, "sitemap.txt", sitemapTxt(library, baseUrl));
   await writeText(root, "sitemap.xml", sitemapXml(library, baseUrl, opts.publishedAt));
-  return { brokenLinks };
+  return { brokenLinks, incompleteCanvases };
 }
 
 /** Assemble the whole site into an in-memory ZipFilesystem (the architectural publish primitive),
  *  WITHOUT serializing — the caller chooses `fs.toZip()` (eager) or `fs.streamZip(sink)` (A.1, stream
  *  straight to a disk handle so the archive never fully materializes). */
-export async function libraryToZipFs(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ fs: ZipFilesystem; brokenLinks: BrokenLink[] }> {
+export async function libraryToZipFs(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ fs: ZipFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }> {
   const fs = new ZipFilesystem();
-  const { brokenLinks } = await publishLibrary(fs, library, getLog, opts);
-  return { fs, brokenLinks };
+  const { brokenLinks, incompleteCanvases } = await publishLibrary(fs, library, getLog, opts);
+  return { fs, brokenLinks, incompleteCanvases };
 }
 
 /** Assemble the whole site into a `.archie.zip` (eager: builds the entire archive in memory). */
-export async function libraryToZip(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ zip: Uint8Array; brokenLinks: BrokenLink[] }> {
-  const { fs, brokenLinks } = await libraryToZipFs(library, getLog, opts);
-  return { zip: fs.toZip(), brokenLinks };
+export async function libraryToZip(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ zip: Uint8Array; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }> {
+  const { fs, brokenLinks, incompleteCanvases } = await libraryToZipFs(library, getLog, opts);
+  return { zip: fs.toZip(), brokenLinks, incompleteCanvases };
 }
 
 export interface LoadedLibrary {

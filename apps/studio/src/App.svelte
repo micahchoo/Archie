@@ -1798,7 +1798,7 @@
       ongithub={() => { p.closeDialog(); void p.openPublish(); }}
       ondownload={p.download}
     />
-    <Pub open={p.publishOpen} onclose={() => p.closePublish()} onpublish={p.publish} brokenLinks={p.brokenLinks} />
+    <Pub open={p.publishOpen} onclose={() => p.closePublish()} onpublish={p.publish} brokenLinks={p.brokenLinks} incompleteCanvases={p.incompleteCanvases} />
   {/if}
   {#if cmdkOpen && CmdKComp}{@const CK = CmdKComp}<CK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />{/if}
   {#if mediaPickerOpen && MediaPickerComp}{@const MP = MediaPickerComp}<MP open={mediaPickerOpen} title="Cite a note by its image" items={mediaPickerItems} onpick={pickVisualCite} onclose={() => (mediaPickerOpen = false)} />{/if}
