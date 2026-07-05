@@ -123,10 +123,12 @@ Archie began as a tool for digital-humanities scholars and has broadened to anyo
 
 ## Installation
 
-**Prerequisites:** Node.js 22 or newer (CI builds on Node 24) and pnpm 9 or newer (the workspace uses lockfile v9). If you prefer not to use the command line, the launcher scripts (`start.cmd`, `start.command`, `start.sh`) check Node for you on first run.
+**Prerequisites:** Node.js 22 or newer (CI builds on Node 24), pnpm 9 or newer (the workspace uses lockfile v9), and [Git LFS](https://git-lfs.com/) (the bundled `apps/viewer/libraries/*.archie.zip` demo library is LFS-tracked — without it you'll get small pointer-stub files instead of real data). If you prefer not to use the command line, the launcher scripts (`start.cmd`, `start.command`, `start.sh`) check Node for you on first run.
 
 ```bash
+git lfs install         # one-time per machine, if you haven't already
 pnpm install            # install the whole workspace
+sh qa/hooks/install.sh  # wire up the repo's git hooks (LFS safety net + QA sync)
 pnpm typecheck          # type-check every package + app
 pnpm test               # run the test suite (~1150 tests)
 ```
