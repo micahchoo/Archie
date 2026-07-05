@@ -54,37 +54,46 @@ For each invented interaction: a clickable prototype + the *specific* question a
 Highest-leverage move: make the strategy's two fragile disciplines — *ordering* and *don't-ship-inventions-ungated* — **mechanical, not vigilance-dependent.**
 
 ### Make it mechanical (the backbone)
-- **seeds DAG = the phase graph.** Encode Phase 0→3 + the source-before-projection dependencies as `sd` issues with a real dependency graph; the data-model module is the root every projection blocks on. `sd ready` then *enforces* the ordering — you physically can't pick a projection before its source. `sd-next.sh --parallel` surfaces the independent Action work.
-- **mulch Q-N = citable decisions.** Mint Q-N IDs (`decision-record.sh`) for ADR-0001..0004 + the source/projection principle, so every plan's §9 and every commit cites the decision it implements; plan↔ADR drift becomes greppable.
-- **gate-enforcer = the validation gates, independently.** Each invention's gate + the Phase-0/1 acceptance criteria (the WADM-interop fixture; "mounted-via-new-path passes anvil-stock fitBounds") are verified by the **gate-enforcer agent**, not self-reported. This is what makes "inventions gated" real rather than aspirational.
+- **The ordering itself: sources before projections.** Phase 0→3 + the source-before-projection
+  dependencies are the plan; `ISSUES.md`/`ledgers/` (this repo's actual live backlog, the `tend`
+  convention) is where in-flight and completed work is tracked. There is no dependency-graph tool that
+  *enforces* the ordering mechanically today — it's a discipline a decomposer/reviewer holds, not a
+  tool that blocks you from picking a projection before its source.
+- **ADR / `docs/decisions/` Q-N citations = citable decisions.** ADR-0001..0004 + the source/projection
+  principle already carry citable ids, so every plan's §9 and every commit can cite the decision it
+  implements; plan↔ADR drift becomes greppable.
+- **A `code-review` pass = the validation gates, independently.** Each invention's gate + the Phase-0/1
+  acceptance criteria (the WADM-interop fixture; "mounted-via-new-path passes anvil-stock fitBounds")
+  should be verified by review, not self-reported. This is what makes "inventions gated" real rather
+  than aspirational — no automated wave/seam-specific auditor exists to do this for you.
 
 ### Per-phase skill rhythm
-- **Phase 0–2 (adopted, locked, low-ambiguity):** `characterization-testing` to PIN anvil's current behavior as a harness *before* extracting (refactor-under-test — exactly its purpose) → `test-driven-development` to write the corpus fixtures as tests first → `writing-plans` → `executing-plans` (follow exactly) → `verification-before-completion` (claims mapped to acceptance criteria). No `brainstorming` — the design is locked; go straight to plan+execute under test.
-- **Phase 3 inventions (novel, no donor, High-ambiguity):** `brainstorming` FIRST — the friction loop is where the interaction actually gets designed → clickable prototype → **gate-enforcer runs the validation question** (2–3 users) → `writing-plans` → execute. Skipping brainstorming here is the trap; the inventions are where the design is thinnest.
+- **Phase 0–2 (adopted, locked, low-ambiguity):** `characterization-testing` to PIN anvil's current behavior as a harness *before* extracting (refactor-under-test — exactly its purpose) → `tdd` to write the corpus fixtures as tests first → `writing-plans` → `executing-plans` (follow exactly) → `verify` (claims mapped to acceptance criteria). No `brainstorming` — the design is locked; go straight to plan+execute under test.
+- **Phase 3 inventions (novel, no donor, High-ambiguity):** `brainstorming` FIRST — the friction loop is where the interaction actually gets designed → clickable prototype → **a `code-review` pass against the validation question** (2–3 users) → `writing-plans` → execute. Skipping brainstorming here is the trap; the inventions are where the design is thinnest.
 
 ### Parallelism (Action waves only)
-`dispatching-parallel-agents` + the delegation protocol (shared prefix = mulch infra/meta + the locked ADRs + the relevant `@render` contract; small per-worker deltas) at the TWO parallel points: Studio + Viewer once `@render/svelte` exists; independent Phase-3 inventions if staffed. Serial everywhere else — the data model and the extraction do NOT parallelize.
+The `Agent`/`Workflow` tools' parallel dispatch (shared prefix = the locked ADRs + the relevant `@render` contract; small per-worker deltas) at the TWO parallel points: Studio + Viewer once `@render/svelte` exists; independent Phase-3 inventions if staffed. Serial everywhere else — the data model and the extraction do NOT parallelize.
 
 ### Continuous discipline
 - **Scout before adopting:** `Explore` agents verify each donor module's current shape before the lift (the spike was the first; each module gets a cheap one).
 - **Library APIs at code-time:** Docs MCP (`get_docs`) for Svelte/Astro/OSD/Annotorious/Wavesurfer/vitest — don't guess signatures.
-- **Coherence + pre-ship:** `strategic-looping` pause-and-reflect at each phase boundary; the **4-Invariables Pre-Ship Gate** before the Phase-2 dogfood and before each invention ships.
-- **Capture:** `[SNAG]` inline when a delamination surprises; `record-extractor` at each phase close → mulch (the real bundle number, the WADM-interop result, the gate outcomes are exactly the non-obvious findings worth persisting).
-- **Code review = `/thermo-nuclear-code-quality-review`, EVERY leaf task, before commit** (standing rule). It's the code-review tool of record — nothing the (small, least-trustworthy) executor writes reaches a wave unreviewed. This *replaces* the generic `code-reviewer`/`requesting-code-review`/keystone-only-`/ultrareview` references throughout. Cost accepted knowingly: each leaf is execute (small model) → **thermonuclear review** (strong) → commit, ~doubling per-task cost for the guarantee that no small-model code ships unreviewed. Distinct from `gate-enforcer` (which audits *test-meaningfulness + cross-worker seams* at wave close — the interaction concern a per-task review can't see).
+- **Coherence + pre-ship:** pause and reflect at each phase boundary; the **4-Invariables Pre-Ship Gate** before the Phase-2 dogfood and before each invention ships.
+- **Capture:** `[SNAG]` inline when a delamination surprises; `systematic-debugging` to root-cause it; update `HANDOFF.md` + the relevant ledger at each phase close (the real bundle number, the WADM-interop result, the gate outcomes are exactly the non-obvious findings worth persisting).
+- **Code review = a `code-review` pass (`/code-review ultra` for the keystones), EVERY leaf task, before commit** (standing rule). Nothing the (small, least-trustworthy) executor writes reaches a wave unreviewed. Cost accepted knowingly: each leaf is execute (small model) → review (strong) → commit, ~doubling per-task cost for the guarantee that no small-model code ships unreviewed. The cross-worker-seam-specific audit ("did two parallel workers step on the same file?") has no automated equivalent today — that check is manual, at wave close.
 
 ## When the implementer is an LLM (the operative case)
 
 This changes the tactics materially. An LLM implementer has no cross-session memory, is confidently-wrong-prone, cannot run human user-tests, but spawns in parallel and works cheaply against tests. Six adjustments:
 
-1. **The durable artifacts ARE the implementer's working memory — not documentation.** `CONTEXT.md` + `docs/adr/` + this strategy + the seeds DAG + mulch are what a fresh LLM session reads to start cold and writes back to at session end (`record-extractor` → mulch; `HANDOFF.md` for the through-line). We front-loaded durability for exactly this reason — it's load-bearing for the *implementer*, not just for audit. Every phase = **read-state → work → write-state-back**; a phase that ends without writing state back is one the next session can't continue.
+1. **The durable artifacts ARE the implementer's working memory — not documentation.** `CONTEXT.md` + `docs/adr/` + this strategy + `ISSUES.md`/`ledgers/` are what a fresh LLM session reads to start cold and writes back to at session end (the ledger for the work item; `HANDOFF.md` for the through-line). We front-loaded durability for exactly this reason — it's load-bearing for the *implementer*, not just for audit. Every phase = **read-state → work → write-state-back**; a phase that ends without writing state back is one the next session can't continue.
 
 2. **Split every gate into machine-verifiable vs human-judgment — only the first is LLM-automatable.**
-   - *Machine-verifiable* (LLM + `gate-enforcer` self-certify): the WADM-interop fixture passes; "mounted-via-new-path passes anvil-stock fitBounds"; types/tests green; the bundle number. The LLM runs these; gate-enforcer audits them.
+   - *Machine-verifiable* (LLM self-certifies, a `code-review` pass audits): the WADM-interop fixture passes; "mounted-via-new-path passes anvil-stock fitBounds"; types/tests green; the bundle number. The LLM runs these; review audits them.
    - *Human-judgment* (the LLM builds the prototype and **STOPS for the user**): all six invention comprehension questions ("does a non-technical author grok the merge summary panel?"). An LLM **cannot** substitute for a user-comprehension test — it will confidently rate its own UX as clear. The invention tier is gated by *your* judgment; the LLM's job is to get each prototype gate-ready and hand off.
 
-3. **Tests are the LLM's seatbelt — TDD + characterization are non-optional here.** Because the failure mode is confident-wrong, the corpus-as-tests (Phase 0) and `characterization-testing` pinning anvil's behavior (Phase 1) are the ground-truth oracle the LLM refactors against; without them it produces plausible code that silently breaks behavior. `gate-enforcer` checks the tests are *meaningful*, not gamed to green.
+3. **Tests are the LLM's seatbelt — TDD + characterization are non-optional here.** Because the failure mode is confident-wrong, the corpus-as-tests (Phase 0) and `characterization-testing` pinning anvil's behavior (Phase 1) are the ground-truth oracle the LLM refactors against; without them it produces plausible code that silently breaks behavior. A `code-review` pass checks the tests are *meaningful*, not gamed to green.
 
-4. **Scope each seeds issue to one context window, fully self-contained.** Each issue names: the ADR/Q-N it implements, the donor module (`file:line` from the spike/Explore), the acceptance criterion, and the test that proves it. That's what lets a cold LLM session pick it up via `sd ready` and finish it without re-deriving context. Parallelism is *real* — spawn parallel agents (delegation protocol) at the Action waves, not "if staffed."
+4. **Scope each work item to one context window, fully self-contained.** Each issue/ledger names: the ADR/Q-N it implements, the donor module (`file:line` from the spike/Explore), the acceptance criterion, and the test that proves it. That's what lets a cold LLM session pick it up from `ISSUES.md` and finish it without re-deriving context. Parallelism is *real* — spawn parallel agents (the Agent/Workflow tools) at the Action waves, not "if staffed."
 
 5. **Adopted vs invented = the LLM-reliability split, and it's now the load-bearing one.** Adopted work (transcribe/refactor proven anvil code under characterization tests) is where an LLM is *most* reliable — let it run fast. Invented work (novel UX, no donor) is where LLMs are *least* reliable: they generate plausible-but-wrong interaction designs and rate them confidently. So the invention risk already flagged is **doubled** for an LLM implementer — `brainstorming` first (slow-mode), human gate after, never ship on the LLM's own say-so.
 
@@ -95,10 +104,10 @@ This changes the tactics materially. An LLM implementer has no cross-session mem
 Requirement: a leaf task must be executable by a *small* model with **no judgment** — it can't infer missing context, can't decompose, can't tell "looks good" from "is correct." That forces a separation of labor and a rigid task schema. The principle: **push all judgment UP into the decomposer so the leaves are dumb-executable.**
 
 ### Separation of labor (judgment lives in exactly one place)
-- **Decomposer (strong model — Cognition, NOT mechanical):** turns a phase into an ordered DAG of leaf tasks, writes each task spec, and writes **each task's acceptance test first**. All the judgment lives here. Runs once per phase (its own `writing-plans` pass); output encoded into the seeds DAG.
-- **Wave-builder (mechanical — no model):** a wave = every task whose deps are met (`sd ready`) AND whose declared `write-targets` are disjoint from the others in the wave. A max-independent-set filter for edit-safety; computable from the DAG, zero judgment.
+- **Decomposer (strong model — Cognition, NOT mechanical):** turns a phase into an ordered DAG of leaf tasks, writes each task spec, and writes **each task's acceptance test first**. All the judgment lives here. Runs once per phase (its own `writing-plans` pass); output recorded in the phase's ledger/issue. (No tool enforces this DAG mechanically today — the ordering is a discipline the decomposer holds, not something `ISSUES.md` blocks you from violating.)
+- **Wave-builder (mechanical — no model):** a wave = every task whose deps are met AND whose declared `write-targets` are disjoint from the others in the wave. A max-independent-set filter for edit-safety; computable from the DAG, zero judgment.
 - **Executor (small model — mechanical):** receives ONE leaf task; makes its pre-written test green by editing only its `write-targets`, using the named donor as reference; runs the acceptance command; reports pass/fail. No decomposition, no design, no scope expansion.
-- **gate-enforcer (verify):** at wave/phase close, audits that green tests are *meaningful* (not gamed) and acceptance is real.
+- **A `code-review` pass (verify):** at wave/phase close, audits that green tests are *meaningful* (not gamed) and acceptance is real — manually, no automated wave/seam auditor exists.
 
 ### The leaf-task schema (rigid — fill mechanically, execute mechanically)
 ```
@@ -121,7 +130,7 @@ A task a small model can't execute mechanically is **under-specified** — send 
 The reducibility test, the adopted/invented split, and the model-tier are **the same classification**. A task that resists a mechanical spec is a design task in disguise — the signal to route it to a human gate, not to "try harder to spec it for the small model."
 
 ### Consequence for model-tiering
-Mechanical leaf tasks → smallest capable model, parallel waves. Decomposition + invented design → strong model (slow-mode) + human gate. gate-enforcer → mid-tier verify. The expensive model is spent on *decomposition and invention*; the cheap model executes pre-specified, test-bearing leaves. Cost and reliability both follow the same cut.
+Mechanical leaf tasks → smallest capable model, parallel waves. Decomposition + invented design → strong model (slow-mode) + human gate. A `code-review` pass → mid-tier verify. The expensive model is spent on *decomposition and invention*; the cheap model executes pre-specified, test-bearing leaves. Cost and reliability both follow the same cut.
 
 ## Where skills vs infra attach (phase / wave / task)
 
@@ -130,19 +139,19 @@ Short answer: **skills attach where judgment lives (phases + the decomposer + in
 ### Phases carry skills — and which skill *leads* names the phase's character
 | Phase | Dominant skill(s) | Why | Tier |
 |---|---|---|---|
-| 0 Skeleton + data model | `writing-plans` + `test-driven-development` | keystone source; corpus-as-tests first | strong (decompose) |
+| 0 Skeleton + data model | `writing-plans` + `tdd` | keystone source; corpus-as-tests first | strong (decompose) |
 | 1 Extraction | **`characterization-testing`** → `executing-plans` | pin anvil's behavior *before* refactor — literally the skill's purpose | strong-decompose / small-execute |
-| 2 Adopted-core | `executing-plans` · `dispatching-parallel-agents` · `verification-before-completion` · `requesting-code-review` | follow the spec, fan Studio/Viewer, Pre-Ship Gate | small-execute / strong-review |
-| 3 Inventions | **`brainstorming` leads** → `writing-plans` → `gate-enforcer` + human | the design happens here; the skill set INVERTS from execute to design | strong + human |
-| Continuous | `systematic-debugging` · `failure-capture` | orphan-gate bugs, `[SNAG]` capture | as needed |
+| 2 Adopted-core | `executing-plans` · the Agent/Workflow tools' parallel dispatch · `verify` · `code-review` | follow the spec, fan Studio/Viewer, Pre-Ship Gate | small-execute / strong-review |
+| 3 Inventions | **`brainstorming` leads** → `writing-plans` → `code-review` + human | the design happens here; the skill set INVERTS from execute to design | strong + human |
+| Continuous | `systematic-debugging` | orphan-gate bugs, `[SNAG]` capture | as needed |
 
 The tell: phases 0–2 are *execution*-skilled (plan/test/verify); phase 3 *inverts* to *design*-skilled (brainstorming first). **Which skill leads tells you whether you're adopting or inventing.**
 
 ### Waves carry no skill — they carry an accumulating shared prefix + a worker batch
 A wave is a *dispatch unit*, not a kind of work. Across waves within a phase, three things progress mechanically (all computable from the DAG):
 - **source → projection:** early waves build the source (often ONE serial task — the model/seam); later waves fan out to its projections/adapters.
-- **narrow → wide:** width = count of `sd ready` tasks with disjoint write-targets at that frontier. Source waves are narrow (serial); projection waves are wide (parallel).
-- **accumulating prefix:** wave N's outputs "commit to prefix" (delegation protocol) for wave N+1; the shared prefix grows, per-worker deltas stay small.
+- **narrow → wide:** width = count of ready tasks with disjoint write-targets at that frontier. Source waves are narrow (serial); projection waves are wide (parallel).
+- **accumulating prefix:** wave N's outputs "commit to prefix" for wave N+1; the shared prefix grows, per-worker deltas stay small.
 
 So waves "do different things" = different DAG frontiers progressing source→projection, narrow→wide — but the *skill* is the phase's, not the wave's.
 
@@ -152,7 +161,7 @@ A leaf task's powers are all infra, zero judgment:
 - the **donor `file:line`** (spike/Explore) = the reference to adapt
 - the **acceptance command** (vitest etc.) = binary done
 - **Docs MCP** `get_docs` = exact API signatures (a small model must not guess)
-- the **seeds issue** = the work order; **mulch Q-N** = the cited decision; **write-targets** = edit-safety
+- the **issue/ledger row** = the work order; **ADR/Q-N citation** = the cited decision; **write-targets** = edit-safety
 
 A leaf task needs **no skill** — skill is judgment, and a leaf has none by construction. **Corollary: a task that "needs a skill" needs judgment → it's not a leaf → it's a design task misfiled.** Kick it back to the decomposer (which spends `brainstorming`/`writing-plans` on it). The reducibility classifier again: skill-needed ⟺ judgment-needed ⟺ invented ⟺ not-small-model.
 
@@ -164,7 +173,7 @@ A leaf task needs **no skill** — skill is judgment, and a leaf has none by con
 - **The spike / `Explore`** → the **PREP that bridges them**: it converts a decision's "adopt anvil" into a task's concrete `donor: file:line`. The survey axis files + `_GAP-ANSWERS` are the **donor registry** the decomposer indexes into; **a missing donor is the signal the work is greenfield.**
 
 ### Do the ADRs afford decomposition to task level? No — by design. Here's where it's developed.
-ADRs afford the **decision layer, not the task layer** (an ADR carrying leaf-tasks would conflate decision with execution-plan). The ADR→task affordance is **developed in the decomposer's per-phase `writing-plans` pass**, which JOINS: the ADR (why/what) + the survey/spike (donor `file:line`) + `CONTEXT.md` (glossary, through-line) → leaf-task specs + pre-written tests + the seeds DAG.
+ADRs afford the **decision layer, not the task layer** (an ADR carrying leaf-tasks would conflate decision with execution-plan). The ADR→task affordance is **developed in the decomposer's per-phase `writing-plans` pass**, which JOINS: the ADR (why/what) + the survey/spike (donor `file:line`) + `CONTEXT.md` (glossary, through-line) → leaf-task specs + pre-written tests + the phase's ledger.
 
 What the ADRs *do* afford — and must — is **routing**: which work is adopted vs greenfield vs invented. Affordance strength then tracks donor availability:
 
@@ -181,21 +190,21 @@ What the ADRs *do* afford — and must — is **routing**: which work is adopted
 
 ## Pre/post review per task / wave / phase
 
-Review attaches at **every** level (with `/thermo-nuclear-code-quality-review` per leaf — see Tactics); each level **adds a distinct concern** (it is not that lower levels are unreviewed). PRE = *readiness* (spec/prefix/plan ready, test RED), POST = *completion + capture* (reviewed, coherent, externalized).
+Review attaches at **every** level (with a `code-review` pass per leaf, `/code-review ultra` for keystones — see Tactics); each level **adds a distinct concern** (it is not that lower levels are unreviewed). PRE = *readiness* (spec/prefix/plan ready, test RED), POST = *completion + capture* (reviewed, coherent, externalized).
 
-**TASK (executor self-check + per-leaf thermonuclear review):**
+**TASK (executor self-check + per-leaf review):**
 - *Pre:* spec complete (donor `file:line` resolves · write-targets declared · acceptance command runnable) AND **the pre-written test is RED**. A test that isn't red means the task isn't real or isn't ready → kick back to decomposer.
-- *Post:* acceptance command → **GREEN**; types/lint pass; **only write-targets touched** (scope-creep check); Q-N cited; **`/thermo-nuclear-code-quality-review` passes before commit** (every leaf — the executor's output never ships unreviewed). Execution is small-model; the per-leaf review is the strong-model guard.
+- *Post:* acceptance command → **GREEN**; types/lint pass; **only write-targets touched** (scope-creep check); Q-N cited; **a `code-review` pass before commit** (every leaf — the executor's output never ships unreviewed). Execution is small-model; the per-leaf review is the strong-model guard.
 
-**WAVE (cross-worker coherence — `gate-enforcer`):**
-- *Pre:* shared prefix built + **fresh** (delegation protocol: rebuild if >30 min or a prior wave touched files this wave depends on); **write-target disjointness** verified across the batch; every task's pre-test red + spec complete.
-- *Post:* **seam verification** — each parallel output checked against the shared prefix AND every other worker's output (same-file / renamed-symbol / moved-module conflicts are the parallelism failure mode); **full suite green** (not just per-task tests — did a sibling break?); `gate-enforcer` audits tests are *meaningful, not gamed*; **commit-to-prefix** (wave outputs join the prefix for the next wave). A worker failure is a prefix-level event — propagate before the next wave.
+**WAVE (cross-worker coherence — a `code-review` pass):**
+- *Pre:* shared prefix built + **fresh** (rebuild if >30 min or a prior wave touched files this wave depends on); **write-target disjointness** verified across the batch; every task's pre-test red + spec complete.
+- *Post:* **seam verification** — each parallel output checked against the shared prefix AND every other worker's output (same-file / renamed-symbol / moved-module conflicts are the parallelism failure mode); **full suite green** (not just per-task tests — did a sibling break?); review audits tests are *meaningful, not gamed*; **commit-to-prefix** (wave outputs join the prefix for the next wave). A worker failure is a prefix-level event — propagate before the next wave. (No automated cross-worker auditor exists today — this whole pass is manual.)
 
 **PHASE (milestone — Pre-Ship + capture + human):**
 - *Pre:* the decomposer's `writing-plans` pass is done (DAG + specs + **test corpus** exist; for greenfield, corpus written); prior phase's Post passed (hard gate: Phase 1 can't start before Phase 0's corpus is green); brownfield flow context if touching anvil.
-- *Post:* the **4-Invariables Pre-Ship Gate** (state ownership / observability / blast-radius / timing); `code-reviewer` against the plan + ADRs; `/ultrareview` on the keystones (data model, Phase 2); bundle measurement + response-tier action (Phase 2); **`record-extractor` → mulch + `HANDOFF.md` write-back** (mandatory for the LLM implementer — no write-back = next session can't continue); the **human comprehension gate** for invention phases; an **ADR-amendment / new-Q-N check** (did the phase surface a decision?).
+- *Post:* the **4-Invariables Pre-Ship Gate** (state ownership / observability / blast-radius / timing); a `code-review` pass against the plan + ADRs; `/code-review ultra` on the keystones (data model, Phase 2); bundle measurement + response-tier action (Phase 2); **`HANDOFF.md` + the ledger write-back** (mandatory for the LLM implementer — no write-back = next session can't continue); the **human comprehension gate** for invention phases; an **ADR-amendment / new-Q-N check** (did the phase surface a decision?).
 
-The shape — each level **adds** a concern: TASK = "test green, stayed in lane, **thermonuclear review passed**" · WAVE = "+ do the parallel outputs cohere at the seams?" · PHASE = "+ is the milestone shippable (Pre-Ship Gate) and is state externalized for the next session?"
+The shape — each level **adds** a concern: TASK = "test green, stayed in lane, **review passed**" · WAVE = "+ do the parallel outputs cohere at the seams?" · PHASE = "+ is the milestone shippable (Pre-Ship Gate) and is state externalized for the next session?"
 
 ## Deceptively-simple items that need a spec + corpus before a (small) model touches them
 
@@ -229,29 +238,27 @@ The shape — each level **adds** a concern: TASK = "test green, stayed in lane,
 2. **A design pass + human gate** (per invention) — enumerates the invention's implementation tasks *after* its shape is validated. You can't enumerate "build the merge-UI" into leaves until the prototype passes the comprehension gate; then the tweaks/tasks are knowable.
 3. **A failure / measurement / `[SNAG]` event** — spawns a *bounded* remediation task: a gate-failure tweak (rename "Synced"→"Added"), a bundle-measurement response (>2× → a tree-shake task), a cross-worker seam conflict, an edge case the corpus-writing surfaced (the EXIF transpose orientation, a new concurrent-merge case).
 
-**Cadence: decompose just-ahead, per phase — never all up front.** This also matches the LLM-memory constraint: enumerate against *current* state, not a stale graph written months earlier. The seeds DAG is **append-mostly** — it grows at those three boundaries, and each new task cites the decomposer pass / gate / `[SNAG]` that birthed it (attribution via `append-attribution.sh`). `sd ready` is always the live frontier; **you never need the whole graph enumerated — only the next wave + the phase skeleton.**
+**Cadence: decompose just-ahead, per phase — never all up front.** This also matches the LLM-memory constraint: enumerate against *current* state, not a stale graph written months earlier. The task backlog (`ISSUES.md`/`ledgers/`) is **append-mostly** — it grows at those three boundaries, and each new item cites the decomposer pass / gate / `[SNAG]` that birthed it (a one-line provenance note, same convention as this doc's own Issue rows). The live frontier is whatever's still queued; **you never need the whole graph enumerated — only the next wave + the phase skeleton.**
 
 So: **enumerated-vs-discovered is the same cut as mechanical-vs-human-gated is binary-test-writable-now-or-not.** The enumerable tasks are exactly the mechanical ones; the discovered ones are exactly those downstream of a Cognition pass (decomposer / design) or an execution event. Discovery is a *Cognition-phase* activity; execution stays mechanical against a set frozen for that wave.
 
-## Context-load per step + next-step decision (with qmd + fff as the retrieval layer)
+## Context-load per step + next-step decision (with grep/fff as the retrieval layer)
 
 **Governing principle: context breadth is *inverse* to step depth — and tracks where judgment lives.** The decomposer (top, strong model) reads broad (all relevant ADRs + survey + CONTEXT); the leaf executor (bottom, small model) reads narrow (one task spec + one donor + one test). Loading the whole design into a leaf step would blow a small model's context *and* invite it to "improve" locked decisions. So each step loads **precisely what its level needs, no more.**
 
-**Use `qmd` and `fff` extensively as the retrieval layer** — never re-read whole files to find something:
-- **`qmd`** = "*what did we decide / where's the finding*" over the **markdown design corpus** (CONTEXT.md, the ADRs, this strategy, the survey axis files). Query it to recall a decision instead of re-reading the doc. (CLAUDE.md routing: project markdown → qmd.)
-- **`fff`** = "*where is the file / the donor source / the code*" over the **repo** (frecency-ranked; `grep`/`multi_grep` for identifiers). This is how the `donor: file:line` fields get found and how the leaf executor locates the exact donor lines. (CLAUDE.md routing: file location → fff.)
+**Use `grep`/`fff` as the retrieval layer** — never re-read whole files to find something. There is no markdown-specific decision-recall tool; recalling a past decision means grepping `CONTEXT.md` / `docs/adr/` / `docs/decisions/` / this strategy directly, or checking a ledger for the row that cites it. **`fff`** = "*where is the file / the donor source / the code*" over the **repo** (frecency-ranked; `grep`/`multi_grep` for identifiers) — this is how the `donor: file:line` fields get found and how the leaf executor locates the exact donor lines. (CLAUDE.md routing: file location → fff.)
 
 | Step (level) | Context to LOAD (breadth) | Retrieval | Next-step decision |
 |---|---|---|---|
-| **Cold session boot** | CONTEXT.md + the relevant ADRs + this strategy + `sd prime` + `mulch prime` | `qmd` to recall decisions (don't re-read) · `fff` to locate | `sd ready` → the live frontier |
-| **Decomposer pass** (phase) — BROAD | the phase's ADR(s) + survey axis files + spike/donor-index + CONTEXT through-line | `qmd` over ADRs/CONTEXT/survey · `fff`/grep over donor source | enumerate *this* phase vs current state; classify each task by reducibility |
-| **Wave dispatch** — MIDDLE | the shared prefix (mulch infra/meta + locked ADRs + the relevant `@render` contract + donor-index slice + a foxhound envelope), built **once** per wave | `mulch-prime-cache` + foxhound; `qmd`/`fff` feed the prefix | `sd ready` ∩ disjoint-write-targets = the wave |
+| **Cold session boot** | CONTEXT.md + the relevant ADRs + this strategy + `ISSUES.md` + `HANDOFF.md` | grep over the design docs to recall decisions (don't re-read whole files) · `fff` to locate code | the live frontier = whatever's `queued`/`running` in `ISSUES.md` |
+| **Decomposer pass** (phase) — BROAD | the phase's ADR(s) + survey axis files + spike/donor-index + CONTEXT through-line | grep over ADRs/CONTEXT/survey · `fff`/grep over donor source | enumerate *this* phase vs current state; classify each task by reducibility |
+| **Wave dispatch** — MIDDLE | the shared prefix (the locked ADRs + the relevant `@render` contract + donor-index slice), built **once** per wave | grep/`fff` feed the prefix | ready tasks ∩ disjoint-write-targets = the wave |
 | **Leaf execution** — NARROW | ONLY: the task spec + the donor file content + the pre-test + Docs MCP for any library API | `fff` to locate the donor · Docs MCP (`get_docs`) for signatures | none — single task; done→review→commit, block→escalate |
-| **Per-leaf review** (thermonuclear) | the diff + the task spec + the cited ADR/Q-N | `qmd` to pull the exact decision text to check conformance | pass→commit · fail→spawn remediation task |
+| **Per-leaf review** | the diff + the task spec + the cited ADR/Q-N | grep the ADR/decisions doc to pull the exact decision text to check conformance | pass→commit · fail→spawn remediation task |
 | **Wave POST** | all wave outputs + the shared prefix | — | seams ok → commit-to-prefix → next wave |
-| **Phase POST** | the milestone + ADRs + the Pre-Ship checklist | `qmd` over ADRs | Pre-Ship + human gate → **write-back** (`record-extractor`→mulch + `HANDOFF`) → next phase's decomposer pass |
+| **Phase POST** | the milestone + ADRs + the Pre-Ship checklist | grep over ADRs | Pre-Ship + human gate → **write-back** (`HANDOFF.md` + the ledger) → next phase's decomposer pass |
 
-**How "decide next" works mechanically:** `sd ready` (the DAG frontier — enforces sources-before-projections) → the wave-builder filters to disjoint write-targets → the reducibility classifier routes each task (mechanical→small-model executor; needs-design→strong-model design pass + human gate) → at boundaries, the trigger fires (phase done → decomposer pass; gate fail / `[SNAG]` / measurement → bounded remediation task). No step requires the implementer to *infer* what's next — the DAG + the classifier + the boundary triggers decide it. qmd/fff are what make each step's precise context retrievable without holding the whole design in working memory — they are the retrieval half of "the durable docs are the implementer's memory."
+**How "decide next" works mechanically:** the ready-task frontier (`ISSUES.md`/`ledgers/`, enforcing sources-before-projections as a discipline, not a mechanical block) → the wave-builder filters to disjoint write-targets → the reducibility classifier routes each task (mechanical→small-model executor; needs-design→strong-model design pass + human gate) → at boundaries, the trigger fires (phase done → decomposer pass; gate fail / `[SNAG]` / measurement → bounded remediation task). No step requires the implementer to *infer* what's next — the backlog + the classifier + the boundary triggers decide it. grep/`fff` are what make each step's precise context retrievable without holding the whole design in working memory — they are the retrieval half of "the durable docs are the implementer's memory."
 
 ## First concrete move
 
