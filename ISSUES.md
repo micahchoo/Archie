@@ -175,7 +175,7 @@ accident rows and every deliberate row carrying its reason.
 
 ## Issue 4 — Silent failure on the persistence path
 
-**Status:** queued
+**Status:** running — ledger: ledgers/SILENCE.md
 
 **Symptom.** Bare or degrading catches sit exactly where a local-first tool can
 least afford them: `apps/studio/src/binding.ts:95`, `save-queue.svelte.ts:47`,
