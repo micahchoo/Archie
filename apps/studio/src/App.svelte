@@ -572,7 +572,9 @@
   function onDrop(e: DragEvent) {
     e.preventDefault();
     dragOver = false;
-    void flows.addFiles(e.dataTransfer?.files ?? null);
+    // SILENCE row 2 (tend Issue 4): addFiles had no .catch() anywhere in its call chain, so an OPFS
+    // write failure (e.g. quota) was an unhandled rejection — invisible, unlike every sibling ingest path.
+    flows.addFiles(e.dataTransfer?.files ?? null).catch((err) => { console.error("File add failed", err); window.alert("Couldn't add that file."); });
   }
 
   let rev = $state(0);
@@ -644,10 +646,12 @@
   const objectLabelOf = (id: string) => OBJECTS.find((o) => o.id === id)?.label ?? id;
   const newPendingId = () => `p-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
   // Persist the current exhibit's pending list into the slug-keyed sidecar (whole-map I/O; single writer).
+  // Routed through the save queue (SILENCE row 1, tend Issue 4): a direct OPFS write here had no catch
+  // anywhere in its call chain, so a quota/permission failure was an unhandled rejection — invisible.
   async function persistPending() {
     const map = await loadPendingNotes();
     if (pendingNotes.length) map[currentSlug] = [...pendingNotes]; else delete map[currentSlug];
-    await savePendingNotes(map);
+    await enqueueSave("pending-notes", "Pending notes", () => savePendingNotes(map));
   }
   // IngestContext hook: stage coordinate-free CSV rows, deduped by (object, comment). Returns the NEW count.
   function addPendingNotes(incoming: CsvPendingNote[]): number {
@@ -1211,7 +1215,7 @@
     openExhibit,
     bump,
     cancelPendingSave: () => sess.cancelPendingSave(),
-    finishReplace: () => { currentSlug = lib.meta.exhibits[0]!.slug; view = "library"; pendingNotes = []; void savePendingNotes({}); }, // destructive replace wipes the old project's pending sidecar
+    finishReplace: () => { currentSlug = lib.meta.exhibits[0]!.slug; view = "library"; pendingNotes = []; void enqueueSave("pending-notes", "Pending notes", () => savePendingNotes({})); }, // destructive replace wipes the old project's pending sidecar
     confirmReplace: (msg) => window.confirm(msg),
     alert: (msg) => window.alert(msg),
   });
@@ -1399,7 +1403,7 @@
     {#if addingObject}
       <form class="add-obj" aria-label={`Add media to ${currentExhibit?.title ?? "this exhibit"}`} onsubmit={(e) => { e.preventDefault(); void flows.addObject(addSource, addLabel); }}>
         <span class="add-obj-head">Add media to “{currentExhibit?.title ?? "this exhibit"}”</span>
-        <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; void flows.addFiles(el.files).then(() => (el.value = "")); }} /></label>
+        <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; flows.addFiles(el.files).catch((err) => { console.error("File add failed", err); window.alert("Couldn't add that file."); }).finally(() => { el.value = ""; }); }} /></label>
         <span class="or">or</span>
         <input bind:value={addSource} placeholder="Link to an image, audio, or video" aria-label="Object source URL" title="A link points to the media where it lives, so your library stays small." />
         <input class="lbl" bind:value={addLabel} placeholder="Label" aria-label="Object label" />
