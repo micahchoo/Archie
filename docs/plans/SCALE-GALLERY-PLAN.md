@@ -69,21 +69,57 @@ overview scroll, and after saves — so all three fixes are live:
    lazy (a prove-it pass, not a build task).
 
 ### Phase 2 — Studio overview toolkit (find + organize)
-One persistent toolbar on `ExhibitOverview`: search box (Object titles), sort control
-(reading order default / name / recently-annotated — views only), density slider, select-mode
-toggle. Selection model: click single, ctrl/cmd toggle, shift range, background-drag marquee,
-select-all. **Conflict to resolve:** background-drag currently pans the canvas mode
-(`ExhibitOverview.svelte:111-124`) — select-mode toggle (or a modifier) disambiguates in canvas;
-list mode gets marquee for free. Bulk delete + multi-drag reorder ride the existing single-item
-DnD primitive (`:128-163` — its comment already anticipates extension).
+(Spike: `docs/spikes/spike-0003-overview-toolkit-interaction.md` — the implementation spec.)
+- **Selection state lives in App** (bulk delete rides App's removal path; future cross-exhibit
+  move is library-scope; keyboard dispatch is App-global). Selection math = pure reducer
+  `overview-selection.ts` (click replace / ctrl toggle / shift range over the canonical array) —
+  headlessly testable.
+- **Multi-drag:** generalize `commitReorder`/`commitToStart` into one pure
+  `moveBlock(orderedIds, movingIds, before)` with START/END sentinels (subsumes the existing
+  first-position edge case); reuses the existing `onreorder` → `reorderObjects` path.
+- **Marquee-vs-pan: persistent select-mode TOGGLE in the toolbar.** OFF = today's gestures
+  (click opens, background-drag pans, modifier-click still selects); ON = checkboxes +
+  background-drag marquee + click toggles. List mode gets marquee free. (Rejected: shift-drag —
+  fights the pan legend; click-always-selects — inverts the open gesture. Fallback if dogfood
+  says friction: flip the default, no rework.)
+- **Toolbar state (search/sort/density) is VIEW-only, local to ExhibitOverview**; compute
+  `displayObjects` once, both modes render it. Recently-annotated sort =
+  `AnnotationRecord.modifiedAt` aggregated per-object MAX (same pattern as `noteCountByCanvas`).
+  Density drives `--plate-w`/`--row-h` CSS vars — **coupling: must also feed Phase 1.3's
+  `contain-intrinsic-size` or virtualization janks.**
+- **Drag-reorder disabled while sort ≠ reading-order or search is active** (a drop index in a
+  filtered view ≠ canonical index) — gate `draggable`, swap the legend text.
+- **Bulk delete:** new `removeObjects(slug, ids[])` bulk reducer + App `bulkRemove` marking all
+  removals first → coalesces into ONE persist + ONE mirror via Phase 1.1's dirty-set (verified).
+- **Keyboard:** shortcuts.ts registry + `onGlobalKey`, new "Organizing" group (⌘A/⌫/Esc);
+  Esc-clears-selection slots into the existing dismiss-ladder before overview→library.
+- ~250 LOC; binding-store untouched. Headless tests: selection reducer, `moveBlock`,
+  `removeObjects`. Browser-only checks (manual/Playwright): marquee geometry, pan/marquee
+  routing, density CSS, HTML5 DnD.
 
 ### Phase 3 — Library-level Gallery (Studio + publish format + Viewer parity)
-1. Studio `LibraryHome.svelte` (text-only cards today, `:222-235`): visual Exhibit cards
-   (cover thumb, object count, last-edited) + all-images wall (virtualized, lazy thumbs) +
-   one search box.
-2. Publish pipeline emits the library-level image index alongside `exhibits.json` (ADR-0023).
-3. Viewer library landing (`published.ts:200-213` reads `exhibits.json` only today) gains the
-   same two views + search, fed by the baked index.
+(Spike: `docs/spikes/spike-0004-gallery-image-index.md` — the implementation spec. ADR-0023
+amended 2026-07-05 with the pinned format.)
+1. **P3a — index emission (render-core, ~70 LOC):** `images.json` at published root,
+   `stamp()`-versioned; entry `{objectId, exhibitSlug, title, thumbnail, width?, height?}`,
+   library→reading order. **Build by reading the published manifests AFTER the write loop** (not
+   in-loop projections — incremental publishes skip exhibits entirely, so their projections
+   aren't in hand; the manifest read is uniform for fresh and skipped). Thumbnail ref =
+   `canvas.thumbnail` (baked local path OR derived IIIF URL — remote objects get wall thumbs).
+   Headless tests: ordering, ref integrity, survives-a-skipped-exhibit.
+2. **P3b — Studio gallery (~150 LOC):** `LibraryHome` reads OPFS live (NOT the baked index —
+   stale): visual cards (explicit cover else first object's thumb via `readThumbUrl`) +
+   all-images wall flattened into the SAME item shape as the index → one shared
+   `GalleryWall.svelte` (Studio feeds blob URLs, Viewer feeds baked refs). Wall click-through:
+   `onopenobject(slug, objId)` → App opens exhibit + object + editor. Virtualize + lazy-mint
+   thumbs per Phase 1.2 patterns.
+3. **P3c — Viewer parity (~80 LOC):** `loadImageIndex()` (one fetch; 404 → hide the wall
+   toggle, cards still work = ADR degradation contract). Wall = ObjectGrid pattern
+   (content-visibility + lazy imgs). Click-through needs NO new route — `#/<slug>/o/<id>`
+   already exists and `ViewerShell` parses `route.objectId`.
+4. **Search:** one shared `matchesTitle(title, query)` — case-insensitive, NFKD-normalized
+   substring — used by viewer Gallery, Studio wall, AND the Phase 2 overview toolbar. Distinct
+   from MiniSearch (`search-index.ts` = full-text over annotation prose; different corpus).
 
 ### Phase 4 — Viewer in-exhibit navigation
 Filmstrip/jump overlay reachable from Reader and NarrativeReader (collapsed by default in

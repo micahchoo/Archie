@@ -28,12 +28,31 @@ This is the one hard-to-reverse choice in the plan: published trees live on stat
 ## Decision
 
 The publish pipeline emits a **library-level image index** alongside `exhibits.json`: one entry
-per Object across the Library — Object id, Exhibit slug, title, and baked-thumbnail ref. The
-Viewer's Gallery wall renders from this index alone; full-res assets and annotations load only
-on click-through into the owning Exhibit (existing per-exhibit path, unchanged).
+per Object across the Library. The Viewer's Gallery wall renders from this index alone; full-res
+assets and annotations load only on click-through into the owning Exhibit (existing per-exhibit
+path, unchanged).
 
 Contract mirrors `exhibits.json`: a **generated build artifact, a projection of the Library** —
 never authored, never the source of truth, safe to regenerate on every publish.
+
+**Pinned format** (spike-0004, 2026-07-05 — this file is a compatibility surface, so pinned
+before first ship):
+
+- **Filename:** `images.json` at the published root, beside `exhibits.json`/`collection.json`.
+- **Version marker:** same `stamp()` versioning convention as `exhibits.json`.
+- **Entry:** `{ objectId, exhibitSlug, title, thumbnail, width?, height? }` — width/height are
+  the manifest's canvas dimensions when known, so the wall can lay out a justified grid without
+  per-thumbnail measurement or layout shift.
+- **Ordering:** flattened library order, then per-exhibit reading order — the index is already
+  display-ordered; consumers don't re-sort.
+- **Thumbnail ref source:** the published manifest's `canvas.thumbnail` — a baked
+  `{slug}/assets-thumb/{name}` path for imported assets, or a derived IIIF thumbnail URL for
+  remote objects. (Broader than this ADR's original "baked-thumbnail ref" wording: remote
+  Objects get wall thumbnails too.)
+- **Build source:** the index is built by reading each exhibit's *published* `manifest.json`
+  after the write loop — uniform for both freshly-written and incrementally-skipped exhibits,
+  and the thumbnail ref provably survives byte-pass-skipped publishes (the recover path re-emits
+  `canvas.thumbnail` verbatim).
 
 ## Consequences
 
