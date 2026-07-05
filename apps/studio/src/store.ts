@@ -7,17 +7,18 @@
 //   {PROJECT}/annotations/                       — the "sample" exhibit's annotations (LEGACY path,
 //                                                   kept so pre-multi-exhibit work isn't orphaned)
 //   {PROJECT}/exhibits/{slug}/annotations/       — every OTHER exhibit's annotations
-import { FsaFilesystem, type FsDirectory, type WorkingLibraryMeta, type LayoutType } from "@render/core";
-
 // The persisted working-store SHAPES live in core now (Q-3 archie-persistence: the Viewer's live
 // source reads the same format via loadWorkingLibrary). Re-exported under their original Studio
 // names so import sites stay stable; this module remains the WRITER of the layout.
-export type {
-  WorkingObjectProvenance as ObjectProvenance,
-  WorkingObjectMeta as ObjectMeta,
-  WorkingExhibitMeta as ExhibitMeta,
-  WorkingLibraryMeta as LibraryMeta,
+import {
+  FsaFilesystem,
+  type FsDirectory,
+  type WorkingObjectProvenance as ObjectProvenance,
+  type WorkingObjectMeta as ObjectMeta,
+  type WorkingExhibitMeta as ExhibitMeta,
+  type WorkingLibraryMeta as LibraryMeta,
 } from "@render/core";
+export type { ObjectProvenance, ObjectMeta, ExhibitMeta, LibraryMeta };
 
 const PROJECT = "archie-demo-project";
 const SAMPLE_SLUG = "sample";
@@ -43,53 +44,6 @@ export async function openExhibitAnnotationsDir(slug: string): Promise<FsDirecto
   const exhibits = await project.getDirectory("exhibits", { create: true });
   const ex = await exhibits.getDirectory(slug, { create: true });
   return ex.getDirectory("annotations", { create: true });
-}
-
-/** A persisted object. Carries `RightsFields` (per-object credit/license — the truest provenance level:
- *  each folio = its holding institution). Projects to the Canvas's IIIF rights. */
-export interface ObjectMeta extends RightsFields {
-  id: string;
-  source: string;
-  label: string;
-  /** Optional description/caption — projects to the Canvas `summary`. */
-  summary?: string;
-  width?: number;
-  height?: number;
-  /** Media kind — "image" (default, OSD) vs "sound"/"video" (the temporal AvEditor). */
-  mediaType?: MediaType;
-  /** Seconds — for sound/video objects. */
-  duration?: number;
-  provenance?: ObjectProvenance;
-}
-/** A persisted exhibit (authored structure). Carries `RightsFields` (exhibit-level credit/license). */
-export interface ExhibitMeta extends RightsFields {
-  id: string;
-  slug: string;
-  title: string;
-  /** Optional exhibit description — projects to the Manifest `summary` (the Gallery card + exhibit chrome). */
-  summary?: string;
-  /** @deprecated (ADR-0016) The leading surface is now DERIVED from content by render-core resolveLayout
-   *  (sections → narrative, >1 object → grid, else single). Kept OPTIONAL for back-compat read-tolerance —
-   *  legacy stored data is harmless and IGNORED; the Studio NEVER writes this field anymore. `LayoutType`
-   *  imported from render-core so this stays the single source of truth (no duplicated string union). */
-  layout?: LayoutType;
-  /** RESERVED (§43 reading-MODE axis) — v1.1 pacing variant (slideshow/scrollytelling). Unused in v1. */
-  mode?: string;
-  objects: ObjectMeta[];
-  /** Ordered narrative sections (the authored spine; IIIF Ranges at publish). Present for narrative exhibits. */
-  sections?: Section[];
-  /** The exhibit's curated Readings (interpretive passes; ADR-0007). A note references one by id (`record.reading`). */
-  readings?: Reading[];
-  /** Bundled defaults only: bump when the seeded notes change so the reconcile reseeds (P0 fixture iteration). */
-  seedVersion?: number;
-}
-/** The authored library structure persisted at `{PROJECT}/library.json`. Carries the library-level
- *  identity (`title`/`summary`) + `RightsFields` (collection credit/license). `title`/`summary` were
- *  previously hardcoded in buildFullLibrary; now authorable so the Library has a home (rights grill Q6). */
-export interface LibraryMeta extends RightsFields {
-  title?: string;
-  summary?: string;
-  exhibits: ExhibitMeta[];
 }
 
 /** Read the authored library structure. Null if OPFS unsupported or nothing authored yet. */
