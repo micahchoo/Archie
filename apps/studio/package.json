@@ -10,7 +10,8 @@
     "dev": "node scripts/sync-learn.mjs && vite",
     "build": "node scripts/sync-learn.mjs && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@annotorious/openseadragon": "^3.8.2",
