@@ -86,7 +86,12 @@ describe("newExhibitFromManifest — mid-flow exhibit switch (NEGSPACE row 3)", 
         { type: "Canvas", items: [{ items: [{ body: { id: "https://x/2.jpg", type: "Image" } }] }] },
       ],
     };
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => manifest })));
+    const body = new TextEncoder().encode(JSON.stringify(manifest));
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      headers: new Headers({ "content-length": String(body.byteLength) }),
+      arrayBuffer: async () => body.buffer,
+    })));
 
     const origAppendObject = ctx.lib.appendObject.bind(ctx.lib);
     let calls = 0;
@@ -128,5 +133,49 @@ describe("newExhibitFromFolder — mid-flow exhibit switch (NEGSPACE row 4)", ()
     const other = exhibits.find((e) => e.slug === "other")!;
     expect(roll.objects.length).toBe(2); // both files landed on the folder's own exhibit
     expect(other.objects.length).toBe(0); // none leaked onto the exhibit the user switched to
+  });
+});
+
+describe("no-byte-cap fixes (NEGSPACE rows 5-7)", () => {
+  it("newExhibitFromManifest rejects a huge response via the declared content-length, before reading the body", async () => {
+    const { ctx } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const arrayBuffer = vi.fn(async () => new ArrayBuffer(0));
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      headers: new Headers({ "content-length": String(64 * 1024 * 1024) }), // over the 32 MB cap
+      arrayBuffer,
+    })));
+    await flows.newExhibitFromManifest("https://x/huge-manifest.json");
+    expect(arrayBuffer).not.toHaveBeenCalled(); // rejected on the declared header — body never read
+  });
+
+  it("newExhibitFromManifest rejects a huge response by actual size when content-length is absent/lying", async () => {
+    const { ctx, alerts } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const big = new ArrayBuffer(33 * 1024 * 1024); // over the 32 MB cap, no content-length header at all
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, headers: new Headers(), arrayBuffer: async () => big })));
+    await flows.newExhibitFromManifest("https://x/huge-manifest.json");
+    expect(alerts.at(-1)).toMatch(/too large/);
+  });
+
+  it("importNotesCsv rejects a file over the local-text-import cap without reading it", async () => {
+    const { ctx, notes } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const text = vi.fn(async () => "object,comment\n,hi\n");
+    const file = { name: "huge.csv", size: 65 * 1024 * 1024, text } as unknown as File;
+    await flows.importNotesCsv(file);
+    expect(text).not.toHaveBeenCalled();
+    expect(notes.at(-1)).toMatch(/too large/);
+  });
+
+  it("importNotesWadm rejects a file over the local-text-import cap without reading it", async () => {
+    const { ctx, notes } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const text = vi.fn(async () => "{}");
+    const file = { name: "huge.json", size: 65 * 1024 * 1024, text } as unknown as File;
+    await flows.importNotesWadm(file);
+    expect(text).not.toHaveBeenCalled();
+    expect(notes.at(-1)).toMatch(/too large/);
   });
 });

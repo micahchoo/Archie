@@ -30,6 +30,19 @@ const LARGE_MEDIA_BYTES = 100 * 1024 * 1024; // ~100 MB — above this, suggest 
 const THUMB_DIM = 640; // grid/overview thumbnail longest-edge px — covers retina plates, tiny vs the master
 const ASSET_THUMB_PREFIX = "/assets-thumb/"; // working ref for a baked thumbnail (sibling of ASSET_PREFIX)
 
+// A remote IIIF manifest is JSON, not media — even a huge institutional collection's manifest runs a
+// few MB. 32 MB is generous headroom; above it something is wrong (or hostile) rather than merely big.
+// Distinct from @render/core's SRC_MAX_BYTES (256 MB), which caps a DIFFERENT trust boundary (untrusted
+// .archie.zip bytes) — this one guards an arbitrary-JSON fetch that had NO cap at all (tend Issue 7,
+// ledgers/NEGSPACE.md row 5).
+const IIIF_MANIFEST_MAX_BYTES = 32 * 1024 * 1024;
+
+// The three local-file bulk-import vectors (CSV notes, WADM notes, VTT/SRT captions) had no size cap
+// either — a many-hundred-MB file gets `.text()`-read then synchronously parsed on the main thread with
+// nothing to stop it (tend Issue 7, ledgers/NEGSPACE.md rows 6-8). These are hand-authored annotation
+// files; legitimate ones are KBs to low MBs even for thousands of notes.
+export const LOCAL_TEXT_IMPORT_MAX_BYTES = 64 * 1024 * 1024;
+
 /** Everything the ingest flows touch in App.svelte's reactive scope, passed explicitly. Reactive reads
  *  are getters (so the flow sees the live value at call time); mutations are setters/store methods. */
 export interface IngestContext {
@@ -336,7 +349,14 @@ export function createIngestFlows(ctx: IngestContext) {
     try {
       const resp = await fetch(trimmed);
       if (!resp.ok) { console.error("IIIF fetch failed", resp.status, trimmed); ctx.alert("Couldn't open that link. Check the address and try again."); return; }
-      json = await resp.json();
+      // Cap enforced twice (mirrors @render/core's fetchArchieLibraryBytes, a DIFFERENT trust boundary
+      // — see IIIF_MANIFEST_MAX_BYTES): first cheaply against a declared content-length before reading
+      // the body, then against the actual received size — a missing/lying header can't bypass it.
+      const declared = Number(resp.headers.get("content-length"));
+      if (Number.isFinite(declared) && declared > IIIF_MANIFEST_MAX_BYTES) { ctx.alert("That IIIF link is too large to open here."); return; }
+      const buf = await resp.arrayBuffer();
+      if (buf.byteLength > IIIF_MANIFEST_MAX_BYTES) { ctx.alert("That IIIF link is too large to open here."); return; }
+      json = JSON.parse(new TextDecoder().decode(buf));
     } catch {
       ctx.alert("Couldn't open that link. Check the address is correct and reachable.");
       return;
@@ -370,6 +390,10 @@ export function createIngestFlows(ctx: IngestContext) {
   // Excel/Sheets annotate THERE (object,x,y,w,h,comment[,tags][,reading]) and bulk-load through the
   // SAME createNote path the seeds use. Skip-and-tally per row; fix-and-retry deduped on target+comment.
   async function importNotesCsv(file: File) {
+    if (file.size > LOCAL_TEXT_IMPORT_MAX_BYTES) {
+      ctx.setImportNote(`“${file.name}” is too large (${Math.round(file.size / (1024 * 1024))} MB) to import as notes — check it's really a CSV of your annotations.`);
+      return;
+    }
     const session = ctx.session();
     const plan = planCsvImport(await file.text(), {
       objects: ctx.objects().map((o) => ({ id: o.id, label: o.label, ...(o.mediaType ? { mediaType: o.mediaType } : {}) })),
@@ -419,6 +443,10 @@ export function createIngestFlows(ctx: IngestContext) {
   // publish, Recogito, or any standard WADM producer lands on this exhibit — re-anchored by the
   // /canvas/<id> tail, selector + bodies verbatim, deduped like the CSV path.
   async function importNotesWadm(file: File) {
+    if (file.size > LOCAL_TEXT_IMPORT_MAX_BYTES) {
+      ctx.setImportNote(`“${file.name}” is too large (${Math.round(file.size / (1024 * 1024))} MB) to import as notes — check it's really a notes file.`);
+      return;
+    }
     const session = ctx.session();
     let json: unknown;
     try { json = JSON.parse(await file.text()); }

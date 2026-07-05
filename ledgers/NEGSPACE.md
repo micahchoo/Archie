@@ -96,9 +96,9 @@ recheck — see its row above), clustering into 3 root causes:
 | 2 | transcript import | empty data (silent no-op) | (this fix; hash filled at close) | pass — same fix, same re-probe (empty string) |
 | 3 | IIIF manifest import | mid-flow interruption (wrong-exhibit misdirect) | (this fix; hash filled at close) | pass — new `ingest-flows.test.ts`: flips `currentSlug` mid-import via a spy on `appendObject`, both planned objects still land on the exhibit the import created, none leak onto the exhibit switched to; studio suite 150/150 green |
 | 4 | folder import | mid-flow interruption (wrong-exhibit misdirect) | (this fix; hash filled at close) | pass — same test file, same technique, both files in a group land on the group's own exhibit |
-| 5 | IIIF manifest import | huge input (no byte cap) | | |
-| 6 | CSV import | huge input (no byte cap) | | |
-| 7 | WADM import | huge input (no byte cap) | | |
+| 5 | IIIF manifest import | huge input (no byte cap) | (this fix; hash filled at close) | pass — new `IIIF_MANIFEST_MAX_BYTES` (32 MB) cap, checked against declared `content-length` before reading the body AND against actual size after (mirrors `@render/core`'s `fetchArchieLibraryBytes` two-phase pattern); 2 new tests, studio suite 154/154 green |
+| 6 | CSV import | huge input (no byte cap) | (this fix; hash filled at close) | pass — new `LOCAL_TEXT_IMPORT_MAX_BYTES` (64 MB), checked against `file.size` before `file.text()`; test confirms `.text()` is never called when oversized |
+| 7 | WADM import | huge input (no byte cap) | (this fix; hash filled at close) | pass — same cap, same check, same test shape |
 | 8 | transcript import | huge input (no byte cap) | | |
 
 Done when every row above reads pass.
