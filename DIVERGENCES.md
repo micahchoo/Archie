@@ -23,8 +23,11 @@ hypothetical.*
 
 ## 1. publish-to-web — one-continuous-motion publishing from Studio
 
-**Status:** probing — ledger: ledgers/PROBE-publish-to-web.md (branch `probe/publish-to-web`;
-A1/A3 confirmed, A2/A4 await a user-run timing test with a GitHub PAT)
+**Status:** probe verdict **pursue** 2026-07-05 — ledger: ledgers/PROBE-publish-to-web.md.
+Seed tree live on GitHub Pages in 0.6 min (kill budget 10 min). Mechanism revised mid-probe:
+per-blob REST refuted by secondary rate limits (A2); single-pack git push confirmed (A6) —
+build = `git2`/`gitoxide` in `src-tauri` + 2 REST calls. Hands to a fresh build session with the
+ledger; slice on branch `probe/publish-to-web` (`2398c8e`), never merges.
 
 **Evidence.**
 - repo — the "Save a copy" done-screen tells the user to upload the `.archie.zip` to "your site, a
