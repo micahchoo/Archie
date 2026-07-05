@@ -128,7 +128,7 @@ Archie began as a tool for digital-humanities scholars and has broadened to anyo
 ```bash
 pnpm install            # install the whole workspace
 pnpm typecheck          # type-check every package + app
-pnpm test               # run the test suite (~770 tests)
+pnpm test               # run the test suite (~1150 tests)
 ```
 
 > [!IMPORTANT]
@@ -329,7 +329,7 @@ graph TD
 
 ## Status & roadmap
 
-**Tests:** ~770 across the workspace (≈568 `@render/core`, 43 `@render/mount`, 7 `@render/svelte`, 127 `@archie/studio`, 24 `@archie/viewer`). Run `pnpm test`.
+**Tests:** ~1150 across the workspace (714 `@render/core`, 116 `@render/mount`, 7 `@render/svelte`, 154 `@archie/studio`, 63 `@archie/viewer`, 98 `@render/archie-viewer`). Run `pnpm test`.
 
 **v1 — complete and dogfooded.** The data layer, both apps, and all major features are built and verified on the Voynich (Beinecke MS 408) demo and a real Bidar fieldwork project. Both apps build clean.
 
