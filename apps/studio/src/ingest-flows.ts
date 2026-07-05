@@ -91,20 +91,28 @@ export function createIngestFlows(ctx: IngestContext) {
     while (existing.has(id)) id = `o${++n}`;
     return id;
   }
-  const exhibit = (): ExhibitMeta | undefined => ctx.lib.meta.exhibits.find((e) => e.slug === ctx.currentSlug());
+  const exhibitBySlug = (slug: string): ExhibitMeta | undefined => ctx.lib.meta.exhibits.find((e) => e.slug === slug);
+  const exhibit = (): ExhibitMeta | undefined => exhibitBySlug(ctx.currentSlug());
 
-  // Append an object to the current exhibit + persist; for imported files, keep its blob: URL.
-  async function appendObject(obj: ObjectMeta, blobUrl?: string) {
+  // Append an object to `targetSlug` (defaults to whatever's current) + persist; for imported files,
+  // keep its blob: URL. `targetSlug` matters for multi-item loops (newExhibitFromFolder,
+  // newExhibitFromManifest, addFiles): each PINS the exhibit it's importing into at the start, so a
+  // user switching exhibits mid-import can't silently misdirect later items onto the wrong one (tend
+  // Issue 7, ledgers/NEGSPACE.md — mid-flow-interruption rows). Only steer the view to this object
+  // when the target is still the one open; a background loop must not yank the user back.
+  async function appendObject(obj: ObjectMeta, blobUrl?: string, targetSlug: string = ctx.currentSlug()) {
     // Register the blob URL BEFORE the awaited persist (Archie-9db6): lib.appendObject sync-mutates the
     // store then awaits the OPFS write, and Svelte flushes the reactive graph during that await — so
     // `current` flips to this object before the await resolves. Setting assetUrls first means
     // `currentSource` resolves to the blob (not the raw /assets/ path) the instant Canvas mounts,
     // closing the first-import OSD open-failed race.
     if (blobUrl) ctx.setAssetUrl(obj.id, blobUrl);
-    await ctx.lib.appendObject(ctx.currentSlug(), obj);
-    ctx.setCurrentObjectId(obj.id);
-    ctx.clearAddForm();
-    ctx.setAddingObject(false);
+    await ctx.lib.appendObject(targetSlug, obj);
+    if (targetSlug === ctx.currentSlug()) {
+      ctx.setCurrentObjectId(obj.id);
+      ctx.clearAddForm();
+      ctx.setAddingObject(false);
+    }
   }
   // Add by URL / public path (e.g. /voynich/herbal.jpg, or an audio/video URL → the AV editor).
   // AV INGEST (uploading a media file) stays gated (§152); referencing an existing AV URL does not.
@@ -135,11 +143,14 @@ export function createIngestFlows(ctx: IngestContext) {
   // the upright master so the coord layer stays orientation-blind.
   // Returns whether an object was created + any per-file advisory (large-AV nudge / unsupported), so the
   // caller (addFiles / folder import) composes ONE message instead of each file clobbering the surface.
-  async function addObjectFromFile(file: File): Promise<{ added: boolean; note?: string }> {
+  // `targetSlug` (defaults to current) is the pinned exhibit a multi-file loop is importing into — see
+  // appendObject's comment; every OPFS path below must use it too, or bytes would save under the right
+  // slug while metadata drifted (or vice versa) once the user switches exhibits mid-import.
+  async function addObjectFromFile(file: File, targetSlug: string = ctx.currentSlug()): Promise<{ added: boolean; note?: string }> {
     if (!ctx.storeReady()) return { added: false }; // OPFS unavailable — caller surfaces this once
-    const ex = exhibit();
+    const ex = exhibitBySlug(targetSlug);
     if (!ex) return { added: false };
-    const slug = ctx.currentSlug();
+    const slug = targetSlug;
     const id = nextObjectId(ex);
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
 
@@ -149,7 +160,7 @@ export function createIngestFlows(ctx: IngestContext) {
       const mediaType: "sound" | "video" = file.type.startsWith("video/") ? "video" : "sound";
       const avName = `${id}-${safe}`;
       await saveAssetFile(slug, avName, file);
-      await appendObject({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file));
+      await appendObject({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file), targetSlug);
       return file.size > LARGE_MEDIA_BYTES
         ? { added: true, note: `“${file.name}” is large (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.` }
         : { added: true };
@@ -204,6 +215,7 @@ export function createIngestFlows(ctx: IngestContext) {
     await appendObject(
       { id, source: `${ASSET_PREFIX}${name}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(thumbnail ? { thumbnail } : {}), ...(provenance ? { provenance } : {}) },
       blobUrl,
+      targetSlug,
     );
     return { added: true };
   }
@@ -219,16 +231,21 @@ export function createIngestFlows(ctx: IngestContext) {
       ctx.setImportNote("This browser can’t save files here — you may be in a private window. Use a normal window to add media.");
       return;
     }
-    if (!exhibit()) {
+    const opened = exhibit();
+    if (!opened) {
       ctx.setImportNote("Open an exhibit first.");
       return;
     }
+    // Pin the exhibit this drop targets (tend Issue 7, ledgers/NEGSPACE.md): a multi-file drop has the
+    // same mid-flow-interruption exposure as the folder/manifest loops below — without this, switching
+    // exhibits partway through a drop would silently redirect the remaining files.
+    const targetSlug = opened.slug;
     let added = 0;
     const notes: string[] = [];
     try {
       for (let i = 0; i < list.length; i++) {
         ctx.setImportStatus({ name: list[i]!.name, index: i + 1, total: list.length });
-        const r = await addObjectFromFile(list[i]!);
+        const r = await addObjectFromFile(list[i]!, targetSlug);
         if (r.added) added++;
         if (r.note) notes.push(r.note);
       }
@@ -237,7 +254,7 @@ export function createIngestFlows(ctx: IngestContext) {
     }
     // Confirm the add AND name where it landed (reuses the importNote idiom that already confirms cites).
     // Compose one message so a mixed batch (some added, some unreadable) reads cleanly.
-    const where = exhibit()?.title ?? "this exhibit";
+    const where = exhibitBySlug(targetSlug)?.title ?? "this exhibit";
     const parts: string[] = [];
     if (added > 0) parts.push(`Added ${added} file${added === 1 ? "" : "s"} to “${where}”.`);
     parts.push(...notes);
@@ -270,6 +287,11 @@ export function createIngestFlows(ctx: IngestContext) {
     try {
       for (const g of groups) {
         await ctx.newExhibit(g.name);
+        // Pin THIS group's exhibit slug right after creating it (tend Issue 7, ledgers/NEGSPACE.md):
+        // the per-file loop below has awaits the user can act during, and a multi-folder import
+        // navigates through several exhibits in turn — without pinning, switching exhibits mid-group
+        // would silently redirect that group's remaining files onto whatever's now current.
+        const targetSlug = ctx.currentSlug();
         // storeReady is PER-EXHIBIT state — openExhibit (inside newExhibit) just set it. Without
         // it, addObjectFromFile would no-op per file = titled, silently-empty exhibits; stop loudly.
         if (!ctx.storeReady()) {
@@ -283,7 +305,7 @@ export function createIngestFlows(ctx: IngestContext) {
           // plan admitted them under — addObjectFromFile branches on File.type.
           const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
           try {
-            const r = await addObjectFromFile(file);
+            const r = await addObjectFromFile(file, targetSlug);
             if (r.added) imported++; else failed++;
             if (r.note) ctx.setImportNote(r.note); // large-AV nudge; the end-of-import summary overrides it if any
           } catch {
@@ -328,13 +350,17 @@ export function createIngestFlows(ctx: IngestContext) {
       return;
     }
     await ctx.newExhibit(plan.title);
+    // Pin the target slug right after creating it (tend Issue 7, ledgers/NEGSPACE.md): the per-object
+    // loop below awaits per object, and nothing blocks the user from navigating elsewhere mid-import —
+    // without pinning, a later object would silently land on whatever exhibit is now current.
+    const targetSlug = ctx.currentSlug();
     try {
       for (let i = 0; i < plan.objects.length; i++) {
         const o = plan.objects[i]!;
         ctx.setImportStatus({ name: o.label, index: i + 1, total: plan.objects.length });
-        const ex = exhibit();
+        const ex = exhibitBySlug(targetSlug);
         if (!ex) break;
-        await appendObject({ id: nextObjectId(ex), ...o });
+        await appendObject({ id: nextObjectId(ex), ...o }, undefined, targetSlug);
       }
     } finally {
       ctx.setImportStatus(null);

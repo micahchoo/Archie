@@ -94,11 +94,18 @@ recheck — see its row above), clustering into 3 root causes:
 |---|---|---|---|---|
 | 1 | transcript import | invalid input (silent no-op) | (this fix; hash filled at close) | pass — studio suite 148/148 green; re-probed the malformed-text case, now sets `importNote` |
 | 2 | transcript import | empty data (silent no-op) | (this fix; hash filled at close) | pass — same fix, same re-probe (empty string) |
-| 3 | IIIF manifest import | mid-flow interruption (wrong-exhibit misdirect) | | |
-| 4 | folder import | mid-flow interruption (wrong-exhibit misdirect) | | |
+| 3 | IIIF manifest import | mid-flow interruption (wrong-exhibit misdirect) | (this fix; hash filled at close) | pass — new `ingest-flows.test.ts`: flips `currentSlug` mid-import via a spy on `appendObject`, both planned objects still land on the exhibit the import created, none leak onto the exhibit switched to; studio suite 150/150 green |
+| 4 | folder import | mid-flow interruption (wrong-exhibit misdirect) | (this fix; hash filled at close) | pass — same test file, same technique, both files in a group land on the group's own exhibit |
 | 5 | IIIF manifest import | huge input (no byte cap) | | |
 | 6 | CSV import | huge input (no byte cap) | | |
 | 7 | WADM import | huge input (no byte cap) | | |
 | 8 | transcript import | huge input (no byte cap) | | |
 
 Done when every row above reads pass.
+
+**Scope note on rows 3/4's fix:** the same root cause (re-reading `ctx.currentSlug()` live inside a
+multi-item `await` loop) also lives in `addFiles` (drag-drop / picker onto the *currently open*
+exhibit) — not one of Issue 7's six named flows, but sharing `appendObject`/`addObjectFromFile` with
+the two fixed loops. Pinning the target slug there too was the same one-line change at the same call
+sites already being edited, so it rode the same commit rather than opening a new ledger row for a
+flow outside this loop's stated scope.
