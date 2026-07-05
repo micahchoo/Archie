@@ -443,8 +443,12 @@ export function createIngestFlows(ctx: IngestContext) {
     let loaded: Awaited<ReturnType<typeof loadLibrary>>;
     try {
       loaded = await loadLibrary(ZipFilesystem.fromZip(new Uint8Array(await file.arrayBuffer())));
-    } catch {
-      ctx.alert("Couldn't open that file — choose a published .archie.zip file.");
+    } catch (e) {
+      // ZipFilesystem.fromZip's zip-bomb caps (ZIP_LIMITS) already throw a specific, user-facing
+      // message ("too many entries" / ratio / size — possible zip bomb); collapsing every cause into
+      // one generic line discarded it (SILENCE row, tend Issue 4). Mirrors apps/viewer/src/published.ts's
+      // openError, which already surfaces e.message verbatim for this exact reason.
+      ctx.alert(e instanceof Error ? e.message : "Couldn't open that file — choose a published .archie.zip file.");
       return null;
     }
     if (loaded.library.exhibits.length === 0) { ctx.alert("That file has no exhibits to open."); return null; }
