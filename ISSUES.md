@@ -625,7 +625,12 @@ user review after each phase.
 
 ### Direction 1 — The collaboration machinery is built, tested, and unreachable
 
-**Status:** queued
+**Status:** done 2026-07-05 — ledger: ledgers/CAPABILITY.md (verdict: pursue, all three clusters —
+DAG-classification functions, import-merge path, merge-UI components. User-directed pursue; each
+cluster carries a commissioned next step — a spec interview for the conflict-resolution UI trigger
+and contract, a prototype brief for running MergeReview.svelte's own unrun comprehension test before
+wiring it in. No code built or changed; this resolves README.md:226's inaccurate "shipped" claim,
+already flagged blocked-on-verdict in ledgers/CLAIMS.md:40.)
 
 **Surplus.** `apps/studio/src/MergeReview.svelte` (conflict cards; its own header
 calls it the "#1 validation-priority invention") and `IdentityPrompt.svelte` are
