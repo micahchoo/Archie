@@ -692,7 +692,12 @@ sweep, and either verdict resolves the README claim row from ledgers/CLAIMS.md
 
 ### Direction 2 — Version history is written forever and shown never
 
-**Status:** queued
+**Status:** done 2026-07-05 — ledger: ledgers/DARKDATA.md (verdict: pursue, all three clusters —
+provenance/history values, timestamp values, identity values. User-directed pursue; corrected the
+direction's own framing along the way — `lastEditor` is partially surfaced already, via `collab.ts`'s
+aggregate per-editor banner, not only the unmounted MergeReview.svelte. Each cluster carries a
+commissioned next step: a spec interview for a note History panel, and two smaller prototype briefs
+for surfacing `modifiedAt` and per-note `lastEditor` standalone. No code built or changed.)
 
 **Surplus.** The annotation spine persists full provenance: `mergeParents`
 serialized as `archie:mergeParents` (`spine/serialize.ts:112`, read back at
