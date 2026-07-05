@@ -20,6 +20,8 @@
   import NarrativeReader from "./NarrativeReader.svelte";
   import MediaPlayer from "./MediaPlayer.svelte";
   import SearchOverlay from "./SearchOverlay.svelte";
+  import Filmstrip from "./Filmstrip.svelte";
+  import { stepObjectId } from "../exhibit-nav.js";
   import type { MarkerStyle } from "@render/svelte";
 
   // `onnav` (dba2): publishes the object-nav snapshot up to ViewerShell, which renders the carousel in
@@ -69,6 +71,10 @@
   // opens that grid over the read; `indexObjectId` is an object opened FROM the index (its own Reader).
   let narrativeIndex = $state(false);
   let indexObjectId = $state<string | null>(null);
+  // Filmstrip (Phase 4): the shared bottom thumbnail strip. Collapsed by default in the narrative (the
+  // authored read stays primary, plan :23); expanded elsewhere. Per-session component state (a user's
+  // open/closed choice holds while this exhibit is open) — the default is set once the layout resolves.
+  let filmstripCollapsed = $state(false);
 
   // Finder overlay (Q-3/Q-4): the ONE mode-independent discovery surface, mounted here so it works in
   // grid AND narrative exhibits. `finderTag` pre-scopes it as a facet when a tag chip opened it; null =
@@ -90,6 +96,7 @@
       const l = resolveLayout(exhibit); // sections ⇒ narrative; >1 object ⇒ grid; one ⇒ single
       data = d;
       layout = l;
+      filmstripCollapsed = l.type === "narrative"; // authored narrative read leads → strip starts collapsed
       selectedObjectId = l.type === "grid" ? null : (l.objects[0]?.id ?? null);
       // Object-cite arrival (#/<slug>/o/<id>, ADR-0018): land on the whole Object, not the overview/spine.
       // A narrative layout ignores selectedObjectId (it renders the spine), so open the object FROM the
@@ -174,6 +181,20 @@
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || t?.isContentEditable) return;
       e.preventDefault();
       openFinder();
+    }
+    // ←/→ object-stepping (Phase 4): move between sibling objects in grid/single readers. NET-NEW — the
+    // readers' own onkey is Escape/local only. Narrative arrows stay UNBOUND — the authored scroll leads.
+    // Step ONLY when nothing focused owns the arrow: OSD (canvas tabIndex=0) pans + preventDefaults every
+    // arrow it handles, so `defaultPrevented` cedes to it (Reader.svelte's "OSD owns the arrows" invariant)
+    // and future-proofs anything else that claims the key; native <video>/<audio> controls seek but don't
+    // reliably preventDefault, so they join the typing gate. Same not-typing / finder-closed guard as `/`.
+    if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !e.metaKey && !e.ctrlKey && !e.altKey
+        && !e.defaultPrevented && !finderOpen && layout && layout.type !== "narrative") {
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "VIDEO" || tag === "AUDIO" || t?.isContentEditable) return;
+      const target = stepObjectId(layout.objects, selectedObjectId, e.key === "ArrowRight" ? 1 : -1);
+      if (target) { e.preventDefault(); selectedObjectId = target; }
     }
   }
 
@@ -293,6 +314,15 @@
       ? { obj: indexObject, set: (id: string) => (indexObjectId = id) }
       : { obj: activeObject, set: (id: string) => (selectedObjectId = id) },
   );
+
+  // Filmstrip visibility (Phase 4): a multi-object exhibit shows the strip everywhere EXCEPT a full
+  // ObjectGrid surface (the grid overview, or the narrative index) — the grid already IS the survey there,
+  // so a strip would double it. A jump reuses the `reader` snapshot: grid → selectedObjectId, narrative →
+  // indexObjectId (open the object's own reader), sidestepping the object↔section ambiguity (spike-0005 §1).
+  const showingGrid = $derived(
+    (layout?.type === "grid" && !selectedObjectId) || (layout?.type === "narrative" && narrativeIndex && !indexObjectId),
+  );
+  const showFilmstrip = $derived((layout?.objects.length ?? 0) > 1 && !showingGrid);
 
   // The one honest arrival line — note/object/section misses each say what wasn't found and where we
   // landed instead (4.4 / 4.6 surface the same honest chrome the note path (#8) established).
@@ -455,6 +485,19 @@
       countOf={(id) => annotationsOf(id).length}
       onselect={(id) => (selectedObjectId = id)}
       rights={exhibitRights}
+    />
+  {/if}
+
+  <!-- Filmstrip (Phase 4): the shared survey-and-jump strip. One instance for BOTH readers — clicking a
+       thumb routes through `reader.set`, so a grid click lands on selectedObjectId and a narrative click
+       opens the object's own Reader (indexObjectId). Hidden on a full-grid surface (it would double it). -->
+  {#if showFilmstrip && layout}
+    <Filmstrip
+      objects={layout.objects}
+      currentId={reader.obj?.id ?? null}
+      collapsed={filmstripCollapsed}
+      onjump={(id) => reader.set(id)}
+      ontoggle={() => (filmstripCollapsed = !filmstripCollapsed)}
     />
   {/if}
 

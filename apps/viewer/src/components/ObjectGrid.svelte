@@ -3,9 +3,11 @@
   // (system.md signature) — the visitor scans the works and chooses one to read (object-led
   // reading, strategy §27). Deliberately a PLAIN thumbnail grid, NOT the Phase-3 "overview-as-canvas"
   // invention (a zoomable canvas-of-objects) — that stays gated. Selecting a card opens its Reader.
+  import { onMount } from "svelte";
   import { type AObject, type RightsFields } from "@render/core";
   import Credit from "./Credit.svelte";
   import MediaThumbnail from "./MediaThumbnail.svelte";
+  import { type Density, loadGridDensity, saveGridDensity, densityMetrics } from "../grid-density.js";
 
   let {
     title,
@@ -24,6 +26,13 @@
     rights?: RightsFields;
   } = $props();
 
+  // Grid landing density (Phase 4): a per-device audience preference. Read on mount (client-only — no
+  // localStorage during SSR); the toggle persists it. `metrics` drives the min column width AND the
+  // contain-intrinsic-size estimate TOGETHER, so the content-visibility virtualization can't jank.
+  let density = $state<Density>("comfortable");
+  onMount(() => { density = loadGridDensity(); });
+  const metrics = $derived(densityMetrics(density));
+  function setDensity(d: Density) { density = d; saveGridDensity(d); }
 </script>
 
 <main class="overview">
@@ -32,13 +41,21 @@
     <h1>{title}</h1>
     {#if summary}<p class="summary">{summary}</p>{/if}
     <p class="credit-row"><Credit {rights} tone="canvas" /></p>
+    {#if objects.length > 1}
+      <!-- Density — a 2-step segmented toggle (Phase 4). Discrete, one-tap: an audience surface needs no
+           fine control (the slider is the Studio editing surface). Persisted per-device in localStorage. -->
+      <div class="density" role="group" aria-label="Grid density">
+        <button type="button" class:on={density === "comfortable"} aria-pressed={density === "comfortable"} onclick={() => setDensity("comfortable")}>Comfortable</button>
+        <button type="button" class:on={density === "compact"} aria-pressed={density === "compact"} onclick={() => setDensity("compact")}>Compact</button>
+      </div>
+    {/if}
   </header>
 
   {#if objects.length === 0}
     <!-- empty state (orphan gate §39) — an exhibit with no objects yet -->
     <p class="empty">Nothing in this exhibit yet.</p>
   {:else}
-    <ul class="grid">
+    <ul class="grid" style:--grid-min={metrics.minCol} style:--grid-intrinsic={metrics.intrinsic}>
       {#each objects as obj (obj.id)}
         <li>
           <button class="object" onclick={() => onselect(obj.id)}>
@@ -66,11 +83,27 @@
   h1 { font-family: var(--font-display); font-weight: 300; font-size: 3rem; line-height: 1.1; margin: var(--space-2) 0 var(--space-3); color: var(--ink-canvas-primary); text-shadow: var(--shadow-text-haze); }
   .summary { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.6; color: var(--ink-canvas-secondary); margin: 0; max-width: 42rem; }
 
-  .grid { list-style: none; margin: 0 auto; padding: 0; max-width: 60rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-6); }
+  /* --grid-min / --grid-intrinsic are set per density (Phase 4); the fallbacks are the Comfortable
+     defaults (SSR / before onMount reads the preference). */
+  .grid { list-style: none; margin: 0 auto; padding: 0; max-width: 60rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--grid-min, 280px), 1fr)); gap: var(--space-6); }
   /* PERF: skip layout/paint/decode of off-screen plates in a large multi-object overview. The browser
      renders only what's near the viewport; `auto` in contain-intrinsic-size remembers each card's real
-     size after first render so scrolling never jumps. Pairs with the plate's loading="lazy". */
-  .grid > li { content-visibility: auto; contain-intrinsic-size: auto 360px; }
+     size after first render so scrolling never jumps. Pairs with the plate's loading="lazy". The intrinsic
+     estimate tracks density (via --grid-intrinsic) so a Compact grid reserves the shorter card height. */
+  .grid > li { content-visibility: auto; contain-intrinsic-size: auto var(--grid-intrinsic, 360px); }
+
+  /* Density segmented toggle — a quiet two-step control on warm paper; the active step is filled, the
+     other recedes. Discrete steps, one tap (audience surface). Sits under the credit in the header. */
+  .density { display: inline-flex; margin-top: var(--space-4); border-radius: var(--radius-sm); overflow: hidden; box-shadow: var(--shadow-lift-low); }
+  .density button {
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
+    border: none; padding: var(--space-2) var(--space-4); cursor: pointer;
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 500;
+    letter-spacing: 0.1em; text-transform: uppercase; transition: color 160ms ease, background 160ms ease;
+  }
+  .density button:hover { color: var(--accent-2); }
+  .density button.on { background: var(--accent); color: var(--ink-on-accent, #fff); }
+  .density button.on:hover { color: var(--ink-on-accent, #fff); }
 
   .object {
     display: flex; flex-direction: column; width: 100%; padding: 0; cursor: pointer; text-align: left;

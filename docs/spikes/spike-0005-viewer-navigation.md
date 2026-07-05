@@ -79,7 +79,12 @@ relabel). ~120 LOC, `apps/viewer` only.
 `SidebarObjectNav` :43-45; extract to a helper if shared), the narrative `activeIndex → "N of M"` derivation, the
 jump-target resolver (grid→`selectedObjectId` / narrative→`indexObjectId`), density localStorage read+default.
 **Browser-only (manual, as the viewer already is):** filmstrip thumbnail render/scroll, the collapse gesture,
-keyboard focus routing, the density content-visibility re-layout.
+keyboard focus routing, the density content-visibility re-layout. Added from the Phase-4 build review:
+(1) with the Reader lightbox / reading-sheet open, confirm ←/→ does NOT step the object underneath (check
+for state loss — the arrow gate cedes on `defaultPrevented` + the typing/media tag list, but an overlay that
+neither claims the key nor is a gated tag would still step through it); (2) the EXPANDED filmstrip overlays
+the readers' bottom edge with no padding compensation — at small viewport heights, confirm nothing important
+(credit, controls, note card) hides under the band.
 
 **Riskiest assumption:** that a horizontal thumbnail filmstrip is the right jump surface vs. simply making the
 existing full-grid overlay (`narrativeIndex` → `ObjectGrid`) reachable from BOTH readers. If dogfood finds the

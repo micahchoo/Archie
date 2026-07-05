@@ -17,6 +17,7 @@
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
   import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
+  import { positionLabel } from "../exhibit-nav.js";
 
   // Resizable / collapsible narrative spine (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
   // responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom. Drag math
@@ -229,7 +230,8 @@
        tree + tab order — no invisible duplicate of the stepper's section nav. The ResizeDivider is a
        sibling, so re-expanding stays reachable (§223 anti-trap). -->
   <aside class:collapsed={asideCollapsed} inert={asideCollapsed} style:--narr-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
-    <p class="eyebrow">Narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}</p>
+    <p class="eyebrow">Narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}
+      {#if sections.length > 1}<span class="spine-pos">· {positionLabel(activeIndex, sections.length, "Section")}</span>{/if}</p>
     <h1>{title}</h1>
     <p class="hint">Read down the page, or jump to any section. The image follows along, zooming to what each section is about{multiObject ? ", and switching between items as you go" : ""}.</p>
     <p class="credit-row"><Credit {rights} tone="paper" /></p>
@@ -296,6 +298,9 @@
   /* Collapsed = give the canvas the whole page (image-first). Divider stays (anti-trap §223: always expandable). */
   aside.collapsed { width: 0; min-width: 0; padding: 0; border-left: 0; overflow: hidden; }
   .eyebrow { color: var(--ink-paper-muted); }
+  /* Persistent position indicator (Phase 4 / §146): "Section N of M", live as the spine scrolls. A quiet
+     tabular-numeral echo in the eyebrow — connector-blue lifts it just off the category label beside it. */
+  .spine-pos { color: var(--accent-2); font-variant-numeric: tabular-nums; }
   aside h1 { font-family: var(--font-display); font-weight: 300; font-size: 2rem; line-height: 1.2; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); text-shadow: var(--shadow-text-haze); }
   .hint { font-family: var(--font-body); font-size: 0.8rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0 0 var(--space-5); }
 

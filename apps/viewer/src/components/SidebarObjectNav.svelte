@@ -7,6 +7,8 @@
   // keyboard-only/invisible (Prior Art 07 "surface stepping visibly") — this surfaces it.
   // Pure presentational: the host (ExhibitView, via the reader component) owns selection; this only
   // reflects the sibling list + calls back. Shown only when there are siblings to step (length > 1).
+  import { positionLabel } from "../exhibit-nav.js";
+
   let { siblings, currentId, onstep, onoverview }: {
     siblings: { id: string; label: string }[];
     currentId: string;
@@ -33,7 +35,7 @@
       title={prev ? `Previous: ${prev.label}` : "This is the first object"}>
       <span aria-hidden="true">‹</span> Prev
     </button>
-    <span class="pos">{idx >= 0 ? idx + 1 : "–"} / {siblings.length}</span>
+    <span class="pos">{idx >= 0 ? positionLabel(idx, siblings.length, "Object") : `– of ${siblings.length}`}</span>
     <button type="button" class="step" disabled={!next}
       onclick={() => { if (next) onstep(next.id); }}
       aria-label={next ? `Next object: ${next.label}` : "This is the last object"}
