@@ -1730,6 +1730,7 @@
             <Av source={currentSource} label={current.label} mediaType={current.mediaType}
               slug={currentSlug} assetName={isAsset(current.source) ? current.source.slice(ASSET_PREFIX.length) : null}
               {annotations} bind:selected oncreate={onCreateTime} oncreatewhole={createWholeObjectNote} onimport={onImportTranscript}
+              onimporterror={(msg) => (importNote = msg)}
               onmarkerrect={(r) => { notePos = r ? { left: r.right + 14, top: r.top } : null; }} />
           {:else}
             <div class="no-canvas">Loading…</div>

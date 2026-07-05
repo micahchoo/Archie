@@ -8,6 +8,7 @@
   import { matches, typingInField } from "./shortcuts.js";
   import { isTauri, fetchRemoteAsBlobUrl } from "./tauri-fs.js";
   import { readPeaks, savePeaks } from "./store.js";
+  import { LOCAL_TEXT_IMPORT_MAX_BYTES } from "./ingest-flows.js";
 
   type Box = { x: number; y: number; w: number; h: number };
 
@@ -22,6 +23,7 @@
     oncreate,
     oncreatewhole,
     onimport,
+    onimporterror,
     onmarkerrect,
   }: {
     source: string;
@@ -38,6 +40,10 @@
     /** Create a whole-object Note on this recording — no time range (bare canvas IRI, ADR-0018). */
     oncreatewhole?: () => void;
     onimport?: (text: string) => void;
+    /** A captions file was rejected before reading it (tend Issue 7, ledgers/NEGSPACE.md row 8) — too
+     *  large to be a real .vtt/.srt. Distinct from `onimport` so the caller can tell "nothing to import"
+     *  apart from "refused to try". */
+    onimporterror?: (msg: string) => void;
     /** Screen-rect (VIEWPORT coords; host popover is position:fixed) of the selected cue's locus — an audio
      *  waveform region, or a video frame box. Null when nothing's selected / not resolvable (ADR-0006). */
     onmarkerrect?: (rect: { left: number; top: number; right: number; bottom: number } | null) => void;
@@ -321,7 +327,13 @@
   async function loadTranscript(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
     const file = input.files?.[0];
-    if (file && onimport) onimport(await file.text());
+    if (file) {
+      if (file.size > LOCAL_TEXT_IMPORT_MAX_BYTES) {
+        onimporterror?.(`“${file.name}” is too large (${Math.round(file.size / (1024 * 1024))} MB) to import as captions — check it's really a .vtt or .srt file.`);
+      } else if (onimport) {
+        onimport(await file.text());
+      }
+    }
     input.value = "";
   }
   function setIn() { markedIn = playhead(); }

@@ -92,14 +92,14 @@ recheck — see its row above), clustering into 3 root causes:
 
 | # | item | case | fix commit | retest |
 |---|---|---|---|---|
-| 1 | transcript import | invalid input (silent no-op) | (this fix; hash filled at close) | pass — studio suite 148/148 green; re-probed the malformed-text case, now sets `importNote` |
-| 2 | transcript import | empty data (silent no-op) | (this fix; hash filled at close) | pass — same fix, same re-probe (empty string) |
-| 3 | IIIF manifest import | mid-flow interruption (wrong-exhibit misdirect) | (this fix; hash filled at close) | pass — new `ingest-flows.test.ts`: flips `currentSlug` mid-import via a spy on `appendObject`, both planned objects still land on the exhibit the import created, none leak onto the exhibit switched to; studio suite 150/150 green |
-| 4 | folder import | mid-flow interruption (wrong-exhibit misdirect) | (this fix; hash filled at close) | pass — same test file, same technique, both files in a group land on the group's own exhibit |
-| 5 | IIIF manifest import | huge input (no byte cap) | (this fix; hash filled at close) | pass — new `IIIF_MANIFEST_MAX_BYTES` (32 MB) cap, checked against declared `content-length` before reading the body AND against actual size after (mirrors `@render/core`'s `fetchArchieLibraryBytes` two-phase pattern); 2 new tests, studio suite 154/154 green |
-| 6 | CSV import | huge input (no byte cap) | (this fix; hash filled at close) | pass — new `LOCAL_TEXT_IMPORT_MAX_BYTES` (64 MB), checked against `file.size` before `file.text()`; test confirms `.text()` is never called when oversized |
-| 7 | WADM import | huge input (no byte cap) | (this fix; hash filled at close) | pass — same cap, same check, same test shape |
-| 8 | transcript import | huge input (no byte cap) | | |
+| 1 | transcript import | invalid input (silent no-op) | `b9fc2f5` | pass — studio suite 148/148 green; re-probed the malformed-text case, now sets `importNote` |
+| 2 | transcript import | empty data (silent no-op) | `b9fc2f5` | pass — same fix, same re-probe (empty string) |
+| 3 | IIIF manifest import | mid-flow interruption (wrong-exhibit misdirect) | `4ff8d2f` | pass — new `ingest-flows.test.ts`: flips `currentSlug` mid-import via a spy on `appendObject`, both planned objects still land on the exhibit the import created, none leak onto the exhibit switched to; studio suite 150/150 green |
+| 4 | folder import | mid-flow interruption (wrong-exhibit misdirect) | `4ff8d2f` | pass — same test file, same technique, both files in a group land on the group's own exhibit |
+| 5 | IIIF manifest import | huge input (no byte cap) | `331003d` | pass — new `IIIF_MANIFEST_MAX_BYTES` (32 MB) cap, checked against declared `content-length` before reading the body AND against actual size after (mirrors `@render/core`'s `fetchArchieLibraryBytes` two-phase pattern); 2 new tests, studio suite 154/154 green |
+| 6 | CSV import | huge input (no byte cap) | `331003d` | pass — new `LOCAL_TEXT_IMPORT_MAX_BYTES` (64 MB), checked against `file.size` before `file.text()`; test confirms `.text()` is never called when oversized |
+| 7 | WADM import | huge input (no byte cap) | `331003d` | pass — same cap, same check, same test shape |
+| 8 | transcript import | huge input (no byte cap) | (this fix; hash filled at close) | pass — `AvEditor.svelte`'s `loadTranscript` now checks `file.size` against the shared `LOCAL_TEXT_IMPORT_MAX_BYTES` before `file.text()`, routing a rejection through a new `onimporterror` prop (distinct from `onimport` so "nothing to import" and "refused to try" don't conflate); `tsc --noEmit` clean, studio suite 154/154 green. **Caveat**: no direct executable test — this repo has no Svelte component-mount test harness (no `@testing-library/svelte`, no existing component test anywhere in `apps/studio`), and building one from scratch for a single guard clause is disproportionate to this issue's "Worth exploring" strength. Verified by code inspection only; the shared constant and comparison logic ARE exercised by the CSV/WADM tests above. |
 
 Done when every row above reads pass.
 
