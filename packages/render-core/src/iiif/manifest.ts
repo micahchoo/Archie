@@ -21,6 +21,14 @@ const ARCHIE_TILE_SOURCE = "archie:tileSource" as const;
 function asTileSourceDescriptor(v: unknown): TileSourceDescriptor | undefined {
   if (typeof v !== "object" || v === null) return undefined;
   const d = v as Record<string, unknown>;
+  // A DZI pyramid (publish-time baking): toCanvas stamps it verbatim, so recover it verbatim — else a
+  // publish↔load round trip (and the incremental recover-from-manifest path, spike-0002) drops deep-zoom.
+  if (d.kind === "dzi") {
+    return typeof d.width === "number" && typeof d.height === "number" && typeof d.tileSize === "number"
+      && typeof d.overlap === "number" && typeof d.format === "string" && typeof d.filesPath === "string"
+      ? { kind: "dzi", width: d.width, height: d.height, tileSize: d.tileSize, overlap: d.overlap, format: d.format, filesPath: d.filesPath }
+      : undefined;
+  }
   if (d.kind !== "xyz" || typeof d.template !== "string" || typeof d.maxZoom !== "number") return undefined;
   return {
     kind: "xyz",

@@ -62,7 +62,7 @@ accumulated by these reducers and drained + cleared by `autosaveToFolder`.
 |---|---|---|---|
 | **note add/edit/delete** (hot path) | that slug's `manifest.json`, `canvas/{obj}/*`, `history/*`, `narrative.json`, `index.html` + global | **all asset/tile/thumb passes, all other exhibits** | — |
 | **object add** | that slug: manifest + NEW object's `assets/`,`_files/`,`assets-thumb/`, its canvas pages + global | other objects' bytes/tiles | — |
-| **object remove** | that slug's manifest + global | all bytes/tiles | orphaned `canvas/{obj}/`,`assets/{name}`,`assets-thumb/{name}`,`{name}_files/` |
+| **object remove** | that slug's manifest + global | all bytes/tiles | orphaned `canvas/{obj}/`,`assets/{name}`,`assets-thumb/{name}`, AND the tile pyramid — `{name}_files/` (imported, keyed by asset name) OR `{objId}_files/` (remote-baked, `tileRemote` keys by objId) |
 | **object reorder** | that slug's `manifest.json` + global | **all bytes/tiles** (order is manifest-only) | — |
 | **exhibit meta** (title/desc/sections/rights) | that slug: manifest, index.html, narrative/readings + global | bytes/tiles | — |
 | **library meta** | global only (`collection`,`exhibits`,`index.html`,`sitemaps`,image-index) | **every exhibit dir** | — |
@@ -73,11 +73,21 @@ accumulated by these reducers and drained + cleared by `autosaveToFolder`.
 embedded inline, `:427`), and the manifest carries the asset-REWRITTEN object sources + `tileSource` +
 baked `thumbnail` (`site.ts:255-277`). Rebuilding it from the working model would re-emit raw
 `/assets/` sources and drop `tileSource`/`thumbnail` — because those publish decisions (tiled? has
-thumb?) aren't persisted in the model. **Recovery:** `objectsFromManifest` (`manifest.ts:145`) already
-round-trips `source`, `tileSource` (:148,164), and the baked `thumbnail` (:152-153,165) — it's what
-`loadLibrary` uses. So when the asset pass is skipped, recover the projected objects by reading the
-EXISTING published `manifest.json`, rebuild the bare manifest from them + the model's order, re-embed
-fresh heads, write. No bytes touched, projection preserved.
+thumb?) aren't persisted in the model. **Recovery:** `objectsFromManifest` (`manifest.ts:145`)
+round-trips `source`, `tileSource`, and the baked `thumbnail` — it's what `loadLibrary` uses. So when
+the asset pass is skipped, recover the projected objects by reading the EXISTING published
+`manifest.json`, rebuild the bare manifest from them + the model's order, re-embed fresh heads, write.
+No bytes touched, projection preserved.
+
+> **Implementation correction (the linchpin was HALF-false):** `asTileSourceDescriptor`
+> (`manifest.ts:21`) only validated `kind:"xyz"` and returned `undefined` for `kind:"dzi"`, so
+> `objectsFromManifest` silently **dropped DZI tileSources** — the exact publish-time-baked pyramids the
+> recover path must preserve (and `loadLibrary` had the same latent bug on load→publish). Fixed to
+> recover DZI descriptors verbatim. Two more recover subtleties the sketch missed, both fixed:
+> (a) recovery must MIRROR the published projection's *absences* — drop a working `/assets-thumb/` ref /
+> stale `tileSource` when the published manifest has none, matching the full pass's `delete next.thumbnail`;
+> (b) if a scoped exhibit's manifest is **missing/unreadable**, recovery can't run — force the byte passes
+> for that exhibit (self-heal) rather than publish raw `/assets/` sources.
 
 ## 5. Recommended design
 
@@ -86,22 +96,40 @@ so the GH/zip/preview paths (`libraryToZipFs`, `projectSite`, `collectSiteFiles`
 untouched.
 
 ```ts
-interface IncrementalScope {
+interface IncrementalScope {                 // gates the exhibit-WRITE loop only
   exhibits: Set<string>;              // slugs whose exhibit-dir JSON/HTML to rewrite; others skipped whole
   reassets: Set<string>;             // subset whose asset+tile+thumb byte passes must run; else recover
-                                     // objects via objectsFromManifest(existing manifest)
-  removedExhibits?: string[];        // rm -rf {slug}/
-  removedObjects?: { slug: string; objId: string; assetName?: string }[]; // orphan cleanup
-}
-// PublishOptions gains: incremental?: IncrementalScope
+}                                     // objects via objectsFromManifest(existing manifest)
+// PublishOptions gains:
+//   incremental?: IncrementalScope
+//   removedExhibits?: string[]                                     // rm -rf {slug}/
+//   removedObjects?: { slug; objId; assetName? }[]                 // orphan cleanup (canvas + asset + tiles)
 ```
+
+> **API refinement (as built):** removals are **top-level `PublishOptions` fields, NOT inside
+> `IncrementalScope`** — because a full republish never prunes, so the full resync / explicit-Save paths
+> must carry removals too, and those paths pass NO incremental scope. Bundling removals inside
+> `incremental` would force every full write to also enumerate all exhibits. And removals run **BEFORE**
+> the exhibit-write loop, so a remove-then-recreate of one slug in a single publish prunes the old tree
+> first, then rewrites the fresh exhibit (post-loop pruning would delete that write). The binding store
+> mirrors this: `markExhibit/AssetsDirty` purges a slug from the pending-removal set (re-marking for
+> writing cancels a pending delete), and full-write paths pass the removals so ⌘S / the first-mirror
+> resync still prune.
 
 Behaviour when `incremental` is set: library-global writes always run (cheap, ADR-0023-mandated);
 the per-exhibit loop processes only `exhibits`; inside a processed exhibit the asset/`tileObject`/
 `tileRemote`/thumb passes run only if `reassets.has(slug)`, else objects come from the existing
-manifest; then removals. Binding store maintains the set, `autosaveToFolder` builds scope
-(note-edit slug → `exhibits` only, structure ops add to `reassets`/removals), calls the incremental
-write, clears the set on success. `loadAllLogs` → load only the dirty slugs' logs.
+manifest. `removedExhibits`/`removedObjects` prune first, regardless of `incremental`. Binding store
+maintains the set, `autosaveToFolder` builds scope (note-edit slug → `exhibits` only, structure ops add
+to `reassets`/removals), calls the incremental write, clears the set on success (retains on failure).
+
+> **Deviation — `loadAllLogs` is NOT narrowed to dirty slugs (do not "fix" this back).** The sketch
+> proposed loading only dirty logs. It's unsafe: `publishLibrary` builds a whole-library `archie:` link
+> index (`buildLinkIndex` over EVERY exhibit's log) to validate cross-exhibit cites; a partial log map
+> would mark a valid cite from the dirty exhibit into a clean one as broken and degrade it to plain text —
+> corrupting the dirty exhibit's published manifest/pages/HTML. Reading the (small) histories is cheap;
+> DZI re-tiling + master byte-copy were the real costs, and those are fully cut. `writeTree` keeps the
+> whole-library `loadAllLogs`.
 
 **Size:** ~1 new param + ~40 LOC of branching in `site.ts` (guard the two byte passes, add a
 recover-objects branch, add removal handling); ~30 LOC dirty-set in `binding-store.svelte.ts`; wire

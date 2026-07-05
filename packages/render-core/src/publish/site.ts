@@ -93,6 +93,38 @@ export interface PublishOptions {
    * pages byte-stable across republish; omitting it keeps the pre-Q-8 byte output.
    */
   publishedAt?: string;
+  /**
+   * Incremental scope (spike-0002 / SCALE-GALLERY Phase 1.1) — restrict which exhibits this publish
+   * (re)writes (the folder-autosave hot path). ABSENT = full projection: the zip / GitHub / preview
+   * paths pass nothing and stay byte-identical. PRESENT: only `exhibits` slugs are (re)written; within
+   * those, the expensive asset-copy + DZI-tiling + thumbnail BYTE passes run only for `reassets` slugs —
+   * others recover their published object projection from the existing manifest (bytes untouched).
+   * Library-global projections (collection/exhibits/index/sitemaps) are ALWAYS rewritten regardless —
+   * they are cheap (ADR-0023).
+   */
+  incremental?: IncrementalScope;
+  /**
+   * Orphan pruning (spike-0002) — DELETE these stale entries. DECOUPLED from `incremental` on purpose:
+   * a full republish overwrites but never removes, so removals must run on BOTH the incremental hot path
+   * AND the full resync / explicit-Save writes (else a deletion is silently forfeited). Processed BEFORE
+   * the exhibit-write loop, so a remove-then-recreate in one publish prunes the old tree, then rewrites.
+   */
+  removedExhibits?: string[];
+  removedObjects?: { slug: string; objId: string; assetName?: string }[];
+}
+
+/**
+ * Which exhibits an incremental publish must rewrite (spike-0002). `reassets` is a subset of `exhibits`:
+ * a slug there reruns the asset-copy + tiling byte passes; a slug only in `exhibits` rewrites its
+ * JSON/HTML but recovers its object projection from the prior manifest (bytes untouched). Slugs are the
+ * per-exhibit directory names. Removals live in `PublishOptions.removedExhibits/removedObjects` (they
+ * apply to full writes too), NOT here.
+ */
+export interface IncrementalScope {
+  /** Exhibit slugs whose data-tree files to rewrite; exhibits not listed are skipped entirely. */
+  exhibits: Set<string>;
+  /** Subset of `exhibits` whose asset/tile/thumbnail byte passes must rerun (object added / asset changed). */
+  reassets: Set<string>;
 }
 
 const ASSET_PREFIX = "/assets/";
@@ -184,6 +216,15 @@ async function writeTilePyramid(filesDir: FsDirectory, tiles: Map<string, Blob>)
   }
 }
 
+/** Remove a child if present; a missing entry is not an error (incremental orphan cleanup). */
+async function removeIfExists(dir: FsDirectory, name: string): Promise<void> {
+  try { await dir.remove(name); } catch { /* already absent */ }
+}
+/** Open a child directory, or null if it doesn't exist (create:false throws on the FSA/OPFS backends). */
+async function getDirOptional(dir: FsDirectory, name: string): Promise<FsDirectory | null> {
+  try { return await dir.getDirectory(name); } catch { return null; }
+}
+
 /** A remote image object eligible for publish-time DZI baking: an http(s) source that is NOT a local
  *  `/assets/` import (the asset pass — which runs FIRST and rewrites those to published `…/assets/…` URLs —
  *  owns its own tiling), no existing `tileSource` (a map/xyz/dzi is already structured), and image medium
@@ -204,6 +245,8 @@ function isRemoteTileable(o: AObject): boolean {
  */
 export async function publishLibrary(fs: Filesystem, library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<PublishResult> {
   const baseUrl = opts.baseUrl ?? "";
+  const inc = opts.incremental; // spike-0002: present = incremental (dirty-set) publish; absent = full
+  const src = fsJsonSource(fs); // for the incremental recover-from-existing-manifest path
   const root = await fs.root();
   // ADR-0020: stamp the L1 self-ID marker at the tree root so a consumer can identify (and reject a
   // non-Archie / wrong-schema) `.archie.zip` BEFORE opening it as a library — beside collection/exhibits.
@@ -229,14 +272,67 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   const brokenLinks: BrokenLink[] = [];
   const incompleteCanvases: IncompleteCanvas[] = [];
 
+  // Orphan pruning (spike-0002) — BEFORE the write loop, so a remove-then-recreate in one publish deletes
+  // the old tree first, then the loop rewrites the fresh exhibit (post-loop pruning would delete that write).
+  // Decoupled from `incremental`: runs on full writes too (a full republish overwrites but never removes).
+  // Removing a MISSING entry is a no-op.
+  for (const slug of opts.removedExhibits ?? []) await removeIfExists(root, slug);
+  for (const r of opts.removedObjects ?? []) {
+    const exDir = await getDirOptional(root, r.slug);
+    if (!exDir) continue;
+    const canvasDir = await getDirOptional(exDir, "canvas");
+    if (canvasDir) await removeIfExists(canvasDir, r.objId);
+    await removeIfExists(exDir, `${r.objId}_files`); // remote-baked DZI pyramid (tileRemote keys by objId)
+    if (r.assetName) {
+      const assetsDir = await getDirOptional(exDir, "assets");
+      if (assetsDir) await removeIfExists(assetsDir, r.assetName);
+      const thumbDir = await getDirOptional(exDir, "assets-thumb");
+      if (thumbDir) await removeIfExists(thumbDir, r.assetName);
+      await removeIfExists(exDir, `${r.assetName}_files`); // publish-time-tiled imported asset (keys by name)
+    }
+  }
+
   for (const exhibit of library.exhibits) {
+    if (inc && !inc.exhibits.has(exhibit.slug)) continue; // incremental: only dirty exhibits are (re)written
     const exDir = await root.getDirectory(exhibit.slug, { create: true });
+    let runAssets = !inc || inc.reassets.has(exhibit.slug); // rerun the expensive asset-copy + tiling passes?
+
+    let manifestExhibit = exhibit;
+    // JSON-only rewrite (byte passes skipped): recover the already-published object projection (rewritten
+    // source, tileSource, baked thumbnail) from the existing manifest and reuse it — rebuilding from the
+    // working model would re-emit raw /assets/ sources and DROP tileSource/thumbnail, since those publish
+    // decisions aren't persisted in the model (spike-0002 §manifest-recovery trap). Model order + authored
+    // fields win; only the asset triple comes from disk. objectsFromManifest is the round-trip loadLibrary relies on.
+    if (!runAssets) {
+      const existing = await src.getOptional<IIIFManifest>(`${exhibit.slug}/manifest.json`);
+      if (existing) {
+        const published = new Map(objectsFromManifest(existing).map((o) => [o.id, o]));
+        manifestExhibit = {
+          ...exhibit,
+          objects: exhibit.objects.map((o) => {
+            const p = published.get(o.id);
+            if (!p) return o; // no prior published projection (e.g. a just-added object) — keep the model
+            // The published projection is authoritative for the asset triple — MIRROR it exactly, including
+            // its ABSENCES: a working /assets-thumb/ ref or a stale tileSource in the model must be dropped
+            // when the published manifest carries none, matching the full pass's `delete next.thumbnail`.
+            const next: AObject = { ...o, source: p.source };
+            if (p.tileSource) next.tileSource = p.tileSource; else delete next.tileSource;
+            if (p.thumbnail !== undefined) next.thumbnail = p.thumbnail; else delete next.thumbnail;
+            return next;
+          }),
+        };
+      } else {
+        // Self-heal (spike-0002 §API footgun): a scoped exhibit whose published manifest is missing/unreadable
+        // can't recover its asset projection — falling back to the raw model would publish raw /assets/ sources
+        // and drop tiles. Force the byte passes for this exhibit instead (treat it as `reassets`).
+        runAssets = true;
+      }
+    }
 
     // Imported-asset objects (source "/assets/{name}"): write the bytes into the published tree at
     // {slug}/assets/{name} and rewrite the canvas image URL to that published path. The annotation
     // log targets canvas IRIs (by obj.id), NOT the image source, so heads grouping is unaffected.
-    let manifestExhibit = exhibit;
-    if (opts.getAsset && exhibit.objects.some((o) => o.source.startsWith(ASSET_PREFIX))) {
+    if (runAssets && opts.getAsset && exhibit.objects.some((o) => o.source.startsWith(ASSET_PREFIX))) {
       const assetsDir = await exDir.getDirectory("assets", { create: true });
       // The baked-thumbnail sibling dir, created only when an object actually carries one + the
       // callback is wired (keeps a thumbnail-less publish byte-identical to before).
@@ -287,7 +383,7 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // viewer deep-zooms from local tiles instead of depending on a slow / cross-origin IIIF service.
     // App-supplied tileRemote fetches the full-res image + slices (browser); writes {slug}/{objId}_files/
     // and stamps tileSource. The remote `source` stays as a fallback if the local tiles ever 404.
-    if (opts.tileRemote && manifestExhibit.objects.some(isRemoteTileable)) {
+    if (runAssets && opts.tileRemote && manifestExhibit.objects.some(isRemoteTileable)) {
       const objects = await Promise.all(
         manifestExhibit.objects.map(async (o) => {
           if (!isRemoteTileable(o)) return o;
@@ -330,7 +426,7 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // Opt-in: publish preserved ORIGINALS for citation (CONTEXT §89.1). Written beside the tree at
     // {slug}/assets-original/{name}; NOT referenced by any canvas (the display master is) — a citation
     // sidecar a scholar can dereference. Only objects carrying an `originalName` (an EXIF-baked import).
-    if (opts.getOriginal) {
+    if (runAssets && opts.getOriginal) {
       const withOriginals = exhibit.objects.filter((o) => o.originalName);
       if (withOriginals.length > 0) {
         const origDir = await exDir.getDirectory("assets-original", { create: true });

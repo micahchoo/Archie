@@ -10,14 +10,22 @@ import { loadLibrary, recentFromBinding, addRecent, removeRecent, bindingLabel, 
 import { loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
 import { folderSinkSupported, pickFolderBinding, reopenFolderBinding, forgetFolderBinding } from "./folder-backend.js";
 import { enqueueSave } from "./save-queue.svelte.js";
+import type { FolderWritePlan } from "./publish-flows.svelte.js";
 
 export type LoadedLibrary = Awaited<ReturnType<typeof loadLibrary>>;
+
+/** One object pending orphan cleanup (spike-0002). */
+type RemovedObject = { slug: string; objId: string; assetName?: string };
+/** A cleared snapshot of the incremental dirty-set — passed to the mirror, restored on failure. */
+interface DirtSnapshot { exhibits: Set<string>; reassets: Set<string>; removedExhibits: string[]; removedObjects: RemovedObject[]; library: boolean; }
 
 export interface BindingDeps {
   /** Flush the CURRENT exhibit's edits to OPFS (App's save()) so a whole-library write is current. */
   flushExhibit: () => Promise<void>;
-  /** Write the whole published tree into the bound folder's Filesystem (FSA or Tauri — the seam). */
-  writeToFolder: (fs: Filesystem) => Promise<void>;
+  /** Write the published tree into the bound folder's Filesystem (FSA or Tauri — the seam). `plan`
+   *  (spike-0002) carries the incremental scope + orphan removals; omitted (or removals-only) = full
+   *  publish. Removals apply to full writes too, so a resync / Save still prunes. */
+  writeToFolder: (fs: Filesystem, plan?: FolderWritePlan) => Promise<void>;
   /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
   downloadProjectZip: () => Promise<boolean>;
   /** Replace the OPFS project from a loaded library (the shared open-zip/open-folder body). */
@@ -38,6 +46,33 @@ export function createBindingStore(deps: BindingDeps) {
 
   let folderFs: Filesystem | null = null; // cached so autosave doesn't re-acquire each tick
   let autosaving = false;
+  // Incremental folder-mirror state (spike-0002). folderResynced: a FULL publish has landed for this
+  // binding session, so the on-disk tree is complete and the incremental recover-from-manifest path is
+  // safe; the first autosave of a session forces a full resync. The dirty-set below is accumulated by the
+  // studio mutation seams (mark* methods) and drained by autosaveToFolder — cleared on a successful write,
+  // retained on failure so the same scope retries. Non-reactive: the mirror doesn't drive UI.
+  let folderResynced = false;
+  let dEx = new Set<string>(); // exhibit slugs needing a JSON/HTML rewrite
+  let dAssets = new Set<string>(); // subset of dEx also needing the asset/tile byte passes rerun
+  let dRemovedEx: string[] = []; // exhibit slugs to delete from the tree
+  let dRemovedObj: RemovedObject[] = []; // objects to prune
+  let dLibrary = false; // library-global metadata changed — rewrite the always-cheap global projections
+  function resetDirt() { dEx = new Set(); dAssets = new Set(); dRemovedEx = []; dRemovedObj = []; dLibrary = false; }
+  function dirtEmpty(): boolean { return dEx.size === 0 && dAssets.size === 0 && dRemovedEx.length === 0 && dRemovedObj.length === 0 && !dLibrary; }
+  /** Snapshot the WHOLE dirty-set (writes + removals + the library bit) and clear the LIVE sets, so edits
+   *  during the in-flight write accrue fresh. Restored verbatim on a failed write (never drop a save). */
+  function takeDirt(): DirtSnapshot {
+    const snap = { exhibits: dEx, reassets: dAssets, removedExhibits: dRemovedEx, removedObjects: dRemovedObj, library: dLibrary };
+    resetDirt();
+    return snap;
+  }
+  function restoreDirt(snap: DirtSnapshot) {
+    for (const x of snap.exhibits) dEx.add(x);
+    for (const x of snap.reassets) dAssets.add(x);
+    dRemovedEx.unshift(...snap.removedExhibits);
+    dRemovedObj.unshift(...snap.removedObjects);
+    if (snap.library) dLibrary = true;
+  }
 
   function rememberBinding() {
     saveLastBinding(s.binding);
@@ -53,6 +88,61 @@ export function createBindingStore(deps: BindingDeps) {
     if (!reb) { s.error = `Couldn't reach "${s.binding.name}". Grant access again, or save as a new library.`; return null; }
     folderFs = reb.fs;
     return folderFs;
+  }
+
+  /** Folder autosave-in-place (spike-0002 incremental): mirror the accumulated dirty-set to the bound
+   *  folder after an OPFS save(). Fire-and-forget, guarded against overlap; a permission miss stays quiet
+   *  (expected without a gesture); a WRITE failure lands in saveStatus via the queue (worklist 0.1). The
+   *  first mirror of a session forces a full resync, then only dirty files are rewritten. */
+  async function mirrorToFolder(): Promise<void> {
+    // `s.busy` guard: an explicit Save/Open/replace is in flight — it owns the write (or is about to reset
+    // the binding for a resync), so an autosave must not race it or mirror to a folder mid-swap.
+    if (s.binding.kind !== "folder" || autosaving || s.busy) return;
+    autosaving = true;
+    let progressed = false; // a write actually landed → safe to drain any dirt that accrued mid-flight
+    try {
+      const fs = folderFs ?? (s.binding.handleKey ? (await reopenFolderBinding(s.binding.handleKey, s.binding.name ?? ""))?.fs ?? null : null);
+      if (!fs) return;
+      folderFs = fs;
+      if (!folderResynced) {
+        // First mirror of the session → FULL resync: incremental recovery reads the existing manifest,
+        // so the tree must be complete first. A full write flushes all pending write-dirt, but it still
+        // must PRUNE pending removals (a full republish overwrites but never deletes) — pass them along.
+        const snap = takeDirt();
+        if (await enqueueSave("folder-mirror", "Folder autosave", () => deps.writeToFolder(fs, { removedExhibits: snap.removedExhibits, removedObjects: snap.removedObjects }))) {
+          folderResynced = true; s.dirty = false; progressed = true;
+        } else restoreDirt(snap);
+        return;
+      }
+      if (dirtEmpty()) return; // a redundant trigger — the tree is already current
+      const snap = takeDirt();
+      const plan: FolderWritePlan = { incremental: { exhibits: snap.exhibits, reassets: snap.reassets }, removedExhibits: snap.removedExhibits, removedObjects: snap.removedObjects };
+      if (await enqueueSave("folder-mirror", "Folder autosave", () => deps.writeToFolder(fs, plan))) {
+        s.dirty = false; progressed = true;
+      } else restoreDirt(snap); // failed → retry the SAME scope + removals next trigger (never drop a save)
+    } catch { /* not yet reacquirable (FSA permission needs a gesture) — keep dirty; explicit Save asks */ }
+    finally {
+      autosaving = false;
+      // Dirt accrued while the write was in flight turned its own triggers into no-ops (the guard);
+      // drain it now, but ONLY after a successful write (never hot-loop on a persistent failure).
+      if (progressed && !dirtEmpty() && s.binding.kind === "folder") void mirrorToFolder();
+    }
+  }
+
+  /** A FULL folder write for the explicit-Save / Save-As paths — rewrites the whole tree AND prunes pending
+   *  removals. Takes the dirty-set snapshot BEFORE the write so edits that accrue DURING the in-flight write
+   *  (s.busy guards the mirror, not the mark* seams) stay live for the next autosave; on success the taken
+   *  snapshot is simply discarded (already written), on failure it is restored so ⌘S can retry. Mirrors
+   *  mirrorToFolder's take/restore contract. Throws on write failure (saveProject's catch surfaces it). */
+  async function fullFolderWrite(fs: Filesystem): Promise<void> {
+    const snap = takeDirt();
+    try {
+      await deps.writeToFolder(fs, { removedExhibits: snap.removedExhibits, removedObjects: snap.removedObjects });
+    } catch (e) {
+      restoreDirt(snap); // Save failed → keep the dirt (incl. removals) for a retry
+      throw e;
+    }
+    folderResynced = true; // the tree is complete; mid-flight accruals (post-snapshot) remain for the next mirror
   }
 
   return {
@@ -77,6 +167,8 @@ export function createBindingStore(deps: BindingDeps) {
     dismissError() { s.error = null; },
     /** An opened .archie.zip is now this Library's canonical file (the open-zip path). */
     bindToFile(name: string) {
+      folderFs = null;
+      folderResynced = false; resetDirt(); // leaving any folder binding — drop its stale mirror state
       s.binding = { kind: "file", name };
       s.error = null;
       s.dirty = false;
@@ -95,7 +187,7 @@ export function createBindingStore(deps: BindingDeps) {
             if (!fb) return;
             folderFs = fb.fs;
             s.binding = { kind: "folder", name: fb.name, handleKey: fb.key };
-            await deps.writeToFolder(fb.fs);
+            await fullFolderWrite(fb.fs); // full tree + pruned removals; preserves mid-flight dirt
           } else {
             s.binding = { kind: "file", name: deps.zipName() };
             if (!(await deps.downloadProjectZip())) return; // declined the large-library zip → stay unsaved
@@ -103,7 +195,7 @@ export function createBindingStore(deps: BindingDeps) {
         } else if (s.binding.kind === "folder") {
           const fs = await reacquireFolder();
           if (!fs) return;
-          await deps.writeToFolder(fs);
+          await fullFolderWrite(fs); // full tree + pruned removals; preserves mid-flight dirt
         } else {
           if (!(await deps.downloadProjectZip())) return; // declined the large-library zip → stay unsaved
         }
@@ -130,6 +222,7 @@ export function createBindingStore(deps: BindingDeps) {
         if (!window.confirm("Open this folder as your library? Your current library will be replaced.")) return;
         await deps.replaceProjectFrom(loaded);
         folderFs = fb.fs;
+        folderResynced = false; resetDirt(); // new library + folder — resync before incremental mirrors
         s.binding = { kind: "folder", name: fb.name, handleKey: fb.key };
         s.dirty = false; rememberBinding();
       } finally { s.busy = false; }
@@ -150,6 +243,7 @@ export function createBindingStore(deps: BindingDeps) {
         if (!window.confirm(`Open "${r.name}"? Your current library will be replaced.`)) return;
         await deps.replaceProjectFrom(loaded);
         folderFs = reb.fs;
+        folderResynced = false; resetDirt(); // new library + folder — resync before incremental mirrors
         s.binding = { kind: "folder", name: reb.name, handleKey: r.id };
         s.dirty = false; rememberBinding();
       } finally { s.busy = false; }
@@ -165,27 +259,35 @@ export function createBindingStore(deps: BindingDeps) {
     closeProject() {
       if (s.binding.kind === "folder" && s.binding.handleKey) void forgetFolderBinding(s.binding.handleKey);
       folderFs = null;
+      folderResynced = false; resetDirt(); // a new binding must resync before incremental mirrors resume
       s.binding = { kind: "unbound" };
       s.error = null; s.dirty = false;
       saveLastBinding(s.binding);
     },
 
-    /** Folder autosave-in-place: mirror the tree to the bound folder after an OPFS save(). Fire-and-
-     *  forget, guarded against overlap; a permission miss stays quiet (expected without a gesture);
-     *  a WRITE failure lands in saveStatus via the queue (worklist 0.1), never swallowed. */
-    async autosaveToFolder() {
-      if (s.binding.kind !== "folder" || autosaving) return;
-      autosaving = true;
-      try {
-        const fs = folderFs ?? (s.binding.handleKey ? (await reopenFolderBinding(s.binding.handleKey, s.binding.name ?? ""))?.fs ?? null : null);
-        if (fs) {
-          folderFs = fs;
-          if (await enqueueSave("folder-mirror", "Folder autosave", () => deps.writeToFolder(fs)))
-            s.dirty = false;
-        }
-      } catch { /* not yet reacquirable (FSA permission needs a gesture) — keep dirty; explicit Save asks */ }
-      finally { autosaving = false; }
+    autosaveToFolder: mirrorToFolder,
+
+    // — incremental dirty-set seams (spike-0002): the studio mutation sites tag what changed; the next
+    //   autosaveToFolder drains it. A slug in `reassets` reruns the expensive asset-copy + DZI-tiling
+    //   passes; `dirty`-only reruns just that exhibit's JSON/HTML (the note-edit hot path). —
+    // Re-marking a slug for WRITING cancels any pending EXHIBIT removal of it (a remove-then-recreate in one
+    // drain must not both write and delete the exhibit) — the inverse of markExhibitRemoved's dEx.delete.
+    // We do NOT purge dRemovedObj here: object ids are minted fresh on every add, so a pending object removal
+    // always names a genuinely-gone object, and the site.ts prune runs BEFORE the write loop — a stale entry
+    // is harmless. (If object ids ever become reusable, this stops holding — purge dRemovedObj by objId then.)
+    /** A note edit / exhibit-metadata edit — rewrite that exhibit's JSON/HTML only (no byte passes). */
+    markExhibitDirty(slug: string) { dEx.add(slug); dRemovedEx = dRemovedEx.filter((x) => x !== slug); },
+    /** An object added / an asset changed — also rerun that exhibit's asset-copy + tiling byte passes. */
+    markAssetsDirty(slug: string) { dEx.add(slug); dAssets.add(slug); dRemovedEx = dRemovedEx.filter((x) => x !== slug); },
+    /** An object removed — rewrite the exhibit's manifest AND prune the object's orphaned tree files. */
+    markObjectRemoved(slug: string, objId: string, assetName?: string) {
+      dEx.add(slug);
+      dRemovedObj.push({ slug, objId, ...(assetName !== undefined ? { assetName } : {}) });
     },
+    /** An exhibit removed — drop it from the rewrite set and prune its whole `{slug}/` directory. */
+    markExhibitRemoved(slug: string) { dEx.delete(slug); dAssets.delete(slug); dRemovedEx.push(slug); },
+    /** Library-global metadata (title / rights) changed — rewrite only the cheap global projections. */
+    markLibraryDirty() { dLibrary = true; },
   };
 }
 export type BindingStore = ReturnType<typeof createBindingStore>;

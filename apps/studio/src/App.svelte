@@ -72,7 +72,17 @@
   const srcOf = (t: unknown): string | undefined => (typeof t === "string" ? t : (t as { source?: string } | null)?.source);
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
-  const lib = createLibraryStore({ exhibits: DEFAULT_EXHIBITS }, { onAfterPersist: () => bnd.touch() });
+  const lib = createLibraryStore({ exhibits: DEFAULT_EXHIBITS }, {
+    // touch() marks the binding unsaved; the incremental folder mirror (spike-0002) then drains whatever
+    // onDirty accumulated — one trigger per (debounced) persist, so a keystroke burst coalesces into one.
+    onAfterPersist: () => { bnd.touch(); void bnd.autosaveToFolder(); },
+    onDirty: (d) => {
+      if (d.kind === "library") bnd.markLibraryDirty();
+      else if (d.kind === "exhibit-assets") bnd.markAssetsDirty(d.slug);
+      else if (d.kind === "exhibit-removed") bnd.markExhibitRemoved(d.slug);
+      else bnd.markExhibitDirty(d.slug);
+    },
+  });
   let view = $state<"library" | "overview" | "editor">("library");
   // Lazy deep-zoom canvas (OpenSeadragon + Annotorious — the largest dep). Loaded the moment the user
   // enters an exhibit (overview or editor), so it's warm by the time an object opens, while staying OUT
@@ -150,7 +160,7 @@
     author: () => author,
     isTemplate,
     seedFor: (slug) => seededFor(author, slug),
-    autosaveToFolder: () => void bnd.autosaveToFolder(),
+    autosaveToFolder: (slug) => { bnd.markExhibitDirty(slug); void bnd.autosaveToFolder(); },
     touchBinding: () => bnd.touch(),
   });
   // Thin App-side wrappers preserve the zero-arg save()/scheduleSave() call sites (they thread the live slug).
@@ -263,6 +273,12 @@
     const cid = canvasIdOf(objId);
     for (const r of sess.session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) sess.session.deleteNote(r.logicalId as LogicalId);
     bump();
+    // Tag the incremental mirror BEFORE removeObject so the trigger it fires (via onAfterPersist) sees the
+    // removal: rewrite the exhibit's manifest AND prune the object's orphaned tree files (spike-0002). The
+    // removeObject reducer can't do this — only here do we still know the object's imported-asset name.
+    const gone = OBJECTS.find((o) => o.id === objId);
+    const assetName = gone && isAsset(gone.source) ? gone.source.slice(ASSET_PREFIX.length) : undefined;
+    bnd.markObjectRemoved(currentSlug, objId, assetName);
     await lib.removeObject(currentSlug, objId);
   }
   async function removeCurrentObject() {
@@ -514,6 +530,9 @@
     const { seedVersion: _omit, ...rest } = ex; // a user copy is not a reconciled default
     const copy: ExhibitMeta = { ...rest, id: `ex-${slug}`, slug, title: `${ex.title} (copy)`, objects: ex.objects.map((o) => ({ ...o })) };
     lib.setMeta({ ...lib.meta, exhibits: [...lib.meta.exhibits, copy] });
+    // setMeta bypasses onDirty (bulk rebuild) — tag the copy for the incremental mirror ourselves: a
+    // brand-new exhibit has no prior manifest to recover from, so its byte passes must run (spike-0002).
+    bnd.markAssetsDirty(slug);
     // Re-create the current head notes against the copy's canvas IRIs (fresh records — it's new content).
     const fromBase = `${BASE}${from}/canvas/`, toBase = `${BASE}${slug}/canvas/`;
     const carried = sess.session.notes().filter((r) => !r.deleted).map((r) => {

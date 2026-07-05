@@ -46,9 +46,12 @@ overview scroll, and after saves — so all three fixes are live:
    recover projected objects (source/tileSource/thumbnail) from the EXISTING published
    `manifest.json` via `objectsFromManifest` (`manifest.ts:145`), re-embed fresh heads, write.
    Dirty-set lives in the binding store, fed by `exhibit-session.save()` (note edits → that slug)
-   and the `library-meta` reducers (structure ops → `reassets`/removals); `loadAllLogs` loads only
-   dirty slugs. ~4 files, ~90 LOC + tests. Test oracle: full-publish tree ≡ sequence of
-   incremental publishes; `tileObject` spy asserts 0 calls on a note-edit save.
+   and the `library-meta` reducers (structure ops → `reassets`/removals). NOTE (implementation
+   deviation, deliberate): `loadAllLogs` is NOT narrowed to dirty slugs — publishLibrary builds a
+   whole-library `archie:` link index from every log, and a partial map would wrongly degrade
+   valid cross-exhibit cites; log JSON is cheap, byte passes were the cost. Test oracle:
+   full-publish tree ≡ incremental publish of the same mutation; `tileObject` spy asserts 0 calls
+   on a note-edit save.
 2. **Lazy master minting.** (Spike: `docs/spikes/2026-07-open-cost-and-lazy-assets.md`.)
    Minting is handle-lookup + blob-URL registration, no byte read — the waste is N never-viewed
    master URLs pinning OPFS Files plus N handle lookups on the open critical path. Only

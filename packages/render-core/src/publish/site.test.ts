@@ -1,12 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { publishLibrary, libraryToZip, loadLibrary } from "./site.js";
+import { collectFiles } from "./ghpages.js";
+import { objectsFromManifest } from "../iiif/manifest.js";
+import type { DziTileSource } from "../iiif/resolve.js";
 import { ZipFilesystem } from "../fs/zip.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { readAnnotations } from "../spine/persist.js";
 import { appendNew } from "../spine/log.js";
 import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import { encodeLinkRef } from "../link/link.js";
-import type { Library } from "../model/model.js";
+import type { AObject, Library } from "../model/model.js";
 import type { AnnotationLog } from "../wadm/types.js";
 
 // Publish primitive (CONTEXT: zip-primitive + per-host adapters). Assemble the whole published
@@ -326,5 +329,162 @@ describe("publishLibrary — incompleteCanvases (IIIF Pres 3 §5.3 dimensions ad
     const fs = new MemoryFilesystem();
     const { incompleteCanvases } = await publishLibrary(fs, gapLib, getLog, { baseUrl: "https://u.gh.io/lib/" });
     expect(incompleteCanvases).toEqual([{ exhibitSlug: "gap", canvasId: "https://u.gh.io/lib/gap/canvas/no-dims", label: "Undimensioned" }]);
+  });
+});
+
+// Incremental folder-autosave scope (spike-0002 / SCALE-GALLERY Phase 1.1). A note edit must rewrite ONLY
+// the touched exhibit's JSON and MUST NOT re-copy assets or re-slice DZI tiles; removals must prune orphans.
+describe("publishLibrary — incremental scope (spike-0002)", () => {
+  const INC_BASE = "https://u/lib/";
+  const descriptor: DziTileSource = { kind: "dzi", width: 8000, height: 6000, tileSize: 254, overlap: 1, format: "image/jpeg", filesPath: "photo.jpg_files" };
+  const assetBytes = new Uint8Array([1, 2, 3, 4]).buffer;
+  const thumbBytes = new Uint8Array([5, 6, 7]).buffer;
+  // An imported-asset object that tiles + carries a baked thumbnail — the full path exercises every byte pass.
+  const objP = { id: asObjectId("p1"), source: "/assets/photo.jpg", label: "Photo", width: 8000, height: 6000, thumbnail: "/assets-thumb/photo.jpg" };
+  const exP = { id: asExhibitId("exP"), slug: "p", title: "P", objects: [objP] };
+  const exQ = { id: asExhibitId("exQ"), slug: "q", title: "Q", objects: [{ id: asObjectId("q1"), source: "https://img/q.jpg", label: "Q1", width: 10, height: 10 }] };
+  const libPQ: Library = { id: asLibraryId("lib"), title: "Lib", exhibits: [exP, exQ] };
+  const canvasP1 = `${INC_BASE}p/canvas/p1`;
+
+  const tiles = () => new Map<string, Blob>([["0/0_0.jpg", new Blob([new Uint8Array([9, 9])])]]);
+  const fullOpts = () => ({
+    baseUrl: INC_BASE,
+    getAsset: async () => assetBytes,
+    getThumbnail: async () => thumbBytes,
+    tileObject: async () => ({ descriptor, tiles: tiles() }),
+  });
+
+  // A REMOTE object baked to a local pyramid at publish (tileRemote keys its dir by objId, not asset name).
+  const objR = { id: asObjectId("r1"), source: "https://iiif.example/img/info.json", label: "Remote", width: 8000, height: 6000, bakeTiles: true };
+  const exR = { id: asExhibitId("exR"), slug: "r", title: "R", objects: [objR] };
+  const libR: Library = { id: asLibraryId("lib"), title: "Lib", exhibits: [exR] };
+  const remoteOpts = () => ({ baseUrl: INC_BASE, tileRemote: async () => ({ descriptor: { ...descriptor, filesPath: "r1_files" }, tiles: tiles() }) });
+
+  const log0: AnnotationLog = appendNew([], { target: canvasP1, body: { type: "TextualBody", value: "first" }, lastEditor: alice, modifiedAt: "t0", now: 1 }).log;
+  const logsFor = (log: AnnotationLog): ((id: string) => AnnotationLog) => (id) => (id === "exP" ? log : []);
+
+  it("a note edit re-runs NO byte passes AND yields a tree IDENTICAL to a full republish (equivalence oracle)", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libPQ, logsFor(log0), fullOpts()); // full baseline
+    const before = await collectFiles(await fs.root());
+
+    const log1 = appendNew(log0, { target: canvasP1, body: { type: "TextualBody", value: "second" }, lastEditor: alice, modifiedAt: "t1", now: 2 }).log;
+    let tileCalls = 0;
+    await publishLibrary(fs, libPQ, logsFor(log1), {
+      ...fullOpts(),
+      tileObject: async () => { tileCalls++; return { descriptor, tiles: tiles() }; }, // spy; must NOT fire
+      incremental: { exhibits: new Set(["p"]), reassets: new Set() },
+    });
+    const after = await collectFiles(await fs.root());
+
+    expect(tileCalls).toBe(0); // the whole point: no re-slicing on a note edit
+    expect(after["p/assets/photo.jpg"]).toEqual(before["p/assets/photo.jpg"]); // bytes never rewritten
+    expect(after["p/photo.jpg_files/0/0_0.jpg"]).toEqual(before["p/photo.jpg_files/0/0_0.jpg"]);
+    // The real oracle: the incremental result must equal a FULL republish of the same mutated library.
+    const fullFs = new MemoryFilesystem();
+    await publishLibrary(fullFs, libPQ, logsFor(log1), fullOpts());
+    expect(after).toEqual(await collectFiles(await fullFs.root()));
+    // (and the recovered projection carried source/tileSource/thumbnail through — implied by the oracle,
+    // asserted directly so a regression names the culprit)
+    const recovered = objectsFromManifest(JSON.parse((after["p/manifest.json"] as { text: string }).text))[0]!;
+    expect(recovered.source).toBe(`${INC_BASE}p/assets/photo.jpg`);
+    expect(recovered.tileSource).toEqual({ ...descriptor, filesPath: `${INC_BASE}p/photo.jpg_files` });
+    expect(recovered.thumbnail).toBe(`${INC_BASE}p/assets-thumb/photo.jpg`);
+  });
+
+  it("skips an exhibit not in the scope entirely (its files are untouched even if the model changed)", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libPQ, logsFor(log0), fullOpts());
+    const before = await collectFiles(await fs.root());
+    const libPQ2: Library = { ...libPQ, exhibits: [exP, { ...exQ, title: "Q RENAMED" }] };
+    await publishLibrary(fs, libPQ2, logsFor(log0), { ...fullOpts(), incremental: { exhibits: new Set(["p"]), reassets: new Set() } });
+    const after = await collectFiles(await fs.root());
+    expect(after["q/manifest.json"]).toEqual(before["q/manifest.json"]); // untouched — still titled "Q"
+  });
+
+  it("recovery MIRRORS the published projection's absences — a stripped thumbnail stays stripped (defect 4)", async () => {
+    const fs = new MemoryFilesystem();
+    const objAt = async (): Promise<{ obj: AObject; text: string }> => {
+      const text = ((await collectFiles(await fs.root()))["p/manifest.json"] as { text: string }).text;
+      return { obj: objectsFromManifest(JSON.parse(text))[0]!, text };
+    };
+    // Full baseline with NO thumbnail bytes: the full pass strips the working /assets-thumb/ ref.
+    await publishLibrary(fs, libPQ, logsFor(log0), { ...fullOpts(), getThumbnail: async () => null });
+    expect((await objAt()).obj.thumbnail).toBeUndefined();
+    // A note-edit recover must NOT resurrect objP's raw model thumbnail ref.
+    const log1 = appendNew(log0, { target: canvasP1, body: { type: "TextualBody", value: "second" }, lastEditor: alice, modifiedAt: "t1", now: 2 }).log;
+    await publishLibrary(fs, libPQ, logsFor(log1), { ...fullOpts(), getThumbnail: async () => null, incremental: { exhibits: new Set(["p"]), reassets: new Set() } });
+    const recovered = await objAt();
+    expect(recovered.obj.thumbnail).toBeUndefined();
+    expect(recovered.text).not.toContain("assets-thumb");
+  });
+
+  it("self-heals a scoped exhibit whose manifest is missing — forces the byte passes (defect 5)", async () => {
+    const fs = new MemoryFilesystem(); // FRESH tree: no prior p/manifest.json to recover from
+    let tileCalls = 0;
+    await publishLibrary(fs, libPQ, logsFor(log0), {
+      ...fullOpts(),
+      tileObject: async () => { tileCalls++; return { descriptor, tiles: tiles() }; },
+      incremental: { exhibits: new Set(["p"]), reassets: new Set() }, // note: p NOT in reassets
+    });
+    const tree = await collectFiles(await fs.root());
+    expect(tileCalls).toBe(1); // forced byte passes rather than publishing a raw /assets/ source
+    expect(tree["p/assets/photo.jpg"]).toBeDefined();
+    expect(objectsFromManifest(JSON.parse((tree["p/manifest.json"] as { text: string }).text))[0]!.source).toBe(`${INC_BASE}p/assets/photo.jpg`);
+  });
+
+  it("prunes an orphaned imported-asset object's tree files (canvas + asset + thumb + tiles)", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libPQ, logsFor(log0), fullOpts());
+    const libNoP1: Library = { ...libPQ, exhibits: [{ ...exP, objects: [] }, exQ] };
+    await publishLibrary(fs, libNoP1, logsFor(log0), {
+      ...fullOpts(),
+      incremental: { exhibits: new Set(["p"]), reassets: new Set() },
+      removedObjects: [{ slug: "p", objId: "p1", assetName: "photo.jpg" }],
+    });
+    const tree = await collectFiles(await fs.root());
+    expect(Object.keys(tree).some((k) => k.startsWith("p/canvas/p1/"))).toBe(false);
+    expect(Object.keys(tree).some((k) => k.startsWith("p/photo.jpg_files/"))).toBe(false);
+    expect(tree["p/assets/photo.jpg"]).toBeUndefined();
+    expect(tree["p/assets-thumb/photo.jpg"]).toBeUndefined();
+  });
+
+  it("prunes a removed REMOTE-baked object's {objId}_files pyramid (defect 3)", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libR, () => [], remoteOpts());
+    expect(Object.keys(await collectFiles(await fs.root())).some((k) => k.startsWith("r/r1_files/"))).toBe(true);
+    const libNoR1: Library = { ...libR, exhibits: [{ ...exR, objects: [] }] };
+    await publishLibrary(fs, libNoR1, () => [], {
+      ...remoteOpts(),
+      incremental: { exhibits: new Set(["r"]), reassets: new Set() },
+      removedObjects: [{ slug: "r", objId: "r1" }], // remote → no assetName; keyed by objId
+    });
+    expect(Object.keys(await collectFiles(await fs.root())).some((k) => k.startsWith("r/r1_files/"))).toBe(false);
+  });
+
+  it("prunes a removed exhibit's whole directory — on a FULL write too (removals decoupled from scope, defect 1)", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libPQ, logsFor(log0), fullOpts());
+    const libNoQ: Library = { ...libPQ, exhibits: [exP] };
+    // No `incremental` → a FULL publish, which never overwrites q away; the removal must still prune it.
+    await publishLibrary(fs, libNoQ, logsFor(log0), { ...fullOpts(), removedExhibits: ["q"] });
+    const tree = await collectFiles(await fs.root());
+    expect(Object.keys(tree).some((k) => k.startsWith("q/"))).toBe(false);
+    expect(tree["p/manifest.json"]).toBeDefined(); // the rest of the full write still happened
+  });
+
+  it("remove-then-recreate in ONE publish rewrites the fresh exhibit (prune runs BEFORE the loop, defect 2)", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libPQ, logsFor(log0), fullOpts());
+    // Same slug q both removed AND rewritten (new title) in one scope — the fresh write must survive.
+    const libQ2: Library = { ...libPQ, exhibits: [exP, { ...exQ, title: "Q REBORN" }] };
+    await publishLibrary(fs, libQ2, logsFor(log0), {
+      ...fullOpts(),
+      incremental: { exhibits: new Set(["q"]), reassets: new Set(["q"]) },
+      removedExhibits: ["q"],
+    });
+    const manifest = (await collectFiles(await fs.root()))["q/manifest.json"] as { text: string } | undefined;
+    expect(manifest).toBeDefined(); // NOT deleted by a post-loop prune
+    expect(manifest!.text).toContain("Q REBORN"); // and it's the fresh write
   });
 });

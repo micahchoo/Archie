@@ -7,7 +7,7 @@
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
   MemoryFilesystem, publishLibrary, libraryToZipFs, collectFiles, publishToGitHub, renderMarkdown,
-  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type GitHubTarget, type PublishProgress,
+  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type GitHubTarget, type PublishProgress, type IncrementalScope,
 } from "@render/core";
 import { supportsFileStreamSave, saveZipToDisk } from "./binding.js";
 import { pickFolderBinding } from "./folder-backend.js";
@@ -22,6 +22,14 @@ import archieConfig from "../../../archie.config.json";
 const CANONICAL_VIEWER = `${archieConfig.canonicalOrigin}${archieConfig.viewerPath}`;
 /** Shared static-page options for every publish sink (folder / zip / GH / memory projection). */
 const STATIC_PAGE_OPTS = { viewerBase: CANONICAL_VIEWER, renderBody: renderMarkdown } as const;
+
+/** What the binding store hands `writeToFolder` (spike-0002): the incremental scope (absent = full write)
+ *  plus the orphan removals, which apply to full writes too. Mirrors the matching `PublishOptions` fields. */
+export interface FolderWritePlan {
+  incremental?: IncrementalScope;
+  removedExhibits?: string[];
+  removedObjects?: { slug: string; objId: string; assetName?: string }[];
+}
 
 export interface PublishDeps {
   baseUrl: string;
@@ -162,9 +170,15 @@ export function createPublishFlows(deps: PublishDeps) {
   }
   // ONE folder writer for the two folder sinks (binding autosave/Save + local publish). Takes the
   // Filesystem seam directly (FSA or Tauri), so the caller owns capability selection (folder-backend).
-  async function writeTree(fs: Filesystem) {
+  // `plan` (spike-0002) carries the incremental scope AND the orphan removals — absent = full publish.
+  // Removals apply to full writes too (a full republish never prunes), so they're spread in regardless of
+  // `incremental`. loadAllLogs stays whole-library even on the incremental path: the intra-Library link
+  // index (publishLibrary) validates cross-exhibit archie: cites against EVERY log, so a partial map would
+  // wrongly degrade a valid cite in the dirty exhibit to plain text. Reading histories is cheap; re-tiling
+  // was the cost we cut.
+  async function writeTree(fs: Filesystem, plan: FolderWritePlan = {}) {
     const logs = await deps.loadAllLogs();
-    await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS });
+    await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS, ...plan });
   }
   /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
   async function downloadProjectZip(): Promise<boolean> {

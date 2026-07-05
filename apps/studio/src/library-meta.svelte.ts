@@ -20,7 +20,18 @@ function signalLibraryChanged(): void {
   bc.close();
 }
 
-export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?: () => void } = {}) {
+/**
+ * What changed in the Library on a mutation (spike-0002) — the studio maps this to the incremental
+ * publish scope so a folder autosave rewrites only the affected files. Object REMOVAL is reported by
+ * the App caller instead (it alone knows the removed object's asset name for orphan cleanup).
+ */
+export type LibraryDirt =
+  | { kind: "library" } // library-global metadata (title / rights) — only global projections change
+  | { kind: "exhibit"; slug: string } // exhibit or object metadata, or an object reorder — JSON only
+  | { kind: "exhibit-assets"; slug: string } // object added / exhibit created — also rerun byte passes
+  | { kind: "exhibit-removed"; slug: string }; // exhibit deleted — prune its `{slug}/` directory
+
+export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?: () => void; onDirty?: (d: LibraryDirt) => void } = {}) {
   const s = $state<{ meta: LibraryMeta }>({ meta: initial });
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   // Routed through the save queue (worklist 0.1): writes to library.json serialize, and a failure
@@ -47,17 +58,17 @@ export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?
 
     // Auto-persist (DEBOUNCED, fire-and-forget) — the meta is updated synchronously (reactive UI is
     // instant); the library.json write coalesces across a burst of keystrokes.
-    patchLibrary(fields: Partial<LibraryMeta>) { s.meta = patchLibraryIn(s.meta, fields); schedulePersist(); },
-    patchExhibit(slug: string, fields: Partial<ExhibitMeta>) { s.meta = patchExhibitIn(s.meta, slug, fields); schedulePersist(); },
-    patchObject(slug: string, objId: string, fields: Partial<ObjectMeta>) { s.meta = patchObjectIn(s.meta, slug, objId, fields); schedulePersist(); },
+    patchLibrary(fields: Partial<LibraryMeta>) { s.meta = patchLibraryIn(s.meta, fields); opts.onDirty?.({ kind: "library" }); schedulePersist(); },
+    patchExhibit(slug: string, fields: Partial<ExhibitMeta>) { s.meta = patchExhibitIn(s.meta, slug, fields); opts.onDirty?.({ kind: "exhibit", slug }); schedulePersist(); },
+    patchObject(slug: string, objId: string, fields: Partial<ObjectMeta>) { s.meta = patchObjectIn(s.meta, slug, objId, fields); opts.onDirty?.({ kind: "exhibit", slug }); schedulePersist(); },
 
     // Awaitable — for the sites that `await persistLibrary()` before navigating.
-    async appendObject(slug: string, obj: ObjectMeta) { s.meta = appendObjectIn(s.meta, slug, obj); await persist(); },
-    async addExhibit(ex: ExhibitMeta) { s.meta = addExhibitIn(s.meta, ex); await persist(); signalLibraryChanged(); },
+    async appendObject(slug: string, obj: ObjectMeta) { s.meta = appendObjectIn(s.meta, slug, obj); opts.onDirty?.({ kind: "exhibit-assets", slug }); await persist(); },
+    async addExhibit(ex: ExhibitMeta) { s.meta = addExhibitIn(s.meta, ex); opts.onDirty?.({ kind: "exhibit-assets", slug: ex.slug }); await persist(); signalLibraryChanged(); },
 
     // Destructive removes (Archie-3f4c) — meta-only; the caller tombstones/clears annotations separately
     // (object → session.deleteNote per note; exhibit → clearExhibitAnnotations) before navigating away.
-    async removeExhibit(slug: string) { s.meta = removeExhibitIn(s.meta, slug); await persist(); signalLibraryChanged(); },
+    async removeExhibit(slug: string) { s.meta = removeExhibitIn(s.meta, slug); opts.onDirty?.({ kind: "exhibit-removed", slug }); await persist(); signalLibraryChanged(); },
     async removeObject(slug: string, objId: string) { s.meta = removeObjectIn(s.meta, slug, objId); await persist(); },
 
     // Set-only (NO auto-persist) — bulk rebuilds keep the caller's existing conditional persist timing.

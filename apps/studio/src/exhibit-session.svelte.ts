@@ -26,8 +26,9 @@ export interface ExhibitSessionDeps {
   isTemplate: (slug: string) => boolean;
   /** The per-slug seed factory (seededFor(author, slug)) — null for a user-created exhibit. */
   seedFor: (slug: string) => (() => AnnotationSession) | null;
-  /** Mirror a folder-bound Project to disk after an OPFS save (no-op when unbound). */
-  autosaveToFolder: () => void;
+  /** Mirror a folder-bound Project to disk after an OPFS save (no-op when unbound). `slug` is the
+   *  exhibit whose notes just changed — the incremental mirror rewrites only its JSON (spike-0002). */
+  autosaveToFolder: (slug: string) => void;
   /** Mark the bound location behind (binding chip) on every edit. */
   touchBinding: () => void;
 }
@@ -61,7 +62,7 @@ export function createExhibitSession(deps: ExhibitSessionDeps) {
       if (!(await enqueueSave(`ann:${currentSlug}`, "Notes", () => sess.save(dir, { baseUrl: deps.baseUrl })))) return;
     }
     s.dirty = false;
-    deps.autosaveToFolder();
+    deps.autosaveToFolder(currentSlug);
   }
   /** Debounced autosave (800ms). Touches the binding regardless; only schedules a write when bound to OPFS. */
   function scheduleSave(currentSlug: string) {
