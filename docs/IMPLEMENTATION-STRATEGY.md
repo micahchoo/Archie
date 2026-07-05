@@ -268,21 +268,19 @@ Not a waterfall backlog — the **just-in-time discovery** rule above still hold
 > **▶ MAJOR NEW FRONTIER (2026-05-27): the Layers→Readings reframe.** The v1 "Layer" feature is being reframed — "Layer" was one word doing two jobs (a stroad) and is retired, splitting into **Reading** (a mutually-exclusive interpretive pass = an IIIF `AnnotationPage` per Object) + **Tag** (additive per-note discovery, now carrying apparatus). Full method + sequence (5 phases, reducibility cut, **migration as a Phase-1 prerequisite**, first move) → **`docs/plans/READINGS-IMPLEMENTATION-STRATEGY.md`**; rationale → **`docs/adr/0007-readings-as-annotationpages.md`**; design → CONTEXT "Readings & Tags". This SUPERSEDES the v1 per-note-`layers` model — treat any `layers`-related item below as folded into that strategy.
 
 ### A. Mechanical now (adopted-donor / greenfield-corpus → small-model-executable, enumerable this phase)
+**Shipped since this registry was written (2026-07-05, ISSUES.md Issue 2's claim-diff — `ledgers/CLAIMS.md`), removed from the table below:** Narrative Studio section-authoring (`NarrativeEditor` lazy-mounted, `apps/studio/src/App.svelte`), Sections round-trip via manifest Ranges (`sectionsFromManifest`, `packages/render-core/src/iiif/manifest.ts:336`), IIIF Content-State arrival wiring (ADR-0022, `packages/archie-viewer/src/content-state.ts`), Cold-arrival chrome (`packages/render-core/src/url/breadcrumb.ts`).
+
 | Item | Route | Donor / source | Trigger |
 |---|---|---|---|
-| **Narrative Studio section-authoring** (`NarrativeEditor`: sequence Sections, bind prose↔object, region `start`) | adopted | anvil `NarrativeEditor` (ADR-0002 decision) | next decomposer pass; **also unlocks the overview's section dividers** |
-| **Sections round-trip via manifest Ranges** (`sectionsFromManifest` parser; `toRanges` already built) | greenfield-corpus | self (`toRanges` is the inverse) | so Viewer sections come from the published tree, not `sample-data` |
-| **Overview section dividers** | adopted | self (overview) | blocked-by narrative section-authoring (needs section data) |
-| **IIIF Content-State (`?iiif-content`) arrival** wiring (`encode/decodeContentState` built in core) | adopted | self (core `url/deeplink.ts`) | cross-Library arrival follow-up |
-| **Cold-arrival chrome**: breadcrumb + zoom-to-fit (§124); referrer-based trigger | adopted | annomea / self | deep-link arrival + wax-seal already shipped |
+| **Overview section dividers** | adopted | self (overview) | narrative section-authoring shipped (above) — this is now unblocked, no longer waiting on it |
 | **Progressive marker reveal** (§122, narrative read-side) | greenfield-corpus | self (NarrativeReader) | with narrative polish |
-| **Marker highlight drops per edit** (P2-5 sibling bug) | greenfield-corpus | self (`mount`/markers) | bugfix — `systematic-debugging` |
+| **Marker highlight drops per edit** (P2-5 sibling bug) | greenfield-corpus | self (`mount`/markers) | bugfix — unconfirmed whether ever fixed; no evidence either way as of 2026-07-05 |
 | **Styled AV scrubber** (mm:ss inputs already shipped) | adopted | Wavesurfer / native | cosmetic — lowest priority |
 
 ### B. Deceptively-simple → corpus/spec pass FIRST, then mechanical (per the §"Deceptively-simple" detector)
 | Item | Class | Why it's not a one-liner |
 |---|---|---|
-| **In-memory publish/zip scaling gap** (OPFS→Uint8Array→fflate holds the whole library in memory) → streaming/chunked write | (c) | memory ceiling on large libraries; needs a streaming corpus (big-fixture + memory assertion) before a small model touches it |
+| **In-memory publish/zip scaling gap** — **partially shipped (2026-07-05 recheck):** `ZipFilesystem.streamZip()` (`packages/render-core/src/fs/zip.ts:142-181`) streams chunk-by-chunk, and `saveZipToDisk` (`apps/studio/src/binding.ts:69-102`) uses it via `FileSystemWritableFileStream` on Chromium. Non-Chromium still falls back to the eager whole-buffer `toZip()`, size-guarded via `zipSizeOk()` (safe, just not streaming) | (c) | remaining gap is non-Chromium only; a streaming corpus is still owed for that fallback path if the size guard's ceiling proves too low in practice |
 | **v1.1 in-browser tiling** (OffscreenCanvas DZI pyramid; NOT libvips-WASM) | (c)/(d) | worker pyramid + pan/zoom levels; v1.1, big |
 
 ### C. Human-gate / browser-verify owed (LLM cannot self-certify — `STOP for the user`)
@@ -294,14 +292,14 @@ Not a waterfall backlog — the **just-in-time discovery** rule above still hold
 ### D. Orphan gates (fire at a CONDITION, not a phase — schedule by gate)
 | Gate | Condition (trigger) | Status |
 |---|---|---|
-| Empty / error / loading states | before the public Viewer ships | **not built** (v1) |
+| Empty / error / loading states | before the public Viewer ships | **satisfied** — shipped since this was written (`EmptyHall.svelte`, mounted in `ViewerShell`) |
 | Overlay-contrast adaptive styling | before the first institutional pilot | not built (v1 = A2 + stroke-over-stroke, shipped) |
-| Schema-migration **runner** exercised | the first time a schema field is added/renamed | `migrate`/`stamp` built; runner in place — owed = first real migration |
-| Body sanitization | before first user-authored-HTML exhibit | **satisfied** (`sanitizeHtml`, 12 tests) |
+| Schema-migration **runner** exercised | the first time a schema field is added/renamed | `migrate`/`stamp` built; runner in place — owed = first real migration (still true 2026-07-05: `MIGRATIONS` registry is empty, `packages/render-core/src/migrate/migrate.ts:56`) |
+| Body sanitization | before first user-authored-HTML exhibit | **satisfied** (`sanitizeHtml`, 15 tests as of 2026-07-05) |
 | EXIF-bake-at-ingest | before first phone-photo public exhibit | **satisfied** (shipped) |
-| Bundle measurement → response tier | at Phase-2 dogfood | **measured** (~327 KB gz studio; >240KB aspirational figure, never binding — treat-as-gate decision still open) |
+| Bundle measurement → response tier | at Phase-2 dogfood | **measured** (~327 KB gz studio at the time; re-measured 2026-07-05: **~127 KB gz** eager entry — the "Studio perf" pass since dropped the raw bundle 1.26MB→340KB; re-measure again before treating either figure as current) |
 
 ### E. Out of v1 (named cuts — explicitly NOT this milestone; the `mode`/§43 axis is reserved for them)
-Ellipse / freehand shapes (svgpath module) · Slideshow (a Grid *mode*) · Scrollytelling + Compare (layout *modes*) · AV ingest / media-upload UX (codec/size — gate before first AV-bearing *uploaded* exhibit; current `/av` uses an external URL) · curated Gallery landing (hero/featured — v1.1 gated invention) · search (minisearch, v1.1) · embedding/oEmbed (v1.2) · AI-authoring / mask→SvgSelector (v1.2/v2).
+Ellipse / freehand shapes (svgpath module) · Slideshow (a Grid *mode*) · Scrollytelling + Compare (layout *modes*) · AV ingest / media-upload UX (**stale as of 2026-07-05 — the upload gate was lifted 2026-05-26; `apps/studio/src/ingest-flows.ts`'s `addObjectFromFile` now stores audio/video files via OPFS and renders them in `AvEditor`, not just external URLs — this line describes a gate that no longer exists**) · curated Gallery landing (hero/featured — v1.1 gated invention) · ~~search (minisearch, v1.1)~~ **shipped since this was written** (`SearchOverlay.svelte`, mounted in `ExhibitView`) · embedding/oEmbed (v1.2 — **note: this is the oEmbed auto-discovery *protocol*, still unbuilt; the `<archie-viewer>` custom-element embed contract, ADR-0021, shipped separately and is a different mechanism — don't read the embed feature's ship as satisfying this line**) · AI-authoring / mask→SvgSelector (v1.2/v2).
 
-**Next mechanical phase (by value, A-tier):** **narrative Studio section-authoring** — it's adopted (anvil donor), it closes the one real *authoring* gap (the narrative layout is pickable but not yet authorable), and it unlocks two dependents (overview section dividers, sections-from-manifest round-trip). Decompose it next (per-phase `writing-plans` pass → DAG → waves).
+**Next mechanical phase (by value, A-tier):** narrative Studio section-authoring shipped since this recommendation was written (see Section A above) — re-evaluate the next A-tier item against Section A's current, shorter list (overview section dividers is the most-unblocked remaining item) rather than following this stale pointer.
