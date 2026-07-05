@@ -6,10 +6,16 @@
 //    URLs — entered via `openPortableLibrary(fs)`. The read itself is core's `loadPortableExhibit`
 //    (ADR-0010 seam). Both sources return the SAME shapes, so ViewerShell/ExhibitView are source-agnostic.
 import {
-  ZipFilesystem, FsaFilesystem, MemoryFilesystem, loadPortableExhibit, loadPortableGallery, readExhibitTree,
-  loadWorkingLibrary, publishLibrary, validateArchieMarker, asClientId, WORKING_IRI_BASE,
+  FsaFilesystem, MemoryFilesystem, loadPortableExhibit, loadPortableGallery, readExhibitTree,
+  loadWorkingLibrary, publishLibrary, asClientId, WORKING_IRI_BASE,
+  // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
+  // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
+  // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
+  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit,
 } from "@render/core";
+
+export { SRC_MAX_BYTES };
 
 const PUBLISHED = `${import.meta.env.BASE_URL}published`;
 
@@ -154,58 +160,22 @@ export async function probeViewerMode(): Promise<ViewerMode> {
 // ----------------------------------------------------------------------------------------------
 
 // --- entry vectors (ADR-0008): open a `.archie.zip` into portable mode -------------------------
-/**
- * Friendly default for an Error thrown on the open path — `ZipFilesystem.fromZip`'s zip-bomb caps
- * (zip.ts) and `validateArchieMarker`'s ADR-0020 rejects already carry user-facing messages, so we
- * surface the thrown message verbatim. A non-Error throw (shouldn't happen) degrades to a generic line.
- * Mirrors studio's openZip try/catch+alert (apps/studio/src/ingest-flows.ts:445) — no raw Error escapes
- * the viewer's drop / `?src=` open path uncaught. The thrown Error is re-thrown so the shell's catch
- * can set its open-error UI; this only normalizes the MESSAGE (so a bare object never reaches the user).
- */
-function openError(e: unknown): never {
-  throw e instanceof Error
-    ? e
-    : new Error("That file couldn't be opened. Choose a published .archie.zip exported from Archie.");
-}
-
-/** Decode + ADR-0020-validate a `.archie.zip`'s bytes, then enter portable mode. Shared by the file
- *  and `?src=` vectors so the zip-bomb cap (fromZip) AND the marker reject both surface as a clear,
- *  thrown user-facing Error — never a raw parse failure deep in the tree reader. */
-async function openZipBytes(bytes: Uint8Array): Promise<void> {
-  let fs: ZipFilesystem;
-  try {
-    fs = ZipFilesystem.fromZip(bytes); // throws on a zip-bomb cap breach (zip.ts) — friendly message
-    await validateArchieMarker(fs); // ADR-0020: reject a non-Archie / wrong-schema zip before opening it
-  } catch (e) {
-    openError(e);
-  }
-  openPortableLibrary(fs);
-}
-
-/** Open a picked/dropped `.archie.zip` (the file-open + drag-drop vector). */
+/** Open a picked/dropped `.archie.zip` (the file-open + drag-drop vector). `openArchieLibrary`
+ *  (`@render/core`) is the canonical decode + ADR-0020-validate step (ISSUES.md Issue 5) — it accepts
+ *  a `Blob` directly, so the captured File passes straight through with no manual `.arrayBuffer()`. */
 export async function openLibraryFromFile(file: Blob): Promise<void> {
-  await openZipBytes(new Uint8Array(await file.arrayBuffer()));
+  openPortableLibrary(await openArchieLibrary(file));
 }
-
-/** Default cap on a fetched `?src=` zip — guards the canonical host against a giant payload OOMing
- *  the tab (ADR-0009 untrusted-content boundary). */
-export const SRC_MAX_BYTES = 256 * 1024 * 1024; // 256 MB
 
 /**
  * Open a hosted `.archie.zip` by URL (the `?src=` vector), enforcing a size cap. Throws on a too-big,
  * unreachable, or non-OK src. Cross-origin requires the src host to send permissive CORS (ADR-0009).
+ * `openArchieLibraryFromUrl` (`@render/core`) is the canonical fetch-under-cap + decode + ADR-0020
+ * marker-validate composition (ISSUES.md Issue 5) — the fetch step fully completes (network + both cap
+ * checks) before the decode step ever runs.
  */
 export async function openLibraryFromSrc(url: string, maxBytes: number = SRC_MAX_BYTES): Promise<void> {
-  const res = await fetch(url);
-  if (!res.ok) {
-    console.error(`Archie: couldn't fetch the library from ${url} — HTTP ${res.status}`);
-    throw new Error("Couldn't open the library. The link may be broken or the file unavailable.");
-  }
-  const declared = Number(res.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > maxBytes) throw new Error("That library is too large to open here.");
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  if (bytes.byteLength > maxBytes) throw new Error("That library is too large to open here.");
-  await openZipBytes(bytes); // decode + ADR-0020 marker-validate before entering portable mode
+  openPortableLibrary(await openArchieLibraryFromUrl(url, { maxBytes })); // fetch defaults to global fetch
 }
 // ----------------------------------------------------------------------------------------------
 

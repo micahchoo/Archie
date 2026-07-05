@@ -9,21 +9,32 @@
 // loadGallery / loadPublishedExhibit) — but that file holds `portableFs`/`liveFs`/`portableRevoke` as
 // MODULE GLOBALS (one library per tab). We deliberately diverge: state lives on `LoadedLibrary`, passed
 // in, so two embeds on one page don't clobber each other.
+//
+// The zip-bomb-cap + ADR-0020-marker-validate + capped-fetch logic that used to be copy-pasted between
+// this file and published.ts now lives in `@render/core`'s `publish/open.ts` (ISSUES.md Issue 5
+// canonicalization) — both files compose it instead of redefining it.
 
 import {
-  ZipFilesystem,
-  validateArchieMarker,
   loadPortableExhibit,
   loadPortableGallery,
   readExhibitTree,
   NotAnArchieLibraryError,
   SCHEMA_VERSION,
+  // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
+  // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
+  // apps/viewer/src/published.ts — both now compose these instead of redefining them.
+  openArchieLibrary,
+  openArchieLibraryFromUrl,
+  looksLikeZip,
+  SRC_MAX_BYTES,
   type ArchieMarker,
   type JsonSource,
   type Filesystem,
   type ExhibitsJson,
   type PortableExhibit,
 } from "@render/core";
+
+export { SRC_MAX_BYTES };
 
 /** A `?src=`/dropped library opened into one element instance. The reader reads exhibits through `fs`;
  *  `gallery` is the front-door index; `blobUrls` accumulates the minted asset blobs across exhibit
@@ -41,14 +52,11 @@ export interface LoadedLibrary {
   openExhibit(slug: string): Promise<{ exhibit: PortableExhibit; revoke(): void }>;
 }
 
-/** Default cap on a fetched `src=` zip (donor: published.ts SRC_MAX_BYTES) — guards the host tab against
- *  a giant payload OOMing it (ADR-0009 untrusted-content boundary). */
-export const SRC_MAX_BYTES = 256 * 1024 * 1024; // 256 MB
-
 /**
- * Normalize a thrown open-path Error to a user-facing message (donor: published.ts openError).
- * `ZipFilesystem.fromZip`'s zip-bomb caps and `validateArchieMarker`'s ADR-0020 rejects already carry
- * friendly messages, so re-throw an Error verbatim; a non-Error throw degrades to a generic line.
+ * Normalize a thrown open-path Error to a user-facing message — used only by the tree-open path below
+ * (`openLibraryFromTree`'s `exhibits.json` read). The zip-decode path's equivalent normalization now
+ * lives inside `@render/core`'s `openArchieLibrary` (ISSUES.md Issue 5 canonicalization) — this local
+ * copy is no longer shared with `published.ts`.
  */
 function openError(e: unknown): never {
   throw e instanceof Error
@@ -56,18 +64,11 @@ function openError(e: unknown): never {
     : new Error("That file couldn't be opened. Choose a published .archie.zip exported from Archie.");
 }
 
-/** Decode + ADR-0020-validate a `.archie.zip`'s bytes into a `LoadedLibrary`. Shared by the file and
- *  `src=` vectors so the zip-bomb cap AND the marker reject both surface as a thrown user-facing Error,
- *  never a raw parse failure deep in the tree reader (donor: published.ts openZipBytes). */
+/** Decode + ADR-0020-validate a `.archie.zip`'s bytes into a `LoadedLibrary` — a thin wrapper over
+ *  `@render/core`'s canonical `openArchieLibrary`, kept as a named export since callers/tests already
+ *  depend on this shape (donor: published.ts openZipBytes, now unified — see open.ts). */
 export async function openZipBytes(bytes: Uint8Array): Promise<LoadedLibrary> {
-  let fs: ZipFilesystem;
-  try {
-    fs = ZipFilesystem.fromZip(bytes); // throws on a zip-bomb cap breach (zip.ts) — friendly message
-    await validateArchieMarker(fs); // ADR-0020: reject a non-Archie / wrong-schema zip BEFORE reading it
-  } catch (e) {
-    openError(e);
-  }
-  return openFilesystem(fs);
+  return openFilesystem(await openArchieLibrary(bytes));
 }
 
 /** Wrap an already-opened Filesystem (marker already validated) into a `LoadedLibrary` by reading its
@@ -79,16 +80,10 @@ export async function openFilesystem(fs: Filesystem): Promise<LoadedLibrary> {
 }
 
 /** Open a picked/dropped `.archie.zip` (the file-open + drag-drop vector; donor: openLibraryFromFile).
- *  The element passes the captured File straight through — File extends Blob. */
+ *  `openArchieLibrary` accepts a `Blob` directly — the element passes the captured File straight
+ *  through, no manual `.arrayBuffer()` here. */
 export async function openLibraryFromFile(file: Blob): Promise<LoadedLibrary> {
-  return openZipBytes(new Uint8Array(await file.arrayBuffer()));
-}
-
-/** A zip's first 4 bytes are the local-file-header signature `PK\x03\x04` (or the empty-archive
- *  `PK\x05\x06`). We sniff this so a `src=` whose URL doesn't end in `.zip` but whose fetched BYTES are
- *  a zip is still opened as a zip — the spec's "bytes are a zip = zip" marker. */
-function looksLikeZip(bytes: Uint8Array): boolean {
-  return bytes[0] === 0x50 && bytes[1] === 0x4b && (bytes[2] === 0x03 || bytes[2] === 0x05) && (bytes[3] === 0x04 || bytes[3] === 0x06);
+  return openFilesystem(await openArchieLibrary(file));
 }
 
 /**
@@ -122,21 +117,18 @@ export async function openLibraryFromSrc(
     }
   }
 
-  const res = await fetchImpl(url);
-  if (!res.ok) {
-    console.error(`archie-viewer: couldn't fetch the library from ${url} — HTTP ${res.status}`);
-    throw new Error("Couldn't open the library. The link may be broken or the file unavailable.");
-  }
-  const declared = Number(res.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > maxBytes) throw new Error("That library is too large to open here.");
-  const bytes = new Uint8Array(await res.arrayBuffer());
-  if (bytes.byteLength > maxBytes) throw new Error("That library is too large to open here.");
-  return openZipBytes(bytes);
+  return openFilesystem(await openArchieLibraryFromUrl(url, { fetch: fetchImpl, maxBytes }));
 }
 
 /** Fallback for a `.zip`-less URL whose tree read failed: fetch it once and, IFF the bytes are a zip
  *  (`looksLikeZip`), open them as a zip (enforcing `maxBytes`). Returns `null` when the bytes aren't a
- *  zip — the caller then surfaces the original tree-open error. */
+ *  zip — the caller then surfaces the original tree-open error.
+ *
+ *  NOT rebuilt on `@render/core`'s `fetchArchieLibraryBytes` (ISSUES.md Issue 5): that helper always
+ *  THROWS on a network failure/non-OK response, but this fallback must SWALLOW those to `null` so the
+ *  original tree-open error surfaces instead — a genuinely different error-handling contract, not an
+ *  overlooked duplicate. Only the (rare) declared-too-large case still throws here, matching today's
+ *  behavior. */
 async function openSrcAsZipIfBytesAreZip(
   url: string,
   maxBytes: number,

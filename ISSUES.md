@@ -230,7 +230,7 @@ design cited) and every forced failure was observed.
 
 ## Issue 5 — The untrusted-zip open path exists twice
 
-**Status:** queued
+**Status:** done 2026-07-05 — ledger: ledgers/CANON.md
 
 **Symptom.** `packages/archie-viewer/src/load.ts` (251 lines) and
 `apps/viewer/src/published.ts` (318 lines) both define near-verbatim:
