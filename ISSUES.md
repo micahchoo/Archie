@@ -62,7 +62,7 @@ to fail once.
 
 ## Issue 2 — The operational docs actively misdirect
 
-**Status:** queued
+**Status:** running — ledger: ledgers/CLAIMS.md
 
 **Symptom.** Three documents contradict the code they describe:
 - `HANDOFF.md` (2026-06-21) says the embed feature is UNCOMMITTED on
@@ -498,6 +498,60 @@ explicitly parked with its reason recorded in docs/plans/SHOWROOM-EXHIBIT-PLAN.m
 ```
 
 **Strength:** Worth exploring (needs the user in the loop by design).
+
+---
+
+## Issue 10 — The implementation-strategy doc describes a methodology that no longer exists
+
+**Status:** queued
+
+**Symptom.** `docs/IMPLEMENTATION-STRATEGY.md` lines 1-261 (everything above its "Deferred-work
+registry") describe an entire operating methodology — a decomposer/wave/leaf-task schema, a
+skill-routing table, and named tooling: `sd`/seeds DAG, `mulch`, `gate-enforcer`, `qmd`, `foxhound`,
+`record-extractor`, `decision-record.sh`, `dispatching-parallel-agents`, `strategic-looping`,
+`failure-capture`, `requesting-code-review`, `verification-before-completion`,
+`/thermo-nuclear-code-quality-review`. None of these exist in the current skill/tool set (found
+2026-07-05, ISSUES.md Issue 2's claim-diff, out of that issue's stated scope). The actual current
+methodology is the `tend` skill plus the `ISSUES.md`/`ledgers/` convention this backlog itself uses —
+an entirely different operating model than the one this document prescribes.
+
+**Rungs.** L1↔L3: a purpose-level document (how work should be organized here) describes a structural
+reality — named tools, a DAG-based task system — that isn't there to invoke.
+
+**Why it's high-leverage.** `README.md`'s Documentation table links this file as "Phasing, sequencing,
+validation gates, deferred work" — a fresh session or contributor following it would try `sd ready` or
+`mulch prime` and find nothing. *Lesson: documentation drift extends to methodology docs, not just
+feature-status docs — a process doc describing dead tooling is as misleading as a feature doc
+describing dead features.*
+
+**Loop.** Claim-vs-reality diff, scoped to lines 1-261 only (the Deferred-work registry at 262-307 is
+Issue 2's territory, already resolved there). Ledger `ledgers/METHOD.md`. Done: every named tool/skill
+in the document is either confirmed live, replaced with the tool that actually does that job today, or
+the passage is removed.
+
+**Run it:**
+
+```
+docs/IMPLEMENTATION-STRATEGY.md lines 1-261 (stop before "## Deferred-work registry" — that section
+is ISSUES.md Issue 2's territory, already resolved) describe a decomposer/wave/leaf-task methodology
+built on tooling that doesn't exist in this session's skill/tool set: sd/seeds DAG, mulch,
+gate-enforcer, qmd, foxhound, record-extractor, decision-record.sh, dispatching-parallel-agents,
+strategic-looping, failure-capture, requesting-code-review, verification-before-completion,
+/thermo-nuclear-code-quality-review. Check each named tool/skill against the CURRENT available skill
+list (visible in your own system context) and this repo's actual working convention (the `tend` skill,
+ISSUES.md, ledgers/) — for each, record whether something else now does that job (e.g. `tend`'s ledger
+convention plausibly replaces `mulch`'s citable-decision role; `writing-plans`/`executing-plans` still
+exist and may be accurate) or whether it's simply gone. Ledger ledgers/METHOD.md: passage | claimed
+tool/skill | current replacement (if any) | resolution | commit | recheck. Finish the whole diff before
+resolving anything. Then per passage: rewrite it to name the current tool, or delete it if nothing
+replaced it and the passage is pure ceremony. Preserve the document's actual load-bearing content (the
+three ordering principles, the phase definitions, the reducibility classifier) — this is a methodology
+refresh, not a deletion sweep; only the passages naming dead tooling change. Done when every named
+tool/skill is confirmed live, replaced, or removed, and the doc no longer sends a reader chasing a
+command that doesn't exist.
+```
+
+**Strength:** Worth exploring.
 
 ---
 
