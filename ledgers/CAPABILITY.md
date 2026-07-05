@@ -52,3 +52,50 @@ finding (class `claimed-not-implemented`, left blocked-on-verdict pending this d
 the user's own reason and a commissioned next-step prompt. No code changed, no gate opened — the
 DAG-merge library, the session API, and both UI components remain exactly as they were; the
 commissioned spec interview and prototype brief are separate follow-on work, not run in this ledger.
+
+---
+
+## Direction 3 — The embed element outgrew its snippet generator
+
+Inventory taken 2026-07-05: every `<archie-viewer>` capability (`packages/archie-viewer/src/element.ts`)
+against what Studio's `PublishDialog.svelte` embed-snippet generator actually lets an author reach.
+
+| operation | defined at | user path | gate | intent | class |
+|---|---|---|---|---|---|
+| `src` (hosted zip URL / published-tree base) | `element.ts:74,97-98`; ADR-0021 | PublishDialog "Save a copy" phase → `zipUrl` input (`:150`) → `wcSnippet` (`:72-74`) | none | designed + shipped end-to-end | **reachable** |
+| absent-`src` local-drop default | `element.ts:139-142,166-184` | available any time an author omits `src` from the snippet, but the dialog never emits a src-less snippet by choice — only reachable by hand-deleting the attribute | none (element's own default state) | designed-latent — `recipes/03-local-drop.html` documents it explicitly | reachable (indirectly, not authored by the dialog) |
+| `target` (cite-ladder deep link — Exhibit/Object/Note/region/Section) | `element.ts:74,100-101,229-247`; ADR-0021:16,21-26; `recipes/EMBED.md:32-41` | **none** — no dialog field ever sets `target`; only reachable by hand-editing the copied snippet against `recipes/EMBED.md` | nothing in the dialog reaches it | git evidence (see below) leans **deliberate v1 scoping**, not staleness — `target` was already in `observedAttributes` in the exact commit (`77e5a29`, 2026-06-21) that wrote the src-only snippet | **gated** |
+| `iiif-content` (IIIF Pres 3 Content State, base64url) | `element.ts:74,103-105,196-227`; ADR-0022:26-49; `recipes/EMBED.md:43-53` | **none** — zero references anywhere in `apps/studio/src`; no in-app Content-State *encoder* exists to feed one even if the dialog had a field | no UI surface at all | same commit evidence as `target`; ADR-0022 calls this attribute part of "the frozen embed public API" — deliberate on the element side, absent on the dialog side | **gated** |
+| `offline` (boolean, kiosk/air-gapped mode) | `element.ts:74,107-109,159-163`; ADR-0021:27; `recipes/EMBED.md:30-31` | **none** — zero references in `apps/studio/src` | no UI surface at all | present in `element.ts` from the same originating commit as the dialog's snippet code | **gated** |
+| `currentContentState()` (reverse interop — encode the currently-open object) | `element.ts:408-417`; ADR-0022:46-49 | none — a runtime JS method, not an attribute; no markup-only snippet generator could emit it into HTML at all | category mismatch, not a UI gap | orphaned by design from this generator's shape; would need a separate "copy live location" affordance | **orphaned** |
+| iframe fallback (`embedSnippet`) | `PublishDialog.svelte:75`, wraps `shareLink` (`:46-54`) → canonical viewer `?src=` | Same "Save a copy" phase, "Copy iframe" button | `apps/viewer/src/published.ts` only reads `?src=` — no `?target=`/`?offline=` query-param analog exists on the hosted viewer at all | never designed for parity with the WC path — ADR-0021's frozen surface is scoped to the custom element, not the iframe's query contract | **gated**, further behind than the WC snippet — a hand-appended `#/...` hash fragment might work (the standalone viewer's address bar uses that hash router) but is unverified and unoffered either way |
+
+**Adjacent in-app source confirmed:** the Studio's ⌘K citation flow (`App.svelte:1041-1131`,
+`buildCmdEntries`/`insertCite`/`requestCite`) already computes cite-ladder addresses for every
+note/exhibit/object via `encodeLinkRef` (`packages/render-core/src/link/link.ts:194`) — the *same*
+route grammar ADR-0021 defines for `target=`, just wrapped in an `archie:` scheme for note-body
+citations instead of copied bare. This flow predates the embed element by a month (⌘K traces to
+`5653253`, 2026-05-25; `element.ts` first appears 2026-06-21) — never built for embed purposes, but
+a ready-made source of exactly the values `target=` needs, wired only to note-body links today.
+
+**Git-history sequencing check:** `PublishDialog.svelte`'s snippet logic was last substantively
+changed in the same commit (`77e5a29`, 2026-06-21) that introduced `element.ts` with `target`/
+`iiif-content`/`offline` already in `observedAttributes`. Two later commits touched `element.ts`
+and neither touched `PublishDialog.svelte` nor added new attributes. This contradicts a pure
+"attributes landed after the dialog shipped" story — the evidence leans toward deliberate v1
+scoping (ship the simplest snippet, document the rest in `recipes/`) over a staleness gap, though
+git alone can't fully rule out "shipped-then-never-revisited" (no commit message states a rationale).
+
+### Verdicts
+
+| cluster | verdict | reason | commissioned as |
+|---|---|---|---|
+| `target` deep-linking | **pursue** | User's direct instruction 2026-07-05. The Studio already computes the exact values this attribute needs (⌘K's `encodeLinkRef`) — this is wiring an existing computation into an existing dialog, the cheapest of the three. | Prototype brief. **Prompt:** "PublishDialog.svelte's embed-snippet generator (`apps/studio/src/PublishDialog.svelte:72-75`) only emits `src=`. The Studio's ⌘K citation flow (`App.svelte:1041-1131`) already computes cite-ladder routes via `encodeLinkRef` (`packages/render-core/src/link/link.ts:194`) — the same grammar `target=` expects (ADR-0021). Prototype a 'link to a specific note/exhibit/object' picker in the Publish dialog (reusing ⌘K's picker UI if practical) that appends `target=\"...\"` to the generated `<archie-viewer>` snippet. Verify against `recipes/04-deep-link.html`'s documented grammar before wiring in generally." |
+| `iiif-content` Content State | **pursue** | Same instruction. Larger than `target` — no in-app encoder exists yet, so this needs a small new computation, not just wiring, but ADR-0022 already specifies the encoding contract. | Spec interview. **Prompt:** "Read `docs/adr/0022-iiif-content-state-interop.md` in full — it specifies the base64url Content State encoding `iiif-content=` expects and calls this attribute part of 'the frozen embed public API.' No Studio surface computes a Content State today. Write a spec interview for adding one: should the Publish dialog compute a Content State for the currently-open object/note the same way ⌘K computes a `target=` route (see the `target` row's commissioned prototype), or does IIIF Content State need its own encoder given its different addressing model? Interview the user on scope — this is more novel than `target`'s wiring job." |
+| `offline` mode | **pursue** | Same instruction. Simplest of the three — a boolean flag with no value computation needed at all, just a checkbox. | Prototype brief. **Prompt:** "The `<archie-viewer>` element already supports an `offline` boolean attribute (`packages/archie-viewer/src/element.ts:74,107-109`, documented `recipes/EMBED.md:30-31`, `recipes/05-offline.html`) that blocks all remote tile/media fetch for kiosk/air-gapped use — but PublishDialog.svelte has no checkbox for it. Prototype adding a plain toggle to the embed-snippet section that appends `offline` to the generated tag when checked. This is the lowest-risk of Direction 3's three items — no new computation, just exposing an existing boolean." |
+| `currentContentState()` reverse interop | **not pursued — orphaned by category, not by gap** | This is a runtime JS method a host page's own script calls, not markup a snippet generator can emit. Not a "missing UI" in the same sense as the other three; logged here for completeness, no commission. | n/a |
+| iframe-path parity (`?target=`/`?offline=` query params on the hosted viewer) | **pursue** | User's instruction covers "each" — but flagged as the largest unknown: the standalone viewer's own hash router might already support a `#/...` fragment appended to the iframe `src`, unverified either way. | Spec interview. **Prompt:** "The iframe embed path (`PublishDialog.svelte:75`, wrapping `apps/viewer`'s canonical `?src=` URL) has no query-param or hash-fragment analog for `target`/`offline` today, unlike the Web-Component path. Check whether `apps/viewer`'s existing hash-based SPA router (used for in-app navigation) could accept a hand-appended `#/...` fragment on the iframe `src` as a deep link without any code change — if so this may already work and only needs documenting in `recipes/`; if not, scope what routing change the iframe path would need to reach parity with the Web-Component path." |
+
+**Status: done 2026-07-05.** Every element capability classified against the Studio's actual embed
+UI; four of five clusters carry a pursue verdict with reason and a commissioned next step, one
+(`currentContentState()`) logged as orphaned-by-category with no commission. No code changed.

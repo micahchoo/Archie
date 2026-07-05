@@ -752,7 +752,14 @@ written into the row. Done when every dark row holds a verdict and its reason.
 
 ### Direction 3 — The embed element outgrew its snippet generator
 
-**Status:** queued
+**Status:** done 2026-07-05 — ledger: ledgers/CAPABILITY.md (new section, verdict: pursue on
+`target`/`iiif-content`/`offline`/iframe-parity, `currentContentState()` logged orphaned-by-category
+with no commission. User-directed pursue; git-history check found the gap reads as deliberate v1
+scoping rather than staleness — target/iiif-content/offline were already in element.ts's
+observedAttributes in the same commit that shipped the src-only dialog. Confirmed the Studio's
+⌘K citation flow already computes the exact route values `target=` needs, unwired to Publish.
+Commissioned: two prototype briefs [target, offline], two spec interviews [iiif-content,
+iframe-path parity]. No code built or changed.)
 
 **Surplus.** `packages/archie-viewer/src/element.ts:74` observes four attributes
 — `src`, `target`, `iiif-content`, `offline` — all shipped, ADR-blessed
