@@ -403,7 +403,12 @@ running the studio tests per fix. Done when every row reads pass.
 
 ## Issue 8 — Fresh-clone setup silently loses LFS
 
-**Status:** queued
+**Status:** done 2026-07-05 — ledger: ledgers/COLDSTART.md (sharper than originally framed: a plain
+fresh clone actually gets working LFS hooks, auto-installed by git-lfs itself into `.git/hooks` — it's
+running the repo's own `qa/hooks/install.sh` that silently regresses them, by pointing `core.hooksPath`
+at a directory missing the untracked LFS hook files. Fixed by tracking those hooks, documenting
+git-lfs as a prerequisite, and having `install.sh` confirm instead of staying silent. Re-rehearsed
+from a second fresh clone end to end.)
 
 **Symptom.** `core.hooksPath` is set to `qa/hooks` locally. The four untracked
 files there (`post-checkout`, `post-commit`, `post-merge`, `pre-push`) are the
