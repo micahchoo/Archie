@@ -122,10 +122,26 @@ amended 2026-07-05 with the pinned format.)
    from MiniSearch (`search-index.ts` = full-text over annotation prose; different corpus).
 
 ### Phase 4 — Viewer in-exhibit navigation
-Filmstrip/jump overlay reachable from Reader and NarrativeReader (collapsed by default in
-narrative — authored path stays primary); position indicator; richer grid landing (density
-toggle). Note `.scratch/CONTEXT.md` §146 already prescribes a Narrative position indicator
-("Section 3 of 7") for deep-link arrival — extend, don't duplicate.
+(Spike: `docs/spikes/spike-0005-viewer-navigation.md`.) Mostly SURFACING existing machinery
+(~120 LOC, apps/viewer only):
+- **Filmstrip** mounts at the ExhibitView shell (above both readers — one instance, reads/writes
+  the cursors ExhibitView already owns: `selectedObjectId`, `indexObjectId`, `narrativeIndex`).
+  One collapsible bottom thumbnail strip for BOTH modes, collapsed by default in narrative. Jump
+  semantics reuse existing cursors — narrative click opens the object's OWN reader (the existing
+  opened-from-index path), sidestepping the object-in-multiple-sections trap. Data: none new
+  (layout.objects + baked thumbs already loaded; reuse MediaThumbnail).
+- **Keyboard ←/→ object-stepping is the only net-new binding** (ExhibitView.onWindowKey, gated
+  on not-typing); narrative arrows stay unbound (scroll leads).
+- **Position indicator:** grid/single ALREADY ships ("{idx+1} / {n}" in SidebarObjectNav) —
+  relabel to "Object 14 of 32". Narrative: surface "Section {activeIndex+1} of {n}" in the spine
+  header from existing state (the `.scratch/CONTEXT.md` §146 extension — don't duplicate).
+- **Grid density:** 2-step segmented toggle (Comfortable/Compact), not a slider (audience
+  surface); drives min-col-width AND `contain-intrinsic-size` together; persists in
+  localStorage `archie:gridDensity`.
+- **Out of scope, flagged:** `<archie-viewer>` embed is a separate imperative mount and inherits
+  none of this — embed parity is a follow-up port.
+- Fallback if dogfood finds the filmstrip redundant with the grid overlay: one shared
+  grid-overlay jump surface reusing ObjectGrid (smaller build, existing parts).
 
 ## Deferred (explicitly out of this round)
 Bulk move/copy between Exhibits (annotations/readings/assets must travel — own design branch);
