@@ -45,7 +45,7 @@ describe("archie:wholeObject = region-override (the closed seam)", () => {
     const { log } = appendNew([], { target: region("xywh=pixel:0,0,10,10"), wholeObject: true, lastEditor: editor });
 
     const head = toHeadsPage(log, "p").items[0]!;
-    expect((head as Record<string, unknown>)["archie:wholeObject"]).toBe(true);
+    expect((head as unknown as Record<string, unknown>)["archie:wholeObject"]).toBe(true);
     expect(wholeObjectFlagOf(head)).toBe(true); // the reader the viewer already calls now sees a real value
 
     const back = fromHistory(Object.values(toHistory(log).pages));
