@@ -10,7 +10,7 @@ paste it into a fresh session with no skill loaded.
 
 ## Issue 1 — CI is deploy-only and typecheck is red on main
 
-**Status:** queued
+**Status:** done 2026-07-05 — ledger: ledgers/GATE.md
 
 **Symptom.** `.github/workflows/deploy.yml` is the only workflow; it builds
 (`scripts/build-gh-pages.sh`) and deploys Pages — no vitest, no tsc, no
