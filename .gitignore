@@ -63,6 +63,12 @@ pnpm-debug.log*
 /--output
 
 # ─────────────────────────────────────────────────────────────
+# One-shot analysis dumps — no generator script lives in this repo;
+# regenerate with whatever external tool produced it, never commit the output.
+# ─────────────────────────────────────────────────────────────
+/anti-pattern-report.txt
+
+# ─────────────────────────────────────────────────────────────
 # Editor / OS
 # ─────────────────────────────────────────────────────────────
 .DS_Store
