@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTWJBS6HABV5HS0QGMK1ZV.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWJBS6HABV5HS0QGMK1ZV/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o11",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1071.6433090040362,314.52805857927586,356.88364165315375,41.80663211344989"
+        }
+      },
+      "modified": "2026-06-22T04:54:42.809Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Choose a license — Creative Commons or RightsStatements.org — so reuse terms travel with the exhibit.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "license",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTWJBS6HABV5HS0QGMK1ZV",
+      "archie:rev": "01KVPTWJBSPSADRH3HJ3J49MW6",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWJBS6HABV5HS0QGMK1ZV/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o11",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1071.6433090040362,314.52805857927586,356.88364165315375,41.80663211344989"
+        }
+      },
+      "modified": "2026-06-22T04:54:44.093Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Choose a license — Creative Commons or RightsStatements.org — so reuse terms travel with the exhibit.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "license",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWJBS6HABV5HS0QGMK1ZV/v1",
+      "archie:logicalId": "01KVPTWJBS6HABV5HS0QGMK1ZV",
+      "archie:rev": "01KVPTWKKXGTAEQ64EHSFWQK39",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTWJBSPSADRH3HJ3J49MW6",
+      "archie:reading": "studio"
+    }
+  ]
+}

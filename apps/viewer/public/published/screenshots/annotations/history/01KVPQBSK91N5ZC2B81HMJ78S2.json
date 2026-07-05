@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQBSK91N5ZC2B81HMJ78S2.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBSK91N5ZC2B81HMJ78S2/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o8",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:532.3162343209095,809.0688643618212,217.97222721755156,50.906464955266756"
+        }
+      },
+      "modified": "2026-06-22T03:53:07.433Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The selector carries time and space together (t=… plus xywh=…), so the mark appears only while that frame is on screen.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "spatiotemporal",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQBSK91N5ZC2B81HMJ78S2",
+      "archie:rev": "01KVPQBSK9F26C4ZM79ZCPH7TN",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBSK91N5ZC2B81HMJ78S2/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o8",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:532.3162343209095,809.0688643618212,217.97222721755156,50.906464955266756"
+        }
+      },
+      "modified": "2026-06-22T03:53:08.488Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The selector carries time and space together (t=… plus xywh=…), so the mark appears only while that frame is on screen.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "spatiotemporal",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBSK91N5ZC2B81HMJ78S2/v1",
+      "archie:logicalId": "01KVPQBSK91N5ZC2B81HMJ78S2",
+      "archie:rev": "01KVPQBTM8HE70N9H4QSS0155V",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQBSK9F26C4ZM79ZCPH7TN",
+      "archie:reading": "power"
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV9JJYKF5330NHBS8DZNF8.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9JJYKF5330NHBS8DZNF8/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o19",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:417.029402508654,217.47909454659896,540.5020680663575,74.93424897720627"
+        }
+      },
+      "modified": "2026-06-22T05:01:49.022Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Search note text and filter by tag; results update as you type.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "search",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "tags",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV9JJYKF5330NHBS8DZNF8",
+      "archie:rev": "01KVPV9JJYPQGPN5BQF7ATKVDT",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9JJYKF5330NHBS8DZNF8/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o19",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:417.029402508654,217.47909454659896,540.5020680663575,74.93424897720627"
+        }
+      },
+      "modified": "2026-06-22T05:01:50.204Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Search note text and filter by tag; results update as you type.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "search",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "tags",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9JJYKF5330NHBS8DZNF8/v1",
+      "archie:logicalId": "01KVPV9JJYKF5330NHBS8DZNF8",
+      "archie:rev": "01KVPV9KQW4D9S0B1SZXYB40QK",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV9JJYPQGPN5BQF7ATKVDT",
+      "archie:reading": "viewer"
+    }
+  ]
+}

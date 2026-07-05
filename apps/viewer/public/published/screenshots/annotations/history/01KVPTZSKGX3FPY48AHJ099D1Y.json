@@ -1,0 +1,104 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTZSKGX3FPY48AHJ099D1Y.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZSKGX3FPY48AHJ099D1Y/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o13",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:534.8661378936704,502.86570889753665,11.414191705577764,10.99532228518973"
+        }
+      },
+      "modified": "2026-06-22T04:56:28.528Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Published pages carry SEO metadata — OpenGraph and Twitter tags, schema.org JSON-LD, a sitemap — so links preview richly and search engines index them.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "seo",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "metadata",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTZSKGX3FPY48AHJ099D1Y",
+      "archie:rev": "01KVPTZSKGX1KB8VKZR8HTKFHY",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZSKGX3FPY48AHJ099D1Y/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o13",
+      "modified": "2026-06-22T04:56:30.535Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Published pages carry SEO metadata — OpenGraph and Twitter tags, schema.org JSON-LD, a sitemap — so links preview richly and search engines index them.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "seo",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "metadata",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZSKGX3FPY48AHJ099D1Y/v1",
+      "archie:logicalId": "01KVPTZSKGX3FPY48AHJ099D1Y",
+      "archie:rev": "01KVPTZVJ7WBGVRD8EV0CF22QT",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTZSKGX1KB8VKZR8HTKFHY",
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZSKGX3FPY48AHJ099D1Y/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o13",
+      "modified": "2026-06-22T04:56:31.342Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Published pages carry SEO metadata — OpenGraph and Twitter tags, schema.org JSON-LD, a sitemap — so links preview richly and search engines index them.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "seo",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "metadata",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZSKGX3FPY48AHJ099D1Y/v2",
+      "archie:logicalId": "01KVPTZSKGX3FPY48AHJ099D1Y",
+      "archie:rev": "01KVPTZWBEN6BJ7M690MEJ8BM5",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTZVJ7WBGVRD8EV0CF22QT",
+      "archie:reading": "viewer"
+    }
+  ]
+}

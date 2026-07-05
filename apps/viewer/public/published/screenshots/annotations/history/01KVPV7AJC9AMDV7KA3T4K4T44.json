@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV7AJC9AMDV7KA3T4K4T44.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7AJC9AMDV7KA3T4K4T44/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1028.604954367666,46.34941329856589,409.5176010430248,607.8226857887875"
+        }
+      },
+      "modified": "2026-06-22T05:00:35.276Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Audio and video read with a transcript spine — the words beside the sound, each line a moment you can jump to.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "transcript",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "spine",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV7AJC9AMDV7KA3T4K4T44",
+      "archie:rev": "01KVPV7AJCBMTV92QMP042KT6V",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7AJC9AMDV7KA3T4K4T44/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1028.604954367666,46.34941329856589,409.5176010430248,607.8226857887875"
+        }
+      },
+      "modified": "2026-06-22T05:00:36.607Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Audio and video read with a transcript spine — the words beside the sound, each line a moment you can jump to.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "transcript",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "spine",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7AJC9AMDV7KA3T4K4T44/v1",
+      "archie:logicalId": "01KVPV7AJC9AMDV7KA3T4K4T44",
+      "archie:rev": "01KVPV7BVZWPZ1E3CCTF3BARPD",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV7AJCBMTV92QMP042KT6V",
+      "archie:reading": "viewer"
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV4PQEWGK6A28DZYYSQYZE.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4PQEWGK6A28DZYYSQYZE/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o16",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:57.597252370858726,654.637941555936,7.038887349584996,11.775334911922528"
+        }
+      },
+      "modified": "2026-06-22T04:59:09.422Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Long note? Expand it into a centred reading sheet over a dimmed backdrop.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "expand",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sheet",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV4PQEWGK6A28DZYYSQYZE",
+      "archie:rev": "01KVPV4PQEMT6A1GY9C4YEW813",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4PQEWGK6A28DZYYSQYZE/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:11.012Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Long note? Expand it into a centred reading sheet over a dimmed backdrop.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "expand",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sheet",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4PQEWGK6A28DZYYSQYZE/v1",
+      "archie:logicalId": "01KVPV4PQEWGK6A28DZYYSQYZE",
+      "archie:rev": "01KVPV4R94CZE46DA7AX74SZJ0",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV4PQEMT6A1GY9C4YEW813",
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4PQEWGK6A28DZYYSQYZE/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:11.673Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Long note? Expand it into a centred reading sheet over a dimmed backdrop.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "expand",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sheet",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4PQEWGK6A28DZYYSQYZE/v2",
+      "archie:logicalId": "01KVPV4PQEWGK6A28DZYYSQYZE",
+      "archie:rev": "01KVPV4RXSQWTB3GZKA02F6D7C",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV4R94CZE46DA7AX74SZJ0",
+      "archie:reading": "viewer"
+    }
+  ]
+}

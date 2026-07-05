@@ -1,0 +1,104 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPABZXRC6HX4FHSWFDK3MT.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPABZXRC6HX4FHSWFDK3MT/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o1",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:175.2254593397686,421.85294312438765,77.03562970098196,43.299956615800454"
+        }
+      },
+      "modified": "2026-06-22T03:34:52.157Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Multiple embeds on one page stay independent — each tag carries its own library.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "instance",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "context",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPABZXRC6HX4FHSWFDK3MT",
+      "archie:rev": "01KVPPABZX4G8645R5SFKF83EC",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "embed"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPABZXRC6HX4FHSWFDK3MT/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:34:53.249Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Multiple embeds on one page stay independent — each tag carries its own library.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "instance",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "context",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPABZXRC6HX4FHSWFDK3MT/v1",
+      "archie:logicalId": "01KVPPABZXRC6HX4FHSWFDK3MT",
+      "archie:rev": "01KVPPAD21YT936G18EHKFG87X",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPABZX4G8645R5SFKF83EC",
+      "archie:reading": "embed"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPABZXRC6HX4FHSWFDK3MT/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:34:53.883Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Multiple embeds on one page stay independent — each tag carries its own library.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "instance",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "context",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPABZXRC6HX4FHSWFDK3MT/v2",
+      "archie:logicalId": "01KVPPABZXRC6HX4FHSWFDK3MT",
+      "archie:rev": "01KVPPADNV9JS2VWDBBJ94CT0S",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPAD21YT936G18EHKFG87X",
+      "archie:reading": "embed"
+    }
+  ]
+}

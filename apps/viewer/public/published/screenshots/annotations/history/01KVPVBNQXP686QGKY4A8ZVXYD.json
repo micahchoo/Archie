@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVBNQXP686QGKY4A8ZVXYD.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVBNQXP686QGKY4A8ZVXYD/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o21",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:31.212516297262223,86.2451108213821,1372.6117904084,578.8720000432954"
+        }
+      },
+      "modified": "2026-06-22T05:02:57.789Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Expand a long note into a centred sheet over a dimmed backdrop — distraction-free reading.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "reading",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sheet",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPVBNQXP686QGKY4A8ZVXYD",
+      "archie:rev": "01KVPVBNQXMXQW9DFRE5J6WXWK",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVBNQXP686QGKY4A8ZVXYD/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o21",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:31.212516297262223,86.2451108213821,1372.6117904084,578.8720000432954"
+        }
+      },
+      "modified": "2026-06-22T05:02:59.057Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Expand a long note into a centred sheet over a dimmed backdrop — distraction-free reading.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "reading",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sheet",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVBNQXP686QGKY4A8ZVXYD/v1",
+      "archie:logicalId": "01KVPVBNQXP686QGKY4A8ZVXYD",
+      "archie:rev": "01KVPVBPZH369FRREDQRXK6D3R",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPVBNQXMXQW9DFRE5J6WXWK",
+      "archie:reading": "viewer"
+    }
+  ]
+}

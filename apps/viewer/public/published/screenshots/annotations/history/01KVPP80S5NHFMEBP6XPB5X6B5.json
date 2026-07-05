@@ -1,0 +1,84 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPP80S5NHFMEBP6XPB5X6B5.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP80S5NHFMEBP6XPB5X6B5/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o1",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:100.77728373451463,185.80815188940554,647.7960048528578,223.29965070940617"
+        }
+      },
+      "modified": "2026-06-22T03:33:35.141Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Point it at a published library by URL, or at a local .archie.zip to browse exhibits with no internet at all.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "src",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "offline",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "zip",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPP80S5NHFMEBP6XPB5X6B5",
+      "archie:rev": "01KVPP80S51K3Z709C07T05VZH",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "embed"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP80S5NHFMEBP6XPB5X6B5/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:33:36.169Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Point it at a published library by URL, or at a local .archie.zip to browse exhibits with no internet at all.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "src",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "offline",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "zip",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP80S5NHFMEBP6XPB5X6B5/v1",
+      "archie:logicalId": "01KVPP80S5NHFMEBP6XPB5X6B5",
+      "archie:rev": "01KVPP81S8QJ67AQYMB6CGQYE0",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPP80S51K3Z709C07T05VZH",
+      "archie:reading": "embed"
+    }
+  ]
+}

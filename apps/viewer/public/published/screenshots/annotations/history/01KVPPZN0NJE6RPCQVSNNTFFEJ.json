@@ -1,0 +1,64 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPZN0NJE6RPCQVSNNTFFEJ.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZN0NJE6RPCQVSNNTFFEJ/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:926.4551694807709,517.2542467596647,18.2282138019674,14.037871279920068"
+        }
+      },
+      "modified": "2026-06-22T03:46:29.525Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Or make a whole-object note with no box at all — a thin colour border frames the entire image instead of a region.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "whole-object",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPZN0NJE6RPCQVSNNTFFEJ",
+      "archie:rev": "01KVPPZN0NG2E4AVKWVRV1JTR0",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZN0NJE6RPCQVSNNTFFEJ/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o4",
+      "modified": "2026-06-22T03:46:31.464Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Or make a whole-object note with no box at all — a thin colour border frames the entire image instead of a region.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "whole-object",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZN0NJE6RPCQVSNNTFFEJ/v1",
+      "archie:logicalId": "01KVPPZN0NJE6RPCQVSNNTFFEJ",
+      "archie:rev": "01KVPPZPX7KQAWDHYTT6SZCAC8",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPZN0NG2E4AVKWVRV1JTR0",
+      "archie:reading": "studio"
+    }
+  ]
+}

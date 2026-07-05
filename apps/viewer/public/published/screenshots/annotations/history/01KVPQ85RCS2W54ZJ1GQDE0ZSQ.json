@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ85RCS2W54ZJ1GQDE0ZSQ.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ85RCS2W54ZJ1GQDE0ZSQ/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o6",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1.4491951983921503,451.59595727558997,377.3936456849484,232.49776384343545"
+        }
+      },
+      "modified": "2026-06-22T03:51:08.812Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Reorder sections to retell the story; the reader follows your order.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "reorder",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ85RCS2W54ZJ1GQDE0ZSQ",
+      "archie:rev": "01KVPQ85RCF33WG7Q71R61S7X9",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ85RCS2W54ZJ1GQDE0ZSQ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o6",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1.4491951983921503,451.59595727558997,377.3936456849484,232.49776384343545"
+        }
+      },
+      "modified": "2026-06-22T03:51:10.229Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Reorder sections to retell the story; the reader follows your order.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "reorder",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ85RCS2W54ZJ1GQDE0ZSQ/v1",
+      "archie:logicalId": "01KVPQ85RCS2W54ZJ1GQDE0ZSQ",
+      "archie:rev": "01KVPQ874NVK5SJEPZSN34F6DQ",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ85RCF33WG7Q71R61S7X9",
+      "archie:reading": "studio"
+    }
+  ]
+}

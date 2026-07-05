@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPXYMDNM262HBZH9TKK77X.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXYMDNM262HBZH9TKK77X/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:2.6183397432406252,137.46260317088618,1440.938722294654,63.36375488917869"
+        }
+      },
+      "modified": "2026-06-22T03:45:33.837Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Begin a narrative spine right here — frame these objects into an ordered story.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "narrative",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPXYMDNM262HBZH9TKK77X",
+      "archie:rev": "01KVPPXYMDHEW3TFT7FS36VVJT",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXYMDNM262HBZH9TKK77X/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:2.6183397432406252,137.46260317088618,1440.938722294654,63.36375488917869"
+        }
+      },
+      "modified": "2026-06-22T03:45:35.334Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Begin a narrative spine right here — frame these objects into an ordered story.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "narrative",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXYMDNM262HBZH9TKK77X/v1",
+      "archie:logicalId": "01KVPPXYMDNM262HBZH9TKK77X",
+      "archie:rev": "01KVPPY036FCRWFKA6H3R0DPMN",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPXYMDHEW3TFT7FS36VVJT",
+      "archie:reading": "studio"
+    }
+  ]
+}

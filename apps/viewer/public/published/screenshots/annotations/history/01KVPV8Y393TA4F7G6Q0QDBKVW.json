@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV8Y393TA4F7G6Q0QDBKVW.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8Y393TA4F7G6Q0QDBKVW/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1025.5638310479999,564.828031177177,397.92481529769657,52.966101694915324"
+        }
+      },
+      "modified": "2026-06-22T05:01:28.041Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Step between sibling tracks from the carousel in a multi-object AV exhibit.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sibling",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "nav",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV8Y393TA4F7G6Q0QDBKVW",
+      "archie:rev": "01KVPV8Y397GR6T19Z0XB7120J",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8Y393TA4F7G6Q0QDBKVW/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1025.5638310479999,564.828031177177,397.92481529769657,52.966101694915324"
+        }
+      },
+      "modified": "2026-06-22T05:01:29.710Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Step between sibling tracks from the carousel in a multi-object AV exhibit.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sibling",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "nav",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8Y393TA4F7G6Q0QDBKVW/v1",
+      "archie:logicalId": "01KVPV8Y393TA4F7G6Q0QDBKVW",
+      "archie:rev": "01KVPV8ZQE11MMKBMT3KWBP5JD",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV8Y397GR6T19Z0XB7120J",
+      "archie:reading": "viewer"
+    }
+  ]
+}

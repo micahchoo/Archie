@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV2G4V2788DZ8JT4KKWVE7.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2G4V2788DZ8JT4KKWVE7/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o15",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:206.58566740098,279.59189407903625,342.06379535134647,472.7650271995683"
+        }
+      },
+      "modified": "2026-06-22T04:57:57.147Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Cards sit in the order you set, so the most important exhibit leads.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "order",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV2G4V2788DZ8JT4KKWVE7",
+      "archie:rev": "01KVPV2G4VK1VENK23H0QFMQ1R",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2G4V2788DZ8JT4KKWVE7/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o15",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:206.58566740098,279.59189407903625,342.06379535134647,472.7650271995683"
+        }
+      },
+      "modified": "2026-06-22T04:57:58.390Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Cards sit in the order you set, so the most important exhibit leads.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "order",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2G4V2788DZ8JT4KKWVE7/v1",
+      "archie:logicalId": "01KVPV2G4V2788DZ8JT4KKWVE7",
+      "archie:rev": "01KVPV2HBPJ14WCFFTYFRTXTC3",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV2G4VK1VENK23H0QFMQ1R",
+      "archie:reading": "viewer"
+    }
+  ]
+}

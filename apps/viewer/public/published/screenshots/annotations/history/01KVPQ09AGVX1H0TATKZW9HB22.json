@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ09AGVX1H0TATKZW9HB22.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ09AGVX1H0TATKZW9HB22/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:906.5697589477821,470.90328654547255,166.23207301173386,73.3376792698827"
+        }
+      },
+      "modified": "2026-06-22T03:46:50.320Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Write the note body in markdown.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "comment",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "markdown",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ09AGVX1H0TATKZW9HB22",
+      "archie:rev": "01KVPQ09AG6GBVAZBM6A5MKERA",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ09AGVX1H0TATKZW9HB22/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:906.5697589477821,470.90328654547255,166.23207301173386,73.3376792698827"
+        }
+      },
+      "modified": "2026-06-22T03:46:51.803Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Write the note body in markdown.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "comment",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "markdown",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ09AGVX1H0TATKZW9HB22/v1",
+      "archie:logicalId": "01KVPQ09AGVX1H0TATKZW9HB22",
+      "archie:rev": "01KVPQ0ARV41973Z5RVFESR2MK",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ09AG6GBVAZBM6A5MKERA",
+      "archie:reading": "studio"
+    }
+  ]
+}

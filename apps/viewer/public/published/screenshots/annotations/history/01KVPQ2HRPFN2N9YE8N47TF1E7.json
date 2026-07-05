@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ2HRPFN2N9YE8N47TF1E7.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ2HRPFN2N9YE8N47TF1E7/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:792.3397496470833,643.3725414743437,26.10545009099087,22.89373856560087"
+        }
+      },
+      "modified": "2026-06-22T03:48:04.502Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Deep-zoom to pixel detail — but never past native resolution, nor out into an unreadable speck. The camera clamps both ends.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "zoom",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "clamp",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ2HRPFN2N9YE8N47TF1E7",
+      "archie:rev": "01KVPQ2HRP7864EE6BE3HV6PTN",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ2HRPFN2N9YE8N47TF1E7/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:792.3397496470833,643.3725414743437,26.10545009099087,22.89373856560087"
+        }
+      },
+      "modified": "2026-06-22T03:48:06.470Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Deep-zoom to pixel detail — but never past native resolution, nor out into an unreadable speck. The camera clamps both ends.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "zoom",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "clamp",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ2HRPFN2N9YE8N47TF1E7/v1",
+      "archie:logicalId": "01KVPQ2HRPFN2N9YE8N47TF1E7",
+      "archie:rev": "01KVPQ2KP627CTA0Z0ST7F9WKG",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ2HRP7864EE6BE3HV6PTN",
+      "archie:reading": "power"
+    }
+  ]
+}

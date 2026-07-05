@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV82JGG21D1GWRCK77CYW4.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV82JGG21D1GWRCK77CYW4/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:-0.37959549891194655,811.6761549495234,1015.2710354327334,72.36273038721447"
+        }
+      },
+      "modified": "2026-06-22T05:00:59.856Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The waveform doubles as a map of annotated moments.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "waveform",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "map",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV82JGG21D1GWRCK77CYW4",
+      "archie:rev": "01KVPV82JGNQ8KYK3DKQ95X231",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV82JGG21D1GWRCK77CYW4/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:-0.37959549891194655,811.6761549495234,1015.2710354327334,72.36273038721447"
+        }
+      },
+      "modified": "2026-06-22T05:01:01.011Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The waveform doubles as a map of annotated moments.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "waveform",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "map",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV82JGG21D1GWRCK77CYW4/v1",
+      "archie:logicalId": "01KVPV82JGG21D1GWRCK77CYW4",
+      "archie:rev": "01KVPV83PKY99DFSPXB6EWAVW5",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV82JGNQ8KYK3DKQ95X231",
+      "archie:reading": "viewer"
+    }
+  ]
+}

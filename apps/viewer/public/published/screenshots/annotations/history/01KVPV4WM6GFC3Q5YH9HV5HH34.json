@@ -1,0 +1,119 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV4WM6GFC3Q5YH9HV5HH34.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4WM6GFC3Q5YH9HV5HH34/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o16",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:52.71890178643133,660.5256090118975,5.035606064029494,3.101196417481674"
+        }
+      },
+      "modified": "2026-06-22T04:59:15.462Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The note list is a sidebar you can drag to resize or collapse; your preference is remembered next time.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "resizable",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sidebar",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "persists",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV4WM6GFC3Q5YH9HV5HH34",
+      "archie:rev": "01KVPV4WM66MRAWBW87566ZNH8",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4WM6GFC3Q5YH9HV5HH34/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:17.375Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The note list is a sidebar you can drag to resize or collapse; your preference is remembered next time.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "resizable",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sidebar",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "persists",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4WM6GFC3Q5YH9HV5HH34/v1",
+      "archie:logicalId": "01KVPV4WM6GFC3Q5YH9HV5HH34",
+      "archie:rev": "01KVPV4YFZGS4E6V2GSC382HXY",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV4WM66MRAWBW87566ZNH8",
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4WM6GFC3Q5YH9HV5HH34/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:17.986Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The note list is a sidebar you can drag to resize or collapse; your preference is remembered next time.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "resizable",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sidebar",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "persists",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4WM6GFC3Q5YH9HV5HH34/v2",
+      "archie:logicalId": "01KVPV4WM6GFC3Q5YH9HV5HH34",
+      "archie:rev": "01KVPV4Z32DSVASKQS7E8MZXYB",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV4YFZGS4E6V2GSC382HXY",
+      "archie:reading": "viewer"
+    }
+  ]
+}

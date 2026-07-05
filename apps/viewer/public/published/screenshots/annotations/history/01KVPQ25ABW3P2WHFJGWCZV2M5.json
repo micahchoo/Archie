@@ -1,0 +1,89 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ25ABW3P2WHFJGWCZV2M5.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ25ABW3P2WHFJGWCZV2M5/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:778.504684614634,627.6134997470026,114.63339598315235,32.671005540720216"
+        }
+      },
+      "modified": "2026-06-22T03:47:51.755Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Delete a note in one click; its mark and region go with it.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "delete",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ25ABW3P2WHFJGWCZV2M5",
+      "archie:rev": "01KVPQ25ABA4Y6GV2G2PB3SAVH",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ25ABW3P2WHFJGWCZV2M5/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o4",
+      "modified": "2026-06-22T03:47:54.678Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Delete a note in one click; its mark and region go with it.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "delete",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ25ABW3P2WHFJGWCZV2M5/v1",
+      "archie:logicalId": "01KVPQ25ABW3P2WHFJGWCZV2M5",
+      "archie:rev": "01KVPQ285NAMTVP6T4MAYXSEZ2",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ25ABA4Y6GV2G2PB3SAVH",
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ25ABW3P2WHFJGWCZV2M5/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o4",
+      "modified": "2026-06-22T03:47:55.688Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Delete a note in one click; its mark and region go with it.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "delete",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ25ABW3P2WHFJGWCZV2M5/v2",
+      "archie:logicalId": "01KVPQ25ABW3P2WHFJGWCZV2M5",
+      "archie:rev": "01KVPQ2958PKM477PMNWWXESDY",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ285NAMTVP6T4MAYXSEZ2",
+      "archie:reading": "studio"
+    }
+  ]
+}

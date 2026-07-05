@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ974KKZ3AX3CZSN57YND2.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ974KKZ3AX3CZSN57YND2/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:529.073272490223,589.0811560719792,91.24380704041732,103.40964797913944"
+        }
+      },
+      "modified": "2026-06-22T03:51:42.995Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Annotate sound the way you annotate images — by marking moments on the waveform.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "audio",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "annotation",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ974KKZ3AX3CZSN57YND2",
+      "archie:rev": "01KVPQ974KK7B9J7JJB19CBMKM",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ974KKZ3AX3CZSN57YND2/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:529.073272490223,589.0811560719792,91.24380704041732,103.40964797913944"
+        }
+      },
+      "modified": "2026-06-22T03:51:44.447Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Annotate sound the way you annotate images — by marking moments on the waveform.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "audio",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "annotation",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ974KKZ3AX3CZSN57YND2/v1",
+      "archie:logicalId": "01KVPQ974KKZ3AX3CZSN57YND2",
+      "archie:rev": "01KVPQ98HZT6500M0W58XH664F",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ974KK7B9J7JJB19CBMKM",
+      "archie:reading": "studio"
+    }
+  ]
+}

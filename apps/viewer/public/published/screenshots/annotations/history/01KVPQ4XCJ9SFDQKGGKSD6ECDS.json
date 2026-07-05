@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ4XCJ9SFDQKGGKSD6ECDS.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4XCJ9SFDQKGGKSD6ECDS/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1153.2618905724526,513.5302623512094,248.87097459657753,37.86928225817428"
+        }
+      },
+      "modified": "2026-06-22T03:49:21.938Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Hover a reading to solo it — isolate one interpretation, or compare two side by side.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "solo",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "compare",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ4XCJ9SFDQKGGKSD6ECDS",
+      "archie:rev": "01KVPQ4XCJKW2HEMMB1KHEWMS5",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4XCJ9SFDQKGGKSD6ECDS/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1153.2618905724526,513.5302623512094,248.87097459657753,37.86928225817428"
+        }
+      },
+      "modified": "2026-06-22T03:49:23.609Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Hover a reading to solo it — isolate one interpretation, or compare two side by side.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "solo",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "compare",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4XCJ9SFDQKGGKSD6ECDS/v1",
+      "archie:logicalId": "01KVPQ4XCJ9SFDQKGGKSD6ECDS",
+      "archie:rev": "01KVPQ4Z0SZJEC2D1V69WDGMHR",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ4XCJKW2HEMMB1KHEWMS5",
+      "archie:reading": "viewer"
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV4HHCSPRQ1D9GBKYG00YZ.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4HHCSPRQ1D9GBKYG00YZ/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o16",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:59.374185136897175,628.3572359843546,43.415906127770505,50.45632333767924"
+        }
+      },
+      "modified": "2026-06-22T04:59:04.108Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "On touch, scroll the note list without panning the canvas — the two never fight.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "touch",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "scroll",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV4HHCSPRQ1D9GBKYG00YZ",
+      "archie:rev": "01KVPV4HHC22NEZE1S97WRHDWX",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4HHCSPRQ1D9GBKYG00YZ/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:06.042Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "On touch, scroll the note list without panning the canvas — the two never fight.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "touch",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "scroll",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4HHCSPRQ1D9GBKYG00YZ/v1",
+      "archie:logicalId": "01KVPV4HHCSPRQ1D9GBKYG00YZ",
+      "archie:rev": "01KVPV4KDTYN8QP0XMCSGCG0MD",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV4HHC22NEZE1S97WRHDWX",
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4HHCSPRQ1D9GBKYG00YZ/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:07.065Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "On touch, scroll the note list without panning the canvas — the two never fight.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "touch",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "scroll",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4HHCSPRQ1D9GBKYG00YZ/v2",
+      "archie:logicalId": "01KVPV4HHCSPRQ1D9GBKYG00YZ",
+      "archie:rev": "01KVPV4MDSXAPWV0JHNBAGDM6J",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV4KDTYN8QP0XMCSGCG0MD",
+      "archie:reading": "power"
+    }
+  ]
+}

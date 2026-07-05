@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQC34WBN738E6T9F7BMA8C.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQC34WBN738E6T9F7BMA8C/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o8",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:398.974350209444,770.1510389814107,763.5279672690142,28.27881360255617"
+        }
+      },
+      "modified": "2026-06-22T03:53:17.212Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Scrub the markbar to jump between annotated frames.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "markbar",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQC34WBN738E6T9F7BMA8C",
+      "archie:rev": "01KVPQC34WTX4HEXE9CA4J56H2",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQC34WBN738E6T9F7BMA8C/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o8",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:398.974350209444,770.1510389814107,763.5279672690142,28.27881360255617"
+        }
+      },
+      "modified": "2026-06-22T03:53:18.997Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Scrub the markbar to jump between annotated frames.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "markbar",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQC34WBN738E6T9F7BMA8C/v1",
+      "archie:logicalId": "01KVPQC34WBN738E6T9F7BMA8C",
+      "archie:rev": "01KVPQC4WNZSQQGWDTAP0NE664",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQC34WTX4HEXE9CA4J56H2",
+      "archie:reading": "studio"
+    }
+  ]
+}

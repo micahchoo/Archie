@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQBKA4KEQVQ9H0K54M8HJ6.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBKA4KEQVQ9H0K54M8HJ6/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o8",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:387.9269882659714,766.8187744458929,644.1981747066491,102.08604954367672"
+        }
+      },
+      "modified": "2026-06-22T03:53:00.996Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Video gets both axes: pause on a frame, draw a box on it, and the note anchors to that spot at that moment.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "video",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "frame",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQBKA4KEQVQ9H0K54M8HJ6",
+      "archie:rev": "01KVPQBKA4ZMMMKD25C7H3MZAX",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBKA4KEQVQ9H0K54M8HJ6/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o8",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:387.9269882659714,766.8187744458929,644.1981747066491,102.08604954367672"
+        }
+      },
+      "modified": "2026-06-22T03:53:02.420Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Video gets both axes: pause on a frame, draw a box on it, and the note anchors to that spot at that moment.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "video",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "frame",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBKA4KEQVQ9H0K54M8HJ6/v1",
+      "archie:logicalId": "01KVPQBKA4KEQVQ9H0K54M8HJ6",
+      "archie:rev": "01KVPQBMPMKKVNQ3A2F62RBA7W",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQBKA4ZMMMKD25C7H3MZAX",
+      "archie:reading": "studio"
+    }
+  ]
+}

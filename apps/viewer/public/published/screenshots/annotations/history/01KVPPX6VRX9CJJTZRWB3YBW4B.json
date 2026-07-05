@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPX6VRX9CJJTZRWB3YBW4B.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPX6VRX9CJJTZRWB3YBW4B/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:349.808568533077,224.3436484019039,336.0988355887245,36.98695319875915"
+        }
+      },
+      "modified": "2026-06-22T03:45:09.496Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Drag plates to arrange them — the layout is yours to compose.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "arrange",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPX6VRX9CJJTZRWB3YBW4B",
+      "archie:rev": "01KVPPX6VRER70F5CFH95PVT88",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPX6VRX9CJJTZRWB3YBW4B/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:349.808568533077,224.3436484019039,336.0988355887245,36.98695319875915"
+        }
+      },
+      "modified": "2026-06-22T03:45:10.716Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Drag plates to arrange them — the layout is yours to compose.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "arrange",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPX6VRX9CJJTZRWB3YBW4B/v1",
+      "archie:logicalId": "01KVPPX6VRX9CJJTZRWB3YBW4B",
+      "archie:rev": "01KVPPX81WX4CMG9HVXYQ1X8W8",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPX6VRER70F5CFH95PVT88",
+      "archie:reading": "studio"
+    }
+  ]
+}

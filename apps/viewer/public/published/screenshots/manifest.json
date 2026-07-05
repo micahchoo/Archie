@@ -1,0 +1,3364 @@
+{
+  "@context": "https://iiif.io/api/presentation/3/context.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/manifest.json",
+  "type": "Manifest",
+  "label": {
+    "none": [
+      "Archie, Annotated"
+    ]
+  },
+  "summary": {
+    "none": [
+      "Archie annotates Archie: 21 screenshots of the app itself, read four ways — as a Studio how-to, a Viewer tour, an embed guide, and a power-user's list of invisible behavior."
+    ]
+  },
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "e1-embed"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o1-e1-embed.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s1-library"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o2-s1-library.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s2-overview"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o3-s2-overview.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s3-canvas"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o4-s3-canvas.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s4-readings"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o5-s4-readings.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s5-narrative"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o6-s5-narrative.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s6a-audio"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o7-s6a-audio.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s6b-video"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o8-s6b-video.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s7-map"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o9-s7-map.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s8-cite"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o10-s8-cite.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s9-meta"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o11-s9-meta.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s10-ingest"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o12-s10-ingest.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s11-publish"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o13-s11-publish.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "s12-shortcuts"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o14-s12-shortcuts.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "v1-gallery"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o15-v1-gallery.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "v2-reader"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o16-v2-reader.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "v4-av"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o18-v4-av.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "v5-search"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o19-v5-search.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "v6-lightbox"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o20-v6-lightbox.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "v7-sheet"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o21-v7-sheet.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17",
+      "type": "Canvas",
+      "label": {
+        "none": [
+          "v3-narrative"
+        ]
+      },
+      "width": 1440,
+      "height": 900,
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17/page/1",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17/painting/1",
+              "type": "Annotation",
+              "motivation": "painting",
+              "body": {
+                "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/assets/o17-v3-narrative.png",
+                "type": "Image",
+                "width": 1440,
+                "height": 900
+              },
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17"
+            }
+          ]
+        }
+      ],
+      "annotations": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17/annotations.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "label": {
+            "none": [
+              "Base"
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17/annotations-studio.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Studio"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Authoring features (curator-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17/annotations-viewer.json",
+          "type": "AnnotationPage",
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KWT0S7NJ8SWVMNNV8P8405H7/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:0,0,1440,900"
+                }
+              },
+              "modified": "2026-07-05T20:51:10.130Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A narrative exhibit reads as prose beside a canvas — the story on one side, the object it's about on the other.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "prose spine",
+                  "purpose": "tagging"
+                }
+              ],
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KWT0S7NJ8SWVMNNV8P8405H7.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KWT0S7NKZ5MW0S19FR7VQ7Y8/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1000,322,420,270"
+                }
+              },
+              "modified": "2026-07-05T20:51:10.131Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Click a section and the canvas switches to its object and fits the framed view; the active section lights up in the spine.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "section switch",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "fit",
+                  "purpose": "tagging"
+                }
+              ],
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KWT0S7NKZ5MW0S19FR7VQ7Y8.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KWT0S7NMDM6P7JD8E24PZVWW/v1",
+              "type": "Annotation",
+              "target": {
+                "type": "SpecificResource",
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1000,0,440,900"
+                }
+              },
+              "modified": "2026-07-05T20:51:10.132Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Scroll the spine and the canvas follows along.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "follow",
+                  "purpose": "tagging"
+                }
+              ],
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KWT0S7NMDM6P7JD8E24PZVWW.json"
+            }
+          ],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Viewer"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Reading features (visitor-facing)."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17/annotations-embed.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Embed"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Web-embed + mount/tile internals."
+            ]
+          }
+        },
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17/annotations-power.json",
+          "type": "AnnotationPage",
+          "items": [],
+          "partOf": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
+              "type": "AnnotationCollection"
+            }
+          ],
+          "label": {
+            "none": [
+              "Power"
+            ]
+          },
+          "summary": {
+            "none": [
+              "Keyboard / advanced / invisible-behavior callouts."
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "structures": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-1",
+      "type": "Range",
+      "label": {
+        "none": [
+          "What is Archie?"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Archie turns images into annotated exhibits — no server, no database, no lock-in. This library holds every exhibit you're building; open one to start."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-2",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Arrange your objects"
+        ]
+      },
+      "summary": {
+        "none": [
+          "An exhibit's overview is itself a canvas: drag objects to set their reading order, and the count badge shows how many notes each one carries."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-3",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Annotate an image"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Draw a region, write the note in the popover anchored right where you drew it — the marker follows as you pan and zoom."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-4",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Competing readings"
+        ]
+      },
+      "summary": {
+        "none": [
+          "The same object, read more than one way: a Reading is a mutually-exclusive interpretive pass, and the legend lets a visitor switch between them."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-5",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Tell a story"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Sequence sections into a narrative spine — bind prose to an object and a framed region, and the reader's camera follows the story."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-6",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Annotate sound & video"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Drag across the waveform to mark a time range, or import a VTT/SRT transcript to seed a whole recording's worth of notes at once."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-7",
+      "type": "Range",
+      "label": {
+        "none": [
+          "(continued)"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Video adds a spatial dimension: draw a box on a paused frame and set a time window — a combined spatiotemporal selector."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-8",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Put it on a map"
+        ]
+      },
+      "summary": {
+        "none": [
+          "A Map is a fourth medium: regions anchor to true longitude/latitude, so re-framing the basemap keeps them nailed to the Earth."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-9",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Cite across the library"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Cmd+K opens the cite palette — reach any note or exhibit in the library and insert a live, clickable reference."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-10",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Title, credit, license"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Set the exhibit's title, rights, and required statement here — the same fields that carry through to the published IIIF manifest."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-11",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Bring in media"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Drop a folder, paste a IIIF manifest URL, or drag in files directly — the import gate that once required a IIIF server is open."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-12",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Publish it"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Publish bakes the whole library into static HTML, JSON, and media — a folder, a zip, or straight to GitHub Pages."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-13",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Keyboard-first"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Every action in Studio has a keyboard shortcut — this sheet is always one keystroke away."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-14",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Browse exhibits"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Visitors land on the gallery — every published exhibit in the library, one card each."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-15",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Read an image"
+        ]
+      },
+      "summary": {
+        "none": [
+          "The reader pairs the deep-zoom canvas with a sidebar of notes; select one and its region solos on the canvas."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-16",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Follow a narrative"
+        ]
+      },
+      "summary": {
+        "none": [
+          "A narrative exhibit reads as prose beside a canvas — scroll the spine and the canvas follows, fitting the framed view for each section as you go."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-17",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Listen along"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Audio and video play inline with a transcript spine — each line seeks the recording as you read down the page."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-18",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Find anything"
+        ]
+      },
+      "summary": {
+        "none": [
+          "The finder searches every note, object, and exhibit in the library at once — press the shortcut and start typing."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-19",
+      "type": "Range",
+      "label": {
+        "none": [
+          "See note media full-screen"
+        ]
+      },
+      "summary": {
+        "none": [
+          "A note with an image of its own opens into a full-screen lightbox — the note text stays alongside it."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-20",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Read deeply"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Long notes expand into a centred reading sheet over a dimmed backdrop — room to actually read, with the Readings legend and citations still in reach."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/range/sec-21",
+      "type": "Range",
+      "label": {
+        "none": [
+          "Embed it anywhere"
+        ]
+      },
+      "summary": {
+        "none": [
+          "Drop <archie-viewer> into any page — a read-only Web Component, about half the Studio's bundle, no build step, no unsafe-eval."
+        ]
+      },
+      "items": [
+        {
+          "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+          "type": "Canvas"
+        }
+      ],
+      "start": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+        "type": "Canvas"
+      },
+      "supplementary": {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+        "type": "AnnotationCollection"
+      }
+    }
+  ]
+}

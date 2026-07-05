@@ -1,0 +1,44 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KWT0S7NKZ5MW0S19FR7VQ7Y8.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KWT0S7NKZ5MW0S19FR7VQ7Y8/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1000,322,420,270"
+        }
+      },
+      "modified": "2026-07-05T20:51:10.131Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click a section and the canvas switches to its object and fits the framed view; the active section lights up in the spine.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "section switch",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "fit",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KWT0S7NKZ5MW0S19FR7VQ7Y8",
+      "archie:rev": "01KWT0S7NK4MG7GMRC89271DRW",
+      "archie:version": 1,
+      "archie:lastEditor": "showroom-curator",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    }
+  ]
+}

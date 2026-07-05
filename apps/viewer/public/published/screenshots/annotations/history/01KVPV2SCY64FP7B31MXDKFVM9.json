@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV2SCY64FP7B31MXDKFVM9.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2SCY64FP7B31MXDKFVM9/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o15",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:559.6110202826076,278.87442538065267,318.2543214339703,539.3707776913068"
+        }
+      },
+      "modified": "2026-06-22T04:58:06.622Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "One card per exhibit; click through to read.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "open",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "exhibit",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV2SCY64FP7B31MXDKFVM9",
+      "archie:rev": "01KVPV2SCY0AA2BXMHP1N7F5QS",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2SCY64FP7B31MXDKFVM9/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o15",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:559.6110202826076,278.87442538065267,318.2543214339703,539.3707776913068"
+        }
+      },
+      "modified": "2026-06-22T04:58:07.848Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "One card per exhibit; click through to read.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "open",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "exhibit",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2SCY64FP7B31MXDKFVM9/v1",
+      "archie:logicalId": "01KVPV2SCY64FP7B31MXDKFVM9",
+      "archie:rev": "01KVPV2TK87Q1Z05DF07E903V7",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV2SCY0AA2BXMHP1N7F5QS",
+      "archie:reading": "viewer"
+    }
+  ]
+}

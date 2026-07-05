@@ -1,0 +1,104 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV5Z9WKTNG4PVZNJFVFRV2.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5Z9WKTNG4PVZNJFVFRV2/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o16",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:310.1021312612111,405.04965533074466,141.08709705123283,203.8440288213738"
+        }
+      },
+      "modified": "2026-06-22T04:59:50.972Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Read an image with its notes pinned right to the regions they describe.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "pinned",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "notes",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV5Z9WKTNG4PVZNJFVFRV2",
+      "archie:rev": "01KVPV5Z9WRXH46NF8NST5ZQ9M",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5Z9WKTNG4PVZNJFVFRV2/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:52.469Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Read an image with its notes pinned right to the regions they describe.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "pinned",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "notes",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5Z9WKTNG4PVZNJFVFRV2/v1",
+      "archie:logicalId": "01KVPV5Z9WKTNG4PVZNJFVFRV2",
+      "archie:rev": "01KVPV60RNW42BDKDM9FPDZQ3E",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV5Z9WRXH46NF8NST5ZQ9M",
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5Z9WKTNG4PVZNJFVFRV2/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:53.041Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Read an image with its notes pinned right to the regions they describe.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "pinned",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "notes",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5Z9WKTNG4PVZNJFVFRV2/v2",
+      "archie:logicalId": "01KVPV5Z9WKTNG4PVZNJFVFRV2",
+      "archie:rev": "01KVPV61AHTCQ2D87BY0G1JEPZ",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV60RNW42BDKDM9FPDZQ3E",
+      "archie:reading": "viewer"
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV26C33PV4MX9278BAPFQ5.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV26C33PV4MX9278BAPFQ5/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o15",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:193.14211212516307,257.5619295958279,1039.6349413298565,544.4589308996087"
+        }
+      },
+      "modified": "2026-06-22T04:57:47.139Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Published exhibits greet visitors as a wall of cards — cover image, title, and how many notes wait inside.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "gallery",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cards",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV26C33PV4MX9278BAPFQ5",
+      "archie:rev": "01KVPV26C3VDPJXDPF8HDAA4E7",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV26C33PV4MX9278BAPFQ5/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o15",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:193.14211212516307,257.5619295958279,1039.6349413298565,544.4589308996087"
+        }
+      },
+      "modified": "2026-06-22T04:57:48.314Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Published exhibits greet visitors as a wall of cards — cover image, title, and how many notes wait inside.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "gallery",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cards",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV26C33PV4MX9278BAPFQ5/v1",
+      "archie:logicalId": "01KVPV26C33PV4MX9278BAPFQ5",
+      "archie:rev": "01KVPV27GTF6421B2H0X9QSZ3J",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV26C3VDPJXDPF8HDAA4E7",
+      "archie:reading": "viewer"
+    }
+  ]
+}

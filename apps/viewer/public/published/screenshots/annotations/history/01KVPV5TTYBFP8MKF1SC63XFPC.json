@@ -1,0 +1,104 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV5TTYBFP8MKF1SC63XFPC.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5TTYBFP8MKF1SC63XFPC/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o16",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:437.65152522770444,302.456540826632,252.35964178354453,436.3459816060305"
+        }
+      },
+      "modified": "2026-06-22T04:59:46.398Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click a mark and the camera fits and highlights it; click a whole-object mark and a thin colour border frames the entire image.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "fit",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "highlight",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV5TTYBFP8MKF1SC63XFPC",
+      "archie:rev": "01KVPV5TTYA7XMF08SQWHAYZ79",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5TTYBFP8MKF1SC63XFPC/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:47.926Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click a mark and the camera fits and highlights it; click a whole-object mark and a thin colour border frames the entire image.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "fit",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "highlight",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5TTYBFP8MKF1SC63XFPC/v1",
+      "archie:logicalId": "01KVPV5TTYBFP8MKF1SC63XFPC",
+      "archie:rev": "01KVPV5WAP2ENJ36RXEM1K150H",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV5TTYA7XMF08SQWHAYZ79",
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5TTYBFP8MKF1SC63XFPC/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:48.706Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click a mark and the camera fits and highlights it; click a whole-object mark and a thin colour border frames the entire image.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "fit",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "highlight",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5TTYBFP8MKF1SC63XFPC/v2",
+      "archie:logicalId": "01KVPV5TTYBFP8MKF1SC63XFPC",
+      "archie:rev": "01KVPV5X32S3CPBTXXH2KMBCVY",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV5WAP2ENJ36RXEM1K150H",
+      "archie:reading": "viewer"
+    }
+  ]
+}

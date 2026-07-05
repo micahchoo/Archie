@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTWB0MMX6F1VQ0QWFZWN45.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWB0MMX6F1VQ0QWFZWN45/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o11",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1079.886849006099,246.7444055794975,342.2808074450386,45.82146293215837"
+        }
+      },
+      "modified": "2026-06-22T04:54:35.284Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Credit the work with an attribution statement.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "attribution",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTWB0MMX6F1VQ0QWFZWN45",
+      "archie:rev": "01KVPTWB0MM8TZ8Q8RNTYZ3DCX",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWB0MMX6F1VQ0QWFZWN45/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o11",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1079.886849006099,246.7444055794975,342.2808074450386,45.82146293215837"
+        }
+      },
+      "modified": "2026-06-22T04:54:36.855Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Credit the work with an attribution statement.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "attribution",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWB0MMX6F1VQ0QWFZWN45/v1",
+      "archie:logicalId": "01KVPTWB0MMX6F1VQ0QWFZWN45",
+      "archie:rev": "01KVPTWCHQJJP80963ZPM2D3C2",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTWB0MM8TZ8Q8RNTYZ3DCX",
+      "archie:reading": "studio"
+    }
+  ]
+}

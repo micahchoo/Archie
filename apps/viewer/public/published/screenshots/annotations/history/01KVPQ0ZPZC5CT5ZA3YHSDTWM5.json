@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ0ZPZC5CT5ZA3YHSDTWM5.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ0ZPZC5CT5ZA3YHSDTWM5/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:905.3635661458206,473.3920034767501,167.3526441975098,67.90525858322462"
+        }
+      },
+      "modified": "2026-06-22T03:47:13.247Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Tag it — tags drive filtering and the search finder later.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "tags",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ0ZPZC5CT5ZA3YHSDTWM5",
+      "archie:rev": "01KVPQ0ZPZMRRHW03MRV6Y2YG7",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ0ZPZC5CT5ZA3YHSDTWM5/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:905.3635661458206,473.3920034767501,167.3526441975098,67.90525858322462"
+        }
+      },
+      "modified": "2026-06-22T03:47:14.578Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Tag it — tags drive filtering and the search finder later.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "tags",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ0ZPZC5CT5ZA3YHSDTWM5/v1",
+      "archie:logicalId": "01KVPQ0ZPZC5CT5ZA3YHSDTWM5",
+      "archie:rev": "01KVPQ110JBN33FP2561BBK49M",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ0ZPZMRRHW03MRV6Y2YG7",
+      "archie:reading": "studio"
+    }
+  ]
+}

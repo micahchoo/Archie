@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ1QJ9PFANV0A3Y6ATGQZG.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1QJ9PFANV0A3Y6ATGQZG/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:757.1657845777061,461.1886351785758,298.0443285528031,417.73142112125146"
+        }
+      },
+      "modified": "2026-06-22T03:47:37.673Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Emphasis makes a mark stand out or recede — normal, strong, or muted.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "emphasis",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ1QJ9PFANV0A3Y6ATGQZG",
+      "archie:rev": "01KVPQ1QJ997AXNCZH2J7SC7N1",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1QJ9PFANV0A3Y6ATGQZG/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:757.1657845777061,461.1886351785758,298.0443285528031,417.73142112125146"
+        }
+      },
+      "modified": "2026-06-22T03:47:43.679Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Emphasis makes a mark stand out or recede — normal, strong, or muted.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "emphasis",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1QJ9PFANV0A3Y6ATGQZG/v1",
+      "archie:logicalId": "01KVPQ1QJ9PFANV0A3Y6ATGQZG",
+      "archie:rev": "01KVPQ1XDZM108BNFMZJ9KX8BC",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ1QJ997AXNCZH2J7SC7N1",
+      "archie:reading": "power"
+    }
+  ]
+}

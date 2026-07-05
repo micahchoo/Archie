@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPHN7FTV2HEHQP4874791K.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPHN7FTV2HEHQP4874791K/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:224.82398956975257,431.2255541069079,333.2464146023466,192.43807040417198"
+        }
+      },
+      "modified": "2026-06-22T03:38:50.991Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Your library is every exhibit you're authoring, gathered in one place. Open one to keep editing, or start a fresh exhibit.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "library",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "home",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPHN7FTV2HEHQP4874791K",
+      "archie:rev": "01KVPPHN7FM4ABZSQDV6MZ0W2X",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPHN7FTV2HEHQP4874791K/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:224.82398956975257,431.2255541069079,333.2464146023466,192.43807040417198"
+        }
+      },
+      "modified": "2026-06-22T03:38:52.611Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Your library is every exhibit you're authoring, gathered in one place. Open one to keep editing, or start a fresh exhibit.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "library",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "home",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPHN7FTV2HEHQP4874791K/v1",
+      "archie:logicalId": "01KVPPHN7FTV2HEHQP4874791K",
+      "archie:rev": "01KVPPHPT38HYTKWFS665Z6G26",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPHN7FM4ABZSQDV6MZ0W2X",
+      "archie:reading": "studio"
+    }
+  ]
+}

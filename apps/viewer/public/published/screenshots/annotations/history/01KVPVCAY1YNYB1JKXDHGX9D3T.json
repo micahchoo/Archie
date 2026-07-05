@@ -1,0 +1,104 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVCAY1YNYB1JKXDHGX9D3T.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVCAY1YNYB1JKXDHGX9D3T/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o21",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:302.64022094635123,224.41942280593597,195.1942546793091,82.97986689718775"
+        }
+      },
+      "modified": "2026-06-22T05:03:19.489Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Hover an in-library cite link and a rich preview card floats in — peek at the cited note without leaving the page.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cite",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hovercard",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPVCAY1YNYB1JKXDHGX9D3T",
+      "archie:rev": "01KVPVCAY1EKE390Q3V4EZWMSX",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVCAY1YNYB1JKXDHGX9D3T/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o21",
+      "modified": "2026-06-22T05:03:21.640Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Hover an in-library cite link and a rich preview card floats in — peek at the cited note without leaving the page.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cite",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hovercard",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVCAY1YNYB1JKXDHGX9D3T/v1",
+      "archie:logicalId": "01KVPVCAY1YNYB1JKXDHGX9D3T",
+      "archie:rev": "01KVPVCD18ZN1H1BM9PXVTQB86",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPVCAY1EKE390Q3V4EZWMSX",
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVCAY1YNYB1JKXDHGX9D3T/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o21",
+      "modified": "2026-06-22T05:03:22.574Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Hover an in-library cite link and a rich preview card floats in — peek at the cited note without leaving the page.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cite",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hovercard",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVCAY1YNYB1JKXDHGX9D3T/v2",
+      "archie:logicalId": "01KVPVCAY1YNYB1JKXDHGX9D3T",
+      "archie:rev": "01KVPVCDYE9KF6WTC8YK171VYM",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPVCD18ZN1H1BM9PXVTQB86",
+      "archie:reading": "viewer"
+    }
+  ]
+}

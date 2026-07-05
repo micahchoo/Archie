@@ -1,0 +1,92 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVC0A89K2KFNM146AT8MTZ.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVC0A89K2KFNM146AT8MTZ/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o21",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:5.101337985469616,42.61764875778155,291.37235109496936,214.6954165962932"
+        }
+      },
+      "modified": "2026-06-22T05:03:08.616Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The legend toggles readings: the plain base pass, or the colour-coded interpretations, with a hide-all to declutter entirely.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "legend",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "toggle",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hide-all",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPVC0A89K2KFNM146AT8MTZ",
+      "archie:rev": "01KVPVC0A8EG9744QDGDAYQPNN",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVC0A89K2KFNM146AT8MTZ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o21",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:5.101337985469616,42.61764875778155,291.37235109496936,214.6954165962932"
+        }
+      },
+      "modified": "2026-06-22T05:03:09.676Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The legend toggles readings: the plain base pass, or the colour-coded interpretations, with a hide-all to declutter entirely.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "legend",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "toggle",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hide-all",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVC0A89K2KFNM146AT8MTZ/v1",
+      "archie:logicalId": "01KVPVC0A89K2KFNM146AT8MTZ",
+      "archie:rev": "01KVPVC1BC40E3ADD4JTTGGJDJ",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPVC0A8EG9744QDGDAYQPNN",
+      "archie:reading": "viewer"
+    }
+  ]
+}

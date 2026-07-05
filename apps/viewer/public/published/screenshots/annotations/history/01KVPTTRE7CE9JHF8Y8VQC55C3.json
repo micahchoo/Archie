@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTTRE7CE9JHF8Y8VQC55C3.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTRE7CE9JHF8Y8VQC55C3/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o10",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:434.86310299869626,93.2855280312908,564.4067796610168,637.1577574967405"
+        }
+      },
+      "modified": "2026-06-22T04:53:43.495Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Cite another note, object, or exhibit from inside a note — your library cross-links itself.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "citation",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTTRE7CE9JHF8Y8VQC55C3",
+      "archie:rev": "01KVPTTRE737JFV4Q1GMTGDJF3",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTRE7CE9JHF8Y8VQC55C3/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o10",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:434.86310299869626,93.2855280312908,564.4067796610168,637.1577574967405"
+        }
+      },
+      "modified": "2026-06-22T04:53:45.470Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Cite another note, object, or exhibit from inside a note — your library cross-links itself.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "citation",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTRE7CE9JHF8Y8VQC55C3/v1",
+      "archie:logicalId": "01KVPTTRE7CE9JHF8Y8VQC55C3",
+      "archie:rev": "01KVPTTTBYK06HDCTVZK6GES0H",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTTRE737JFV4Q1GMTGDJF3",
+      "archie:reading": "studio"
+    }
+  ]
+}

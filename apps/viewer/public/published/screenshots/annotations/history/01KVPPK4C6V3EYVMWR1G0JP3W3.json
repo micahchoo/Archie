@@ -1,0 +1,64 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPK4C6V3EYVMWR1G0JP3W3.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPK4C6V3EYVMWR1G0JP3W3/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:941.7642192763175,147.02548460395084,95.16350647753495,95.03566967626418"
+        }
+      },
+      "modified": "2026-06-22T03:39:39.270Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Start an exhibit by bringing in media — images, audio, video, or a IIIF manifest URL.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "ingest",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPK4C6V3EYVMWR1G0JP3W3",
+      "archie:rev": "01KVPPK4C6ZS7FMK9YDNKVE995",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPK4C6V3EYVMWR1G0JP3W3/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o2",
+      "modified": "2026-06-22T03:39:40.726Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Start an exhibit by bringing in media — images, audio, video, or a IIIF manifest URL.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "ingest",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPK4C6V3EYVMWR1G0JP3W3/v1",
+      "archie:logicalId": "01KVPPK4C6V3EYVMWR1G0JP3W3",
+      "archie:rev": "01KVPPK5SPY8XEM2T9JBT6C2PX",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPK4C6ZS7FMK9YDNKVE995",
+      "archie:reading": "studio"
+    }
+  ]
+}

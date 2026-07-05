@@ -1,0 +1,74 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPA6R7M3P8RX7J8BV5XCJX.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA6R7M3P8RX7J8BV5XCJX/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o1",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:148.42636070187703,390.6194408217091,129.9030199984493,101.73976363022189"
+        }
+      },
+      "modified": "2026-06-22T03:34:46.791Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Malformed or empty region selectors are skipped safely — a broken box never breaks the read.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "safe",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "skip",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPA6R7M3P8RX7J8BV5XCJX",
+      "archie:rev": "01KVPPA6R7SB1WW2JYS835YPGA",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA6R7M3P8RX7J8BV5XCJX/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:34:48.558Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Malformed or empty region selectors are skipped safely — a broken box never breaks the read.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "safe",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "skip",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA6R7M3P8RX7J8BV5XCJX/v1",
+      "archie:logicalId": "01KVPPA6R7M3P8RX7J8BV5XCJX",
+      "archie:rev": "01KVPPA8FEZJ47PAV2ZK471CBP",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPA6R7SB1WW2JYS835YPGA",
+      "archie:reading": "power"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
+  "type": "AnnotationCollection",
+  "label": {
+    "en": [
+      "Viewer"
+    ]
+  },
+  "summary": {
+    "en": [
+      "Reading features (visitor-facing)."
+    ]
+  }
+}

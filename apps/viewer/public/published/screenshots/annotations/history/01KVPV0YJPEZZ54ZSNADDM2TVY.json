@@ -1,0 +1,92 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV0YJPEZZ54ZSNADDM2TVY.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0YJPEZZ54ZSNADDM2TVY/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o14",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:405.66693977311354,455.25505022989955,556.5915836954296,47.85647261680333"
+        }
+      },
+      "modified": "2026-06-22T04:57:06.390Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Save, cite (Cmd-K), and dismiss without leaving the keyboard.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "save",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cite",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "dismiss",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV0YJPEZZ54ZSNADDM2TVY",
+      "archie:rev": "01KVPV0YJPH6TYHCZ714XA00DA",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0YJPEZZ54ZSNADDM2TVY/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o14",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:405.66693977311354,455.25505022989955,556.5915836954296,47.85647261680333"
+        }
+      },
+      "modified": "2026-06-22T04:57:07.741Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Save, cite (Cmd-K), and dismiss without leaving the keyboard.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "save",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cite",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "dismiss",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0YJPEZZ54ZSNADDM2TVY/v1",
+      "archie:logicalId": "01KVPV0YJPEZZ54ZSNADDM2TVY",
+      "archie:rev": "01KVPV0ZWX1GZ6V4FCGNXP06ZQ",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV0YJPH6TYHCZ714XA00DA",
+      "archie:reading": "power"
+    }
+  ]
+}

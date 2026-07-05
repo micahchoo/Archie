@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV7TVKJ7F7G6XDY4SVJ62F.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7TVKJ7F7G6XDY4SVJ62F/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:254.32831362558795,470.9602660707756,492.9782742835579,53.40597971405208"
+        }
+      },
+      "modified": "2026-06-22T05:00:51.955Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click a transcript line to seek there; as it plays, the active line highlights and follows along.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "seek",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "highlight",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV7TVKJ7F7G6XDY4SVJ62F",
+      "archie:rev": "01KVPV7TVKNVPHRF9X1ZJV8F4F",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7TVKJ7F7G6XDY4SVJ62F/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:254.32831362558795,470.9602660707756,492.9782742835579,53.40597971405208"
+        }
+      },
+      "modified": "2026-06-22T05:00:53.437Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click a transcript line to seek there; as it plays, the active line highlights and follows along.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "seek",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "highlight",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7TVKJ7F7G6XDY4SVJ62F/v1",
+      "archie:logicalId": "01KVPV7TVKJ7F7G6XDY4SVJ62F",
+      "archie:rev": "01KVPV7W9XZBG03S3W8FYKKE9S",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV7TVKNVPHRF9X1ZJV8F4F",
+      "archie:reading": "viewer"
+    }
+  ]
+}

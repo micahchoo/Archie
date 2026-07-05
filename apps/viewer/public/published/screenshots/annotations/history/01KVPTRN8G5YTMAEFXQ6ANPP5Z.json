@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTRN8G5YTMAEFXQ6ANPP5Z.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRN8G5YTMAEFXQ6ANPP5Z/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o9",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:474.17209908735344,663.7880361522989,446.88749917132554,45.24561907497832"
+        }
+      },
+      "modified": "2026-06-22T04:52:34.704Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Frame a lat/lng extent and anchor a note to that patch of the world.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "geo",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "extent",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTRN8G5YTMAEFXQ6ANPP5Z",
+      "archie:rev": "01KVPTRN8GR8FBEYFC7YH5XKDY",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRN8G5YTMAEFXQ6ANPP5Z/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o9",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:474.17209908735344,663.7880361522989,446.88749917132554,45.24561907497832"
+        }
+      },
+      "modified": "2026-06-22T04:52:36.000Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Frame a lat/lng extent and anchor a note to that patch of the world.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "geo",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "extent",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRN8G5YTMAEFXQ6ANPP5Z/v1",
+      "archie:logicalId": "01KVPTRN8G5YTMAEFXQ6ANPP5Z",
+      "archie:rev": "01KVPTRPH0PY2BNPCDTCR5ZY8V",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTRN8GR8FBEYFC7YH5XKDY",
+      "archie:reading": "studio"
+    }
+  ]
+}

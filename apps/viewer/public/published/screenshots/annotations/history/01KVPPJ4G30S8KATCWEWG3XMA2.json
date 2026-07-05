@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPJ4G30S8KATCWEWG3XMA2.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJ4G30S8KATCWEWG3XMA2/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:889.5930977144695,345.22477701938556,132.04653691541114,41.03150314177748"
+        }
+      },
+      "modified": "2026-06-22T03:39:06.627Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Bind your work to disk however you like — a folder, one portable .archie.zip, or stay browser-only. The current binding shows here and you can switch anytime.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "save",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "binding",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPJ4G30S8KATCWEWG3XMA2",
+      "archie:rev": "01KVPPJ4G3EK4EGG5E8N27J8NJ",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJ4G30S8KATCWEWG3XMA2/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:889.5930977144695,345.22477701938556,132.04653691541114,41.03150314177748"
+        }
+      },
+      "modified": "2026-06-22T03:39:08.091Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Bind your work to disk however you like — a folder, one portable .archie.zip, or stay browser-only. The current binding shows here and you can switch anytime.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "save",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "binding",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJ4G30S8KATCWEWG3XMA2/v1",
+      "archie:logicalId": "01KVPPJ4G30S8KATCWEWG3XMA2",
+      "archie:rev": "01KVPPJ5XV5XVCMB4ZGXFAFAJ8",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPJ4G3EK4EGG5E8N27J8NJ",
+      "archie:reading": "studio"
+    }
+  ]
+}

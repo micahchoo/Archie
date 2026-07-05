@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ9ZSGZ8B0S399SDGA16Y1.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9ZSGZ8B0S399SDGA16Y1/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:637.3739573808042,812.0595934248123,182.47937326277827,41.7741199620566"
+        }
+      },
+      "modified": "2026-06-22T03:52:08.240Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Or drop a point marker at a single instant.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "point",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "marker",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ9ZSGZ8B0S399SDGA16Y1",
+      "archie:rev": "01KVPQ9ZSGGVH2630SFAGDK9C9",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9ZSGZ8B0S399SDGA16Y1/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:637.3739573808042,812.0595934248123,182.47937326277827,41.7741199620566"
+        }
+      },
+      "modified": "2026-06-22T03:52:09.765Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Or drop a point marker at a single instant.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "point",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "marker",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9ZSGZ8B0S399SDGA16Y1/v1",
+      "archie:logicalId": "01KVPQ9ZSGZ8B0S399SDGA16Y1",
+      "archie:rev": "01KVPQA195QMGZKZKCXNJN89Z0",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ9ZSGGVH2630SFAGDK9C9",
+      "archie:reading": "studio"
+    }
+  ]
+}

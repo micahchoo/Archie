@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTXMJFRNFAXNYT4W690FSZ.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXMJFRNFAXNYT4W690FSZ/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o12",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1219.265238552109,239.22343127550712,216.39874279478272,35.89222304003644"
+        }
+      },
+      "modified": "2026-06-22T04:55:17.839Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Paste a IIIF manifest URL and Archie pulls in its folios as objects, ready to annotate.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "iiif",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "import",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTXMJFRNFAXNYT4W690FSZ",
+      "archie:rev": "01KVPTXMJFYWAMCWJAZ8HMCNBF",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXMJFRNFAXNYT4W690FSZ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o12",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1219.265238552109,239.22343127550712,216.39874279478272,35.89222304003644"
+        }
+      },
+      "modified": "2026-06-22T04:55:19.009Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Paste a IIIF manifest URL and Archie pulls in its folios as objects, ready to annotate.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "iiif",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "import",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXMJFRNFAXNYT4W690FSZ/v1",
+      "archie:logicalId": "01KVPTXMJFRNFAXNYT4W690FSZ",
+      "archie:rev": "01KVPTXNQ1817DRQ0VWE0K0BHK",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTXMJFYWAMCWJAZ8HMCNBF",
+      "archie:reading": "studio"
+    }
+  ]
+}

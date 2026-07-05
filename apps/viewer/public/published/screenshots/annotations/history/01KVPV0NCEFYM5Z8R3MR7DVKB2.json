@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV0NCEFYM5Z8R3MR7DVKB2.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0NCEFYM5Z8R3MR7DVKB2/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o14",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:396.1408083441982,231.11507488758244,125.55410691003914,461.7793188542689"
+        }
+      },
+      "modified": "2026-06-22T04:56:56.974Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Archie is keyboard-first — a shortcut for every common move, listed in this overlay.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "shortcuts",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV0NCEFYM5Z8R3MR7DVKB2",
+      "archie:rev": "01KVPV0NCE9Y3WHVYFY0966K9W",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0NCEFYM5Z8R3MR7DVKB2/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o14",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:396.1408083441982,231.11507488758244,125.55410691003914,461.7793188542689"
+        }
+      },
+      "modified": "2026-06-22T04:56:58.298Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Archie is keyboard-first — a shortcut for every common move, listed in this overlay.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "shortcuts",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0NCEFYM5Z8R3MR7DVKB2/v1",
+      "archie:logicalId": "01KVPV0NCEFYM5Z8R3MR7DVKB2",
+      "archie:rev": "01KVPV0PNTH74S7SX83SHCYDS2",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV0NCE9Y3WHVYFY0966K9W",
+      "archie:reading": "power"
+    }
+  ]
+}

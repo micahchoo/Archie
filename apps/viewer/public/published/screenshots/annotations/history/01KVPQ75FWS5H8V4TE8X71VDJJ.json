@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ75FWS5H8V4TE8X71VDJJ.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ75FWS5H8V4TE8X71VDJJ/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o6",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:8.973474919030693,496.8269112234135,170.07406655231756,45.39570949328777"
+        }
+      },
+      "modified": "2026-06-22T03:50:35.772Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Each section points at an object; draw a region and that becomes the camera the reader lands on.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "framing",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "camera",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ75FWS5H8V4TE8X71VDJJ",
+      "archie:rev": "01KVPQ75FWMD3DFD5M42T60N7S",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ75FWS5H8V4TE8X71VDJJ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o6",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:8.973474919030693,496.8269112234135,170.07406655231756,45.39570949328777"
+        }
+      },
+      "modified": "2026-06-22T03:50:37.041Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Each section points at an object; draw a region and that becomes the camera the reader lands on.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "framing",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "camera",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ75FWS5H8V4TE8X71VDJJ/v1",
+      "archie:logicalId": "01KVPQ75FWS5H8V4TE8X71VDJJ",
+      "archie:rev": "01KVPQ76QH4C0RF0YNK3VQJJ4J",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ75FWMD3DFD5M42T60N7S",
+      "archie:reading": "studio"
+    }
+  ]
+}

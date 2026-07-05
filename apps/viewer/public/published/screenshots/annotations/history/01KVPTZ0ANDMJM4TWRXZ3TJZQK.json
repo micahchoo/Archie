@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTZ0ANDMJM4TWRXZ3TJZQK.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZ0ANDMJM4TWRXZ3TJZQK/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o13",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:457.3502945204009,210.66635616168207,510.95345994910633,128.6734921101703"
+        }
+      },
+      "modified": "2026-06-22T04:56:02.645Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Choose where it goes: a local folder, a downloadable zip, or straight to GitHub Pages.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "destinations",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTZ0ANDMJM4TWRXZ3TJZQK",
+      "archie:rev": "01KVPTZ0ANH3ECJ3Q01SW8XVPV",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZ0ANDMJM4TWRXZ3TJZQK/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o13",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:457.3502945204009,210.66635616168207,510.95345994910633,128.6734921101703"
+        }
+      },
+      "modified": "2026-06-22T04:56:03.753Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Choose where it goes: a local folder, a downloadable zip, or straight to GitHub Pages.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "destinations",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZ0ANDMJM4TWRXZ3TJZQK/v1",
+      "archie:logicalId": "01KVPTZ0ANDMJM4TWRXZ3TJZQK",
+      "archie:rev": "01KVPTZ1D9NE90VXQEW82BKSMR",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTZ0ANH3ECJ3Q01SW8XVPV",
+      "archie:reading": "studio"
+    }
+  ]
+}

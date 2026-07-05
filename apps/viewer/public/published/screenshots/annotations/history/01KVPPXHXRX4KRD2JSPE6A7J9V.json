@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPXHXRX4KRD2JSPE6A7J9V.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXHXRX4KRD2JSPE6A7J9V/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:612.3958426766069,487.2400412005684,213.48552829230266,227.83749658086094"
+        }
+      },
+      "modified": "2026-06-22T03:45:20.824Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click any plate to enter its editor and start annotating.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "enter",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "object",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPXHXRX4KRD2JSPE6A7J9V",
+      "archie:rev": "01KVPPXHXR8QK8HHSY617025MF",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXHXRX4KRD2JSPE6A7J9V/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:612.3958426766069,487.2400412005684,213.48552829230266,227.83749658086094"
+        }
+      },
+      "modified": "2026-06-22T03:45:22.281Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click any plate to enter its editor and start annotating.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "enter",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "object",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXHXRX4KRD2JSPE6A7J9V/v1",
+      "archie:logicalId": "01KVPPXHXRX4KRD2JSPE6A7J9V",
+      "archie:rev": "01KVPPXKB9WDB8N70K8C9HPQCG",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPXHXR8QK8HHSY617025MF",
+      "archie:reading": "studio"
+    }
+  ]
+}

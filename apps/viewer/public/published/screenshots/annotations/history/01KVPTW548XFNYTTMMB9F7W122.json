@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTW548XFNYTTMMB9F7W122.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTW548XFNYTTMMB9F7W122/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o11",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1063.744509428106,63.34810786785846,370.5997392438069,172.09908735332456"
+        }
+      },
+      "modified": "2026-06-22T04:54:29.256Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Set the exhibit's display title and summary — the name and blurb readers meet first.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "title",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "summary",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTW548XFNYTTMMB9F7W122",
+      "archie:rev": "01KVPTW548KP4EVD9NDM1CJQS3",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTW548XFNYTTMMB9F7W122/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o11",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1063.744509428106,63.34810786785846,370.5997392438069,172.09908735332456"
+        }
+      },
+      "modified": "2026-06-22T04:54:30.475Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Set the exhibit's display title and summary — the name and blurb readers meet first.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "title",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "summary",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTW548XFNYTTMMB9F7W122/v1",
+      "archie:logicalId": "01KVPTW548XFNYTTMMB9F7W122",
+      "archie:rev": "01KVPTW6AB8A3JKMYCMP5HQYRC",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTW548KP4EVD9NDM1CJQS3",
+      "archie:reading": "studio"
+    }
+  ]
+}

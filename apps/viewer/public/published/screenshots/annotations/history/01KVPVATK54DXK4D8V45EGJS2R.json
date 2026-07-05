@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVATK54DXK4D8V45EGJS2R.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVATK54DXK4D8V45EGJS2R/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o20",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:232.90241456155113,161.49674997288952,1024.024368975112,575.8025103566426"
+        }
+      },
+      "modified": "2026-06-22T05:02:29.989Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Step through a note's images, audio, or video in a carousel with the arrow keys.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "carousel",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "arrows",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPVATK54DXK4D8V45EGJS2R",
+      "archie:rev": "01KVPVATK5KXJXWVTBK3HZWBHR",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVATK54DXK4D8V45EGJS2R/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o20",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:232.90241456155113,161.49674997288952,1024.024368975112,575.8025103566426"
+        }
+      },
+      "modified": "2026-06-22T05:02:31.059Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Step through a note's images, audio, or video in a carousel with the arrow keys.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "carousel",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "arrows",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVATK54DXK4D8V45EGJS2R/v1",
+      "archie:logicalId": "01KVPVATK54DXK4D8V45EGJS2R",
+      "archie:rev": "01KVPVAVMK7F5BRZF2AJNA7M1Z",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPVATK5KXJXWVTBK3HZWBHR",
+      "archie:reading": "viewer"
+    }
+  ]
+}

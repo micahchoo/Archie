@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ3AAWR0TBS3E5XMPVH43C.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3AAWR0TBS3E5XMPVH43C/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:431.0667449644606,148.89230769230826,563.2333767926987,87.02737940026077"
+        }
+      },
+      "modified": "2026-06-22T03:48:29.660Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Readings are competing interpretations of the same image — a 'cipher' reading, a 'botanical' reading — each its own coloured pass over the marks.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "readings",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ3AAWR0TBS3E5XMPVH43C",
+      "archie:rev": "01KVPQ3AAWQ0E4BCFAY0EAPZ3B",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3AAWR0TBS3E5XMPVH43C/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:431.0667449644606,148.89230769230826,563.2333767926987,87.02737940026077"
+        }
+      },
+      "modified": "2026-06-22T03:48:31.187Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Readings are competing interpretations of the same image — a 'cipher' reading, a 'botanical' reading — each its own coloured pass over the marks.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "readings",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3AAWR0TBS3E5XMPVH43C/v1",
+      "archie:logicalId": "01KVPQ3AAWR0TBS3E5XMPVH43C",
+      "archie:rev": "01KVPQ3BTK3M0XTCTKX4Z4JDGY",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ3AAWQ0E4BCFAY0EAPZ3B",
+      "archie:reading": "studio"
+    }
+  ]
+}

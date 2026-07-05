@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPJKJFF4H8GQPPRPXQXVX6.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJKJFF4H8GQPPRPXQXVX6/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:242.14041172084404,328.13802591510006,482.90020073173224,69.4517036094519"
+        }
+      },
+      "modified": "2026-06-22T03:39:22.063Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Save status, always visible: Saved, Saving…, or Unsaved. Browser-only work persists in the browser; bind to a file for a copy you can move or back up.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "save",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "status",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPJKJFF4H8GQPPRPXQXVX6",
+      "archie:rev": "01KVPPJKJFHE186TGG7KMMKXJG",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJKJFF4H8GQPPRPXQXVX6/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:242.14041172084404,328.13802591510006,482.90020073173224,69.4517036094519"
+        }
+      },
+      "modified": "2026-06-22T03:39:23.257Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Save status, always visible: Saved, Saving…, or Unsaved. Browser-only work persists in the browser; bind to a file for a copy you can move or back up.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "save",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "status",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJKJFF4H8GQPPRPXQXVX6/v1",
+      "archie:logicalId": "01KVPPJKJFF4H8GQPPRPXQXVX6",
+      "archie:rev": "01KVPPJMQS3BWVDCNV5MKQZXH0",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPJKJFHE186TGG7KMMKXJG",
+      "archie:reading": "studio"
+    }
+  ]
+}

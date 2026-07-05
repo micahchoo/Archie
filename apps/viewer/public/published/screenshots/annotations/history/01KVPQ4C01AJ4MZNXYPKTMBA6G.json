@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ4C01AJ4MZNXYPKTMBA6G.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4C01AJ4MZNXYPKTMBA6G/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:419.0988522347517,466.5793025456476,168.39568925806373,48.28454060767183"
+        }
+      },
+      "modified": "2026-06-22T03:49:04.129Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Describe a reading in a line so readers know what lens they're looking through.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "description",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ4C01AJ4MZNXYPKTMBA6G",
+      "archie:rev": "01KVPQ4C01HAYQXAP13M8C6FE6",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4C01AJ4MZNXYPKTMBA6G/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:419.0988522347517,466.5793025456476,168.39568925806373,48.28454060767183"
+        }
+      },
+      "modified": "2026-06-22T03:49:05.549Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Describe a reading in a line so readers know what lens they're looking through.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "description",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4C01AJ4MZNXYPKTMBA6G/v1",
+      "archie:logicalId": "01KVPQ4C01AJ4MZNXYPKTMBA6G",
+      "archie:rev": "01KVPQ4DCDP0RNX68V8FQ6XK8A",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ4C01HAYQXAP13M8C6FE6",
+      "archie:reading": "studio"
+    }
+  ]
+}

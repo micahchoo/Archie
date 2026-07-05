@@ -1,0 +1,104 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTZMG5Q4VK731XEEW0EJN9.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZMG5Q4VK731XEEW0EJN9/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o13",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:530.452790210927,481.11067837612563,67.78256628512236,40.15910567971673"
+        }
+      },
+      "modified": "2026-06-22T04:56:23.301Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Each step reports its status — working, done, or the exact error if something fails.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "status",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "steps",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTZMG5Q4VK731XEEW0EJN9",
+      "archie:rev": "01KVPTZMG54EQ0Z3SM3HTH9ZCH",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZMG5Q4VK731XEEW0EJN9/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o13",
+      "modified": "2026-06-22T04:56:24.958Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Each step reports its status — working, done, or the exact error if something fails.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "status",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "steps",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZMG5Q4VK731XEEW0EJN9/v1",
+      "archie:logicalId": "01KVPTZMG5Q4VK731XEEW0EJN9",
+      "archie:rev": "01KVPTZP3YTNS4E76JJWGSMYZC",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTZMG54EQ0Z3SM3HTH9ZCH",
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZMG5Q4VK731XEEW0EJN9/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o13",
+      "modified": "2026-06-22T04:56:25.744Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Each step reports its status — working, done, or the exact error if something fails.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "status",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "steps",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZMG5Q4VK731XEEW0EJN9/v2",
+      "archie:logicalId": "01KVPTZMG5Q4VK731XEEW0EJN9",
+      "archie:rev": "01KVPTZPWFSRWVYKT3T7RWHXSX",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTZP3YTNS4E76JJWGSMYZC",
+      "archie:reading": "power"
+    }
+  ]
+}

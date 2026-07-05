@@ -1,0 +1,26 @@
+[
+  {
+    "id": "studio",
+    "name": "Studio",
+    "description": "Authoring features (curator-facing).",
+    "colour": "#d98a2b"
+  },
+  {
+    "id": "viewer",
+    "name": "Viewer",
+    "description": "Reading features (visitor-facing).",
+    "colour": "#2bb0a6"
+  },
+  {
+    "id": "embed",
+    "name": "Embed",
+    "description": "Web-embed + mount/tile internals.",
+    "colour": "#7c5cff"
+  },
+  {
+    "id": "power",
+    "name": "Power",
+    "description": "Keyboard / advanced / invisible-behavior callouts.",
+    "colour": "#e0567a"
+  }
+]

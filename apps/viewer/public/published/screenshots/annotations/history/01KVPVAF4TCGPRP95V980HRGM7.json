@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVAF4TCGPRP95V980HRGM7.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVAF4TCGPRP95V980HRGM7/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o20",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:137.99217731421132,122.62059973924386,1132.333767926988,631.2907431551497"
+        }
+      },
+      "modified": "2026-06-22T05:02:18.266Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A note can carry its own media — click a thumbnail and it opens full-screen.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "note",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "media",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPVAF4TCGPRP95V980HRGM7",
+      "archie:rev": "01KVPVAF4TJX08KCTEGBH5NEG3",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVAF4TCGPRP95V980HRGM7/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o20",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:137.99217731421132,122.62059973924386,1132.333767926988,631.2907431551497"
+        }
+      },
+      "modified": "2026-06-22T05:02:19.512Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A note can carry its own media — click a thumbnail and it opens full-screen.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "note",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "media",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVAF4TCGPRP95V980HRGM7/v1",
+      "archie:logicalId": "01KVPVAF4TCGPRP95V980HRGM7",
+      "archie:rev": "01KVPVAGBRRCXT507TV7YM272W",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPVAF4TJX08KCTEGBH5NEG3",
+      "archie:reading": "viewer"
+    }
+  ]
+}

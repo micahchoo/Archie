@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPZDS42NAQF1A4751J79G3.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZDS42NAQF1A4751J79G3/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:911.0652759669719,473.3598742089974,154.82398956975237,69.26336375488921"
+        }
+      },
+      "modified": "2026-06-22T03:46:22.116Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Pin a note to any region: drag a box on the deep-zoom canvas and the note anchors there. Redraw or nudge the box whenever you like.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "region",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "annotation",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPZDS42NAQF1A4751J79G3",
+      "archie:rev": "01KVPPZDS4V4BR5NH27XCF2NTN",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZDS42NAQF1A4751J79G3/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:911.0652759669719,473.3598742089974,154.82398956975237,69.26336375488921"
+        }
+      },
+      "modified": "2026-06-22T03:46:23.781Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Pin a note to any region: drag a box on the deep-zoom canvas and the note anchors there. Redraw or nudge the box whenever you like.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "region",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "annotation",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZDS42NAQF1A4751J79G3/v1",
+      "archie:logicalId": "01KVPPZDS42NAQF1A4751J79G3",
+      "archie:rev": "01KVPPZFD52GJTXZCTB9C05PJH",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPZDS4V4BR5NH27XCF2NTN",
+      "archie:reading": "studio"
+    }
+  ]
+}

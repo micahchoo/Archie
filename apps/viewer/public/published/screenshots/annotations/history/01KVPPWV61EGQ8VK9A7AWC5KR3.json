@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPWV61EGQ8VK9A7AWC5KR3.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPWV61EGQ8VK9A7AWC5KR3/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:130.02357550156162,201.3413915120946,1295.436766623207,671.6558018252933"
+        }
+      },
+      "modified": "2026-06-22T03:44:57.537Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "An exhibit opens as an overview — its objects laid out as plates on one canvas you pan and zoom, so you see the whole shape before diving into any single image.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "overview",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "canvas",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPWV61EGQ8VK9A7AWC5KR3",
+      "archie:rev": "01KVPPWV61SYM9BQSNZHA61RT2",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPWV61EGQ8VK9A7AWC5KR3/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:130.02357550156162,201.3413915120946,1295.436766623207,671.6558018252933"
+        }
+      },
+      "modified": "2026-06-22T03:44:59.099Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "An exhibit opens as an overview — its objects laid out as plates on one canvas you pan and zoom, so you see the whole shape before diving into any single image.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "overview",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "canvas",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPWV61EGQ8VK9A7AWC5KR3/v1",
+      "archie:logicalId": "01KVPPWV61EGQ8VK9A7AWC5KR3",
+      "archie:rev": "01KVPPWWPVP7V3AJWS1X0WZM7Y",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPWV61SYM9BQSNZHA61RT2",
+      "archie:reading": "studio"
+    }
+  ]
+}

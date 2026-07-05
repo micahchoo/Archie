@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQAAYRBSXJBZAEMZDCJTT9.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQAAYRBSXJBZAEMZDCJTT9/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:511.30787793352744,574.0280140513246,793.6321856072923,134.4148767965222"
+        }
+      },
+      "modified": "2026-06-22T03:52:19.672Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The marker bar shows every annotated moment along the track.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "markbar",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQAAYRBSXJBZAEMZDCJTT9",
+      "archie:rev": "01KVPQAAYR390W5WRQ302XPQXV",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQAAYRBSXJBZAEMZDCJTT9/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:511.30787793352744,574.0280140513246,793.6321856072923,134.4148767965222"
+        }
+      },
+      "modified": "2026-06-22T03:52:21.116Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The marker bar shows every annotated moment along the track.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "markbar",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQAAYRBSXJBZAEMZDCJTT9/v1",
+      "archie:logicalId": "01KVPQAAYRBSXJBZAEMZDCJTT9",
+      "archie:rev": "01KVPQACBW6B3DHC5V01TFVJPZ",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQAAYR390W5WRQ302XPQXV",
+      "archie:reading": "studio"
+    }
+  ]
+}

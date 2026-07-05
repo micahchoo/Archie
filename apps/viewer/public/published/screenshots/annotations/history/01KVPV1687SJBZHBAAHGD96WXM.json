@@ -1,0 +1,92 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV1687SJBZHBAAHGD96WXM.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV1687SJBZHBAAHGD96WXM/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o14",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:416.33942345036235,419.07203525963627,412.0773771922188,33.994310794529156"
+        }
+      },
+      "modified": "2026-06-22T04:57:14.247Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Step between objects and open this help from anywhere with a key.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "object",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "nav",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "help",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV1687SJBZHBAAHGD96WXM",
+      "archie:rev": "01KVPV1687CH6XD7CSN92MRCFX",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV1687SJBZHBAAHGD96WXM/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o14",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:416.33942345036235,419.07203525963627,412.0773771922188,33.994310794529156"
+        }
+      },
+      "modified": "2026-06-22T04:57:16.046Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Step between objects and open this help from anywhere with a key.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "object",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "nav",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "help",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV1687SJBZHBAAHGD96WXM/v1",
+      "archie:logicalId": "01KVPV1687SJBZHBAAHGD96WXM",
+      "archie:rev": "01KVPV180EGV36T5GVVETGX620",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV1687CH6XD7CSN92MRCFX",
+      "archie:reading": "power"
+    }
+  ]
+}

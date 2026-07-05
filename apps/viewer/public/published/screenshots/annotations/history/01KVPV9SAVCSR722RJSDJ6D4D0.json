@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV9SAVCSR722RJSDJ6D4D0.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9SAVCSR722RJSDJ6D4D0/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o19",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:414.54994453753056,300.4782720520569,614.5334090787544,69.5489717136706"
+        }
+      },
+      "modified": "2026-06-22T05:01:55.931Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Pick a result and the reader jumps straight to that note, whatever mode you're in.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "jump",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV9SAVCSR722RJSDJ6D4D0",
+      "archie:rev": "01KVPV9SAVW7HRD3CAVSKJJN20",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9SAVCSR722RJSDJ6D4D0/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o19",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:414.54994453753056,300.4782720520569,614.5334090787544,69.5489717136706"
+        }
+      },
+      "modified": "2026-06-22T05:01:57.031Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Pick a result and the reader jumps straight to that note, whatever mode you're in.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "jump",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9SAVCSR722RJSDJ6D4D0/v1",
+      "archie:logicalId": "01KVPV9SAVCSR722RJSDJ6D4D0",
+      "archie:rev": "01KVPV9TD7WNBQKGQ2QARY2XFR",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV9SAVW7HRD3CAVSKJJN20",
+      "archie:reading": "viewer"
+    }
+  ]
+}

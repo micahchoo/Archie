@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTYSVWFK6R3NVVW9ETEPDJ.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTYSVWFK6R3NVVW9ETEPDJ/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o13",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:446.5971316818775,160.16949152542378,546.6737178941364,573.7940026075617"
+        }
+      },
+      "modified": "2026-06-22T04:55:56.028Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Publish turns your exhibit into a static site — shareable, indexable, hostable anywhere.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "publish",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTYSVWFK6R3NVVW9ETEPDJ",
+      "archie:rev": "01KVPTYSVWB7W9RFW8ZF3V8ZQ0",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTYSVWFK6R3NVVW9ETEPDJ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o13",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:446.5971316818775,160.16949152542378,546.6737178941364,573.7940026075617"
+        }
+      },
+      "modified": "2026-06-22T04:55:58.528Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Publish turns your exhibit into a static site — shareable, indexable, hostable anywhere.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "publish",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTYSVWFK6R3NVVW9ETEPDJ/v1",
+      "archie:logicalId": "01KVPTYSVWFK6R3NVVW9ETEPDJ",
+      "archie:rev": "01KVPTYWA0VQ6WCTSQV3GFV70T",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTYSVWB7W9RFW8ZF3V8ZQ0",
+      "archie:reading": "studio"
+    }
+  ]
+}

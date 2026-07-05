@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV8AQJ1Q35K0TE5HXCDCZR.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8AQJ1Q35K0TE5HXCDCZR/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:241.82890144179234,458.10708538274093,524.769861269106,80.35099788986645"
+        }
+      },
+      "modified": "2026-06-22T05:01:08.210Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Open at a shared timestamp and the player lands there, paused — no autoplay surprise.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "deep-link",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "paused",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV8AQJ1Q35K0TE5HXCDCZR",
+      "archie:rev": "01KVPV8AQJ04T96S4NPVQ1A1T3",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8AQJ1Q35K0TE5HXCDCZR/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:241.82890144179234,458.10708538274093,524.769861269106,80.35099788986645"
+        }
+      },
+      "modified": "2026-06-22T05:01:09.383Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Open at a shared timestamp and the player lands there, paused — no autoplay surprise.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "deep-link",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "paused",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8AQJ1Q35K0TE5HXCDCZR/v1",
+      "archie:logicalId": "01KVPV8AQJ1Q35K0TE5HXCDCZR",
+      "archie:rev": "01KVPV8BW7WWQV8CEG4VT2NGRJ",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV8AQJ04T96S4NPVQ1A1T3",
+      "archie:reading": "power"
+    }
+  ]
+}

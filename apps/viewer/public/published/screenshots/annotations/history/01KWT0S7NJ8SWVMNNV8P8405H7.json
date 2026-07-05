@@ -1,0 +1,39 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KWT0S7NJ8SWVMNNV8P8405H7.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KWT0S7NJ8SWVMNNV8P8405H7/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:0,0,1440,900"
+        }
+      },
+      "modified": "2026-07-05T20:51:10.130Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A narrative exhibit reads as prose beside a canvas — the story on one side, the object it's about on the other.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "prose spine",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KWT0S7NJ8SWVMNNV8P8405H7",
+      "archie:rev": "01KWT0S7NJK8S46E9VGF8WWHR3",
+      "archie:version": 1,
+      "archie:lastEditor": "showroom-curator",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    }
+  ]
+}

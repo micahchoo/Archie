@@ -1,0 +1,15 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
+  "type": "AnnotationCollection",
+  "label": {
+    "en": [
+      "Embed"
+    ]
+  },
+  "summary": {
+    "en": [
+      "Web-embed + mount/tile internals."
+    ]
+  }
+}

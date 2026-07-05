@@ -1,0 +1,92 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ3PYKWSMSWN86SMP5QFJJ.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3PYKWSMSWN86SMP5QFJJ/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1148.0908346417489,442.4878108120564,275.87093107944065,192.30418918311364"
+        }
+      },
+      "modified": "2026-06-22T03:48:42.579Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The rail lists every reading. The eye toggles a reading's marks on or off; the pen picks which reading you're authoring into.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "rail",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "visibility",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "filter",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ3PYKWSMSWN86SMP5QFJJ",
+      "archie:rev": "01KVPQ3PYK5MDFCKDH5W7DMBWH",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3PYKWSMSWN86SMP5QFJJ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1148.0908346417489,442.4878108120564,275.87093107944065,192.30418918311364"
+        }
+      },
+      "modified": "2026-06-22T03:48:43.803Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The rail lists every reading. The eye toggles a reading's marks on or off; the pen picks which reading you're authoring into.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "rail",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "visibility",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "filter",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3PYKWSMSWN86SMP5QFJJ/v1",
+      "archie:logicalId": "01KVPQ3PYKWSMSWN86SMP5QFJJ",
+      "archie:rev": "01KVPQ3R4VBCF6VP5NCHWCYEPK",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ3PYK5MDFCKDH5W7DMBWH",
+      "archie:reading": "studio"
+    }
+  ]
+}

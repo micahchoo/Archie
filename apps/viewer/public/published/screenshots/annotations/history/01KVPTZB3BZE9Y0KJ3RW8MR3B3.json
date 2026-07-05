@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTZB3BZE9Y0KJ3RW8MR3B3.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZB3BZE9Y0KJ3RW8MR3B3/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o13",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:472.69570073491934,442.69800872433177,505.05893169191893,104.16840466145834"
+        }
+      },
+      "modified": "2026-06-22T04:56:13.675Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "For GitHub, give a repo, a branch, and a personal access token; Archie pushes the built pages.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "github",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "pat",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPTZB3BZE9Y0KJ3RW8MR3B3",
+      "archie:rev": "01KVPTZB3BSXN98C8DQHSAANY0",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZB3BZE9Y0KJ3RW8MR3B3/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o13",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:472.69570073491934,442.69800872433177,505.05893169191893,104.16840466145834"
+        }
+      },
+      "modified": "2026-06-22T04:56:14.854Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "For GitHub, give a repo, a branch, and a personal access token; Archie pushes the built pages.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "github",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "pat",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZB3BZE9Y0KJ3RW8MR3B3/v1",
+      "archie:logicalId": "01KVPTZB3BZE9Y0KJ3RW8MR3B3",
+      "archie:rev": "01KVPTZC86P69BFTKSEKJWV6VG",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPTZB3BSXN98C8DQHSAANY0",
+      "archie:reading": "studio"
+    }
+  ]
+}

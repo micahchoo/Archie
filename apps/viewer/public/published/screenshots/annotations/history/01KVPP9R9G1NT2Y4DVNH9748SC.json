@@ -1,0 +1,104 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPP9R9G1NT2Y4DVNH9748SC.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP9R9G1NT2Y4DVNH9748SC/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o1",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:519.5027608603585,215.6285874597166,155.1324623078183,110.18888744902225"
+        }
+      },
+      "modified": "2026-06-22T03:34:31.984Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Deep-zoom still works inside the embed; tiles stream on demand.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "embedded",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "deep-zoom",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPP9R9G1NT2Y4DVNH9748SC",
+      "archie:rev": "01KVPP9R9GCX4R2D3Z0GXWS6CT",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "embed"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP9R9G1NT2Y4DVNH9748SC/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:34:34.037Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Deep-zoom still works inside the embed; tiles stream on demand.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "embedded",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "deep-zoom",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP9R9G1NT2Y4DVNH9748SC/v1",
+      "archie:logicalId": "01KVPP9R9G1NT2Y4DVNH9748SC",
+      "archie:rev": "01KVPP9T9N5P9KS9RNVKX19V3C",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPP9R9GCX4R2D3Z0GXWS6CT",
+      "archie:reading": "embed"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP9R9G1NT2Y4DVNH9748SC/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:34:35.012Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Deep-zoom still works inside the embed; tiles stream on demand.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "embedded",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "deep-zoom",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP9R9G1NT2Y4DVNH9748SC/v2",
+      "archie:logicalId": "01KVPP9R9G1NT2Y4DVNH9748SC",
+      "archie:rev": "01KVPP9V84D405TY532A5XHSZB",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPP9T9N5P9KS9RNVKX19V3C",
+      "archie:reading": "embed"
+    }
+  ]
+}

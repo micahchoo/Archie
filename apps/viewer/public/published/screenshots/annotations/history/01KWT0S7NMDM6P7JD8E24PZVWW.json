@@ -1,0 +1,39 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KWT0S7NMDM6P7JD8E24PZVWW.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KWT0S7NMDM6P7JD8E24PZVWW/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1000,0,440,900"
+        }
+      },
+      "modified": "2026-07-05T20:51:10.132Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Scroll the spine and the canvas follows along.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "follow",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KWT0S7NMDM6P7JD8E24PZVWW",
+      "archie:rev": "01KWT0S7NM0FWW1YF97ZGHP5ZJ",
+      "archie:version": 1,
+      "archie:lastEditor": "showroom-curator",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    }
+  ]
+}

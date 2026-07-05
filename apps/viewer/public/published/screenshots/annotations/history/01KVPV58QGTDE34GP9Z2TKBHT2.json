@@ -1,0 +1,104 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV58QGTDE34GP9Z2TKBHT2.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV58QGTDE34GP9Z2TKBHT2/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o16",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:75.73203441813567,666.6710121956327,72.23674713675257,74.26458929817011"
+        }
+      },
+      "modified": "2026-06-22T04:59:27.856Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Hover a note in the list and its mark solos on the canvas — everything else fades.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hover",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "solo",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV58QGTDE34GP9Z2TKBHT2",
+      "archie:rev": "01KVPV58QGGN19XB40707HP42K",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV58QGTDE34GP9Z2TKBHT2/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:29.919Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Hover a note in the list and its mark solos on the canvas — everything else fades.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hover",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "solo",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV58QGTDE34GP9Z2TKBHT2/v1",
+      "archie:logicalId": "01KVPV58QGTDE34GP9Z2TKBHT2",
+      "archie:rev": "01KVPV5AQZTXZH20HT3R00PQZ9",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV58QGGN19XB40707HP42K",
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV58QGTDE34GP9Z2TKBHT2/v3",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:30.873Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Hover a note in the list and its mark solos on the canvas — everything else fades.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hover",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "solo",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV58QGTDE34GP9Z2TKBHT2/v2",
+      "archie:logicalId": "01KVPV58QGTDE34GP9Z2TKBHT2",
+      "archie:rev": "01KVPV5BNSA4X6C68A4K5R6JPT",
+      "archie:version": 3,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV5AQZTXZH20HT3R00PQZ9",
+      "archie:reading": "viewer"
+    }
+  ]
+}

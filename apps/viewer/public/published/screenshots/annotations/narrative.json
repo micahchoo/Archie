@@ -1,0 +1,420 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+  "type": "AnnotationCollection",
+  "label": {
+    "none": [
+      "Archie, Annotated"
+    ]
+  },
+  "total": 21,
+  "first": {
+    "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json#page-1",
+    "type": "AnnotationPage",
+    "items": [
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-1",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "What is Archie?"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+        "archie:role": "section",
+        "archie:order": 0,
+        "body": {
+          "type": "TextualBody",
+          "value": "Archie turns images into annotated exhibits — no server, no database, no lock-in. This library holds every exhibit you're building; open one to start.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-2",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Arrange your objects"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+        "archie:role": "section",
+        "archie:order": 1,
+        "body": {
+          "type": "TextualBody",
+          "value": "An exhibit's overview is itself a canvas: drag objects to set their reading order, and the count badge shows how many notes each one carries.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-3",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Annotate an image"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+        "archie:role": "section",
+        "archie:order": 2,
+        "body": {
+          "type": "TextualBody",
+          "value": "Draw a region, write the note in the popover anchored right where you drew it — the marker follows as you pan and zoom.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-4",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Competing readings"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+        "archie:role": "section",
+        "archie:order": 3,
+        "body": {
+          "type": "TextualBody",
+          "value": "The same object, read more than one way: a Reading is a mutually-exclusive interpretive pass, and the legend lets a visitor switch between them.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-5",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Tell a story"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+        "archie:role": "section",
+        "archie:order": 4,
+        "body": {
+          "type": "TextualBody",
+          "value": "Sequence sections into a narrative spine — bind prose to an object and a framed region, and the reader's camera follows the story.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-6",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Annotate sound & video"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+        "archie:role": "section",
+        "archie:order": 5,
+        "body": {
+          "type": "TextualBody",
+          "value": "Drag across the waveform to mark a time range, or import a VTT/SRT transcript to seed a whole recording's worth of notes at once.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-7",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "(continued)"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8",
+        "archie:role": "section",
+        "archie:order": 6,
+        "body": {
+          "type": "TextualBody",
+          "value": "Video adds a spatial dimension: draw a box on a paused frame and set a time window — a combined spatiotemporal selector.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-8",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Put it on a map"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9",
+        "archie:role": "section",
+        "archie:order": 7,
+        "body": {
+          "type": "TextualBody",
+          "value": "A Map is a fourth medium: regions anchor to true longitude/latitude, so re-framing the basemap keeps them nailed to the Earth.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-9",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Cite across the library"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+        "archie:role": "section",
+        "archie:order": 8,
+        "body": {
+          "type": "TextualBody",
+          "value": "Cmd+K opens the cite palette — reach any note or exhibit in the library and insert a live, clickable reference.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-10",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Title, credit, license"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11",
+        "archie:role": "section",
+        "archie:order": 9,
+        "body": {
+          "type": "TextualBody",
+          "value": "Set the exhibit's title, rights, and required statement here — the same fields that carry through to the published IIIF manifest.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-11",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Bring in media"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12",
+        "archie:role": "section",
+        "archie:order": 10,
+        "body": {
+          "type": "TextualBody",
+          "value": "Drop a folder, paste a IIIF manifest URL, or drag in files directly — the import gate that once required a IIIF server is open.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-12",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Publish it"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13",
+        "archie:role": "section",
+        "archie:order": 11,
+        "body": {
+          "type": "TextualBody",
+          "value": "Publish bakes the whole library into static HTML, JSON, and media — a folder, a zip, or straight to GitHub Pages.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-13",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Keyboard-first"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14",
+        "archie:role": "section",
+        "archie:order": 12,
+        "body": {
+          "type": "TextualBody",
+          "value": "Every action in Studio has a keyboard shortcut — this sheet is always one keystroke away.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-14",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Browse exhibits"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15",
+        "archie:role": "section",
+        "archie:order": 13,
+        "body": {
+          "type": "TextualBody",
+          "value": "Visitors land on the gallery — every published exhibit in the library, one card each.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-15",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Read an image"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+        "archie:role": "section",
+        "archie:order": 14,
+        "body": {
+          "type": "TextualBody",
+          "value": "The reader pairs the deep-zoom canvas with a sidebar of notes; select one and its region solos on the canvas.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-16",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Follow a narrative"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o17",
+        "archie:role": "section",
+        "archie:order": 15,
+        "body": {
+          "type": "TextualBody",
+          "value": "A narrative exhibit reads as prose beside a canvas — scroll the spine and the canvas follows, fitting the framed view for each section as you go.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-17",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Listen along"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+        "archie:role": "section",
+        "archie:order": 16,
+        "body": {
+          "type": "TextualBody",
+          "value": "Audio and video play inline with a transcript spine — each line seeks the recording as you read down the page.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-18",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Find anything"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19",
+        "archie:role": "section",
+        "archie:order": 17,
+        "body": {
+          "type": "TextualBody",
+          "value": "The finder searches every note, object, and exhibit in the library at once — press the shortcut and start typing.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-19",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "See note media full-screen"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20",
+        "archie:role": "section",
+        "archie:order": 18,
+        "body": {
+          "type": "TextualBody",
+          "value": "A note with an image of its own opens into a full-screen lightbox — the note text stays alongside it.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-20",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Read deeply"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21",
+        "archie:role": "section",
+        "archie:order": 19,
+        "body": {
+          "type": "TextualBody",
+          "value": "Long notes expand into a centred reading sheet over a dimmed backdrop — room to actually read, with the Readings legend and citations still in reach.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      },
+      {
+        "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/section/sec-21",
+        "type": "Annotation",
+        "motivation": "supplementing",
+        "label": {
+          "none": [
+            "Embed it anywhere"
+          ]
+        },
+        "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+        "archie:role": "section",
+        "archie:order": 20,
+        "body": {
+          "type": "TextualBody",
+          "value": "Drop <archie-viewer> into any page — a read-only Web Component, about half the Studio's bundle, no build step, no unsafe-eval.",
+          "format": "text/html",
+          "purpose": "describing"
+        }
+      }
+    ],
+    "partOf": {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/narrative.json",
+      "type": "AnnotationCollection"
+    }
+  }
+}

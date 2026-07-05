@@ -1,0 +1,12 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/annotations-studio.json",
+  "type": "AnnotationPage",
+  "items": [],
+  "partOf": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
+      "type": "AnnotationCollection"
+    }
+  ]
+}

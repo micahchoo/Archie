@@ -1,0 +1,92 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVB1TKQ9PE28TXETBGSEQH.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVB1TKQ9PE28TXETBGSEQH/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o20",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:180.27624167692093,685.0451808703999,1074.0843954844645,50.73102042096912"
+        }
+      },
+      "modified": "2026-06-22T05:02:37.395Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The note's text sits beside the media; Esc or the backdrop closes it.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "text",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "beside",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "close",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPVB1TKQ9PE28TXETBGSEQH",
+      "archie:rev": "01KVPVB1TKPTQC6V3DQ83KXD9H",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVB1TKQ9PE28TXETBGSEQH/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o20",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:180.27624167692093,685.0451808703999,1074.0843954844645,50.73102042096912"
+        }
+      },
+      "modified": "2026-06-22T05:02:38.442Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The note's text sits beside the media; Esc or the backdrop closes it.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "text",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "beside",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "close",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVB1TKQ9PE28TXETBGSEQH/v1",
+      "archie:logicalId": "01KVPVB1TKQ9PE28TXETBGSEQH",
+      "archie:rev": "01KVPVB2VAX9A4PJRESTGQJNT5",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPVB1TKPTQC6V3DQ83KXD9H",
+      "archie:reading": "viewer"
+    }
+  ]
+}

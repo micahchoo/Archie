@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ7P5344ZF6XBH0AGS55M9.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ7P5344ZF6XBH0AGS55M9/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o6",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:253.6249865323566,449.5252144446616,120.6048199394701,40.094720543115045"
+        }
+      },
+      "modified": "2026-06-22T03:50:52.835Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Write the section's prose beside it — markdown, with live cites to other notes.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "prose",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ7P5344ZF6XBH0AGS55M9",
+      "archie:rev": "01KVPQ7P53KPYXRQWSKH2FB0AZ",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ7P5344ZF6XBH0AGS55M9/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o6",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:253.6249865323566,449.5252144446616,120.6048199394701,40.094720543115045"
+        }
+      },
+      "modified": "2026-06-22T03:50:54.275Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Write the section's prose beside it — markdown, with live cites to other notes.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "prose",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ7P5344ZF6XBH0AGS55M9/v1",
+      "archie:logicalId": "01KVPQ7P5344ZF6XBH0AGS55M9",
+      "archie:rev": "01KVPQ7QJ3PBXP0FEWDRP9N8C9",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ7P53KPYXRQWSKH2FB0AZ",
+      "archie:reading": "studio"
+    }
+  ]
+}

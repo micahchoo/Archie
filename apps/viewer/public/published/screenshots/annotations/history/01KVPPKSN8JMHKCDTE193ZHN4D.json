@@ -1,0 +1,74 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPKSN8JMHKCDTE193ZHN4D.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPKSN8JMHKCDTE193ZHN4D/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1221.5422965356242,775.4589200649344,93.87603753330995,63.36375488917861"
+        }
+      },
+      "modified": "2026-06-22T03:40:01.064Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Open a local image straight from the OS file dialog and annotate it offline — no server, no upload.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "offline",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "local",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPPKSN8JMHKCDTE193ZHN4D",
+      "archie:rev": "01KVPPKSN8G297R1P2H57603G6",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "power"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPKSN8JMHKCDTE193ZHN4D/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/screenshots/canvas/o2",
+      "modified": "2026-06-22T03:40:02.684Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Open a local image straight from the OS file dialog and annotate it offline — no server, no upload.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "offline",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "local",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPKSN8JMHKCDTE193ZHN4D/v1",
+      "archie:logicalId": "01KVPPKSN8JMHKCDTE193ZHN4D",
+      "archie:rev": "01KVPPKV7W1QP3N2HNZE8M0C4T",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPPKSN8G297R1P2H57603G6",
+      "archie:reading": "power"
+    }
+  ]
+}

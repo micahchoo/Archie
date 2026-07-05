@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ1ABXZ0MVHKT94RSHK26Q.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1ABXZ0MVHKT94RSHK26Q/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1147.179388741199,450.2850812815683,275.4871963995579,197.23596940668745"
+        }
+      },
+      "modified": "2026-06-22T03:47:24.157Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Assign the note to a reading — one interpretive pass among several.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "reading",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ1ABXZ0MVHKT94RSHK26Q",
+      "archie:rev": "01KVPQ1ABXVX8PZME2J0SV52DT",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1ABXZ0MVHKT94RSHK26Q/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1147.179388741199,450.2850812815683,275.4871963995579,197.23596940668745"
+        }
+      },
+      "modified": "2026-06-22T03:47:25.844Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Assign the note to a reading — one interpretive pass among several.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "reading",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1ABXZ0MVHKT94RSHK26Q/v1",
+      "archie:logicalId": "01KVPQ1ABXZ0MVHKT94RSHK26Q",
+      "archie:rev": "01KVPQ1C0MANTRYDEH9GR57X19",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ1ABXVX8PZME2J0SV52DT",
+      "archie:reading": "studio"
+    }
+  ]
+}

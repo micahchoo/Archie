@@ -1,0 +1,82 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ9M3EFS5QM5K92HFVE2X7.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9M3EFS5QM5K92HFVE2X7/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:647.6951070130516,590.7200709100948,90.44126588919244,96.60082306147478"
+        }
+      },
+      "modified": "2026-06-22T03:51:56.270Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Drag across the waveform to mark a time range; the note anchors to those seconds.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "time",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "range",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPQ9M3EFS5QM5K92HFVE2X7",
+      "archie:rev": "01KVPQ9M3EG1WCYB578E5K82VP",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "studio"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9M3EFS5QM5K92HFVE2X7/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:647.6951070130516,590.7200709100948,90.44126588919244,96.60082306147478"
+        }
+      },
+      "modified": "2026-06-22T03:51:57.535Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Drag across the waveform to mark a time range; the note anchors to those seconds.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "time",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "range",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9M3EFS5QM5K92HFVE2X7/v1",
+      "archie:logicalId": "01KVPQ9M3EFS5QM5K92HFVE2X7",
+      "archie:rev": "01KVPQ9NAZRZS5QN0XWPFB19X3",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPQ9M3EG1WCYB578E5K82VP",
+      "archie:reading": "studio"
+    }
+  ]
+}

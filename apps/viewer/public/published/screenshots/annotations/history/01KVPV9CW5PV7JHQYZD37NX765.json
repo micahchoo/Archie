@@ -1,0 +1,72 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV9CW5PV7JHQYZD37NX765.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9CW5PV7JHQYZD37NX765/v1",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o19",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:409.04823989569763,160.16949152542378,617.2099087353322,48.109517601043024"
+        }
+      },
+      "modified": "2026-06-22T05:01:43.173Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Find anything across the exhibit — open the finder with Cmd-K or just '/'.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "finder",
+          "purpose": "tagging"
+        }
+      ],
+      "archie:logicalId": "01KVPV9CW5PV7JHQYZD37NX765",
+      "archie:rev": "01KVPV9CW54QRHW6ZWRRKPG9JR",
+      "archie:version": 1,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": null,
+      "archie:reading": "viewer"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9CW5PV7JHQYZD37NX765/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://archie.demo/screenshots/canvas/o19",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:409.04823989569763,160.16949152542378,617.2099087353322,48.109517601043024"
+        }
+      },
+      "modified": "2026-06-22T05:01:44.273Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Find anything across the exhibit — open the finder with Cmd-K or just '/'.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "finder",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9CW5PV7JHQYZD37NX765/v1",
+      "archie:logicalId": "01KVPV9CW5PV7JHQYZD37NX765",
+      "archie:rev": "01KVPV9DYHVP9EQGAC99YND1HR",
+      "archie:version": 2,
+      "archie:lastEditor": "anonymous",
+      "archie:parent": "01KVPV9CW54QRHW6ZWRRKPG9JR",
+      "archie:reading": "viewer"
+    }
+  ]
+}
