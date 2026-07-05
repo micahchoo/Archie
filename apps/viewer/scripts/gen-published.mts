@@ -59,12 +59,39 @@ const zipPath = explicitZip ?? mostRecentLibraryZip();
 
 let library: Library;
 let getLog: (id: string) => AnnotationLog;
+// getAsset serves bytes for a dropped zip's LOCALLY-sourced objects (source `/assets/{name}`, e.g.
+// a Studio-imported image) — absent for the sample-data path, which has none (tend Issue 9: this was
+// missing entirely, silently dropping every locally-sourced asset's bytes on every regen; unnoticed
+// because every bundled sample exhibit uses external URLs only, never a local import).
+let getAsset: ((slug: string, name: string) => Promise<ArrayBuffer | null>) | undefined;
 if (zipPath) {
+  const zipFs = ZipFilesystem.fromZip(new Uint8Array(readFileSync(zipPath)));
   // loadLibrary is the inverse of publishLibrary (publish↔load symmetry); logs are keyed by slug and
   // recovered exhibit.id === slug, so getLog(id) hits loaded.logs[slug].
-  const loaded = await loadLibrary(ZipFilesystem.fromZip(new Uint8Array(readFileSync(zipPath))));
+  const loaded = await loadLibrary(zipFs);
   library = loaded.library;
   getLog = (id) => loaded.logs[id] ?? [];
+  // publishLibrary's own asset-copy step only fires for a RELATIVE `/assets/{name}` source
+  // (site.ts's ASSET_PREFIX check) — but a zip dropped here has ALREADY been through one publish
+  // cycle (Studio's "Publish & Share" always bakes an absolute baseUrl), so loadLibrary's
+  // objectsFromManifest hands back the baked ABSOLUTE URL, never the original relative form. When
+  // that bake used THIS SAME canonical BASE (the common case — dropping your own project's export),
+  // recover the relative shape so the check below fires and the bytes get copied forward instead of
+  // silently dropped on every regen.
+  for (const ex of library.exhibits) {
+    const assetBase = `${BASE}${ex.slug}/assets/`;
+    for (const obj of ex.objects) {
+      if (obj.source.startsWith(assetBase)) (obj as { source: string }).source = `/assets/${obj.source.slice(assetBase.length)}`;
+    }
+  }
+  getAsset = async (slug, name) => {
+    try {
+      const dir = await (await (await zipFs.root()).getDirectory(slug)).getDirectory("assets");
+      return await (await dir.getFile(name)).readable();
+    } catch {
+      return null; // not a locally-sourced asset (external URL) — publishLibrary leaves it as-is
+    }
+  };
   console.log(`Source: ${zipPath} (${library.exhibits.length} exhibit(s))`);
 } else {
   library = sampleLibrary;
@@ -73,7 +100,7 @@ if (zipPath) {
 }
 
 const fs = new MemoryFilesystem();
-await publishLibrary(fs, library, getLog, { baseUrl: BASE, viewerBase: VIEWER_BASE });
+await publishLibrary(fs, library, getLog, { baseUrl: BASE, viewerBase: VIEWER_BASE, ...(getAsset ? { getAsset } : {}) });
 const files = await collectFiles(await fs.root()); // Record<path, {text}|{base64}>
 
 // What does the EXISTING tree hold that this source doesn't own? (null on first run / fresh clone)
