@@ -27,8 +27,10 @@ describe("Object cite route grammar (route.ts)", () => {
     expect(parseRoute(routeToHash(r))).toEqual(r);
   });
   it("does not confuse `/o/` with the `/a/` note tail", () => {
-    expect(parseRoute("#/voynich/a/n1").objectId).toBeUndefined();
-    expect(parseRoute("#/voynich/o/f1r").noteId).toBeUndefined();
+    const noteRoute = parseRoute("#/voynich/a/n1");
+    expect(noteRoute.view === "exhibit" ? noteRoute.objectId : undefined).toBeUndefined();
+    const objectRoute = parseRoute("#/voynich/o/f1r");
+    expect(objectRoute.view === "exhibit" ? objectRoute.noteId : undefined).toBeUndefined();
   });
 });
 

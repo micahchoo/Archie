@@ -16,7 +16,7 @@ import type { ImageAnnotation, W3CImageAnnotation, DrawingStyle, DrawingStyleExp
 import { mountPlugin } from "@annotorious/plugin-tools";
 import { resolveTileSource, isDegenerateSelectorValue, selectorOf, selectorBBox, regionPixelRect } from "@render/core";
 import { dispatchFitBounds, applyFitBounds, clampedFitRect, type FitOptions, type ViewportLike } from "./fitbounds.js";
-import { createFrameOverlay } from "./frame-overlay.js";
+import { createFrameOverlay, type FrameViewerLike } from "./frame-overlay.js";
 import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
 import { xyzTileSource } from "./xyz.js";
@@ -248,7 +248,11 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
   // Coverage-border overlay (7e1f) — a standalone rendering concern (createFrameOverlay). It frames the
   // WHOLE OBJECT: the SVG is added as an OSD overlay at the image's bounds, so it tracks the object through
   // pan/zoom (not a fixed viewport border). setFrame re-draws (replacing any current frame); null clears it.
-  const frameOverlay = createFrameOverlay(viewer);
+  // FrameViewerLike is deliberately a minimal duck-typed capability (frame-overlay.ts stays
+  // decoupled from OSD's concrete Point/Rect/OverlayOptions types); OSD's real Viewer satisfies it
+  // at runtime (addOverlay takes {element, location}) but its own types are narrower/wider than
+  // the duck type in ways TS can't verify structurally — asserted once here, at the wiring point.
+  const frameOverlay = createFrameOverlay(viewer as unknown as FrameViewerLike);
 
   // Shared rect math for markerScreenRect(s): selector bbox in image px → viewer-element coords +
   // the container's page offset, so a position:fixed anchor works regardless of layout (ADR-0006).

@@ -47,25 +47,25 @@ describe("createReadOnlyOverlay.setAnnotations — draw", () => {
   it("a rect annotation → one <rect> with width/height of the box", () => {
     const v = fakeViewer();
     createReadOnlyOverlay(v).setAnnotations([rectAnn("r")]);
-    const svg = v.overlays[0].element as SVGSVGElement;
+    const svg = v.overlays[0]!.element as SVGSVGElement;
     const rects = svg.querySelectorAll("rect");
     expect(rects).toHaveLength(1);
-    expect(rects[0].getAttribute("width")).toBe("200");
-    expect(rects[0].getAttribute("height")).toBe("80");
-    expect(rects[0].getAttribute("vector-effect")).toBe("non-scaling-stroke");
+    expect(rects[0]!.getAttribute("width")).toBe("200");
+    expect(rects[0]!.getAttribute("height")).toBe("80");
+    expect(rects[0]!.getAttribute("vector-effect")).toBe("non-scaling-stroke");
     // Anchored to the box's image-space bbox via the viewport.
-    expect(v.overlays[0].location).toEqual({ x: 100, y: 50, w: 200, h: 80 });
+    expect(v.overlays[0]!.location).toEqual({ x: 100, y: 50, w: 200, h: 80 });
   });
 
   it("a polygon annotation → one <polygon> whose points attribute = bbox-local coords", () => {
     const v = fakeViewer();
     createReadOnlyOverlay(v).setAnnotations([polyAnn("p")]);
-    const svg = v.overlays[0].element as SVGSVGElement;
+    const svg = v.overlays[0]!.element as SVGSVGElement;
     const polys = svg.querySelectorAll("polygon");
     expect(polys).toHaveLength(1);
     // bbox of (10,10),(110,10),(60,90) = x10 y10 w100 h80 → local: (0,0),(100,0),(50,80)
-    expect(polys[0].getAttribute("points")).toBe("0,0 100,0 50,80");
-    expect(v.overlays[0].location).toEqual({ x: 10, y: 10, w: 100, h: 80 });
+    expect(polys[0]!.getAttribute("points")).toBe("0,0 100,0 50,80");
+    expect(v.overlays[0]!.location).toEqual({ x: 10, y: 10, w: 100, h: 80 });
   });
 
   it("a degenerate annotation is skipped (excluded from overlay count) and warns LOUDLY", () => {
@@ -92,7 +92,7 @@ describe("createReadOnlyOverlay.setAnnotations — draw", () => {
     expect(v.overlays).toHaveLength(0);
     expect(v.openHandlers).toHaveLength(1);
     Object.assign(v.world, fakeViewer().world);
-    v.openHandlers[0]();
+    v.openHandlers[0]!();
     expect(v.overlays).toHaveLength(1);
   });
 });
@@ -116,7 +116,7 @@ describe("createReadOnlyOverlay.onSelect — hit-test (P0-3)", () => {
     const cb = vi.fn();
     o.onSelect(cb);
     o.setAnnotations([rectAnn("r")]);
-    const geom = (v.overlays[0].element as SVGSVGElement).querySelector("rect")!;
+    const geom = (v.overlays[0]!.element as SVGSVGElement).querySelector("rect")!;
     geom.dispatchEvent(new Event("click"));
     expect(cb).toHaveBeenCalledTimes(1);
     expect(cb).toHaveBeenCalledWith("r");
@@ -128,7 +128,7 @@ describe("createReadOnlyOverlay.onSelect — hit-test (P0-3)", () => {
     const cb = vi.fn();
     o.onSelect(cb);
     o.setAnnotations([rectAnn("r"), polyAnn("p")]);
-    const geom = (v.overlays[1].element as SVGSVGElement).querySelector("polygon")!;
+    const geom = (v.overlays[1]!.element as SVGSVGElement).querySelector("polygon")!;
     geom.dispatchEvent(new Event("click"));
     expect(cb).toHaveBeenLastCalledWith("p");
   });
@@ -140,7 +140,7 @@ describe("createReadOnlyOverlay.onSelect — hit-test (P0-3)", () => {
     const off = o.onSelect(cb);
     o.setAnnotations([rectAnn("r")]);
     off();
-    (v.overlays[0].element as SVGSVGElement).querySelector("rect")!.dispatchEvent(new Event("click"));
+    (v.overlays[0]!.element as SVGSVGElement).querySelector("rect")!.dispatchEvent(new Event("click"));
     expect(cb).not.toHaveBeenCalled();
   });
 });
@@ -149,7 +149,7 @@ describe("createReadOnlyOverlay — a11y marker-label (P0-6)", () => {
   it("a drawn shape carries role + the aria-label from labelFor", () => {
     const v = fakeViewer();
     createReadOnlyOverlay(v, { labelFor: (id) => `Note: ${id}` }).setAnnotations([rectAnn("r")]);
-    const svg = v.overlays[0].element as SVGSVGElement;
+    const svg = v.overlays[0]!.element as SVGSVGElement;
     expect(svg.getAttribute("role")).toBe("button");
     expect(svg.getAttribute("aria-label")).toBe("Note: r");
   });
@@ -157,13 +157,13 @@ describe("createReadOnlyOverlay — a11y marker-label (P0-6)", () => {
   it("absent labelFor → the fallback label", () => {
     const v = fakeViewer();
     createReadOnlyOverlay(v).setAnnotations([rectAnn("r")]);
-    expect((v.overlays[0].element as SVGSVGElement).getAttribute("aria-label")).toBe("annotation r");
+    expect((v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")).toBe("annotation r");
   });
 
   it("the label NEVER comes from the selector value (hostile-string proof)", () => {
     const v = fakeViewer();
     createReadOnlyOverlay(v).setAnnotations([polyAnn("p", "<svg><polygon points='10,10 110,10 60,90'/><script>x</script></svg>")]);
-    const label = (v.overlays[0].element as SVGSVGElement).getAttribute("aria-label")!;
+    const label = (v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")!;
     expect(label).toBe("annotation p");
     expect(label).not.toContain("<");
   });

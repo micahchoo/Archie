@@ -37,7 +37,7 @@ describe("STANDING: hostile SvgSelector renders as geometry only — never inner
   it("(b) the drawn <polygon> points attribute = ONLY the parsed numeric coords", () => {
     const v = fakeViewer();
     createReadOnlyOverlay(v).setAnnotations([hostileAnn]);
-    const svg = v.overlays[0].element as SVGSVGElement;
+    const svg = v.overlays[0]!.element as SVGSVGElement;
     const poly = svg.querySelector("polygon")!;
     expect(poly.getAttribute("points")).toBe("0,0 100,0 50,80"); // bbox-local of the 3 valid points
   });
@@ -45,7 +45,7 @@ describe("STANDING: hostile SvgSelector renders as geometry only — never inner
   it("(a) no overlay node's innerHTML contains <script or onerror", () => {
     const v = fakeViewer();
     createReadOnlyOverlay(v).setAnnotations([hostileAnn]);
-    const svg = v.overlays[0].element as SVGSVGElement;
+    const svg = v.overlays[0]!.element as SVGSVGElement;
     expect(svg.innerHTML).not.toContain("<script");
     expect(svg.innerHTML).not.toContain("onerror");
     // No <script>/<image> nodes ever entered the tree — only createElementNS geometry did.
@@ -58,7 +58,7 @@ describe("STANDING: hostile SvgSelector renders as geometry only — never inner
     const innerHTMLSetter = vi.fn();
     Object.defineProperty(Element.prototype, "innerHTML", {
       configurable: true,
-      get: innerHTMLDesc?.get,
+      ...(innerHTMLDesc?.get ? { get: innerHTMLDesc.get } : {}),
       set(this: Element, v: string) { innerHTMLSetter(); innerHTMLDesc?.set?.call(this, v); },
     });
     const parseSpy = vi.spyOn(DOMParser.prototype, "parseFromString");
@@ -75,7 +75,7 @@ describe("STANDING: hostile SvgSelector renders as geometry only — never inner
   it("(d') the produced subtree is exactly the geometry nodes built by createElementNS (svg + polygon)", () => {
     const v = fakeViewer();
     createReadOnlyOverlay(v).setAnnotations([hostileAnn]);
-    const svg = v.overlays[0].element as SVGSVGElement;
+    const svg = v.overlays[0]!.element as SVGSVGElement;
     // The whole subtree: the <svg> root + exactly one <polygon> child. No injected nodes.
     expect(svg.querySelectorAll("*")).toHaveLength(1); // just the polygon
   });

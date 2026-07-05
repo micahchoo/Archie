@@ -11,7 +11,9 @@ import type { FrameOverlay } from "./surface.js";
 
 /** The minimal OSD viewer surface this overlay needs — keeps the module decoupled from the full OSD type. */
 export interface FrameViewerLike {
-  addOverlay(options: { element: HTMLElement | SVGElement; location: unknown }): void;
+  // OSD's own OverlayOptions.element type is HTMLElement-only (@types/openseadragon), even though
+  // an SVGElement works fine at runtime — the SVG frame below is cast at its one call site.
+  addOverlay(options: { element: HTMLElement; location: unknown }): void;
   removeOverlay(element: HTMLElement | SVGElement): void;
   world: { getItemAt(i: number): { getBounds(immediately?: boolean): unknown } | undefined };
   addOnceHandler?(name: string, handler: () => void): void;
@@ -86,7 +88,7 @@ export function createFrameOverlay(viewer: FrameViewerLike): FrameOverlayControl
     svg.append(rect(frame.colour, "1.5", true)); // the quiet colour border — the click target
     // Anchor to the OBJECT: OSD positions + sizes the SVG to the image's viewport Rect every render frame,
     // so the border tracks the object through pan/zoom instead of sticking to the viewport edges.
-    viewer.addOverlay({ element: svg, location: item.getBounds() });
+    viewer.addOverlay({ element: svg as unknown as HTMLElement, location: item.getBounds() });
     frameEl = svg;
   };
 

@@ -16,7 +16,7 @@ describe("collabBreakdown — who wrote what, on live notes", () => {
     note(priya, 1); note(priya, 2);
     const me = new AnnotationSession(asClientId("me"), priya.entries);
     const mine = note(me, 3);
-    const b = collabBreakdown({ ex: me.log }, asClientId("me"));
+    const b = collabBreakdown({ ex: me.entries }, asClientId("me"));
     expect(b).toEqual({ others: [{ editor: "priya", count: 2 }], yours: 1 });
 
     const afterDelete = new AnnotationSession(asClientId("me"), me.entries);

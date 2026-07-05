@@ -7,7 +7,7 @@
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
   MemoryFilesystem, publishLibrary, libraryToZipFs, collectFiles, publishToGitHub, renderMarkdown,
-  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type GitHubTarget, type PublishProgress, type LogicalId,
+  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type GitHubTarget, type PublishProgress,
 } from "@render/core";
 import { supportsFileStreamSave, saveZipToDisk } from "./binding.js";
 import { pickFolderBinding } from "./folder-backend.js";
@@ -143,7 +143,7 @@ export function createPublishFlows(deps: PublishDeps) {
   async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[] }> {
     const logs = await deps.loadAllLogs();
     const fs = new MemoryFilesystem();
-    const { brokenLinks } = await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     return { fs, brokenLinks };
   }
@@ -156,13 +156,13 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE zip builder for the three zip paths (project Save / dialog download / local publish).
   async function buildZipFs() {
     const logs = await deps.loadAllLogs();
-    return libraryToZipFs(deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS });
+    return libraryToZipFs(deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS });
   }
   // ONE folder writer for the two folder sinks (binding autosave/Save + local publish). Takes the
   // Filesystem seam directly (FSA or Tauri), so the caller owns capability selection (folder-backend).
   async function writeTree(fs: Filesystem) {
     const logs = await deps.loadAllLogs();
-    await publishLibrary(fs, deps.buildFullLibrary(), (id: LogicalId) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS });
+    await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS });
   }
   /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
   async function downloadProjectZip(): Promise<boolean> {

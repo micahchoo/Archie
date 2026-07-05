@@ -34,7 +34,7 @@ describe("createFrameOverlay.draw", () => {
     const v = fakeViewer();
     createFrameOverlay(v).draw(frame());
     expect(v.overlays).toHaveLength(1);
-    const svg = v.overlays[0].element as SVGSVGElement;
+    const svg = v.overlays[0]!.element as SVGSVGElement;
     expect(svg.tagName.toLowerCase()).toBe("svg");
     expect(svg.getAttribute("viewBox")).toBe("0 0 100 100");
     expect(svg.style.pointerEvents).toBe("none"); // centre stays pan/zoom-free
@@ -43,9 +43,9 @@ describe("createFrameOverlay.draw", () => {
   it("draws a halo rect + a clickable colour rect carrying the frame colour", () => {
     const v = fakeViewer();
     createFrameOverlay(v).draw(frame());
-    const rects = (v.overlays[0].element as SVGSVGElement).querySelectorAll("rect");
+    const rects = (v.overlays[0]!.element as SVGSVGElement).querySelectorAll("rect");
     expect(rects).toHaveLength(2);
-    const colour = rects[1];
+    const colour = rects[1]!;
     expect(colour.getAttribute("stroke")).toBe("#c83");
     expect((colour as SVGElement).style.pointerEvents).toBe("stroke"); // only the line is the hit target
     expect(colour.getAttribute("vector-effect")).toBe("non-scaling-stroke");
@@ -55,7 +55,7 @@ describe("createFrameOverlay.draw", () => {
     const v = fakeViewer();
     const onActivate = vi.fn();
     createFrameOverlay(v).draw(frame(onActivate));
-    const colour = (v.overlays[0].element as SVGSVGElement).querySelectorAll("rect")[1];
+    const colour = (v.overlays[0]!.element as SVGSVGElement).querySelectorAll("rect")[1]!;
     colour.dispatchEvent(new Event("click"));
     expect(onActivate).toHaveBeenCalledTimes(1);
   });
@@ -68,7 +68,7 @@ describe("createFrameOverlay.draw", () => {
     // simulate the image opening — but it still has no item in this fake, so re-queues; flip to ready:
     const ready = fakeViewer();
     Object.assign(v.world, ready.world);
-    v.openHandlers[0]();
+    v.openHandlers[0]!();
     expect(v.overlays).toHaveLength(1);
   });
 

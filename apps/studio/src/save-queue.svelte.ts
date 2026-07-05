@@ -26,7 +26,7 @@ export const saveStatus = {
   },
   get error(): string | null {
     const msgs = Object.values(s.errors);
-    return msgs.length > 0 ? msgs[msgs.length - 1] : null;
+    return msgs.length > 0 ? msgs[msgs.length - 1]! : null;
   },
   get pending(): number {
     return s.pending;

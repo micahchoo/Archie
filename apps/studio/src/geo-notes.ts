@@ -1,11 +1,12 @@
 // Geo-note selector math (the DOMINO cut out of App.svelte): the two pure helpers that turn a note's
 // pixel selector / stored geo-truth into a lng/lat readout, and a drawn region's WORLD-pixel selector
 // into its lng/lat anchor. Both took the reactive `currentTileSource` via closure in App.svelte; here
-// they take the `TileSourceDescriptor` explicitly, so they are pure and unit-testable. The underlying
+// they take the map's `XyzTileSource` explicitly (geo readout only makes sense for a slippy-map
+// basemap, never a DZI pyramid), so they are pure and unit-testable. The underlying
 // projection (pixel↔lng/lat) is core's geometry/geo — this module only composes it over a note's shape.
 import {
   formatLngLat, parseFragmentXYWH, parsePolygonPoints, pixelToLngLat,
-  type AnnotationRecord, type W3CTarget, type GeoAnchor, type TileSourceDescriptor,
+  type AnnotationRecord, type W3CTarget, type GeoAnchor, type XyzTileSource,
 } from "@render/core";
 
 /** The selector `value` string off a record's target (xywh / polygon fragment), or "" if absent. */
@@ -15,7 +16,7 @@ export const selectorValue = (r: AnnotationRecord): string =>
 // Geo readout (geo-annotation, Q5): the region's CENTRE lng/lat. Prefer the stored geo-truth (archie:geo,
 // ADR-0015 — record.geo); fall back to deriving from the pixel selector for any pre-geo record. Returns
 // null off a Map (no tileSource) or when the shape can't be located.
-export function geoLabelOf(r: AnnotationRecord, ts: TileSourceDescriptor | undefined): string | null {
+export function geoLabelOf(r: AnnotationRecord, ts: XyzTileSource | undefined): string | null {
   if (!ts) return null;
   if (r.geo?.type === "bbox") return formatLngLat({ lng: (r.geo.west + r.geo.east) / 2, lat: (r.geo.south + r.geo.north) / 2 });
   if (r.geo?.type === "polygon" && r.geo.coordinates.length) {
@@ -29,7 +30,7 @@ export function geoLabelOf(r: AnnotationRecord, ts: TileSourceDescriptor | undef
 
 // Geo-truth capture (Q4 / ADR-0015): turn a drawn region's WORLD-pixel selector into its lng/lat anchor
 // (the source of truth). Box → bbox (NW/SE corners); Outline → polygon (each vertex). undefined off-map.
-export function geoForTarget(target: W3CTarget, ts: TileSourceDescriptor | undefined): GeoAnchor | undefined {
+export function geoForTarget(target: W3CTarget, ts: XyzTileSource | undefined): GeoAnchor | undefined {
   if (!ts) return undefined;
   const v = (target as { selector?: { value?: string } } | undefined)?.selector?.value;
   if (!v) return undefined;

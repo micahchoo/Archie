@@ -12,7 +12,9 @@
     "build": "pnpm -r build",
     "build:gh-pages": "bash scripts/build-gh-pages.sh",
     "bundle:baseline": "node scripts/bundle-size.mjs",
-    "bundle:check": "node scripts/bundle-size.mjs --check"
+    "bundle:check": "node scripts/bundle-size.mjs --check",
+    "sync-dist": "node scripts/sync-dist.mjs",
+    "sync-dist:check": "node scripts/sync-dist.mjs --check"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.3",
