@@ -22,9 +22,13 @@ Columns: claim | where claimed | what the code does | type | resolution | commit
 
 **Resolution for all five HANDOFF.md rows**: the document's only claims that are still true are
 *already* duplicated, more currently, in `ISSUES.md` Issue 9 (showroom) and
-`docs/plans/EMBED-VIEWER-IMPLEMENTATION-STRATEGY.md` (cross-library affordance). Nothing here is
-uniquely live. Archive the file with a one-line pointer to both, rather than a line-by-line rewrite
-of a session-status doc for a feature that finished shipping two weeks ago.
+`docs/plans/EMBED-VIEWER-IMPLEMENTATION-STRATEGY.md` (cross-library affordance) — nothing here was
+uniquely live. **Correction from the initial plan**: this repo's `CLAUDE.md` instructs actively
+maintaining `HANDOFF.md` for session continuity (mirrored by the `check-handoff` skill) — a bare
+"archived, read elsewhere" tombstone would break that ongoing convention rather than fix it.
+Rewrote it instead as a genuine current-state handoff (what shipped, what's still open, key files) —
+still a "rewrite," which the issue's own Run-it prompt explicitly sanctions, but one that keeps the
+file doing its real job.
 
 ## README.md — Features (208-227)
 
