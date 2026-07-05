@@ -18,7 +18,7 @@ import { toExhibitsJson, toReadingCollection, type ExhibitsJson } from "../iiif/
 import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest, sectionsToAnnotationCollection, embedHeadsIntoManifest, findCanvasesMissingDimensions, type HeadsEmbed } from "../iiif/manifest.js";
 import { rightsFromIIIF } from "../iiif/rights.js";
 import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.js";
-import type { Exhibit, AObject, Section, RightsFields } from "../model/model.js";
+import type { Exhibit, AObject, Section, Reading, RightsFields } from "../model/model.js";
 import type { DziTileSource } from "../iiif/resolve.js";
 import type { PortableExhibit } from "./portable.js"; // type-only (erased) — the readings superset; type-cycle is harmless
 import { readExhibitTree, fsJsonSource } from "./read.js";
@@ -480,11 +480,20 @@ export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
     const exDir = await root.getDirectory(card.slug);
     const manifest = await src.get<IIIFManifest>(`${card.slug}/manifest.json`);
     logs[card.slug] = await readAnnotations(await exDir.getDirectory("annotations"));
+    // Sections (narrative Ranges) and readings were NOT recovered here at all — a silent gap in the
+    // publish↔load symmetry this function's own doc comment claims: a narrative exhibit's Ranges
+    // vanished on any load→publish round trip (e.g. gen-published.mts regenerating a dropped zip),
+    // and every reading-scoped note's per-reading annotation page went along with it (toCanvas gates
+    // that split on the reading-id list). Confirmed missing via ISSUES.md Issue 9's showroom assembly.
+    const sections = sectionsFromManifest(manifest);
+    const readings = (await src.getOptional<Reading[]>(`${card.slug}/readings.json`)) ?? [];
     exhibits.push({
       id: asExhibitId(card.slug),
       slug: card.slug,
       title: card.title,
       objects: objectsFromManifest(manifest),
+      ...(sections.length > 0 ? { sections } : {}),
+      ...(readings.length > 0 ? { readings } : {}),
       ...(card.description !== undefined ? { summary: card.description } : {}),
       ...(card.cover !== undefined ? { cover: card.cover } : {}),
       ...rightsFromIIIF(manifest), // exhibit-level credit/license round-trips via the manifest

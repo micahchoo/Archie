@@ -147,6 +147,35 @@ describe("loadLibrary — inverse of publishLibrary (publish↔load symmetry)", 
     expect(library.exhibits[0]!.objects).toEqual(lib2.exhibits[0]!.objects); // objects recovered from the manifest
     expect(logs["a"]!.map((r) => r.rev)).toEqual(log2.map((r) => r.rev)); // log round-trips
   });
+
+  // tend ISSUES.md Issue 9 (showroom assembly): loadLibrary silently dropped BOTH sections and
+  // readings on every round trip — a narrative exhibit's Ranges vanished, and every reading-scoped
+  // note's per-reading annotation page went with it (toCanvas gates that split on the reading-id
+  // list, which came from the now-missing `exhibit.readings`). Exposed by gen-published.mts
+  // regenerating a dropped zip: a real narrative exhibit's spine disappeared on every dev-server run.
+  it("recovers sections and readings, not just objects", async () => {
+    const libN: Library = {
+      id: asLibraryId("N"),
+      exhibits: [{
+        id: asExhibitId("n"), slug: "n", title: "Narrative Exhibit",
+        objects: [
+          { id: asObjectId("o1"), source: "https://img/1.jpg", label: "O1", width: 10, height: 10 },
+          { id: asObjectId("o2"), source: "https://img/2.jpg", label: "O2", width: 10, height: 10 },
+        ],
+        sections: [{ id: "sec-1", title: "First", objectId: "o1", prose: "About o1." }],
+        readings: [{ id: "r1", name: "Reading One", colour: "#123456" }],
+      }],
+    };
+    const canvas1 = `${base}n/canvas/o1`;
+    const logN: AnnotationLog = appendNew([], {
+      target: { type: "SpecificResource", source: canvas1, selector: { type: "FragmentSelector", value: "xywh=pixel:0,0,3,3" } },
+      body: { type: "TextualBody", value: "n1" }, reading: "r1", lastEditor: asClientId("alice"), modifiedAt: "t", now: 1,
+    }).log;
+    const { zip } = await libraryToZip(libN, (id) => (id === "n" ? logN : []), { baseUrl: base });
+    const { library } = await loadLibrary(ZipFilesystem.fromZip(zip));
+    expect(library.exhibits[0]!.sections).toEqual(libN.exhibits[0]!.sections);
+    expect(library.exhibits[0]!.readings).toEqual(libN.exhibits[0]!.readings);
+  });
 });
 
 describe("intra-Library links — resolved on the heads projection, raw in the canonical history", () => {
