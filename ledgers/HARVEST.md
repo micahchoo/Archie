@@ -1,0 +1,12 @@
+# HARVEST — cross-session lessons from tend runs
+
+One dated section per session. Format: lesson | rule | stored where.
+
+## 2026-07-05 — Issue 7 (ledgers/NEGSPACE.md)
+
+| lesson | rule | stored where |
+|---|---|---|
+| A prior session's Issues 5 (CANON.md) and 6 (COVERAGE.md) had finished, verified work sitting uncommitted after a `/clear` — discovered only because Issue 7's fix touched the same files. | Before starting a new tend loop, run `git status`/`git diff --stat` first; if prior-issue work is sitting uncommitted, resolve it (commit or reconcile) before layering new edits on the same files. | `.claude/CLAUDE.md` candidate — not added this session (repo-specific workflow habit, not a code rule; flagged here for the user to decide whether it belongs in CLAUDE.md or stays a personal habit) |
+| Issue 7's own inventory almost re-flagged `openZip`'s `"invalid zip data"` message as a new bug — Issue 4's `SILENCE.md` row 32 had already examined that exact site and deliberately chosen to surface it verbatim. | Before logging a finding as new, grep sibling `ledgers/*.md` for the same file:line — a prior loop may have already decided it. | Already the tend skill's own stated discipline ("recorded decisions are not re-litigated without new evidence"); this session is the concrete case that proves why it matters. No new storage needed. |
+| `apps/studio` has no Svelte component-mount test harness (no `@testing-library/svelte`, zero existing component tests) — surfaced when the transcript-cap fix (AvEditor.svelte) needed one and didn't get one. | If a future fix needs to assert Svelte component *behavior* (not just a pure/exported function), building the harness is a separate, larger decision — don't build it silently inside an unrelated fix's commit. | Noted here; not acted on (disproportionate to Issue 7's "Worth exploring" strength) |
+| Multi-item async ingest loops (`newExhibitFromManifest`, `newExhibitFromFolder`, `addFiles`) all re-read `ctx.currentSlug()` live on every iteration with no blocking overlay during import — the general shape of the bug, not just these three instances. | A new multi-item import loop added to `ingest-flows.ts` must pin its target exhibit slug once at the top and thread it through `appendObject`/`addObjectFromFile`, never read `ctx.currentSlug()` mid-loop. | Recorded in `ledgers/NEGSPACE.md` rows 3/4 and as inline comments at each of the three fixed call sites — the rule lives where the next loop's author will actually read it. |
