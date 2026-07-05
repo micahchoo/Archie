@@ -348,7 +348,11 @@ behavior-asserting test sibling and every bug row reads pass.
 
 ## Issue 7 — The ingest boundary's negative space
 
-**Status:** running — ledger: ledgers/NEGSPACE.md
+**Status:** done 2026-07-05 — ledger: ledgers/NEGSPACE.md (8 real fail rows found across the six
+ingest flows' 36-row matrix, all fixed: transcript import's silent no-op on unparseable/empty input,
+a mid-flow exhibit-switch that could misdirect objects/notes to the wrong exhibit, and no byte cap
+on 4 vectors including the IIIF-fetch gap this issue named. A 9th apparent fail — zip-open's leaked
+"invalid zip data" string — turned out to be an already-decided Issue 4 row on recheck, not reopened.)
 
 **Symptom.** The zip path is capped (`ZIP_LIMITS` 512 MB / 50k entries / 100×
 ratio, `fs/zip.ts:29`) and `?src=` is capped (`SRC_MAX_BYTES`), but the remote

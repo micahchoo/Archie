@@ -99,9 +99,13 @@ recheck — see its row above), clustering into 3 root causes:
 | 5 | IIIF manifest import | huge input (no byte cap) | `331003d` | pass — new `IIIF_MANIFEST_MAX_BYTES` (32 MB) cap, checked against declared `content-length` before reading the body AND against actual size after (mirrors `@render/core`'s `fetchArchieLibraryBytes` two-phase pattern); 2 new tests, studio suite 154/154 green |
 | 6 | CSV import | huge input (no byte cap) | `331003d` | pass — new `LOCAL_TEXT_IMPORT_MAX_BYTES` (64 MB), checked against `file.size` before `file.text()`; test confirms `.text()` is never called when oversized |
 | 7 | WADM import | huge input (no byte cap) | `331003d` | pass — same cap, same check, same test shape |
-| 8 | transcript import | huge input (no byte cap) | (this fix; hash filled at close) | pass — `AvEditor.svelte`'s `loadTranscript` now checks `file.size` against the shared `LOCAL_TEXT_IMPORT_MAX_BYTES` before `file.text()`, routing a rejection through a new `onimporterror` prop (distinct from `onimport` so "nothing to import" and "refused to try" don't conflate); `tsc --noEmit` clean, studio suite 154/154 green. **Caveat**: no direct executable test — this repo has no Svelte component-mount test harness (no `@testing-library/svelte`, no existing component test anywhere in `apps/studio`), and building one from scratch for a single guard clause is disproportionate to this issue's "Worth exploring" strength. Verified by code inspection only; the shared constant and comparison logic ARE exercised by the CSV/WADM tests above. |
+| 8 | transcript import | huge input (no byte cap) | `261c19d` | pass — `AvEditor.svelte`'s `loadTranscript` now checks `file.size` against the shared `LOCAL_TEXT_IMPORT_MAX_BYTES` before `file.text()`, routing a rejection through a new `onimporterror` prop (distinct from `onimport` so "nothing to import" and "refused to try" don't conflate); `tsc --noEmit` clean, studio suite 154/154 green. **Caveat**: no direct executable test — this repo has no Svelte component-mount test harness (no `@testing-library/svelte`, no existing component test anywhere in `apps/studio`), and building one from scratch for a single guard clause is disproportionate to this issue's "Worth exploring" strength. Verified by code inspection only; the shared constant and comparison logic ARE exercised by the CSV/WADM tests above. |
 
 Done when every row above reads pass.
+
+**Done 2026-07-05**: all 36 matrix rows read pass or n/a (one, zip-open's "invalid zip data", was a
+recheck of an already-decided Issue 4 row, not a new fix). Studio suite 154/154 green, `tsc --noEmit`
+clean, throughout. Commits: `b9fc2f5`, `4ff8d2f`, `331003d`, `261c19d`.
 
 **Scope note on rows 3/4's fix:** the same root cause (re-reading `ctx.currentSlug()` live inside a
 multi-item `await` loop) also lives in `addFiles` (drag-drop / picker onto the *currently open*
