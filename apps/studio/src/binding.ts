@@ -95,7 +95,11 @@ export async function saveZipToDisk(fs: ZipFilesystem, filename: string): Promis
         close: () => writable.close(),
       });
     } catch (e) {
-      await writable.abort().catch(() => {}); // discard the partial file
+      // The primary save failure (e) is rethrown below and surfaces via binding-store.svelte.ts's
+      // catch -> saveStatus.error. abort() failing here is a SEPARATE, secondary failure (a stuck
+      // partial file); it must not replace/mask e, but it was previously fully invisible (SILENCE
+      // row, tend Issue 4) — log it so a stuck partial file is at least debuggable.
+      await writable.abort().catch((abortErr) => console.warn("saveZipToDisk: couldn't discard the partial file", abortErr));
       throw e;
     }
     return { kind: "streamed", name: handle.name ?? name };
