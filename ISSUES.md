@@ -459,7 +459,14 @@ scratch until a full run needs zero undocumented steps.
 
 ## Issue 9 — The showroom exhibit is stranded at ~80%
 
-**Status:** queued
+**Status:** done 2026-07-05 — ledger: ledgers/SHOWROOM.md (was actually ~95% done — a prior session
+had already built most of it via Studio, exported to `apps/viewer/libraries/archie-library.archie.zip`,
+but never finished or published it. Added the one missing object, its notes, the 21-section narrative,
+and metadata, then published it. Along the way found and fixed 3 real pre-existing bugs the assembly
+exposed: a broken source screenshot, `loadLibrary` silently dropping sections/readings on any round
+trip, and `gen-published.mts` never wiring `getAsset` — the drop-folder publish mechanism had never
+actually worked for a locally-authored image. One open item flagged, not resolved unilaterally: the
+same zip's unrelated `assets` test-fixture exhibit will now also appear in the live gallery.)
 
 **Symptom.** `docs/showroom/` holds the full prep — `exhibit.md` (4 readings,
 21-section tour), 21 coordinate-free CSVs (87 rows, verified by `verify.mjs`),
@@ -562,6 +569,51 @@ command that doesn't exist.
 ```
 
 **Strength:** Worth exploring.
+
+---
+
+## Issue 11 — Both apps degrade past ~20 images (perf + UX); plan exists, untracked until now
+
+**Status:** queued (plan: `docs/plans/SCALE-GALLERY-PLAN.md`, grilled + user-confirmed 2026-07-05)
+
+**Symptom.** At 20+ Objects in an Exhibit / 50+ across the Library, Studio and Viewer both turn
+clunky — user-reported, in performance AND interaction design. Mechanics (verified 2026-07-05):
+folder-bound autosave reruns the FULL publish pipeline (all manifests, assets, thumbnails, DZI
+re-tiling) on every save (`apps/studio/src/binding-store.svelte.ts:176` →
+`publish-flows.svelte.ts:165`); `App.svelte:114-142` mints blob URLs for every Object's master at
+exhibit open; `ExhibitOverview.svelte` renders all plates eagerly with no virtualization (:238,
+:304) while the Viewer's `ObjectGrid.svelte:69-73` already has it; the Viewer loads all objects +
+all annotations before first paint (`render-core/src/publish/read.ts:59-103`); and the UI offers
+no search, no sort, no multi-select, no bulk ops, no library-level image view anywhere.
+
+**Rungs.** L1↔L2: the product's purpose (annotate real collections) outgrew a structure designed
+around a handful-of-folios mental model — nothing in either app acknowledges collection size.
+
+**Why it's high-leverage.** Collection size only grows; every session in a real library pays the
+O(whole-library) save tax and the wall-of-plates scroll. The plan converts one user complaint
+into four independently-shippable phases, perf first. *Lesson: scale pain was invisible to every
+diagnosis pass because the seed data is small — synthetic-scale fixtures (30+ objects) are the
+only way this class of issue surfaces before a user hits it.*
+
+**Loop.** Execute `docs/plans/SCALE-GALLERY-PLAN.md` phase-by-phase (perf slate → Studio overview
+toolkit → Library Gallery + ADR-0023 index → Viewer navigation), verifying each phase against the
+plan's Verification section before starting the next. Ledger `ledgers/SCALE.md`. Done: all four
+phases verified on a synthetic 2×30+1×10 library, ADR-0023 accepted or amended.
+
+**Run it:**
+
+```
+Read docs/plans/SCALE-GALLERY-PLAN.md and docs/adr/0023-library-level-image-index.md. Execute the
+plan ONE PHASE at a time, in order (Phase 1 perf slate first — incremental folder autosave with
+dirty-tracking, lazy master blob-URL minting, content-visibility virtualization of the Studio
+overview list). Before each phase: re-verify the plan's file:line anchors still hold (code moves).
+After each phase: run the plan's Verification section for that phase on a synthetic library of
+2 exhibits × 30 objects + 1 × 10 (build via Studio ingest or a seed script), and record evidence
+in ledgers/SCALE.md (phase | change | verification observed | commit). Decisions already grilled
+and user-confirmed 2026-07-05 — do not relitigate scope (no grouping concept, no audience
+in-exhibit search, bulk move-between-exhibits deferred); flag genuine blockers instead. Stop for
+user review after each phase.
+```
 
 ---
 
