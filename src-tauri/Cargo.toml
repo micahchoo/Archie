@@ -25,8 +25,8 @@ tauri-plugin-http = "2"
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-# GitHub device-flow handshake (github.rs). rustls-only to avoid an openssl link (the git2 spike owns
-# that question separately); reuses the reqwest 0.12 already in the tree via tauri-plugin-http.
+# GitHub device-flow handshake (github.rs). rustls keeps the REST/token traffic off openssl; reuses the
+# reqwest 0.12 already in the tree via tauri-plugin-http.
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "charset"] }
 # `tokio::time::sleep` for the poll back-off loop; tokio is already in-tree via tauri.
 tokio = { version = "1", features = ["time"] }
@@ -35,3 +35,12 @@ tokio = { version = "1", features = ["time"] }
 # The keyring platform-store selection for the Flatpak Secret portal is finalized in the packaging pass
 # (plan Open Q-E4); tests override this with the built-in mock store.
 keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
+# Single-pack deploy upload — stage the site tree, commit, force-push to gh-pages (Q-13, gh_push_tree).
+# Plain git2 (no vendored-openssl) validated by docs/spikes/2026-07-git2-in-tauri.md: libgit2 is
+# statically vendored (good for Flatpak); it links the system OpenSSL for TLS. Keep vendored-openssl in
+# reserve for a build host without libssl-dev (see the spike). libssh2/SSH unused — we push over HTTPS.
+git2 = "0.19"
+
+[dev-dependencies]
+# Temp dirs for the stage-and-commit tests (gh_push_tree).
+tempfile = "3"

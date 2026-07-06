@@ -23,6 +23,7 @@ pub fn run() {
             github::gh_token_save,
             github::gh_token_load,
             github::gh_token_clear,
+            github::gh_push_tree,
         ])
         .setup(|app| {
             let file = SubmenuBuilder::new(app, "File").quit().build()?;
