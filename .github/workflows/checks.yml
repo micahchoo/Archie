@@ -80,6 +80,31 @@ jobs:
       - name: astro check (apps/viewer)
         run: pnpm --filter @archie/viewer run check
 
+  svelte-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: svelte-check (apps/studio)
+        # Studio's .svelte type gate (ISSUES.md Issue 12): tsc --noEmit is blind to .svelte files.
+        # Errors fail this job; the ~11 pre-existing a11y WARNINGS do not (no --fail-on-warnings).
+        run: pnpm --filter @archie/studio run check
+
   gh-pages-build:
     runs-on: ubuntu-latest
     steps:
