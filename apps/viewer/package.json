@@ -23,14 +23,14 @@
     "@render/core": "workspace:*",
     "@render/svelte": "workspace:*",
     "fflate": "^0.8.2",
-    "isomorphic-dompurify": "^2.16.0",
+    "isomorphic-dompurify": "^3.18.0",
     "minisearch": "^7.2.0",
     "snarkdown": "^2.0.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
     "@astrojs/svelte": "^8.1.2",
-    "astro": "^6.3.8",
+    "astro": "^6.4.6",
     "svelte": "^5.15.0",
     "typescript": "^5.9.3",
     "vite-node": "^6.0.0"

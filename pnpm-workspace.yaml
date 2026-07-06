@@ -10,6 +10,8 @@ overrides:
   dompurify@<3.4.8: '3.4.8'
   # vite: scope to the vulnerable 8.0.x only (via vite-node); blanket vite override violates vitest ^5 / svelte-plugin ^6 / astro ^7.3.2 and breaks build.
   vite@>=8.0.0 <8.0.16: '8.0.16'
+  # undici: force the jsdom→undici transitive past the <7.28.0 advisory cluster (7 CVEs: TLS bypass / SSRF / cache poisoning). dev/build-only — jsdom exists only in the Node publish + test paths, never the browser bundle. BOUND to major 7 (undici 8 breaks jsdom 29's fetch). (tend Issue 15 / ledgers/DEPS.md)
+  undici@<7.28.0: '>=7.28.0 <8'
 allowBuilds:
   esbuild: true
   sharp: true

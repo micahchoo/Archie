@@ -24,6 +24,7 @@
   // AddMapModal (map add) is lazy-loaded — see AddMapModalComp below.
   import NoteEditor from "./NoteEditor.svelte";
   import { matches, typingInField } from "./shortcuts.js";
+  import { applyClick, selectAll as selectAllIds, applyMarquee, type ClickMods } from "./overview-selection.js";
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
@@ -210,6 +211,7 @@
     editing = null;
     creating = null;
     placingPendingId = null; // drop any armed placement from the outgoing exhibit
+    clearSel(); selectMode = false; // selection is exhibit-scoped (Phase 2) — the incoming exhibit starts clean
     void loadPendingNotes().then((m) => { pendingNotes = m[slug] ?? []; }); // this exhibit's coordinate-free imports awaiting a box
     rdg.resetForExhibit(); // fresh exhibit = everything visible, pen on base (fixes the cross-exhibit leak)
     firstAddCueSlug = null; pendingClear = null; clearedSlug = null; // drop any narrative-staging cue from the outgoing exhibit
@@ -242,6 +244,15 @@
   // Overview ↔ object (invention #1): descend from a plate into close annotation, then climb back. Going
   // back to the overview KEEPS the resolved thumbnails (unlike backToLibrary, which frees them).
   function openObject(objId: string) { editingObjectId = null; switchObject(objId); view = "editor"; }
+  // Library-Gallery wall click-through (Phase 3.2): open an object in ITS exhibit's editor. ALWAYS
+  // openExhibit first — `currentSlug` is a cursor, NOT a "this exhibit is loaded" flag: after
+  // backToLibrary (assets.revokeAll emptied the thumbs) or at boot/post-replace, currentSlug can name a
+  // slug whose SESSION isn't installed, so a same-slug shortcut would open an editor with blank rails.
+  // The card path already re-opens same-slug via openExhibit — pay the same (cheap) cost.
+  async function openObjectInExhibit(slug: string, objId: string) {
+    await openExhibit(slug);
+    openObject(objId);
+  }
   async function backToOverview() { editingObjectId = null; await save(); view = "overview"; }
 
   // --- Destructive removes (Archie-3f4c). Object → tombstone its notes (ADR-0003 append-only; recoverable
@@ -493,6 +504,69 @@
     for (const id of orderedIds) { const o = byId.get(id); if (o) next.push(o); }
     for (const o of ex.objects) if (!orderedIds.includes(o.id)) next.push(o); // safety: keep any unlisted
     lib.patchExhibit(ex.slug, { objects: next });
+  }
+
+  // --- Overview multi-select (SCALE-GALLERY Phase 2). Selection lives HERE, not in ExhibitOverview: bulk
+  // delete rides App's removal path, ⌘A/Delete/Esc dispatch from onGlobalKey, and a future bulk-move is
+  // library-scope — all need selection reachable above the one component. The math is the pure
+  // overview-selection reducer; ExhibitOverview emits intents (onselect/onmarquee/onclear) + the drag block.
+  let selection = $state<Set<string>>(new Set());
+  let selAnchor = $state<string | null>(null);
+  let selectMode = $state(false); // App-owned so the Esc ladder can exit it (§5) — the toolbar toggles it
+  let bulkConfirming = $state(false); // armed second-click guard for bulk delete (inline, on-brand — DetailsEditor idiom)
+  // The VISIBLE object order (filtered/sorted) as ExhibitOverview renders it — reported up via onvisible.
+  // Shift-range + ⌘A run over THIS, not the canonical array, so they never touch objects hidden by the
+  // active filter (canonical ranging would silently select filtered-out items a bulk delete then removes
+  // unseen). Falls back to canonical before the overview has reported (e.g. select-all with no toolbar use).
+  let visibleIds = $state<string[]>([]);
+  const rangeIds = () => (visibleIds.length ? visibleIds : OBJECTS.map((o) => o.id));
+  function clearSel() { selection = new Set(); selAnchor = null; bulkConfirming = false; }
+  function onOverviewSelect(id: string, mods: ClickMods) {
+    bulkConfirming = false; // changing the selection disarms a pending bulk delete
+    const r = applyClick({ selection, anchor: selAnchor }, id, mods, rangeIds());
+    selection = r.selection; selAnchor = r.anchor;
+  }
+  function onOverviewMarquee(ids: string[]) {
+    bulkConfirming = false;
+    const r = applyMarquee(ids);
+    selection = r.selection; selAnchor = r.anchor;
+  }
+  function selectAllObjects() {
+    bulkConfirming = false;
+    const r = selectAllIds(rangeIds()); // all VISIBLE when filtered; the full set when not
+    selection = r.selection; selAnchor = r.anchor;
+  }
+  // Bulk delete — ONE persist + ONE mirror (spike-0002 dirty-set coalesces N removedObjects). Mirrors
+  // deleteObjectNotesAndMeta per id (tombstone notes + markObjectRemoved for orphan cleanup) BUT batches
+  // the meta mutation into the single lib.removeObjects call, instead of N awaited removeObject writes.
+  async function bulkRemove(ids: ReadonlySet<string>) {
+    // Canonical order, NOT rangeIds(): a delete must honor the whole selection even when a live
+    // search filter hides some selected plates — visible-order here would silently skip them.
+    const present = OBJECTS.map((o) => o.id);
+    const list = present.filter((id) => ids.has(id)); // canonical order, only ids still in the exhibit
+    if (list.length === 0) { clearSel(); return; }
+    for (const objId of list) {
+      const cid = canvasIdOf(objId);
+      for (const r of sess.session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) sess.session.deleteNote(r.logicalId as LogicalId);
+      const gone = OBJECTS.find((o) => o.id === objId);
+      const assetName = gone && isAsset(gone.source) ? gone.source.slice(ASSET_PREFIX.length) : undefined;
+      bnd.markObjectRemoved(currentSlug, objId, assetName); // per-id orphan cleanup (asset name known only here)
+    }
+    bump();
+    await lib.removeObjects(currentSlug, list); // single persist → single onAfterPersist mirror
+    clearSel(); selectMode = false;
+    // View invariant (mirror removeObjectById): a lone survivor drops into ITS editor (a 1-plate overview is
+    // never entered); if the open object was among the deleted, advance the cursor to a survivor.
+    if (OBJECTS.length === 1) { switchObject(OBJECTS[0]!.id); view = "editor"; return; }
+    if (list.includes(currentObjectId)) { const surv = OBJECTS.find((o) => !list.includes(o.id)); if (surv) switchObject(surv.id); }
+  }
+  // Two-step inline confirm (DetailsEditor idiom — no window.confirm, off-brand for the study): first call
+  // arms (the toolbar button morphs to the guard); second commits. Keyboard Delete + the button share this.
+  function requestBulkDelete() {
+    if (selection.size === 0) return;
+    if (!bulkConfirming) { bulkConfirming = true; return; }
+    bulkConfirming = false;
+    void bulkRemove(selection);
   }
 
   // "Keep a copy" (§115 conversion): fork the current EXAMPLE (playground) into a saved, user-owned
@@ -811,6 +885,16 @@
     return m;
   });
   const noteCountOf = (objId: string) => noteCountByCanvas.get(canvasIdOf(objId)) ?? 0;
+  // Recency per canvas for the overview's "recently-annotated" sort (Phase 2) — MAX modifiedAt over the
+  // object's notes, built ONCE per allNotes change (same shape as noteCountByCanvas). modifiedAt is an ISO
+  // string, so lexicographic MAX = chronological MAX; "" (no notes) sorts oldest. Exhibit-scoped, which is
+  // exactly the overview's scope (the session holds one exhibit's log).
+  const lastAnnotatedByCanvas = $derived.by(() => {
+    const m = new Map<string, string>();
+    for (const r of allNotes) { const c = srcOf(r.target); const t = r.modifiedAt ?? ""; const cur = m.get(c); if (cur === undefined || t > cur) m.set(c, t); }
+    return m;
+  });
+  const lastAnnotatedOf = (objId: string) => lastAnnotatedByCanvas.get(canvasIdOf(objId)) ?? "";
   // Live marker styling (Archie-1489) — mirrors the viewer's readingStyleOf so the curator authors against
   // what a visitor sees. Colour = the note's reading (ADR-0007); reading-less notes get a neutral forest-
   // green default (so base marks are visible). Per-note emphasis modulates opacity/weight ONLY, never hue.
@@ -1147,13 +1231,20 @@
       else importNote = "Open a note first — then ⌘K cites another note or exhibit into it.";
       return;
     }
-    // Esc dismiss-ladder: palette (self-closes) → note popover → camera framing → overview → library.
+    // Overview organizing (Phase 2): select-all + bulk delete, only at the overview scale and not while
+    // typing in the toolbar search. ⌘A must preventDefault or the browser selects the whole page's text.
+    if (matches(e, "⌘A") && view === "overview" && !typingInField(e)) { e.preventDefault(); selectAllObjects(); return; }
+    if (matches(e, "⌫") && view === "overview" && !typingInField(e) && selection.size > 0) { e.preventDefault(); requestBulkDelete(); return; }
+    // Esc dismiss-ladder: palette (self-closes) → note popover → camera framing → SELECTION → select-mode → overview → library.
     if (matches(e, "Esc")) {
       if (cmdkOpen || mediaPickerOpen) return; // those dialogs handle their own Esc
       if (creating) { e.preventDefault(); creating = null; return; } // disarm a new-note gesture first
       if (framingSectionId) { e.preventDefault(); cancelFraming(); return; }
       if (placingPendingId) { e.preventDefault(); cancelPlacing(); return; } // disarm a pending-note placement
       if (sel) { e.preventDefault(); selected = null; editing = null; return; }
+      // Phase 2 rungs — clear a selection first, then leave select-mode, BEFORE backing out of the overview.
+      if (view === "overview" && selection.size > 0) { e.preventDefault(); clearSel(); return; }
+      if (view === "overview" && selectMode) { e.preventDefault(); selectMode = false; return; }
       if (view === "editor" && hasOverview) { e.preventDefault(); void backToOverview(); return; }
       if (view === "overview") { e.preventDefault(); void backToLibrary(); return; }
       return;
@@ -1294,6 +1385,7 @@
   <LibraryHome
     exhibits={lib.meta.exhibits}
     onopen={openExhibit}
+    onopenobject={(slug, objId) => void openObjectInExhibit(slug, objId)}
     oncreate={newExhibit}
     oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add that folder."); }); }}
     oncreatefrommanifest={(url) => { flows.newExhibitFromManifest(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
@@ -1335,6 +1427,16 @@
       onaddobject={() => { editingObjectId = null; view = "editor"; addingObject = true; }}
       onback={backToLibrary}
       onreorder={reorderObjects}
+      {lastAnnotatedOf}
+      {selection}
+      {selectMode}
+      onselectmode={() => { selectMode = !selectMode; if (!selectMode) clearSel(); }}
+      onselect={onOverviewSelect}
+      onmarquee={onOverviewMarquee}
+      onclear={clearSel}
+      onbulkdelete={requestBulkDelete}
+      {bulkConfirming}
+      onvisible={(ids) => (visibleIds = ids)}
       onstartnarrative={() => openObject(OBJECTS[0]?.id ?? currentObjectId)}
       rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}

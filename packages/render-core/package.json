@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "fflate": "^0.8.2",
-    "isomorphic-dompurify": "^2.16.0",
+    "isomorphic-dompurify": "^3.18.0",
     "snarkdown": "^2.0.0"
   }
 }

@@ -1,12 +1,57 @@
 # HANDOFF — Archie
 
-**Updated:** 2026-07-05. **Branch:** `main`. Read `ISSUES.md` first — it's the live backlog; this file
-is a snapshot of where things stand, not a task list.
+**Updated:** 2026-07-05 (graft session). **Branch:** `main`. Read `ISSUES.md` first — it's the live
+backlog; this file is a snapshot of where things stand, not a task list.
 
-## IN FLIGHT — Issue 11 execution: spikes → flesh plan → implement/review/repeat (2026-07-05)
+## IN FLIGHT — publish-to-web BUILD (2026-07-05, graft session → build session)
 
-Grill phase DONE (user confirmed). Deliverables on disk, uncommitted: `docs/plans/SCALE-GALLERY-PLAN.md`,
-ISSUES.md Issue 11, `docs/adr/0023-library-level-image-index.md`, Gallery entry in `.scratch/CONTEXT.md`.
+Executing `docs/plans/PUBLISH-TO-WEB-PLAN.md` (committed on branch `worktree-publish-to-web`,
+worktree `.claude/worktrees/publish-to-web`; plan reviewed+approved; Q-12/Q-13 minted in
+docs/decisions/archie.md). Progress: **Waves 0–2 nearly done** — Task 1 types (`106dd23`),
+Task 2 spike git2=YES (`eec8768`), Tasks 3–5 Tauri commands (`75a5620`,`7b034fd`,`681e3f0`)
++ review fixes (`c6ba97f`, poll deadline/async keyring/Debug redaction — gh_device_poll now
+takes expiresIn, Task 9 must pass it), Task 7 ensureRepo (`70a831e`, 726 render-core green),
+Task 6 gh_push_tree (`f72f0ba`, 13 cargo tests + ignored push_live for user). Task 8
+(deploy-flows orchestration) in flight; then Task 9 (session, same file), Wave 4 UI
+(Publish.svelte machine per docs/plans/GHPAGES-PUBLISH-UX.md), Wave 5 acceptance →
+ledgers/DEPLOY-VERIFY.md. USER ITEMS PENDING: OAuth app client_id (Q-B1, gates Wave-4 demo);
+optional `push_live` closure with a scratch repo (Task 14).
+
+## DONE EARLIER THIS SESSION — /graft run (2026-07-05)
+
+SECOND PASS (same day): /graft re-invoked on divergence 1 → pr-faq interview ran → **PRFAQ.md**
+written at repo root; divergence 1 Status now **spec'd — PRFAQ.md**. Interview decisions (user):
+customer = no-server scholar; announcement = "one click, yours"; auth = device-flow + PAT
+fallback (+ fork client_id config slot); host = GitHub-only with git-remote/host-adapter seam;
+**appetite = 3–4 weeks**; reach = Tauri full + browser guided-manual degraded path. Build order
++ cut-from-the-tail list in PRFAQ.md Appetite section. A build session starts from PRFAQ.md +
+ledgers/PROBE-publish-to-web.md. PRFAQ.md is uncommitted (commit only when asked).
+
+FIRST PASS: RUN COMPLETE. `DIVERGENCES.md` written (5 divergences; disposition table accounts for every
+observation; handed-to-tend rows at the bottom). Top bet **publish-to-web** converged via
+thin-slice probe → **verdict: pursue** (2026-07-05). Two probe runs, user-fired: v1 refuted
+per-blob REST (secondary rate limit at ~500 blobs); v2 single-pack git push went **live in 0.6
+min** vs a 10-min kill budget. Full handoff for the build session in
+`ledgers/PROBE-publish-to-web.md` ("What the build session inherits": git2/gitoxide pack push in
+src-tauri, PAT-paste vs device-flow client_id decision, keyring token storage, base-path rebuild,
+flag `archie.deployToPages`). Probe branch `probe/publish-to-web` (3 commits, `54b2d42..4117631`,
+isolated worktree) hands onward, never merges. Building is NOT graft's job — next session starts
+from the ledger. Cleanup owed by user: delete `micahchoo/archie-pages-probe` on github.com.
+DIVERGENCES.md + probe ledger + HARVEST.md updates are uncommitted on main's working tree (commit
+only when user asks). Note: Directions 1–3 were verdicted *pursue* by a concurrent session
+mid-run (`ea5fe8f`–`246550d`); DIVERGENCES.md reflects that.
+
+## DONE — Issue 11 execution: scale & gallery plan fully shipped (2026-07-06)
+
+**Issue 11 CLOSED** (`5706f19`) — all phases shipped review-gated; evidence `ledgers/SCALE.md`:
+1.1 incremental autosave `1ca4733` · 1.2/1.3a lazy masters + list virtualization `9ac6218` ·
+2 overview toolkit `21f95a6` · 3a images.json + matchesTitle `8374526` · 3b studio gallery
+`eace2c0` · 3c viewer wall `a1227d6` · 4 viewer navigation `e272a0f` · seed fixture `57cbda8`
+(`node scripts/seed-fixture.mjs`, profile `.scratch/seed-profile`) · Phase 1 empirically
+verified vs seeded 70-object library (`739ec91`/`ebdb438`). New hazard rule:
+`.claude/rules/svelte-no-typecheck-net.md` (`829a7ae`). **Manual remainder for the user:**
+FSA folder-bind gesture (live incremental-autosave check); browser-verify lists in spikes
+0003/0005; embed parity port (flagged follow-up); svelte-check adoption = Issue 12.
 
 **NEW USER MANDATE (verbatim intent):** "Run spikes wherever there are gaps. Flesh the plan
 document as needed. Implement review repeat." → autonomous execution loop, phase by phase:
@@ -97,16 +142,11 @@ Since then, a `tend` diagnosis pass (`ISSUES.md`, generated 2026-07-05) found an
 
 ## What's still open
 
-Read `ISSUES.md` for the full, current list with evidence and run-it prompts. As of this writing:
+Read `ISSUES.md` for the full, current list with evidence and run-it prompts. As of this writing
+Issues 1–10 are all done (ledgers in `ledgers/`); still open:
 
-- **Issue 8** (queued) — a fresh clone loses git-LFS hook wiring; the stock LFS hooks under `qa/hooks/`
-  are untracked.
-- **Issue 9** (queued, needs the user in the loop) — the showroom exhibit ("Archie annotates Archie")
-  is ~80% built: 21 CSVs and 21 screenshots exist, but the ASSEMBLE step (building the actual published
-  exhibit) never ran.
-- **Issue 10** (queued) — `docs/IMPLEMENTATION-STRATEGY.md`'s process/methodology sections (everything
-  above its deferred-work registry) reference tooling (`sd`/seeds, `mulch`, `gate-enforcer`, `qmd`,
-  `foxhound`, …) that doesn't exist in the current skill set.
+- **Issue 11** (queued) — both apps degrade past ~20 images; grilled plan at
+  `docs/plans/SCALE-GALLERY-PLAN.md`, execution mandate above.
 - **Direction 1** (queued) — the collaboration/merge subsystem (`MergeReview.svelte`,
   `IdentityPrompt.svelte`, `spine/merge.ts`'s DAG-classification layer) is built and tested but mounted
   nowhere; `README.md`'s Collaboration feature claim is blocked on this direction's verdict.

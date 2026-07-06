@@ -12,9 +12,15 @@ describe("shortcuts registry", () => {
   it("every shortcut declares a group the cheat-sheet knows", () => {
     for (const s of SHORTCUTS) expect(SHORTCUT_GROUPS).toContain(s.group);
   });
-  it("keys are unique in the registry", () => {
-    const keys = SHORTCUTS.map((s) => s.keys);
-    expect(new Set(keys).size).toBe(keys.length);
+  it("keys are unique WITHIN each cheat-sheet group", () => {
+    // A key can legitimately repeat ACROSS groups — the same physical key means different things by
+    // context (⌫ removes selected media items on the overview, deletes the selected note in the editor;
+    // Esc clears a selection in Organizing, steps back out in Anywhere). The cheat-sheet renders per group,
+    // so the invariant is: no key appears twice in ONE group's section.
+    for (const g of SHORTCUT_GROUPS) {
+      const keys = SHORTCUTS.filter((s) => s.group === g).map((s) => s.keys);
+      expect(new Set(keys).size).toBe(keys.length);
+    }
   });
 });
 

@@ -9,6 +9,7 @@
   import type { LayoutType, RightsFields, Section } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
+  import { moveBlock, marqueeHits, START, END, type ClickMods, type PlateRect } from "./overview-selection.js";
 
   type OverviewObject = { id: string; label: string; source: string; mediaType?: "image" | "sound" | "video" };
 
@@ -18,6 +19,7 @@
     objects,
     sections = [],
     noteCountOf,
+    lastAnnotatedOf,
     thumbFor,
     onopenobject,
     oneditobject,
@@ -31,6 +33,15 @@
     ontitle,
     onsummary,
     onremove,
+    selection,
+    selectMode,
+    onselectmode,
+    onselect,
+    onmarquee,
+    onclear,
+    onbulkdelete,
+    bulkConfirming,
+    onvisible,
   }: {
     title: string;
     layout: LayoutType;
@@ -39,6 +50,8 @@
      *  spine + the drag-legend disambiguation. Authored in the object editor (§56), surfaced read-only here. */
     sections?: ReadonlyArray<Section>;
     noteCountOf: (objId: string) => number;
+    /** Most-recent note timestamp per object (ISO string; "" = none) — the recently-annotated sort key (Phase 2). */
+    lastAnnotatedOf: (objId: string) => string;
     /** Resolve an object's thumbnail URL ("" if none — AV/extensionless → placeholder plate). */
     thumbFor: (obj: OverviewObject) => string;
     onopenobject: (objId: string) => void;
@@ -61,6 +74,27 @@
     onsummary: (v: string) => void;
     /** Remove this exhibit from the library (Archie-3f4c) — threaded to the DetailsEditor's remove guard. */
     onremove?: () => void;
+    // --- Multi-select (Phase 2). Selection state is App-owned (bulk delete / keyboard / future bulk-move);
+    // this component reflects it + emits pointer intents. ---
+    /** The App-owned selected object ids. */
+    selection: Set<string>;
+    /** Select-mode ON = checkboxes + click-toggles + background marquee; OFF = click opens, drag pans. */
+    selectMode: boolean;
+    /** Toggle select-mode (App owns it so the Esc ladder can exit it). */
+    onselectmode: () => void;
+    /** A plate click intent (App runs the pure reducer over the canonical order). */
+    onselect: (id: string, mods: ClickMods) => void;
+    /** A marquee result — the ids the rubber-band covered. */
+    onmarquee: (ids: string[]) => void;
+    /** Clear the selection (the "Clear" action + a background click). */
+    onclear: () => void;
+    /** Request bulk delete of the selection (two-step inline confirm — arms, then commits). */
+    onbulkdelete: () => void;
+    /** The bulk-delete confirm is armed (second click / Delete commits) — App-owned so keyboard + button share it. */
+    bulkConfirming: boolean;
+    /** Report the current VISIBLE (filtered/sorted) object order UP to App, so shift-range and ⌘A operate on
+     *  what's on screen — never on filtered-out objects a bulk delete would then remove unseen. */
+    onvisible: (orderedIds: string[]) => void;
   } = $props();
 
   let rightsOpen = $state(false);
@@ -85,6 +119,48 @@
   let mode = $state<"canvas" | "list">("canvas"); // 1a spatial canvas ↔ 1b plain list
   let viewport = $state<HTMLDivElement | null>(null);
 
+  // --- Toolbar: search / sort / density (Phase 2). VIEW-only local $state — these never touch the
+  // canonical `objects` array (sort is a view, never a reorder — plan :21). `displayObjects` folds
+  // filter→sort ONCE; both render blocks iterate it. ---
+  let search = $state("");
+  let sortMode = $state<"reading" | "name" | "recent">("reading");
+  let density = $state(0.5); // 0 = compact … 1 = comfortable (slider — the Studio editing surface, spike-0003 §3)
+  const plateW = $derived(`${(9 + density * 7).toFixed(2)}rem`); // 9–16rem canvas plate width
+  const rowH = $derived(`${(2.5 + density * 1.6).toFixed(2)}rem`); // 2.5–4.1rem list row height (feeds contain-intrinsic-size)
+  // Reorder is meaningless outside canonical order — a drop index in a filtered/sorted view ≠ canonical
+  // index. So drag is live ONLY in reading order with no active search; otherwise the grip/legend say why.
+  const reorderable = $derived(sortMode === "reading" && search.trim() === "");
+  // The plate/row NUMBER is the canonical reading-order position — stable even when the view is sorted by
+  // name/recency (sort is a view, never a reorder), so a sorted plate still shows where it reads.
+  const orderIndexOf = $derived(new Map(objects.map((o, i) => [o.id, i])));
+  const displayObjects = $derived.by(() => {
+    const q = search.trim().toLowerCase();
+    const filtered = q ? objects.filter((o) => o.label.toLowerCase().includes(q)) : objects;
+    if (sortMode === "name") return [...filtered].sort((a, b) => a.label.localeCompare(b.label));
+    if (sortMode === "recent") return [...filtered].sort((a, b) => lastAnnotatedOf(b.id).localeCompare(lastAnnotatedOf(a.id))); // MAX modifiedAt desc; "" (none) sorts last
+    return filtered; // reading order = canonical
+  });
+  // Keep App's copy of the visible order current (drives shift-range + ⌘A over what's actually on screen).
+  // Report ONLY on a real change: onvisible is a fresh arrow each App render, so an unguarded call would
+  // loop (report → App re-render → new arrow → effect re-runs → report …). The id-equality guard stops it.
+  let lastReported: string[] = [];
+  $effect(() => {
+    const ids = displayObjects.map((o) => o.id);
+    if (ids.length === lastReported.length && ids.every((id, i) => id === lastReported[i])) return;
+    lastReported = ids;
+    onvisible(ids);
+  });
+
+  // Plate click routing (spike-0003 §1/§2). Select-mode: click TOGGLES (checkbox), shift ranges, dbl-click
+  // opens. Off-mode: the primary gesture is UNBROKEN — plain click opens; ctrl/shift-click is the power
+  // path that selects without entering select-mode.
+  function onPlateClick(e: MouseEvent, id: string) {
+    const mods: ClickMods = { meta: e.metaKey || e.ctrlKey, shift: e.shiftKey };
+    if (selectMode) { onselect(id, { meta: !mods.shift, shift: mods.shift }); return; } // plain → toggle, shift → range
+    if (mods.meta || mods.shift) { onselect(id, mods); return; }
+    onopenobject(id);
+  }
+
   // Pan/zoom transform of the whole tableau (the canvas gesture). z clamped to a sane range.
   let tx = $state(0), ty = $state(0), z = $state(1);
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -108,32 +184,59 @@
     zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
   }
 
-  // Drag-to-pan, but ONLY from the tableau background (plates handle their own clicks).
+  // Background drag from the tableau: PANS in normal mode, draws a MARQUEE in select-mode (§2 — the toggle
+  // disambiguates, so the "drag to pan" identity is intact until the user opts into selecting). Plates
+  // handle their own clicks/drags; this fires only on the empty canvas.
   let dragging = false, lastX = 0, lastY = 0;
+  let marquee = $state<{ x0: number; y0: number; x1: number; y1: number } | null>(null); // client coords
   function onBgPointerDown(e: PointerEvent) {
     if (mode !== "canvas") return;
+    if (selectMode) { marquee = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); return; }
     dragging = true; lastX = e.clientX; lastY = e.clientY;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function onBgPointerMove(e: PointerEvent) {
+    if (marquee) { marquee = { ...marquee, x1: e.clientX, y1: e.clientY }; return; }
     if (!dragging) return;
     tx += e.clientX - lastX; ty += e.clientY - lastY;
     lastX = e.clientX; lastY = e.clientY;
   }
   function onBgPointerUp(e: PointerEvent) {
+    if (marquee) { commitMarquee(); (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId); return; }
     dragging = false;
     (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
   }
+  // Hit-test the rubber-band against live plate rects (the pure geometry is marqueeHits; the DOM read
+  // stays here). A near-zero drag (a bare background click in select-mode) clears the selection instead.
+  function commitMarquee() {
+    const m = marquee; marquee = null;
+    if (!m || !viewport) return;
+    if (Math.abs(m.x1 - m.x0) < 4 && Math.abs(m.y1 - m.y0) < 4) { onclear(); return; }
+    const rects: PlateRect[] = [...viewport.querySelectorAll<HTMLElement>("[data-plate-id]")].map((el) => {
+      const r = el.getBoundingClientRect();
+      return { id: el.dataset.plateId!, left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+    });
+    onmarquee(marqueeHits(rects, m));
+  }
+  // The marquee rectangle in viewport-local coords (for the overlay); null when not dragging one.
+  const marqueeRect = $derived.by(() => {
+    if (!marquee || !viewport) return null;
+    const vr = viewport.getBoundingClientRect();
+    return { left: Math.min(marquee.x0, marquee.x1) - vr.left, top: Math.min(marquee.y0, marquee.y1) - vr.top, width: Math.abs(marquee.x1 - marquee.x0), height: Math.abs(marquee.y1 - marquee.y0) };
+  });
 
   // Drag-to-reorder reading order — the overview's REASON TO EXIST (the published Grid display order /
   // Narrative sequence, settable nowhere else; the object rail only navigates). Native HTML5 DnD so it's
   // independent of the pan/zoom CSS transform and works identically in canvas + list modes. Emits the new
   // id order; App reorders the canonical objects[] array. Future: section grouping reuses this primitive.
-  const END = "__end__";
-  const START = "__start__"; // leading drop target — insert BEFORE the first object (position 0)
+  // START/END sentinels + moveBlock live in overview-selection.ts now (ONE definition, shared with the
+  // pure tests). A drag moves the WHOLE selection when the grabbed plate is selected, else just that plate
+  // (a 1-element block) — moveBlock preserves canonical relative order and subsumes the old first-position
+  // edge case. Drag is inert unless `reorderable` (canonical order, no filter): the handlers guard on it.
   let dragId = $state<string | null>(null);
   let overId = $state<string | null>(null); // drop target — insert BEFORE it; END = append; START = prepend
   function onPlateDragStart(e: DragEvent, id: string) {
+    if (!reorderable) { e.preventDefault(); return; }
     dragId = id;
     if (e.dataTransfer) { e.dataTransfer.effectAllowed = "move"; e.dataTransfer.setData("text/plain", id); }
   }
@@ -143,23 +246,18 @@
     if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
     overId = id;
   }
-  function commitReorder(beforeId: string | null) {
+  // The block that travels with the drag: the selection if the grabbed plate is in it, else just it.
+  const movingIds = () => (dragId && selection.has(dragId) ? selection : new Set(dragId ? [dragId] : []));
+  const sameOrder = (a: string[], b: string[]) => a.length === b.length && a.every((id, i) => id === b[i]);
+  function commit(before: string | null) {
     if (!dragId) { overId = null; return; }
-    const ids = objects.map((o) => o.id).filter((id) => id !== dragId);
-    const at = beforeId === null ? ids.length : ids.indexOf(beforeId);
-    ids.splice(at < 0 ? ids.length : at, 0, dragId);
+    const cur = objects.map((o) => o.id);
+    const next = moveBlock(cur, movingIds(), before);
     dragId = null; overId = null;
-    onreorder(ids);
+    if (!sameOrder(cur, next)) onreorder(next); // skip a no-op drop — no spurious persist + folder mirror
   }
-  // Prepend to position 0. Dedicated path so it survives the dragged item BEING first (where
-  // commitReorder(objects[0].id) would indexOf its own filtered-out id → -1 → wrongly append to end).
-  function commitToStart() {
-    if (!dragId) { overId = null; return; }
-    const ids = objects.map((o) => o.id).filter((id) => id !== dragId);
-    ids.unshift(dragId);
-    dragId = null; overId = null;
-    onreorder(ids);
-  }
+  const commitReorder = (beforeId: string | null) => commit(beforeId ?? END);
+  const commitToStart = () => commit(START);
   function onDragEnd() { dragId = null; overId = null; }
 </script>
 
@@ -185,6 +283,42 @@
   <PropsDrawer open={rightsOpen} title="Exhibit details" onclose={() => (rightsOpen = false)}>
     <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onremove} />
   </PropsDrawer>
+
+  <!-- Organizing toolbar (Phase 2): find (search titles) · sort (a VIEW, never a reorder) · size (density)
+       · select-mode toggle. When something's selected, the same row carries the bulk actions. -->
+  {#if objects.length > 0}
+    <div class="toolbar">
+      <label class="tb-search">
+        <span class="glass" aria-hidden="true">⌕</span>
+        <input type="search" placeholder="Search titles" bind:value={search} aria-label="Search media titles" />
+      </label>
+      <label class="tb-field">
+        <span class="tb-lbl">Sort</span>
+        <select bind:value={sortMode} aria-label="Sort media items">
+          <option value="reading">Reading order</option>
+          <option value="name">Name</option>
+          <option value="recent">Recently annotated</option>
+        </select>
+      </label>
+      <label class="tb-field tb-density" title="Plate size">
+        <span class="tb-lbl">Size</span>
+        <input type="range" min="0" max="1" step="0.01" bind:value={density} aria-label="Media plate size" />
+      </label>
+      <button type="button" class="tb-select" class:on={selectMode} onclick={onselectmode} aria-pressed={selectMode}
+        title="Select several media items to reorder or remove together">
+        {selectMode ? "Done selecting" : "Select"}
+      </button>
+      {#if selection.size > 0}
+        <span class="tb-gap"></span>
+        <span class="sel-count" aria-live="polite">{selection.size} selected</span>
+        <!-- Two-step inline confirm (DetailsEditor idiom): first click/Delete arms the guard, second commits. -->
+        <button type="button" class="sel-del" class:confirming={bulkConfirming} onclick={onbulkdelete}>
+          {bulkConfirming ? `Confirm — remove ${selection.size} ${selection.size === 1 ? "item" : "items"} & their notes` : `Remove ${selection.size}`}
+        </button>
+        <button type="button" class="sel-clear" onclick={onclear}>Clear</button>
+      {/if}
+    </div>
+  {/if}
 
   <!-- Narrative at the overview scale (staging spec §5). 0 sections → an invitation to start; ≥1 → the
        ordered spine, read-only here (beats are authored on the object canvas, §56 — a row drops into it). -->
@@ -227,7 +361,7 @@
       role="application"
       aria-label="Exhibit canvas — drag to pan, scroll to zoom"
     >
-      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z});`}>
+      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z}); --plate-w: ${plateW};`}>
         <!-- Leading drop zone: the ONLY way to express "insert before the first object" (Archie-1933).
              Inert unless a drag is active and the dragged plate isn't already first. -->
         <div class="dropstart" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
@@ -235,17 +369,23 @@
           ondrop={(e) => { e.preventDefault(); commitToStart(); }}
           ondragleave={() => { if (overId === START) overId = null; }}
           role="presentation" aria-hidden="true"></div>
-        {#each objects as o, i (o.id)}
+        {#each displayObjects as o (o.id)}
           {@const thumb = thumbFor(o)}
-          <div class="plate-wrap" class:dragging={dragId === o.id}>
-            <button class="plate" class:over={overId === o.id}
-              draggable="true"
+          <div class="plate-wrap" class:dragging={dragId === o.id} class:selected={selection.has(o.id)}>
+            <button class="plate" class:over={overId === o.id} class:sel-on={selectMode}
+              data-plate-id={o.id}
+              draggable={reorderable}
               ondragstart={(e) => onPlateDragStart(e, o.id)}
               ondragover={(e) => onPlateDragOver(e, o.id)}
               ondrop={(e) => { e.preventDefault(); commitReorder(o.id); }}
               ondragend={onDragEnd}
-              onpointerdown={(e) => e.stopPropagation()} onclick={() => onopenobject(o.id)} title={o.label}>
-              <span class="order">{i + 1}</span>
+              onpointerdown={(e) => e.stopPropagation()}
+              onclick={(e) => onPlateClick(e, o.id)}
+              ondblclick={() => onopenobject(o.id)}
+              aria-pressed={selectMode ? selection.has(o.id) : undefined}
+              title={o.label}>
+              {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
+              <span class="order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
               <span class="frame" class:av={!thumb}>
                 {#if thumb}<span class="img" style={`background-image:url(${thumb})`}></span>{:else}<span class="glyph">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}
               </span>
@@ -271,13 +411,19 @@
         </button>
       </div>
 
+      <!-- Marquee rubber-band (select-mode background drag). Viewport-local coords; pointer-events off so it
+           never eats the drag it visualizes. -->
+      {#if marqueeRect}
+        <div class="marquee" aria-hidden="true" style={`left:${marqueeRect.left}px; top:${marqueeRect.top}px; width:${marqueeRect.width}px; height:${marqueeRect.height}px;`}></div>
+      {/if}
+
       <!-- Pan/zoom affordances: a top legend NAMES the gestures, an edge vignette implies space beyond the
            frame, and the zoom cluster shows the live % — together signalling "this is a movable canvas". -->
       <div class="edges" aria-hidden="true"></div>
       <div class="canvas-legend" aria-hidden="true">
         <!-- Drag-legend disambiguation (staging spec §6): once a narrative exists, drag here no longer sets
              "the order visitors see" — the SECTION order does. Demote drag to the fallback grid order. -->
-        <span class="g lead"><span class="ico">⇅</span> {hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a media item to set the reading order"}</span>
+        <span class="g lead"><span class="ico">⇅</span> {!reorderable ? "Clear search & sort to reorder" : hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a media item to set the reading order"}</span>
         <span class="dot">·</span>
         <span class="g"><span class="ico">✥</span> Drag the canvas to pan</span>
         <span class="dot">·</span>
@@ -294,20 +440,21 @@
   {:else}
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
-    <p class="list-hint">{hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order."}</p>
-    <ul class="list">
+    <p class="list-hint">{!reorderable ? "Clear search & sort to reorder" : hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order."}</p>
+    <ul class="list" style={`--row-h: ${rowH};`}>
       <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
         ondrop={(e) => { e.preventDefault(); commitToStart(); }}
         ondragleave={() => { if (overId === START) overId = null; }}
         aria-hidden="true"></li>
-      {#each objects as o, i (o.id)}
-        <li class:dragging={dragId === o.id} class:over={overId === o.id}
+      {#each displayObjects as o (o.id)}
+        <li class:dragging={dragId === o.id} class:over={overId === o.id} class:selected={selection.has(o.id)}
           ondragover={(e) => onPlateDragOver(e, o.id)}
           ondrop={(e) => { e.preventDefault(); commitReorder(o.id); }}>
-          <button type="button" class="grip" draggable="true" ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd} title="Drag to reorder" aria-label="Reorder {o.label}">⠿</button>
-          <button onclick={() => onopenobject(o.id)}>
-            <span class="li-order">{i + 1}</span>
+          <button type="button" class="grip" class:off={!reorderable} draggable={reorderable} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd} title={reorderable ? "Drag to reorder" : "Clear search & sort to reorder"} aria-label="Reorder {o.label}">⠿</button>
+          <button data-plate-id={o.id} onclick={(e) => onPlateClick(e, o.id)} ondblclick={() => onopenobject(o.id)} aria-pressed={selectMode ? selection.has(o.id) : undefined}>
+            {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
+            <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
             <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}</span>
             <span class="li-lbl">{o.label}</span>
             <span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
@@ -378,7 +525,7 @@
   .canvas-legend .ico { color: var(--accent-2); font-size: 0.95rem; }
   .canvas-legend .dot { color: var(--ink-canvas-muted); }
 
-  .plate { display: flex; flex-direction: column; gap: var(--space-2); width: 13rem; cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); transition: transform 180ms ease, box-shadow 180ms ease; }
+  .plate { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: var(--plate-w, 13rem); cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); transition: transform 180ms ease, box-shadow 180ms ease; }
   .plate:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
   .plate .order { font-family: var(--font-mono); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
   .frame { position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-canvas-overlay); display: flex; align-items: center; justify-content: center; }
@@ -436,7 +583,10 @@
      height after first render so the scrollbar never jumps; the fixed estimate covers never-seen rows.
      Scoped OFF the zero-height drop sentinels (dropstart-row / end) — reserving a row's height for them
      would break the insert-line affordance. */
-  .list li:not(.dropstart-row):not(.end) { content-visibility: auto; contain-intrinsic-size: auto 3.5rem; }
+  /* The intrinsic-size estimate tracks the density var (Phase 2) so the virtualization scroll estimate
+     stays honest as rows resize — coupling flagged in the plan (density MUST feed contain-intrinsic-size). */
+  .list li:not(.dropstart-row):not(.end) { content-visibility: auto; contain-intrinsic-size: auto var(--row-h, 3.5rem); }
+  .list li:not(.dropstart-row):not(.end) button { min-height: var(--row-h, 3.5rem); box-sizing: border-box; }
   .list li.dragging { opacity: 0.4; }
   .list li.over { box-shadow: 0 -3px 0 var(--accent); } /* insert-before line */
   /* Leading "insert before first" drop zone (list): collapsed until a drag is active. */
@@ -469,4 +619,38 @@
   .list li .row-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
   .li-add { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); padding: var(--space-3); cursor: pointer; width: 100%; transition: color 160ms ease, border-color 160ms ease; }
   .li-add:hover { color: var(--ink-canvas-primary); border-color: var(--accent); }
+
+  /* --- Organizing toolbar (Phase 2) — one quiet row under the header: find · sort · size · select. --- */
+  .toolbar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-6); border-bottom: 1px solid var(--border-canvas); flex-wrap: wrap; }
+  .tb-search { display: inline-flex; align-items: center; gap: var(--space-2); padding: 4px var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
+  .tb-search .glass { color: var(--ink-canvas-muted); font-size: 0.9rem; }
+  .tb-search input { background: none; border: none; outline: none; color: var(--ink-canvas-primary); font-family: var(--font-ui); font-size: var(--text-ui-sm); width: 11rem; }
+  .tb-search input::placeholder { color: var(--ink-canvas-muted); }
+  .tb-field { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .tb-lbl { font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
+  .tb-field select { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: 4px var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; }
+  .tb-density input { accent-color: var(--accent); cursor: pointer; width: 6rem; }
+  .tb-select { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 160ms ease, border-color 160ms ease, background 160ms ease; }
+  .tb-select:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
+  .tb-select.on { background: var(--accent-muted); color: var(--ink-canvas-primary); border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+  .tb-gap { flex: 1; }
+  .sel-count { font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
+  /* Bulk delete — quiet at rest, warms to the semantic-error fill on the armed second-click guard (DetailsEditor idiom). */
+  .sel-del { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: color 160ms ease, background 160ms ease, border-color 160ms ease; }
+  .sel-del:hover { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; }
+  .sel-del.confirming { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; font-weight: 600; box-shadow: var(--shadow-lift-mid); }
+  .sel-clear { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-2) var(--space-2); background: none; border: none; color: var(--ink-canvas-muted); transition: color 160ms ease; }
+  .sel-clear:hover { color: var(--accent-2); }
+
+  /* Selected state — a rationed accent ring on the plate/row; the checkbox corner appears in select-mode. */
+  .plate-wrap.selected .plate, .list li.selected button:not(.grip):not(.row-edit) { box-shadow: var(--shadow-lift-low), 0 0 0 2px var(--accent); }
+  .checkbox { position: absolute; top: var(--space-2); left: var(--space-2); z-index: 1; width: 1.15rem; height: 1.15rem; border-radius: var(--radius-sm); border: 2px solid var(--border-canvas-emphasis); background: var(--surface-canvas-raised); }
+  .checkbox.checked { background: var(--accent); border-color: var(--accent); }
+  .checkbox.checked::after { content: "✓"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: var(--ink-on-accent); }
+  .list li button { position: relative; } /* anchor the row checkbox */
+  .plate.sel-on { cursor: default; } /* in select-mode a click toggles, not opens — signal it's not the open gesture */
+  .grip.off { opacity: 0.3; cursor: default; }
+
+  /* Marquee rubber-band — a faint accent-tinted rectangle over the canvas while background-dragging in select-mode. */
+  .marquee { position: absolute; z-index: 5; pointer-events: none; border: 1px solid var(--accent); background: var(--accent-muted); border-radius: 2px; }
 </style>

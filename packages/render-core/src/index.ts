@@ -77,6 +77,8 @@ export * from "./iiif/image.js";
 
 // Body sanitization (CONTEXT §151 XSS): HTML/markdown note bodies → safe HTML/plain text. Framework-agnostic.
 export * from "./text/sanitize.js";
+// Shared title-search primitive (case/diacritic-insensitive substring) — Gallery wall + overview toolbar.
+export * from "./text/match.js";
 
 // IIIF Presentation 3 projections (Q-1 exhibit-nested): Manifest / Collection / exhibits.json.
 export * from "./iiif/presentation.js";
@@ -84,6 +86,8 @@ export * from "./iiif/canvasid.js";
 export * from "./iiif/manifest.js";
 export * from "./iiif/collection.js";
 export * from "./iiif/exhibits.js";
+// Library-level image index baked at publish (ADR-0023) — the Viewer Gallery wall's one-fetch source.
+export * from "./iiif/image-index.js";
 export * from "./iiif/rights.js";
 
 // The Filesystem seam (source interface) + its backend projections (Q-5):

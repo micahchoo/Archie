@@ -101,6 +101,33 @@ Studio UI by text anchors (`:17-60`). Clone that harness into `scripts/seed-fixt
    library; the user performs the one-time folder-bind gesture manually, then autosave-touch testing
    proceeds against that folder (Phase 1.1 verification).
 
+### Built + verified 2026-07-05 (`scripts/seed-fixture.mjs`, committed 57cbda8) — three corrections to the above
+
+1. **Discover the dev-server URL; it is NOT `:5173`.** `capture-screenshots.mjs` does NOT boot the dev
+   servers (it assumes they are already up), and the Studio app serves under base **`/studio/`**
+   (`apps/studio/vite.config.ts:30`) on a Vite port that auto-increments (`:5174` when `:5173` is taken).
+   The seed script probes candidate URLs and, when it boots `pnpm --filter @archie/studio dev` itself,
+   parses Vite's `Local:` line — never a hardcoded port/base.
+2. **Upload a WRAPPER dir, not a flat folder.** `setInputFiles` on the `<input webkitdirectory>` works,
+   but a single flat folder makes `newExhibitFromFolder` navigate INTO the new exhibit's editor, hiding
+   the LibraryHome cards the assertion needs. Upload the wrapper dir holding the three exhibit subfolders
+   → 3-segment `webkitRelativePath` → `planFolderImportGroups` (`folder-import.ts:72`) splits into 3
+   exhibits → "several new exhibits" lands back at the LIBRARY (`App.svelte:544`). One `setInputFiles` →
+   "Added 70 files to 3 exhibits".
+3. **Annotations aren't headlessly scriptable.** Canvas drawing (Annotorious/OSD) has no reliable
+   text-anchor path — the seed's best-effort pass is guarded and reports SKIPPED; add notes by hand if
+   recently-annotated data is needed.
+
+### Scripted Phase-1 verification (probe against the 70-object profile, 2026-07-05)
+
+Measured on Coastal Survey (30 objects), Phase 1.2/1.3 code present: exhibit open **~85–110 ms** to the
+30-plate overview; **blob-URL mint at open = 31** (≈30 thumbs + the 1 current-object master, NOT ~60 →
+**lazy masters confirmed**); opening a not-yet-viewed object mints **exactly +1** master; list mode has
+**`content-visibility:auto` + `contain-intrinsic-size` on all 30 object rows** (**virtualization
+confirmed**); **0** console/page errors on open + scroll. Folder-bound incremental autosave stays the one
+MANUAL item (native FSA picker), already MemoryFilesystem-proven in `publish/site.test.ts` (only the dirty
+slug's files rewritten; `tileObject` spy = 0 calls on a note edit).
+
 ## 10-line summary
 
 - **Masters-on-demand:** thumbs stay eager; drop the master wave from `resolveAssets`
