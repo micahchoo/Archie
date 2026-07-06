@@ -20,17 +20,20 @@ import type { DeploySession, DeployTarget, DeployProgress, DeployError } from ".
 import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
 
 /** Every screen the dialog can show. `name-taken` / `repo-picker` are the existing-repo paths (Task 11);
- *  `update-confirm` / `manual-pages` / `pages-building` are Task 12 and intentionally absent here. */
+ *  `update-confirm` is the return-visit one-click re-publish and `manual-pages` the org-policy fallback
+ *  (Task 12). `pages-building` is folded into the `publishing` checklist, not its own screen. */
 export type PublishState =
   | "intro-desktop"
   | "device-code"
   | "auth-cancelled"
   | "auth-config-error"
+  | "update-confirm"
   | "name-site"
   | "name-taken"
   | "repo-picker"
   | "publishing"
   | "success"
+  | "manual-pages"
   | "error"
   | "advanced"
   | "web-intro";
@@ -56,6 +59,9 @@ export interface PublishMachineDeps {
   signIn: (onCode: (c: { userCode: string; verificationUri: string; expiresIn: number }) => void) => Promise<DeploySession>;
   /** "Stay signed in" — save the token to the OS keyring; false = store unavailable (non-fatal, honest). */
   persistSession: (s: DeploySession) => Promise<boolean>;
+  /** Sign out — forget the stored token (keyring clear). Bound from `signOut`; the return-visit
+   *  "Sign out" affordance calls it, then the machine drops the in-memory session and shows the intro. */
+  signOut: () => Promise<void>;
   /** The one-motion deploy (Task 8) — staging → repo → push → Pages, emitting progress. */
   deploy: (session: DeploySession, target: DeployTarget, onProgress: (p: DeployProgress) => void) => Promise<DeployResult>;
   /** Open a URL in the system browser (opener plugin on desktop). */
@@ -72,6 +78,11 @@ export interface PublishMachineDeps {
    *  (`GET /user/repos?per_page=100`, filtered client-side). Optional — unwired, the picker is unreachable.
    *  `| undefined` explicit for the same live-getter reason as `checkRepoExists` above. */
   listRepos?: ((session: DeploySession) => Promise<string[]>) | undefined;
+  /** Re-attempt the Pages enable for the `manual-pages` fallback ([I did it — recheck]) — resolves true
+   *  once GitHub reports the site enabled. Optional — unwired, the recheck button is hidden (the manual
+   *  steps still stand). `| undefined` explicit for the same live-getter reason as `checkRepoExists`.
+   *  Wired in Task 13. */
+  recheckPages?: ((session: DeploySession, target: DeployTarget) => Promise<boolean>) | undefined;
   /** Clock seam so the countdown is testable. Defaults to `Date.now`. */
   now?: () => number;
 }
@@ -162,6 +173,8 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     result: DeployResult | null;
     error: DeployError | null;
     persistFailed: boolean; // "couldn't stay signed in" — surfaced on success, non-fatal
+    recheckPending: boolean; // manual-pages: a [recheck] round-trip is in flight
+    recheckSaysOff: boolean; // manual-pages: the last recheck came back "still not on" (honest, non-fatal)
   }>({
     state: "intro-desktop",
     session: null,
@@ -179,12 +192,16 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     result: null,
     error: null,
     persistFailed: false,
+    recheckPending: false,
+    recheckSaysOff: false,
   });
 
-  /** Compute the opening screen from the runtime + any restored session (GHPAGES-PUBLISH-UX §states). */
+  /** Compute the opening screen from the runtime + any restored session (GHPAGES-PUBLISH-UX §states). A
+   *  signed-in return visit to a library that has published before opens straight on the one-click
+   *  `update-confirm`; a signed-in first publish opens on naming; signed-out opens the intro. */
   function computeInitial(): PublishState {
     if (!deps.isTauriEnv) return "web-intro"; // device flow is CORS-impossible in a browser tab
-    if (deps.initialSession) return "name-site"; // Task 12 turns this into update-confirm
+    if (deps.initialSession) return deps.remembered ? "update-confirm" : "name-site";
     return "intro-desktop";
   }
 
@@ -211,9 +228,11 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     s.error = null;
     s.progress = null;
     s.result = null;
+    s.recheckPending = false;
+    s.recheckSaysOff = false;
     if (deps.initialSession) s.session = deps.initialSession;
     s.state = computeInitial();
-    if (s.state === "name-site") seedTarget();
+    if (s.state === "name-site" || s.state === "update-confirm") seedTarget();
   }
 
   /** Start (or restart) the device flow: surface the code, pre-copy it, then block on the poll and
@@ -296,7 +315,9 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     try {
       const res = await deps.deploy(s.session, targetOf(), (p) => (s.progress = p));
       s.result = res;
-      s.state = "success";
+      // The commit landed. If GitHub couldn't auto-enable Pages (org policy / private repo), the author
+      // flips one switch themselves — a full `manual-pages` screen, not a footnote on success.
+      s.state = res.manualPagesNeeded ? "manual-pages" : "success";
     } catch (e) {
       s.error = asDeployError(e);
       s.state = "error";
@@ -337,6 +358,57 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     s.intent = "update";
     s.updateTargetRepo = name;
     s.state = "name-site";
+  }
+
+  // --- return visit: update-confirm (Task 12) ---
+
+  /** [Publish update] on the return visit: the author already published this library here, so update the
+   *  remembered repo directly — no name-taken pre-flight (that guard exists only to protect a NEW site
+   *  from clobbering a stranger's repo; here the author owns this one and means to overwrite it). */
+  function publishUpdate(): void {
+    s.intent = "update";
+    s.updateTargetRepo = s.repo.trim();
+    void runDeploy();
+  }
+
+  /** "Publish somewhere else…" — leave the one-click confirm for the full naming step (where they can type
+   *  a new name or open the picker to update a different existing site). Editing the name away from the
+   *  remembered repo reverts intent to `new` via the `repo` setter, so a fresh name is re-checked. */
+  function publishElsewhere(): void {
+    s.state = "name-site";
+  }
+
+  /** "Sign out" — forget the stored token, drop the in-memory session, and return to the signed-out intro.
+   *  The keyring clear is best-effort (a failure still signs the author out of this session). */
+  async function doSignOut(): Promise<void> {
+    await deps.signOut().catch(() => {});
+    s.session = null;
+    s.code = null;
+    s.state = "intro-desktop"; // signed out ⇒ the intro, regardless of a stale live `initialSession` dep
+  }
+
+  // --- fallback: manual-pages (Task 12) ---
+
+  /** [I did it — recheck] on the manual-pages fallback: re-attempt the Pages enable. Success promotes to
+   *  the live-site screen; "still not on" is surfaced honestly (the author may need another moment) rather
+   *  than thrown. A no-op if the recheck seam is unwired. */
+  async function recheck(): Promise<void> {
+    if (!s.session || !deps.recheckPages) return;
+    s.recheckPending = true;
+    s.recheckSaysOff = false;
+    try {
+      const enabled = await deps.recheckPages(s.session, targetOf());
+      if (enabled) {
+        if (s.result) s.result = { ...s.result, manualPagesNeeded: false };
+        s.state = "success";
+      } else {
+        s.recheckSaysOff = true;
+      }
+    } catch {
+      s.recheckSaysOff = true; // a transient recheck failure is not the author's problem to debug
+    } finally {
+      s.recheckPending = false;
+    }
   }
 
   /** From an error screen: retry the deploy (or, after a 401, this is wired to sign-in-again in the view). */
@@ -382,6 +454,15 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     get result(): DeployResult | null { return s.result; },
     get error(): DeployError | null { return s.error; },
     get persistFailed(): boolean { return s.persistFailed; },
+    get recheckPending(): boolean { return s.recheckPending; },
+    get recheckSaysOff(): boolean { return s.recheckSaysOff; },
+
+    /** The remembered live URL for the return-visit confirm ("Update {url}…"). */
+    get updateUrl(): string { return deps.remembered?.url ?? ""; },
+    /** GitHub's per-repo Pages settings deep link — the manual-pages fallback sends the author here. */
+    get pagesSettingsUrl(): string { return `https://github.com/${s.owner.trim()}/${s.repo.trim()}/settings/pages`; },
+    /** Whether the [I did it — recheck] button is offered (the recheck seam is wired). */
+    get canRecheck(): boolean { return !!deps.recheckPages; },
 
     /** Whether the "Continue with GitHub" affordance is offered at all (desktop + configured). */
     get canContinueWithGitHub(): boolean { return deps.isTauriEnv && deps.deviceFlowAvailable; },
@@ -465,6 +546,10 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     updateExisting,
     openPicker,
     chooseRepo,
+    publishUpdate,
+    publishElsewhere,
+    signOut: doSignOut,
+    recheck,
   };
 }
 

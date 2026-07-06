@@ -23,9 +23,11 @@
     initialSession = null,
     signIn,
     persistSession,
+    signOut,
     deploy,
     checkRepoExists,
     listRepos,
+    recheckPages,
     /** Optional: web-intro "share a link instead" → route back to the chooser's zip/?src= path (Task 13). */
     onusezip,
     // --- legacy advanced (token) form — verbatim, unchanged interface ---
@@ -41,11 +43,15 @@
     initialSession?: DeploySession | null;
     signIn?: (onCode: (c: { userCode: string; verificationUri: string; expiresIn: number }) => void) => Promise<DeploySession>;
     persistSession?: (s: DeploySession) => Promise<boolean>;
+    /** Forget the stored token (sign out) — the return-visit "Sign out" affordance. Wired in Task 13. */
+    signOut?: () => Promise<void>;
     deploy?: (session: DeploySession, target: DeployTarget, onProgress: (p: DeployProgress) => void) => Promise<DeployResult>;
     /** Pre-flight name check for a NEW site (never force-overwrites an existing repo). Wired in Task 13. */
     checkRepoExists?: (session: DeploySession, target: DeployTarget) => Promise<boolean>;
     /** The author's repo names, for the "update an existing site" picker. Wired in Task 13. */
     listRepos?: (session: DeploySession) => Promise<string[]>;
+    /** Re-attempt the Pages enable for the manual-pages fallback ([recheck]). Wired in Task 13. */
+    recheckPages?: (session: DeploySession, target: DeployTarget) => Promise<boolean>;
     onusezip?: () => void;
     onpublish: (target: GitHubTarget, opts: { includeOriginals: boolean }, onProgress: (p: PublishProgress) => void) => Promise<GitHubPublishResult>;
     /** Intra-Library links that won't resolve in the published site — they degrade to plain text. */
@@ -83,9 +89,11 @@
     get initialSession() { return initialSession; },
     get signIn() { return signIn ?? (async () => { throw { kind: "device-flow-disabled", message: "GitHub sign-in isn't available in this build." }; }); },
     get persistSession() { return persistSession ?? (async () => false); },
+    get signOut() { return signOut ?? (async () => {}); },
     get deploy() { return deploy ?? (async () => { throw { kind: "push", message: "Publishing to the web isn't available here." }; }); },
     get checkRepoExists() { return checkRepoExists; },
     get listRepos() { return listRepos; },
+    get recheckPages() { return recheckPages; },
     openUrl: defaultOpenUrl,
     copy: defaultCopy,
   });
@@ -103,7 +111,13 @@
   const commitUrl = $derived(
     machine.result ? `https://github.com/${machine.owner.trim()}/${machine.repo.trim()}/commit/${machine.result.commitSha}` : "",
   );
+  // The return-visit confirm headline reads as a sentence, so show the bare host/path (no scheme/trailing
+  // slash) — e.g. "micah.github.io/voynich-folios".
+  const updateHost = $derived(machine.updateUrl.replace(/^https?:\/\//, "").replace(/\/$/, ""));
   let showDetails = $state(false);
+  let showDomain = $state(false); // success: the collapsed "Use your own domain" guidance (copy only)
+  // GitHub's own custom-domain walkthrough — we point at it rather than automating CNAME (PRFAQ item 5).
+  const CUSTOM_DOMAIN_DOCS = "https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/about-custom-domains-and-github-pages";
 
   function close() {
     token = ""; // never retain the advanced-form secret across a close
@@ -233,6 +247,25 @@
         <button class="primary" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
       </div>
 
+    {:else if machine.state === "update-confirm"}
+      <header>
+        <p class="eyebrow">Publish</p>
+        <h2>Update {updateHost} with your latest changes?</h2>
+        <p class="lede">One click republishes everything in your library right now to the site you already made — no re-typing, no signing in again.</p>
+      </header>
+      <div class="stack">
+        <div class="quiet-links">
+          <button type="button" class="linkish" onclick={() => machine.publishElsewhere()}>Publish somewhere else…</button>
+        </div>
+        {#if machine.session}
+          <p class="signed-in">Signed in as <span class="handle">@{machine.session.login}</span> · <button type="button" class="linkish inline" onclick={() => machine.signOut()}>Sign out</button></p>
+        {/if}
+      </div>
+      <div class="actions">
+        <button type="button" class="ghost" onclick={close}>Cancel</button>
+        <button class="primary" onclick={() => machine.publishUpdate()}>Publish update</button>
+      </div>
+
     {:else if machine.state === "name-site"}
       <header>
         <p class="eyebrow">Publish{#if machine.session}<span class="handle"> · @{machine.session.login}</span>{/if}</p>
@@ -327,12 +360,15 @@
         </div>
         <p class="note">GitHub may take a minute to finish the first build — if it's blank, refresh in a moment.</p>
         <p class="note">Made changes? Just hit <strong>Publish to the web</strong> again — it updates the same site.</p>
-        {#if machine.result?.manualPagesNeeded}
-          <p class="note warn">Your files are up, but GitHub Pages needs one manual switch for this repository. Open <a href={`https://github.com/${machine.owner.trim()}/${machine.repo.trim()}/settings/pages`} target="_blank" rel="noopener">Settings › Pages</a> and set the source to the <code>gh-pages</code> branch.</p>
-        {/if}
         {#if machine.persistFailed}
           <p class="note muted">We couldn't keep you signed in on this computer — you'll sign in again next time.</p>
         {/if}
+        <div class="details">
+          <button type="button" class="linkish" onclick={() => (showDomain = !showDomain)}>{showDomain ? "▾" : "▸"} Use your own domain</button>
+          {#if showDomain}
+            <p class="note">Want <code>library.yoursite.com</code> instead? GitHub Pages lets you point your own domain at this site — you add the domain in the repository's Pages settings and a matching record at your domain host. <a href={CUSTOM_DOMAIN_DOCS} target="_blank" rel="noopener">GitHub's guide walks through it.</a></p>
+          {/if}
+        </div>
         <div class="details">
           <button type="button" class="linkish" onclick={() => (showDetails = !showDetails)}>{showDetails ? "▾" : "▸"} Details</button>
           {#if showDetails}
@@ -341,6 +377,30 @@
         </div>
       </div>
       <div class="actions"><button type="button" class="ghost" onclick={close}>Done</button></div>
+
+    {:else if machine.state === "manual-pages"}
+      <header>
+        <p class="eyebrow">Publish</p>
+        <h2>Almost done — one quick switch on GitHub.</h2>
+        <p class="lede">Your library is uploaded. GitHub couldn't turn the site on automatically for this repository, so flip it on yourself — it takes about thirty seconds.</p>
+      </header>
+      <div class="stack">
+        <ol class="steps">
+          <li>Open <a href={machine.pagesSettingsUrl} target="_blank" rel="noopener">your repository's Settings › Pages</a>.</li>
+          <li>Under <strong>Build and deployment</strong>, set <em>Source</em> to <strong>Deploy from a branch</strong>.</li>
+          <li>Choose the <code>gh-pages</code> branch and the <code>/ (root)</code> folder, then <strong>Save</strong>.</li>
+        </ol>
+        {#if machine.recheckSaysOff}
+          <p class="note warn">GitHub still shows the site as off. Give it a moment after saving, then check again.</p>
+        {/if}
+        <p class="note">Once you've saved, your site will live at <a href={machine.result?.url} target="_blank" rel="noopener">{machine.result?.url}</a>.</p>
+      </div>
+      <div class="actions">
+        <button type="button" class="ghost" onclick={close}>I'll do it later</button>
+        {#if machine.canRecheck}
+          <button class="primary" disabled={machine.recheckPending} onclick={() => machine.recheck()}>{machine.recheckPending ? "Checking…" : "I did it — recheck"}</button>
+        {/if}
+      </div>
 
     {:else if machine.state === "error"}
       <header>
@@ -472,6 +532,16 @@
     font-family: var(--font-body); font-size: 0.875rem; color: var(--accent-2);
   }
   .linkish:hover { text-decoration: underline; }
+  .linkish.inline { display: inline; font-size: inherit; }
+
+  /* return-visit "Signed in as @handle · Sign out" — a quiet footer under the confirm. */
+  .signed-in { font-family: var(--font-body); font-size: 0.8125rem; color: var(--ink-paper-muted); margin: 0; }
+  .signed-in .handle { color: var(--ink-paper-secondary); }
+
+  /* manual-pages fallback — the three numbered switches on GitHub. */
+  .steps { margin: 0; padding-left: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+  .steps li { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-paper-secondary); }
+  .steps a { color: var(--accent-2); }
 
   .field { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-paper-muted); }
 

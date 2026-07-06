@@ -25,6 +25,7 @@ function makeDeps(over: Partial<Deps> = {}): Deps {
       return SESSION;
     },
     persistSession: async () => true,
+    signOut: async () => {},
     deploy: async () => ({ url: "https://micah.github.io/voynich-folios/", commitSha: "abc123" }),
     openUrl: async () => {},
     copy: async () => {},
@@ -392,5 +393,115 @@ describe("publish machine — existing-repo paths (Task 11)", () => {
     expect(m.state).toBe("name-site");
     expect(m.intent).toBe("update");
     expect(m.repo).toBe("recipes");
+  });
+});
+
+describe("publish machine — return visit + fallbacks (Task 12)", () => {
+  const REMEMBERED = { target: { owner: "micah", repo: "voynich-folios", branch: "gh-pages" } as DeployTarget, url: "https://micah.github.io/voynich-folios/" };
+
+  it("a signed-in return visit (session + remembered target) opens on update-confirm, not naming", () => {
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION, remembered: REMEMBERED }));
+    m.open();
+    expect(m.state).toBe("update-confirm");
+    expect(m.updateUrl).toBe("https://micah.github.io/voynich-folios/");
+    expect(m.intent).toBe("update"); // seeded from the remembered target
+    expect(m.repo).toBe("voynich-folios");
+  });
+
+  it("a signed-in FIRST publish (session, no remembered target) still opens on naming", () => {
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION, remembered: null }));
+    m.open();
+    expect(m.state).toBe("name-site");
+  });
+
+  it("[Publish update] deploys straight into the remembered repo, skipping the name-taken guard", async () => {
+    let checked = 0;
+    let deployedTarget: DeployTarget | null = null;
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      remembered: REMEMBERED,
+      checkRepoExists: async () => { checked++; return true; }, // would trip name-taken on a `new` publish
+      deploy: async (_s, target) => { deployedTarget = target; return { url: REMEMBERED.url, commitSha: "abc123" }; },
+    }));
+    m.open();
+    expect(m.state).toBe("update-confirm");
+    m.publishUpdate();
+    await flush();
+    expect(checked).toBe(0); // the pre-flight name check is NOT run for an update
+    expect(m.intent).toBe("update");
+    expect(deployedTarget).toEqual({ owner: "micah", repo: "voynich-folios", branch: "gh-pages" });
+    expect(m.state).toBe("success");
+  });
+
+  it('"Publish somewhere else…" leaves the confirm for the full naming step', () => {
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION, remembered: REMEMBERED }));
+    m.open();
+    m.publishElsewhere();
+    expect(m.state).toBe("name-site");
+  });
+
+  it("Sign out clears the session, calls the signOut seam, and returns to the intro", async () => {
+    let cleared = 0;
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION, remembered: REMEMBERED, signOut: async () => { cleared++; } }));
+    m.open();
+    expect(m.state).toBe("update-confirm");
+    await m.signOut();
+    expect(cleared).toBe(1);
+    expect(m.session).toBeNull();
+    expect(m.state).toBe("intro-desktop");
+  });
+
+  it("a deploy that couldn't auto-enable Pages lands on manual-pages, not success", async () => {
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      deploy: async () => ({ url: "https://micah.github.io/voynich-folios/", commitSha: "abc123", manualPagesNeeded: true }),
+    }));
+    m.open();
+    await m.publish();
+    expect(m.state).toBe("manual-pages");
+    expect(m.pagesSettingsUrl).toBe("https://github.com/micah/voynich-folios/settings/pages");
+    expect(m.result?.url).toBe("https://micah.github.io/voynich-folios/");
+  });
+
+  it("[recheck] re-invokes the Pages enable — success promotes to the live-site screen", async () => {
+    let rechecks = 0;
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      deploy: async () => ({ url: "https://micah.github.io/voynich-folios/", commitSha: "abc123", manualPagesNeeded: true }),
+      recheckPages: async () => { rechecks++; return true; },
+    }));
+    m.open();
+    await m.publish();
+    expect(m.state).toBe("manual-pages");
+    expect(m.canRecheck).toBe(true);
+    await m.recheck();
+    expect(rechecks).toBe(1);
+    expect(m.state).toBe("success");
+    expect(m.result?.manualPagesNeeded).toBe(false); // cleared once GitHub reports it enabled
+  });
+
+  it("[recheck] that comes back still-off stays on manual-pages and says so, honestly", async () => {
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      deploy: async () => ({ url: "https://micah.github.io/voynich-folios/", commitSha: "abc123", manualPagesNeeded: true }),
+      recheckPages: async () => false,
+    }));
+    m.open();
+    await m.publish();
+    await m.recheck();
+    expect(m.state).toBe("manual-pages");
+    expect(m.recheckSaysOff).toBe(true);
+  });
+
+  it("the recheck affordance is hidden when the seam is unwired (manual steps still stand)", async () => {
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      recheckPages: undefined,
+      deploy: async () => ({ url: "https://micah.github.io/voynich-folios/", commitSha: "abc123", manualPagesNeeded: true }),
+    }));
+    m.open();
+    await m.publish();
+    expect(m.state).toBe("manual-pages");
+    expect(m.canRecheck).toBe(false);
   });
 });
