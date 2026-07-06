@@ -72,11 +72,30 @@ struct GhDeviceCode {
     interval: u64,
 }
 
+/// A secret string (the OAuth access token) whose `Debug` is redacted, so a stray `{:?}` on any
+/// structure that holds one can never leak it into a log. Deserializes transparently from a JSON
+/// string (serde newtype). `expose()` is the single, explicit way to read the underlying value.
+#[derive(Clone, PartialEq, Deserialize)]
+struct Secret(String);
+
+impl Secret {
+    fn expose(self) -> String {
+        self.0
+    }
+}
+
+impl std::fmt::Debug for Secret {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Secret(<redacted>)")
+    }
+}
+
 /// The `/login/oauth/access_token` body: success carries `access_token`; every non-success carries
-/// `error` (and often `error_description`); `slow_down` may carry a widened `interval`.
+/// `error` (and often `error_description`); `slow_down` may carry a widened `interval`. `access_token`
+/// is a redacting `Secret` so the derived `Debug` on this struct cannot spill the token.
 #[derive(Debug, Deserialize)]
 struct GhTokenResponse {
-    access_token: Option<String>,
+    access_token: Option<Secret>,
     error: Option<String>,
     error_description: Option<String>,
     interval: Option<u64>,
@@ -90,11 +109,20 @@ struct GhTokenResponse {
 /// `Terminal` stops it with a typed error; `Authorized` yields the token.
 #[derive(Debug, PartialEq)]
 enum PollStep {
-    Authorized(String),
+    Authorized(Secret),
     Pending,
     /// GitHub asked us to back off; the payload is its suggested new interval, if any.
     SlowDown(Option<u64>),
     Terminal(DeployError),
+}
+
+/// The one "code expired" error, shared by the `expired_token` server response and the local deadline
+/// guard so both surface identical copy.
+fn expired_error() -> DeployError {
+    DeployError::new(
+        "expired",
+        "The sign-in code expired before you authorized it. Start again to get a new one.",
+    )
 }
 
 /// Map a parsed token-endpoint response to the next poll step. Token presence wins; otherwise the
@@ -106,10 +134,7 @@ fn classify_poll(resp: &GhTokenResponse) -> PollStep {
     match resp.error.as_deref() {
         Some("authorization_pending") => PollStep::Pending,
         Some("slow_down") => PollStep::SlowDown(resp.interval),
-        Some("expired_token") => PollStep::Terminal(DeployError::new(
-            "expired",
-            "The sign-in code expired before you authorized it. Start again to get a new one.",
-        )),
+        Some("expired_token") => PollStep::Terminal(expired_error()),
         Some("access_denied") => PollStep::Terminal(DeployError::new(
             "denied",
             "Sign-in was cancelled.",
@@ -129,14 +154,18 @@ fn classify_poll(resp: &GhTokenResponse) -> PollStep {
     }
 }
 
-/// The poll interval after a `slow_down`. Honors GitHub's suggested interval when it is larger than
-/// what we're already using; otherwise adds the spec's +5s. Guarantees the interval only ever grows,
-/// so the poll loop always backs off (never busy-loops).
+/// The poll interval after a `slow_down`. Adds the spec's +5s to the current interval, and never
+/// polls faster than GitHub's suggested interval — so the effective wait is `max(current + 5, server)`.
+/// The interval therefore only ever grows and the loop always backs off (never busy-loops).
 fn bumped_interval(current: u64, server: Option<u64>) -> u64 {
-    match server {
-        Some(i) if i > current => i,
-        _ => current + 5,
-    }
+    (current + 5).max(server.unwrap_or(0))
+}
+
+/// Whether the device code's lifetime has elapsed. Once true, polling must stop with `expired` even
+/// if GitHub keeps answering `authorization_pending` — a local guarantee the loop can't outlive the
+/// code. Pure so the deadline is unit-testable without a real clock.
+fn deadline_exceeded(elapsed: Duration, expires_in: u64) -> bool {
+    elapsed.as_secs() >= expires_in
 }
 
 /// Parse the device-code start body. Success yields a `DeviceStart`; an `error` body (e.g. a
@@ -198,19 +227,26 @@ pub async fn gh_device_start(client_id: String) -> Result<DeviceStart, DeployErr
 
 /// Poll for the token after the scholar authorizes. Sleeps `interval` seconds between requests,
 /// widens on `slow_down`, and returns the token exactly once. Terminates with a typed error on
-/// `expired_token` / `access_denied` / `device_flow_disabled` — GitHub's own `expired_token`
-/// guarantees the loop can never run forever.
+/// `expired_token` / `access_denied` / `device_flow_disabled`. `expires_in` (the lifetime GitHub
+/// returned from `gh_device_start`) is a local deadline: once it elapses the loop returns `expired`
+/// regardless of what the server says, so the poll can never outlive the code.
 #[tauri::command]
 pub async fn gh_device_poll(
     client_id: String,
     device_code: String,
     interval: u64,
+    expires_in: u64,
 ) -> Result<DevicePollResult, DeployError> {
     let client = reqwest::Client::new();
+    let started = tokio::time::Instant::now();
     let mut wait = interval.max(1);
     loop {
         // GitHub requires waiting `interval` seconds before each poll — sleep first.
         tokio::time::sleep(Duration::from_secs(wait)).await;
+        // Stop the moment the code's lifetime is spent, even if GitHub is still saying "pending".
+        if deadline_exceeded(started.elapsed(), expires_in) {
+            return Err(expired_error());
+        }
         let resp = client
             .post(ACCESS_TOKEN_URL)
             .header(reqwest::header::ACCEPT, "application/json")
@@ -226,7 +262,7 @@ pub async fn gh_device_poll(
         let parsed: GhTokenResponse = serde_json::from_str(&body)
             .map_err(|_| DeployError::new("gh", "GitHub returned a response we didn't understand."))?;
         match classify_poll(&parsed) {
-            PollStep::Authorized(token) => return Ok(DevicePollResult { token }),
+            PollStep::Authorized(token) => return Ok(DevicePollResult { token: token.expose() }),
             PollStep::Pending => continue,
             PollStep::SlowDown(server) => wait = bumped_interval(wait, server),
             PollStep::Terminal(err) => return Err(err),
@@ -263,28 +299,39 @@ fn clear_in(entry: &keyring::Entry) {
     let _ = entry.delete_credential();
 }
 
+// These run on the blocking thread pool: a locked GNOME Keyring / KWallet blocks the calling thread
+// until the user answers the unlock dialog, so keeping them off the async reactor (the webview's
+// event loop) is what stops the window from freezing during that wait.
+
 /// Persist the session token to the OS keyring. Returns `false` when the platform store is
 /// unavailable — a truthful "couldn't stay signed in", NOT an error the UI must dialog about.
 #[tauri::command]
-pub fn gh_token_save(token: String) -> bool {
-    match keyring_entry() {
+pub async fn gh_token_save(token: String) -> bool {
+    tauri::async_runtime::spawn_blocking(move || match keyring_entry() {
         Ok(entry) => save_to(&entry, &token),
         Err(_) => false,
-    }
+    })
+    .await
+    .unwrap_or(false)
 }
 
 /// Load a previously-saved token. `None` = nothing stored or the store is unavailable (signed out).
 #[tauri::command]
-pub fn gh_token_load() -> Option<String> {
-    keyring_entry().ok().and_then(|entry| load_from(&entry))
+pub async fn gh_token_load() -> Option<String> {
+    tauri::async_runtime::spawn_blocking(|| keyring_entry().ok().and_then(|entry| load_from(&entry)))
+        .await
+        .unwrap_or(None)
 }
 
 /// Forget the stored token (sign out). A no-op when nothing is stored.
 #[tauri::command]
-pub fn gh_token_clear() {
-    if let Ok(entry) = keyring_entry() {
-        clear_in(&entry);
-    }
+pub async fn gh_token_clear() {
+    let _ = tauri::async_runtime::spawn_blocking(|| {
+        if let Ok(entry) = keyring_entry() {
+            clear_in(&entry);
+        }
+    })
+    .await;
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -364,9 +411,18 @@ mod tests {
     fn poll_success_yields_token_once() {
         let body = r#"{"access_token":"gho_example_test_token","token_type":"bearer","scope":"repo"}"#;
         match parse_token(body) {
-            PollStep::Authorized(t) => assert_eq!(t, "gho_example_test_token"),
+            PollStep::Authorized(t) => assert_eq!(t.expose(), "gho_example_test_token"),
             other => panic!("expected authorized, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn authorized_token_debug_is_redacted() {
+        // A stray `{:?}` on the poll step (or anything holding the Secret) must not spill the token.
+        let step = parse_token(r#"{"access_token":"gho_example_test_token"}"#);
+        let rendered = format!("{step:?}");
+        assert!(rendered.contains("<redacted>"), "Debug redacts: {rendered}");
+        assert!(!rendered.contains("gho_example_test_token"), "token absent from Debug: {rendered}");
     }
 
     #[test]
@@ -375,6 +431,15 @@ mod tests {
         assert_eq!(bumped_interval(5, None), 10, "adds +5 when GitHub suggests none");
         assert_eq!(bumped_interval(5, Some(5)), 10, "never shrinks: +5 when server isn't larger");
         assert_eq!(bumped_interval(10, Some(3)), 15, "ignores a smaller server interval");
+        assert_eq!(bumped_interval(5, Some(8)), 10, "floors at current+5 even when server is lower");
+        assert_eq!(bumped_interval(5, Some(20)), 20, "honors a much larger server interval");
+    }
+
+    #[test]
+    fn poll_deadline_stops_after_expiry() {
+        assert!(!deadline_exceeded(Duration::from_secs(30), 900), "still within the code's lifetime");
+        assert!(deadline_exceeded(Duration::from_secs(900), 900), "at the deadline");
+        assert!(deadline_exceeded(Duration::from_secs(901), 900), "past the deadline");
     }
 
     #[test]
