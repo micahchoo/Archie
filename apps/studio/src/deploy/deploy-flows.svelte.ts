@@ -23,7 +23,8 @@
 
 import { collectFiles, ensureRepo, enablePagesFor, pagesUrlFor, GitHubPublishError, type FileContent, type Filesystem } from "@render/core";
 import { isTauri } from "../tauri-fs.js";
-import type { DeploySession, DeployTarget, DeployProgress, DeployError } from "./types.js";
+import type { DeploySession, DeployTarget, DeployProgress, DeployError, DeviceStart, DevicePollResult } from "./types.js";
+import archieConfig from "../../../../archie.config.json";
 
 /** The seam the App (Task 10) fills: the library's stable identity plus the same site projection every
  *  other publish sink uses. `projectSite` returns the populated in-memory tree; staging flattens it. */
@@ -187,4 +188,100 @@ export function createDeployFlows(source: DeploySource) {
   }
 
   return { deployToPages };
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Session half (plan Task 9) — GitHub device-flow sign-in + "stay signed in" (Q-12). The Rust commands
+// (github.rs) own the two things a webview can't: the CORS-blocked device-flow endpoints and the token,
+// which stays off the JS heap except for the in-memory DeploySession. These wrappers turn those commands
+// into one awaitable sign-in, an honest persist, and a startup restore. TOKEN SAFETY: the token lives
+// only in the returned DeploySession (memory) and the OS keyring (via gh_token_save) — never elsewhere.
+// ---------------------------------------------------------------------------------------------------
+
+/** This build's PUBLIC GitHub OAuth App client id (device flow needs no secret). Empty in the shipped
+ *  config — a fork wires its own; see archie.config.json. Read once at module eval. */
+const GITHUB_CLIENT_ID = ((archieConfig as { githubOAuthClientId?: string }).githubOAuthClientId ?? "").trim();
+
+/**
+ * Whether desktop device-flow sign-in is offered at all — false when this build ships no OAuth client id
+ * (a fork without its own app gets NO broken "Sign in" button, per Q-12/PRFAQ fork-safety). The UI
+ * (Tasks 10–13) gates the sign-in affordance on this.
+ */
+export const deviceFlowAvailable: boolean = GITHUB_CLIENT_ID !== "";
+
+/** GitHub's login lookup — the one REST call the token identity needs after auth. 401 ⇒ the token is bad
+ *  (used by restoreSession to distinguish a revoked token from a transient failure). */
+async function fetchLogin(token: string): Promise<string> {
+  const res = await fetch("https://api.github.com/user", {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
+  });
+  if (!res.ok) throw deployError("gh", "GitHub sign-in couldn't verify your account. Try signing in again.", res.status);
+  const body = (await res.json().catch(() => null)) as { login?: string } | null;
+  if (!body?.login) throw deployError("gh", "GitHub sign-in couldn't verify your account. Try signing in again.");
+  return body.login;
+}
+
+/**
+ * Sign in with GitHub's device flow: start the flow (Rust), surface the user code via `onCode` so the UI
+ * can show "enter this code at github.com/login/device", then poll (Rust, blocks until the scholar
+ * authorizes) and look up the login. Resolves an in-memory {@link DeploySession} with `persisted: false`
+ * — persistence is the separate, opt-in {@link persistSession} (Q-12). Poll rejections are already typed
+ * DeployErrors from Rust (`expired` / `denied` / …) and pass through unchanged.
+ */
+export async function signInWithGitHub(
+  onCode: (c: { userCode: string; verificationUri: string; expiresIn: number }) => void,
+): Promise<DeploySession> {
+  if (!deviceFlowAvailable) {
+    throw deployError("device-flow-disabled", "This build isn't configured for GitHub sign-in.");
+  }
+  const { invoke } = await import("@tauri-apps/api/core");
+  const start = await invoke<DeviceStart>("gh_device_start", { clientId: GITHUB_CLIENT_ID });
+  // Surface the code immediately — the scholar acts on it while the poll below blocks.
+  onCode({ userCode: start.userCode, verificationUri: start.verificationUri, expiresIn: start.expiresIn });
+  const { token } = await invoke<DevicePollResult>("gh_device_poll", {
+    clientId: GITHUB_CLIENT_ID,
+    deviceCode: start.deviceCode,
+    interval: start.interval,
+    expiresIn: start.expiresIn, // the Rust deadline guard needs this — see github.rs gh_device_poll.
+  });
+  const login = await fetchLogin(token);
+  return { login, token, persisted: false };
+}
+
+/**
+ * Persist the session token to the OS keyring ("stay signed in", Q-12). Returns the keyring outcome
+ * honestly: `false` = the store was unavailable (the scholar signs in again next launch), NOT an error to
+ * dialog about. The token reaches the keyring ONLY through this call.
+ */
+export async function persistSession(s: DeploySession): Promise<boolean> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  return invoke<boolean>("gh_token_save", { token: s.token });
+}
+
+/**
+ * Restore a previously-saved session at startup (Q-12). Loads the keyring token (Rust) and validates it
+ * with a login lookup. NEVER throws — a signed-out startup is normal:
+ *  - no token stored ⇒ null (no network).
+ *  - token rejected (401, e.g. revoked) ⇒ forget it ({@link signOut}) and return null.
+ *  - transient failure (offline, 5xx) ⇒ null WITHOUT clearing — the token may still be good next launch.
+ * On restore the session is `persisted: true` (it came from the keyring). Web / non-Tauri ⇒ null.
+ */
+export async function restoreSession(): Promise<DeploySession | null> {
+  if (!isTauri()) return null;
+  const { invoke } = await import("@tauri-apps/api/core");
+  const token = await invoke<string | null>("gh_token_load");
+  if (!token) return null;
+  try {
+    const login = await fetchLogin(token);
+    return { login, token, persisted: true };
+  } catch (e) {
+    if (isDeployError(e) && e.status === 401) await signOut(); // revoked → forget it
+    return null; // any validation failure is a signed-out startup, never an error dialog
+  }
+}
+
+/** Forget the stored token (sign out). A no-op when nothing is stored. */
+export async function signOut(): Promise<void> {
+  const { invoke } = await import("@tauri-apps/api/core");
+  await invoke("gh_token_clear");
 }

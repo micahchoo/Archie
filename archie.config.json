@@ -2,5 +2,8 @@
   "$comment": "THE single source for the canonical deploy origin (ADR-0013 + amendment). Everything that mints absolute URLs consumes this — Studio share/embed UI, viewer og/sitemap emitters, scripts/build-gh-pages.sh (via node -p). SITE_BASE / PUBLISH_BASE env vars override per deploy context but DEFAULT from here. Changing domains = edit this file only.",
   "canonicalOrigin": "https://micahchoo.github.io/Archie/",
   "viewerPath": "viewer/",
-  "studioPath": "studio/"
+  "studioPath": "studio/",
+  "$comment_deploy": "Fork-safe config for the desktop one-motion 'Publish to the web' (Q-12/Q-13). githubOAuthClientId is this build's PUBLIC GitHub OAuth App client id (device flow needs no secret); empty ⇒ deviceFlowAvailable is false and the desktop Sign-in UI is hidden, so a fork with no app of its own ships no broken button. deployToPages gates whether the one-motion deploy path is offered at all.",
+  "githubOAuthClientId": "",
+  "deployToPages": true
 }
