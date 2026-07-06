@@ -196,6 +196,11 @@
     // Restore recents + the active-binding DESCRIPTOR so the chip shows continuity ("bound to X");
     // the folder handle's permission re-grants lazily on the next write (binding store boot).
     bnd.boot();
+    // Restore a saved GitHub session (Task 13) — desktop only; web / no stored token resolves null with
+    // no network. Non-blocking: the publish machine's live `initialSession` getter picks it up whenever
+    // it lands, so a return visit opens straight on the one-click update. Dynamic import keeps the deploy
+    // module out of the startup parse.
+    void import("./deploy/deploy-flows.svelte.js").then((m) => m.restoreSession()).then((sess) => { initialSession = sess; }).catch(() => {});
   });
 
   // Open an exhibit into the editor: load its per-exhibit annotation log (seed the sample if empty).
@@ -1331,6 +1336,33 @@
   // Lazy publish flows (fflate + dompurify + GitHub publisher live behind this dynamic import). Created on
   // first publish / save-to-folder action, then cached — so none of that weight is in the startup bundle.
   let pub = $state<ReturnType<typeof import("./publish-flows.svelte.js").createPublishFlows> | null>(null);
+  // Desktop "Publish to the web" seams (Task 13). `df` is the deploy-flows MODULE (sign-in / persist /
+  // repo pre-flight / picker / Pages recheck — all token-in-only); `deploy` is the one-motion deploy over
+  // the SAME site projection every sink uses (`pub.projectSiteFs`). Both load with the publish flows
+  // (ensurePub) so their weight stays out of the startup bundle. `initialSession` is restored separately
+  // at startup (onMount) — the publish machine reads it through a live getter once it lands, opening a
+  // return visit straight on the one-click update.
+  let df = $state<typeof import("./deploy/deploy-flows.svelte.js") | null>(null);
+  let deploy = $state<ReturnType<typeof import("./deploy/deploy-flows.svelte.js").createDeployFlows> | null>(null);
+  let initialSession = $state<import("./deploy/types.js").DeploySession | null>(null);
+  // Stable id for the remembered deploy target: the Studio edits one library per project, so a single id
+  // is correct. It needn't match the projected site's library id ("demo" from workingToLibrary) — this
+  // only keys "where this Studio last deployed" in deploy-flows' rememberedTarget store.
+  const DEPLOY_LIBRARY_ID = "archie-studio-library";
+  const deployLibrary = $derived({ id: DEPLOY_LIBRARY_ID, title: lib.meta.title || PROJECT_TITLE });
+  // The machine's platform seams, packaged only once the deploy flows have loaded (null before then, so
+  // the <Publish> mount stays gated). rememberedTarget re-reads on recompute (a library switch).
+  const deployProps = $derived(df && deploy ? {
+    deviceFlowAvailable: df.deviceFlowAvailable,
+    remembered: df.rememberedTarget(deployLibrary.id),
+    signIn: df.signInWithGitHub,
+    persistSession: df.persistSession,
+    signOut: df.signOut,
+    deployToPages: deploy.deployToPages,
+    checkRepoExists: df.checkRepoExists,
+    listRepos: df.listRepos,
+    recheckPages: df.recheckPages,
+  } : null);
   async function ensurePub() {
     if (pub) return pub;
     const { createPublishFlows } = await import("./publish-flows.svelte.js");
@@ -1344,6 +1376,12 @@
       currentZipName: () => (bnd.binding.kind === "file" && bnd.binding.name ? bnd.binding.name : zipNameFor(lib.meta.title || PROJECT_TITLE)),
     });
     pub = created;
+    // The desktop deploy seams: the module (sign-in / repo helpers) + the one-motion deploy bound to the
+    // library's SAME site projection (no duplicated tiling). Awaited here so the machine has them the
+    // moment the dialog opens.
+    const deployMod = await import("./deploy/deploy-flows.svelte.js");
+    df = deployMod;
+    deploy = deployMod.createDeployFlows({ library: deployLibrary, projectSite: () => created.projectSiteFs() });
     // Load the publish dialog UI now too (they render under {#if pub} once ready).
     void import("./PublishDialog.svelte").then((m) => { PublishDialogComp = m.default; });
     void import("./Publish.svelte").then((m) => { PublishComp = m.default; });
@@ -1914,7 +1952,28 @@
       ongithub={() => { p.closeDialog(); void p.openPublish(); }}
       ondownload={p.download}
     />
-    <Pub open={p.publishOpen} onclose={() => p.closePublish()} onpublish={p.publish} brokenLinks={p.brokenLinks} incompleteCanvases={p.incompleteCanvases} />
+    {#if deployProps}
+      {@const dp = deployProps}
+      <Pub
+        open={p.publishOpen}
+        onclose={() => p.closePublish()}
+        library={deployLibrary}
+        deviceFlowAvailable={dp.deviceFlowAvailable}
+        remembered={dp.remembered}
+        initialSession={initialSession}
+        signIn={dp.signIn}
+        persistSession={dp.persistSession}
+        signOut={dp.signOut}
+        deploy={dp.deployToPages}
+        checkRepoExists={dp.checkRepoExists}
+        listRepos={dp.listRepos}
+        recheckPages={dp.recheckPages}
+        onusezip={() => { p.closePublish(); p.openDialog(); }}
+        onpublish={p.publish}
+        brokenLinks={p.brokenLinks}
+        incompleteCanvases={p.incompleteCanvases}
+      />
+    {/if}
   {/if}
   {#if cmdkOpen && CmdKComp}{@const CK = CmdKComp}<CK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />{/if}
   {#if mediaPickerOpen && MediaPickerComp}{@const MP = MediaPickerComp}<MP open={mediaPickerOpen} title="Cite a note by its image" items={mediaPickerItems} onpick={pickVisualCite} onclose={() => (mediaPickerOpen = false)} />{/if}

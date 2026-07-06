@@ -191,6 +191,55 @@ export function createDeployFlows(source: DeploySource) {
 }
 
 // ---------------------------------------------------------------------------------------------------
+// Machine seams (plan Task 13) — the three GitHub REST helpers the publish machine consumes as OPTIONAL
+// injected deps: a new-site name pre-flight, the author's repo list for the update picker, and the
+// manual-pages Pages recheck. Each takes the in-memory session (its token is a request CREDENTIAL only,
+// never returned) and answers a single boolean/string[] the machine's transitions branch on. Kept here
+// beside the deploy path (not in the session half) because they speak the same owner/repo/token REST as
+// ensureRepo/enablePagesFor. TOKEN SAFETY (Q-12): no token appears in any return value.
+// ---------------------------------------------------------------------------------------------------
+
+/**
+ * Pre-flight for a `new` publish: does `owner/repo` already exist under the account? The machine calls
+ * this ONLY for a new site (never an update) so it never force-overwrites a repo the author didn't mean
+ * to. `200 ⇒ true` (taken), `404 ⇒ false` (free); any other status is a real failure surfaced as a typed
+ * `gh` DeployError (carrying the status) rather than a silent "free" that would risk clobbering.
+ */
+export async function checkRepoExists(session: DeploySession, target: DeployTarget): Promise<boolean> {
+  const res = await fetch(`https://api.github.com/repos/${target.owner}/${target.repo}`, {
+    headers: { Authorization: `Bearer ${session.token}`, Accept: "application/vnd.github+json" },
+  });
+  if (res.status === 200) return true;
+  if (res.status === 404) return false;
+  throw deployError("gh", "GitHub couldn't check that repository name. Try again in a moment.", res.status);
+}
+
+/**
+ * The author's repositories (most-recently-pushed first), for the "update an existing site" picker. The
+ * contract is a flat list of bare repo NAME strings — the picker filters and displays names, not objects.
+ * A non-array body or an entry without a string `name` is dropped (defensive). A non-2xx is a typed `gh`
+ * DeployError; the machine's `openPicker` swallows it to an empty list (the author can still go back).
+ */
+export async function listRepos(session: DeploySession): Promise<string[]> {
+  const res = await fetch("https://api.github.com/user/repos?per_page=100&sort=pushed", {
+    headers: { Authorization: `Bearer ${session.token}`, Accept: "application/vnd.github+json" },
+  });
+  if (!res.ok) throw deployError("gh", "GitHub couldn't list your repositories. Try again in a moment.", res.status);
+  const body = (await res.json().catch(() => [])) as unknown;
+  if (!Array.isArray(body)) return [];
+  return body.map((r) => (r as { name?: unknown }).name).filter((n): n is string => typeof n === "string");
+}
+
+/**
+ * The manual-pages fallback recheck ([I did it — recheck]): re-attempt the Pages enable and report
+ * whether GitHub now serves our branch. Delegates to the same `enablePagesFor` the deploy path uses, so
+ * the "never repoint an existing Pages config" invariant has ONE definition (201/409 ⇒ true).
+ */
+export async function recheckPages(session: DeploySession, target: DeployTarget): Promise<boolean> {
+  return enablePagesFor(target.owner, target.repo, session.token, target.branch);
+}
+
+// ---------------------------------------------------------------------------------------------------
 // Session half (plan Task 9) — GitHub device-flow sign-in + "stay signed in" (Q-12). The Rust commands
 // (github.rs) own the two things a webview can't: the CORS-blocked device-flow endpoints and the token,
 // which stays off the JS heap except for the in-memory DeploySession. These wrappers turn those commands

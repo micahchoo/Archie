@@ -313,6 +313,71 @@ describe("signOut — forget the token", () => {
   });
 });
 
+// --- Task 13: repo pre-flight + picker + Pages recheck (machine deps) --------------------------------
+// These three module-level exports are the seams the publish machine consumes as OPTIONAL injected deps
+// (checkRepoExists? / listRepos? / recheckPages?). The session's token is a request CREDENTIAL only —
+// it never appears in a return value (boolean / string[] / boolean).
+
+describe("checkRepoExists — new-site name pre-flight", () => {
+  it("returns true when the repo already exists (200)", async () => {
+    stubFetch([{ method: "GET", match: "api.github.com/repos/alice/my-exhibit", status: 200, json: { id: 1 } }]);
+    const { checkRepoExists } = await import("./deploy-flows.svelte.js");
+    expect(await checkRepoExists(session, target)).toBe(true);
+  });
+
+  it("returns false when the repo is free (404) — the name is available", async () => {
+    stubFetch([{ method: "GET", match: "api.github.com/repos/alice/my-exhibit", status: 404, json: { message: "Not Found" } }]);
+    const { checkRepoExists } = await import("./deploy-flows.svelte.js");
+    expect(await checkRepoExists(session, target)).toBe(false);
+  });
+
+  it("throws a typed 'gh' DeployError (carrying the status) on any other response", async () => {
+    stubFetch([{ method: "GET", match: "api.github.com/repos/alice/my-exhibit", status: 500, json: { message: "boom" } }]);
+    const { checkRepoExists } = await import("./deploy-flows.svelte.js");
+    await expect(checkRepoExists(session, target)).rejects.toMatchObject({ kind: "gh", status: 500 });
+  });
+});
+
+describe("listRepos — the author's repos for the update picker", () => {
+  it("returns bare repo NAME strings (not objects)", async () => {
+    stubFetch([{ method: "GET", match: "api.github.com/user/repos", status: 200, json: [{ name: "voynich-folios" }, { name: "my-exhibit" }] }]);
+    const { listRepos } = await import("./deploy-flows.svelte.js");
+    expect(await listRepos(session)).toEqual(["voynich-folios", "my-exhibit"]);
+  });
+
+  it("drops entries with no usable name and tolerates a non-array body", async () => {
+    stubFetch([{ method: "GET", match: "api.github.com/user/repos", status: 200, json: [{ name: "ok" }, {}, { name: 42 }] }]);
+    const { listRepos } = await import("./deploy-flows.svelte.js");
+    expect(await listRepos(session)).toEqual(["ok"]);
+  });
+
+  it("throws a typed 'gh' DeployError (with status) when GitHub rejects the listing", async () => {
+    stubFetch([{ method: "GET", match: "api.github.com/user/repos", status: 401, json: { message: "Bad credentials" } }]);
+    const { listRepos } = await import("./deploy-flows.svelte.js");
+    await expect(listRepos(session)).rejects.toMatchObject({ kind: "gh", status: 401 });
+  });
+});
+
+describe("recheckPages — manual-pages fallback [I did it — recheck]", () => {
+  it("returns true when Pages is now enabled for our branch (404 → POST 201)", async () => {
+    stubFetch([{ method: "GET", match: "/pages", status: 404 }, { method: "POST", match: "/pages", status: 201 }]);
+    const { recheckPages } = await import("./deploy-flows.svelte.js");
+    expect(await recheckPages(session, target)).toBe(true);
+  });
+
+  it("treats an already-existing Pages site (409) as on", async () => {
+    stubFetch([{ method: "GET", match: "/pages", status: 404 }, { method: "POST", match: "/pages", status: 409 }]);
+    const { recheckPages } = await import("./deploy-flows.svelte.js");
+    expect(await recheckPages(session, target)).toBe(true);
+  });
+
+  it("returns false when Pages still serves a different branch (never repointed)", async () => {
+    stubFetch([{ method: "GET", match: "/pages", status: 200, json: { source: { branch: "main" } } }]);
+    const { recheckPages } = await import("./deploy-flows.svelte.js");
+    expect(await recheckPages(session, target)).toBe(false);
+  });
+});
+
 describe("deviceFlowAvailable — fork-safe gate", () => {
   it("is true when the build ships an OAuth client id", async () => {
     const { deviceFlowAvailable } = await import("./deploy-flows.svelte.js");

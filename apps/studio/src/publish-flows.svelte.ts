@@ -220,6 +220,18 @@ export function createPublishFlows(deps: PublishDeps) {
     /** GH publish (includeOriginals opt-in from the dialog; onProgress reports upload/commit/Pages). */
     publish: async (target: GitHubTarget, opts?: { includeOriginals?: boolean }, onProgress?: (p: PublishProgress) => void) =>
       publishToGitHub(await collectSiteFiles(opts?.includeOriginals ?? false), target, onProgress),
+    /** The projected static-site tree for the desktop one-motion deploy (Task 13). The SAME projection
+     *  (media tiling / baked thumbnails) every other sink uses — deploy-flows flattens it into one git
+     *  pack, so it never has to duplicate the browser-only tiling closures. Flushes the current exhibit
+     *  first (parity with `localPublishFolder`) so the pushed tree is current; also surfaces the
+     *  broken-links / incomplete-canvas advisories the same way `openPublish` does. */
+    async projectSiteFs(): Promise<Filesystem> {
+      await deps.flushExhibit();
+      const { fs, brokenLinks, incompleteCanvases } = await projectSite(false);
+      s.brokenLinks = brokenLinks;
+      s.incompleteCanvases = incompleteCanvases;
+      return fs;
+    },
     /** Open the GitHub dialog immediately (no invisible gap), then project ONCE: caches the tree and
      *  surfaces broken intra-Library links so the author sees them before publishing. */
     async openPublish() {

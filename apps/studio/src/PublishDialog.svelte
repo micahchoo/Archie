@@ -39,6 +39,11 @@
   // ONE config source (ADR-0013 amendment): archie.config.json — build-gh-pages.sh reads the
   // same file via node -p, so the minted links and the deploy can't drift apart.
   import archieConfig from "../../../archie.config.json";
+  // Feature flag (Task 13): when the build offers the one-motion desktop deploy, "Publish to the web" LEADS
+  // the chooser (durability-first, Q-3). Off (a fork with no deploy infra) → today's quieter "To GitHub
+  // Pages" card as the escape hatch; the same `ongithub` handler routes to the machine either way (the
+  // machine self-degrades honestly — web-intro on the web, the token form via "I already use GitHub").
+  const deployToPages = archieConfig.deployToPages === true;
   const CANONICAL_VIEWER = `${archieConfig.canonicalOrigin}${archieConfig.viewerPath}`;
   const CANONICAL_HOST = new URL(CANONICAL_VIEWER).host;
   let zipUrl = $state("");
@@ -125,20 +130,32 @@
 
     {#if phase === "choose"}
       <div class="choices">
+        {#if deployToPages}
+          <!-- The leading, durability-first path (Q-3). Routes into the publish machine (Publish.svelte),
+               which handles desktop sign-in + one-button deploy, or degrades honestly on the web. -->
+          <button class="choice lead" onclick={ongithub}>
+            <span class="c-eyebrow">Recommended</span>
+            <span class="c-title">Publish to the web</span>
+            <span class="c-desc">A free, permanent website that's yours — Archie builds it and puts it online in one motion. Best when you want a real address to share or cite.</span>
+          </button>
+        {/if}
         <button class="choice" onclick={() => (phase = "local")}>
           <span class="c-title">Locally</span>
           <span class="c-desc">Write the site to the Viewer's folder and preview it. No account.</span>
-        </button>
-        <button class="choice" onclick={ongithub}>
-          <span class="c-title">To GitHub Pages</span>
-          <span class="c-desc">Publish to the web on a GitHub Pages branch — standalone, no server.</span>
         </button>
         <!-- Stay on the chooser until the save actually happens (the OS picker is modal anyway) —
              done-download must never claim a save the user cancelled. -->
         <button class="choice" onclick={async () => { if (await ondownload().catch(() => false)) phase = "done-download"; }}>
           <span class="c-title">Save a copy — or share a link</span>
-          <span class="c-desc">Keep a copy, share a link, or hand it to a colleague — packed into one <code>.archie.zip</code>.</span>
+          <span class="c-desc">Keep a copy, share a link, or hand it to a colleague — packed into one <code>.archie.zip</code>. Best for a draft, not a permanent citation.</span>
         </button>
+        {#if !deployToPages}
+          <!-- Flag off (no deploy infra): the quieter escape hatch — same handler, same machine. -->
+          <button class="choice" onclick={ongithub}>
+            <span class="c-title">To GitHub Pages</span>
+            <span class="c-desc">Publish to the web on a GitHub Pages branch — standalone, no server.</span>
+          </button>
+        {/if}
       </div>
       <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>
 
@@ -239,6 +256,10 @@
     transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
   }
   .choice:hover { background: var(--surface-paper-hover); transform: translateY(-1px); box-shadow: var(--shadow-lift-mid); }
+  /* The leading card — marked with the CALM accent (accent-2), not the rationed signal-orange (that stays
+     reserved for the publish action inside the machine). A hairline + eyebrow, not a loud fill. */
+  .choice.lead { border: 1px solid var(--accent-2); box-shadow: var(--shadow-lift-mid); }
+  .c-eyebrow { font-family: var(--font-ui); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-2); }
   .c-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; color: var(--ink-paper-primary); }
   .c-desc { font-family: var(--font-body); font-size: 0.875rem; line-height: 1.5; color: var(--ink-paper-secondary); }
 
