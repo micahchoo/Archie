@@ -634,7 +634,7 @@ user review after each phase.
 
 ## Issue 12 — Studio's typecheck is Svelte-blind: no `svelte-check` anywhere, so CI is green while App.svelte's type errors go ungated `[re-run 246550d]`
 
-**Status:** queued (completes Issue 1's gate — the tripwire has a Svelte-shaped hole)
+**Status:** running (2026-07-05) — branch `tend/issue-12-svelte-check` (off `1704e83`), ledger `ledgers/GATE.md` §Issue-12. Inventory + infra DONE: `svelte-check@4.7.1` + `svelte.config.js` + `check` script added; baseline = **43 errors (13 exactOptionalPropertyTypes strictness + 30 real, ALL in App.svelte)** incl. a real silent-data-loss bug (`layers` dropped on exhibit copy, App.svelte:522) + DZI-union unsoundness. **Fix + CI-wire DEFERRED** — App.svelte is being concurrently rewritten (Issue 11 Phase-2, adding errors); fixing here would collide and a red CI gate would break every push. Resume after the studio rewrite settles: re-run `check`, fix, wire CI, trip red.
 
 **Symptom.** `apps/studio/package.json`'s `typecheck` is bare `tsc --noEmit`, which treats `.svelte`
 files as opaque — it never checks the script/template inside a component. `svelte-check` is **not a
