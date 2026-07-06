@@ -21,6 +21,8 @@ tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-http = "2"
+# Hands the device-code URL off to the system browser (the "Open GitHub to enter it" button).
+tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # GitHub device-flow handshake (github.rs). rustls-only to avoid an openssl link (the git2 spike owns
