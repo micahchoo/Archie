@@ -19,6 +19,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             github::gh_device_start,
             github::gh_device_poll,
+            github::gh_token_save,
+            github::gh_token_load,
+            github::gh_token_clear,
         ])
         .setup(|app| {
             let file = SubmenuBuilder::new(app, "File").quit().build()?;

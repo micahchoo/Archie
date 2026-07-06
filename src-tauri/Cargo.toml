@@ -28,3 +28,8 @@ serde_json = "1"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "charset"] }
 # `tokio::time::sleep` for the poll back-off loop; tokio is already in-tree via tauri.
 tokio = { version = "1", features = ["time"] }
+# OS keyring for "stay signed in" token custody (Q-12). sync-secret-service is the persistent Linux
+# store (GNOME Keyring / KWallet over pure-Rust zbus — no system lib); crypto-rust keeps it openssl-free.
+# The keyring platform-store selection for the Flatpak Secret portal is finalized in the packaging pass
+# (plan Open Q-E4); tests override this with the built-in mock store.
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
