@@ -12,12 +12,13 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-check --tsconfig ./tsconfig.svelte-check.json"
   },
   "dependencies": {
     "@annotorious/openseadragon": "^3.8.2",
     "@annotorious/plugin-tools": "^1.6.0",
     "@render/core": "workspace:*",
+    "@render/mount": "workspace:*",
     "@render/svelte": "workspace:*",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",

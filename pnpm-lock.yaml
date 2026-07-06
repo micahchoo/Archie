@@ -42,6 +42,9 @@ importers:
       '@render/core':
         specifier: workspace:*
         version: link:../../packages/render-core
+      '@render/mount':
+        specifier: workspace:*
+        version: link:../../packages/render-mount
       '@render/svelte':
         specifier: workspace:*
         version: link:../../packages/render-svelte

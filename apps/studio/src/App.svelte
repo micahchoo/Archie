@@ -383,6 +383,9 @@
     switchObject(s.objectId); // rail-jump to the section's object (no-op when already there; clears focusSectionId)
     focusSectionId = sectionId; // set AFTER switchObject → drives the canvas focus fragment + the lit "active" card
   }
+  // Which object of the exhibit the editor is showing. Switching resets transient view state. Declared here
+  // (not with the other object state below) because canvasFocus reads it — svelte-check flags the TDZ (Issue 12).
+  let currentObjectId = $state("o1");
   // The framed region the active card points at, passed to Canvas.focus to fit the viewport to it (ADR-0005
   // Section.start). Gated on object-match so a stale fragment never fits the wrong canvas; a temporal `t=` AV
   // fragment no-ops on the spatial canvas anyway (AV uses AvEditor, which takes no focus).
@@ -686,8 +689,6 @@
   // header. Replaces the ADR-0007 first-add gate (ReadingHelp + localStorage flag) — the teaching
   // copy lives permanently in the modal, so there's nothing to remember or re-nag about.
   let readingsOpen = $state(false);
-  // Which object of the exhibit the editor is showing. Switching resets transient view state.
-  let currentObjectId = $state("o1");
   const current = $derived(OBJECTS.find((o) => o.id === currentObjectId) ?? OBJECTS[0]);
   // The overview pencil's edit target (pencil-CRUD, Archie-79be) — a transient cursor independent of
   // currentObjectId, so editing a plate's details opens a drawer WITHOUT navigating into the object.
@@ -876,26 +877,31 @@
   function patchExhibitMeta(slug: string, fields: Partial<ExhibitMeta>) { lib.patchExhibit(slug, fields); }
   function patchObjectMeta(objId: string, fields: Partial<ObjectMeta>) { lib.patchObject(currentSlug, objId, fields); }
 
+  // A W3C annotation target is `W3CTarget | W3CTarget[]`; Archie authors ONE target per note, so
+  // normalize to the single target wherever a single is required (createNote/editNote/geoForTarget).
+  const oneTarget = <T,>(t: T | T[]): T => (Array.isArray(t) ? (t[0] as T) : t);
   // Notes + working annotations are scoped to the CURRENT object's canvas (then the layer filter).
-  const allNotes = $derived((rev, sess.session.notes()));
+  // `void rev;` registers the revision counter as a reactive dep (bumped on every log write) without the
+  // bare-comma idiom svelte-check flags as an unused expression.
+  const allNotes = $derived.by(() => { void rev; return sess.session.notes(); });
   const objNotes = $derived(allNotes.filter((r) => srcOf(r.target) === canvasId));
   const notes = $derived(
     objNotes.filter((r) => rdg.noteVisible(r)), // visibility = the reading-state set (canvas + margin share it)
   );
-  const objAnnotations = $derived<W3CAnnotation[]>((rev, sess.session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId)));
+  const objAnnotations = $derived.by<W3CAnnotation[]>(() => { void rev; return sess.session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId); });
   // O(1) marker lookup for the live styler: Annotorious calls styleOf per marker on every restyle
   // (hover / solo / reading toggle), so a per-call array scan was O(n²) across the canvas. Rebuilt only
   // when the working-annotation set changes.
   const annById = $derived(new Map(objAnnotations.map((a) => [a.id, a] as const)));
   const annotations = $derived<W3CAnnotation[]>(
-    objAnnotations.filter((a) => rdg.isVisible(((a as Record<string, unknown>)["archie:reading"] as string | undefined) ?? "base")),
+    objAnnotations.filter((a) => rdg.isVisible(((a as unknown as Record<string, unknown>)["archie:reading"] as string | undefined) ?? "base")),
   );
   const sel = $derived(notes.find((r) => r.logicalId === editing));
   // Note count per canvas, built ONCE per allNotes change — the overview/library lists call this per
   // object, so the old per-call filter was O(objects × notes) on every `rev` bump. O(1) lookup now.
   const noteCountByCanvas = $derived.by(() => {
     const m = new Map<string, number>();
-    for (const r of allNotes) { const c = srcOf(r.target); m.set(c, (m.get(c) ?? 0) + 1); }
+    for (const r of allNotes) { const c = srcOf(r.target); if (c === undefined) continue; m.set(c, (m.get(c) ?? 0) + 1); }
     return m;
   });
   const noteCountOf = (objId: string) => noteCountByCanvas.get(canvasIdOf(objId)) ?? 0;
@@ -905,7 +911,7 @@
   // exactly the overview's scope (the session holds one exhibit's log).
   const lastAnnotatedByCanvas = $derived.by(() => {
     const m = new Map<string, string>();
-    for (const r of allNotes) { const c = srcOf(r.target); const t = r.modifiedAt ?? ""; const cur = m.get(c); if (cur === undefined || t > cur) m.set(c, t); }
+    for (const r of allNotes) { const c = srcOf(r.target); if (c === undefined) continue; const t = r.modifiedAt ?? ""; const cur = m.get(c); if (cur === undefined || t > cur) m.set(c, t); }
     return m;
   });
   const lastAnnotatedOf = (objId: string) => lastAnnotatedByCanvas.get(canvasIdOf(objId)) ?? "";
@@ -937,7 +943,7 @@
   function markerStyleOf(id: string): MarkerStyle | undefined {
     const a = annById.get(id);
     if (!a) return undefined;
-    const rid = (a as Record<string, unknown>)["archie:reading"] as string | undefined;
+    const rid = (a as unknown as Record<string, unknown>)["archie:reading"] as string | undefined;
     const colour = (rid ? currentReadings.find((r) => r.id === rid)?.colour : undefined) ?? BASE_MARKER;
     // ONE style source for both apps (render-core readingMarkerStyle) carrying the comparing
     // regime (archie-ux Q-2): 2+ readings visible → outline-only; solo-on-hover restores a fill.
@@ -958,7 +964,7 @@
     for (const a of annotations) {
       if (!a.id) continue;
       if (isWholeObjectFor(selectorOf(a), w ?? 0, h ?? 0, wholeObjectFlagOf(a))) {
-        const rid = (a as Record<string, unknown>)["archie:reading"] as string | undefined;
+        const rid = (a as unknown as Record<string, unknown>)["archie:reading"] as string | undefined;
         const colour = (rid ? currentReadings.find((r) => r.id === rid)?.colour : undefined) ?? BASE_MARKER;
         return { markId: a.id, colour };
       }
@@ -1011,9 +1017,9 @@
       // consumed from the tray. Body mirrors importNotesCsv (comment + tags); reading + geo carried too.
       const p = pendingNotes.find((n) => n.id === placingPendingId);
       if (p) {
-        const geo = isMapCurrent ? geoForTarget(a.target, currentTileSource) : undefined;
+        const geo = isMapCurrent ? geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) : undefined;
         const id = sess.session.createNote({
-          target: a.target,
+          target: oneTarget(a.target),
           body: [
             { type: "TextualBody", value: p.comment, purpose: "commenting" },
             ...p.tags.map((t) => ({ type: "TextualBody" as const, value: t, purpose: "tagging" as const })),
@@ -1032,16 +1038,16 @@
     // bounds" (replace a region's geometry) arm a draw that EDITS the open note's target instead of making a
     // new note. Only fires when explicitly armed (retargetingNoteId), so an ordinary draw still creates.
     if (retargetingNoteId) {
-      const cgeo = isMapCurrent ? geoForTarget(a.target, currentTileSource) ?? null : undefined;
-      sess.session.editNote(retargetingNoteId as LogicalId, { target: a.target, ...(cgeo !== undefined ? { geo: cgeo } : {}) });
+      const cgeo = isMapCurrent ? geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null : undefined;
+      sess.session.editNote(retargetingNoteId as LogicalId, { target: oneTarget(a.target), ...(cgeo !== undefined ? { geo: cgeo } : {}) });
       bump();
       retargetingNoteId = null;
       creating = null;
       return;
     }
     // On a Map, capture the region's geo-truth (lng/lat) alongside the pixel selector (Q4/ADR-0015).
-    const geo = isMapCurrent ? geoForTarget(a.target, currentTileSource) : undefined;
-    const id = sess.session.createNote({ target: a.target, ...(geo ? { geo } : {}), ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
+    const geo = isMapCurrent ? geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) : undefined;
+    const id = sess.session.createNote({ target: oneTarget(a.target), ...(geo ? { geo } : {}), ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
     bump();
     selected = id;
     creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
@@ -1078,7 +1084,7 @@
     }
   }
   // Geometry edit on canvas → re-derive geo-truth on a Map (null clears it if the new shape is unparseable).
-  const onUpdate = (a: W3CAnnotation) => { sess.session.editNote(a.id as LogicalId, { target: a.target, ...(isMapCurrent ? { geo: geoForTarget(a.target, currentTileSource) ?? null } : {}) }); bump(); };
+  const onUpdate = (a: W3CAnnotation) => { sess.session.editNote(a.id as LogicalId, { target: oneTarget(a.target), ...(isMapCurrent ? { geo: geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null } : {}) }); bump(); };
   const onDelete = (id: string) => { sess.session.deleteNote(id as LogicalId); bump(); if (selected === id) selected = null; if (editing === id) editing = null; };
   // Hand-annotate AV: AvEditor marked a [start,end] region → create a supplementing time note, then
   // select it so the WADM form opens to type the note (the temporal analogue of onCreate for OSD draws).
@@ -1427,7 +1433,7 @@
     ontutorial={() => (tutorialOpen = true)}
     onshortcuts={() => (helpOpen = true)}
   />
-{:else if view === "overview"}
+{:else if view === "overview" && currentExhibit}
   <div class="overview-stage">
     <ExhibitOverview
       title={currentExhibit.title}
@@ -1482,7 +1488,7 @@
     <button class="exhibit-back" onclick={hasOverview ? backToOverview : backToLibrary}>← {hasOverview ? "Overview" : "Exhibits"}</button>
     <!-- Breadcrumb: Exhibit › Object — surfaces the two scales (the spine lives at the exhibit level, notes
          at the object level; the crumb names where you are). -->
-    <h1 class="wordmark">{currentExhibit.title}</h1>{#if current}<span class="crumb">› {current.label}</span>{/if}<span class="sub">Studio</span>
+    <h1 class="wordmark">{currentExhibit?.title}</h1>{#if current}<span class="crumb">› {current.label}</span>{/if}<span class="sub">Studio</span>
     <span class="spacer"></span>
     <!-- ADR-0011: no persistent tool palette. Selection is ambient; drawing arms only from a CREATE act
          ("New note" in the notes pane, or narrative camera framing). -->
@@ -1752,7 +1758,7 @@
                   <button onclick={() => (selected = r.logicalId)}>
                     <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
                     <div class="meta">
-                      {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
+                      {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource?.kind === "xyz" ? currentTileSource : undefined)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
                       {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
                       <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
                       {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}>General notes</span>{/if}

@@ -1,0 +1,7 @@
+{
+  "//": "svelte-check config (ISSUES.md Issue 12). Extends the studio tsconfig but RELAXES exactOptionalPropertyTypes for .svelte components only. exactOptionalPropertyTypes stays ON for the .ts gate (`tsc --noEmit`, tsconfig.json) — render-core/app logic honour it. On Svelte component props it is near-pure noise: a `prop?: string` slot receives `string | undefined` and trips the flag with no real bug, and the repo's existing components already carry that idiom. Relaxing it here keeps every OTHER type check on .svelte files (the real bugs this gate exists to catch) without a per-component `| undefined` sweep. Revisit if a genuine exactOptional bug ever hides in a component.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "exactOptionalPropertyTypes": false
+  }
+}
