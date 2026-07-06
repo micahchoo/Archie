@@ -74,4 +74,14 @@ describe("library-meta store (rune wrapper)", () => {
     expect(lib.meta.exhibits.map((e) => e.slug)).toEqual(["a", "b"]);
     expect(saveLibraryMeta).toHaveBeenCalledTimes(1);
   });
+
+  it("bulk removeObjects drops N objects in ONE persist (Phase 2 — no per-object write amplification)", async () => {
+    const lib = createLibraryStore(
+      { title: "L", exhibits: [{ id: "e1", slug: "a", title: "A", objects: [{ id: "o1", source: "s1", label: "1" }, { id: "o2", source: "s2", label: "2" }, { id: "o3", source: "s3", label: "3" }] }] },
+      {},
+    );
+    await lib.removeObjects("a", new Set(["o1", "o3"]));
+    expect(lib.meta.exhibits[0]!.objects.map((o) => o.id)).toEqual(["o2"]);
+    expect(saveLibraryMeta).toHaveBeenCalledTimes(1); // ONE write for the whole bulk delete
+  });
 });

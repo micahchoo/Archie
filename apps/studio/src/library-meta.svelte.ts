@@ -7,7 +7,7 @@
 // live across modules. `persist` is injected with `onAfterPersist` (the App's `touchBinding`) so the
 // binding seam stays on the App side for the next cut — the store owns persistence, not binding state.
 import { saveLibraryMeta, type LibraryMeta, type ExhibitMeta, type ObjectMeta } from "./store";
-import { patchLibraryIn, patchExhibitIn, patchObjectIn, appendObjectIn, addExhibitIn, removeExhibitIn, removeObjectIn } from "./library-meta-reducers";
+import { patchLibraryIn, patchExhibitIn, patchObjectIn, appendObjectIn, addExhibitIn, removeExhibitIn, removeObjectIn, removeObjectsIn } from "./library-meta-reducers";
 import { enqueueSave } from "./save-queue.svelte";
 import { LIVE_CHANNEL } from "@render/core";
 
@@ -70,6 +70,10 @@ export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?
     // (object → session.deleteNote per note; exhibit → clearExhibitAnnotations) before navigating away.
     async removeExhibit(slug: string) { s.meta = removeExhibitIn(s.meta, slug); opts.onDirty?.({ kind: "exhibit-removed", slug }); await persist(); signalLibraryChanged(); },
     async removeObject(slug: string, objId: string) { s.meta = removeObjectIn(s.meta, slug, objId); await persist(); },
+    /** Bulk delete (Phase 2) — drop N objects from one exhibit in ONE meta mutation + ONE persist. Like
+     *  removeObject, the caller reports each removal's asset for orphan cleanup (App.bulkRemove →
+     *  bnd.markObjectRemoved) BEFORE calling this, so no onDirty here (that channel is the App's). */
+    async removeObjects(slug: string, ids: ReadonlySet<string> | readonly string[]) { s.meta = removeObjectsIn(s.meta, slug, ids); await persist(); },
 
     // Set-only (NO auto-persist) — bulk rebuilds keep the caller's existing conditional persist timing.
     setMeta(next: LibraryMeta) { s.meta = next; },
