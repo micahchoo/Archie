@@ -6,8 +6,25 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ZipFilesystem, publishLibrary, appendNew, asClientId, asExhibitId, asLibraryId, asObjectId, type Library, type AnnotationLog, type ExhibitsJson } from "@render/core";
 import {
   openPortableLibrary, closePortableLibrary, isPortable, loadGallery, loadPublishedExhibit,
-  modeFromProbe, probeViewerMode, openLibraryFromFile, openLibraryFromSrc, mergeGalleries,
+  modeFromProbe, probeViewerMode, openLibraryFromFile, openLibraryFromSrc, mergeGalleries, toServingOrigin,
 } from "./published.js";
+import { BASE as CANONICAL_BASE } from "./published-base.js";
+
+// Hosted rebase (ADR-0010 portable read seam, tend Issue 16): the published manifest bakes asset URLs
+// against the canonical origin (ADR-0013); a fork / localhost / any re-host serves the same tree from a
+// DIFFERENT origin and must rebase those URLs onto its own, or every local image 404s.
+describe("toServingOrigin — canonical asset URLs → serving origin", () => {
+  it("rebases a canonical-BASE asset URL off the canonical origin (fork/localhost can then serve it)", () => {
+    const out = toServingOrigin(`${CANONICAL_BASE}screenshots/assets/o1-e1-embed.png`);
+    expect(out.startsWith(CANONICAL_BASE)).toBe(false); // canonical origin stripped
+    expect(out.endsWith("screenshots/assets/o1-e1-embed.png")).toBe(true); // asset path preserved
+  });
+  it("passes remote IIIF / data / blob URLs through untouched (only canonical BASE URLs rebase)", () => {
+    for (const url of ["https://collections.library.yale.edu/iiif/2/1006076", "data:image/png;base64,AAAA", "blob:http://x/y"]) {
+      expect(toServingOrigin(url)).toBe(url);
+    }
+  });
+});
 
 const BASE = "https://u.gh.io/lib/";
 const SLUG = "voynich";
