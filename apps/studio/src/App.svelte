@@ -593,11 +593,16 @@
       const src = srcOf(r.target);
       const target = src && src.startsWith(fromBase) && typeof r.target !== "string"
         ? { ...(r.target as object), source: toBase + src.slice(fromBase.length) } : r.target;
-      return { target, body: r.body, motivation: r.motivation, layers: r.layers, reading: r.reading };
+      // Carry EVERY authored note attribute onto the copy (a faithful copy). `layers` was migrated into
+      // body tags (migrate.ts foldLayersIntoTags) and rides `body`; emphasis/wholeObject/geo are real
+      // AnnotationRecord fields the copy silently dropped (added post-copy-path: ADR-0015 geo, ADR-0018
+      // wholeObject, §1489 emphasis) — a field omission `tsc` can't see, surfaced by the vestigial
+      // `layers` type error (ISSUES.md Issue 12).
+      return { target, body: r.body, motivation: r.motivation, reading: r.reading, emphasis: r.emphasis, wholeObject: r.wholeObject, geo: r.geo };
     });
     await lib.persist();
     await openExhibit(slug); // not a template → persists; seeds empty
-    for (const c of carried) sess.session.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.layers !== undefined ? { layers: c.layers } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}) });
+    for (const c of carried) sess.session.createNote({ target: c.target, ...(c.body !== undefined ? { body: c.body } : {}), ...(c.motivation !== undefined ? { motivation: c.motivation } : {}), ...(c.reading !== undefined ? { reading: c.reading } : {}), ...(c.emphasis !== undefined ? { emphasis: c.emphasis } : {}), ...(c.wholeObject !== undefined ? { wholeObject: c.wholeObject } : {}), ...(c.geo !== undefined ? { geo: c.geo } : {}) });
     rev += 1;
     await save();
     keeping = false;
@@ -1865,8 +1870,9 @@
             <div class="no-canvas">Loading…</div>
           {/if}
         {/key}
-        {#if isMapCurrent && currentTileSource?.attribution}
-          <!-- Basemap attribution (REQUIRED by the tile provider's terms — DESIGN.md D6). -->
+        {#if isMapCurrent && currentTileSource?.kind === "xyz" && currentTileSource.attribution}
+          <!-- Basemap attribution (REQUIRED by the tile provider's terms — DESIGN.md D6). Narrowed to the
+               xyz (basemap) variant: only XyzTileSource carries attribution, DZI is an image pyramid (Issue 12). -->
           <div class="map-attribution">{currentTileSource.attribution}</div>
         {/if}
       {:else if current}
