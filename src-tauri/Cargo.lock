@@ -51,6 +51,7 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 name = "archie"
 version = "1.0.0"
 dependencies = [
+ "reqwest 0.12.28",
  "serde",
  "serde_json",
  "tauri",
@@ -58,6 +59,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-fs",
  "tauri-plugin-http",
+ "tokio",
 ]
 
 [[package]]

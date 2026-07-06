@@ -6,12 +6,20 @@
 use tauri::menu::{MenuBuilder, SubmenuBuilder};
 use tauri::Manager;
 
+// GitHub publish handshake — device-flow sign-in + keyring token custody. See github.rs; the token
+// stays in Rust (Q-12) and the endpoints have no CORS, so the webview can't call them itself.
+mod github;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())
+        .invoke_handler(tauri::generate_handler![
+            github::gh_device_start,
+            github::gh_device_poll,
+        ])
         .setup(|app| {
             let file = SubmenuBuilder::new(app, "File").quit().build()?;
             let view = SubmenuBuilder::new(app, "View")
