@@ -2085,6 +2085,10 @@
   /* Object tab — a thumbnail + label so you choose visually (P2-6), not by name alone. */
   .obj {
     display: flex; align-items: center; gap: var(--space-2); cursor: pointer; text-align: left; max-width: 16rem;
+    /* Never shrink below content: the rail SCROLLS at scale (overflow-x above). Without this, 20+
+       siblings crush each tile to its one-character min-content (overflow-wrap:anywhere) — the
+       ransom-note rail. Label is clamped to 2 lines below; title= carries the full text. */
+    flex-shrink: 0;
     padding: var(--space-2);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
     border: none; border-radius: var(--radius-sm);
@@ -2094,8 +2098,12 @@
   .obj.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
   .obj-thumb { flex-shrink: 0; width: 40px; height: 32px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; box-shadow: var(--shadow-inset-fog); }
   .obj-meta { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-  .obj-label { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 400; line-height: 1.1; overflow-wrap: anywhere; }
-  .obj-count { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-muted); }
+  .obj-label {
+    font-family: var(--font-display); font-size: 1.0625rem; font-weight: 400; line-height: 1.1; overflow-wrap: anywhere;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+    max-width: 12rem; /* long filenames get 2 lines + clip, not a tall column; full title in the tooltip */
+  }
+  .obj-count { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-muted); white-space: nowrap; }
   .obj.on .obj-count { color: var(--accent); }
 
   /* Add-object affordance on the rail */
