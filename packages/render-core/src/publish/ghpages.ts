@@ -221,6 +221,20 @@ export async function publishToGitHub(
  *  already serves Pages from a *different* branch (e.g. a docs site on `main`), we leave it alone and
  *  return false (the author decides) rather than silently repointing it. Returns true only if Pages is
  *  now — or already was — serving the branch we published; false otherwise (incl. no Pages scope/policy). */
+/**
+ * Enable GitHub Pages for `owner/repo`'s `branch`, addressed by the same owner/repo/token triple as
+ * {@link ensureRepo} — the desktop deploy path (Q-13) calls this AFTER `gh_push_tree` has landed the
+ * commit, so it must never throw for a Pages-only failure: a false return means "the commit is live but
+ * the author has to flip Pages on themselves" (drives the `manual-pages` state). Delegates to the same
+ * private {@link enablePages} the legacy browser path uses, so the "never repoint an existing Pages
+ * config" invariant has ONE definition. Returns true iff Pages now serves `branch`.
+ */
+export async function enablePagesFor(owner: string, repo: string, token: string, branch = "gh-pages"): Promise<boolean> {
+  const api = `https://api.github.com/repos/${owner}/${repo}`;
+  const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" };
+  return enablePages(api, headers, branch);
+}
+
 async function enablePages(api: string, headers: Record<string, string>, branch: string): Promise<boolean> {
   // Already configured? (200) — only "on" for us if it already serves OUR branch. Don't repoint it.
   const get = await fetch(`${api}/pages`, { headers });
