@@ -40,9 +40,12 @@ before first ship):
 
 - **Filename:** `images.json` at the published root, beside `exhibits.json`/`collection.json`.
 - **Version marker:** same `stamp()` versioning convention as `exhibits.json`.
-- **Entry:** `{ objectId, exhibitSlug, title, thumbnail, width?, height? }` — width/height are
+- **Entry:** `{ objectId, exhibitSlug, title, thumbnail?, width?, height? }` — width/height are
   the manifest's canvas dimensions when known, so the wall can lay out a justified grid without
-  per-thumbnail measurement or layout shift.
+  per-thumbnail measurement or layout shift. `thumbnail` is OPTIONAL (implementation finding,
+  2026-07-05): the manifest carries one only for baked-asset objects and IIIF-service sources —
+  plain external rasters and AV objects have none, and consumers show a placeholder or derive at
+  runtime. Every entry stays searchable by title regardless.
 - **Ordering:** flattened library order, then per-exhibit reading order — the index is already
   display-ordered; consumers don't re-sort.
 - **Thumbnail ref source:** the published manifest's `canvas.thumbnail` — a baked

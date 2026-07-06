@@ -127,7 +127,9 @@ function toCanvas(manifestBase: string, obj: AObject, readingIds: string[] = [])
   return canvas;
 }
 
-function objIdFromCanvasId(canvasId: string): string {
+/** objId is the last path segment of a canvas IRI `${base}{slug}/canvas/{objId}` — the one derivation,
+ *  shared with the image-index projection so the two can never drift. */
+export function objIdFromCanvasId(canvasId: string): string {
   const parts = canvasId.split("/");
   return parts[parts.length - 1] ?? canvasId;
 }

@@ -1,6 +1,6 @@
 // Publish primitive (CONTEXT: "Publish = zip-primitive + per-host adapters"). Assemble the
 // whole published-site DATA tree through the Filesystem seam:
-//   collection.json · exhibits.json
+//   collection.json · exhibits.json · images.json (library-level image index, ADR-0023)
 //   {slug}/manifest.json
 //   {slug}/canvas/{objId}/annotations.json   — PER-CANVAS heads page (what the manifest links to)
 //   {slug}/annotations/history/{logicalId}.json + index.json   — history sidecar (reload/merge)
@@ -15,6 +15,7 @@ import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CAnnotationPage 
 import { buildLinkIndex, resolveViewerLink, validateLink, rewriteArchieLinks, type LinkTarget } from "../link/link.js";
 import { toCollection } from "../iiif/collection.js";
 import { toExhibitsJson, toReadingCollection, type ExhibitsJson } from "../iiif/exhibits.js";
+import { buildImageIndex } from "../iiif/image-index.js";
 import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest, sectionsToAnnotationCollection, embedHeadsIntoManifest, findCanvasesMissingDimensions, type HeadsEmbed } from "../iiif/manifest.js";
 import { rightsFromIIIF } from "../iiif/rights.js";
 import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.js";
@@ -536,6 +537,10 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   // sitemap.xml (sitemaps.org 0.9) so search engines ingest it directly with <lastmod> (Q-8).
   await writeText(root, "sitemap.txt", sitemapTxt(library, baseUrl));
   await writeText(root, "sitemap.xml", sitemapXml(library, baseUrl, opts.publishedAt));
+  // Library-level image index (ADR-0023, spike-0004): a cheap always-rewritten projection like
+  // exhibits.json — built by reading the just-written / prior manifests, so it stays correct on both full
+  // and incremental publishes. Exempt from dirty-tracking; the Viewer Gallery wall reads this one file.
+  await writeJson(root, "images.json", stamp(await buildImageIndex(fs, library)));
   return { brokenLinks, incompleteCanvases };
 }
 
