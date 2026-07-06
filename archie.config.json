@@ -4,6 +4,6 @@
   "viewerPath": "viewer/",
   "studioPath": "studio/",
   "$comment_deploy": "Fork-safe config for the desktop one-motion 'Publish to the web' (Q-12/Q-13). githubOAuthClientId is this build's PUBLIC GitHub OAuth App client id (device flow needs no secret); empty ⇒ deviceFlowAvailable is false and the desktop Sign-in UI is hidden, so a fork with no app of its own ships no broken button. deployToPages gates whether the one-motion deploy path is offered at all.",
-  "githubOAuthClientId": "",
+  "githubOAuthClientId": "Ov23liUb5X6otXA80MHL",
   "deployToPages": true
 }
