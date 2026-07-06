@@ -11,8 +11,8 @@ import {
   // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
-  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES,
-  type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit,
+  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource,
+  type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex,
 } from "@render/core";
 
 export { SRC_MAX_BYTES };
@@ -211,6 +211,22 @@ export async function loadGallery(): Promise<ExhibitsJson> {
     throw hostedErr;
   }
   return mergeGalleries(await loadPortableGallery(liveFs), hosted);
+}
+
+/** The library-level image index (ADR-0023) — the Gallery wall's ONE-fetch source. Returns null when the
+ *  file is absent (an older published tree with no baked index) OR unparsable — the Gallery then hides the
+ *  "All images" wall entirely and the exhibit-cards view still works (ADR-0023 degradation contract).
+ *  Portable (.archie.zip): read from the opened zip; live-only working store: no baked index → null. */
+export async function loadImageIndex(): Promise<ImageIndex | null> {
+  try {
+    if (portableFs) return await fsJsonSource(portableFs).getOptional<ImageIndex>("images.json");
+    // fetchJsonOptional keeps a missing index SILENT (404 = the expected ADR degradation, not an error);
+    // a non-404 warns, a parse-fail throws → the outer catch degrades. Don't use fetchJson (it error-logs
+    // a user-facing message for every old tree that legitimately has no images.json).
+    return await fetchJsonOptional<ImageIndex>("images.json");
+  } catch {
+    return null; // fetch reject / corrupt JSON → degrade: no wall, cards only
+  }
 }
 
 // Hosted exhibits come from an IMMUTABLE published tree (it changes only on republish → a full page
