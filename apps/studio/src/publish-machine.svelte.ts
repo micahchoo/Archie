@@ -15,23 +15,29 @@
 // lives only inside the in-memory DeploySession this machine holds; it is never read into any copy,
 // preview, or persisted target.
 
+import { pagesUrlFor } from "@render/core";
 import type { DeploySession, DeployTarget, DeployProgress, DeployError } from "./deploy/types.js";
 import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
 
-/** Every screen the dialog can show. `name-site` is the minimal target-entry seam Task 11 fleshes out
- *  (slug preview / public toggle / name-taken); `update-confirm` / `manual-pages` / `pages-building`
- *  are Task 11/12 and intentionally absent here. */
+/** Every screen the dialog can show. `name-taken` / `repo-picker` are the existing-repo paths (Task 11);
+ *  `update-confirm` / `manual-pages` / `pages-building` are Task 12 and intentionally absent here. */
 export type PublishState =
   | "intro-desktop"
   | "device-code"
   | "auth-cancelled"
   | "auth-config-error"
   | "name-site"
+  | "name-taken"
+  | "repo-picker"
   | "publishing"
   | "success"
   | "error"
   | "advanced"
   | "web-intro";
+
+/** Publish intent: `new` creates a fresh site (and must NOT clobber an existing repo — so it's pre-flight
+ *  checked); `update` deliberately re-publishes into a repo the author already picked. */
+export type PublishIntent = "new" | "update";
 
 /** The platform seams the machine drives, injected so the view wires real deploy-flows and tests fake. */
 export interface PublishMachineDeps {
@@ -56,6 +62,13 @@ export interface PublishMachineDeps {
   openUrl: (url: string) => Promise<void>;
   /** Copy text to the clipboard (pre-copies the device code, copies the live URL). */
   copy: (text: string) => Promise<void>;
+  /** Pre-flight: does this repo already exist under the account? Called ONLY for a `new` publish, so we
+   *  never force-overwrite a repo the author didn't mean to (deploy force-replaces gh-pages). Optional —
+   *  unwired, a `new` publish proceeds without the guard (Task 10's behavior). Wired in Task 13. */
+  checkRepoExists?: (session: DeploySession, target: DeployTarget) => Promise<boolean>;
+  /** The author's existing repos (names), for the "update an existing site" picker
+   *  (`GET /user/repos?per_page=100`, filtered client-side). Optional — unwired, the picker is unreachable. */
+  listRepos?: (session: DeploySession) => Promise<string[]>;
   /** Clock seam so the countdown is testable. Defaults to `Date.now`. */
   now?: () => number;
 }
@@ -78,6 +91,17 @@ export type PublishStep = { label: string; status: "done" | "active" | "pending"
 export function slugifyTitle(title: string): string {
   const slug = title.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   return slug || "my-library";
+}
+
+/** In-field validation for the site name: it's a bare GitHub repo name, so reject anything a pasted URL
+ *  or `owner/repo` would carry (slashes, spaces, colons). GitHub repo names allow letters, numbers, and
+ *  `. _ -` only. Empty is not an error here (the Publish button is separately disabled) — this only
+ *  surfaces a message once the author has typed something wrong. */
+export function validateSiteName(name: string): string {
+  const n = name.trim();
+  if (n === "") return "";
+  if (!/^[A-Za-z0-9._-]+$/.test(n)) return "Enter just the name — no slashes, spaces, or full web addresses.";
+  return "";
 }
 
 /** Plain-language copy for a deploy failure (GHPAGES-PUBLISH-UX §error-publish). `offerSignInAgain` is
@@ -126,6 +150,10 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     tick: number; // bumped by the view's 1s interval so `remainingSeconds` recomputes reactively
     owner: string;
     repo: string;
+    intent: PublishIntent;
+    updateTargetRepo: string; // the repo an explicit "update existing" locked onto — editing away from it reverts to `new`
+    repoList: string[]; // the author's repos, loaded for the picker
+    repoFilter: string; // client-side filter over repoList
     staySignedIn: boolean;
     progress: DeployProgress | null;
     result: DeployResult | null;
@@ -139,6 +167,10 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     tick: 0,
     owner: "",
     repo: "",
+    intent: "new",
+    updateTargetRepo: "",
+    repoList: [],
+    repoFilter: "",
     staySignedIn: true,
     progress: null,
     result: null,
@@ -156,6 +188,14 @@ export function createPublishMachine(deps: PublishMachineDeps) {
   function seedTarget(): void {
     s.owner = s.session?.login ?? deps.remembered?.target.owner ?? "";
     s.repo = deps.remembered?.target.repo ?? slugifyTitle(deps.library.title);
+    // A remembered target is a repo the author has already published to — updating it is the intent, so
+    // don't pre-flight it as "name taken". A fresh library slugs to a `new` site.
+    if (deps.remembered) { s.intent = "update"; s.updateTargetRepo = s.repo; }
+    else { s.intent = "new"; s.updateTargetRepo = ""; }
+  }
+
+  function targetOf(): DeployTarget {
+    return { owner: s.owner.trim(), repo: s.repo.trim(), branch: "gh-pages" };
   }
 
   function goToNameSite(): void {
@@ -215,8 +255,29 @@ export function createPublishMachine(deps: PublishMachineDeps) {
   function openAdvanced(): void { s.state = "advanced"; }
   function backToIntro(): void { s.state = computeInitial(); }
 
-  /** Publish from the name step: honor "stay signed in", then run the one-motion deploy. */
+  /** Publish from the name step. A `new` site is pre-flight checked so we never force-overwrite an
+   *  existing repo (deploy replaces gh-pages wholesale) — a hit routes to `name-taken`. An `update`
+   *  goes straight through (the author already chose that repo). */
   async function publish(): Promise<void> {
+    if (!s.session || validateSiteName(s.repo) !== "" || s.repo.trim() === "") return;
+    if (s.intent === "new" && deps.checkRepoExists) {
+      s.error = null;
+      let exists: boolean;
+      try {
+        exists = await deps.checkRepoExists(s.session, targetOf());
+      } catch (e) {
+        // Can't verify the name is free → don't risk clobbering. Surface it instead of pushing blind.
+        s.error = asDeployError(e);
+        s.state = "error";
+        return;
+      }
+      if (exists) { s.state = "name-taken"; return; }
+    }
+    await runDeploy();
+  }
+
+  /** Persist (if opted in), then run the one-motion deploy. Assumes the name is settled + safe to write. */
+  async function runDeploy(): Promise<void> {
     if (!s.session) return;
     const session = s.session;
     s.state = "publishing";
@@ -229,15 +290,50 @@ export function createPublishMachine(deps: PublishMachineDeps) {
       s.session = { ...session, persisted: ok };
       s.persistFailed = !ok;
     }
-    const target: DeployTarget = { owner: s.owner.trim(), repo: s.repo.trim(), branch: "gh-pages" };
     try {
-      const res = await deps.deploy(s.session, target, (p) => (s.progress = p));
+      const res = await deps.deploy(s.session, targetOf(), (p) => (s.progress = p));
       s.result = res;
       s.state = "success";
     } catch (e) {
       s.error = asDeployError(e);
       s.state = "error";
     }
+  }
+
+  // --- existing-repo paths (name-taken + picker) ---
+
+  /** From name-taken: keep creating a new site — go back to the name field to pick another. */
+  function useNewName(): void {
+    s.intent = "new";
+    s.updateTargetRepo = "";
+    s.state = "name-site";
+  }
+
+  /** From name-taken: publish into the repo of that name after all (deliberate update). */
+  function updateExisting(): void {
+    s.intent = "update";
+    s.updateTargetRepo = s.repo.trim();
+    void runDeploy();
+  }
+
+  /** Open the "update a different existing site" picker — load the author's repos, then show the list. */
+  async function openPicker(): Promise<void> {
+    if (!s.session || !deps.listRepos) return;
+    s.repoFilter = "";
+    try {
+      s.repoList = await deps.listRepos(s.session);
+    } catch {
+      s.repoList = []; // an empty list is honest; the author can still go back and type a name
+    }
+    s.state = "repo-picker";
+  }
+
+  /** Choose an existing repo from the picker → update it (back to the name step to confirm + preview). */
+  function chooseRepo(name: string): void {
+    s.repo = name;
+    s.intent = "update";
+    s.updateTargetRepo = name;
+    s.state = "name-site";
   }
 
   /** From an error screen: retry the deploy (or, after a 401, this is wired to sign-in-again in the view). */
@@ -271,9 +367,14 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     get owner(): string { return s.owner; },
     set owner(v: string) { s.owner = v; },
     get repo(): string { return s.repo; },
-    set repo(v: string) { s.repo = v; },
+    // Editing the name away from an explicitly-chosen update target reverts intent to `new` (so it's
+    // re-checked before we'd overwrite a different repo).
+    set repo(v: string) { s.repo = v; if (v.trim() !== s.updateTargetRepo) s.intent = "new"; },
+    get intent(): PublishIntent { return s.intent; },
     get staySignedIn(): boolean { return s.staySignedIn; },
     set staySignedIn(v: boolean) { s.staySignedIn = v; },
+    get repoFilter(): string { return s.repoFilter; },
+    set repoFilter(v: string) { s.repoFilter = v; },
     get progress(): DeployProgress | null { return s.progress; },
     get result(): DeployResult | null { return s.result; },
     get error(): DeployError | null { return s.error; },
@@ -313,6 +414,36 @@ export function createPublishMachine(deps: PublishMachineDeps) {
       return s.error ? errorCopyFor(s.error) : { message: "", offerSignInAgain: false };
     },
 
+    // --- name-site (Task 11) ---
+
+    /** Validation message for the current site name ("" when valid or still empty). */
+    get nameError(): string { return validateSiteName(s.repo); },
+    /** Whether the name is publishable (non-empty + valid). */
+    get canPublish(): boolean { return s.repo.trim() !== "" && this.nameError === ""; },
+
+    /** The live "Your site will live at ___" preview (GHPAGES-PUBLISH-UX §name-site). `isUserSite` is the
+     *  `{login}.github.io` root-site case; otherwise it's a project site at `/{repo}/` and `userSiteName`
+     *  is the tip ("name it {login}.github.io to publish to your top-level address"). Null until both the
+     *  owner and a valid name are known. */
+    get sitePreview(): { url: string; isUserSite: boolean; userSiteName: string } | null {
+      const owner = (s.owner.trim() || s.session?.login || "").trim();
+      const repo = s.repo.trim();
+      if (owner === "" || repo === "" || this.nameError !== "") return null;
+      return {
+        url: pagesUrlFor(owner, repo),
+        isUserSite: repo.toLowerCase() === `${owner.toLowerCase()}.github.io`,
+        userSiteName: `${owner}.github.io`,
+      };
+    },
+
+    // --- picker (Task 11) ---
+
+    /** The author's repos filtered by the picker's search box. */
+    get filteredRepos(): string[] {
+      const q = s.repoFilter.trim().toLowerCase();
+      return q === "" ? s.repoList : s.repoList.filter((r) => r.toLowerCase().includes(q));
+    },
+
     // --- transitions ---
     open,
     continueWithGitHub,
@@ -327,6 +458,10 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     openSite,
     copyLink,
     tick,
+    useNewName,
+    updateExisting,
+    openPicker,
+    chooseRepo,
   };
 }
 

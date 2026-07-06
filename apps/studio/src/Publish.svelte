@@ -24,6 +24,8 @@
     signIn,
     persistSession,
     deploy,
+    checkRepoExists,
+    listRepos,
     /** Optional: web-intro "share a link instead" → route back to the chooser's zip/?src= path (Task 13). */
     onusezip,
     // --- legacy advanced (token) form — verbatim, unchanged interface ---
@@ -40,6 +42,10 @@
     signIn?: (onCode: (c: { userCode: string; verificationUri: string; expiresIn: number }) => void) => Promise<DeploySession>;
     persistSession?: (s: DeploySession) => Promise<boolean>;
     deploy?: (session: DeploySession, target: DeployTarget, onProgress: (p: DeployProgress) => void) => Promise<DeployResult>;
+    /** Pre-flight name check for a NEW site (never force-overwrites an existing repo). Wired in Task 13. */
+    checkRepoExists?: (session: DeploySession, target: DeployTarget) => Promise<boolean>;
+    /** The author's repo names, for the "update an existing site" picker. Wired in Task 13. */
+    listRepos?: (session: DeploySession) => Promise<string[]>;
     onusezip?: () => void;
     onpublish: (target: GitHubTarget, opts: { includeOriginals: boolean }, onProgress: (p: PublishProgress) => void) => Promise<GitHubPublishResult>;
     /** Intra-Library links that won't resolve in the published site — they degrade to plain text. */
@@ -73,6 +79,8 @@
     signIn: signIn ?? (async () => { throw { kind: "device-flow-disabled", message: "GitHub sign-in isn't available in this build." }; }),
     persistSession: persistSession ?? (async () => false),
     deploy: deploy ?? (async () => { throw { kind: "push", message: "Publishing to the web isn't available here." }; }),
+    checkRepoExists,
+    listRepos,
     openUrl: defaultOpenUrl,
     copy: defaultCopy,
   });
@@ -221,17 +229,62 @@
         <p class="eyebrow">Publish{#if machine.session}<span class="handle"> · @{machine.session.login}</span>{/if}</p>
         <h2>Name your site.</h2>
       </header>
-      <!-- Task 11 seam: this is the minimal target entry. Task 11 adds the live "Your site will live at ___"
-           preview (pagesUrlFor), the "Anyone with the link can see it" toggle, and the name-taken path. -->
       <div class="stack">
         <label class="field">Site name<input bind:value={machine.repo} autocomplete="off" spellcheck="false" /></label>
-        <p class="note">Letters, numbers and dashes. This becomes part of your web address.</p>
+        {#if machine.nameError}
+          <p class="err">{machine.nameError}</p>
+        {:else}
+          <p class="note">Letters, numbers and dashes. This becomes part of your web address.</p>
+        {/if}
+        {#if machine.sitePreview}
+          <div class="preview">
+            <span class="preview-label">Your site will live at</span>
+            <span class="preview-url">{machine.sitePreview.url}{#if machine.sitePreview.isUserSite} <span class="muted">(your main site)</span>{/if}</span>
+            {#if !machine.sitePreview.isUserSite}
+              <span class="preview-tip">Name it <code>{machine.sitePreview.userSiteName}</code> to publish to your top-level address.</span>
+            {/if}
+          </div>
+        {/if}
+        <!-- Public-only at launch (PRFAQ): shown as a checked, non-editable reassurance — never the word "private". -->
+        <label class="cb"><input type="checkbox" checked disabled /><span class="cb-text">Anyone with the link can see it <span class="cb-sub">— published sites are public for now</span></span></label>
         <label class="cb"><input type="checkbox" bind:checked={machine.staySignedIn} /><span class="cb-text">Stay signed in on this computer</span></label>
+        {#if listRepos}
+          <button type="button" class="linkish" onclick={() => machine.openPicker()}>Update an existing site instead…</button>
+        {/if}
       </div>
       <div class="actions">
         <button type="button" class="ghost" onclick={close}>Cancel</button>
-        <button class="primary" disabled={machine.repo.trim() === ""} onclick={() => machine.publish()}>Publish</button>
+        <button class="primary" disabled={!machine.canPublish} onclick={() => machine.publish()}>Publish</button>
       </div>
+
+    {:else if machine.state === "name-taken"}
+      <header>
+        <p class="eyebrow">Publish</p>
+        <h2>You already have a site called {machine.repo}.</h2>
+        <p class="lede">Pick another name, or update the site that's already there with your latest changes.</p>
+      </header>
+      <div class="actions">
+        <button type="button" class="ghost" onclick={() => machine.useNewName()}>Use a new name</button>
+        <button class="primary" onclick={() => machine.updateExisting()}>Update the existing site</button>
+      </div>
+
+    {:else if machine.state === "repo-picker"}
+      <header>
+        <p class="eyebrow">Publish</p>
+        <h2>Update an existing site.</h2>
+        <p class="lede">Pick one of your GitHub repositories to publish this library into.</p>
+      </header>
+      <div class="stack">
+        <input class="filter" placeholder="Search your repositories…" bind:value={machine.repoFilter} autocomplete="off" />
+        <ul class="repo-list">
+          {#each machine.filteredRepos as name}
+            <li><button type="button" class="repo-item" onclick={() => machine.chooseRepo(name)}>{name}</button></li>
+          {:else}
+            <li class="repo-empty">No repositories match.</li>
+          {/each}
+        </ul>
+      </div>
+      <div class="actions"><button type="button" class="ghost" onclick={() => machine.useNewName()}>← Back</button></div>
 
     {:else if machine.state === "publishing"}
       <header>
@@ -412,6 +465,30 @@
   .linkish:hover { text-decoration: underline; }
 
   .field { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-paper-muted); }
+
+  /* name-site live preview — the calm "your site will live at ___" address. */
+  .preview { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-radius: var(--radius-sm); box-shadow: var(--shadow-inset-fog); }
+  .preview-label { font-family: var(--font-ui); font-size: 0.68rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  .preview-url { font-family: var(--font-mono); font-size: 1rem; color: var(--accent-2); word-break: break-all; }
+  .preview-tip { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.5; color: var(--ink-paper-muted); }
+
+  /* repo picker — a filterable list of the author's existing sites. */
+  .filter {
+    width: 100%; box-sizing: border-box; font-family: var(--font-body); font-size: 0.95rem;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-paper-card); color: var(--ink-paper-primary);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
+  }
+  .filter:focus { outline: none; border-color: var(--accent-2); }
+  .repo-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); max-height: 16rem; overflow-y: auto; }
+  .repo-item {
+    width: 100%; text-align: left; cursor: pointer; font-family: var(--font-mono); font-size: 0.9rem;
+    padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm);
+    background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid transparent;
+    transition: background 120ms ease, border-color 120ms ease;
+  }
+  .repo-item:hover { background: var(--surface-paper-hover); border-color: var(--border-canvas); }
+  .repo-empty { font-family: var(--font-body); font-size: 0.85rem; color: var(--ink-paper-muted); padding: var(--space-2) var(--space-3); }
 
   /* Device-code screen — a large, calm monospace code the user copies to GitHub. */
   .code-row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }

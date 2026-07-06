@@ -4,7 +4,7 @@ import { describe, it, expect } from "vitest";
 // publish-machine.svelte.ts so it's drivable headlessly in the node test env (the studio suite has no
 // DOM / component-mount harness — cf. library-meta.svelte.test.ts). We drive it with fake platform
 // seams and assert the transitions GHPAGES-PUBLISH-UX §"Every dialog state" specifies.
-const { createPublishMachine, slugifyTitle, errorCopyFor } = await import("./publish-machine.svelte.js");
+const { createPublishMachine, slugifyTitle, errorCopyFor, validateSiteName } = await import("./publish-machine.svelte.js");
 type DeploySession = import("./deploy/types.js").DeploySession;
 type DeployProgress = import("./deploy/types.js").DeployProgress;
 type DeployTarget = import("./deploy/types.js").DeployTarget;
@@ -250,5 +250,127 @@ describe("publish machine — helpers", () => {
     const m = createPublishMachine(makeDeps({ initialSession: SESSION, remembered }));
     m.open();
     expect(m.repo).toBe("old-site");
+  });
+});
+
+describe("publish machine — name-site (Task 11)", () => {
+  it("validateSiteName rejects slashes, spaces and pasted URLs; accepts a bare name", () => {
+    expect(validateSiteName("voynich-folios")).toBe("");
+    expect(validateSiteName("my.cool_site-2")).toBe("");
+    expect(validateSiteName("")).toBe(""); // empty isn't an error (Publish stays disabled separately)
+    expect(validateSiteName("micah/voynich")).not.toBe("");
+    expect(validateSiteName("has space")).not.toBe("");
+    expect(validateSiteName("https://github.com/micah/x")).not.toBe("");
+  });
+
+  it("canPublish tracks the name's validity", () => {
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION }));
+    m.open();
+    expect(m.canPublish).toBe(true); // seeded voynich-folios
+    m.repo = "bad name";
+    expect(m.nameError).not.toBe("");
+    expect(m.canPublish).toBe(false);
+    m.repo = "";
+    expect(m.canPublish).toBe(false);
+  });
+
+  it("live preview is project-site by default and switches to the root user-site at {login}.github.io", () => {
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION }));
+    m.open();
+    // default: project site under the login
+    expect(m.sitePreview).toEqual({ url: "https://micah.github.io/voynich-folios/", isUserSite: false, userSiteName: "micah.github.io" });
+    // naming it exactly {login}.github.io flips to the top-level user site served at root
+    m.repo = "micah.github.io";
+    expect(m.sitePreview).toEqual({ url: "https://micah.github.io/", isUserSite: true, userSiteName: "micah.github.io" });
+    // an invalid name has no preview
+    m.repo = "no slashes/here";
+    expect(m.sitePreview).toBeNull();
+  });
+});
+
+describe("publish machine — existing-repo paths (Task 11)", () => {
+  it("a 'new' publish whose name is already taken routes to name-taken and does NOT deploy", async () => {
+    let deployed = 0;
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      checkRepoExists: async () => true,
+      deploy: async () => { deployed++; return { url: "x", commitSha: "y" }; },
+    }));
+    m.open();
+    await m.publish();
+    expect(m.state).toBe("name-taken");
+    expect(deployed).toBe(0);
+  });
+
+  it("name-taken → Update the existing site deploys into that repo; → Use a new name returns to naming", async () => {
+    let deployed = 0;
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      checkRepoExists: async () => true,
+      deploy: async () => { deployed++; return { url: "https://micah.github.io/voynich-folios/", commitSha: "y" }; },
+    }));
+    m.open();
+    await m.publish();
+    expect(m.state).toBe("name-taken");
+
+    m.useNewName();
+    expect(m.state).toBe("name-site");
+    expect(m.intent).toBe("new");
+
+    // Back to name-taken, then commit to updating the existing repo.
+    await m.publish();
+    expect(m.state).toBe("name-taken");
+    m.updateExisting();
+    await flush();
+    expect(m.intent).toBe("update");
+    expect(deployed).toBe(1);
+    expect(m.state).toBe("success");
+  });
+
+  it("a 'new' publish with a free name deploys without the name-taken detour", async () => {
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION, checkRepoExists: async () => false }));
+    m.open();
+    await m.publish();
+    expect(m.state).toBe("success");
+  });
+
+  it("an existence-check failure surfaces an error rather than risking an overwrite", async () => {
+    let deployed = 0;
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      checkRepoExists: async () => { throw { kind: "network", message: "offline" }; },
+      deploy: async () => { deployed++; return { url: "x", commitSha: "y" }; },
+    }));
+    m.open();
+    await m.publish();
+    expect(m.state).toBe("error");
+    expect(deployed).toBe(0);
+  });
+
+  it("editing the name after choosing an existing repo reverts intent to 'new' (re-checked before overwrite)", () => {
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION }));
+    m.open();
+    m.chooseRepo("existing-site");
+    expect(m.intent).toBe("update");
+    expect(m.repo).toBe("existing-site");
+    m.repo = "existing-site-renamed";
+    expect(m.intent).toBe("new");
+  });
+
+  it("the picker loads the author's repos and filters them client-side", async () => {
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      listRepos: async () => ["voynich-folios", "recipes", "voynich-notes"],
+    }));
+    m.open();
+    await m.openPicker();
+    expect(m.state).toBe("repo-picker");
+    expect(m.filteredRepos).toEqual(["voynich-folios", "recipes", "voynich-notes"]);
+    m.repoFilter = "voyn";
+    expect(m.filteredRepos).toEqual(["voynich-folios", "voynich-notes"]);
+    m.chooseRepo("recipes");
+    expect(m.state).toBe("name-site");
+    expect(m.intent).toBe("update");
+    expect(m.repo).toBe("recipes");
   });
 });
