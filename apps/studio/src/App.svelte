@@ -244,6 +244,15 @@
   // Overview ↔ object (invention #1): descend from a plate into close annotation, then climb back. Going
   // back to the overview KEEPS the resolved thumbnails (unlike backToLibrary, which frees them).
   function openObject(objId: string) { editingObjectId = null; switchObject(objId); view = "editor"; }
+  // Library-Gallery wall click-through (Phase 3.2): open an object in ITS exhibit's editor. ALWAYS
+  // openExhibit first — `currentSlug` is a cursor, NOT a "this exhibit is loaded" flag: after
+  // backToLibrary (assets.revokeAll emptied the thumbs) or at boot/post-replace, currentSlug can name a
+  // slug whose SESSION isn't installed, so a same-slug shortcut would open an editor with blank rails.
+  // The card path already re-opens same-slug via openExhibit — pay the same (cheap) cost.
+  async function openObjectInExhibit(slug: string, objId: string) {
+    await openExhibit(slug);
+    openObject(objId);
+  }
   async function backToOverview() { editingObjectId = null; await save(); view = "overview"; }
 
   // --- Destructive removes (Archie-3f4c). Object → tombstone its notes (ADR-0003 append-only; recoverable
@@ -1376,6 +1385,7 @@
   <LibraryHome
     exhibits={lib.meta.exhibits}
     onopen={openExhibit}
+    onopenobject={(slug, objId) => void openObjectInExhibit(slug, objId)}
     oncreate={newExhibit}
     oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add that folder."); }); }}
     oncreatefrommanifest={(url) => { flows.newExhibitFromManifest(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}

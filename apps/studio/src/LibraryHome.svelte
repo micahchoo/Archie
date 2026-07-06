@@ -13,6 +13,9 @@
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import HelpMenu from "./HelpMenu.svelte";
+  import GalleryThumb from "./GalleryThumb.svelte";
+  import GalleryWall from "./GalleryWall.svelte";
+  import { flattenLibraryImages, coverOf, filterExhibits, filterImages } from "./gallery-data.js";
   import { saveStatus } from "./save-queue.svelte.js";
 
   let {
@@ -44,6 +47,7 @@
     onremoveexhibit,
     ontutorial,
     onshortcuts,
+    onopenobject,
   }: {
     exhibits: ExhibitMeta[];
     onopen: (slug: string) => void;
@@ -85,10 +89,23 @@
     /** Help menu actions (threaded from App): open the onboarding tutorial / the shortcuts cheat-sheet. */
     ontutorial: () => void;
     onshortcuts: () => void;
+    /** All-images wall click-through (Phase 3.2): open an object in ITS exhibit's editor. App owns the
+     *  cross-exhibit navigation (openExhibit → object → editor); this only signals which object. */
+    onopenobject: (slug: string, objId: string) => void;
   } = $props();
 
   let rightsOpen = $state(false);
   const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
+
+  // Two views, one search (Phase 3.2): visual Exhibit cards ⟷ the all-images wall; the search box filters
+  // the ACTIVE view (exhibit titles / object titles) via the shared matchesTitle primitive. View-only local
+  // state. The wall reads the library LIVE (flatten OPFS meta) — never the baked images.json (unpublished
+  // edits would make it stale). "All images" only offered once there's media to browse.
+  let galleryView = $state<"exhibits" | "wall">("exhibits");
+  let gallerySearch = $state("");
+  const allImages = $derived(flattenLibraryImages(exhibits));
+  const shownExhibits = $derived(filterExhibits(exhibits, gallerySearch));
+  const shownImages = $derived(filterImages(allImages, gallerySearch));
 
   // The exhibit whose per-card pencil drawer is open (Archie-79be) — transient view state, like rightsOpen.
   // Resolves to its full ExhibitMeta so the shared DetailsEditor can read title/description/rights.
@@ -107,8 +124,10 @@
     newTitle = "";
   }
 
-  // The hidden directory input behind "… or add a media folder".
-  let dirEl: HTMLInputElement | null = null;
+  // The hidden directory input behind "… or add a media folder". $state because the wall/exhibits
+  // {#if} toggle remounts it, reassigning this ref across mount cycles (compiler non_reactive_update
+  // otherwise; matches ExhibitOverview's viewport precedent).
+  let dirEl = $state<HTMLInputElement | null>(null);
 
   // A human "x ago" for a recent project's last-opened stamp.
   function ago(ms: number): string {
@@ -218,11 +237,40 @@
     {/if}
   </header>
 
+  <!-- Two-views-one-search bar (Phase 3.2). Shown once the library has any exhibit; "All images" appears
+       once there's media to browse (else the wall would be a dead toggle). -->
+  {#if exhibits.length > 0}
+    <div class="gallery-bar">
+      <div class="views" role="group" aria-label="Library view">
+        <button type="button" class:on={galleryView === "exhibits"} aria-pressed={galleryView === "exhibits"} onclick={() => (galleryView = "exhibits")}>Exhibits</button>
+        {#if allImages.length > 0}
+          <button type="button" class:on={galleryView === "wall"} aria-pressed={galleryView === "wall"} onclick={() => (galleryView = "wall")}>All images</button>
+        {/if}
+      </div>
+      <label class="g-search">
+        <span class="glass" aria-hidden="true">⌕</span>
+        <input type="search" bind:value={gallerySearch}
+          placeholder={galleryView === "wall" ? "Search media" : "Search exhibits"}
+          aria-label={galleryView === "wall" ? "Search media titles" : "Search exhibit titles"} />
+      </label>
+    </div>
+  {/if}
+
+  {#if galleryView === "wall"}
+    <GalleryWall images={shownImages} query={gallerySearch} {onopenobject} />
+  {:else}
+  {#if gallerySearch.trim() && shownExhibits.length === 0}
+    <p class="no-match">No exhibits match “{gallerySearch.trim()}”.</p>
+  {/if}
   <ul class="grid">
-    {#each exhibits as ex (ex.slug)}
+    {#each shownExhibits as ex (ex.slug)}
+      {@const cover = coverOf(ex)}
       <li class="card-wrap">
         <button class="card" class:template={isTemplate(ex.slug)} onclick={() => onopen(ex.slug)}>
           {#if isTemplate(ex.slug)}<span class="badge">Example</span>{/if}
+          {#if cover}
+            <span class="cover"><GalleryThumb slug={cover.slug} source={cover.source} mediaType={cover.mediaType} alt="" /></span>
+          {/if}
           <span class="title">{ex.title}</span>
           <span class="meta">{ex.objects.length} {ex.objects.length === 1 ? "media item" : "media items"} · /{ex.slug}</span>
           {#if isTemplate(ex.slug)}<span class="ex-hint">Explore freely — changes aren't kept. Keep a copy to make it yours.</span>{/if}
@@ -255,6 +303,7 @@
       </form>
     </li>
   </ul>
+  {/if}
 </main>
 
 <style>
@@ -392,4 +441,19 @@
   .new button:disabled { background: none; color: var(--ink-canvas-muted); border-color: var(--border-canvas); box-shadow: none; cursor: default; }
   .new .alt-create { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.14em; background: none; border: none; box-shadow: none; padding: 6px 0; font-weight: 400; color: var(--ink-canvas-secondary); } /* 6px v-pad -> 24px+ hit box (Fitts) */
   .new .alt-create:hover { background: none; box-shadow: none; color: var(--accent-2); }
+
+  /* --- Two-views-one-search bar (Phase 3.2): a quiet row between the header and the grid/wall. --- */
+  .gallery-bar { max-width: 60rem; margin: 0 auto var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
+  .views { display: inline-flex; border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); overflow: hidden; }
+  .views button { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer; padding: 6px var(--space-4); background: transparent; color: var(--ink-canvas-muted); border: none; transition: color 160ms ease, background 160ms ease; }
+  .views button.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: inset 0 -2px 0 var(--accent); }
+  .g-search { display: inline-flex; align-items: center; gap: var(--space-2); padding: 4px var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
+  .g-search .glass { color: var(--ink-canvas-muted); font-size: 0.9rem; }
+  .g-search input { background: none; border: none; outline: none; color: var(--ink-canvas-primary); font-family: var(--font-ui); font-size: var(--text-ui-sm); width: 12rem; }
+  .g-search input::placeholder { color: var(--ink-canvas-muted); }
+
+  /* Card cover thumbnail (Phase 3.2) — a full-width plate above the title; the card becomes a real visual card. */
+  .cover { display: block; width: 100%; margin-bottom: var(--space-1); }
+  /* Filtered-to-nothing note (cards view) — quiet, above the grid (which still offers the new-exhibit tile). */
+  .no-match { max-width: 60rem; margin: 0 auto var(--space-4); font-family: var(--font-body); font-size: 1rem; color: var(--ink-canvas-secondary); }
 </style>
