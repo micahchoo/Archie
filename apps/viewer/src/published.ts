@@ -11,13 +11,46 @@ import {
   // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
-  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES,
-  type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit,
+  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource,
+  type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex, type NoteTransform,
 } from "@render/core";
+import { BASE } from "./published-base.js";
 
 export { SRC_MAX_BYTES };
 
 const PUBLISHED = `${import.meta.env.BASE_URL}published`;
+
+// --- hosted rebase (ADR-0010 portable read seam) ----------------------------------------------
+// The published manifest bakes every local-import asset URL against the CANONICAL origin (BASE,
+// ADR-0013) so IIIF IDs stay stable and citable — but those absolute URLs resolve ONLY on the
+// canonical host. A localhost dev server, a fork, or any re-host serves the SAME tree from a
+// different origin and 404s every local image / thumbnail / baked-DZI tile (unnoticed until now
+// because every bundled sample uses external IIIF, never a local import — cf. tend Issues 9/16).
+// Rebase canonical asset URLs onto the origin the tree is actually SERVED from (`${PUBLISHED}`);
+// remote IIIF / http / data URLs (which don't start with BASE) pass through untouched. Hosted-only:
+// portable mints blob URLs, live reads WORKING_IRI_BASE — neither carries a canonical BASE URL.
+export const toServingOrigin = (url: string): string =>
+  url.startsWith(BASE) ? `${PUBLISHED}/${url.slice(BASE.length)}` : url;
+const hostedRebase: NoteTransform = {
+  object: async (o) => {
+    const source = toServingOrigin(o.source);
+    const thumbnail = o.thumbnail !== undefined ? toServingOrigin(o.thumbnail) : undefined;
+    const tileSource =
+      o.tileSource?.kind === "dzi" && o.tileSource.filesPath.startsWith(BASE)
+        ? { ...o.tileSource, filesPath: toServingOrigin(o.tileSource.filesPath) }
+        : o.tileSource;
+    if (source === o.source && thumbnail === o.thumbnail && tileSource === o.tileSource) return o;
+    return {
+      ...o,
+      source,
+      ...(thumbnail !== undefined ? { thumbnail } : {}),
+      ...(tileSource !== undefined ? { tileSource } : {}),
+    };
+  },
+  // Note-body visual cites can embed a `${BASE}` image too — same portability gap, left as a focused
+  // follow-up; the reported break is object media. Identity keeps notes untouched.
+  note: async (n) => n,
+};
 
 /** The exhibit data components consume — UNIFIED with core's portable shape (ADR-0010) so the two
  *  read paths can never drift. (Was a duplicate interface; now one source of truth.) */
@@ -213,6 +246,22 @@ export async function loadGallery(): Promise<ExhibitsJson> {
   return mergeGalleries(await loadPortableGallery(liveFs), hosted);
 }
 
+/** The library-level image index (ADR-0023) — the Gallery wall's ONE-fetch source. Returns null when the
+ *  file is absent (an older published tree with no baked index) OR unparsable — the Gallery then hides the
+ *  "All images" wall entirely and the exhibit-cards view still works (ADR-0023 degradation contract).
+ *  Portable (.archie.zip): read from the opened zip; live-only working store: no baked index → null. */
+export async function loadImageIndex(): Promise<ImageIndex | null> {
+  try {
+    if (portableFs) return await fsJsonSource(portableFs).getOptional<ImageIndex>("images.json");
+    // fetchJsonOptional keeps a missing index SILENT (404 = the expected ADR degradation, not an error);
+    // a non-404 warns, a parse-fail throws → the outer catch degrades. Don't use fetchJson (it error-logs
+    // a user-facing message for every old tree that legitimately has no images.json).
+    return await fetchJsonOptional<ImageIndex>("images.json");
+  } catch {
+    return null; // fetch reject / corrupt JSON → degrade: no wall, cards only
+  }
+}
+
 // Hosted exhibits come from an IMMUTABLE published tree (it changes only on republish → a full page
 // reload), so a slug's read is cacheable for the session: revisiting an exhibit from the Gallery is
 // then instant instead of re-fetching + re-parsing the (now annotation-laden) manifest. Holds JSON
@@ -282,7 +331,7 @@ export async function loadPublishedExhibit(slug: string): Promise<PublishedExhib
   // Served from the session cache on revisit (the published tree is immutable until a reload).
   const cached = hostedCache.get(slug);
   if (cached) return cached;
-  const exhibit = await readExhibitTree(httpSource, slug);
+  const exhibit = await readExhibitTree(httpSource, slug, hostedRebase);
   hostedCache.set(slug, exhibit);
   return exhibit;
 }

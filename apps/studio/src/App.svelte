@@ -24,6 +24,7 @@
   // AddMapModal (map add) is lazy-loaded — see AddMapModalComp below.
   import NoteEditor from "./NoteEditor.svelte";
   import { matches, typingInField } from "./shortcuts.js";
+  import { applyClick, selectAll as selectAllIds, applyMarquee, type ClickMods } from "./overview-selection.js";
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
@@ -210,6 +211,7 @@
     editing = null;
     creating = null;
     placingPendingId = null; // drop any armed placement from the outgoing exhibit
+    clearSel(); selectMode = false; // selection is exhibit-scoped (Phase 2) — the incoming exhibit starts clean
     void loadPendingNotes().then((m) => { pendingNotes = m[slug] ?? []; }); // this exhibit's coordinate-free imports awaiting a box
     rdg.resetForExhibit(); // fresh exhibit = everything visible, pen on base (fixes the cross-exhibit leak)
     firstAddCueSlug = null; pendingClear = null; clearedSlug = null; // drop any narrative-staging cue from the outgoing exhibit
@@ -242,6 +244,15 @@
   // Overview ↔ object (invention #1): descend from a plate into close annotation, then climb back. Going
   // back to the overview KEEPS the resolved thumbnails (unlike backToLibrary, which frees them).
   function openObject(objId: string) { editingObjectId = null; switchObject(objId); view = "editor"; }
+  // Library-Gallery wall click-through (Phase 3.2): open an object in ITS exhibit's editor. ALWAYS
+  // openExhibit first — `currentSlug` is a cursor, NOT a "this exhibit is loaded" flag: after
+  // backToLibrary (assets.revokeAll emptied the thumbs) or at boot/post-replace, currentSlug can name a
+  // slug whose SESSION isn't installed, so a same-slug shortcut would open an editor with blank rails.
+  // The card path already re-opens same-slug via openExhibit — pay the same (cheap) cost.
+  async function openObjectInExhibit(slug: string, objId: string) {
+    await openExhibit(slug);
+    openObject(objId);
+  }
   async function backToOverview() { editingObjectId = null; await save(); view = "overview"; }
 
   // --- Destructive removes (Archie-3f4c). Object → tombstone its notes (ADR-0003 append-only; recoverable
@@ -495,6 +506,69 @@
     lib.patchExhibit(ex.slug, { objects: next });
   }
 
+  // --- Overview multi-select (SCALE-GALLERY Phase 2). Selection lives HERE, not in ExhibitOverview: bulk
+  // delete rides App's removal path, ⌘A/Delete/Esc dispatch from onGlobalKey, and a future bulk-move is
+  // library-scope — all need selection reachable above the one component. The math is the pure
+  // overview-selection reducer; ExhibitOverview emits intents (onselect/onmarquee/onclear) + the drag block.
+  let selection = $state<Set<string>>(new Set());
+  let selAnchor = $state<string | null>(null);
+  let selectMode = $state(false); // App-owned so the Esc ladder can exit it (§5) — the toolbar toggles it
+  let bulkConfirming = $state(false); // armed second-click guard for bulk delete (inline, on-brand — DetailsEditor idiom)
+  // The VISIBLE object order (filtered/sorted) as ExhibitOverview renders it — reported up via onvisible.
+  // Shift-range + ⌘A run over THIS, not the canonical array, so they never touch objects hidden by the
+  // active filter (canonical ranging would silently select filtered-out items a bulk delete then removes
+  // unseen). Falls back to canonical before the overview has reported (e.g. select-all with no toolbar use).
+  let visibleIds = $state<string[]>([]);
+  const rangeIds = () => (visibleIds.length ? visibleIds : OBJECTS.map((o) => o.id));
+  function clearSel() { selection = new Set(); selAnchor = null; bulkConfirming = false; }
+  function onOverviewSelect(id: string, mods: ClickMods) {
+    bulkConfirming = false; // changing the selection disarms a pending bulk delete
+    const r = applyClick({ selection, anchor: selAnchor }, id, mods, rangeIds());
+    selection = r.selection; selAnchor = r.anchor;
+  }
+  function onOverviewMarquee(ids: string[]) {
+    bulkConfirming = false;
+    const r = applyMarquee(ids);
+    selection = r.selection; selAnchor = r.anchor;
+  }
+  function selectAllObjects() {
+    bulkConfirming = false;
+    const r = selectAllIds(rangeIds()); // all VISIBLE when filtered; the full set when not
+    selection = r.selection; selAnchor = r.anchor;
+  }
+  // Bulk delete — ONE persist + ONE mirror (spike-0002 dirty-set coalesces N removedObjects). Mirrors
+  // deleteObjectNotesAndMeta per id (tombstone notes + markObjectRemoved for orphan cleanup) BUT batches
+  // the meta mutation into the single lib.removeObjects call, instead of N awaited removeObject writes.
+  async function bulkRemove(ids: ReadonlySet<string>) {
+    // Canonical order, NOT rangeIds(): a delete must honor the whole selection even when a live
+    // search filter hides some selected plates — visible-order here would silently skip them.
+    const present = OBJECTS.map((o) => o.id);
+    const list = present.filter((id) => ids.has(id)); // canonical order, only ids still in the exhibit
+    if (list.length === 0) { clearSel(); return; }
+    for (const objId of list) {
+      const cid = canvasIdOf(objId);
+      for (const r of sess.session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) sess.session.deleteNote(r.logicalId as LogicalId);
+      const gone = OBJECTS.find((o) => o.id === objId);
+      const assetName = gone && isAsset(gone.source) ? gone.source.slice(ASSET_PREFIX.length) : undefined;
+      bnd.markObjectRemoved(currentSlug, objId, assetName); // per-id orphan cleanup (asset name known only here)
+    }
+    bump();
+    await lib.removeObjects(currentSlug, list); // single persist → single onAfterPersist mirror
+    clearSel(); selectMode = false;
+    // View invariant (mirror removeObjectById): a lone survivor drops into ITS editor (a 1-plate overview is
+    // never entered); if the open object was among the deleted, advance the cursor to a survivor.
+    if (OBJECTS.length === 1) { switchObject(OBJECTS[0]!.id); view = "editor"; return; }
+    if (list.includes(currentObjectId)) { const surv = OBJECTS.find((o) => !list.includes(o.id)); if (surv) switchObject(surv.id); }
+  }
+  // Two-step inline confirm (DetailsEditor idiom — no window.confirm, off-brand for the study): first call
+  // arms (the toolbar button morphs to the guard); second commits. Keyboard Delete + the button share this.
+  function requestBulkDelete() {
+    if (selection.size === 0) return;
+    if (!bulkConfirming) { bulkConfirming = true; return; }
+    bulkConfirming = false;
+    void bulkRemove(selection);
+  }
+
   // "Keep a copy" (§115 conversion): fork the current EXAMPLE (playground) into a saved, user-owned
   // exhibit, carrying the current notes (retargeted to the copy's canvas IRIs) — so the work you did
   // while trying the template isn't lost. The copy is a project (persists; no banner). Single example
@@ -645,6 +719,15 @@
     placingPendingId = null; // …and any armed pending-placement (a manual switch leaves the bound object)
     focusSectionId = null; // a manual rail switch drops the narrative card's frame focus (navigateToSection re-sets it)
   }
+  // Keep the ACTIVE rail tile on screen at scale: narrative jumps, [ / ] stepping, and wall click-through
+  // all move currentObjectId without a rail click, and at 100+ objects the tile is usually off-screen.
+  // $effect runs post-DOM-update, so .obj.on is already the new tile.
+  let railEl = $state<HTMLElement | null>(null);
+  $effect(() => {
+    void currentObjectId;
+    railEl?.querySelector(".obj.on")?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  });
+  const currentObjectIndex = $derived(OBJECTS.findIndex((o) => o.id === currentObjectId));
   // --- pending notes (coordinate-free imports → "Set area" placement; Archie-79c0 sub-cycle B) ---
   const objectLabelOf = (id: string) => OBJECTS.find((o) => o.id === id)?.label ?? id;
   const newPendingId = () => `p-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
@@ -811,6 +894,16 @@
     return m;
   });
   const noteCountOf = (objId: string) => noteCountByCanvas.get(canvasIdOf(objId)) ?? 0;
+  // Recency per canvas for the overview's "recently-annotated" sort (Phase 2) — MAX modifiedAt over the
+  // object's notes, built ONCE per allNotes change (same shape as noteCountByCanvas). modifiedAt is an ISO
+  // string, so lexicographic MAX = chronological MAX; "" (no notes) sorts oldest. Exhibit-scoped, which is
+  // exactly the overview's scope (the session holds one exhibit's log).
+  const lastAnnotatedByCanvas = $derived.by(() => {
+    const m = new Map<string, string>();
+    for (const r of allNotes) { const c = srcOf(r.target); const t = r.modifiedAt ?? ""; const cur = m.get(c); if (cur === undefined || t > cur) m.set(c, t); }
+    return m;
+  });
+  const lastAnnotatedOf = (objId: string) => lastAnnotatedByCanvas.get(canvasIdOf(objId)) ?? "";
   // Live marker styling (Archie-1489) — mirrors the viewer's readingStyleOf so the curator authors against
   // what a visitor sees. Colour = the note's reading (ADR-0007); reading-less notes get a neutral forest-
   // green default (so base marks are visible). Per-note emphasis modulates opacity/weight ONLY, never hue.
@@ -1147,13 +1240,20 @@
       else importNote = "Open a note first — then ⌘K cites another note or exhibit into it.";
       return;
     }
-    // Esc dismiss-ladder: palette (self-closes) → note popover → camera framing → overview → library.
+    // Overview organizing (Phase 2): select-all + bulk delete, only at the overview scale and not while
+    // typing in the toolbar search. ⌘A must preventDefault or the browser selects the whole page's text.
+    if (matches(e, "⌘A") && view === "overview" && !typingInField(e)) { e.preventDefault(); selectAllObjects(); return; }
+    if (matches(e, "⌫") && view === "overview" && !typingInField(e) && selection.size > 0) { e.preventDefault(); requestBulkDelete(); return; }
+    // Esc dismiss-ladder: palette (self-closes) → note popover → camera framing → SELECTION → select-mode → overview → library.
     if (matches(e, "Esc")) {
       if (cmdkOpen || mediaPickerOpen) return; // those dialogs handle their own Esc
       if (creating) { e.preventDefault(); creating = null; return; } // disarm a new-note gesture first
       if (framingSectionId) { e.preventDefault(); cancelFraming(); return; }
       if (placingPendingId) { e.preventDefault(); cancelPlacing(); return; } // disarm a pending-note placement
       if (sel) { e.preventDefault(); selected = null; editing = null; return; }
+      // Phase 2 rungs — clear a selection first, then leave select-mode, BEFORE backing out of the overview.
+      if (view === "overview" && selection.size > 0) { e.preventDefault(); clearSel(); return; }
+      if (view === "overview" && selectMode) { e.preventDefault(); selectMode = false; return; }
       if (view === "editor" && hasOverview) { e.preventDefault(); void backToOverview(); return; }
       if (view === "overview") { e.preventDefault(); void backToLibrary(); return; }
       return;
@@ -1294,6 +1394,7 @@
   <LibraryHome
     exhibits={lib.meta.exhibits}
     onopen={openExhibit}
+    onopenobject={(slug, objId) => void openObjectInExhibit(slug, objId)}
     oncreate={newExhibit}
     oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add that folder."); }); }}
     oncreatefrommanifest={(url) => { flows.newExhibitFromManifest(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
@@ -1335,6 +1436,16 @@
       onaddobject={() => { editingObjectId = null; view = "editor"; addingObject = true; }}
       onback={backToLibrary}
       onreorder={reorderObjects}
+      {lastAnnotatedOf}
+      {selection}
+      {selectMode}
+      onselectmode={() => { selectMode = !selectMode; if (!selectMode) clearSel(); }}
+      onselect={onOverviewSelect}
+      onmarquee={onOverviewMarquee}
+      onclear={clearSel}
+      onbulkdelete={requestBulkDelete}
+      {bulkConfirming}
+      onvisible={(ids) => (visibleIds = ids)}
       onstartnarrative={() => openObject(OBJECTS[0]?.id ?? currentObjectId)}
       rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}
@@ -1398,10 +1509,14 @@
 
   <!-- Object rail — the exhibit's objects on the light table; pick which one to annotate.
        Horizontal overflow scrolls; map a vertical wheel onto it so a mouse (no shift) can scroll the rail. -->
-  <nav class="objects" aria-label="Exhibit objects"
+  <nav class="objects" aria-label="Exhibit objects" bind:this={railEl}
     onwheel={(e) => { const el = e.currentTarget as HTMLElement; if (el.scrollWidth <= el.clientWidth || e.deltaY === 0) return; el.scrollLeft += e.deltaY; e.preventDefault(); }}>
     {#if OBJECTS.length === 0}
       <span class="no-objects">No media yet — add one below to start adding notes.</span>
+    {/if}
+    {#if OBJECTS.length > 1}
+      <!-- Orientation at scale: sticky, so "where am I" survives scrolling a 100+ rail. -->
+      <span class="rail-pos" aria-live="polite">{currentObjectIndex + 1} / {OBJECTS.length}</span>
     {/if}
     {#each OBJECTS as o (o.id)}
       <button class="obj" class:on={o.id === currentObjectId} onclick={() => switchObject(o.id)} title={o.label}>
@@ -1982,7 +2097,13 @@
   }
   /* Object tab — a thumbnail + label so you choose visually (P2-6), not by name alone. */
   .obj {
-    display: flex; align-items: center; gap: var(--space-2); cursor: pointer; text-align: left; max-width: 16rem;
+    display: flex; align-items: center; gap: var(--space-2); cursor: pointer; text-align: left; max-width: 13rem;
+    /* Never shrink below content: the rail SCROLLS at scale (overflow-x above). Without this, 20+
+       siblings crush each tile to its one-character min-content (overflow-wrap:anywhere) — the
+       ransom-note rail. Label is clamped to 2 lines below; title= carries the full text. */
+    flex-shrink: 0;
+    /* 100+ objects: skip layout/paint for off-screen tiles (the Viewer-grid pattern; estimate ≈ tile box). */
+    content-visibility: auto; contain-intrinsic-size: auto 9rem auto 3.75rem;
     padding: var(--space-2);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
     border: none; border-radius: var(--radius-sm);
@@ -1990,10 +2111,27 @@
   }
   .obj:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
   .obj.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
-  .obj-thumb { flex-shrink: 0; width: 40px; height: 32px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; box-shadow: var(--shadow-inset-fog); }
+  /* The IMAGE is the tile's identity (you choose visually, P2-6): thumb leads, caption recedes. */
+  .obj-thumb { flex-shrink: 0; width: 72px; height: 54px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; box-shadow: var(--shadow-inset-fog); }
   .obj-meta { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
-  .obj-label { font-family: var(--font-display); font-size: 1.0625rem; font-weight: 400; line-height: 1.1; overflow-wrap: anywhere; }
-  .obj-count { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-muted); }
+  .obj-label {
+    font-family: var(--font-ui); font-size: 0.75rem; font-weight: 400; line-height: 1.2; overflow-wrap: anywhere;
+    color: var(--ink-canvas-muted);
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
+    max-width: 8rem; /* long filenames get 2 quiet lines + clip; full title in the tooltip */
+  }
+  .obj.on .obj-label, .obj:hover .obj-label { color: var(--ink-canvas-secondary); }
+  .obj-count { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-muted); white-space: nowrap; }
+  /* Sticky position chip — orientation while scrolling a long rail. */
+  .rail-pos {
+    position: sticky; left: 0; z-index: 1; align-self: center; flex-shrink: 0;
+    padding: var(--space-1) var(--space-2); margin-right: var(--space-1);
+    /* overlay + border so the chip reads as floating ABOVE tiles it scrolls over (raised-on-raised vanished) */
+    background: var(--surface-canvas-overlay); border: 1px solid var(--border-canvas);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low);
+    font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.08em; color: var(--ink-canvas-muted);
+    white-space: nowrap;
+  }
   .obj.on .obj-count { color: var(--accent); }
 
   /* Add-object affordance on the rail */

@@ -5,10 +5,10 @@
   // opened `.archie.zip`). Mode is detected at boot: try to load a library; on "no baked tree" (404)
   // show the empty hall; a `?src=` (ADR-0009) opens a hosted zip first. Hash routing = zero per-host config.
   import { onMount, setContext } from "svelte";
-  import { parseRoute, breadcrumbFor, shouldRenderGalleryFromJson, LIVE_CHANNEL, type ViewerRoute, type ExhibitsJson } from "@render/core";
+  import { parseRoute, breadcrumbFor, shouldRenderGalleryFromJson, LIVE_CHANNEL, type ViewerRoute, type ExhibitsJson, type ImageIndex } from "@render/core";
   import { CITE_GALLERY, type GalleryRef } from "../cite-context.js";
   import {
-    loadGallery, probeViewerMode, openLibraryFromSrc, openLibraryFromFile, closePortableLibrary,
+    loadGallery, loadImageIndex, probeViewerMode, openLibraryFromSrc, openLibraryFromFile, closePortableLibrary,
     initLiveSource, isPortable,
   } from "../published.js";
   import Gallery from "./Gallery.svelte";
@@ -19,6 +19,7 @@
 
   let route = $state<ViewerRoute>({ view: "gallery" });
   let gallery = $state<ExhibitsJson | null>(null);
+  let imageIndex = $state<ImageIndex | null>(null); // ADR-0023 wall source; null → Gallery hides the wall
   // Expose the loaded gallery to the cite-card layer (ProseCites) without prop-drilling — a getter ref
   // so consumers re-derive as the library loads. See cite-context.ts.
   setContext(CITE_GALLERY, { get value() { return gallery; } } satisfies GalleryRef);
@@ -48,6 +49,9 @@
     try {
       const g = await loadGallery();
       gallery = g;
+      // ADR-0023 wall source — fire-and-forget so the landing (esp. the single-exhibit collapse below)
+      // never waits on images.json; the wall populates reactively when it resolves, null → cards-only.
+      void loadImageIndex().then((i) => (imageIndex = i));
       // Single-exhibit collapse (CONTEXT §Gallery): a lone exhibit → land straight in it.
       if (route.view === "gallery" && !shouldRenderGalleryFromJson(g) && g.exhibits[0]) {
         route = { view: "exhibit", slug: g.exhibits[0].slug };
@@ -87,6 +91,7 @@
       if (phase === "ready") {
         await initLiveSource();
         gallery = await loadGallery();
+        imageIndex = await loadImageIndex();
       } else if (phase === "empty") {
         await boot();
       }
@@ -296,7 +301,7 @@
     <div class="state error"><span class="warn" aria-hidden="true">⚠</span><span>Couldn’t load the viewer. Reload to try again.</span></div>
   {/await}
 {:else if gallery}
-  <Gallery {gallery} />
+  <Gallery {gallery} {imageIndex} />
 {/if}
 
 <style>

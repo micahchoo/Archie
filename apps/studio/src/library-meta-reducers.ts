@@ -50,3 +50,17 @@ export function removeObjectIn(meta: LibraryMeta, slug: string, objId: string): 
     ),
   };
 }
+
+/** Remove a SET of objects from one exhibit in one pass (bulk delete, Phase 2). Survivors keep their
+ *  canonical relative order; other exhibits keep identity. One filter over `ids` (a Set) so a large
+ *  selection is O(objects), not O(objects × ids). */
+export function removeObjectsIn(meta: LibraryMeta, slug: string, ids: ReadonlySet<string> | readonly string[]): LibraryMeta {
+  const drop = ids instanceof Set ? ids : new Set(ids);
+  if (drop.size === 0) return meta; // nothing to remove — preserve identity (no spurious persist/re-render)
+  return {
+    ...meta,
+    exhibits: meta.exhibits.map((e) =>
+      e.slug === slug ? { ...e, objects: e.objects.filter((o) => !drop.has(o.id)) } : e,
+    ),
+  };
+}

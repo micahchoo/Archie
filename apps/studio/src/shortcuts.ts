@@ -8,13 +8,16 @@ export interface Shortcut {
   /** Plain-language description (curator voice — see memory archie-ui-copy-curator-voice). */
   label: string;
   /** Cheat-sheet grouping. */
-  group: "Anywhere" | "Image" | "Audio & video";
+  group: "Anywhere" | "Organizing" | "Image" | "Audio & video";
 }
 
 export const SHORTCUTS: Shortcut[] = [
   { keys: "?", label: "Show or hide this shortcuts help", group: "Anywhere" },
   { keys: "⌘S", label: "Save the library", group: "Anywhere" },
   { keys: "Esc", label: "Close what's open — palette, then the note, then framing, then step back out", group: "Anywhere" },
+  { keys: "⌘A", label: "Select all media items (on the exhibit overview)", group: "Organizing" },
+  { keys: "⌫", label: "Remove the selected media items", group: "Organizing" },
+  { keys: "Esc", label: "Clear the selection, then leave select mode", group: "Organizing" },
   { keys: "⌫", label: "Delete the selected note", group: "Image" },
   { keys: "[ ]", label: "Previous / next object on the rail", group: "Image" },
   { keys: "⌘K", label: "Cite a note or exhibit (while editing a note or section)", group: "Image" },
@@ -25,7 +28,7 @@ export const SHORTCUTS: Shortcut[] = [
   { keys: "B", label: "Draw a box on the video", group: "Audio & video" },
 ];
 
-export const SHORTCUT_GROUPS: Shortcut["group"][] = ["Anywhere", "Image", "Audio & video"];
+export const SHORTCUT_GROUPS: Shortcut["group"][] = ["Anywhere", "Organizing", "Image", "Audio & video"];
 
 /**
  * Does a keydown match a shortcut key descriptor? One matcher for every key in the registry, so handlers
@@ -36,6 +39,7 @@ export function matches(e: KeyboardEvent, keys: string): boolean {
   switch (keys) {
     case "⌘S": return (e.metaKey || e.ctrlKey) && k.toLowerCase() === "s";
     case "⌘K": return (e.metaKey || e.ctrlKey) && k.toLowerCase() === "k";
+    case "⌘A": return (e.metaKey || e.ctrlKey) && k.toLowerCase() === "a";
     case "?": return k === "?";
     case "Esc": return k === "Escape";
     case "Space": return k === " " || k === "Spacebar";
