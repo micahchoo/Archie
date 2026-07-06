@@ -20,6 +20,14 @@ Spikes: `docs/spikes/spike-0002-incremental-folder-autosave.md`,
 
 | 3c viewer gallery wall | Two-views-one-search Gallery landing: exhibit cards + all-images wall (ObjectGrid virtualization, per-tile aspect from index dims, title placeholder for thumbnail-less entries, existing `#/<slug>/o/<id>` route, shared density preference); `loadImageIndex` via `fetchJsonOptional`, non-blocking (fire-and-forget before the single-exhibit collapse); portable-zip + live-mode branches honored. | Review: SHIP (degradation contract verified on every branch; no XSS; density-sharing assessed correct; live-over-hosted wall-snapshot semantics accepted as documented). Two minors fixed: collapse-redirect no longer waits on the index fetch; expected 404 no longer error-logs (test asserts silence). viewer 83/83, astro check clean, build clean (lead re-run). | `a1227d6` |
 
+| 3b studio library gallery | LibraryHome two-views-one-search: visual exhibit cards (lazy covers) + all-images wall over the whole library (`flattenLibraryImages`, congruent with images.json but read LIVE from OPFS); `GalleryThumb` mints per-tile on viewport approach + revokes on destroy (destroy-during-mint branch extracted pure, leak-test-pinned); wall click → `openObjectInExhibit` always awaits `openExhibit`. Uniform 4/3 tiles (stable virtualization; dims carried for later justified layout). | Review: fix-first — 2 defects confirmed and fixed (same-slug shortcut opened editors with no session/blank rails; mint-after-destroy blob leak); dirEl reactivity warning (diff-introduced, compiler-proven) fixed to `$state` by lead; mediaType prop widened; copy nits taken. Seed-fixture anchors verified intact. studio 205/205, tsc clean, build clean (lead re-run). | `eace2c0` |
+
+**ALL PHASES SHIPPED 2026-07-06.** Remaining manual/follow-up: FSA folder-bind gesture (verify
+incremental autosave live); browser-verify lists in spikes 0003/0005 (marquee geometry, filmstrip
+overlay at small heights, IntersectionObserver timing); `<archie-viewer>` embed parity port
+(flagged out of scope, spike-0005); svelte-check adoption = ISSUES.md Issue 12 (three of the five
+final-round findings were invisible to every existing gate).
+
 Behavior change (flagged, intended): structural edits (reorder/add/remove/title) now mirror to the
 bound folder continuously and incrementally; previously they waited for ⌘S or the next note-save.
 Behavior change (1.2, minor): object switching has a sub-frame mint gate (one OPFS handle lookup,

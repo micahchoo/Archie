@@ -589,7 +589,12 @@ command that doesn't exist.
 
 ## Issue 11 — Both apps degrade past ~20 images (perf + UX); plan exists, untracked until now
 
-**Status:** queued (plan: `docs/plans/SCALE-GALLERY-PLAN.md`, grilled + user-confirmed 2026-07-05)
+**Status:** done 2026-07-06 — ledger: ledgers/SCALE.md. All phases shipped, review-gated:
+1.1 incremental autosave `1ca4733` · 1.2/1.3a lazy masters + virtualization `9ac6218` ·
+2 overview toolkit `21f95a6` · 3a images.json `8374526` · 3b studio gallery `eace2c0` ·
+3c viewer wall `a1227d6` · 4 viewer navigation `e272a0f` · fixture `57cbda8` · Phase 1
+verified against a seeded 70-object library (numbers in the ledger). Manual remainder:
+FSA folder-bind gesture; spikes 0003/0005 browser-verify lists; embed parity port (flagged).
 
 **Symptom.** At 20+ Objects in an Exhibit / 50+ across the Library, Studio and Viewer both turn
 clunky — user-reported, in performance AND interaction design. Mechanics (verified 2026-07-05):
