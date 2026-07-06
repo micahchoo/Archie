@@ -719,6 +719,15 @@
     placingPendingId = null; // …and any armed pending-placement (a manual switch leaves the bound object)
     focusSectionId = null; // a manual rail switch drops the narrative card's frame focus (navigateToSection re-sets it)
   }
+  // Keep the ACTIVE rail tile on screen at scale: narrative jumps, [ / ] stepping, and wall click-through
+  // all move currentObjectId without a rail click, and at 100+ objects the tile is usually off-screen.
+  // $effect runs post-DOM-update, so .obj.on is already the new tile.
+  let railEl = $state<HTMLElement | null>(null);
+  $effect(() => {
+    void currentObjectId;
+    railEl?.querySelector(".obj.on")?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  });
+  const currentObjectIndex = $derived(OBJECTS.findIndex((o) => o.id === currentObjectId));
   // --- pending notes (coordinate-free imports → "Set area" placement; Archie-79c0 sub-cycle B) ---
   const objectLabelOf = (id: string) => OBJECTS.find((o) => o.id === id)?.label ?? id;
   const newPendingId = () => `p-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
@@ -1500,10 +1509,14 @@
 
   <!-- Object rail — the exhibit's objects on the light table; pick which one to annotate.
        Horizontal overflow scrolls; map a vertical wheel onto it so a mouse (no shift) can scroll the rail. -->
-  <nav class="objects" aria-label="Exhibit objects"
+  <nav class="objects" aria-label="Exhibit objects" bind:this={railEl}
     onwheel={(e) => { const el = e.currentTarget as HTMLElement; if (el.scrollWidth <= el.clientWidth || e.deltaY === 0) return; el.scrollLeft += e.deltaY; e.preventDefault(); }}>
     {#if OBJECTS.length === 0}
       <span class="no-objects">No media yet — add one below to start adding notes.</span>
+    {/if}
+    {#if OBJECTS.length > 1}
+      <!-- Orientation at scale: sticky, so "where am I" survives scrolling a 100+ rail. -->
+      <span class="rail-pos" aria-live="polite">{currentObjectIndex + 1} / {OBJECTS.length}</span>
     {/if}
     {#each OBJECTS as o (o.id)}
       <button class="obj" class:on={o.id === currentObjectId} onclick={() => switchObject(o.id)} title={o.label}>
@@ -2084,11 +2097,13 @@
   }
   /* Object tab — a thumbnail + label so you choose visually (P2-6), not by name alone. */
   .obj {
-    display: flex; align-items: center; gap: var(--space-2); cursor: pointer; text-align: left; max-width: 16rem;
+    display: flex; align-items: center; gap: var(--space-2); cursor: pointer; text-align: left; max-width: 13rem;
     /* Never shrink below content: the rail SCROLLS at scale (overflow-x above). Without this, 20+
        siblings crush each tile to its one-character min-content (overflow-wrap:anywhere) — the
        ransom-note rail. Label is clamped to 2 lines below; title= carries the full text. */
     flex-shrink: 0;
+    /* 100+ objects: skip layout/paint for off-screen tiles (the Viewer-grid pattern; estimate ≈ tile box). */
+    content-visibility: auto; contain-intrinsic-size: auto 9rem auto 3.75rem;
     padding: var(--space-2);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
     border: none; border-radius: var(--radius-sm);
@@ -2096,14 +2111,27 @@
   }
   .obj:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
   .obj.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
-  .obj-thumb { flex-shrink: 0; width: 40px; height: 32px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; box-shadow: var(--shadow-inset-fog); }
+  /* The IMAGE is the tile's identity (you choose visually, P2-6): thumb leads, caption recedes. */
+  .obj-thumb { flex-shrink: 0; width: 72px; height: 54px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; box-shadow: var(--shadow-inset-fog); }
   .obj-meta { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
   .obj-label {
-    font-family: var(--font-display); font-size: 1.0625rem; font-weight: 400; line-height: 1.1; overflow-wrap: anywhere;
+    font-family: var(--font-ui); font-size: 0.75rem; font-weight: 400; line-height: 1.2; overflow-wrap: anywhere;
+    color: var(--ink-canvas-muted);
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden;
-    max-width: 12rem; /* long filenames get 2 lines + clip, not a tall column; full title in the tooltip */
+    max-width: 8rem; /* long filenames get 2 quiet lines + clip; full title in the tooltip */
   }
+  .obj.on .obj-label, .obj:hover .obj-label { color: var(--ink-canvas-secondary); }
   .obj-count { font-family: var(--font-mono); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-muted); white-space: nowrap; }
+  /* Sticky position chip — orientation while scrolling a long rail. */
+  .rail-pos {
+    position: sticky; left: 0; z-index: 1; align-self: center; flex-shrink: 0;
+    padding: var(--space-1) var(--space-2); margin-right: var(--space-1);
+    /* overlay + border so the chip reads as floating ABOVE tiles it scrolls over (raised-on-raised vanished) */
+    background: var(--surface-canvas-overlay); border: 1px solid var(--border-canvas);
+    border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low);
+    font-family: var(--font-mono); font-size: 0.65rem; letter-spacing: 0.08em; color: var(--ink-canvas-muted);
+    white-space: nowrap;
+  }
   .obj.on .obj-count { color: var(--accent); }
 
   /* Add-object affordance on the rail */
