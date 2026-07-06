@@ -11,7 +11,8 @@
     "build": "node scripts/sync-learn.mjs && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check": "svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
     "@annotorious/openseadragon": "^3.8.2",
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "svelte": "^5.15.0",
+    "svelte-check": "^4.7.1",
     "vite": "^6.4.2"
   }
 }

@@ -92,3 +92,79 @@ Every package's own `vitest run` passes today when invoked per-package (as above
 "root vitest binary fails rune tests" problem noted elsewhere only bites the root `vitest` binary
 run directly — `pnpm -r --no-bail test` (each package running its own local `vitest`) already
 works and needs no fix. Issue 1's test-inventory step is done; nothing to repair there.
+
+---
+
+# GATE — Svelte typecheck (ISSUES.md Issue 12)
+
+**Run:** 2026-07-05 · baseline `main` @ `1704e83`, in an isolated worktree
+(`tend/issue-12-svelte-check`) — the shared `main` tree had an active concurrent session
+mid-rewriting `App.svelte` (Issue 11 Phase-2 multi-select), so this loop worked off the *committed*
+HEAD to get a stable, collision-free inventory. Node 24 / pnpm 11.
+
+## The gap (confirmed)
+
+`apps/studio`'s only type gate is `typecheck: tsc --noEmit` (GATE.md Issue-1 table, row `studio
+typecheck`). Plain `tsc` treats `.svelte` files as opaque — it never checks `<script>`/template
+contents. `svelte-check` was **not a dependency anywhere** in the monorepo. So CI's `typecheck` job
+(`.github/workflows/checks.yml`) type-checks studio's `.ts` but **none of its 66 `.svelte` files** —
+a green check over an unchecked surface.
+
+## Infra added (this branch)
+
+- `svelte-check@^4.7.1` as an `apps/studio` devDep.
+- `apps/studio/svelte.config.js` — minimal `{ preprocess: vitePreprocess() }`. **Required**: without a
+  discoverable Svelte config, `svelte-check` emitted a `"No Svelte configuration found in vite config"`
+  error on *every* `.svelte` file (23-error cascade) and could not reliably check them. This file
+  changes no runtime behaviour (vite-plugin-svelte already applies the same TS preprocessing).
+- `apps/studio` `check` script: `svelte-check --tsconfig ./tsconfig.json`.
+
+## Inventory (baseline `1704e83`, with `svelte.config.js`)
+
+`pnpm --filter @archie/studio run check` → **43 errors + 11 warnings, 9 files with problems** (exit 1).
+
+Empirical split (re-ran with `exactOptionalPropertyTypes: false`):
+
+| class | count | where | disposition |
+|---|---|---|---|
+| `exactOptionalPropertyTypes` strictness | **13** | App.svelte (8) + AddMapModal/ReadingsModal/LibraryHome/ExhibitOverview/MergeReview (5) | mostly component-prop optional-field noise; **relax the flag in studio's tsconfig OR add `\| undefined` to prop types**. Low priority. |
+| real type errors | **30** | **all in App.svelte** | must be fixed (or narrowly suppressed) per-site — the real worklist |
+
+## The 30 real errors — classified (all App.svelte, verified against `1704e83`)
+
+| lines | n | class | verdict |
+|---|---|---|---|
+| 34 | 1 | undeclared dep | **real** — studio imports `@render/mount` (type-only) but doesn't declare it (only `@render/core`+`@render/svelte`); resolves transitively via `@render/svelte`, so `tsc` tolerates it, svelte-check flags it. Fix: add `@render/mount` to studio deps. |
+| 522 | 1 | **silent data-loss BUG** | **real, highest value** — exhibit-copy builds carried notes with `layers: r.layers`, but `layers` isn't on `AnnotationRecord` → per-note layer assignments are dropped (carried as `undefined`) on copy. The gate would have caught a real data-loss regression. |
+| 1635, 1753, 1755 | 3 | DZI-union unsoundness | **real** — Issue 11 Phase 1 widened `TileSourceDescriptor` to `Xyz\|Dzi`; `DziTileSource` has no `attribution`, and 1635 passes the union where `XyzTileSource` is expected. Currently masked at runtime (the `isMapCurrent` guard means only XYZ tile sources hit `.attribution`), but genuinely unsound. Fix: narrow on `kind === "xyz"`. |
+| 916–983 | 7 | array-target gap | **real (type)** — `W3CTarget \| W3CTarget[]` passed where a single `W3CTarget` is expected; the array case is unhandled. Fix: narrow/normalize the target. |
+| 810, 1327–1369 | 10 | null-safety gaps | **real (guards)** — `currentExhibit` possibly-undefined (8) + `string \| undefined` → `string` (2). Low runtime risk if `currentExhibit` is always set in that template branch, but the guards are genuinely missing. |
+| 379 | 2 | forward reference | **real (smell)** — `canvasFocus` `$derived` reads `currentObjectId` before its declaration; lazy-derived so low runtime risk, but a real TDZ hazard. Fix: reorder. |
+| 792, 797 | 2 | intentional rune idiom | **pattern** — `(rev, sess.session.notes())` comma-operator to register `rev` as a reactive dep; svelte-check flags "left side unused". Not a bug, but fragile. Fix: `void rev` or a cleaner dependency. |
+| 803, 842, 863 | 3 | dynamic-key cast | **fixable cast** — `(a as Record<string, unknown>)["archie:reading"]` to read a namespaced key not on `W3CAnnotation`. Fix: `as unknown as Record<…>`. |
+
+Net: **≥1 genuine data-loss bug (522), 3 real unsoundnesses (DZI), 17 real guard/type gaps, 5 fragile
+patterns/casts.** The gate is hiding real defects, not just strictness noise.
+
+## Status: INVENTORY + INFRA DONE — fix & CI-wire DEFERRED (blocked)
+
+The remaining loop phases are **blocked by a live collision** and were deliberately not run:
+
+- **Fix phase** — all 30 real errors are in `App.svelte`, which a concurrent session is actively
+  rewriting (Issue 11 Phase-2; it is *adding* errors — `selection/selectMode/onselectmode` prop
+  mismatches at :1322). Fixing App.svelte on this branch would conflict with that rewrite and much of
+  the worklist will shift when it lands. **Re-run `check` against the post-Phase-2 App.svelte before
+  fixing.**
+- **CI-wire phase** — wiring `svelte-check` into `checks.yml` while it is red would fail every push,
+  including the concurrent session's. **Wire only after the check is green.**
+
+## Next steps (when the concurrent studio work settles)
+
+1. Rebase/re-run `check` on the current `App.svelte`; regenerate the 30-error worklist.
+2. Decide the `exactOptionalPropertyTypes` disposition (relax in studio tsconfig vs fix 13 sites).
+3. Fix the real errors — 522 (`layers`) and the DZI unsoundness first (real defects), one commit per cluster.
+4. Add `check` to `checks.yml`'s `typecheck` job (or a new `svelte-check` job); plant one deliberate
+   `.svelte` type error, watch CI go red, revert (mirroring Issue 1's trip-red proof).
+5. Done when `pnpm --filter @archie/studio run check` is green on `main`, wired in CI, and seen to fail once.
+
+**Infra + this ledger live on branch `tend/issue-12-svelte-check` (off `1704e83`), ready to merge.**
