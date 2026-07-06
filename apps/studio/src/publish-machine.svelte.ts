@@ -64,11 +64,14 @@ export interface PublishMachineDeps {
   copy: (text: string) => Promise<void>;
   /** Pre-flight: does this repo already exist under the account? Called ONLY for a `new` publish, so we
    *  never force-overwrite a repo the author didn't mean to (deploy force-replaces gh-pages). Optional —
-   *  unwired, a `new` publish proceeds without the guard (Task 10's behavior). Wired in Task 13. */
-  checkRepoExists?: (session: DeploySession, target: DeployTarget) => Promise<boolean>;
+   *  unwired, a `new` publish proceeds without the guard (Task 10's behavior). Wired in Task 13.
+   *  `| undefined` is explicit (not just `?`) so the view can bind it through a live getter under
+   *  `exactOptionalPropertyTypes` — a getter is always "present", so its value type must admit undefined. */
+  checkRepoExists?: ((session: DeploySession, target: DeployTarget) => Promise<boolean>) | undefined;
   /** The author's existing repos (names), for the "update an existing site" picker
-   *  (`GET /user/repos?per_page=100`, filtered client-side). Optional — unwired, the picker is unreachable. */
-  listRepos?: (session: DeploySession) => Promise<string[]>;
+   *  (`GET /user/repos?per_page=100`, filtered client-side). Optional — unwired, the picker is unreachable.
+   *  `| undefined` explicit for the same live-getter reason as `checkRepoExists` above. */
+  listRepos?: ((session: DeploySession) => Promise<string[]>) | undefined;
   /** Clock seam so the countdown is testable. Defaults to `Date.now`. */
   now?: () => number;
 }

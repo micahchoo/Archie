@@ -69,18 +69,23 @@
     if (typeof navigator !== "undefined" && navigator.clipboard) await navigator.clipboard.writeText(text);
   }
 
+  // The machine is constructed ONCE (App.svelte mounts this dialog for the app's lifetime and toggles
+  // `open`), but the data props above resolve LATE — a session restored after mount, a library switch —
+  // so every data/seam dep is read through a GETTER. That keeps each `deps.X` read live at call time
+  // (on each dialog open); capturing prop snapshots here would freeze the first-render values (and emit
+  // 9 `state_referenced_locally` warnings). Fallbacks stay inside the getters so an unwired seam still
+  // never throws before Task 13 wires the real ones.
   const machine = createPublishMachine({
     isTauriEnv,
-    deviceFlowAvailable,
-    library,
-    remembered,
-    initialSession,
-    // Safe fallbacks so the view never throws if a seam is unwired (real ones arrive from App in Task 13).
-    signIn: signIn ?? (async () => { throw { kind: "device-flow-disabled", message: "GitHub sign-in isn't available in this build." }; }),
-    persistSession: persistSession ?? (async () => false),
-    deploy: deploy ?? (async () => { throw { kind: "push", message: "Publishing to the web isn't available here." }; }),
-    checkRepoExists,
-    listRepos,
+    get deviceFlowAvailable() { return deviceFlowAvailable; },
+    get library() { return library; },
+    get remembered() { return remembered; },
+    get initialSession() { return initialSession; },
+    get signIn() { return signIn ?? (async () => { throw { kind: "device-flow-disabled", message: "GitHub sign-in isn't available in this build." }; }); },
+    get persistSession() { return persistSession ?? (async () => false); },
+    get deploy() { return deploy ?? (async () => { throw { kind: "push", message: "Publishing to the web isn't available here." }; }); },
+    get checkRepoExists() { return checkRepoExists; },
+    get listRepos() { return listRepos; },
     openUrl: defaultOpenUrl,
     copy: defaultCopy,
   });
@@ -102,6 +107,10 @@
 
   function close() {
     token = ""; // never retain the advanced-form secret across a close
+    // Reset the advanced form's result state so reopening it shows a fresh form, not the stale
+    // done/error screen from the previous publish.
+    phase = "idle";
+    progress = null;
     onclose();
   }
 

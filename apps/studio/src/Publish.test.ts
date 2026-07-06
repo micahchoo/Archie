@@ -88,6 +88,26 @@ describe("publish machine — opening state", () => {
     expect(m.state).toBe("name-site");
     expect(m.owner).toBe("micah");
   });
+
+  it("a session restored AFTER construction routes to name-site on reopen (live-getter deps)", () => {
+    // The dialog is mounted for the app's lifetime, so the machine is built ONCE — but restoreSession
+    // resolves late, so `initialSession` starts null and fills in after mount. Publish.svelte reads the
+    // dep through a getter; a snapshot captured at construction would leave a late-signed-in author stuck
+    // on intro-desktop (the Q-12 "stay signed in" regression the Task-10 review flagged). Mirror that
+    // getter here to pin the machine reads `deps.initialSession` live on every open().
+    let initialSession: DeploySession | null = null;
+    const deps = makeDeps();
+    Object.defineProperty(deps, "initialSession", { get: () => initialSession });
+    const m = createPublishMachine(deps);
+
+    m.open();
+    expect(m.state).toBe("intro-desktop"); // nothing restored yet at first open
+
+    initialSession = SESSION; // restoreSession resolves after mount
+    m.open(); // reopening must now see the session and skip the intro
+    expect(m.state).toBe("name-site");
+    expect(m.owner).toBe("micah");
+  });
 });
 
 describe("publish machine — device flow", () => {
