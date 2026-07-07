@@ -20,6 +20,10 @@
     {
       "identifier": "fs:scope",
       "allow": [{ "path": "$APPDATA/**" }, { "path": "$HOME/**" }]
+    },
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://github.com/login/device" }]
     }
   ]
 }

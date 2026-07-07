@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { collectFiles, buildGitTree, publishToGitHub, pagesUrlFor, GitHubPublishError } from "./ghpages.js";
+import { collectFiles, buildGitTree, publishToGitHub, pagesUrlFor, ensureRepo, GitHubPublishError } from "./ghpages.js";
 import { publishLibrary } from "./site.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { appendNew } from "../spine/log.js";
@@ -155,5 +155,43 @@ describe("publishToGitHub — network sequence + error mapping (mocked fetch)", 
     // here the route exists; assert via the fetch mock that PUT was never called).
     const calls = (globalThis.fetch as unknown as { mock: { calls: [string, RequestInit?][] } }).mock.calls;
     expect(calls.some(([, init]) => (init?.method ?? "GET").toUpperCase() === "PUT")).toBe(false);
+  });
+});
+
+describe("ensureRepo — create the target repo (creation only, never mutate an existing one)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  type Route = { method?: string; match: string; status?: number; json?: unknown };
+  const stub = (routes: Route[]) =>
+    vi.stubGlobal("fetch", vi.fn(async (url: string | URL, init?: RequestInit) => {
+      const u = String(url);
+      const method = (init?.method ?? "GET").toUpperCase();
+      const r = routes.find((x) => u.includes(x.match) && (x.method ?? "GET") === method);
+      if (!r) throw new Error(`unmocked ${method} ${u}`);
+      const status = r.status ?? 200;
+      return { ok: status >= 200 && status < 300, status, json: async () => r.json ?? {} } as Response;
+    }));
+
+  it("201 → 'created', POSTs /user/repos with {name, private:false} and NO auto_init", async () => {
+    stub([{ method: "POST", match: "/user/repos", status: 201, json: { id: 1 } }]);
+    const result = await ensureRepo("alice", "my-exhibit", "github_pat_x");
+    expect(result).toBe("created");
+    const calls = (globalThis.fetch as unknown as { mock: { calls: [string, RequestInit?][] } }).mock.calls;
+    const [url, init] = calls[0]!;
+    expect(String(url)).toBe("https://api.github.com/user/repos");
+    expect((init?.method ?? "GET").toUpperCase()).toBe("POST");
+    const body = JSON.parse(String(init?.body));
+    expect(body).toEqual({ name: "my-exhibit", private: false });
+    expect("auto_init" in body).toBe(false);
+  });
+
+  it("422 (name already exists) → 'exists', does not throw or mutate", async () => {
+    stub([{ method: "POST", match: "/user/repos", status: 422, json: { message: "name already exists on this account" } }]);
+    expect(await ensureRepo("alice", "my-exhibit", "github_pat_x")).toBe("exists");
+  });
+
+  it("any other status (403 no repo scope) throws a mapped GitHubPublishError", async () => {
+    stub([{ method: "POST", match: "/user/repos", status: 403, json: { message: "Forbidden" } }]);
+    await expect(ensureRepo("alice", "my-exhibit", "github_pat_x")).rejects.toBeInstanceOf(GitHubPublishError);
   });
 });

@@ -58,16 +58,19 @@ export interface GitHubTarget {
   owner: string;
   repo: string;
   branch?: string;
-  /** fine-grained PAT — Contents: write (push the tree) + Pages: write (auto-enable Pages).
-   *  NOT persisted (paste-each-publish, CONTEXT: token not stored). */
+  /** A GitHub token with Contents: write (push the tree/create the repo) + Pages: write (auto-enable
+   *  Pages). Type-agnostic — a fine-grained PAT, a classic PAT, or a `gho_` device-flow token all work.
+   *  NOT persisted by this engine (paste-each-publish, CONTEXT: token not stored). */
   token: string;
 }
 
 /** Coarse publish progress for the UI — media upload is the long part (one request per asset), so it
  *  carries a count; the rest is a single labelled step. */
 export type PublishProgress =
+  | { phase: "creating-repo" }
   | { phase: "uploading"; done: number; total: number }
   | { phase: "committing" }
+  | { phase: "pushing" }
   | { phase: "enabling-pages" };
 
 /** The outcome of a publish, used to render an honest success screen (commit landed; Pages may not be live). */
@@ -136,10 +139,32 @@ export function pagesUrlFor(owner: string, repo: string): string {
   return r.toLowerCase() === `${o.toLowerCase()}.github.io` ? `https://${o}.github.io/` : `https://${o}.github.io/${r}/`;
 }
 
+/**
+ * Ensure the target repo exists under the authenticated user, creating it if not. POSTs `/user/repos`
+ * with `{ name, private: false }` and NO `auto_init` — the publish engine self-creates the branch ref,
+ * and an auto-init README would pollute `main` while we publish to `gh-pages`
+ * (docs/plans/GHPAGES-PUBLISH-UX.md correction). Creation ONLY: a 422 ("name already exists") means the
+ * repo is already there and is returned as `'exists'` — this never repoints or mutates an existing repo.
+ * Any other non-201 status throws a mapped `GitHubPublishError` via `ghError`.
+ */
+export async function ensureRepo(owner: string, repo: string, token: string): Promise<"created" | "exists"> {
+  const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" };
+  const res = await fetch("https://api.github.com/user/repos", { method: "POST", headers, body: JSON.stringify({ name: repo, private: false }) });
+  if (res.status === 201) return "created";
+  if (res.status === 422) return "exists"; // name already exists on this account → the repo is there; leave it untouched.
+  throw await ghError(res, "repo creation");
+}
+
 /** In-flight blob uploads — bounded to stay under GitHub's secondary rate limit. */
 const BLOB_CONCURRENCY = 6;
 
 /**
+ * LEGACY browser-PAT path — do NOT extend. The one-motion desktop deploy uploads via a single git pack
+ * push in Rust (`gh_push_tree`), not this per-blob JS engine; see docs/decisions/archie.md Q-13. This
+ * function survives only for the browser paste-a-PAT flow; its `ghJson`/`ghError` REST helpers,
+ * `pagesUrlFor`, `enablePages`, and `ensureRepo` are reused by the desktop path, but the upload sequence
+ * below is not.
+ *
  * Push a published file tree to a GitHub Pages branch via the git-trees API: upload binary files as
  * base64 blobs (bounded concurrency → sha), create tree from the base commit → commit → update ref,
  * then best-effort enable Pages. Every network step ok-checks and throws a mapped cause on failure.
@@ -196,6 +221,20 @@ export async function publishToGitHub(
  *  already serves Pages from a *different* branch (e.g. a docs site on `main`), we leave it alone and
  *  return false (the author decides) rather than silently repointing it. Returns true only if Pages is
  *  now — or already was — serving the branch we published; false otherwise (incl. no Pages scope/policy). */
+/**
+ * Enable GitHub Pages for `owner/repo`'s `branch`, addressed by the same owner/repo/token triple as
+ * {@link ensureRepo} — the desktop deploy path (Q-13) calls this AFTER `gh_push_tree` has landed the
+ * commit, so it must never throw for a Pages-only failure: a false return means "the commit is live but
+ * the author has to flip Pages on themselves" (drives the `manual-pages` state). Delegates to the same
+ * private {@link enablePages} the legacy browser path uses, so the "never repoint an existing Pages
+ * config" invariant has ONE definition. Returns true iff Pages now serves `branch`.
+ */
+export async function enablePagesFor(owner: string, repo: string, token: string, branch = "gh-pages"): Promise<boolean> {
+  const api = `https://api.github.com/repos/${owner}/${repo}`;
+  const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json", "Content-Type": "application/json" };
+  return enablePages(api, headers, branch);
+}
+
 async function enablePages(api: string, headers: Record<string, string>, branch: string): Promise<boolean> {
   // Already configured? (200) — only "on" for us if it already serves OUR branch. Don't repoint it.
   const get = await fetch(`${api}/pages`, { headers });
