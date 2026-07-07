@@ -9,13 +9,35 @@ Executing `docs/plans/PUBLISH-TO-WEB-PLAN.md` (committed on branch `worktree-pub
 worktree `.claude/worktrees/publish-to-web`; plan reviewed+approved; Q-12/Q-13 minted in
 docs/decisions/archie.md). Progress: **Waves 0–2 nearly done** — Task 1 types (`106dd23`),
 Task 2 spike git2=YES (`eec8768`), Tasks 3–5 Tauri commands (`75a5620`,`7b034fd`,`681e3f0`)
-+ review fixes (`c6ba97f`, poll deadline/async keyring/Debug redaction — gh_device_poll now
-takes expiresIn, Task 9 must pass it), Task 7 ensureRepo (`70a831e`, 726 render-core green),
-Task 6 gh_push_tree (`f72f0ba`, 13 cargo tests + ignored push_live for user). Task 8
-(deploy-flows orchestration) in flight; then Task 9 (session, same file), Wave 4 UI
-(Publish.svelte machine per docs/plans/GHPAGES-PUBLISH-UX.md), Wave 5 acceptance →
-ledgers/DEPLOY-VERIFY.md. USER ITEMS PENDING: OAuth app client_id (Q-B1, gates Wave-4 demo);
-optional `push_live` closure with a scratch repo (Task 14).
++ review fixes (`c6ba97f`, poll deadline/async keyring/Debug redaction — gh_device_poll takes
+expiresIn), Task 7 ensureRepo (`70a831e`), Task 6 gh_push_tree (`f72f0ba`, 13 cargo + ignored
+push_live), Task 8 deployToPages orchestration (`7d71882`, factory createDeployFlows +
+enablePagesFor wrapper), Task 9 sign-in/session (`a646760`, module-level exports,
+deviceFlowAvailable fork-safe-false). Main merged post-Issue-11-close; post-merge suites green
+(studio 226, cargo 13, tsc clean). **BUILD COMPLETE.** All 14 plan tasks done on `worktree-publish-to-web` (18 commits, `064af6f`..
+`e9e9eec`, off main). Full stack: Rust device-flow/keyring/git2-push commands (src-tauri/src/
+github.rs), deploy-flows.svelte.ts (session + deployToPages + checkRepoExists/listRepos/
+recheckPages), Publish.svelte machine (publish-machine.svelte.ts, headless-tested), App.svelte
+mount + PublishDialog chooser (flag deployToPages). Integration review PASS (all 15 deps sourced,
+flow-map wired node-for-node, initialSession live, token-safe). **Automated acceptance GREEN**
+(ledgers/DEPLOY-VERIFY.md): studio 270, render-core 737, cargo 13, tsc x2 exit 0, build clean.
+
+**REMAINING = USER-GATED live acceptance** (can't be faked — needs device + GitHub account):
+(1) register a GitHub OAuth App with Device Flow enabled, put its PUBLIC client id in
+archie.config.json `githubOAuthClientId` (the value pasted in chat earlier was the client SECRET —
+rotate it; device flow uses no secret); (2) packaged Tauri/Flatpak build (deploy is Rust-only);
+(3) drive happy path → live URL <10min (kill criterion); (4) optional push_live closure. Full
+steps in ledgers/DEPLOY-VERIFY.md. On live pass → merge worktree-publish-to-web.
+KNOWN LIMITATION (v1 accept): same-session re-publish returns to intro not update-confirm (keys off
+next-launch initialSession/remembered; keyring restore is the intended return path). IDE App.svelte
+type errors are CLI-tsc-clean phantoms (svelte-no-typecheck-net.md). Concurrency lessons →
+ledgers/HARVEST.md + memory. USER ITEMS: **client_id still needed — user pasted the client SECRET by
+mistake (told to rotate; device flow needs no secret)**; optional `push_live` closure (Task 14).
+CONCURRENCY LESSONS THIS WAVE: (1) reusing an Agent `name` → auto `-2` + crossed messages, use
+distinct names (memory saved); (2) a subagent rebased the shared worktree under another active
+agent — history rewrites in a shared worktree need a resync message to the co-located agent.
+Rejected deploy-flows draft (RepoOption[]/allowExisting) was dropped; correct backing
+(checkRepoExists→bool, listRepos→string[]) is Task 13's.
 
 ## DONE EARLIER THIS SESSION — /graft run (2026-07-05)
 
@@ -40,6 +62,19 @@ from the ledger. Cleanup owed by user: delete `micahchoo/archie-pages-probe` on 
 DIVERGENCES.md + probe ledger + HARVEST.md updates are uncommitted on main's working tree (commit
 only when user asks). Note: Directions 1–3 were verdicted *pursue* by a concurrent session
 mid-run (`ea5fe8f`–`246550d`); DIVERGENCES.md reflects that.
+
+## DONE — embed-autogrow shipped (DIVERGENCES.md #5, 2026-07-07)
+
+**`e3766bc`** — ResizeObserver→postMessage in element.ts (reader view excluded: zoom surface,
+feedback loop; convergence proven monotone), validated parent listener snippet in recipes/EMBED.md,
+demo recipes/09-autogrow.html, ledger `ledgers/PROBE-autogrow.md` (kill-criterion boundary:
+script-stripping hosts strip the listener too — fixed height remains their answer). Review-gated:
+ship-breaker caught (rebuilt dist chunks were gitignored/untracked → force-added coherently in BOTH
+tracked dist copies) + snippet clamp + src-leak discriminator fix. DIVERGENCES.md §5 status updated
+(file stays uncommitted — graft session owns it). ALSO this session (post-Issue-11): rail fixes
+`3c6523c` + `3238764` (ransom-note collapse; image-led tiles, position chip, auto-scroll,
+content-visibility). Studio dev server restored on :5174 (evicted Atlasdraw's spillover vite; its
+:5173 instance untouched).
 
 ## DONE — Issue 11 execution: scale & gallery plan fully shipped (2026-07-06)
 
