@@ -35,6 +35,7 @@ import type { AvPlayerSurface } from "./av-player.js";
 import { createNoteCard, noteBodyHtml, type NoteCard } from "./note-card.js";
 import { resolveExhibitTarget, type ResolvedTarget } from "./target-resolve.js";
 import { resolveContentState } from "./content-state.js";
+import { embedHeightMessage, heightToPost, isFramed } from "./embed-autogrow.js";
 import { encodeContentState } from "@render/core";
 
 type View =
@@ -87,6 +88,10 @@ export class ArchieViewerElement extends HTMLElement {
   #loadSeq = 0;
   /** Set once connected, so attribute changes BEFORE connection don't double-load on connect. */
   #connected = false;
+  // --- Embed auto-grow (DIVERGENCES §5): post rendered height to the parent so an iframe can size to it.
+  #resizeObserver: ResizeObserver | null = null;
+  #growRaf = 0;
+  #lastPostedHeight: number | null = null;
 
   constructor() {
     super();
@@ -111,12 +116,47 @@ export class ArchieViewerElement extends HTMLElement {
   connectedCallback(): void {
     this.#connected = true;
     void this.#load();
+    this.#startAutogrow();
   }
 
   disconnectedCallback(): void {
     this.#connected = false;
     this.#teardownSurface();
     this.#library?.revoke();
+    this.#stopAutogrow();
+  }
+
+  // --- Embed auto-grow ------------------------------------------------------------------------------
+  // Only inside an iframe (a top-level page sizes itself). Observe the HOST element — a STABLE target
+  // whose height reflects the shadow content across every view (the shadow tree is re-rendered wholesale,
+  // so observing an inner node would break on each render). rAF-coalesce so pan/zoom / reflow bursts post
+  // at most once per frame; heightToPost skips the reader view (avoids the 70vh feedback loop) + no-op posts.
+  #startAutogrow(): void {
+    if (this.#resizeObserver || typeof ResizeObserver === "undefined" || !isFramed(window)) return;
+    this.#resizeObserver = new ResizeObserver(() => this.#scheduleGrow());
+    this.#resizeObserver.observe(this);
+  }
+
+  #scheduleGrow(): void {
+    if (this.#growRaf) return; // a post is already queued for this frame
+    this.#growRaf = requestAnimationFrame(() => {
+      this.#growRaf = 0;
+      const h = heightToPost({ viewKind: this.#view.kind, height: this.offsetHeight, lastPosted: this.#lastPostedHeight });
+      if (h === null) return;
+      this.#lastPostedHeight = h;
+      // targetOrigin "*": the payload is a single non-sensitive height integer, and the parent's origin is
+      // unknowable from inside a (possibly sandboxed, cross-origin) iframe. The parent validates the
+      // sender by `event.source` (its own iframe window) + the namespaced message type — not by origin.
+      // Discriminator = the element's `id` only (NOT `src`): in the recommended wrapper-page pattern `src`
+      // is a URL the embedding parent can't otherwise see, and the snippet matches by `event.source` anyway.
+      window.parent.postMessage(embedHeightMessage(h, this.id || ""), "*");
+    });
+  }
+
+  #stopAutogrow(): void {
+    this.#resizeObserver?.disconnect();
+    this.#resizeObserver = null;
+    if (this.#growRaf) { cancelAnimationFrame(this.#growRaf); this.#growRaf = 0; }
   }
 
   attributeChangedCallback(name: string, oldVal: string | null, newVal: string | null): void {

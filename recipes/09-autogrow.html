@@ -1,0 +1,65 @@
+<!doctype html>
+<!--
+  recipes/09-autogrow.html — DEMO: an iframe that sizes itself to <archie-viewer>'s content (DIVERGENCES §5).
+  ================================================================================================
+  iframes don't grow with their content, so a long gallery gets clipped inside a fixed `height`. The
+  embedded <archie-viewer> POSTs its rendered height to this parent page; the ~8-line listener below
+  resizes the matching iframe to fit. Navigate the gallery → the iframe grows/shrinks with the content.
+
+  Serve from the REPO ROOT (same-origin, no internet needed for the gallery):
+      cd <repo root> && python3 -m http.server 8000
+      open http://localhost:8000/recipes/09-autogrow.html
+  Prereqs: a built bundle at /dist/archie-viewer.js and the baked tree at /apps/viewer/public/published/.
+
+  KILL-CRITERION (honest): a host that strips <script> from your content ALSO strips this listener, so
+  auto-grow can't run there — the fixed-height iframe (recipes/README.md → iframe fallback) stays the
+  answer for script-stripping CMSes. Auto-grow is for self-hosted pages + script-permitting hosts.
+  The deep-zoom READER keeps the iframe's current height (a zoom surface wants a viewport), so a
+  deep-link straight to a reader is best served by the fixed height.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>archie-viewer — iframe auto-grow demo</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; background: #efe7df; color: #2a2320; }
+    .wrap { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-weight: 300; }
+    p { color: #6b5d52; line-height: 1.5; }
+    /* NO fixed height on the iframe — the listener sets it from the embed's posted content height.
+       A min-height avoids a 0px flash before the first message arrives. */
+    iframe { width: 100%; min-height: 320px; border: 1px solid #c9a98f; border-radius: 8px; background: #fff; }
+    code { background: #e7ded7; padding: 0 .3rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>iframe auto-grow</h1>
+    <p>The iframe below has <strong>no fixed height</strong>. The embedded <code>&lt;archie-viewer&gt;</code>
+       posts its content height and the page resizes the iframe to match — click a card, open an object,
+       come back, and watch the frame follow the content.</p>
+    <!-- The inner page (srcdoc) hosts the element at its NATURAL height (no height style), so it grows with
+         content. srcdoc's base URL is this page's, so /dist and /apps resolve from the server root. -->
+    <iframe
+      id="embed"
+      title="Archie viewer (auto-grow)"
+      loading="lazy"
+      srcdoc="<script type='module' src='/dist/archie-viewer.js'></script><archie-viewer src='/apps/viewer/public/published/' style='display:block'></archie-viewer>"></iframe>
+  </div>
+
+  <!-- ── THE AUTO-GROW LISTENER — copy this into your host page. ─────────────────────────────────── -->
+  <script>
+    // Resize each <archie-viewer> iframe to the height it posts (DIVERGENCES §5 / anvil ADR-0006 F1).
+    // Matches the sender iframe by event.source, so several embeds on one page each size independently.
+    addEventListener("message", (e) => {
+      if (e.data?.type !== "archie-embed:height") return;
+      const h = Number(e.data.height);
+      if (!Number.isFinite(h) || h < 0 || h > 16000) return; // ignore a hostile/buggy height — never blow up the page
+      for (const f of document.querySelectorAll("iframe")) {
+        if (f.contentWindow === e.source) { f.style.height = h + "px"; break; }
+      }
+    });
+  </script>
+</body>
+</html>

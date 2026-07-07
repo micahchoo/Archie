@@ -134,8 +134,10 @@ art Archie's embed design adopts), is the **iframe**. Host a tiny page that itse
 ```
 
 > **iframe height note:** iframes do not auto-grow with their content. Give the iframe a fixed
-> `height` (above), or wire a `postMessage` height-resize handshake (anvil ADR-0006 follow-up F1).
-> The fixed height is the no-JavaScript floor and works everywhere.
+> `height` (above) — the no-JavaScript floor that works everywhere — **or**, if your host page can run
+> `<script>`, drop in the built auto-grow listener ([EMBED.md → "Auto-grow the iframe to its content"](EMBED.md);
+> live demo `recipes/09-autogrow.html`): the embed posts its height and the listener sizes the iframe to
+> fit. Hosts that strip `<script>` also strip the listener, so the fixed height stays the answer there.
 
 The WordPress (`06`) and Ghost (`07`) recipes show both: the `<script>`+element first, and the
 iframe fallback if the theme strips it.

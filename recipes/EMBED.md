@@ -63,3 +63,32 @@ the script + element, then point an `<iframe>` at it — iframes survive almost 
         style="width:100%;height:600px;border:0" loading="lazy"
         title="Codex — Archie viewer"></iframe>
 ```
+
+#### Auto-grow the iframe to its content (optional)
+
+iframes don't grow with their content, so a long gallery is clipped inside a fixed `height`. The embed
+posts its rendered height to the parent; if your host page can run a `<script>`, drop in this listener
+(and drop the fixed `height`, or keep it as a minimum) — the iframe then sizes itself to the content:
+
+```html
+<script>
+  // Resize each <archie-viewer> iframe to the height it posts (DIVERGENCES §5 / anvil ADR-0006 F1).
+  // Matches the sender by event.source, so several embeds on one page each size independently.
+  addEventListener("message", (e) => {
+    if (e.data?.type !== "archie-embed:height") return;
+    const h = Number(e.data.height);
+    if (!Number.isFinite(h) || h < 0 || h > 16000) return; // ignore a hostile/buggy height — never blow up the page
+    for (const f of document.querySelectorAll("iframe")) {
+      if (f.contentWindow === e.source) { f.style.height = h + "px"; break; }
+    }
+  });
+</script>
+```
+
+**Where it works, and where it can't (honest boundary):** auto-grow needs the parent page to run
+`<script>`. A host that strips `<script>` from your content — the same Notion / Substack / Squarespace /
+locked-WordPress class that forced the iframe fallback above — **also strips this listener**, so auto-grow
+is unreachable exactly there; for those hosts the **fixed-height iframe is the answer**. Auto-grow is for
+self-hosted pages and script-permitting CMSes. It fits the gallery and exhibit grids; the deep-zoom
+**reader keeps the iframe's current height** (a zoom surface wants a viewport), so a deep-link straight to
+a reader is best served by a fixed height. Working demo: [`recipes/09-autogrow.html`](09-autogrow.html).
