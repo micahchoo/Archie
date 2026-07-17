@@ -24,6 +24,24 @@ export function filterImages(images: readonly ImageIndexEntry[], query: string):
   return images.filter((e) => matchesTitle(e.title, query));
 }
 
+/**
+ * Merge the LIVE working-store wall over the HOSTED one (STALENESS st3) — the image-index twin of
+ * `mergeGalleries`. Live images front; hosted entries for a slug the live source FRONTS (`liveSlugs`) are
+ * DROPPED. Without this, `loadImageIndex` returned the hosted index alone while `mergeGalleries` fronted
+ * live exhibits — so a colliding-slug wall tile routed to the LIVE exhibit but carried a HOSTED object id,
+ * a dead link. Pure; returns `null` only when neither source exists (→ no wall, ADR-0023 degradation).
+ */
+export function mergeImageIndex(
+  live: ImageIndex | null,
+  hosted: ImageIndex | null,
+  liveSlugs: ReadonlySet<string>,
+): ImageIndex | null {
+  if (!live && !hosted) return null;
+  const liveImages = live?.images ?? [];
+  const hostedImages = (hosted?.images ?? []).filter((e) => !liveSlugs.has(e.exhibitSlug)); // drop stale/collision
+  return { images: [...liveImages, ...hostedImages] };
+}
+
 /** The in-app hash route for an image on the wall → the Object in its published Exhibit (existing grammar
  *  `#/<slug>/o/<id>`; the index's objectId IS the bare object id). No new routing. */
 export function wallHref(entry: ImageIndexEntry): string {

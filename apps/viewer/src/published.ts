@@ -15,6 +15,7 @@ import {
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex, type NoteTransform,
 } from "@render/core";
 import { BASE } from "./published-base.js";
+import { mergeImageIndex } from "./gallery-view.js";
 
 export { SRC_MAX_BYTES };
 
@@ -268,7 +269,17 @@ export async function loadImageIndex(): Promise<ImageIndex | null> {
     // FAILED read (5xx / torn body) throws `FailedReadError` → the outer catch degrades the wall to null
     // (a broken index safely hides the wall, cards still work). Don't use fetchJson (it error-logs a
     // user-facing message for every old tree that legitimately has no images.json).
-    return await fetchJsonOptional<ImageIndex>("images.json");
+    const hosted = await fetchJsonOptional<ImageIndex>("images.json");
+    // STALENESS st3: front the LIVE working-store wall over the hosted one, dropping hosted entries for a
+    // slug the live source FRONTS (so a colliding-slug wall tile can't route to the live exhibit with a
+    // stale hosted object id — the dead-link mergeGalleries left open). The live projection wrote its own
+    // images.json (publishLibrary), so read it from the in-memory tree; no baked index there → null → the
+    // hosted wall stands alone.
+    if (liveFs) {
+      const live = await fsJsonSource(liveFs).getOptional<ImageIndex>("images.json");
+      return mergeImageIndex(live, hosted, liveSlugs);
+    }
+    return hosted;
   } catch {
     return null; // fetch reject / corrupt JSON → degrade: no wall, cards only
   }
