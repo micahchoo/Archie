@@ -272,9 +272,16 @@ export function createBindingStore(deps: BindingDeps) {
     //   passes; `dirty`-only reruns just that exhibit's JSON/HTML (the note-edit hot path). —
     // Re-marking a slug for WRITING cancels any pending EXHIBIT removal of it (a remove-then-recreate in one
     // drain must not both write and delete the exhibit) — the inverse of markExhibitRemoved's dEx.delete.
-    // We do NOT purge dRemovedObj here: object ids are minted fresh on every add, so a pending object removal
-    // always names a genuinely-gone object, and the site.ts prune runs BEFORE the write loop — a stale entry
-    // is harmless. (If object ids ever become reusable, this stops holding — purge dRemovedObj by objId then.)
+    // We do NOT purge dRemovedObj here. NB: object ids are NOT always minted fresh — nextObjectId (ingest-
+    // flows.ts) REUSES a freed trailing id (remove o3 from [o1,o2,o3], re-add → o3 again; a freed MIDDLE id
+    // is not reused). So a re-add can name-collide with a pending removal of the SAME id+asset. This is still
+    // safe, but for a SUBTLER reason than "ids are fresh": any asset-writing re-add sets `reassets` for the
+    // exhibit (markAssetsDirty), so in a single drain site.ts PRUNES the file then RE-COPIES it in the same
+    // asset pass — the tree ends consistent; across drains each drain is self-consistent (ISSUES.md Issue 25
+    // row (e), ledgers/MIRROR.md: two concurrently-live objects can never share an asset name, so the
+    // prune-vs-skip-asset-pass dangling manifest is not-reachable). The load-bearing invariant is therefore
+    // "an asset-writing re-add always marks reassets", NOT "ids are fresh" — if that ever stops holding,
+    // purge dRemovedObj by matching (slug, assetName) against live objects here.
     /** A note edit / exhibit-metadata edit — rewrite that exhibit's JSON/HTML only (no byte passes). */
     markExhibitDirty(slug: string) { dEx.add(slug); dRemovedEx = dRemovedEx.filter((x) => x !== slug); },
     /** An object added / an asset changed — also rerun that exhibit's asset-copy + tiling byte passes. */
