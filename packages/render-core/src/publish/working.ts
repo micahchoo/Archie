@@ -19,6 +19,8 @@ import type { AnnotationLog } from "../wadm/types.js";
 import type { ClientId } from "../wadm/brand.js";
 import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 import { readAnnotationsReport, AnnotationsCorruptError } from "../spine/persist.js";
+import type { Exhibit, AObject } from "../model/model.js";
+import type { CarryDisposition } from "../model/carry.js";
 
 /** The Studio's working-store root directory name (one project per origin in v1). */
 export const WORKING_PROJECT = "archie-demo-project";
@@ -62,6 +64,15 @@ export interface WorkingObjectMeta extends RightsFields {
   height?: number;
   /** Media kind — "image" (default, OSD) vs "sound"/"video" (the temporal AvEditor). */
   mediaType?: MediaType;
+  /** MIME type of the source (e.g. image/jpeg) — projects to the Canvas body `format`. Round-trip slot
+   *  (Issue 21): recovered on import via `objectsFromManifest`, so `libraryToWorking` must keep it or a
+   *  covered-import→republish drops the declared MIME. */
+  format?: string;
+  /** Preserved-original filename (the EXIF display-master citation master, `assets-original/{name}`).
+   *  Round-trip slot (Issue 21) separate from `provenance` — a `Library` reconstructed from a published
+   *  tree carries `originalName` but NOT the full `provenance` (exifOrientation+transform), so this slot
+   *  lets the import→republish round trip keep the citation ref without inventing a fake provenance. */
+  originalName?: string;
   /** Seconds — for sound/video objects. */
   duration?: number;
   /** Geo-annotation extension (DESIGN.md): when set, this object is a slippy-map basemap — mounted as a
@@ -81,6 +92,10 @@ export interface WorkingExhibitMeta extends RightsFields {
   title: string;
   /** Optional exhibit description — projects to the Manifest `summary`. */
   summary?: string;
+  /** Cover image URL for the Gallery card (UX-Q7). Round-trip slot (Issue 21): recovered on import via
+   *  exhibits.json/loadLibrary, so `libraryToWorking` must keep it or a covered `.archie.zip` import +
+   *  republish makes the covers the viewer renders (`Gallery.svelte`) VANISH. */
+  cover?: string;
   /** @deprecated (ADR-0016) The leading surface is now a pure function of content — `resolveLayout`
    *  always DERIVES the type and IGNORES this field. Kept OPTIONAL only for read-tolerance of legacy
    *  stored data (harmless when present); the Studio MUST NOT write it. Remove once no stored exhibit
@@ -127,6 +142,22 @@ export interface WorkingToLibraryOptions {
   isTemplate?: (ex: WorkingExhibitMeta) => boolean;
 }
 
+// EXHAUSTIVENESS GUARD (Issue 21): workingToLibrary must account for every WORKING field. `seedVersion`
+// is a template marker (not a Library field); `provenance` is Studio-local except `originalName`, which
+// carries as `Library.originalName`. A new working field fails the build here until classified.
+const _workingExhibitCarry = {
+  id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry",
+  layout: "carry", mode: "carry", objects: "carry", sections: "carry", readings: "carry",
+  rights: "carry", requiredStatement: "carry",
+  seedVersion: { drop: "template marker (Playground example); not a Library field — see includeTemplates filter" },
+} satisfies Record<keyof WorkingExhibitMeta, CarryDisposition>;
+const _workingObjectCarry = {
+  id: "carry", source: "carry", label: "carry", summary: "carry", width: "carry", height: "carry",
+  mediaType: "carry", format: "carry", originalName: "carry", duration: "carry", tileSource: "carry",
+  thumbnail: "carry", rights: "carry", requiredStatement: "carry",
+  provenance: { drop: "exif/transform are Studio-local; only originalName round-trips (→ Library.originalName)" },
+} satisfies Record<keyof WorkingObjectMeta, CarryDisposition>;
+
 /** Map the persisted working structure to the publishable `Library` (the pure half of the Studio's
  *  `buildFullLibrary`, extracted so the Viewer's live source and the Studio cannot drift). */
 export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibraryOptions = {}): Library {
@@ -141,6 +172,7 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
     exhibits: source.map((ex) => ({
       id: asExhibitId(ex.id), slug: ex.slug, title: ex.title,
       ...(ex.summary ? { summary: ex.summary } : {}),
+      ...(ex.cover ? { cover: ex.cover } : {}), // round-trip the Gallery cover (Issue 21)
       ...(ex.layout ? { layout: ex.layout } : {}),
       ...(ex.mode ? { mode: ex.mode } : {}),
       ...(ex.sections && ex.sections.length ? { sections: ex.sections } : {}),
@@ -152,10 +184,12 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
         ...(o.width !== undefined ? { width: o.width } : {}),
         ...(o.height !== undefined ? { height: o.height } : {}),
         ...(o.mediaType ? { mediaType: o.mediaType } : {}),
+        ...(o.format ? { format: o.format } : {}), // round-trip the source MIME (Issue 21)
         ...(o.tileSource ? { tileSource: o.tileSource } : {}),
         ...(o.duration !== undefined ? { duration: o.duration } : {}),
         ...(o.thumbnail ? { thumbnail: o.thumbnail } : {}),
-        ...(o.provenance?.originalName ? { originalName: o.provenance.originalName } : {}),
+        // originalName: the standalone import slot wins, else the Studio-native provenance (Issue 21).
+        ...(o.originalName ?? o.provenance?.originalName ? { originalName: o.originalName ?? o.provenance!.originalName } : {}),
         ...rightsOf(o),
       })),
     })),
