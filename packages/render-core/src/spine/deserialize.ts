@@ -105,9 +105,24 @@ export function fromHistoryPage(page: W3CAnnotationPage): AnnotationRecord[] {
   return out;
 }
 
-/** Reconstruct the full append-only log from a set of history pages. */
+/**
+ * Reconstruct the full append-only log from a set of history pages, DEDUPED by `rev` (first-seen
+ * order), mirroring `serialize.ts`'s `dedupe`. Deserialize is the inverse of serialize, so it must
+ * carry the same rev-uniqueness invariant: a duplicated page or a doubly-listed record (a torn /
+ * doubled write) would otherwise put the same `rev` in the log twice, and `linearHead` reads two
+ * identical records as PLURAL HEADS → a spurious "resolve the concurrent merge first" throw on the
+ * next edit of an otherwise-linear note (Issue 19c). Distinct revs sharing (logicalId, version) —
+ * a genuine unresolved merge — are preserved; only exact `rev` collisions collapse.
+ */
 export function fromHistory(pages: Iterable<W3CAnnotationPage>): AnnotationLog {
+  const seen = new Set<RevId>();
   const out: AnnotationRecord[] = [];
-  for (const page of pages) out.push(...fromHistoryPage(page));
+  for (const page of pages) {
+    for (const rec of fromHistoryPage(page)) {
+      if (seen.has(rec.rev)) continue;
+      seen.add(rec.rev);
+      out.push(rec);
+    }
+  }
   return out;
 }
