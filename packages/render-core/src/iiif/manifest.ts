@@ -3,6 +3,7 @@
 // to the Archie heads AnnotationPage where the notes for that canvas load.
 
 import type { AObject, Exhibit, MediaType, Section } from "../model/model.js";
+import type { CarryDisposition } from "../model/carry.js";
 import type {
   SectionAnnotation,
   W3CAnnotation,
@@ -150,6 +151,19 @@ export function canvasIdMap(manifest: IIIFManifest): Record<string, string> {
   for (const canvas of manifest.items) map[objIdFromCanvasId(canvas.id)] = canvas.id;
   return map;
 }
+
+// EXHAUSTIVENESS GUARD (Issue 21): objectsFromManifest must account for every AObject field. Two are
+// deliberately NOT recovered from the manifest transport: `originalName` (the citation master is
+// published to `assets-original/` but the manifest carries no recoverable ref) and `bakeTiles` (a
+// publish-time opt-in — the DZI RESULT is stamped as `tileSource`, so the flag itself is spent). A new
+// AObject field fails the build here until a recover-or-drop decision is made.
+const _manifestObjectRecover = {
+  id: "carry", source: "carry", label: "carry", summary: "carry", mediaType: "carry",
+  tileSource: "carry", width: "carry", height: "carry", duration: "carry", format: "carry",
+  thumbnail: "carry", rights: "carry", requiredStatement: "carry",
+  originalName: { drop: "no recoverable ref in the manifest (published to assets-original/ only)" },
+  bakeTiles: { drop: "publish-time opt-in; the baked DZI is recovered as tileSource, the flag is spent" },
+} satisfies Record<keyof AObject, CarryDisposition>;
 
 /** Reverse of toManifest: recover the Objects from an IIIF Manifest's canvases (load path). */
 export function objectsFromManifest(manifest: IIIFManifest): AObject[] {
