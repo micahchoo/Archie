@@ -1,6 +1,7 @@
 // PROBE (Issues 23/24) — characterizes the hosted viewer's read/staleness behavior via a mocked fetch.
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { loadImageIndex, loadPublishedExhibit, loadGallery } from "./published.js";
+import { BASE as CANONICAL_BASE } from "./published-base.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -95,5 +96,27 @@ describe("generation keying + hostedCache invalidation (STALENESS st2)", () => {
     await loadPublishedExhibit("rd");
     expect(urls2.filter((u) => u.includes("rd/manifest.json")).length).toBe(1); // re-fetched under gk3 (cache busted)
     expect(urls2.some((u) => u.includes("rd/manifest.json?g=gk3"))).toBe(true);
+  });
+});
+
+describe("hostedRebase note-body ${BASE} cite → serving origin (STALENESS st4)", () => {
+  it("rewrites a ${BASE} image URL embedded in a note body; leaves remote URLs alone", async () => {
+    const note = {
+      id: "https://u/st4/canvas/o1/a1", type: "Annotation",
+      target: "https://u/st4/canvas/o1",
+      body: { type: "TextualBody", value: `see ![](${CANONICAL_BASE}screenshots/x.png) and https://remote/y.png` },
+    };
+    const manifest = {
+      "@context": "http://iiif.io/api/presentation/3/context.json",
+      id: "m", type: "Manifest", label: { none: ["St4"] },
+      items: [{ id: "https://u/st4/canvas/o1", type: "Canvas", label: { none: ["o1"] }, height: 1, width: 1,
+        items: [], annotations: [{ id: "https://u/st4/canvas/o1/annotations.json", type: "AnnotationPage", items: [note] }] }],
+    };
+    stub((u) => (u.includes("st4/manifest.json") ? { status: 200, body: manifest } : { status: 404 }));
+    const ex = await loadPublishedExhibit("st4");
+    const value = (ex.annotationsByObject.o1![0]!.body as { value: string }).value;
+    expect(value).toContain("/published/screenshots/x.png"); // ${BASE} cite rebased to the serving origin
+    expect(value).not.toContain(CANONICAL_BASE); // no canonical BASE left behind
+    expect(value).toContain("https://remote/y.png"); // remote URL untouched
   });
 });

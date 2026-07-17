@@ -48,10 +48,38 @@ const hostedRebase: NoteTransform = {
       ...(tileSource !== undefined ? { tileSource } : {}),
     };
   },
-  // Note-body visual cites can embed a `${BASE}` image too — same portability gap, left as a focused
-  // follow-up; the reported break is object media. Identity keeps notes untouched.
-  note: async (n) => n,
+  // Note-body visual cites can embed a `${BASE}` image too (STALENESS st4) — the SAME re-host portability
+  // gap as object media, previously left as identity. Rewrite `${BASE}` occurrences inside each textual
+  // body's `value` to the serving origin (`${PUBLISHED}/`) — a plain substring replacement mirroring
+  // `toServingOrigin`, no markup parsing (the canonical BASE prefix is an unambiguous absolute-URL token).
+  // Remote/data/blob URLs (not BASE-prefixed) are untouched. Returns the SAME object when nothing changed
+  // so the read stays referentially stable for a clean tree.
+  note: async (n) => rebaseNoteBodies(n),
 };
+
+/** Rewrite `${BASE}...` image cites embedded in a note's textual-body values → the serving origin (st4). */
+function rebaseNoteBodies<T extends { body?: unknown }>(n: T): T {
+  const rebaseValue = (v: string): string => (v.includes(BASE) ? v.split(BASE).join(`${PUBLISHED}/`) : v);
+  const rebaseBody = (b: unknown): unknown => {
+    if (b && typeof b === "object" && typeof (b as { value?: unknown }).value === "string") {
+      const value = (b as { value: string }).value;
+      const next = rebaseValue(value);
+      if (next !== value) return { ...(b as object), value: next };
+    }
+    return b;
+  };
+  const body = n.body;
+  if (Array.isArray(body)) {
+    let changed = false;
+    const next = body.map((b) => { const r = rebaseBody(b); if (r !== b) changed = true; return r; });
+    return changed ? { ...n, body: next } : n;
+  }
+  if (body !== undefined) {
+    const r = rebaseBody(body);
+    if (r !== body) return { ...n, body: r };
+  }
+  return n;
+}
 
 /** The exhibit data components consume — UNIFIED with core's portable shape (ADR-0010) so the two
  *  read paths can never drift. (Was a duplicate interface; now one source of truth.) */
