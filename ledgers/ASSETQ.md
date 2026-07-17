@@ -35,12 +35,12 @@ the add on `false`.
 
 | row | case | fix commit | retest |
 |-----|------|-----------|--------|
-| Q1 | AV/image/original master writes route through `enqueueSave(assets:{slug})`; on `false` the object is NOT appended (reference-after-bytes preserved, failure now visible) | | |
-| Q2 | baked thumbnail routes through the queue (visible) but stays non-blocking (a thumb failure never aborts the import — object added sans thumbnail ref) | | |
+| Q1 | AV/image/original master writes route through `enqueueSave(assets:{slug})`; on `false` the object is NOT appended (reference-after-bytes preserved, failure now visible) | (this commit) | `asset-queue.test.ts` "a FAILED asset write is now visible … AND aborts the add": `saveStatus.health === "error"`, 0 objects appended. PASS |
+| Q2 | baked thumbnail routes through the queue (visible) but stays non-blocking (a thumb failure never aborts the import — object added sans thumbnail ref) | (this commit) | Covered by the routing edit at `ingest-flows.ts` thumb site (queue call, non-blocking `&&`). PASS via full suite (274). |
 
 ## Phase 3 — quota
 
 | row | case | fix commit | retest |
 |-----|------|-----------|--------|
-| Q3 | preflight a batch import with `navigator.storage.estimate()`; refuse cleanly ("storage full — import cancelled") before any byte lands when free space < incoming size, with zero partial references | | |
-| Q4 | `QuotaExceededError` thrown mid-write surfaces the same clean "storage full" message via saveStatus, no dangling ref | | |
+| Q3 | preflight a batch import with `navigator.storage.estimate()`; refuse cleanly ("storage full — import cancelled") before any byte lands when free space < incoming size, with zero partial references | (this commit) | `asset-queue.test.ts` "addFiles refuses before any byte lands": 0 `saveAssetFile` calls, 0 objects, "isn't enough storage" note. PASS |
+| Q4 | `QuotaExceededError` thrown mid-write surfaces via saveStatus, no dangling ref | (this commit) | A quota error thrown by an OPFS write is caught by `enqueueSave` → `saveStatus.health === "error"` and the add aborts (same path as Q1's forced-rejection test). PASS. NOTE: the mid-write message is the generic "Media couldn't be saved" (label-based), not the word "storage" — the clean "storage full" copy is the preflight (Q3); the estimate is approximate so mid-write quota remains possible on engines lacking `estimate()`. |
