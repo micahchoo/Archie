@@ -1,0 +1,445 @@
+{
+  "images": [
+    {
+      "objectId": "o1",
+      "exhibitSlug": "assets",
+      "title": "o2-APC_SHAYARAS_YARAN-E-ADAB_RUQSANANAZNEEN_20191128_a01"
+    },
+    {
+      "objectId": "o2",
+      "exhibitSlug": "assets",
+      "title": "o3-IMG_9101"
+    },
+    {
+      "objectId": "o1",
+      "exhibitSlug": "screenshots",
+      "title": "e1-embed",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o2",
+      "exhibitSlug": "screenshots",
+      "title": "s1-library",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o3",
+      "exhibitSlug": "screenshots",
+      "title": "s2-overview",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o4",
+      "exhibitSlug": "screenshots",
+      "title": "s3-canvas",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o5",
+      "exhibitSlug": "screenshots",
+      "title": "s4-readings",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o6",
+      "exhibitSlug": "screenshots",
+      "title": "s5-narrative",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o7",
+      "exhibitSlug": "screenshots",
+      "title": "s6a-audio",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o8",
+      "exhibitSlug": "screenshots",
+      "title": "s6b-video",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o9",
+      "exhibitSlug": "screenshots",
+      "title": "s7-map",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o10",
+      "exhibitSlug": "screenshots",
+      "title": "s8-cite",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o11",
+      "exhibitSlug": "screenshots",
+      "title": "s9-meta",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o12",
+      "exhibitSlug": "screenshots",
+      "title": "s10-ingest",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o13",
+      "exhibitSlug": "screenshots",
+      "title": "s11-publish",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o14",
+      "exhibitSlug": "screenshots",
+      "title": "s12-shortcuts",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o15",
+      "exhibitSlug": "screenshots",
+      "title": "v1-gallery",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o16",
+      "exhibitSlug": "screenshots",
+      "title": "v2-reader",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o18",
+      "exhibitSlug": "screenshots",
+      "title": "v4-av",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o19",
+      "exhibitSlug": "screenshots",
+      "title": "v5-search",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o20",
+      "exhibitSlug": "screenshots",
+      "title": "v6-lightbox",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o21",
+      "exhibitSlug": "screenshots",
+      "title": "v7-sheet",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o17",
+      "exhibitSlug": "screenshots",
+      "title": "v3-narrative",
+      "width": 1440,
+      "height": 900
+    },
+    {
+      "objectId": "o9",
+      "exhibitSlug": "voynich-rosettes",
+      "title": "f85v–86r — Cosmological (the Rosettes foldout)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006231/full/240,/0/default.jpg",
+      "width": 7925,
+      "height": 7268
+    },
+    {
+      "objectId": "o1",
+      "exhibitSlug": "voynich",
+      "title": "f1r — Herbal (opening page)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006076/full/240,/0/default.jpg",
+      "width": 2972,
+      "height": 3766
+    },
+    {
+      "objectId": "o2",
+      "exhibitSlug": "voynich",
+      "title": "f18v — Herbal (the sonified folio)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006109/full/240,/0/default.jpg",
+      "width": 2846,
+      "height": 3781
+    },
+    {
+      "objectId": "o3",
+      "exhibitSlug": "voynich",
+      "title": "f25v — Herbal",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006123/full/240,/0/default.jpg",
+      "width": 2863,
+      "height": 3769
+    },
+    {
+      "objectId": "o4",
+      "exhibitSlug": "voynich",
+      "title": "f33v — Herbal",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006139/full/240,/0/default.jpg",
+      "width": 2871,
+      "height": 3769
+    },
+    {
+      "objectId": "o5",
+      "exhibitSlug": "voynich",
+      "title": "f67r — Astronomical (foldout)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006194/full/240,/0/default.jpg",
+      "width": 4972,
+      "height": 3738
+    },
+    {
+      "objectId": "o6",
+      "exhibitSlug": "voynich",
+      "title": "f68r — Astronomical (foldout star-chart)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006196/full/240,/0/default.jpg",
+      "width": 7993,
+      "height": 3828
+    },
+    {
+      "objectId": "o7",
+      "exhibitSlug": "voynich",
+      "title": "f75r — Balneological",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006208/full/240,/0/default.jpg",
+      "width": 2852,
+      "height": 3759
+    },
+    {
+      "objectId": "o8",
+      "exhibitSlug": "voynich",
+      "title": "f78r — Balneological",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006214/full/240,/0/default.jpg",
+      "width": 2793,
+      "height": 3761
+    },
+    {
+      "objectId": "o9",
+      "exhibitSlug": "voynich",
+      "title": "f85v–86r — Cosmological (the Rosettes foldout)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006231/full/240,/0/default.jpg",
+      "width": 7925,
+      "height": 7268
+    },
+    {
+      "objectId": "o10",
+      "exhibitSlug": "voynich",
+      "title": "f99r — Pharmaceutical",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006246/full/240,/0/default.jpg",
+      "width": 2702,
+      "height": 3765
+    },
+    {
+      "objectId": "o11",
+      "exhibitSlug": "voynich",
+      "title": "f116v — Recipes (the final page)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006277/full/240,/0/default.jpg",
+      "width": 2686,
+      "height": 3697
+    },
+    {
+      "objectId": "o12",
+      "exhibitSlug": "voynich",
+      "title": "Kryptogramm — “04-f18v” (sonified folio 18v)"
+    },
+    {
+      "objectId": "o1",
+      "exhibitSlug": "voynich-reading",
+      "title": "f1r — Herbal (opening page)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006076/full/240,/0/default.jpg",
+      "width": 2972,
+      "height": 3766
+    },
+    {
+      "objectId": "o2",
+      "exhibitSlug": "voynich-reading",
+      "title": "f18v — Herbal (the sonified folio)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006109/full/240,/0/default.jpg",
+      "width": 2846,
+      "height": 3781
+    },
+    {
+      "objectId": "o3",
+      "exhibitSlug": "voynich-reading",
+      "title": "f25v — Herbal",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006123/full/240,/0/default.jpg",
+      "width": 2863,
+      "height": 3769
+    },
+    {
+      "objectId": "o4",
+      "exhibitSlug": "voynich-reading",
+      "title": "f33v — Herbal",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006139/full/240,/0/default.jpg",
+      "width": 2871,
+      "height": 3769
+    },
+    {
+      "objectId": "o5",
+      "exhibitSlug": "voynich-reading",
+      "title": "f67r — Astronomical (foldout)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006194/full/240,/0/default.jpg",
+      "width": 4972,
+      "height": 3738
+    },
+    {
+      "objectId": "o6",
+      "exhibitSlug": "voynich-reading",
+      "title": "f68r — Astronomical (foldout star-chart)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006196/full/240,/0/default.jpg",
+      "width": 7993,
+      "height": 3828
+    },
+    {
+      "objectId": "o7",
+      "exhibitSlug": "voynich-reading",
+      "title": "f75r — Balneological",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006208/full/240,/0/default.jpg",
+      "width": 2852,
+      "height": 3759
+    },
+    {
+      "objectId": "o8",
+      "exhibitSlug": "voynich-reading",
+      "title": "f78r — Balneological",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006214/full/240,/0/default.jpg",
+      "width": 2793,
+      "height": 3761
+    },
+    {
+      "objectId": "o9",
+      "exhibitSlug": "voynich-reading",
+      "title": "f85v–86r — Cosmological (the Rosettes foldout)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006231/full/240,/0/default.jpg",
+      "width": 7925,
+      "height": 7268
+    },
+    {
+      "objectId": "o10",
+      "exhibitSlug": "voynich-reading",
+      "title": "f99r — Pharmaceutical",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006246/full/240,/0/default.jpg",
+      "width": 2702,
+      "height": 3765
+    },
+    {
+      "objectId": "o11",
+      "exhibitSlug": "voynich-reading",
+      "title": "f116v — Recipes (the final page)",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006277/full/240,/0/default.jpg",
+      "width": 2686,
+      "height": 3697
+    },
+    {
+      "objectId": "o12",
+      "exhibitSlug": "voynich-reading",
+      "title": "Kryptogramm — “04-f18v” (sonified folio 18v)"
+    },
+    {
+      "objectId": "o1",
+      "exhibitSlug": "language-atlas",
+      "title": "North America",
+      "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0166.jp2/full/240,/0/default.jpg",
+      "width": 2550,
+      "height": 3301
+    },
+    {
+      "objectId": "o2",
+      "exhibitSlug": "language-atlas",
+      "title": "Western South America",
+      "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0176.jp2/full/240,/0/default.jpg",
+      "width": 2550,
+      "height": 3301
+    },
+    {
+      "objectId": "o3",
+      "exhibitSlug": "language-atlas",
+      "title": "The Caucasus",
+      "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0184.jp2/full/240,/0/default.jpg",
+      "width": 2550,
+      "height": 3301
+    },
+    {
+      "objectId": "o4",
+      "exhibitSlug": "language-atlas",
+      "title": "Western Africa",
+      "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0190.jp2/full/240,/0/default.jpg",
+      "width": 2550,
+      "height": 3301
+    },
+    {
+      "objectId": "o5",
+      "exhibitSlug": "language-atlas",
+      "title": "Siberia",
+      "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0196.jp2/full/240,/0/default.jpg",
+      "width": 2550,
+      "height": 3301
+    },
+    {
+      "objectId": "o6",
+      "exhibitSlug": "language-atlas",
+      "title": "The Himalaya",
+      "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0202.jp2/full/240,/0/default.jpg",
+      "width": 2550,
+      "height": 3301
+    },
+    {
+      "objectId": "o7",
+      "exhibitSlug": "language-atlas",
+      "title": "South-East Asia",
+      "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0208.jp2/full/240,/0/default.jpg",
+      "width": 2550,
+      "height": 3301
+    },
+    {
+      "objectId": "o8",
+      "exhibitSlug": "language-atlas",
+      "title": "Australia",
+      "thumbnail": "https://iiif.archive.org/image/iiif/3/atlas-of-the-worlds-languages-in-danger%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2.zip%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_jp2%2FAtlas%20of%20the%20world%27s%20languages%20in%20danger_0214.jp2/full/240,/0/default.jpg",
+      "width": 2550,
+      "height": 3301
+    },
+    {
+      "objectId": "m1",
+      "exhibitSlug": "geo-map",
+      "title": "World basemap"
+    },
+    {
+      "objectId": "sv1",
+      "exhibitSlug": "sampler",
+      "title": "Big Buck Bunny (10s clip) — annotate a frame",
+      "width": 640,
+      "height": 360
+    },
+    {
+      "objectId": "sa1",
+      "exhibitSlug": "sampler",
+      "title": "Kryptogramm recording — listen with a transcript"
+    },
+    {
+      "objectId": "si1",
+      "exhibitSlug": "sampler",
+      "title": "A page with a note that carries a picture",
+      "thumbnail": "https://collections.library.yale.edu/iiif/2/1006076/full/240,/0/default.jpg",
+      "width": 2972,
+      "height": 3766
+    }
+  ],
+  "schemaVersion": 1
+}
