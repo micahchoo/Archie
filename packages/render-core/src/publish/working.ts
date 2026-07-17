@@ -196,14 +196,30 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
   };
 }
 
+// EXHAUSTIVENESS GUARD (Issue 21): libraryToWorking must account for every PUBLISHED (`Exhibit`/`AObject`)
+// field, so a field recovered on import is carried into the working store rather than silently dropped
+// (the LIVE bug: `cover`/`format`/`originalName` recovered then dropped → covers vanish on republish).
+// `bakeTiles` is the one named exclusion (a publish-time opt-in never present on a reconstructed Library).
+const _libraryExhibitCarry = {
+  id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry",
+  objects: "carry", sections: "carry", readings: "carry", layout: "carry", mode: "carry",
+  rights: "carry", requiredStatement: "carry",
+} satisfies Record<keyof Exhibit, CarryDisposition>;
+const _libraryObjectCarry = {
+  id: "carry", source: "carry", label: "carry", summary: "carry", mediaType: "carry",
+  tileSource: "carry", width: "carry", height: "carry", duration: "carry", format: "carry",
+  originalName: "carry", thumbnail: "carry", rights: "carry", requiredStatement: "carry",
+  bakeTiles: { drop: "publish-time opt-in (bake remote → local DZI); never on a Library reconstructed from a published tree" },
+} satisfies Record<keyof AObject, CarryDisposition>;
+
 /**
  * The faithful inverse of {@link workingToLibrary}: map a publishable `Library` back to the persisted
  * working structure, mirroring `workingToLibrary`'s field set, its `rightsOf` helper, and its
- * `...(x !== undefined ? {x} : {})` style. Maps ONLY the round-trippable fields — replaces the ~8-field
- * hand-spread the studio inline version did. NB: `cover`/`seedVersion` are NOT carried (no `WorkingExhibitMeta`
- * cover slot; `seedVersion` is a template marker that does not round-trip), and `provenance` is NOT
- * reconstructed: `WorkingObjectProvenance` requires `exifOrientation`+`transform` which a `Library` object
- * lacks (`originalName` alone is insufficient), so a baked import's provenance does not survive this direction.
+ * `...(x !== undefined ? {x} : {})` style. Carries every round-trippable field — the exhibit `cover`
+ * and the object `format`/`originalName` now have working slots (Issue 21), so an import→republish is
+ * lossless (was: covers vanished). NOT carried, by design: `seedVersion` (a template marker, not a
+ * Library field) and full `provenance` — `WorkingObjectProvenance` needs `exifOrientation`+`transform`
+ * a `Library` object lacks; only `originalName` round-trips (into the standalone slot, not provenance).
  */
 export function libraryToWorking(library: Library): WorkingLibraryMeta {
   return {
@@ -213,6 +229,7 @@ export function libraryToWorking(library: Library): WorkingLibraryMeta {
     exhibits: library.exhibits.map((ex) => ({
       id: ex.id, slug: ex.slug, title: ex.title,
       ...(ex.summary !== undefined ? { summary: ex.summary } : {}),
+      ...(ex.cover !== undefined ? { cover: ex.cover } : {}), // carry the Gallery cover (Issue 21 live drop)
       ...(ex.layout !== undefined ? { layout: ex.layout } : {}),
       ...(ex.mode !== undefined ? { mode: ex.mode } : {}),
       ...(ex.sections && ex.sections.length ? { sections: ex.sections } : {}),
@@ -224,8 +241,10 @@ export function libraryToWorking(library: Library): WorkingLibraryMeta {
         ...(o.width !== undefined ? { width: o.width } : {}),
         ...(o.height !== undefined ? { height: o.height } : {}),
         ...(o.mediaType !== undefined ? { mediaType: o.mediaType } : {}),
+        ...(o.format !== undefined ? { format: o.format } : {}), // carry the source MIME (Issue 21 live drop)
         ...(o.tileSource !== undefined ? { tileSource: o.tileSource } : {}), // carry the Map basemap (the studio inline version dropped it)
         ...(o.duration !== undefined ? { duration: o.duration } : {}),
+        ...(o.originalName !== undefined ? { originalName: o.originalName } : {}), // carry the citation master ref (Issue 21)
         ...(o.thumbnail !== undefined ? { thumbnail: o.thumbnail } : {}), // carry the baked-thumbnail ref
         ...rightsOf(o),
       })),
