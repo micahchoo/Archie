@@ -101,6 +101,7 @@ couldn't load — showing what's available." Verified: `astro check` 0 errors (i
 `data.incomplete` is validated), viewer suite green. This closes the loop's done-when for the hosted surface.
 
 The `<archie-viewer>` EMBED indicator is intentionally NOT built here: it rides the embed-parity UI rework
-in `ledgers/CAPABILITY.md` (the `<archie-viewer>` read-UI parity work), which reworks that surface wholesale.
+in `ledgers/CAPABILITY.md` — specifically the "Direction 9 — embed-parity" section (verdicted **pursue**
+2026-07-17; its commissioned parity spec names this indicator in scope), which reworks that surface wholesale.
 The embed's read layer already sets `incomplete` identically across the zip + tree paths, so the parity
 rework only needs to render it — no data-layer work is owed there.
