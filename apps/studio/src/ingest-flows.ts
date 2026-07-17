@@ -24,6 +24,7 @@ import { planCsvImport, type CsvPendingNote } from "./csv-import.js";
 import { planWadmImport } from "./wadm-import.js";
 import { collabBreakdown, collabSummaryText } from "./collab.js";
 import { rectSel } from "./seed-data.js";
+import { enqueueSave } from "./save-queue.svelte.js";
 import type { LibraryStore } from "./library-meta.svelte.js";
 
 const LARGE_MEDIA_BYTES = 100 * 1024 * 1024; // ~100 MB — above this, suggest linking by URL (never blocks)
@@ -42,6 +43,35 @@ const IIIF_MANIFEST_MAX_BYTES = 32 * 1024 * 1024;
 // nothing to stop it (tend Issue 7, ledgers/NEGSPACE.md rows 6-8). These are hand-authored annotation
 // files; legitimate ones are KBs to low MBs even for thousands of notes.
 export const LOCAL_TEXT_IMPORT_MAX_BYTES = 64 * 1024 * 1024;
+
+// Binary-asset persistence routes through the save-queue (ISSUES.md Issue 26 / ledgers/ASSETQ.md): the
+// queue header promises "NO failure is silent," but the OPFS asset writers (store.ts saveAssetFile /
+// saveOriginalFile / saveThumbFile) were called directly, so a failed write never reached saveStatus.
+// enqueueSave NEVER throws — it returns false on failure — so the caller MUST branch on the boolean and
+// refuse to append the object on false; that preserves the reference-after-bytes invariant (a
+// library.json ref only lands once its bytes did) while making the failure visible in the chrome.
+const STORAGE_FAIL_NOTE =
+  "Couldn't save that to this device's storage — it wasn't added. Check the save indicator; free some space or save your library as a new copy.";
+/** Persist one exhibit's asset bytes through the queue (serialized per exhibit). False = write failed
+ *  (recorded in saveStatus); the caller must NOT append the referencing object. */
+function persistAsset(slug: string, write: () => Promise<void>): Promise<boolean> {
+  return enqueueSave(`assets:${slug}`, "Media", write);
+}
+// OPFS quota preflight (Issue 26 Phase 3): refuse a batch that plainly won't fit BEFORE any byte lands,
+// so an import can't half-write a library.json reference to storage that fills mid-write. estimate() is
+// approximate and absent in some engines (e.g. the node test env) — a missing estimate never blocks.
+async function quotaOkFor(bytes: number): Promise<boolean> {
+  try {
+    const storage = (globalThis.navigator as Navigator & { storage?: { estimate?: () => Promise<{ quota?: number; usage?: number }> } } | undefined)?.storage;
+    const est = await storage?.estimate?.();
+    if (!est || typeof est.quota !== "number" || typeof est.usage !== "number") return true; // can't estimate → let the write try
+    return est.quota - est.usage > bytes * 1.05; // 5% headroom for OPFS/container overhead
+  } catch {
+    return true; // estimate threw (permissions / private mode) → don't block; the write itself still guards
+  }
+}
+const QUOTA_REFUSED_NOTE =
+  "There isn't enough storage on this device to import these files. Free some space and try again — nothing was added.";
 
 /** Everything the ingest flows touch in App.svelte's reactive scope, passed explicitly. Reactive reads
  *  are getters (so the flow sees the live value at call time); mutations are setters/store methods. */
@@ -178,7 +208,9 @@ export function createIngestFlows(ctx: IngestContext) {
     if (file.type.startsWith("audio/") || file.type.startsWith("video/")) {
       const mediaType: "sound" | "video" = file.type.startsWith("video/") ? "video" : "sound";
       const avName = `${id}-${safe}`;
-      await saveAssetFile(slug, avName, file);
+      // Bytes THROUGH the queue, then the object (reference-after-bytes): a failed write is now visible
+      // in saveStatus AND aborts the add, so library.json never references bytes that didn't land.
+      if (!(await persistAsset(slug, () => saveAssetFile(slug, avName, file)))) return { added: false, note: STORAGE_FAIL_NOTE };
       await appendObject({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file), targetSlug);
       return file.size > LARGE_MEDIA_BYTES
         ? { added: true, note: `“${file.name}” is large (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.` }
@@ -204,7 +236,8 @@ export function createIngestFlows(ctx: IngestContext) {
       dims = { w: baked.width, h: baked.height };
       name = `${id}-${safe.replace(/\.[^.]+$/, "")}.png`;
       const originalName = `${id}-${safe}`;
-      await saveOriginalFile(slug, originalName, file); // preserve the untouched original
+      // Through the queue: a failed original write aborts the add (no provenance ref to absent bytes).
+      if (!(await persistAsset(slug, () => saveOriginalFile(slug, originalName, file)))) return { added: false, note: STORAGE_FAIL_NOTE };
       provenance = { exifOrientation: orientation, transform: orientationTransform(orientation), originalName };
     } else {
       // No rotation needed. If the image exceeds the §80 cap, downscale to a display master PRESERVING
@@ -217,7 +250,9 @@ export function createIngestFlows(ctx: IngestContext) {
 
     const blobUrl = URL.createObjectURL(master);
     if (!dims) dims = await imageDims(blobUrl); // orientation-1 path: probe the (upright) master
-    await saveAssetFile(slug, name, master);
+    // Master bytes THROUGH the queue, before appendObject (reference-after-bytes): a failed write is
+    // visible in saveStatus AND aborts the add — library.json never references an asset that didn't land.
+    if (!(await persistAsset(slug, () => saveAssetFile(slug, name, master)))) return { added: false, note: STORAGE_FAIL_NOTE };
     // Bake a small grid/overview thumbnail from the master (null when the master is already within
     // THUMB_DIM). A thumbnail is a PURE optimization — its failure must NEVER block an import (the grid
     // falls back to the master via thumbnailUrl). Same name, sibling assets-thumb/ dir.
@@ -225,8 +260,10 @@ export function createIngestFlows(ctx: IngestContext) {
     let plateBlob: Blob = master; // the rail/overview plate: the baked thumb when we get one, else the master
     try {
       const thumb = await bakeThumbnail(master, THUMB_DIM, masterMime);
-      if (thumb) {
-        await saveThumbFile(slug, name, thumb);
+      // Through the queue for VISIBILITY, but NON-blocking: a thumbnail is a pure optimization, so a
+      // failed thumb write is recorded in saveStatus yet never aborts the import — the object is added
+      // without a `thumbnail` ref (the grid falls back to the master), so there is no dangling reference.
+      if (thumb && (await persistAsset(slug, () => saveThumbFile(slug, name, thumb)))) {
         thumbnail = `${ASSET_THUMB_PREFIX}${name}`;
         plateBlob = thumb;
       }
@@ -258,6 +295,13 @@ export function createIngestFlows(ctx: IngestContext) {
     const opened = exhibit();
     if (!opened) {
       ctx.setImportNote("Open an exhibit first.");
+      return;
+    }
+    // Quota preflight (Issue 26 Phase 3 / ledgers/ASSETQ.md): refuse a batch that plainly won't fit
+    // BEFORE any byte lands, so an import can't half-write library.json references to storage that
+    // fills mid-drop. A missing/approximate estimate never blocks (per-file writes still guard).
+    if (!(await quotaOkFor(list.reduce((n, f) => n + f.size, 0)))) {
+      ctx.setImportNote(QUOTA_REFUSED_NOTE);
       return;
     }
     // Pin the exhibit this drop targets (tend Issue 7, ledgers/NEGSPACE.md): a multi-file drop has the
@@ -305,6 +349,12 @@ export function createIngestFlows(ctx: IngestContext) {
     const groups = planFolderImportGroups(picked);
     if (groups.length === 0) {
       ctx.alert("No images, audio, or video found in that folder.");
+      return;
+    }
+    // Quota preflight for the WHOLE folder (Issue 26 Phase 3): refuse before creating any exhibit or
+    // writing any byte, so a too-large folder can't leave a trail of titled-but-empty exhibits.
+    if (!(await quotaOkFor(files.reduce((n, f) => n + f.size, 0)))) {
+      ctx.alert(QUOTA_REFUSED_NOTE);
       return;
     }
     let failed = 0, imported = 0;

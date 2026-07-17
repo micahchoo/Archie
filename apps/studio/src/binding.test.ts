@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 // Characterization tests on the browser glue of invention #3 (worklist 0.4 — the binding seam was
 // the highest-risk UNTESTED surface; the pure recents algebra is already core-tested). localStorage
 // is stubbed (node env): these pin the tolerant-load / silent-save contracts the boot path leans on.
-import { zipNameFor, loadLastBinding, saveLastBinding, loadRecents, saveRecents, supportsFolderPicker, supportsFileStreamSave } from "./binding.js";
+import { zipNameFor, loadLastBinding, saveLastBinding, loadRecents, saveRecents, subscribeRecents, supportsFolderPicker, supportsFileStreamSave } from "./binding.js";
 import type { Binding, RecentProject } from "@render/core";
 
 const store = new Map<string, string>();
@@ -74,5 +74,40 @@ describe("binding seam — recents round-trip", () => {
   });
   it("empty storage loads as []", () => {
     expect(loadRecents()).toEqual([]);
+  });
+});
+
+describe("binding seam — cross-tab recents reconcile (Issue 22 / TABS)", () => {
+  const rec = (id: string, ts: number): RecentProject => ({ id, name: id, kind: "folder", lastOpened: ts, reopenable: true });
+
+  it("adopts another tab's recents write via the storage event (no lost update)", () => {
+    // Stub a minimal window that records the storage listener so we can fire a cross-tab event.
+    let handler: ((e: any) => void) | null = null;
+    vi.stubGlobal("window", {
+      addEventListener: (type: string, h: (e: any) => void) => { if (type === "storage") handler = h; },
+      removeEventListener: () => {},
+    });
+    const seen: RecentProject[][] = [];
+    const unsub = subscribeRecents((list) => seen.push(list));
+    expect(typeof handler).toBe("function");
+
+    // Simulate TAB B adding a recent to the shared key, then the storage event firing in THIS tab.
+    store.set(RECENTS_KEY, JSON.stringify([rec("from-tab-b", 5)]));
+    handler!({ key: RECENTS_KEY, newValue: store.get(RECENTS_KEY) });
+    expect(seen.at(-1)).toEqual([rec("from-tab-b", 5)]); // this tab adopted B's list
+
+    // An unrelated key change is ignored.
+    handler!({ key: "some.other.key", newValue: "x" });
+    expect(seen.length).toBe(1);
+
+    unsub();
+    vi.unstubAllGlobals();
+  });
+
+  it("no-ops without a window (node/SSR floor)", () => {
+    // No window stubbed here → subscribeRecents returns a no-op unsubscribe and never throws.
+    const unsub = subscribeRecents(() => { throw new Error("should not fire"); });
+    expect(typeof unsub).toBe("function");
+    unsub();
   });
 });

@@ -37,11 +37,30 @@ export const saveStatus = {
 // the chain); different keys (library.json vs an exhibit's annotations) stay concurrent.
 const tails = new Map<string, Promise<unknown>>();
 
+// Single-writer gate (ISSUES.md Issue 22 / ledgers/TABS.md). Every OPFS/folder persist routes through
+// enqueueSave, so ONE gate here enforces cross-tab single-writer discipline for library.json, annotations,
+// assets, AND the folder mirror: when this tab is not the writer (another tab holds the Web Lock), a
+// persist is refused instead of silently overwriting the writer's edits. Injected by the writer-lock
+// store so the queue stays framework-free. null = no gate (single-tab / not yet wired) → never blocks.
+const READ_ONLY_KEY = "read-only";
+let writerGate: (() => boolean) | null = null;
+/** Install (or clear, with null) the single-writer gate. `gate()` returns true when THIS tab may write. */
+export function setWriterGate(gate: (() => boolean) | null): void { writerGate = gate; }
+
 /**
  * Serialize `job` after all prior jobs for `key`, recording health. `label` is the human name used
  * in the error surface ("Notes", "Library details"). Resolves `true` on success, `false` on failure.
  */
 export function enqueueSave(key: string, label: string, job: () => Promise<void>): Promise<boolean> {
+  // Single-writer gate: a non-writer tab is read-only — refuse the persist (never run the job) and record
+  // a clear read-only status. The write is dropped ON PURPOSE, so the writer tab's edits are never
+  // overwritten. Returning false lets boolean-branching callers keep `dirty` set (they'll persist once
+  // this tab takes over). A gate that passes clears any stale read-only status.
+  if (writerGate && !writerGate()) {
+    s.errors[READ_ONLY_KEY] = "This tab is read-only — another tab is editing this library. Choose “Take over editing” to save here.";
+    return Promise.resolve(false);
+  }
+  delete s.errors[READ_ONLY_KEY];
   const tail = tails.get(key) ?? Promise.resolve();
   const run = tail.then(() => job());
   tails.set(key, run.catch(() => {})); // keep the chain alive past a failure
@@ -68,4 +87,5 @@ export function resetSaveQueueForTests(): void {
   s.everSaved = false;
   s.errors = {};
   tails.clear();
+  writerGate = null;
 }

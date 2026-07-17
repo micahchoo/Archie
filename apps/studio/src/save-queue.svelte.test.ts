@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { enqueueSave, saveStatus, resetSaveQueueForTests } from "./save-queue.svelte";
+import { enqueueSave, saveStatus, resetSaveQueueForTests, setWriterGate } from "./save-queue.svelte";
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
@@ -62,6 +62,26 @@ describe("save-queue", () => {
     await enqueueSave("annotations", "Notes", async () => {});
     expect(saveStatus.health).toBe("error");
     expect(saveStatus.error).toContain("Library details");
+  });
+
+  it("single-writer gate: a non-writer tab is refused (read-only) and the job never runs (Issue 22)", async () => {
+    let ran = false;
+    setWriterGate(() => false); // this tab is NOT the writer
+    const ok = await enqueueSave("annotations", "Notes", async () => { ran = true; });
+    expect(ok).toBe(false); // refused
+    expect(ran).toBe(false); // the OPFS write never happened — the writer tab is not overwritten
+    expect(saveStatus.health).toBe("error");
+    expect(saveStatus.error).toContain("read-only");
+  });
+
+  it("single-writer gate: once this tab is the writer, writes run and the read-only status clears", async () => {
+    setWriterGate(() => false);
+    await enqueueSave("k", "K", async () => {});
+    expect(saveStatus.error).toContain("read-only");
+    setWriterGate(() => true); // took over editing
+    const ok = await enqueueSave("k", "K", async () => {});
+    expect(ok).toBe(true);
+    expect(saveStatus.error).toBeNull(); // stale read-only status cleared
   });
 
   it("pending counts across keys while writes are in flight", async () => {

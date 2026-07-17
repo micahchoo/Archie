@@ -23,6 +23,10 @@ export type { ObjectProvenance, ObjectMeta, ExhibitMeta, LibraryMeta };
 const PROJECT = "archie-demo-project";
 const SAMPLE_SLUG = "sample";
 
+/** The stable identity of Studio's single OPFS working library — the fixed path all tabs of this origin
+ *  share. Used as the cross-tab single-writer lock name (ISSUES.md Issue 22 / ledgers/TABS.md). */
+export const WORKING_STORE_ID = PROJECT;
+
 async function openProjectDir(): Promise<FsDirectory | null> {
   const storage = (navigator as Navigator & { storage?: { getDirectory?: () => Promise<FileSystemDirectoryHandle> } }).storage;
   if (!storage?.getDirectory) return null;
