@@ -625,8 +625,11 @@
   // Create a new exhibit (no objects yet — add them in the editor), persist, and open it.
   async function newExhibit(title: string) {
     const base = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "exhibit";
+    // "sample" is RESERVED (Issue 19e): openExhibitAnnotationsDir special-cases that slug to the LEGACY
+    // top-level {project}/annotations/ dir (the pre-multi-exhibit SAMPLE_SLUG path), so a user exhibit
+    // slugged "sample" would silently alias any legacy data there. Skip it like a taken slug → "sample-2".
     let slug = base, n = 2;
-    while (lib.meta.exhibits.some((e) => e.slug === slug)) slug = `${base}-${n++}`;
+    while (slug === "sample" || lib.meta.exhibits.some((e) => e.slug === slug)) slug = `${base}-${n++}`;
     // No `layout` written (ADR-0016): the leading surface is DERIVED from content by resolveLayout
     // (sections → narrative, >1 object → grid, else single). The field is deprecated; Studio never writes it.
     await lib.addExhibit({ id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", objects: [] });
