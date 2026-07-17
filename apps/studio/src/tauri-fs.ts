@@ -22,6 +22,7 @@ export async function tauriFsBridge(): Promise<TauriFsBridge> {
   return {
     readFile: (path) => fs.readFile(path),
     writeFile: (path, data) => fs.writeFile(path, data),
+    rename: (oldPath, newPath) => fs.rename(oldPath, newPath),
     mkdir: (path) => fs.mkdir(path, { recursive: true }),
     async readDir(path): Promise<TauriDirEntry[]> {
       return (await fs.readDir(path)).map((e) => ({ name: e.name, isDirectory: e.isDirectory }));

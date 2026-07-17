@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { annotationsIn, canvasObjectId, planWadmImport, sanitizeSelector } from "./wadm-import.js";
+import { annotationsIn, canvasObjectId, planWadmImport, sanitizeSelector, sourceRef } from "./wadm-import.js";
 
 const CTX = { objectIds: new Set(["o1", "o2"]) };
 const anno = (source: string, over: Record<string, unknown> = {}) => ({
@@ -31,6 +31,15 @@ describe("canvasObjectId — re-anchoring by the /canvas/<id> tail", () => {
   });
 });
 
+describe("sourceRef — canvas IRI from a string OR an embedded {id|@id} resource object", () => {
+  it("returns a bare string as-is and digs id/@id out of an embedded object", () => {
+    expect(sourceRef("https://p.org/canvas/o1")).toBe("https://p.org/canvas/o1");
+    expect(sourceRef({ id: "https://p.org/canvas/o1", type: "Canvas" })).toBe("https://p.org/canvas/o1");
+    expect(sourceRef({ "@id": "https://p.org/canvas/o2" })).toBe("https://p.org/canvas/o2");
+    expect(sourceRef(undefined)).toBe("");
+  });
+});
+
 describe("planWadmImport", () => {
   it("re-anchors matching annotations, carrying selector and bodies verbatim", () => {
     const plan = planWadmImport({ type: "AnnotationPage", items: [anno("https://pub.org/lib/canvas/o1")] }, CTX);
@@ -45,6 +54,25 @@ describe("planWadmImport", () => {
     const plan = planWadmImport([anno("https://pub.org/lib/canvas/o9")], CTX);
     expect(plan.notes).toEqual([]);
     expect(plan.skipped[0]!.reason).toMatch(/isn't in this exhibit/);
+  });
+  it("re-anchors when target.source is an embedded object {id}, not a bare string (would silently drop before)", () => {
+    const objSource = {
+      type: "Annotation",
+      id: "https://elsewhere.org/anno/1",
+      target: {
+        type: "SpecificResource",
+        source: { id: "https://pub.org/lib/canvas/o1", type: "Canvas" },
+        selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: "xywh=pixel:1,2,3,4" },
+      },
+      body: [{ type: "TextualBody", value: "a note", purpose: "commenting" }],
+    };
+    const plan = planWadmImport([objSource], CTX);
+    expect(plan.skipped).toEqual([]);
+    expect(plan.notes).toEqual([{
+      objectId: "o1",
+      selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: "xywh=pixel:1,2,3,4" },
+      body: [{ type: "TextualBody", value: "a note", purpose: "commenting" }],
+    }]);
   });
   it("a string target with a fragment becomes a FragmentSelector; string bodies become TextualBody", () => {
     const plan = planWadmImport([{ type: "Annotation", target: "https://pub.org/lib/canvas/o2#xywh=5,6,7,8", body: "plain comment" }], CTX);

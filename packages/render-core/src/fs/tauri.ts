@@ -27,6 +27,8 @@ export interface TauriDirEntry {
 export interface TauriFsBridge {
   readFile(path: string): Promise<Uint8Array>;
   writeFile(path: string, data: Uint8Array): Promise<void>;
+  /** Atomically replace `newPath` with `oldPath` (both absolute, same directory — see TauriFile.close). */
+  rename(oldPath: string, newPath: string): Promise<void>;
   mkdir(path: string): Promise<void>;
   readDir(path: string): Promise<TauriDirEntry[]>;
   /** Recursive remove of a file or directory. Must reject if the path is missing. */
@@ -38,6 +40,23 @@ export interface TauriFsBridge {
 function join(dir: string, name: string): string {
   return dir.endsWith("/") ? dir + name : `${dir}/${name}`;
 }
+
+/**
+ * Reject a child name that could escape its parent directory before it is joined onto a real
+ * filesystem path. The browser FSA/OPFS backends get this for free (getFileHandle/getDirectoryHandle
+ * reject names containing "/"); plugin-fs path-joins raw, so an untrusted segment (e.g. an exhibit
+ * slug carried in a `.archie.zip`) could otherwise `..`-traverse out of the library root. Mirrors
+ * the FSA rule set: empty, ".", "..", or any name bearing a separator / NUL is invalid.
+ */
+function assertSafeName(name: string): void {
+  if (name === "" || name === "." || name === ".." || /[/\\]/.test(name) || name.includes("\0")) {
+    throw new Error(`unsafe path segment: ${JSON.stringify(name)}`);
+  }
+}
+
+// Monotonic suffix for atomic-write temp files. Unique-per-process is sufficient: writes to any one
+// path are serialized by the app's save-queue, and a temp exists only between writeFile and rename.
+let tmpSeq = 0;
 
 class TauriFile implements FsFile {
   constructor(
@@ -70,7 +89,22 @@ class TauriFile implements FsFile {
           buf.set(c, off);
           off += c.byteLength;
         }
-        await this.bridge.writeFile(this.path, buf);
+        // Atomic replace: write a same-directory temp, then rename over the destination. plugin-fs
+        // writeFile truncates-then-writes, so a crash mid-flush would otherwise leave `library.json`
+        // / `manifest.json` truncated and unparseable — a durability guarantee the FSA/OPFS backends
+        // get for free. Same-dir temp keeps the rename atomic (one filesystem). Clean up on failure.
+        const tmp = `${this.path}.tmp-${tmpSeq++}`;
+        try {
+          await this.bridge.writeFile(tmp, buf);
+          await this.bridge.rename(tmp, this.path);
+        } catch (e) {
+          try {
+            await this.bridge.remove(tmp);
+          } catch {
+            /* best-effort: temp may not exist if writeFile itself failed */
+          }
+          throw e;
+        }
       },
     };
   }
@@ -88,6 +122,7 @@ class TauriDir implements FsDirectory {
   ) {}
 
   async getDirectory(name: string, opts?: { create?: boolean }): Promise<FsDirectory> {
+    assertSafeName(name);
     const childPath = join(this.path, name);
     if (opts?.create === true) {
       await this.bridge.mkdir(childPath); // idempotent (recursive)
@@ -98,6 +133,7 @@ class TauriDir implements FsDirectory {
   }
 
   async getFile(name: string, opts?: { create?: boolean }): Promise<FsFile> {
+    assertSafeName(name);
     const childPath = join(this.path, name);
     if (!(await this.bridge.exists(childPath))) {
       if (opts?.create !== true) throw new Error(`no such file: ${name}`);
@@ -109,6 +145,7 @@ class TauriDir implements FsDirectory {
   }
 
   async remove(name: string): Promise<void> {
+    assertSafeName(name);
     await this.bridge.remove(join(this.path, name));
   }
 

@@ -46,15 +46,48 @@ export async function openExhibitAnnotationsDir(slug: string): Promise<FsDirecto
   return ex.getDirectory("annotations", { create: true });
 }
 
+/**
+ * A corrupt authored sidecar reads as "absent" (JSON.parse throws → the loader returns empty), which
+ * would then let the next save overwrite it and destroy the authored structure for good. Before an
+ * overwrite, if the existing file is present but unparseable, copy it aside to `{name}.corrupt` so the
+ * unreadable-but-maybe-recoverable bytes survive. No-op when the file is absent or parses cleanly.
+ */
+async function snapshotIfUnparseable(dir: FsDirectory, name: string): Promise<void> {
+  let bytes: ArrayBuffer;
+  try {
+    bytes = await (await dir.getFile(name)).readable();
+  } catch {
+    return; // absent — nothing to protect
+  }
+  try {
+    JSON.parse(new TextDecoder().decode(bytes));
+    return; // parses — a normal overwrite is safe
+  } catch {
+    const backup = await dir.getFile(`${name}.corrupt`, { create: true });
+    const w = await backup.writable();
+    await w.write(bytes);
+    await w.close();
+    console.warn(`[store] ${name} was present but unparseable; preserved a copy as ${name}.corrupt before overwriting.`);
+  }
+}
+
 /** Read the authored library structure. Null if OPFS unsupported or nothing authored yet. */
 export async function loadLibraryMeta(): Promise<LibraryMeta | null> {
   const project = await openProjectDir();
   if (!project) return null;
+  let bytes: ArrayBuffer;
   try {
-    const file = await project.getFile("library.json");
-    return JSON.parse(new TextDecoder().decode(await file.readable())) as LibraryMeta;
+    bytes = await (await project.getFile("library.json")).readable();
   } catch {
-    return null; // not yet written (first run)
+    return null; // absent — first run
+  }
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes)) as LibraryMeta;
+  } catch {
+    // Present but corrupt: do NOT silently treat as empty-and-clobber — the next save snapshots it
+    // aside (snapshotIfUnparseable) so authored structure is never destroyed without a trace.
+    console.warn("[store] library.json is present but unparseable; treating the session as empty until it is replaced (a .corrupt copy is kept on the next save).");
+    return null;
   }
 }
 
@@ -62,6 +95,7 @@ export async function loadLibraryMeta(): Promise<LibraryMeta | null> {
 export async function saveLibraryMeta(meta: LibraryMeta): Promise<void> {
   const project = await openProjectDir();
   if (!project) return;
+  await snapshotIfUnparseable(project, "library.json");
   const file = await project.getFile("library.json", { create: true });
   const w = await file.writable();
   await w.write(JSON.stringify(meta, null, 2));
@@ -89,11 +123,17 @@ const PENDING_FILE = "pending-notes.json";
 export async function loadPendingNotes(): Promise<Record<string, PendingNote[]>> {
   const project = await openProjectDir();
   if (!project) return {};
+  let bytes: ArrayBuffer;
   try {
-    const file = await project.getFile(PENDING_FILE);
-    return JSON.parse(new TextDecoder().decode(await file.readable())) as Record<string, PendingNote[]>;
+    bytes = await (await project.getFile(PENDING_FILE)).readable();
   } catch {
-    return {}; // not yet written (no coordinate-free import has happened)
+    return {}; // absent — no coordinate-free import has happened
+  }
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes)) as Record<string, PendingNote[]>;
+  } catch {
+    console.warn("[store] pending-notes.json is present but unparseable; treating as empty until it is replaced (a .corrupt copy is kept on the next save).");
+    return {};
   }
 }
 
@@ -101,6 +141,7 @@ export async function loadPendingNotes(): Promise<Record<string, PendingNote[]>>
 export async function savePendingNotes(map: Record<string, PendingNote[]>): Promise<void> {
   const project = await openProjectDir();
   if (!project) return;
+  await snapshotIfUnparseable(project, PENDING_FILE);
   const file = await project.getFile(PENDING_FILE, { create: true });
   const w = await file.writable();
   await w.write(JSON.stringify(map, null, 2));

@@ -61,6 +61,20 @@ export function canvasObjectId(source: unknown): string | null {
   return m ? m[1]! : null;
 }
 
+/** The canvas IRI from a WADM `target.source`, tolerating a bare string OR an embedded resource
+ *  object `{id | @id}`. IIIF v3 / SpecificResource producers nest the canvas as an object; then a
+ *  naive `String(source)` yields "[object Object]", the `/canvas/` match fails, and a note that
+ *  DOES belong here is silently dropped with the wrong "not in this exhibit" reason. Mirrors
+ *  iiif-import.ts `idOf`. */
+export function sourceRef(source: unknown): string {
+  if (typeof source === "string") return source;
+  if (source && typeof source === "object") {
+    const o = source as Record<string, unknown>;
+    return String(o["id"] ?? o["@id"] ?? "");
+  }
+  return "";
+}
+
 // media-frags shapes we render: spatial xywh (optionally pixel:/percent:) and temporal t=.
 const FRAGMENT_RE = /^(xywh=(pixel:|percent:)?-?\d+(\.\d+)?(,-?\d+(\.\d+)?){3}|t=\d+(\.\d+)?(,\d+(\.\d+)?)?)$/;
 
@@ -107,7 +121,7 @@ export function planWadmImport(json: unknown, ctx: { objectIds: Set<string> }): 
   for (let i = 0; i < annos.length; i++) {
     const a = annos[i]!;
     const target = a["target"] as Json | string | undefined;
-    const source = typeof target === "string" ? target.split("#")[0] : target?.["source"];
+    const source = typeof target === "string" ? target.split("#")[0] : sourceRef(target?.["source"]);
     const objectId = canvasObjectId(source);
     if (!objectId || !ctx.objectIds.has(objectId)) {
       skipped.push({ index: i + 1, reason: "Points to media that isn't in this exhibit." });

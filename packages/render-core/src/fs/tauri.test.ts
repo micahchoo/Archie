@@ -5,7 +5,7 @@
 // thin plugin wiring is browser/desktop-verified. node:fs is used as the test double because
 // plugin-fs is a structural subset of it (readFile/writeFile/mkdir/readDir/remove/exists).
 
-import { afterAll } from "vitest";
+import { afterAll, describe, it, expect } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import * as fsp from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -22,6 +22,9 @@ const nodeBridge: TauriFsBridge = {
   },
   async writeFile(path, data) {
     await fsp.writeFile(path, data);
+  },
+  async rename(oldPath, newPath) {
+    await fsp.rename(oldPath, newPath);
   },
   async mkdir(path) {
     await fsp.mkdir(path, { recursive: true });
@@ -49,6 +52,35 @@ runConformance("TauriFilesystem (node-bridge)", () => {
   const root = mkdtempSync(nodeJoin(tmpdir(), "archie-tauri-"));
   roots.push(root);
   return new TauriFilesystem(nodeBridge, root);
+});
+
+// Backend-specific hardening beyond the shared seam contract (atomic write + path containment).
+describe("TauriFilesystem hardening", () => {
+  const freshRoot = (): TauriFilesystem => {
+    const root = mkdtempSync(nodeJoin(tmpdir(), "archie-tauri-h-"));
+    roots.push(root);
+    return new TauriFilesystem(nodeBridge, root);
+  };
+
+  it("close() commits via a same-dir temp+rename and leaves no .tmp-* sibling", async () => {
+    const root = await freshRoot().root();
+    const w = await (await root.getFile("m.json", { create: true })).writable();
+    await w.write('{"ok":true}');
+    await w.close();
+    const names: string[] = [];
+    for await (const e of root.entries()) names.push(e.name);
+    expect(names).toContain("m.json");
+    expect(names.some((n) => n.includes(".tmp-"))).toBe(false);
+    expect(new TextDecoder().decode(await (await root.getFile("m.json")).readable())).toBe('{"ok":true}');
+  });
+
+  it("rejects a traversal / separator segment before it reaches the bridge", async () => {
+    const root = await freshRoot().root();
+    await expect(root.getFile("../escape.txt", { create: true })).rejects.toThrow(/unsafe path/);
+    await expect(root.getDirectory("..", { create: true })).rejects.toThrow(/unsafe path/);
+    await expect(root.getFile("a/b", { create: true })).rejects.toThrow(/unsafe path/);
+    await expect(root.remove("../x")).rejects.toThrow(/unsafe path/);
+  });
 });
 
 afterAll(() => {
