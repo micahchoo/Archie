@@ -17,6 +17,21 @@ all-anonymous case; the dependency swap clears a subset, not the whole audit). T
 recommendation** (Issue 1 / the NUL byte) is stale — both are `done`; it is refreshed at the foot of
 this file.
 
+**Re-run 2026-07-17** (fresh tend pass, user-scoped to **data integrity** — "bug and corruption free
+across studio, viewer, different types of exhibits — baked, loaded, etc."; commit examined `332798b`,
+main). Four parallel explorers walked the spine round trip, the publish/bake pipeline, Studio
+persistence, and every viewer load path; the main loop re-verified each load-bearing finding against
+the files before recording it (persist.ts write order, the committed images.json 2-of-8 drift,
+working.ts's own carry-drop admission, the absent locks/guards greps). New findings appended as
+**Issues 19–26** and **Directions 8–9**, tagged `[re-run 332798b]`. **Clean cells recorded** (checked,
+nothing found): serialize→deserialize history round trip carries all 15 record fields; merge never
+loses a DAG head; the deploy/device-flow push re-projects the full library in memory so it cannot push
+a torn or mid-autosave tree; the binding-store dirty-set take/restore has no dirt-drop path; the
+offline attribute refuses cleanly; the portable blob-revoke race is guarded; delete→dependent-note
+tombstoning is coherent; the NEGSPACE exhibit-switch race has no surviving relative. **Gate note:
+Issues 19 and 20 are data-loss / live-wrong-data findings — per SHARED.md, growth is gated until they
+are resolved.**
+
 ---
 
 ## Issue 1 — CI is deploy-only and typecheck is red on main
@@ -994,6 +1009,479 @@ by inline comments — prioritization, not discovery).
 
 ---
 
+## Issue 19 — Annotation persistence writes the index before its pages and reads all-or-nothing: one torn page silently empties an exhibit `[re-run 332798b]`
+
+**Status:** fixed on branch `tend/persist-carry` 2026-07-17, pending review/merge — ledger:
+ledgers/PERSIST.md (on the branch). All five rows fixed: pages-before-index commit point + tolerant
+per-page read + `AnnotationsCorruptError` surfaced, corrupt ≠ empty (`1dec6cc`); duplicate-rev dedupe
+(`89dd8be`); DAG-cycle throws instead of silent recovery (`1f91e18`); "sample" slug aliasing was
+REACHABLE — reserved at newExhibit, full SAMPLE_SLUG retirement flagged as a store.ts-migration
+follow-up (`cdfa50c`). Studio refuses to seed-fresh-over a torn store. render-core tsc clean, 749
+tests; studio 270 + svelte-check 0 errors.
+
+**Symptom.** `writeAnnotations` (`packages/render-core/src/spine/persist.ts:33-52`) commits
+`heads.json`, then `history/index.json` (:39), THEN the per-logicalId pages (:50-51, `Promise.all`) —
+backwards from write-ahead ordering: for a NEW note, any interruption (tab close, crash, quota) after
+the index write leaves `index.json` listing a page that doesn't exist. Per-file atomicity in every
+backend (FSA swap-file commit; `fs/tauri.ts:74-108` temp+rename) cannot help — the hazard is
+cross-file. `readAnnotations` (:58-72) then reads index → `Promise.all` over EVERY listed page with no
+per-page catch: one missing/corrupt page rejects the whole read, and `readExhibitLog`
+(`publish/working.ts:225-233`) catches everything to `[]` — "nothing authored for this exhibit yet" —
+so the user sees an exhibit with zero notes and no error. Compounding: the next save writes a fresh
+index listing only the now-empty log's ids, permanently orphaning every old page. Same-seam rows for
+one loop: `fromHistory` doesn't dedupe duplicate revs though serialize does (`deserialize.ts:109-113`
+vs `serialize.ts:50-60` — a duplicated page triggers a spurious plural-heads throw, `log.ts:49`);
+`linearHead` silently recovers from a DAG cycle (`log.ts:53`) instead of surfacing corruption; the
+legacy `SAMPLE_SLUG` layout aliases top-level `annotations/` with any user exhibit slugged "sample"
+(`apps/studio/src/store.ts:24,40-47` — reachability unconfirmed).
+
+**Rungs.** L2↔L4: the product's core promise ("your work autosaves"; append-only = nothing is ever
+lost) vs a persistence layer whose failure mode is silent total annotation loss per exhibit.
+
+**Why it's high-leverage.** The worst corruption seam this pass found — two explorers (spine
+round-trip, Studio persistence) converged on it independently, and every other integrity property
+(append-only DAG, merge safety) sits on top of this read/write. The fix is small and local: pages
+first, index last (index = commit point); per-page-tolerant read; corrupt ≠ empty, surfaced.
+*Lesson: crash consistency — a multi-file store is a transaction whether you designed one or not;
+write order and torn-read policy ARE the schema.*
+
+**Loop.** Characterization + negative-space over the persistence seam. Ledger `ledgers/PERSIST.md`.
+
+**Run it:**
+
+```
+The Archie annotation store (packages/render-core/src/spine/persist.ts) writes heads.json →
+history/index.json → per-note pages (Promise.all), and reads index → Promise.all(all pages) with no
+per-page tolerance; readExhibitLog (publish/working.ts:225-233) maps ANY throw to [] ("nothing
+authored"). Ledger ledgers/PERSIST.md: case | expected | actual | verdict | fix commit | retest.
+Phase 1 — characterize with failing-first tests against a MemoryFilesystem: (a) index lists a missing
+page → today the whole exhibit reads as empty, no error; (b) one corrupt page (invalid JSON) → same;
+(c) a duplicated page / duplicate revs → fromHistory (deserialize.ts:109-113) doesn't dedupe like
+serialize.ts:50-60 — spurious plural-heads throw at log.ts:49; (d) a DAG cycle → linearHead (log.ts:53)
+silently recovers instead of reporting; (e) a user exhibit slugged "sample" vs the legacy SAMPLE_SLUG
+top-level annotations/ dir (apps/studio/src/store.ts:24,40-47) — is aliasing reachable? Fill every
+actual before fixing anything. Phase 2 — fix: write pages BEFORE the index (index last = commit
+point); make readAnnotations per-page tolerant (skip-and-report, never all-or-nothing); split
+"corrupt" from "empty" in readExhibitLog and surface corruption through the studio toast/saveStatus
+layer instead of returning []; decide (c)/(d)/(e) per row. One fix per commit, retest per row (pnpm
+--filter @render/core exec vitest run; studio tests for the surfacing). Done when every row reads
+pass and a torn write can no longer present as an empty exhibit.
+```
+
+**Strength:** Strong (two independent explorer walks converged; write order, read path, and the
+swallow-to-[] all re-verified against the files this run).
+
+---
+
+## Issue 20 — gen-published's merge preserves exhibits but never images.json: the baked image wall indexes 2 of 8 exhibits, live in the tree right now `[re-run 332798b]`
+
+**Status:** fixed on branch `tend/bake-index` 2026-07-17, pending review/merge — ledger:
+ledgers/BAKE-INDEX.md (on the branch). R1 fixed (`337e56c`: images.json re-merged over carried
+exhibits by re-projecting from on-disk manifests — self-heals, unlike merging stale entry lists) +
+regression test (`29ed6fe`) + tree regenerated/tracked covering all 8 exhibits (`05d22e9`). R2
+(torn-manifest silent skip) logged only — owned by Issue 23/25's read-policy branch. R3/R4
+characterized, no fix, reasons in-row. render-core 739/739, viewer 85/85 green.
+
+**Symptom.** `gen-published.mts` is merge-preserving (a dropped zip owns its exhibits, carries the
+rest), but the merge unions only `exhibits.json` + `collection.json`
+(`apps/viewer/scripts/gen-published.mts:124-130`) and the preserved branch re-emits only
+`exhibits.json`/`collection.json`/`index.html` (:145-159); `images.json` is written once from the
+source-only projection (:137-143) and never merged. Verified in the committed tree: `exhibits.json`
+lists 8 slugs and 8 exhibit dirs exist, but `apps/viewer/public/published/images.json` holds
+`exhibitSlug` values for only `assets` and `screenshots` (the last-baked source). The viewer's "all
+images" wall reads exactly this file (`apps/viewer/src/published.ts:253-263`); a present-but-partial
+index is a valid ImageIndex, so ADR-0023's absent→hide degradation never fires — the wall renders 2
+exhibits' images as if that were everything. The Studio incremental path is NOT affected
+(`publishLibrary` always rebuilds images.json from `buildFullLibrary`, `site.ts:543`). Same-loop rows:
+an unparseable existing `exhibits.json` makes the merge treat the tree as empty → carried exhibits
+drop from root indexes while their dirs survive (three-way divergence, :107-122, console-warned); the
+owned-dir `rmSync` (:134) runs before the write loop (:137-143) — a crash between deletes an owned
+exhibit without rewriting it.
+
+**Rungs.** L2↔L3: the merge structure knows about two of the three root indexes; the third silently
+lies to the shipped gallery.
+
+**Why it's high-leverage.** Live, user-visible wrong data in the deployed gallery today, regenerated
+wrong on every merge-preserving bake. Distinct from Issue 16 (the getAsset glue has no test — same
+file, different defect); one session can run both loops together. *Lesson: an index is derived data —
+every merge/regeneration step must rebuild it from the full set or own it explicitly; an index left
+outside the transaction is a lie waiting to render.*
+
+**Loop.** Fix + regression-test the merge, then reconcile the committed tree. Ledger
+`ledgers/BAKE-INDEX.md`.
+
+**Run it:**
+
+```
+gen-published.mts (apps/viewer/scripts) merges exhibits.json + collection.json over carried exhibits
+(:124-130, :145-159) but writes images.json from the source-only projection (:137-143) — the
+committed tree proves it: exhibits.json lists 8 slugs, images.json indexes only assets+screenshots.
+Ledger ledgers/BAKE-INDEX.md: case | expected | actual | fix commit | retest. First characterize with
+a test: bake a source zip while the tree holds carried exhibits → images.json must cover the union.
+Pick the fix with reasons: rebuild the merged index from carried exhibits' on-disk manifests via
+buildImageIndex (note image-index.ts's getOptional silently skips a torn manifest — log that
+interaction), or merge entry lists in mergePublishedIndexes. Also rows: the crash window between
+rmSync(:134) and the write loop(:137-143); corrupt-existing-index → three-way divergence (:107-122).
+Then regenerate apps/viewer/public/published/ so the committed images.json covers all 8 exhibits and
+commit the corrected tree. Done when the merge-preserving bake test passes, a fresh gen over a
+carried tree yields a complete images.json, and the committed wall shows every exhibit's images.
+```
+
+**Strength:** Strong (two channels: the code path and the committed artifact exhibiting the drift,
+both verified this run).
+
+---
+
+## Issue 21 — Every model-field carry boundary is an unguarded hand-spread; three fields provably don't survive the import round trip today `[re-run 332798b]`
+
+**Status:** fixed on branch `tend/persist-carry` 2026-07-17, pending review/merge — ledger:
+ledgers/CARRY.md (on the branch). All 8 boundaries now guarded by co-located `satisfies
+Record<keyof Source, CarryDisposition>` sentinels (`model/carry.ts`), bite-verified (dropping a
+field → TS1360); resolveConflict's field carry moved INSIDE the primitive (`b9b6a68`); the three
+live drops fixed — `cover`/`format`/`originalName` slots added and carried both directions
+(`e0089cb`/`e743a18`), import→republish round trip proven lossless by test. Deliberate drops
+(tombstones, seedVersion, bakeTiles, provenance) are named compiler-checked exclusions.
+
+**Symptom.** ~8 boundaries hand-enumerate model fields in `...(x !== undefined ? {x} : {})` chains:
+`recordToAnnotation`/`withDagMeta` (`spine/serialize.ts:82-119`), `recordFromHistoryAnnotation`
+(`deserialize.ts:50-96`), `resolveConflict` (`spine/merge.ts:204-216`), `appendEdit`/`appendDelete`
+(`log.ts`), `workingToLibrary`/`libraryToWorking` (`publish/working.ts`), `objectsFromManifest`
+(`iiif/manifest.ts:155-177`). No `keyof`/`satisfies`/`Required` exhaustiveness guard exists anywhere
+in render-core (grep-verified this run) — adding a model field compiles clean at every boundary while
+silently not carrying. The class already bit four times: sections/readings dropped by loadLibrary
+(fixed, SHOWROOM); note-copy dropping emphasis/wholeObject/geo (fixed, Issue 12's correction); and
+live today: `Exhibit.cover`, `AObject.format`, and `provenance`/`originalName` are recovered from a
+baked tree by `loadLibrary`/`objectsFromManifest` but dropped by `libraryToWorking` — whose own doc
+comment admits it ("NB: `cover`/`seedVersion` are NOT carried … `provenance` is NOT reconstructed").
+Import a covered `.archie.zip` via Studio (`ingest-flows.ts:500`), re-publish: covers vanish — and the
+viewer actively renders `ex.cover` (`apps/viewer/src/components/Gallery.svelte:80-81`).
+`resolveConflict` is the latent next instance: it rebuilds a merge node from only
+body/motivation/target; the drop is compensated only in its sole caller (`session.ts:175-212`) — any
+future direct caller silently re-introduces the loss.
+
+**Rungs.** L3↔L4 (a structural convention that guarantees recurrence of an implementation bug class),
+reaching L2 where the cover drop is user-visible.
+
+**Why it's high-leverage.** This is the ROOT of the run's recurring bug class — fix the convention
+once and the whole category moves to compile time. *Lesson: parse, don't spread — a mapper that
+hand-picks fields is a denylist pretending to be an allowlist; make the compiler own the field
+inventory so a new field fails loudly at every boundary.*
+
+**Loop.** Canonicalization of the carry idiom + fix the three live drops. Ledger `ledgers/CARRY.md`.
+
+**Run it:**
+
+```
+render-core carries model fields across ~8 hand-spread boundaries with no exhaustiveness guard
+(grep-verified: no keyof/satisfies guards anywhere): serialize.ts:82-119, deserialize.ts:50-96,
+merge.ts:204-216 (resolveConflict — drop compensated only in session.ts:175-212), log.ts
+appendEdit/appendDelete, working.ts workingToLibrary/libraryToWorking, manifest.ts
+objectsFromManifest. Ledger ledgers/CARRY.md: boundary | fields dropped today | guard added | fix
+commit | tests green. Phase 1 — inventory every boundary and diff its field set against its source
+type; known live drops: Exhibit.cover / AObject.format / provenance.originalName in libraryToWorking
+(its doc comment admits them) — user-visible via Studio import of a covered .archie.zip
+(ingest-flows.ts:500) then re-publish: covers the viewer renders (Gallery.svelte:80-81) vanish.
+Phase 2 — pick the guard idiom (a typed pickDefined<T, K extends keyof T> helper, or satisfies maps
+keyed on keyof T) and apply it per boundary; where a drop is DELIBERATE (appendDelete tombstones;
+seedVersion as template marker) encode it as an explicit compiler-checked exclusion, not silence.
+Phase 3 — decide the three live drops: add cover/format/originalName round-trip slots to
+WorkingExhibitMeta/WorkingObjectMeta, or surface the loss to the importing user; and move
+resolveConflict's field carry INSIDE the primitive. One boundary per commit, per-package tests each
+(pnpm --filter @render/core exec vitest run). Done when every boundary either carries all fields or
+names its exclusions in compiler-checked form, and an import→republish keeps covers.
+```
+
+**Strength:** Strong (grep-verified absence of guards + four historical instances of the class + the
+live drops admitted by the code's own comment).
+
+---
+
+## Issue 22 — Two Studio tabs on one library: zero cross-tab write coordination, last-writer-wins silently `[re-run 332798b]`
+
+**Status:** fixed on branch `tend/studio-guards` 2026-07-17, pending review/merge +
+needs-manual-verify — ledger: ledgers/TABS.md (on the branch). Single-writer via
+`writer-lock.svelte.ts` (navigator.locks, BroadcastChannel fallback) gating `enqueueSave` — second
+tab gets a read-only banner + "Take over editing", auto-promotes when the writer closes (`e81f38a`);
+recents lost-update fixed via storage-event reconcile (`5a672b5`). Cross-tab races need a human
+two-tab walk — steps in the ledger. 284 studio tests, svelte-check 0 errors.
+
+**Symptom.** OPFS is origin-shared across tabs; the working store writes the fixed path
+`archie-demo-project` (`apps/studio/src/store.ts:23`). The save-queue serializes per TAB (module
+singleton, `save-queue.svelte.ts:13`); grep-verified this run: no `navigator.locks` anywhere in
+apps/studio, and the only `BroadcastChannel` is the viewer live-preview signal
+(`library-meta.svelte.ts:17-18`) — no write coordination. Two tabs editing the same library
+interleave full-projection writes over the same files: last-writer-wins at file granularity, no lock,
+no generation counter, no detection, no warning. Same family one level down: `saveRecents`/
+`saveLastBinding` (`binding.ts:124-150`) overwrite whole localStorage keys from a boot-time snapshot —
+a recent added in tab B is dropped when tab A next saves.
+
+**Rungs.** L1↔L2: a local-first tool whose implicit promise is "your files are safe on your machine"
+silently eats edits in an ordinary browser situation (two tabs).
+
+**Why it's high-leverage.** Silent, cause-invisible loss with a standard fix: a Web Lock held by the
+writing tab plus a second-tab read-only/take-over UX (or a BroadcastChannel generation signal).
+*Lesson: single-writer discipline — shared storage without a lock is a race you've already lost; the
+browser ships the primitive (navigator.locks).*
+
+**Loop.** Negative-space probe, then fix. Ledger `ledgers/TABS.md`.
+
+**Run it:**
+
+```
+Probe Archie Studio's two-tab behavior on a LOCAL dev run (node scripts/start.mjs): open the same
+OPFS library in two tabs, edit different exhibits in each, then the same exhibit; observe file-level
+clobbering (store.ts:23 fixed path; per-tab save-queue save-queue.svelte.ts:13; no navigator.locks,
+no coordinating BroadcastChannel — verified). Ledger ledgers/TABS.md: case | actual | verdict | fix
+commit | retest. Fill every actual before fixing. Then implement single-writer discipline: acquire a
+navigator.locks lock per library at open; a second tab gets read-only or a take-over prompt (pick
+with reasons; note the Tauri webview and FSA folder bindings in the matrix — a folder can also be
+bound in two windows). Include the localStorage recents lost-update (binding.ts:124-150) as its own
+row (read-merge or storage-event reconcile). One fix per commit, studio tests per fix. Done when
+every row reads pass and a second tab can no longer silently overwrite the first's edits.
+```
+
+**Strength:** Strong (structural evidence grep-verified; the clobber follows from verified facts —
+probe confirms rather than discovers).
+
+---
+
+## Issue 23 — One tree, three read policies: transient fetch failures silently flatten exhibits, and only the embed checks the schema version `[re-run 332798b]`
+
+**Status:** fixed on branch `tend/read-staleness` 2026-07-17 (one UI piece landing) — ledger:
+ledgers/READPOLICY.md (on the branch). Policy canonicalized: getOptional is uniform across all three
+readers — 404 → null (absent), 5xx/torn → FailedReadError (failed); readExhibitTree degrades
+per-layer and flips `exhibit.incomplete` (`8baf503`); hosted viewer now enforces the same ADR-0020
+schema gate as the embed via a shared `assertArchieTreeMarker` (`5d566fa` — lenient-on-absent,
+present-must-be-current, everywhere). The visible `{#if d.incomplete}` banner in ExhibitView.svelte
+is being added under a follow-up scope grant; embed's own indicator recorded as riding Direction 9's
+parity spec. render-core 746 / embed 108 / viewer 94 green, astro check clean.
+
+**Symptom.** (a) `readExhibitTree` treats `readings.json` and per-reading sidecars as optional
+(`publish/read.ts:64,:90`, `getOptional ?? []`) while base annotations use `src.get` and throw (:82) —
+and both HTTP `getOptional` impls map ANY non-OK response (5xx/403, not just 404) to null
+(`apps/viewer/src/published.ts:290-300` warns to console; `packages/archie-viewer/src/load.ts:175-184`
+is silent). A transient 5xx on `readings.json` renders a multi-reading exhibit flat base-only; on one
+reading sidecar, that reading shows empty — both presented as complete, no partial indicator (the
+partial-success sibling of Issue 4's fixed empty-exhibit bug; usually masked because inline manifest
+annotations skip the fetch, so the legacy/external-manifest fallback is exactly where it bites).
+(b) Schema gating is asymmetric: the embed's tree path validates `format`+`version===SCHEMA_VERSION`
+(`load.ts:199-214`) and the zip path runs `validateArchieMarker`, but the primary hosted apps/viewer
+path never reads `archie.json` at all (grep: only a zip-path test references it), and the migration
+runner (`migrate/migrate.ts`, MIGRATIONS empty today) is wired only at Studio deserialize. When
+SCHEMA_VERSION bumps, the embed cleanly rejects a v1 tree while the flagship viewer spread-defaults
+new fields (`manifest.ts:164-177`) and renders as complete.
+
+**Rungs.** L2↔L3/L4: the same authored tree yields three different failure behaviors depending on
+which surface reads it; two of them hide loss.
+
+**Why it's high-leverage.** One read-policy decision — absent vs failed, optional vs required,
+gate-or-migrate — canonicalized across the three surfaces closes a whole class of
+silent-partial-render bugs, including the version-skew time bomb on the *primary* consumer path.
+*Lesson: error policy is API surface — a getOptional that conflates 404 with 500 converts outages
+into permanent-looking data loss.*
+
+**Loop.** Canonicalization + negative-space matrix over the read failure cases. Ledger
+`ledgers/READPOLICY.md`.
+
+**Run it:**
+
+```
+Archie's published-tree readers disagree on failure policy. Ledger ledgers/READPOLICY.md: surface |
+case | actual | should be | fix commit | retest. Matrix rows per surface (hosted apps/viewer, embed
+archie-viewer tree path, zip path): readings.json 404 / 5xx / malformed; one reading sidecar 404 /
+5xx; base annotations sidecar missing (read.ts:82 throws — reconcile with :64/:90 getOptional
+swallow); archie.json absent / version mismatch (embed validates at load.ts:199-214, hosted never
+reads it — decide ONE policy: gate like the embed, run migrate/migrate.ts at read, or documented
+lenient-on-absent per ADR-0020, but the same everywhere). Probe with a local static server and
+simulated 5xx/corrupt fixtures — never the live deployment. Fix getOptional to distinguish absent
+(404 → null) from failed (throw or surface partial-load state); render a visible partial indicator
+when an authored layer failed to load. Fill every actual before fixing; one fix per commit; per-app
+tests. Done when every row reads pass and no transient failure renders an exhibit as complete.
+```
+
+**Strength:** Strong (all three policies verified in-file this run; the failure rendering follows
+structurally).
+
+---
+
+## Issue 24 — No publish-generation discipline on the hosted tree: cached siblings mix generations; the image wall ignores live sources and dead-links `[re-run 332798b]`
+
+**Status:** fixed on branch `tend/read-staleness` 2026-07-17, pending review/merge — ledger:
+ledgers/STALENESS.md (on the branch). `archie.json` now carries a deterministic `generation` (djb2
+of exhibits+images+publishedAt) and is written LAST = commit point (`cf72c9e`); hosted fetches keyed
+`?g=<generation>`, hostedCache invalidated on change (`56f62d9`); live wall merged over hosted with
+live-fronted slugs dropped — no more dead-link tiles (`7ba8cc9`); note-body `${BASE}` cites rebased
+on re-host (`589334c`). Caveat recorded in-ledger: on GitHub Pages `?g=` is a cache-buster, not a
+version pin. NOTE for merge round: the tree regenerated on tend/bake-index predates the stamp — one
+final regen needed after both branches merge.
+
+**Symptom.** Every hosted tree file is a plain `fetch()` under `${PUBLISHED}` with no version/hash
+param (`published.ts:274,291,176`), resting on an "immutable until republish → full reload"
+assumption (:265-271) the publish step doesn't honor: a republish rewrites the same URLs in place,
+there is no service worker, no ETag/cache-control discipline, and the session-scoped `hostedCache`
+(:271) compounds it. A browser/CDN can serve `exhibits.json` from one publish generation with
+manifests from another — stale cards, thumbnails that 404 on click, inline annotations referencing
+dropped objects, each rendered as complete. Adjacent verified divergence: `loadImageIndex` never
+merges live working-store images while `mergeGalleries` fronts live exhibits over hosted with live
+winning slug collisions (`published.ts:220-263`) — the wall silently omits every live exhibit's
+images, and a wall tile built from stale hosted `images.json` links `#/{slug}/o/{objectId}`
+(`gallery-view.ts:29`) into an object the live-fronted exhibit no longer has. Minor same-family row:
+`hostedRebase` re-bases object media but not note-body `${BASE}` visual cites (`published.ts:34-53`,
+self-flagged in-code — breaks only on fork/localhost re-hosts).
+
+**Rungs.** L2↔L3: the reader trusts an immutability contract nothing writes.
+
+**Why it's high-leverage.** Staleness bugs masquerade as data corruption to the user ("my republish
+lost an object") and are unreproducible by the time anyone looks. A publish-generation stamp (id
+written into `exhibits.json`/`archie.json` at publish, fetches keyed on it) makes every fetch
+generation-coherent in one mechanism. *Lesson: cache coherence — sibling fetches without a shared
+version key are eventually-inconsistent by construction; stamp the generation once at write time.*
+
+**Loop.** Negative-space over staleness + the generation-stamp fix. Ledger `ledgers/STALENESS.md`.
+
+**Run it:**
+
+```
+Probe the hosted viewer's cross-generation staleness on a LOCAL static server: publish generation A,
+load the gallery, republish as generation B (objects removed/renamed), then navigate WITHOUT hard
+reload and with a caching proxy simulating stale sibling files. Ledger ledgers/STALENESS.md: case |
+actual | verdict | fix commit | retest. Rows: stale images.json → wall tile dead-ends
+(gallery-view.ts:29); stale exhibits.json → card for a 404 manifest; hostedCache (published.ts:271)
+serving generation A after B exists; live-source wall omission and live-vs-hosted slug-collision
+dead-link (loadImageIndex published.ts:253-263 never merges live, mergeGalleries :220-247 does);
+hostedRebase note-body cite on a re-host (:34-53). Fill every actual before fixing. Fix shape: write
+a generation id at publish (into exhibits.json or archie.json), key hosted fetches on it
+(?g=<generation>), invalidate hostedCache on mismatch; decide the wall/live merge (merge live images
+like mergeGalleries, or hide the wall when a live source fronts). One fix per commit, per-app tests.
+Done when every row reads pass and no mixed-generation render survives a republish.
+```
+
+**Strength:** Worth exploring (mechanisms verified in-file; the user-facing mixes are constructed,
+not yet observed).
+
+---
+
+## Issue 25 — The folder mirror trusts disk it never verifies: torn-manifest asymmetry, no cross-file ordering, external changes overwritten blind `[re-run 332798b]`
+
+**Status:** partially fixed 2026-07-17 — rows c/d/e on branch `tend/studio-guards` (ledger
+ledgers/MIRROR.md on that branch): (c) mirror generation stamp `.archie-mirror.json` — external
+change pauses autosave with "changed outside Archie" (`957a541`); (d) folderFs invalidated on write
+failure + "reopen the folder" guidance (`2ec1275`); (e) not-reachable — asset names are
+per-exhibit-unique; a false "ids minted fresh" premise corrected in comments, optional monotonic
+nextObjectId hardening handed back for render-core (`c60b4f4`). Rows a/b fixed on branch
+`tend/read-staleness`: (a) buildImageIndex now propagates a torn manifest instead of silently
+omitting the exhibit, reconciled with loadLibrary under the absent-vs-failed policy (`8baf503`);
+(b) the marker/generation is the LAST write — a torn publish has no current marker and is refused
+(`cf72c9e`). All five rows of this issue now have fixes on branches.
+
+**Symptom.** (a) `fsJsonSource.getOptional` swallows ALL errors to null (`publish/read.ts:44-48`), so
+`buildImageIndex` (`iiif/image-index.ts`) silently drops a torn `manifest.json`'s exhibit from
+images.json, while `loadLibrary` reads the same file with `src.get` and hard-throws (`site.ts:582`) —
+one corrupt file, two policies: invisible omission vs total library-open failure ("isn't an Archie
+library"). (b) `publishLibrary` has per-file atomicity but no cross-file ordering discipline: the
+marker `archie.json` is written FIRST (`site.ts:254`), so a torn tree still passes marker validation;
+`images.json` lands last (:543). Bounded: the OPFS working copy is source of truth and the next
+session's first autosave forces a full folder resync (`binding-store.svelte.ts:107-116`) — the
+exposure is the window until it, and any reader (gen-published, a colleague opening the folder)
+inside that window. (c) Once `folderResynced`, the incremental mirror rewrites only dirty exhibits
+and trusts the on-disk manifest (`publish-flows.svelte.ts:179-182`) with no mtime/generation check —
+an external writer mid-session (git pull, Dropbox, another app) yields a mixed tree: dirty parts from
+memory, the rest from the external writer, no reconciliation. (d) The cached `folderFs` handle is
+never invalidated on failure (`binding-store.svelte.ts:85-90` unconditional short-circuit) — write
+failures do reach saveStatus via the queue, but every retry hits the dead handle and nothing tells
+the user the only recovery is close/reopen. (e) Conditional, unconfirmed: the removed-objects prune
+deletes `{slug}/assets/{assetName}` (`site.ts:287-293`) — if two objects could share an asset name
+and one is removed while the exhibit's write skips the asset pass, the surviving manifest points at
+a deleted file; whether imports can ever mint a shared name needs checking.
+
+**Rungs.** L3↔L4: the mirror's consistency model exists only as an unchecked assumption.
+
+**Why it's high-leverage.** The bound folder is the format users point OTHER tools at (git, sync,
+gen-published) — exactly where torn/mixed trees escape the app's self-healing. A tree-generation
+marker written LAST (not first) + one read policy for torn manifests + a cheap external-change check
+closes all four windows. *Lesson: mirrors need fences — a replica you never verify is a second source
+of truth you didn't ask for.*
+
+**Loop.** Negative-space matrix over the mirror. Ledger `ledgers/MIRROR.md`.
+
+**Run it:**
+
+```
+Probe the Studio folder mirror's consistency windows on a LOCAL run with a scratch folder. Ledger
+ledgers/MIRROR.md: case | actual | verdict | fix commit | retest. Rows: (a) torn {slug}/manifest.json
+→ buildImageIndex silently omits the exhibit (read.ts:44-48 getOptional swallows all errors) while
+loadLibrary hard-throws on the same file (site.ts:582) — pick ONE policy (surface the corruption,
+name the file); (b) interrupted publish → marker archie.json written first (site.ts:254) means a torn
+tree still validates — move the marker (or a generation stamp) to LAST write; (c) external change
+between autosaves → incremental mirror (publish-flows.svelte.ts:179-182) overwrites blind — add a
+cheap generation/mtime check and a "folder changed outside Archie" prompt; (d) revoked/moved folder →
+cached folderFs never invalidated (binding-store.svelte.ts:85-90) — null it on write failure and say
+"reopen the folder" in the surfaced error; (e) determine whether two objects can share an asset name
+(import naming in ingest-flows) — if yes, the prune (site.ts:287-293) vs skip-asset-pass interaction
+leaves a manifest pointing at a deleted file; if no, record not-reachable. Fill every actual before
+fixing; simulate faults (kill the
+tab mid-write via a delaying fs wrapper, edit the folder externally) — never live data. One fix per
+commit; studio + render-core tests per fix. Done when every row reads pass and a torn or externally
+modified tree is detected, named, and recoverable instead of silently mixed.
+```
+
+**Strength:** Worth exploring (each window verified in-file; severity bounded by the resync
+self-heal, which is itself now recorded).
+
+---
+
+## Issue 26 — Binary asset writes bypass the save-queue whose header promises "NO failure is silent"; no quota handling → dangling asset references `[re-run 332798b]`
+
+**Status:** fixed on branch `tend/studio-guards` 2026-07-17, pending review/merge — ledger:
+ledgers/ASSETQ.md (on the branch). Finding sharpened in Phase 1: reference-after-bytes ordering
+already prevented dangling refs — the real defect was invisibility. All four ingest asset writes now
+route through `enqueueSave` (failures reach saveStatus; object not appended on failure) + a
+`navigator.storage.estimate()` batch preflight refuses cleanly on quota (`57e3444`). `savePeaks`
+documented as the one un-queued write (not referenceable, cannot dangle).
+
+**Symptom.** `save-queue.svelte.ts:1-2` states the contract ("every persist path routes through
+here … NO failure is silent"), but `saveAssetFile`/`saveOriginalFile`/`saveThumbFile`
+(`apps/studio/src/store.ts:138-153`) are called directly from ingest
+(`ingest-flows.ts:181,207,220,229`), not via `enqueueSave` — asset write failures never reach
+`saveStatus` (health stays green), and asset bytes vs the `library.json` that references them ride
+two uncoordinated paths. No `QuotaExceededError` handling or `navigator.storage.estimate()` preflight
+exists anywhere in the OPFS write path (the zip download has a size guard,
+`publish-flows.svelte.ts:185`; the OPFS import has none) — quota mid-import leaves library.json
+referencing assets whose bytes never landed, with no rollback and no error.
+
+**Rungs.** L2↔L4: a stated structural contract that its largest writes don't obey — exactly where
+failure is most likely (big binary imports).
+
+**Why it's high-leverage.** Dangling asset references are the "my image disappeared" bug report:
+undebuggable after the fact because the failure was never recorded. Routing assets through the queue
+restores the invariant the header already claims; a quota preflight turns a corrupting failure into a
+clean refusal. *Lesson: contract drift — an invariant stated in a comment but unenforced at the seam
+decays into folklore; route everything through the seam or change the comment.*
+
+**Loop.** Canonicalization (assets through the queue) + quota negative-space. Ledger
+`ledgers/ASSETQ.md`.
+
+**Run it:**
+
+```
+Route Archie Studio's binary asset persistence through the save-queue and handle quota. Ledger
+ledgers/ASSETQ.md: site | case | actual | fix commit | retest. Phase 1 — enumerate every asset write
+outside enqueueSave (saveAssetFile/saveOriginalFile/saveThumbFile at store.ts:138-153; call sites
+ingest-flows.ts:181,207,220,229 — grep for more) and characterize: inject a write failure, confirm
+saveStatus stays green today and library.json can reference bytes that never landed. Phase 2 — route
+each through enqueueSave (or an equivalent tracked path) so failures reach saveStatus; order the
+library.json update AFTER its assets commit (reference-after-bytes), or roll back references on
+failure. Phase 3 — quota: preflight large imports with navigator.storage.estimate(), catch
+QuotaExceededError into a clear "storage full, import cancelled" surface with no partial references.
+One fix per commit; studio tests + a forced-failure check per row. Done when no asset write is
+invisible to saveStatus and a quota hit cancels cleanly with zero dangling references.
+```
+
+**Strength:** Worth exploring (contract violation and missing quota handling verified; the dangling
+state is constructed, not yet observed).
+
+---
+
 ## Directions
 
 ### Direction 1 — The collaboration machinery is built, tested, and unreachable
@@ -1327,9 +1815,125 @@ export's fate verdicted — nothing deleted in-loop.
 
 **Strength:** Speculative (already inline-tracked; recorded here so the named backlog reflects it).
 
+### Direction 8 — `bakeTiles`: the publish pipeline honors a tiling flag no Studio surface can set `[re-run 332798b]`
+
+**Status:** done 2026-07-17 — ledger: ledgers/HEADROOM.md (bakeTiles section). Intent read:
+designed-latent, Q-9 commits `64981d7`/`0783d9b` — a publish-time REMOTE-IIIF baking path gated
+behind an opt-in whose UI was never built; NOT superseded by the import-time slicer (different axis;
+its `tileSource` write actively disables this branch). **Verdict: pursue** (user) — commissioned a
+spec interview for a per-object "bake tiles" toggle, prompt in-row; carry the new field on top of
+Issue 21's guard work. Build waits for the Issue 19/20 gate.
+
+**Surplus.** `AObject.bakeTiles` (`packages/render-core/src/model/model.ts:98`) is read by the
+publish pipeline's tiling branch (`publish/site.ts`), but `WorkingObjectMeta` has no slot for it,
+neither working mapper carries it (`publish/working.ts`), and no UI writes it — `buildFullLibrary` →
+`workingToLibrary` always projects undefined, so the branch is unreachable from any Studio-authored
+library. Dead capability on the paid-for publish path, not active corruption.
+
+**Rungs.** L4 → L2: a publish-time capability (bake deep-zoom tiles for an object) fully implemented
+below an authoring surface that cannot invoke it.
+
+**Who feels it.** A curator publishing large local rasters who wants deep zoom on the static site —
+today tiling rides only whatever `tileSource` was set at import; there is no per-object "bake tiles"
+choice anywhere.
+
+**Intent.** Unknown — no ADR or comment found this pass explains whether `bakeTiles` awaited a UI or
+was superseded by import-time DZI slicing (the dzi-slicer cluster was verdicted in
+`ledgers/CAPABILITY.md`; read that first).
+
+**Loop.** Headroom-audit row (a declared-but-unconstructable dimension). Ledger
+`ledgers/HEADROOM.md` (shared with Direction 4). Classify only — build nothing.
+
+**Run it:**
+
+```
+Classify the bakeTiles dimension: declared at model.ts:98, honored by publish/site.ts's tiling
+branch, constructable nowhere (no WorkingObjectMeta slot, not carried by working.ts mappers, no UI
+writer — verify each with grep evidence). Ledger ledgers/HEADROOM.md (bakeTiles row): dimension |
+declared | reached | pinned/omitted at | intent | verdict | commissioned as. Read intent from git
+history of model.ts/site.ts and ledgers/CAPABILITY.md's dzi-slicer rows. Build and prune nothing.
+Then bring me the row for a verdict: pursue (commission a spec for a per-object tiling toggle), park,
+or reject (queue the branch for a deletion sweep). Done when the row holds a verdict and its reason.
+```
+
+**Strength:** Worth exploring (one channel, repo; verified unreachable this run).
+
+### Direction 9 — The embed loads narrative sections and readings it never renders `[re-run 332798b]`
+
+**Status:** done 2026-07-17 — ledger: ledgers/CAPABILITY.md (embed-parity section). FOUR
+loaded-but-unrendered rows, not two: sections, readings+readingAnnotationsByObject, summary, and
+rights/requiredStatement — the last is the sharpest: IIIF treats requiredStatement as MUST-display
+attribution, so the embed silently omits required credit. Intent: designed-minimal-v1 drifting
+toward forgotten — ADR-0019:9-10 justifies the embed precisely because other viewers "cannot render
+Readings … the narrative Spine," yet the shipped embed drops exactly those; "read-only" meant
+no-editing, not no-narrative. **Verdict: pursue** (user) — one parity spec covering all four rows,
+attribution folded in as the must-ship piece; prompt in the sections row. Issue 17 rides the same
+spec. Build waits for the Issue 19/20 gate.
+
+**Surplus.** `<archie-viewer>` loads the full `PortableExhibit` via the same `readExhibitTree` as the
+apps (sections, readings, per-reading annotations all present in memory), but its reader consumes
+only `annotationsByObject` (`packages/archie-viewer/src/element.ts:344,531`) — `exhibit.sections` and
+`readingAnnotationsByObject` are carried and dropped at presentation. An exhibit authored as a
+narrative, or with multiple readings, embeds as a flat object grid with base notes only — no error,
+no hint that authored layers exist.
+
+**Rungs.** L4 → L2: data fully loaded, silently not shown — the layout-family sibling of Issue 17's
+note-reachability gap (which stays its own issue).
+
+**Who feels it.** The educator embedding a narrative exhibit in a course page: the narrative spine
+and reading layers vanish in the embed, so they link out to the full viewer instead — undercutting
+the embed as a distribution surface (Directions 3/5 territory).
+
+**Intent.** Partially known — `ledgers/SCALE.md` (Issue 11) already flags an "embed parity port" as a
+manual remainder, which reads as designed-minimal-v1 drifting toward forgotten. Confirm from ADR-0019
+to 0022 and element.ts git history whether reader-only was the scoped contract.
+
+**Loop.** Capability-reach diff rows. Ledger `ledgers/CAPABILITY.md` (new "embed-parity" section).
+Classify only — build nothing.
+
+**Run it:**
+
+```
+Classify what the <archie-viewer> embed loads but never renders: exhibit.sections and
+readingAnnotationsByObject arrive via readExhibitTree but element.ts consumes only
+annotationsByObject (:344,:531 — verify, and inventory any other loaded-but-unrendered fields).
+Ledger ledgers/CAPABILITY.md (embed-parity section): operation | defined at | user path | gate |
+intent | class | verdict | commissioned as. Read intent from ADRs 0019-0022, element.ts git history,
+and ledgers/SCALE.md's "embed parity port" remainder. Build nothing. Then bring me the rows for
+verdicts: pursue (commission a spec for narrative/readings in the embed, or an explicit "view full
+exhibit" affordance when layers are hidden), park (document reader-only scope in recipes/), or
+reject. Done when every loaded-but-unrendered row holds a verdict and its reason.
+```
+
+**Strength:** Worth exploring (verified in-file; intent half-documented in SCALE.md).
+
 ---
 
 ## Top recommendation
+
+**(Re-run 332798b, 2026-07-17 — data-integrity pass; supersedes the 246550d recommendation below.)**
+Gate: **this pass found data-loss and live-wrong-data findings** — Issues 19 and 20 — so per
+SHARED.md the platform is burning until they close; no growth recommendation until then.
+
+**Top recommendation → Issue 19 (annotation persistence: torn page silently empties an exhibit).**
+It is the single worst corruption seam found: index-before-pages write order, all-or-nothing read,
+and a catch that renders corruption as "nothing authored yet" — with a compounding second save that
+orphans every old page. Two explorers converged on it independently; the fix is small, local, and
+testable (pages first, index last, per-page-tolerant read, corrupt ≠ empty).
+
+**Quickest live-defect kill → Issue 20 (images.json merge drift).** Confirmed wrong in the committed
+tree right now (wall indexes 2 of 8 exhibits); one merge fix, one regression test, one tree regen.
+
+**Root-cause structural fix → Issue 21 (unguarded field-carry boundaries).** The recurring bug class
+behind four past incidents and three live drops; closing it moves the whole category to compile time.
+Issues 19→20→21 in that order is the recommended sequence.
+
+**Top direction:** none Strong this pass; both new directions (8, 9) are Worth exploring and gated
+behind the Issue 19/20 fixes anyway.
+
+---
+
+## Top recommendation (prior, re-run 246550d — superseded)
 
 **(Re-run 246550d.)** Gate: **not** a burning platform — all suites green (render-core 723 tests +
 `tsc --noEmit`; studio 157 tests + `tsc --noEmit`), no open security finding, no data-loss risk. The
