@@ -33,9 +33,10 @@
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import type { DrawTool, MarkerStyle, FrameOverlay } from "@render/mount";
-  import { openExhibitAnnotationsDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
+  import { openExhibitAnnotationsDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
-  import { enqueueSave, saveStatus } from "./save-queue.svelte.js";
+  import { enqueueSave, saveStatus, setWriterGate } from "./save-queue.svelte.js";
+  import { createWriterLock } from "./writer-lock.svelte.js";
   import { zipNameFor } from "./binding.js";
   import { createBindingStore } from "./binding-store.svelte.js";
   // createPublishFlows is imported DYNAMICALLY (ensurePub below) so its fflate + dompurify + GitHub-publish
@@ -156,6 +157,10 @@
   // `bnd` is created below the publish primitives it depends on. The App keeps only zip-open chrome.
   let collabNote = $state<string | null>(null); // ⑧: who-wrote-what after opening a zip (dismissible)
   const PROJECT_TITLE = "Archie Library";
+  // Cross-tab single-writer (Issue 22 / ledgers/TABS.md): the first tab to open this working library holds
+  // the Web Lock and may save; a second tab is read-only (the save-queue gate refuses its writes) until it
+  // takes over. claimed + wired to the queue gate in onMount.
+  const writerLock = createWriterLock(WORKING_STORE_ID);
   let zipInputEl = $state<HTMLInputElement | null>(null); // hidden picker for "Open" on non-Chromium
   let csvEl = $state<HTMLInputElement | null>(null); // hidden picker for the notes-CSV import (⑥)
   let wadmEl = $state<HTMLInputElement | null>(null); // hidden picker for the WADM/JSON import (⑦)
@@ -196,6 +201,12 @@
     // Restore recents + the active-binding DESCRIPTOR so the chip shows continuity ("bound to X");
     // the folder handle's permission re-grants lazily on the next write (binding store boot).
     bnd.boot();
+    // Issue 22: acquire the writer lock for this working library; a second tab is read-only. The queue
+    // gate reads canWrite so a reader tab cannot overwrite the writer's edits. Web Locks auto-release on
+    // tab close; the beforeunload release is for the BroadcastChannel fallback's "bye".
+    writerLock.claim();
+    setWriterGate(() => writerLock.canWrite);
+    window.addEventListener("beforeunload", () => writerLock.release());
     // Restore a saved GitHub session (Task 13) — desktop only; web / no stored token resolves null with
     // no network. Non-blocking: the publish machine's live `initialSession` getter picks it up whenever
     // it lands, so a return visit opens straight on the one-click update. Dynamic import keeps the deploy
@@ -1428,6 +1439,16 @@
   onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void openZipFile(f); el.value = ""; }} />
 
 <div class="app">
+{#if writerLock.otherTabActive && !writerLock.canWrite}
+  <!-- Issue 22 single-writer: this tab is read-only because another tab holds the writer lock. Editing
+       here won't save (the save-queue gate refuses it) until the user takes over. Reuses the amber
+       banner styling (attention, not error). -->
+  <div class="playground-banner" role="status">
+    <span class="pg-tag">Read-only</span>
+    <span class="pg-msg">This library is open in another tab that's editing it — changes here won't save, to protect that tab's work.</span>
+    <button class="pg-keep" onclick={() => writerLock.takeOver()}>Take over editing</button>
+  </div>
+{/if}
 {#if view === "library"}
   {#if collabNote}
     <!-- ⑧ collaboration summary (draft copy — human-gated): amber=transient, the playground
