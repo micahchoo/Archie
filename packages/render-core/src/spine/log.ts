@@ -10,6 +10,7 @@
 
 import { mintLogicalId, mintRevId, type LogicalId, type RevId, type ClientId } from "../wadm/brand.js";
 import type { AnnotationLog, AnnotationRecord, Emphasis, GeoAnchor, W3CBody, W3CTarget } from "../wadm/types.js";
+import type { CarryDisposition } from "../model/carry.js";
 
 function isoOf(modifiedAt: string | undefined, now: number | undefined): string {
   if (modifiedAt !== undefined) return modifiedAt;
@@ -123,6 +124,29 @@ export interface EditInput {
   modifiedAt?: string;
   now?: number;
 }
+
+// EXHAUSTIVENESS GUARD (Issue 21): appendEdit's record construction accounts for EVERY
+// AnnotationRecord field — the identity/DAG fields are re-minted/computed, the content fields carry
+// forward from the head (or the input), and `mergeParents` is the one NAMED exclusion (an edit is a
+// single-parent version, not a merge node). A field added to AnnotationRecord fails the build here
+// until it is classified, so an edit can't silently drop a new field.
+const _editCarry = {
+  logicalId: "carry", // set to the edited note's id
+  rev: "carry", // re-minted
+  version: "carry", // head.version + 1
+  parent: "carry", // head.rev
+  mergeParents: { drop: "an edit is a single-parent version; mergeParents is a merge-node-only field" },
+  modifiedAt: "carry",
+  lastEditor: "carry",
+  deleted: "carry", // false (an edit un-nothing; delete is appendDelete)
+  body: "carry", // forwarded from head unless input overrides
+  target: "carry",
+  motivation: "carry",
+  reading: "carry",
+  emphasis: "carry",
+  wholeObject: "carry",
+  geo: "carry",
+} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
 
 /**
  * Append an edited version of an existing note. Version = head.version + 1, parent =
