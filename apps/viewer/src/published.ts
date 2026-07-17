@@ -11,7 +11,7 @@ import {
   // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
-  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource,
+  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource, FailedReadError,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex, type NoteTransform,
 } from "@render/core";
 import { BASE } from "./published-base.js";
@@ -253,9 +253,10 @@ export async function loadGallery(): Promise<ExhibitsJson> {
 export async function loadImageIndex(): Promise<ImageIndex | null> {
   try {
     if (portableFs) return await fsJsonSource(portableFs).getOptional<ImageIndex>("images.json");
-    // fetchJsonOptional keeps a missing index SILENT (404 = the expected ADR degradation, not an error);
-    // a non-404 warns, a parse-fail throws → the outer catch degrades. Don't use fetchJson (it error-logs
-    // a user-facing message for every old tree that legitimately has no images.json).
+    // fetchJsonOptional keeps a missing index SILENT (404 → null = the expected ADR-0023 degradation); a
+    // FAILED read (5xx / torn body) throws `FailedReadError` → the outer catch degrades the wall to null
+    // (a broken index safely hides the wall, cards still work). Don't use fetchJson (it error-logs a
+    // user-facing message for every old tree that legitimately has no images.json).
     return await fetchJsonOptional<ImageIndex>("images.json");
   } catch {
     return null; // fetch reject / corrupt JSON → degrade: no wall, cards only
@@ -286,17 +287,24 @@ async function fetchJson<T>(path: string): Promise<T> {
   }
 }
 
-/** Fetch a file that may not exist (e.g. readings.json on a base-only exhibit) → null when absent. */
+/** Fetch a file that may not exist (e.g. readings.json on a base-only exhibit). Issue 23 absent-vs-failed
+ *  contract: **404 → null (genuinely absent)**; a 5xx/403, a fetch throw, or a torn-200 body → **throw
+ *  `FailedReadError`** (a failed read is NOT "no data"). `readExhibitTree` catches this to flag a partial
+ *  exhibit; `loadImageIndex` catches it to degrade the wall — neither silently renders complete. */
 async function fetchJsonOptional<T>(path: string): Promise<T | null> {
-  const res = await fetch(`${PUBLISHED}/${path}`);
-  if (!res.ok) {
-    // 404 = genuinely absent (a base-only exhibit). A 5xx/403 is a TRANSIENT failure on an optional file —
-    // still degrade to null (don't abort a loaded exhibit; stay consistent with fsJsonSource.getOptional's
-    // swallow-and-continue), but surface it so a hiccup isn't silently misread as "no data".
-    if (res.status !== 404) console.warn(`Archie: optional ${path} returned HTTP ${res.status} — treating as absent`);
-    return null;
+  let res: Response;
+  try {
+    res = await fetch(`${PUBLISHED}/${path}`);
+  } catch (e) {
+    throw new FailedReadError(path, e); // network/DNS/CORS throw = failed, not absent
   }
-  return (await res.json()) as T;
+  if (res.status === 404) return null; // genuinely absent (a base-only exhibit / an old tree's images.json)
+  if (!res.ok) throw new FailedReadError(path, new Error(`HTTP ${res.status}`)); // 5xx/403 = transient failure
+  try {
+    return (await res.json()) as T;
+  } catch (e) {
+    throw new FailedReadError(path, e); // 200 with an unparsable/torn body = corrupt, not absent
+  }
 }
 
 /** HTTP byte source for the shared reader — GETs tree-relative paths under `${PUBLISHED}`. */

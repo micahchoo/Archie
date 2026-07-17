@@ -3,7 +3,7 @@
 // bug; they are updated to the FIXED expectation as each row lands (retest column).
 import { describe, it, expect } from "vitest";
 import { MemoryFilesystem } from "../fs/memory.js";
-import { fsJsonSource, readExhibitTree, type JsonSource } from "./read.js";
+import { fsJsonSource, readExhibitTree, FailedReadError, type JsonSource } from "./read.js";
 import { buildImageIndex } from "../iiif/image-index.js";
 import { publishLibrary } from "./site.js";
 import { appendNew } from "../spine/log.js";
@@ -25,15 +25,10 @@ describe("PROBE fsJsonSource.getOptional — absent vs corrupt (read.ts:44-48)",
     const fs = new MemoryFilesystem();
     expect(await fsJsonSource(fs).getOptional("nope.json")).toBeNull();
   });
-  it("CORRUPT (torn) file → does it distinguish from absent?", async () => {
+  it("CORRUPT (torn) file → throws FailedReadError (distinct from absent-null) [rp1]", async () => {
     const fs = new MemoryFilesystem();
     await writeRaw(fs, "torn.json", "{not valid json");
-    const result = await fsJsonSource(fs).getOptional("torn.json").then(
-      (v) => ({ ok: true as const, v }),
-      (e) => ({ ok: false as const, e }),
-    );
-    console.log("[PROBE] fsJsonSource.getOptional torn:", result.ok ? `returned ${JSON.stringify(result.v)}` : `threw ${String(result.e)}`);
-    expect(result).toBeDefined();
+    await expect(fsJsonSource(fs).getOptional("torn.json")).rejects.toBeInstanceOf(FailedReadError);
   });
 });
 
@@ -49,17 +44,23 @@ function libWith(slugs: string[]): Library {
 }
 
 describe("PROBE buildImageIndex vs torn manifest (Issue 25a; image-index.ts:45 vs site.ts:582)", () => {
-  it("a TORN manifest.json — buildImageIndex behavior", async () => {
+  it("a TORN manifest.json → buildImageIndex PROPAGATES (loud), no silent omit [rp3]", async () => {
     const fs = new MemoryFilesystem();
     const lib = libWith(["a", "b"]);
     await publishLibrary(fs, lib, () => [], { baseUrl: base });
     await writeRaw(fs, "b/manifest.json", "{ torn");
-    const r = await buildImageIndex(fs, lib).then(
-      (idx) => ({ ok: true as const, slugs: idx.images.map((e) => e.exhibitSlug) }),
-      (e) => ({ ok: false as const, e: String(e) }),
-    );
-    console.log("[PROBE] buildImageIndex torn manifest:", JSON.stringify(r));
-    expect(r).toBeDefined();
+    // Reconciled with loadLibrary's hard-throw: a torn (failed) manifest no longer vanishes from the wall.
+    await expect(buildImageIndex(fs, lib)).rejects.toBeInstanceOf(FailedReadError);
+  });
+
+  it("a genuinely ABSENT manifest → omitted (empty/never-written exhibit, not a corruption) [rp3]", async () => {
+    const fs = new MemoryFilesystem();
+    const lib = libWith(["a", "b"]);
+    await publishLibrary(fs, lib, () => [], { baseUrl: base });
+    // Remove b's manifest entirely (absent, not torn).
+    await (await fs.root()).getDirectory("b").then((d) => d.remove("manifest.json"));
+    const idx = await buildImageIndex(fs, lib);
+    expect(idx.images.map((e) => e.exhibitSlug)).toEqual(["a"]); // absent → omitted, no throw
   });
 });
 
@@ -82,33 +83,42 @@ describe("PROBE readExhibitTree — optional layer failure policy (read.ts:64/82
     return fs;
   };
 
-  it("base-annotations sidecar 404 (bare-ref manifest) — does the whole exhibit die? (read.ts:82 src.get)", async () => {
+  // Build a bare-ref manifest (inline base items stripped) so the base-annotations SIDECAR is actually read.
+  const bareManifestSrc = async (sidecar: (path: string) => Promise<unknown>) => {
     const inner = fsJsonSource(await publishedFs());
     const manifest = await inner.get<{ items: { annotations?: { id: string; items?: unknown }[] }[] }>("rd/manifest.json");
-    for (const c of manifest.items) for (const ap of c.annotations ?? []) if (/\/annotations\.json$/.test(ap.id)) delete ap.items; // strip inline base → force sidecar fetch
+    for (const c of manifest.items) for (const ap of c.annotations ?? []) if (/\/annotations\.json$/.test(ap.id)) delete ap.items;
     const src: JsonSource = {
-      get: async <T>(p: string): Promise<T> => {
-        if (p.endsWith("manifest.json")) return manifest as T;
-        if (/\/annotations\.json$/.test(p)) throw new Error("HTTP 500 / 404 on base sidecar");
-        return inner.get<T>(p);
-      },
-      getOptional: inner.getOptional,
+      get: async <T>(p: string): Promise<T> => (p.endsWith("manifest.json") ? (manifest as T) : inner.get<T>(p)),
+      getOptional: async <T>(p: string): Promise<T | null> => (/\/annotations\.json$/.test(p) ? (sidecar(p) as Promise<T | null>) : inner.getOptional<T>(p)),
     };
-    const r = await readExhibitTree(src, "rd").then((ex) => ({ ok: true as const, n: ex.annotationsByObject.o1?.length }), (e) => ({ ok: false as const, e: String(e) }));
-    console.log("[PROBE] readExhibitTree base-sidecar-fail:", JSON.stringify(r));
-    expect(r).toBeDefined();
+    return src;
+  };
+
+  it("base-annotations sidecar FAILED (5xx) → exhibit RENDERS, flagged incomplete (no abort) [rp1]", async () => {
+    const src = await bareManifestSrc((p) => Promise.reject(new FailedReadError(p, new Error("HTTP 500"))));
+    const ex = await readExhibitTree(src, "rd");
+    expect(ex.annotationsByObject.o1).toEqual([]); // that one layer degraded to empty
+    expect(ex.incomplete).toBe(true); // but the exhibit is flagged partial, not dead
   });
 
-  it("readings.json failure indistinguishable from absent → readings:[] with NO partial signal (read.ts:64)", async () => {
+  it("base-annotations sidecar ABSENT (404) → empty object, NOT flagged incomplete [rp1]", async () => {
+    const src = await bareManifestSrc(() => Promise.resolve(null)); // genuine absence
+    const ex = await readExhibitTree(src, "rd");
+    expect(ex.annotationsByObject.o1).toEqual([]);
+    expect(ex.incomplete).toBeUndefined();
+  });
+
+  it("readings.json FAILED (5xx) → readings:[] AND flagged incomplete (no silent complete) [rp1]", async () => {
     const inner = fsJsonSource(await publishedFs());
-    // current HTTP getOptional swallows a 5xx to null — model that: readings.json → null (as if failed).
     const src: JsonSource = {
       get: inner.get,
-      getOptional: async <T>(p: string): Promise<T | null> => (/readings\.json$/.test(p) ? null : inner.getOptional<T>(p)),
+      getOptional: async <T>(p: string): Promise<T | null> =>
+        /readings\.json$/.test(p) ? Promise.reject(new FailedReadError(p, new Error("HTTP 503"))) : inner.getOptional<T>(p),
     };
     const ex = await readExhibitTree(src, "rd");
-    console.log("[PROBE] readExhibitTree readings-failed:", JSON.stringify({ readings: ex.readings.length, incomplete: (ex as { incomplete?: unknown }).incomplete }));
-    expect(ex.readings.length).toBe(0); // failed read silently rendered as "no readings"
+    expect(ex.readings).toEqual([]);
+    expect(ex.incomplete).toBe(true);
   });
 });
 

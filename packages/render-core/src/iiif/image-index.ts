@@ -35,14 +35,21 @@ export interface ImageIndex {
 
 /**
  * Project the published tree into the library-level image index. Reads each `{slug}/manifest.json` in
- * `library.exhibits` order, then each manifest's canvas (reading) order. A missing manifest contributes
- * nothing — so an empty Library yields the valid empty index `{ images: [] }`.
+ * `library.exhibits` order, then each manifest's canvas (reading) order.
+ *
+ * Issue 25a (absent-vs-failed reconciliation): the manifest read goes through `getOptional`, whose Issue-23
+ * contract is **absent (404 / not-found) → null; failed (torn JSON / read fault) → throw `FailedReadError`**.
+ * So a genuinely-ABSENT manifest (an empty / never-written exhibit) contributes nothing — an empty Library
+ * still yields the valid empty index `{ images: [] }` — but a TORN manifest **propagates loud** rather than
+ * silently vanishing from the wall. This deliberately matches `loadLibrary`'s hard-throw on the same file
+ * (site.ts): one corrupt file no longer means two policies (silent-omit here, hard-throw there). The
+ * absent→omit branch is retained on purpose — a missing exhibit directory is not a corruption.
  */
 export async function buildImageIndex(fs: Filesystem, library: Library): Promise<ImageIndex> {
   const src = fsJsonSource(fs);
   const images: ImageIndexEntry[] = [];
   for (const exhibit of library.exhibits) {
-    const manifest = await src.getOptional<IIIFManifest>(`${exhibit.slug}/manifest.json`);
+    const manifest = await src.getOptional<IIIFManifest>(`${exhibit.slug}/manifest.json`); // torn → throws (loud); absent → null (omit)
     if (!manifest) continue;
     for (const canvas of manifest.items) {
       const thumbnail = canvas.thumbnail?.[0]?.id;

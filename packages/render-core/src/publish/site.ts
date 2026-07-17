@@ -626,6 +626,11 @@ export interface PublishedExhibitData extends RightsFields {
   sections: Section[];
   /** Object id → full canvas IRI from the manifest. */
   canvasIdByObject: Record<string, string>;
+  /** Issue 23: set `true` when an OPTIONAL authored layer (readings, a base/per-reading annotation sidecar)
+   *  FAILED to load (5xx / torn JSON) — as opposed to being genuinely absent. The exhibit still renders
+   *  (that layer degraded to empty), but the Viewer surfaces a visible "some notes couldn't load" indicator
+   *  so a transient failure is never mistaken for a complete exhibit. Omitted when the read was clean. */
+  incomplete?: boolean;
 }
 
 /**

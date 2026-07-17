@@ -27,6 +27,7 @@ import {
   openArchieLibraryFromUrl,
   looksLikeZip,
   SRC_MAX_BYTES,
+  FailedReadError,
   type ArchieMarker,
   type JsonSource,
   type Filesystem,
@@ -173,12 +174,21 @@ function httpJsonSource(base: string, fetchImpl: typeof fetch): JsonSource {
   return {
     get,
     getOptional: async <T>(path: string): Promise<T | null> => {
+      // Issue 23 absent-vs-failed: 404 → null (genuinely absent — a base-only exhibit); a 5xx/403, a fetch
+      // throw, or a torn-200 body → throw `FailedReadError` (a failed read is NOT "no data"). readExhibitTree
+      // catches this to flag a partial exhibit instead of silently rendering it as complete.
+      let res: Response;
       try {
-        const res = await fetchImpl(`${root}${path}`);
-        if (!res.ok) return null; // 404 = genuinely absent (a base-only exhibit); a 5xx degrades to absent too
+        res = await fetchImpl(`${root}${path}`);
+      } catch (e) {
+        throw new FailedReadError(path, e);
+      }
+      if (res.status === 404) return null;
+      if (!res.ok) throw new FailedReadError(path, new Error(`HTTP ${res.status}`));
+      try {
         return (await res.json()) as T;
-      } catch {
-        return null;
+      } catch (e) {
+        throw new FailedReadError(path, e);
       }
     },
   };
