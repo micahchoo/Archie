@@ -144,6 +144,13 @@
     seedFor: (slug) => seededFor(author, slug),
     autosaveToFolder: (slug) => { bnd.markExhibitDirty(slug); void bnd.autosaveToFolder(); },
     touchBinding: () => bnd.touch(),
+    // Torn/corrupt annotation store on open (Issue 19): surface it (the readable notes still load and
+    // nothing is overwritten — the session refuses to seed-fresh-over a torn store). Same window.alert
+    // channel the file/IIIF/CSV load errors already use.
+    onLoadCorruption: (slug, corrupt) => {
+      console.warn(`Archie: annotation store for "${slug}" is partially unreadable`, corrupt);
+      window.alert(`Some notes in this exhibit couldn't be read (${corrupt.length} damaged page${corrupt.length === 1 ? "" : "s"}). The readable notes are shown and nothing was overwritten — export a backup before editing further.`);
+    },
   });
   // Thin App-side wrappers preserve the zero-arg save()/scheduleSave() call sites (they thread the live slug).
   const save = () => sess.save(currentSlug);

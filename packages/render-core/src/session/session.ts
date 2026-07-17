@@ -8,7 +8,7 @@ import { appendNew, appendEdit, appendDelete } from "../spine/log.js";
 import { isDegenerateTarget } from "../geometry/selector.js";
 import { projectHeads } from "../spine/heads.js";
 import { recordToAnnotation } from "../spine/serialize.js";
-import { writeAnnotations, readAnnotations } from "../spine/persist.js";
+import { writeAnnotations, readAnnotationsReport, type CorruptAnnotationPage } from "../spine/persist.js";
 import type { SerializeOptions } from "../spine/serialize.js";
 import type { FsDirectory } from "../fs/seam.js";
 import { ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_WHOLE_OBJECT, ARCHIE_GEO } from "../wadm/types.js";
@@ -58,6 +58,10 @@ export class AnnotationSession {
   /** True once the full log is known to be on disk (after a full write, or a load FROM disk). Until then
    *  the next save is a FULL write — incremental writes are only safe once every page exists on disk. */
   private persistedFully = false;
+  /** Pages the load could not read (torn write / corruption) — empty on a clean or fresh session. The
+   *  studio-open path reads this to surface corruption AND to refuse to seed-fresh-over a torn store
+   *  (which would orphan the unreadable pages permanently — Issue 19). Public, read-only for callers. */
+  loadCorruption: CorruptAnnotationPage[] = [];
 
   constructor(
     private readonly editor: ClientId,
@@ -76,8 +80,13 @@ export class AnnotationSession {
 
   /** Load a session from a persisted annotations directory (the reload/open path). */
   static async load(annDir: FsDirectory, editor: ClientId): Promise<AnnotationSession> {
-    const s = new AnnotationSession(editor, await readAnnotations(annDir));
-    s.persistedFully = true; // every page is on disk (we just read them) — subsequent saves can be incremental
+    const { log, corrupt } = await readAnnotationsReport(annDir);
+    const s = new AnnotationSession(editor, log);
+    s.loadCorruption = corrupt;
+    // Only mark fully-persisted when EVERY page read cleanly. A partial (corrupt) load must NOT do an
+    // incremental save — that would rewrite an index listing only the survivors, dropping the torn
+    // pages' ids for good (Issue 19). corrupt ⇒ the next save is a full write.
+    s.persistedFully = corrupt.length === 0;
     return s;
   }
 
