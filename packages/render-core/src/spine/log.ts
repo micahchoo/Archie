@@ -191,6 +191,28 @@ export interface DeleteInput {
   now?: number;
 }
 
+// EXHAUSTIVENESS GUARD (Issue 21): a tombstone DELIBERATELY carries only identity/DAG + `target`
+// (kept for citation/dereference) — the six content fields are dropped ON PURPOSE (a deleted version
+// has no content). Encoding that as NAMED `{drop}`s (not silence) means a NEW AnnotationRecord field
+// forces a decision: does a tombstone keep it, or is it another content field to drop?
+const _deleteCarry = {
+  logicalId: "carry",
+  rev: "carry", // re-minted
+  version: "carry", // head.version + 1
+  parent: "carry", // head.rev
+  mergeParents: { drop: "a tombstone is a single-parent version, not a merge node" },
+  modifiedAt: "carry",
+  lastEditor: "carry",
+  deleted: "carry", // true
+  target: "carry", // kept for citation/dereference of the deleted note
+  body: { drop: "tombstone: a deleted version has no content" },
+  motivation: { drop: "tombstone: a deleted version has no content" },
+  reading: { drop: "tombstone: a deleted version has no content" },
+  emphasis: { drop: "tombstone: a deleted version has no content" },
+  wholeObject: { drop: "tombstone: a deleted version has no content" },
+  geo: { drop: "tombstone: a deleted version has no content" },
+} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
+
 /** Append a tombstone version (a delete is append-only, never a removal). */
 export function appendDelete(log: AnnotationLog, logicalId: LogicalId, input: DeleteInput): AppendResult {
   const head = linearHead(log, logicalId);
