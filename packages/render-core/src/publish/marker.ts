@@ -16,6 +16,11 @@ export interface ArchieMarker {
   format: "archie-library";
   version: number;
   generator: "archie";
+  /** Publish-generation id (STALENESS / Issue 24) — changes when the published tree's content changes.
+   *  The Viewer keys hosted fetches on it (`?g=<generation>`) so a caching layer can't serve one file
+   *  from generation A next to another from B, and invalidates its session cache when it changes.
+   *  Optional: the constant `ARCHIE_LIBRARY_MARKER` omits it; `publishLibrary` fills it per publish. */
+  generation?: string;
 }
 
 /** The marker publishLibrary stamps into every published tree (the current-schema constant). */

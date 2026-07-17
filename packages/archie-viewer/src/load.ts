@@ -18,8 +18,9 @@ import {
   loadPortableExhibit,
   loadPortableGallery,
   readExhibitTree,
-  NotAnArchieLibraryError,
-  SCHEMA_VERSION,
+  // ADR-0020 tree marker gate — the SHARED validator (was a hand-rolled marker check here); the hosted
+  // apps/viewer path (published.ts) composes the SAME function, so both surfaces apply one policy.
+  assertArchieTreeMarker,
   // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // apps/viewer/src/published.ts — both now compose these instead of redefining them.
@@ -27,7 +28,7 @@ import {
   openArchieLibraryFromUrl,
   looksLikeZip,
   SRC_MAX_BYTES,
-  type ArchieMarker,
+  FailedReadError,
   type JsonSource,
   type Filesystem,
   type ExhibitsJson,
@@ -173,12 +174,21 @@ function httpJsonSource(base: string, fetchImpl: typeof fetch): JsonSource {
   return {
     get,
     getOptional: async <T>(path: string): Promise<T | null> => {
+      // Issue 23 absent-vs-failed: 404 → null (genuinely absent — a base-only exhibit); a 5xx/403, a fetch
+      // throw, or a torn-200 body → throw `FailedReadError` (a failed read is NOT "no data"). readExhibitTree
+      // catches this to flag a partial exhibit instead of silently rendering it as complete.
+      let res: Response;
       try {
-        const res = await fetchImpl(`${root}${path}`);
-        if (!res.ok) return null; // 404 = genuinely absent (a base-only exhibit); a 5xx degrades to absent too
+        res = await fetchImpl(`${root}${path}`);
+      } catch (e) {
+        throw new FailedReadError(path, e);
+      }
+      if (res.status === 404) return null;
+      if (!res.ok) throw new FailedReadError(path, new Error(`HTTP ${res.status}`));
+      try {
         return (await res.json()) as T;
-      } catch {
-        return null;
+      } catch (e) {
+        throw new FailedReadError(path, e);
       }
     },
   };
@@ -198,20 +208,9 @@ function httpJsonSource(base: string, fetchImpl: typeof fetch): JsonSource {
  */
 export async function openLibraryFromTree(base: string, fetchImpl: typeof fetch = fetch): Promise<LoadedLibrary> {
   const src = httpJsonSource(base, fetchImpl);
-  const marker = await src.getOptional<Partial<ArchieMarker>>("archie.json");
-  if (marker) {
-    // Marker present → it MUST be a valid current-schema Archie marker (forged/foreign trees rejected).
-    if (marker.format !== "archie-library") {
-      throw new NotAnArchieLibraryError(
-        "This file isn't an Archie library. Choose a published Archie tree or .archie.zip.",
-      );
-    }
-    if (marker.version !== SCHEMA_VERSION) {
-      throw new NotAnArchieLibraryError(
-        `This library was made with a different version of Archie (schema v${String(marker.version)}, this viewer reads v${SCHEMA_VERSION}). Re-publish it from a current Archie.`,
-      );
-    }
-  }
+  // ADR-0020 marker gate — the SHARED `assertArchieTreeMarker` (was a hand-rolled copy here). Lenient-on-
+  // absent, present-must-be-current; identical policy to the hosted apps/viewer path (published.ts).
+  await assertArchieTreeMarker(src);
   // No marker → accept iff exhibits.json parses (also the marker-present validation's gallery read).
   let gallery: ExhibitsJson;
   try {

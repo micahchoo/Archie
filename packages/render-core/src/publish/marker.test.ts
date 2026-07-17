@@ -34,11 +34,28 @@ describe("ADR-0020 L1 self-ID marker — write side (publishLibrary)", () => {
     expect(names).toContain("file:archie.json");
     expect(names).toContain("file:collection.json");
     expect(names).toContain("file:exhibits.json");
-    expect(await readJson(fs, "archie.json")).toEqual({
-      format: "archie-library",
-      version: SCHEMA_VERSION,
-      generator: "archie",
-    });
+    // Issue 24: the marker now also carries a publish-generation id (a string); the stable ID fields are
+    // unchanged. Issue 25b: archie.json is written LAST (the commit point), so its presence here also
+    // confirms the publish ran to completion.
+    const marker = (await readJson(fs, "archie.json")) as Record<string, unknown>;
+    expect(marker).toMatchObject({ format: "archie-library", version: SCHEMA_VERSION, generator: "archie" });
+    expect(typeof marker.generation).toBe("string");
+  });
+
+  it("stamps the SAME generation for identical content, a DIFFERENT one when content changes (Issue 24)", async () => {
+    const fs1 = new MemoryFilesystem();
+    const fs2 = new MemoryFilesystem();
+    await publishLibrary(fs1, library, () => [], { baseUrl: "https://u.gh.io/lib/" });
+    await publishLibrary(fs2, library, () => [], { baseUrl: "https://u.gh.io/lib/" });
+    const g1 = ((await readJson(fs1, "archie.json")) as { generation: string }).generation;
+    const g2 = ((await readJson(fs2, "archie.json")) as { generation: string }).generation;
+    expect(g1).toBe(g2); // deterministic: same content → same generation (byte-stable republish)
+
+    const lib2: Library = { ...library, exhibits: [exA, { ...exA, id: asExhibitId("exB"), slug: "b", title: "Exhibit B" }] };
+    const fs3 = new MemoryFilesystem();
+    await publishLibrary(fs3, lib2, () => [], { baseUrl: "https://u.gh.io/lib/" });
+    const g3 = ((await readJson(fs3, "archie.json")) as { generation: string }).generation;
+    expect(g3).not.toBe(g1); // content changed (a new exhibit) → generation changed
   });
 });
 

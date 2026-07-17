@@ -11,10 +11,11 @@ import {
   // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
-  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource,
+  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource, FailedReadError, assertArchieTreeMarker,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex, type NoteTransform,
 } from "@render/core";
 import { BASE } from "./published-base.js";
+import { mergeImageIndex } from "./gallery-view.js";
 
 export { SRC_MAX_BYTES };
 
@@ -47,10 +48,38 @@ const hostedRebase: NoteTransform = {
       ...(tileSource !== undefined ? { tileSource } : {}),
     };
   },
-  // Note-body visual cites can embed a `${BASE}` image too — same portability gap, left as a focused
-  // follow-up; the reported break is object media. Identity keeps notes untouched.
-  note: async (n) => n,
+  // Note-body visual cites can embed a `${BASE}` image too (STALENESS st4) — the SAME re-host portability
+  // gap as object media, previously left as identity. Rewrite `${BASE}` occurrences inside each textual
+  // body's `value` to the serving origin (`${PUBLISHED}/`) — a plain substring replacement mirroring
+  // `toServingOrigin`, no markup parsing (the canonical BASE prefix is an unambiguous absolute-URL token).
+  // Remote/data/blob URLs (not BASE-prefixed) are untouched. Returns the SAME object when nothing changed
+  // so the read stays referentially stable for a clean tree.
+  note: async (n) => rebaseNoteBodies(n),
 };
+
+/** Rewrite `${BASE}...` image cites embedded in a note's textual-body values → the serving origin (st4). */
+function rebaseNoteBodies<T extends { body?: unknown }>(n: T): T {
+  const rebaseValue = (v: string): string => (v.includes(BASE) ? v.split(BASE).join(`${PUBLISHED}/`) : v);
+  const rebaseBody = (b: unknown): unknown => {
+    if (b && typeof b === "object" && typeof (b as { value?: unknown }).value === "string") {
+      const value = (b as { value: string }).value;
+      const next = rebaseValue(value);
+      if (next !== value) return { ...(b as object), value: next };
+    }
+    return b;
+  };
+  const body = n.body;
+  if (Array.isArray(body)) {
+    let changed = false;
+    const next = body.map((b) => { const r = rebaseBody(b); if (r !== b) changed = true; return r; });
+    return changed ? { ...n, body: next } : n;
+  }
+  if (body !== undefined) {
+    const r = rebaseBody(body);
+    if (r !== body) return { ...n, body: r };
+  }
+  return n;
+}
 
 /** The exhibit data components consume — UNIFIED with core's portable shape (ADR-0010) so the two
  *  read paths can never drift. (Was a duplicate interface; now one source of truth.) */
@@ -232,6 +261,17 @@ export function mergeGalleries(live: ExhibitsJson, hosted: ExhibitsJson | null):
  *  no baked tree exists (a clone authoring locally before any publish). */
 export async function loadGallery(): Promise<ExhibitsJson> {
   if (portableFs) return loadPortableGallery(portableFs);
+  // ADR-0020 schema gate on the HOSTED tree — the SAME `assertArchieTreeMarker` the embed uses (READPOLICY
+  // rp2). Was the gap: the hosted apps/viewer never read `archie.json`, so a wrong-version/foreign published
+  // tree rendered garbage instead of refusing cleanly. Lenient-on-absent (a 404 marker → no throw, so a
+  // pre-marker tree or a live-only author is unaffected); a PRESENT foreign/wrong-version marker throws
+  // NotAnArchieLibraryError, surfaced by ViewerShell. Runs BEFORE the exhibits.json read so a version
+  // mismatch is an explicit error, not swallowed as "hosted absent → fall back to live".
+  // The marker also carries the publish generation (STALENESS): adopt it BEFORE reading exhibits.json so
+  // that read — and every subsequent content fetch this session — is keyed `?g=<generation>`; a republish
+  // caught here (refreshLive re-invokes loadGallery) clears the stale session cache.
+  const marker = await assertArchieTreeMarker(httpSource);
+  syncHostedGeneration(marker?.generation ?? null);
   let hosted: ExhibitsJson | null = null;
   let hostedErr: unknown = null;
   try {
@@ -253,10 +293,21 @@ export async function loadGallery(): Promise<ExhibitsJson> {
 export async function loadImageIndex(): Promise<ImageIndex | null> {
   try {
     if (portableFs) return await fsJsonSource(portableFs).getOptional<ImageIndex>("images.json");
-    // fetchJsonOptional keeps a missing index SILENT (404 = the expected ADR degradation, not an error);
-    // a non-404 warns, a parse-fail throws → the outer catch degrades. Don't use fetchJson (it error-logs
-    // a user-facing message for every old tree that legitimately has no images.json).
-    return await fetchJsonOptional<ImageIndex>("images.json");
+    // fetchJsonOptional keeps a missing index SILENT (404 → null = the expected ADR-0023 degradation); a
+    // FAILED read (5xx / torn body) throws `FailedReadError` → the outer catch degrades the wall to null
+    // (a broken index safely hides the wall, cards still work). Don't use fetchJson (it error-logs a
+    // user-facing message for every old tree that legitimately has no images.json).
+    const hosted = await fetchJsonOptional<ImageIndex>("images.json");
+    // STALENESS st3: front the LIVE working-store wall over the hosted one, dropping hosted entries for a
+    // slug the live source FRONTS (so a colliding-slug wall tile can't route to the live exhibit with a
+    // stale hosted object id — the dead-link mergeGalleries left open). The live projection wrote its own
+    // images.json (publishLibrary), so read it from the in-memory tree; no baked index there → null → the
+    // hosted wall stands alone.
+    if (liveFs) {
+      const live = await fsJsonSource(liveFs).getOptional<ImageIndex>("images.json");
+      return mergeImageIndex(live, hosted, liveSlugs);
+    }
+    return hosted;
   } catch {
     return null; // fetch reject / corrupt JSON → degrade: no wall, cards only
   }
@@ -270,8 +321,30 @@ export async function loadImageIndex(): Promise<ImageIndex | null> {
 // revoked URLs) and live data mutates as you author.
 const hostedCache = new Map<string, PublishedExhibit>();
 
+// STALENESS (Issue 24): the current published generation, read from the tree's `archie.json` marker at
+// gallery load. Every hosted CONTENT fetch is keyed on it (`?g=<generation>`) so a caching layer can't
+// serve one file from generation A next to another from B; a republish changes it, so a mid-session
+// `loadGallery` (refreshLive) detects the mismatch, clears the session cache, and re-keys the next reads.
+let hostedGeneration: string | null = null;
+
+/** Append the generation cache-key to a hosted CONTENT path. NOT applied to `archie.json` itself — the
+ *  marker is the generation ORACLE, so it must be fetched fresh, never pinned to a (possibly stale)
+ *  generation of its own. */
+function genUrl(path: string): string {
+  const q = hostedGeneration && path !== "archie.json" ? `?g=${encodeURIComponent(hostedGeneration)}` : "";
+  return `${PUBLISHED}/${path}${q}`;
+}
+
+/** Adopt the generation the marker just reported. On a CHANGE (incl. the first non-null, and any mid-session
+ *  republish caught by refreshLive), drop the session exhibit cache so no gen-A exhibit survives into gen B. */
+function syncHostedGeneration(generation: string | null): void {
+  if (generation === hostedGeneration) return;
+  hostedCache.clear();
+  hostedGeneration = generation;
+}
+
 async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${PUBLISHED}/${path}`);
+  const res = await fetch(genUrl(path));
   if (!res.ok) {
     console.error(`Archie: failed to fetch ${path} — HTTP ${res.status}`);
     throw new Error("Couldn't load this exhibit. Reload to try again.");
@@ -286,17 +359,24 @@ async function fetchJson<T>(path: string): Promise<T> {
   }
 }
 
-/** Fetch a file that may not exist (e.g. readings.json on a base-only exhibit) → null when absent. */
+/** Fetch a file that may not exist (e.g. readings.json on a base-only exhibit). Issue 23 absent-vs-failed
+ *  contract: **404 → null (genuinely absent)**; a 5xx/403, a fetch throw, or a torn-200 body → **throw
+ *  `FailedReadError`** (a failed read is NOT "no data"). `readExhibitTree` catches this to flag a partial
+ *  exhibit; `loadImageIndex` catches it to degrade the wall — neither silently renders complete. */
 async function fetchJsonOptional<T>(path: string): Promise<T | null> {
-  const res = await fetch(`${PUBLISHED}/${path}`);
-  if (!res.ok) {
-    // 404 = genuinely absent (a base-only exhibit). A 5xx/403 is a TRANSIENT failure on an optional file —
-    // still degrade to null (don't abort a loaded exhibit; stay consistent with fsJsonSource.getOptional's
-    // swallow-and-continue), but surface it so a hiccup isn't silently misread as "no data".
-    if (res.status !== 404) console.warn(`Archie: optional ${path} returned HTTP ${res.status} — treating as absent`);
-    return null;
+  let res: Response;
+  try {
+    res = await fetch(genUrl(path));
+  } catch (e) {
+    throw new FailedReadError(path, e); // network/DNS/CORS throw = failed, not absent
   }
-  return (await res.json()) as T;
+  if (res.status === 404) return null; // genuinely absent (a base-only exhibit / an old tree's images.json)
+  if (!res.ok) throw new FailedReadError(path, new Error(`HTTP ${res.status}`)); // 5xx/403 = transient failure
+  try {
+    return (await res.json()) as T;
+  } catch (e) {
+    throw new FailedReadError(path, e); // 200 with an unparsable/torn body = corrupt, not absent
+  }
 }
 
 /** HTTP byte source for the shared reader — GETs tree-relative paths under `${PUBLISHED}`. */

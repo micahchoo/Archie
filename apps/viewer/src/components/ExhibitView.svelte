@@ -374,6 +374,16 @@
 {:else if status === "error"}
   <div class="state error"><span class="warn" aria-hidden="true">⚠</span><span>{errorMsg}</span></div>
 {:else if data && layout}
+  {#if data.incomplete}
+    <!-- Issue 23 (READPOLICY): an authored layer (a base/per-reading note sidecar, or readings.json) FAILED
+         to load — a transient 5xx / torn file, NOT a genuine absence. A quiet, non-blocking status strip so
+         the exhibit is never presented as complete when part of it silently dropped. `incomplete` is set by
+         readExhibitTree's per-layer degrade across all three read surfaces. -->
+    <div class="partial-note" role="status">
+      <span class="warn" aria-hidden="true">⚠</span>
+      <span>Some notes couldn’t load — showing what’s available.</span>
+    </div>
+  {/if}
   {#if isAV && activeData}
     <!-- Key on the object so the player REMOUNTS when stepping between AV siblings (R4) — MediaPlayer's
          media/error state is plain $state with no per-object reset, so without this a failed recording's
@@ -540,6 +550,21 @@
   }
   .state.error { color: var(--semantic-error); opacity: 0.85; }
   .warn { font-size: 1.1rem; }
+
+  /* Partial-load indicator (Issue 23) — a quiet found-meta strip, pinned top-RIGHT so it clears the
+     centered arrival toast and the left breadcrumb/escape chrome. Non-interactive (pointer-events:none):
+     it informs, it never gates. Semantic-error ink on a raised paper surface, understated like .arrival. */
+  .partial-note {
+    position: fixed; z-index: 30; top: calc(var(--topbar-h) + var(--space-2)); right: var(--space-5);
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-canvas-raised); color: var(--semantic-error);
+    border: 1px solid color-mix(in srgb, var(--semantic-error) 32%, transparent);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); letter-spacing: 0.02em;
+    opacity: 0.92; pointer-events: none; max-width: min(64vw, 24rem);
+  }
+  .partial-note .warn { font-size: 1rem; }
   /* Soft signal dot — the one rationed orange mark, gently breathing (no hard pixel steps). */
   .dot { width: 8px; height: 8px; border-radius: var(--radius-sm); background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }

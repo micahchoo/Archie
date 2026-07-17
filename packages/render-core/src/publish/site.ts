@@ -95,6 +95,15 @@ export interface PublishOptions {
    */
   publishedAt?: string;
   /**
+   * Publish-generation id (STALENESS / Issue 24), stamped into the root `archie.json` marker (the LAST
+   * write = commit point). App-supplied for full control; ABSENT = derived deterministically from the
+   * library-level projections (exhibits.json + images.json) plus `publishedAt` when given. Deterministic
+   * so an incremental publish and a full republish of the same content stamp the SAME generation (the
+   * byte-stable-republish contract); folding in `publishedAt` makes each real (timestamped) publish unique
+   * so a note-only republish still busts caches. The Viewer keys hosted fetches on `?g=<generation>`.
+   */
+  generation?: string;
+  /**
    * Incremental scope (spike-0002 / SCALE-GALLERY Phase 1.1) — restrict which exhibits this publish
    * (re)writes (the folder-autosave hot path). ABSENT = full projection: the zip / GitHub / preview
    * paths pass nothing and stay byte-identical. PRESENT: only `exhibits` slugs are (re)written; within
@@ -249,12 +258,14 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   const inc = opts.incremental; // spike-0002: present = incremental (dirty-set) publish; absent = full
   const src = fsJsonSource(fs); // for the incremental recover-from-existing-manifest path
   const root = await fs.root();
-  // ADR-0020: stamp the L1 self-ID marker at the tree root so a consumer can identify (and reject a
-  // non-Archie / wrong-schema) `.archie.zip` BEFORE opening it as a library — beside collection/exhibits.
-  await writeJson(root, "archie.json", ARCHIE_LIBRARY_MARKER);
+  // ADR-0020 marker (archie.json) is written LAST, not here — see the end of this function. Issue 25b: a
+  // marker written FIRST validates a tree that a crash mid-publish left torn; writing it last makes it the
+  // COMMIT POINT — a partial tree has no current marker, so a consumer rejects it instead of rendering it.
   await writeJson(root, "collection.json", toCollection(library, { baseUrl }));
-  // Stamp the Gallery source with the schema version so it stays migratable (orphan gap §39).
-  await writeJson(root, "exhibits.json", stamp(toExhibitsJson(library)));
+  // Stamp the Gallery source with the schema version so it stays migratable (orphan gap §39). Keep the
+  // object for the generation hash (below) so the generation id is a pure function of published content.
+  const exhibitsJson = stamp(toExhibitsJson(library));
+  await writeJson(root, "exhibits.json", exhibitsJson);
 
   // Library-wide note index (a projection of EVERY log) — intra-Library `archie:` refs are resolved
   // against it at publish: a link in one exhibit may target a note in another, so build it complete
@@ -540,8 +551,26 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   // Library-level image index (ADR-0023, spike-0004): a cheap always-rewritten projection like
   // exhibits.json — built by reading the just-written / prior manifests, so it stays correct on both full
   // and incremental publishes. Exempt from dirty-tracking; the Viewer Gallery wall reads this one file.
-  await writeJson(root, "images.json", stamp(await buildImageIndex(fs, library)));
+  const imageIndex = stamp(await buildImageIndex(fs, library));
+  await writeJson(root, "images.json", imageIndex);
+
+  // ADR-0020 marker — written LAST = the publish COMMIT POINT (Issue 25b). `generation` (Issue 24) is
+  // app-supplied or derived deterministically from the two library-level projections (so an incremental
+  // publish and a full republish of identical content stamp the SAME generation — the byte-stable
+  // contract), folding in `publishedAt` so each real timestamped publish is unique (busts caches on any
+  // republish, note-only included). The Viewer keys hosted fetches on `?g=<generation>`.
+  const generation = opts.generation ?? generationHash(JSON.stringify(exhibitsJson) + " " + JSON.stringify(imageIndex) + " " + (opts.publishedAt ?? ""));
+  await writeJson(root, "archie.json", { ...ARCHIE_LIBRARY_MARKER, generation });
   return { brokenLinks, incompleteCanvases };
+}
+
+/** A tiny, dependency-free stable string hash (djb2) → base36 — the default publish-generation id when
+ *  none is app-supplied. Deterministic (same input → same id) so byte-stable republishes stay byte-stable;
+ *  not cryptographic (it identifies a generation, it doesn't authenticate — ADR-0020's marker stance). */
+function generationHash(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = (Math.imul(h, 33) ^ s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
 }
 
 /** Assemble the whole site into an in-memory ZipFilesystem (the architectural publish primitive),
@@ -626,6 +655,11 @@ export interface PublishedExhibitData extends RightsFields {
   sections: Section[];
   /** Object id → full canvas IRI from the manifest. */
   canvasIdByObject: Record<string, string>;
+  /** Issue 23: set `true` when an OPTIONAL authored layer (readings, a base/per-reading annotation sidecar)
+   *  FAILED to load (5xx / torn JSON) — as opposed to being genuinely absent. The exhibit still renders
+   *  (that layer degraded to empty), but the Viewer surfaces a visible "some notes couldn't load" indicator
+   *  so a transient failure is never mistaken for a complete exhibit. Omitted when the read was clean. */
+  incomplete?: boolean;
 }
 
 /**
