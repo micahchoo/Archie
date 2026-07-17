@@ -7,8 +7,8 @@ times (sections/readings in loadLibrary; note-copy emphasis/wholeObject/geo) and
 import→republish drops `Exhibit.cover` / `AObject.format`.
 
 **Fix idiom (chosen):** a co-located compiler-checked sentinel per boundary —
-`… satisfies Record<keyof Source, CarryDisposition>` (+ a `carryDefined<T>` helper for same-type
-carries) in `packages/render-core/src/model/carry.ts`. Every source field is classified `"carry"` or
+`… satisfies Record<keyof Source, CarryDisposition>`, with `CarryDisposition` defined in
+`packages/render-core/src/model/carry.ts`. Every source field is classified `"carry"` or
 `{ drop: "<reason>" }`; a NEW field fails to compile until classified, turning the denylist-pretending-
 to-be-an-allowlist into a compiler-owned allowlist. Deliberate drops are NAMED, not silent.
 
@@ -30,7 +30,7 @@ Tests: `pnpm --filter @render/core exec vitest run`.
 | **merge** `resolveConflict` (`spine/merge.ts:194-218`) — merge node | reading/emphasis/wholeObject/geo — compensated ONLY in `session.resolve` (`session.ts:175-212`); any direct caller re-introduces the loss | FIXED — carry moved INSIDE the primitive (`ConflictResolution` gains reading/emphasis/wholeObject/geo, inherited from any head when unset); `session.resolve` now just delegates; `_mergeCarry` sentinel | b9b6a68 | ✅ resolve.test.ts (direct caller carries + override); 748 render-core, 270 studio |
 | **working** `workingToLibrary` (`publish/working.ts:132-163`) — working→Library | `cover` (no working slot), `format` (no working slot); `seedVersion`→dropped (template marker, deliberate) | FIXED — added `cover`/`format`/`originalName` slots to the working types; workingToLibrary carries them (`originalName` from the slot or provenance); `_workingExhibitCarry`/`_workingObjectCarry` sentinels name `seedVersion`/`provenance` `{drop}` | e0089cb | ✅ tsc + working.test.ts (7) |
 | **working** `libraryToWorking` (`publish/working.ts:174-200`) — Library→working (**the LIVE drop**) | `cover`, `format`, `originalName` — recovered on import (`cover` via exhibits.json/loadLibrary; `format` via objectsFromManifest) then dropped here → import a covered `.archie.zip` + republish ⇒ covers the viewer renders (`Gallery.svelte:80-81`) VANISH | FIXED — carry `cover`/`format`/`originalName` into the new working slots; `_libraryExhibitCarry`/`_libraryObjectCarry` sentinels keyed on `keyof Exhibit`/`keyof AObject`; `bakeTiles` named `{drop}` | e743a18 | ✅ working.test.ts round-trip (cover/format/originalName survive Library→Working→Library); 749 render-core, 270 studio, svelte-check 0 err |
-| **manifest** `objectsFromManifest` (`iiif/manifest.ts:155-180`) — Manifest→AObject (load) | `originalName` (published to `assets-original/` but the manifest carries no recoverable ref), `bakeTiles` (publish-time opt-in) — both DELIBERATE for the manifest transport | GUARDED — `_manifestObjectRecover satisfies Record<keyof AObject, …>` names `originalName`/`bakeTiles` `{drop}` with reasons; a new AObject field forces a recover-or-drop decision | `<c8>` | ✅ tsc + manifest.test.ts (19) |
+| **manifest** `objectsFromManifest` (`iiif/manifest.ts:155-180`) — Manifest→AObject (load) | `originalName` (published to `assets-original/` but the manifest carries no recoverable ref), `bakeTiles` (publish-time opt-in) — both DELIBERATE for the manifest transport | GUARDED — `_manifestObjectRecover satisfies Record<keyof AObject, …>` names `originalName`/`bakeTiles` `{drop}` with reasons; a new AObject field forces a recover-or-drop decision | a86623c | ✅ tsc + manifest.test.ts (19) |
 
 ## Phase 1 field diffs (source type → boundary output)
 
