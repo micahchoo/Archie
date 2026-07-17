@@ -79,16 +79,41 @@ describe("binding store — incremental folder mirror dirty-set (spike-0002)", (
     const { store, writeToFolder } = makeStore();
     await bindResynced(store);
     writeToFolder.mockClear();
+    // Issue 25 row (d): a failed write now DROPS the cached handle, so the retry re-acquires — mock it.
+    reopenFolderBinding.mockResolvedValue({ fs: fakeFs, name: "Docs", key: "k" });
 
     writeToFolder.mockRejectedValueOnce(new Error("disk full"));
     store.markExhibitDirty("p");
-    await store.autosaveToFolder(); // fails → scope retained
+    await store.autosaveToFolder(); // fails → scope retained, handle invalidated
     await flush();
 
     writeToFolder.mockClear();
-    await store.autosaveToFolder(); // retry
+    await store.autosaveToFolder(); // retry (re-acquires the folder first)
     expect(writeToFolder).toHaveBeenCalledTimes(1);
     expect([...writeToFolder.mock.calls[0]![1]!.incremental!.exhibits]).toEqual(["p"]);
+  });
+
+  it("invalidates the cached folderFs on a write failure and surfaces reopen guidance (row d)", async () => {
+    const { store, writeToFolder } = makeStore();
+    await bindResynced(store);
+    writeToFolder.mockClear();
+
+    writeToFolder.mockRejectedValueOnce(new Error("NotFoundError: folder moved"));
+    store.markExhibitDirty("p");
+    await store.autosaveToFolder(); // fails
+    await flush();
+
+    // The recovery card names the folder and the one recovery that works.
+    expect(store.error).toContain("reopen the folder");
+    expect(store.error).toContain("Docs");
+
+    // The dead handle was dropped: the next trigger RE-ACQUIRES (reopenFolderBinding) rather than
+    // reusing the cached fs. Prove it by leaving reacquisition failing → no blind write on the dead handle.
+    reopenFolderBinding.mockResolvedValueOnce(null);
+    writeToFolder.mockClear();
+    await store.autosaveToFolder();
+    expect(reopenFolderBinding).toHaveBeenCalled();
+    expect(writeToFolder).not.toHaveBeenCalled(); // re-acquire failed → nothing written to a dead handle
   });
 
   it("an explicit Save preserves dirt that accrues DURING the in-flight full write", async () => {

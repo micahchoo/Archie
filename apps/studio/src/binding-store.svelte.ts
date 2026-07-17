@@ -46,6 +46,17 @@ export function createBindingStore(deps: BindingDeps) {
 
   let folderFs: Filesystem | null = null; // cached so autosave doesn't re-acquire each tick
   let autosaving = false;
+
+  /** Issue 25 row (d): a WRITE failure means the cached handle may be dead (folder moved/deleted/perm
+   *  revoked). Drop the cache so the next attempt RE-ACQUIRES instead of hitting the same dead handle,
+   *  and surface the one recovery that works — reopen the folder. (A permission-not-yet-granted miss is
+   *  handled separately/quietly; this fires only after an actual write rejection.) */
+  function invalidateFolderOnWriteFailure(): void {
+    folderFs = null;
+    if (s.binding.kind === "folder") {
+      s.error = `Couldn't save to "${s.binding.name ?? "the folder"}". If you moved, renamed, or lost access to it, reopen the folder (Open → choose it again) to reconnect — your work is safe in this browser.`;
+    }
+  }
   // Incremental folder-mirror state (spike-0002). folderResynced: a FULL publish has landed for this
   // binding session, so the on-disk tree is complete and the incremental recover-from-manifest path is
   // safe; the first autosave of a session forces a full resync. The dirty-set below is accumulated by the
@@ -111,7 +122,7 @@ export function createBindingStore(deps: BindingDeps) {
         const snap = takeDirt();
         if (await enqueueSave("folder-mirror", "Folder autosave", () => deps.writeToFolder(fs, { removedExhibits: snap.removedExhibits, removedObjects: snap.removedObjects }))) {
           folderResynced = true; s.dirty = false; progressed = true;
-        } else restoreDirt(snap);
+        } else { restoreDirt(snap); invalidateFolderOnWriteFailure(); }
         return;
       }
       if (dirtEmpty()) return; // a redundant trigger — the tree is already current
@@ -119,7 +130,7 @@ export function createBindingStore(deps: BindingDeps) {
       const plan: FolderWritePlan = { incremental: { exhibits: snap.exhibits, reassets: snap.reassets }, removedExhibits: snap.removedExhibits, removedObjects: snap.removedObjects };
       if (await enqueueSave("folder-mirror", "Folder autosave", () => deps.writeToFolder(fs, plan))) {
         s.dirty = false; progressed = true;
-      } else restoreDirt(snap); // failed → retry the SAME scope + removals next trigger (never drop a save)
+      } else { restoreDirt(snap); invalidateFolderOnWriteFailure(); } // failed → retry the SAME scope next trigger (never drop a save), but drop the maybe-dead handle
     } catch { /* not yet reacquirable (FSA permission needs a gesture) — keep dirty; explicit Save asks */ }
     finally {
       autosaving = false;
@@ -140,6 +151,7 @@ export function createBindingStore(deps: BindingDeps) {
       await deps.writeToFolder(fs, { removedExhibits: snap.removedExhibits, removedObjects: snap.removedObjects });
     } catch (e) {
       restoreDirt(snap); // Save failed → keep the dirt (incl. removals) for a retry
+      folderFs = null; // Issue 25 row (d): drop the maybe-dead handle so the retry RE-ACQUIRES (saveProject's catch surfaces the error)
       throw e;
     }
     folderResynced = true; // the tree is complete; mid-flight accruals (post-snapshot) remain for the next mirror
