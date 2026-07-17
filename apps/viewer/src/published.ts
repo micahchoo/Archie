@@ -238,7 +238,11 @@ export async function loadGallery(): Promise<ExhibitsJson> {
   // pre-marker tree or a live-only author is unaffected); a PRESENT foreign/wrong-version marker throws
   // NotAnArchieLibraryError, surfaced by ViewerShell. Runs BEFORE the exhibits.json read so a version
   // mismatch is an explicit error, not swallowed as "hosted absent → fall back to live".
-  await assertArchieTreeMarker(httpSource);
+  // The marker also carries the publish generation (STALENESS): adopt it BEFORE reading exhibits.json so
+  // that read — and every subsequent content fetch this session — is keyed `?g=<generation>`; a republish
+  // caught here (refreshLive re-invokes loadGallery) clears the stale session cache.
+  const marker = await assertArchieTreeMarker(httpSource);
+  syncHostedGeneration(marker?.generation ?? null);
   let hosted: ExhibitsJson | null = null;
   let hostedErr: unknown = null;
   try {
@@ -278,8 +282,30 @@ export async function loadImageIndex(): Promise<ImageIndex | null> {
 // revoked URLs) and live data mutates as you author.
 const hostedCache = new Map<string, PublishedExhibit>();
 
+// STALENESS (Issue 24): the current published generation, read from the tree's `archie.json` marker at
+// gallery load. Every hosted CONTENT fetch is keyed on it (`?g=<generation>`) so a caching layer can't
+// serve one file from generation A next to another from B; a republish changes it, so a mid-session
+// `loadGallery` (refreshLive) detects the mismatch, clears the session cache, and re-keys the next reads.
+let hostedGeneration: string | null = null;
+
+/** Append the generation cache-key to a hosted CONTENT path. NOT applied to `archie.json` itself — the
+ *  marker is the generation ORACLE, so it must be fetched fresh, never pinned to a (possibly stale)
+ *  generation of its own. */
+function genUrl(path: string): string {
+  const q = hostedGeneration && path !== "archie.json" ? `?g=${encodeURIComponent(hostedGeneration)}` : "";
+  return `${PUBLISHED}/${path}${q}`;
+}
+
+/** Adopt the generation the marker just reported. On a CHANGE (incl. the first non-null, and any mid-session
+ *  republish caught by refreshLive), drop the session exhibit cache so no gen-A exhibit survives into gen B. */
+function syncHostedGeneration(generation: string | null): void {
+  if (generation === hostedGeneration) return;
+  hostedCache.clear();
+  hostedGeneration = generation;
+}
+
 async function fetchJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${PUBLISHED}/${path}`);
+  const res = await fetch(genUrl(path));
   if (!res.ok) {
     console.error(`Archie: failed to fetch ${path} — HTTP ${res.status}`);
     throw new Error("Couldn't load this exhibit. Reload to try again.");
@@ -301,7 +327,7 @@ async function fetchJson<T>(path: string): Promise<T> {
 async function fetchJsonOptional<T>(path: string): Promise<T | null> {
   let res: Response;
   try {
-    res = await fetch(`${PUBLISHED}/${path}`);
+    res = await fetch(genUrl(path));
   } catch (e) {
     throw new FailedReadError(path, e); // network/DNS/CORS throw = failed, not absent
   }

@@ -53,35 +53,47 @@ describe("PROBE loadImageIndex — images.json 5xx vs 404 (published.ts:290 fetc
   });
 });
 
-describe("PROBE loadPublishedExhibit — generation keying + hostedCache (published.ts:271/334)", () => {
+describe("generation keying + hostedCache invalidation (STALENESS st2)", () => {
   const manifest = {
     "@context": "http://iiif.io/api/presentation/3/context.json",
     id: "m", type: "Manifest", label: { none: ["One"] },
     items: [{ id: "https://u/rd/canvas/o1", type: "Canvas", label: { none: ["o1"] }, height: 1, width: 1,
       items: [], annotations: [{ id: "https://u/rd/canvas/o1/annotations.json", type: "AnnotationPage", items: [] }] }],
   };
-  it("do hosted fetch URLs carry ?g=<generation>? is archie.json read first?", async () => {
-    const urls = stub((u) => {
-      if (u.includes("manifest.json")) return { status: 200, body: manifest };
-      if (u.includes("archie.json")) return { status: 200, body: { format: "archie-library", version: 1 } };
-      return { status: 404 };
-    });
-    await loadPublishedExhibit("rd").catch((e) => console.log("[PROBE] load err:", String(e)));
-    console.log("[PROBE] hosted fetch URLs:", JSON.stringify(urls));
-    const anyGen = urls.some((u) => u.includes("?g=") || u.includes("&g="));
-    const readsMarker = urls.some((u) => u.includes("archie.json"));
-    console.log("[PROBE] carries ?g= :", anyGen, "| reads archie.json:", readsMarker);
-    expect(urls.length).toBeGreaterThan(0);
+  const emptyExhibits = { library: { id: "L", title: "L" }, exhibits: [], presentation: {} };
+  const serve = (gen: string): Handler => (u) => {
+    if (u.includes("archie.json")) return { status: 200, body: { format: "archie-library", version: 1, generation: gen } };
+    if (u.includes("exhibits.json")) return { status: 200, body: emptyExhibits };
+    if (u.includes("manifest.json")) return { status: 200, body: manifest };
+    return { status: 404 };
+  };
+
+  // Distinct generation per test: module state (hostedGeneration/hostedCache) persists across tests, so a
+  // unique gen makes each first loadGallery a genuine change → a clean cache-clear (no cross-test bleed).
+  it("after loadGallery, every hosted CONTENT fetch is keyed ?g=<generation>; archie.json is NOT [st2]", async () => {
+    const urls = stub(serve("gk1"));
+    await loadGallery();
+    await loadPublishedExhibit("rd");
+    const content = urls.filter((u) => /manifest\.json|exhibits\.json/.test(u));
+    expect(content.length).toBeGreaterThan(0);
+    expect(content.every((u) => u.includes("?g=gk1"))).toBe(true); // content pinned to the generation
+    expect(urls.filter((u) => u.includes("archie.json")).every((u) => !u.includes("?g="))).toBe(true); // marker fresh
   });
 
-  it("hostedCache: a second load re-fetches or serves the cached (stale-able) exhibit?", async () => {
-    const urls = stub((u) => (u.includes("manifest.json") ? { status: 200, body: manifest } : { status: 404 }));
-    await loadPublishedExhibit("rd2").catch(() => {});
-    const after1 = urls.filter((u) => u.includes("rd2/manifest.json")).length;
-    await loadPublishedExhibit("rd2").catch(() => {});
-    const after2 = urls.filter((u) => u.includes("rd2/manifest.json")).length;
-    console.log("[PROBE] manifest fetches after 1st load / 2nd load:", after1, "/", after2);
-    // ACTUAL: after2 === after1 (served from hostedCache — no generation check, can serve gen A after B).
-    expect(after2).toBe(after1);
+  it("hostedCache serves within a generation, but a generation CHANGE invalidates it (no gen A after B) [st2]", async () => {
+    const urls = stub(serve("gk2"));
+    await loadGallery();
+    await loadPublishedExhibit("rd");
+    const a1 = urls.filter((u) => u.includes("rd/manifest.json")).length;
+    await loadPublishedExhibit("rd"); // same generation → served from cache
+    const a2 = urls.filter((u) => u.includes("rd/manifest.json")).length;
+    expect(a2).toBe(a1); // cached within gk2 (no extra fetch)
+
+    vi.unstubAllGlobals();
+    const urls2 = stub(serve("gk3")); // republish: archie.json now reports a new generation
+    await loadGallery(); // refreshLive path — detects the mismatch, clears the cache
+    await loadPublishedExhibit("rd");
+    expect(urls2.filter((u) => u.includes("rd/manifest.json")).length).toBe(1); // re-fetched under gk3 (cache busted)
+    expect(urls2.some((u) => u.includes("rd/manifest.json?g=gk3"))).toBe(true);
   });
 });
