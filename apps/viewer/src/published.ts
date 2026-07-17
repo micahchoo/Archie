@@ -11,7 +11,7 @@ import {
   // The untrusted-archive open seam (ISSUES.md Issue 5 canonicalization): the zip-bomb-cap +
   // ADR-0020-marker-validate + capped-fetch logic used to be copy-pasted here and in
   // packages/archie-viewer/src/load.ts — both now compose these instead of redefining them.
-  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource, FailedReadError,
+  openArchieLibrary, openArchieLibraryFromUrl, SRC_MAX_BYTES, fsJsonSource, FailedReadError, assertArchieTreeMarker,
   type ExhibitsJson, type Filesystem, type JsonSource, type PortableExhibit, type ImageIndex, type NoteTransform,
 } from "@render/core";
 import { BASE } from "./published-base.js";
@@ -232,6 +232,13 @@ export function mergeGalleries(live: ExhibitsJson, hosted: ExhibitsJson | null):
  *  no baked tree exists (a clone authoring locally before any publish). */
 export async function loadGallery(): Promise<ExhibitsJson> {
   if (portableFs) return loadPortableGallery(portableFs);
+  // ADR-0020 schema gate on the HOSTED tree — the SAME `assertArchieTreeMarker` the embed uses (READPOLICY
+  // rp2). Was the gap: the hosted apps/viewer never read `archie.json`, so a wrong-version/foreign published
+  // tree rendered garbage instead of refusing cleanly. Lenient-on-absent (a 404 marker → no throw, so a
+  // pre-marker tree or a live-only author is unaffected); a PRESENT foreign/wrong-version marker throws
+  // NotAnArchieLibraryError, surfaced by ViewerShell. Runs BEFORE the exhibits.json read so a version
+  // mismatch is an explicit error, not swallowed as "hosted absent → fall back to live".
+  await assertArchieTreeMarker(httpSource);
   let hosted: ExhibitsJson | null = null;
   let hostedErr: unknown = null;
   try {

@@ -1,6 +1,6 @@
 // PROBE (Issues 23/24) — characterizes the hosted viewer's read/staleness behavior via a mocked fetch.
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { loadImageIndex, loadPublishedExhibit } from "./published.js";
+import { loadImageIndex, loadPublishedExhibit, loadGallery } from "./published.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -19,6 +19,30 @@ function stub(handler: Handler): string[] {
   }));
   return urls;
 }
+
+describe("hosted schema gate — loadGallery reads archie.json (READPOLICY rp2)", () => {
+  const emptyExhibits = { library: { id: "L", title: "L" }, exhibits: [], presentation: {} };
+  it("PRESENT wrong-version marker → rejects cleanly (no garbage render) [rp2]", async () => {
+    stub((u) => {
+      if (u.includes("archie.json")) return { status: 200, body: { format: "archie-library", version: 999 } };
+      if (u.includes("exhibits.json")) return { status: 200, body: emptyExhibits };
+      return { status: 404 };
+    });
+    await expect(loadGallery()).rejects.toThrow(/different version/i);
+  });
+  it("ABSENT marker (404) → lenient-accept when exhibits.json parses [rp2]", async () => {
+    stub((u) => {
+      if (u.includes("archie.json")) return { status: 404 };
+      if (u.includes("exhibits.json")) return { status: 200, body: emptyExhibits };
+      return { status: 404 };
+    });
+    expect((await loadGallery()).exhibits).toEqual([]);
+  });
+  it("PRESENT foreign marker → rejected [rp2]", async () => {
+    stub((u) => (u.includes("archie.json") ? { status: 200, body: { format: "not-archie" } } : { status: 200, body: emptyExhibits }));
+    await expect(loadGallery()).rejects.toThrow(/isn't an archie library/i);
+  });
+});
 
 describe("PROBE loadImageIndex — images.json 5xx vs 404 (published.ts:290 fetchJsonOptional)", () => {
   it("images.json 500 → wall degrades silently (indistinguishable from a legit 404-absent index?)", async () => {

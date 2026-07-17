@@ -40,7 +40,7 @@ export * from "./query/marker-style.js";
 // Published-shape (W3CAnnotation) accessors — the canonical home for the viewer's body/reading/overlay reads.
 export * from "./query/published.js";
 // The source-parameterized published-tree reader (the domino) — site/portable/viewer adapt over it.
-export { readExhibitTree, fsJsonSource, FailedReadError, type JsonSource, type NoteTransform } from "./publish/read.js";
+export { readExhibitTree, fsJsonSource, FailedReadError, assertArchieTreeMarker, type JsonSource, type NoteTransform } from "./publish/read.js";
 
 // Schema migration runner + version stamping (CONTEXT orphan gap; strategy §39).
 export * from "./migrate/migrate.js";

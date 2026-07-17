@@ -11,6 +11,8 @@ import type { Filesystem } from "../fs/seam.js";
 import type { AObject, Reading } from "../model/model.js";
 import type { W3CAnnotation } from "../wadm/types.js";
 import type { PortableExhibit } from "./portable.js";
+import { NotAnArchieLibraryError, type ArchieMarker } from "./marker.js";
+import { SCHEMA_VERSION } from "../migrate/migrate.js";
 
 /** The narrow read-only byte seam both real sources satisfy — fs-walk over an opened Filesystem, or
  *  HTTP `fetch` over `${BASE}/published`. Tree-relative paths (`"voynich/manifest.json"`). NOT a
@@ -83,6 +85,52 @@ export function fsJsonSource(fs: Filesystem): JsonSource {
       }
     },
   };
+}
+
+/**
+ * ADR-0020 marker gate over an HTTP-shaped published TREE (a `JsonSource`) — the read-side twin of
+ * `validateArchieMarker` (which takes an opened `Filesystem` for the zip path). ONE implementation, so the
+ * embed's tree open (`load.ts`) and the hosted apps/viewer (`published.ts`) apply the SAME policy instead
+ * of two hand-rolled copies of the marker check. (The zip seam in `open.ts` stays separate by design — see
+ * `.claude/rules/untrusted-archive-open-seam.md`; this is ADR-0020's deliberately-separate tree validator.)
+ *
+ * **LENIENT-ON-ABSENT, present-must-be-current** (ADR-0020):
+ *   • `archie.json` PRESENT → MUST be a current-schema Archie marker (`format === "archie-library"` and
+ *     `version === SCHEMA_VERSION`); a forged/foreign/wrong-version marker is rejected cleanly.
+ *   • `archie.json` ABSENT (404) → accept and return `null`; the caller reads `exhibits.json` next, whose
+ *     parse IS the structural acceptance signal (some static hosts strip dotted files, so a tree need not
+ *     ship a marker).
+ *   • A FAILED read of the marker (5xx / torn) is a transient hiccup on a SANITY gate (ADR-0020: "the marker
+ *     is a sanity gate, not the security boundary") — log and proceed lenient rather than hard-block a
+ *     possibly-fine library on a marker fetch failure.
+ *
+ * Returns the parsed marker (or `null` when absent) so a caller can reuse it — e.g. read its `generation`
+ * (STALENESS) — without a second fetch.
+ */
+export async function assertArchieTreeMarker(src: JsonSource): Promise<Partial<ArchieMarker> | null> {
+  let marker: Partial<ArchieMarker> | null;
+  try {
+    marker = await src.getOptional<Partial<ArchieMarker>>("archie.json");
+  } catch (e) {
+    if (e instanceof FailedReadError) {
+      console.warn("assertArchieTreeMarker: archie.json couldn't be read (transient) — skipping the version gate", e);
+      return null;
+    }
+    throw e;
+  }
+  if (marker) {
+    if (marker.format !== "archie-library") {
+      throw new NotAnArchieLibraryError(
+        "This file isn't an Archie library. Choose a published Archie tree or .archie.zip.",
+      );
+    }
+    if (marker.version !== SCHEMA_VERSION) {
+      throw new NotAnArchieLibraryError(
+        `This library was made with a different version of Archie (schema v${String(marker.version)}, this viewer reads v${SCHEMA_VERSION}). Re-publish it from a current Archie.`,
+      );
+    }
+  }
+  return marker; // null = absent (lenient); a present marker is now validated
 }
 
 /**
