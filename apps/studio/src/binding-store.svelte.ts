@@ -10,6 +10,7 @@ import { loadLibrary, recentFromBinding, addRecent, removeRecent, bindingLabel, 
 import { loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
 import { folderSinkSupported, pickFolderBinding, reopenFolderBinding, forgetFolderBinding } from "./folder-backend.js";
 import { enqueueSave } from "./save-queue.svelte.js";
+import { readMirrorToken, writeMirrorToken, newMirrorToken } from "./mirror-stamp.js";
 import type { FolderWritePlan } from "./publish-flows.svelte.js";
 
 export type LoadedLibrary = Awaited<ReturnType<typeof loadLibrary>>;
@@ -42,10 +43,16 @@ export function createBindingStore(deps: BindingDeps) {
     dirty: boolean; // unsaved-to-disk at the Library scale (distinct from per-exhibit edit dirty)
     busy: boolean; // a Save/Open is in flight (guards overlap + disables chrome)
     error: string | null; // a bound location couldn't be used (lost-binding / failed-save recovery)
-  }>({ binding: { kind: "unbound" }, recents: [], dirty: false, busy: false, error: null });
+    externalChange: boolean; // the bound folder was written by something other than Archie (Issue 25 row c)
+  }>({ binding: { kind: "unbound" }, recents: [], dirty: false, busy: false, error: null, externalChange: false });
 
   let folderFs: Filesystem | null = null; // cached so autosave doesn't re-acquire each tick
   let autosaving = false;
+  // Folder-mirror generation stamp (Issue 25 row c, ledgers/MIRROR.md): the opaque token Archie last
+  // wrote into the bound folder. Before an INCREMENTAL mirror, the on-disk token is compared to this —
+  // a definite mismatch means an external writer (or a second Archie window) touched the folder, so the
+  // mirror stops instead of blind-overwriting. null = no baseline yet (fresh session / just rebound).
+  let lastMirrorToken: string | null = null;
 
   /** Issue 25 row (d): a WRITE failure means the cached handle may be dead (folder moved/deleted/perm
    *  revoked). Drop the cache so the next attempt RE-ACQUIRES instead of hitting the same dead handle,
@@ -55,6 +62,23 @@ export function createBindingStore(deps: BindingDeps) {
     folderFs = null;
     if (s.binding.kind === "folder") {
       s.error = `Couldn't save to "${s.binding.name ?? "the folder"}". If you moved, renamed, or lost access to it, reopen the folder (Open → choose it again) to reconnect — your work is safe in this browser.`;
+    }
+  }
+
+  // Issue 25 row (c): the recovery copy when the bound folder was written by something other than Archie.
+  const EXTERNAL_CHANGE_MSG =
+    "This folder was changed outside Archie since your last save (another program, a sync tool, or a second Archie window). To avoid mixing versions, Archie paused folder autosave. Save to overwrite the folder with your current library, or reopen the folder to load its version — your work is safe in this browser either way.";
+
+  /** Re-stamp the folder with a fresh generation token after a SUCCESSFUL write, recording it as the
+   *  baseline the next incremental mirror checks. An Archie write reclaims the folder, so this also
+   *  clears any prior external-change block. */
+  async function stampMirror(fs: Filesystem): Promise<void> {
+    const token = newMirrorToken();
+    await writeMirrorToken(fs, token);
+    lastMirrorToken = token;
+    if (s.externalChange) {
+      s.externalChange = false;
+      if (s.error === EXTERNAL_CHANGE_MSG) s.error = null;
     }
   }
   // Incremental folder-mirror state (spike-0002). folderResynced: a FULL publish has landed for this
@@ -122,14 +146,27 @@ export function createBindingStore(deps: BindingDeps) {
         const snap = takeDirt();
         if (await enqueueSave("folder-mirror", "Folder autosave", () => deps.writeToFolder(fs, { removedExhibits: snap.removedExhibits, removedObjects: snap.removedObjects }))) {
           folderResynced = true; s.dirty = false; progressed = true;
+          await stampMirror(fs); // establish the generation baseline for later incremental checks
         } else { restoreDirt(snap); invalidateFolderOnWriteFailure(); }
         return;
       }
       if (dirtEmpty()) return; // a redundant trigger — the tree is already current
+      // Issue 25 row (c): before overwriting only the dirty files (and TRUSTING the rest of the on-disk
+      // tree), verify the folder is still the one Archie last wrote. A definite token mismatch means an
+      // external writer / a second Archie window touched it — stop and warn instead of mixing versions.
+      if (lastMirrorToken !== null) {
+        const onDisk = await readMirrorToken(fs);
+        if (onDisk !== null && onDisk !== lastMirrorToken) {
+          s.externalChange = true;
+          s.error = EXTERNAL_CHANGE_MSG;
+          return; // dirt retained; the user resolves via Save (mine wins) or reopen (theirs wins)
+        }
+      }
       const snap = takeDirt();
       const plan: FolderWritePlan = { incremental: { exhibits: snap.exhibits, reassets: snap.reassets }, removedExhibits: snap.removedExhibits, removedObjects: snap.removedObjects };
       if (await enqueueSave("folder-mirror", "Folder autosave", () => deps.writeToFolder(fs, plan))) {
         s.dirty = false; progressed = true;
+        await stampMirror(fs); // re-stamp: this write is now the latest generation
       } else { restoreDirt(snap); invalidateFolderOnWriteFailure(); } // failed → retry the SAME scope next trigger (never drop a save), but drop the maybe-dead handle
     } catch { /* not yet reacquirable (FSA permission needs a gesture) — keep dirty; explicit Save asks */ }
     finally {
@@ -155,6 +192,7 @@ export function createBindingStore(deps: BindingDeps) {
       throw e;
     }
     folderResynced = true; // the tree is complete; mid-flight accruals (post-snapshot) remain for the next mirror
+    await stampMirror(fs); // an explicit full write reclaims the folder + clears any external-change block
   }
 
   return {
@@ -166,6 +204,9 @@ export function createBindingStore(deps: BindingDeps) {
     get error(): string | null { return s.error; },
     get place(): string { return bindingLabel(s.binding); },
     get canFolder(): boolean { return canFolder; },
+    /** The bound folder was written by something other than Archie since the last save (Issue 25 row c);
+     *  folder autosave is paused until the user Saves (mine wins) or reopens (theirs wins). */
+    get externalChange(): boolean { return s.externalChange; },
 
     /** Boot: restore recents + the active-binding DESCRIPTOR (continuity chip). Boot counts as
      *  in-sync — the next edit marks unsaved (we never auto-reload from disk without a gesture). */
@@ -181,6 +222,7 @@ export function createBindingStore(deps: BindingDeps) {
     bindToFile(name: string) {
       folderFs = null;
       folderResynced = false; resetDirt(); // leaving any folder binding — drop its stale mirror state
+      lastMirrorToken = null; s.externalChange = false; // new binding — no generation baseline yet
       s.binding = { kind: "file", name };
       s.error = null;
       s.dirty = false;
@@ -235,6 +277,7 @@ export function createBindingStore(deps: BindingDeps) {
         await deps.replaceProjectFrom(loaded);
         folderFs = fb.fs;
         folderResynced = false; resetDirt(); // new library + folder — resync before incremental mirrors
+        lastMirrorToken = null; s.externalChange = false; // fresh folder — reset the generation baseline
         s.binding = { kind: "folder", name: fb.name, handleKey: fb.key };
         s.dirty = false; rememberBinding();
       } finally { s.busy = false; }
@@ -256,6 +299,7 @@ export function createBindingStore(deps: BindingDeps) {
         await deps.replaceProjectFrom(loaded);
         folderFs = reb.fs;
         folderResynced = false; resetDirt(); // new library + folder — resync before incremental mirrors
+        lastMirrorToken = null; s.externalChange = false; // fresh folder — reset the generation baseline
         s.binding = { kind: "folder", name: reb.name, handleKey: r.id };
         s.dirty = false; rememberBinding();
       } finally { s.busy = false; }
@@ -272,6 +316,7 @@ export function createBindingStore(deps: BindingDeps) {
       if (s.binding.kind === "folder" && s.binding.handleKey) void forgetFolderBinding(s.binding.handleKey);
       folderFs = null;
       folderResynced = false; resetDirt(); // a new binding must resync before incremental mirrors resume
+      lastMirrorToken = null; s.externalChange = false; // detached — no generation baseline
       s.binding = { kind: "unbound" };
       s.error = null; s.dirty = false;
       saveLastBinding(s.binding);

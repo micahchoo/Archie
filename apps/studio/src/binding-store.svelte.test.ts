@@ -22,9 +22,36 @@ vi.mock("./folder-backend.js", () => ({
 
 const { createBindingStore } = await import("./binding-store.svelte.js");
 const { resetSaveQueueForTests } = await import("./save-queue.svelte.js");
+const { MIRROR_STAMP_FILE } = await import("./mirror-stamp.js");
 type FolderWritePlan = import("./publish-flows.svelte.js").FolderWritePlan;
 
 const fakeFs = { root: async () => ({}) } as never; // never actually written — writeToFolder is a spy
+
+/** A minimal in-memory Filesystem that actually STORES root files, so the mirror generation stamp
+ *  (.archie-mirror.json) round-trips and a test can simulate an EXTERNAL writer changing the token. */
+function makeStampFs() {
+  const files = new Map<string, string>();
+  const root = {
+    async getFile(name: string, opts?: { create?: boolean }) {
+      if (!files.has(name) && !opts?.create) throw new Error("ENOENT");
+      return {
+        async readable() { return new TextEncoder().encode(files.get(name) ?? "").buffer; },
+        async writable() { let buf = ""; return { async write(d: string) { buf += d; }, async close() { files.set(name, buf); } }; },
+        async getFile() { return new File([files.get(name) ?? ""], name); },
+      };
+    },
+    async getDirectory() { return root; },
+    async remove() {},
+    async *entries() {},
+  };
+  const fs = { root: async () => root } as never;
+  return {
+    fs,
+    /** Simulate a second Archie window / sync tool writing a DIFFERENT token into the folder. */
+    externalWrite(token = "external-writer-token") { files.set(MIRROR_STAMP_FILE, JSON.stringify({ v: 1, token })); },
+    currentToken() { const raw = files.get(MIRROR_STAMP_FILE); return raw ? (JSON.parse(raw) as { token: string }).token : null; },
+  };
+}
 const flush = () => new Promise<void>((r) => setTimeout(r, 0)); // drain the save-queue microtasks
 
 function makeStore() {
@@ -128,6 +155,35 @@ describe("binding store — incremental folder mirror dirty-set (spike-0002)", (
     await store.autosaveToFolder();
     expect(writeToFolder).toHaveBeenCalledTimes(1);
     expect([...writeToFolder.mock.calls[0]![1]!.incremental!.exhibits]).toEqual(["midflight"]);
+  });
+
+  it("detects an EXTERNAL folder change before an incremental mirror and pauses instead of overwriting blind (row c)", async () => {
+    const { store, writeToFolder } = makeStore();
+    const stamp = makeStampFs();
+    // Save As onto the stamp-backed folder → a full write establishes generation token T1.
+    pickFolderBinding.mockResolvedValueOnce({ fs: stamp.fs, name: "Docs", key: "k" });
+    await store.saveProject();
+    const t1 = stamp.currentToken();
+    expect(t1).not.toBeNull(); // Archie stamped the folder
+    writeToFolder.mockClear();
+
+    // A SECOND writer (another Archie window / a sync tool) rewrites the folder's token.
+    stamp.externalWrite();
+
+    // The next incremental mirror must NOT blind-overwrite — it detects the mismatch and pauses.
+    store.markExhibitDirty("p");
+    await store.autosaveToFolder();
+    expect(writeToFolder).not.toHaveBeenCalled(); // no blind incremental write
+    expect(store.externalChange).toBe(true);
+    expect(store.error).toContain("changed outside Archie");
+
+    // Resolution "mine wins": an explicit Save overwrites the folder + re-stamps + clears the block,
+    // and the retained dirt is written (the full write covers exhibit "p").
+    await store.saveProject();
+    expect(writeToFolder).toHaveBeenCalled();
+    expect(store.externalChange).toBe(false);
+    expect(store.error).toBeNull();
+    expect(stamp.currentToken()).not.toBe("external-writer-token"); // Archie reclaimed the folder
   });
 
   it("first mirror of a session RESYNCS (full write) but still prunes a pending removal", async () => {
