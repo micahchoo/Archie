@@ -49,8 +49,14 @@ export function linearHead(log: AnnotationLog, logicalId: LogicalId): Annotation
   if (heads.length > 1) {
     throw new Error(`plural heads for ${logicalId} — resolve the concurrent merge first (Q-6)`);
   }
-  // A linear chain always has exactly one not-referenced-as-parent tip.
-  return heads[0] ?? versions[versions.length - 1]!;
+  // A finite, acyclic version DAG ALWAYS has exactly one tip not referenced as anyone's parent.
+  // heads.length === 0 ⟺ every version IS referenced as a parent ⟺ a cycle (corruption — Issue 19d).
+  // The old `?? versions[last]` silently HANDED BACK a version here, masking the corruption; a cycle
+  // is not a recoverable state, so report it rather than guess a head.
+  if (heads.length === 0) {
+    throw new Error(`cyclic version DAG for ${logicalId} — corrupt annotation store (no head: every version is referenced as a parent)`);
+  }
+  return heads[0]!;
 }
 
 export interface NewNoteInput {

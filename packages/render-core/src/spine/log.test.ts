@@ -119,3 +119,15 @@ describe("Q-6: the log tolerates plural-head collisions assembled directly", () 
     expect(() => linearHead(merged, lid)).toThrow(/plural head/i); // cannot pick one
   });
 });
+
+describe("Issue 19d — linearHead reports a cyclic version DAG (corruption) instead of guessing", () => {
+  it("throws on a cycle rather than silently returning the last version", () => {
+    const { log: l1, record: a } = appendNew([], { target, body: { type: "TextualBody", value: "v1" }, lastEditor: alice, now: 1 });
+    const { log: l2 } = appendEdit(l1, a.logicalId, { body: { type: "TextualBody", value: "v2" }, lastEditor: alice, now: 2 });
+    const [v1, v2] = l2 as unknown as AnnotationRecord[];
+    // Make it a cycle: v1.parent := v2.rev (v2.parent is already v1.rev). Now every version is
+    // referenced as a parent → no head. The old code returned versions[last]; the fix throws.
+    const cyclic = Object.freeze([{ ...v1!, parent: v2!.rev }, v2!]) as AnnotationLog;
+    expect(() => linearHead(cyclic, a.logicalId)).toThrow(/cyclic|corrupt/i);
+  });
+});
