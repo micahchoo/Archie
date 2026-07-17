@@ -33,11 +33,13 @@ which throws on absence) vs the getOptional swallow at :64/:90.
   `FailedReadError` is caught, flips `exhibit.incomplete = true`, and the layer falls back to empty — the
   exhibit still renders, but flagged partial. The base sidecar moves from `src.get` (fatal) to this
   optional-with-distinction path (404 → empty object; 5xx/torn → partial). The flag rides on the loaded
-  exhibit (`PublishedExhibit.incomplete`), so the read-side guarantee — a transient failure is never
-  *represented* as a complete exhibit — holds today. **Rendering the visible "some notes couldn't load"
-  indicator is a component change in `ExhibitView.svelte`, outside this agent's owned files (viewer-load
-  owns the components):** handed off to viewer-load with the exact contract (`exhibit.incomplete === true`);
-  the data contract is in place for them to consume. See HANDOFF note at the bottom of this ledger.
+  exhibit (`PublishedExhibit.incomplete`). **The visible indicator is SHIPPED** (`rp5`): `ExhibitView.svelte`
+  renders a quiet, non-blocking top-right status strip — "Some notes couldn't load — showing what's
+  available." — gated on `{#if data.incomplete}`, so a transient failure is never *presented* as a complete
+  exhibit (the loop's done-when). The `<archie-viewer>` EMBED's equivalent indicator is deliberately NOT
+  built here — it rides the embed-parity UI rework tracked in `ledgers/CAPABILITY.md` (the `<archie-viewer>`
+  parity work, which reworks the embed's read UI wholesale); the embed's read layer already sets `incomplete`
+  identically, so that rework only needs to render it.
 
 **SCHEMA GATE — lenient-on-absent, present-must-be-current, UNIFORM (ADR-0020, read first).**
 ADR-0020 names all three surfaces (file-drop/zip, embed-tree, and — per its own "gate like the embed"
@@ -75,6 +77,8 @@ Surfaces: **hosted** = apps/viewer HTTP (published.ts); **embed** = archie-viewe
 | zip | readings/base/per-reading torn | **fsJsonSource swallows corrupt → null silent** | failed → throw→partial flag | `rp1` | pass |
 | zip | archie.json absent / mismatch | lenient-accept / reject (validateArchieMarker) | same (ok) | (no change) | pass |
 | all | **25a** torn manifest.json | buildImageIndex **silently omits exhibit** (slugs=["a"]); loadLibrary **hard-throws** — one file, two policies | torn (failed) manifest → propagate loud on BOTH; genuinely-absent manifest → omit (buildImageIndex) | `rp1` | pass |
+| hosted | partial exhibit → VISIBLE indicator | (pre-fix) no signal — a degraded exhibit looked complete | ExhibitView renders a quiet non-blocking strip on `data.incomplete` | `rp5` | pass (astro check + viewer suite) |
+| embed | partial exhibit → visible indicator | no signal | deferred to the embed-parity rework (CAPABILITY.md); read layer already sets `incomplete` | — (rides embed-parity) | n/a |
 
 ## Issue 25a — image-index consumes the new getOptional semantics
 
@@ -87,13 +91,16 @@ torn (failed) manifest as fatal-loud, and the divergence ("one corrupt file, two
 choice is made *explicit* in image-index.ts with a comment; `buildImageIndex`'s absent→omit is retained
 deliberately (an empty/never-written exhibit is not a corruption).
 
-## HANDOFF → viewer-load — render the partial indicator
+## Partial indicator — SHIPPED (hosted) + embed deferral
 
-`loadPublishedExhibit(slug)` now returns `PublishedExhibit.incomplete?: boolean` (from `@render/core`'s
-`readExhibitTree`). It is `true` when an OPTIONAL authored layer (readings, a base/per-reading annotation
-sidecar) FAILED to load (5xx / torn JSON) — as distinct from being genuinely absent. In
-`ExhibitView.svelte`, after `const d = await loadPublishedExhibit(slug)` (line ~89), surface a quiet,
-non-blocking banner when `d.incomplete` (e.g. a `⚠ Some notes couldn't load — showing what's available.`
-strip over the found-meta chrome). The read layer + all three surfaces (hosted/embed/zip) already set the
-flag; only the render is owed. Data contract is stable — `incomplete` is omitted (not `false`) on a clean
-read, so `{#if d.incomplete}` is the guard.
+`loadPublishedExhibit(slug)` returns `PublishedExhibit.incomplete?: boolean` (from `@render/core`'s
+`readExhibitTree`) — `true` when an OPTIONAL authored layer (readings, a base/per-reading annotation
+sidecar) FAILED to load (5xx / torn JSON), omitted on a clean read. `ExhibitView.svelte` (`rp5`) renders a
+quiet top-right `role="status"` strip, `pointer-events:none`, gated on `{#if data.incomplete}` — "Some notes
+couldn't load — showing what's available." Verified: `astro check` 0 errors (it typechecks `.svelte`, so
+`data.incomplete` is validated), viewer suite green. This closes the loop's done-when for the hosted surface.
+
+The `<archie-viewer>` EMBED indicator is intentionally NOT built here: it rides the embed-parity UI rework
+in `ledgers/CAPABILITY.md` (the `<archie-viewer>` read-UI parity work), which reworks that surface wholesale.
+The embed's read layer already sets `incomplete` identically across the zip + tree paths, so the parity
+rework only needs to render it — no data-layer work is owed there.
