@@ -126,6 +126,26 @@ export function saveRecents(list: RecentProject[]): void {
   catch { /* storage unavailable */ }
 }
 
+/**
+ * Reconcile recents across tabs (ISSUES.md Issue 22 / ledgers/TABS.md). localStorage is origin-shared,
+ * but each tab keeps its OWN in-memory recents snapshot and OVERWRITES the whole key on save — so a
+ * recent added in tab B is silently dropped the next time tab A saves from its boot-time snapshot
+ * (last-writer-wins, lost update). The `storage` event fires in EVERY OTHER tab when the key changes;
+ * adopting the written list the instant it lands keeps each tab's snapshot fresh, so it never saves over
+ * another tab's addition. Adopt-on-event is removal-safe too (a tab that removed an entry writes the
+ * shorter list; other tabs adopt it), unlike a union-merge which would resurrect a just-forgotten entry.
+ * No-op without `window` (node/SSR). Returns an unsubscribe.
+ */
+export function subscribeRecents(onChange: (list: RecentProject[]) => void): () => void {
+  if (typeof window === "undefined" || typeof window.addEventListener !== "function") return () => {};
+  const handler = (e: StorageEvent) => {
+    if (e.key !== null && e.key !== RECENTS_KEY) return; // ignore unrelated keys; key===null = storage.clear()
+    onChange(loadRecents()); // re-read + tolerant-parse the current shared list (never trust e.newValue raw)
+  };
+  window.addEventListener("storage", handler);
+  return () => window.removeEventListener("storage", handler);
+}
+
 /** Restore the active binding DESCRIPTOR across reloads so the UI shows continuity ("bound to X").
  *  The folder handle itself lives in IndexedDB (handleKey); permission is re-granted lazily on the
  *  next write (a user gesture). Returns unbound if nothing was stored or the record is malformed. */

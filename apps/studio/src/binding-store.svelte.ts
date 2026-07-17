@@ -7,7 +7,7 @@
 // A `.svelte.ts` rune module (cf. library-meta.svelte.ts): the $state container is never
 // reassigned, so getters stay live across the module boundary.
 import { loadLibrary, recentFromBinding, addRecent, removeRecent, bindingLabel, type Filesystem, type Binding, type RecentProject } from "@render/core";
-import { loadRecents, saveRecents, loadLastBinding, saveLastBinding } from "./binding.js";
+import { loadRecents, saveRecents, loadLastBinding, saveLastBinding, subscribeRecents } from "./binding.js";
 import { folderSinkSupported, pickFolderBinding, reopenFolderBinding, forgetFolderBinding } from "./folder-backend.js";
 import { enqueueSave } from "./save-queue.svelte.js";
 import { readMirrorToken, writeMirrorToken, newMirrorToken } from "./mirror-stamp.js";
@@ -214,6 +214,9 @@ export function createBindingStore(deps: BindingDeps) {
       s.recents = loadRecents();
       s.binding = loadLastBinding();
       s.dirty = false;
+      // Issue 22 (ledgers/TABS.md): adopt another tab's recents write the instant it lands, so this tab
+      // never saves its stale boot-time snapshot over a project another tab just opened (lost update).
+      subscribeRecents((list) => { s.recents = list; });
     },
     /** Mark the Library unsaved-to-disk (only meaningful once bound). */
     touch() { if (s.binding.kind !== "unbound") s.dirty = true; },

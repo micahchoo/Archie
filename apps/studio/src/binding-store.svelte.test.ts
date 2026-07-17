@@ -10,6 +10,7 @@ vi.mock("./binding.js", () => ({
   saveRecents: () => {},
   loadLastBinding,
   saveLastBinding: () => {},
+  subscribeRecents: () => () => {},
 }));
 const reopenFolderBinding = vi.fn();
 const pickFolderBinding = vi.fn();
