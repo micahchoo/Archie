@@ -157,3 +157,31 @@ describe("loadWorkingLibrary", () => {
     revoke();
   });
 });
+
+describe("Issue 21 — Library↔Working round trip is lossless for cover/format/originalName", () => {
+  it("libraryToWorking → workingToLibrary preserves Exhibit.cover and AObject.format/originalName", () => {
+    const library: Library = {
+      id: asLibraryId("demo"),
+      exhibits: [
+        {
+          id: asExhibitId("ex1"),
+          slug: "ex1",
+          title: "Covered",
+          cover: "https://cdn.example/cover.jpg",
+          objects: [
+            { id: asObjectId("o1"), source: "https://cdn.example/a.jpg", label: "A", format: "image/jpeg", originalName: "A-original.tiff" },
+          ],
+        },
+      ],
+    };
+    const working = libraryToWorking(library);
+    expect(working.exhibits[0]!.cover).toBe("https://cdn.example/cover.jpg");
+    expect(working.exhibits[0]!.objects[0]!.format).toBe("image/jpeg");
+    expect(working.exhibits[0]!.objects[0]!.originalName).toBe("A-original.tiff");
+
+    const back = workingToLibrary(working, { id: "demo" });
+    expect(back.exhibits[0]!.cover).toBe("https://cdn.example/cover.jpg"); // the live-drop that used to VANISH
+    expect(back.exhibits[0]!.objects[0]!.format).toBe("image/jpeg");
+    expect(back.exhibits[0]!.objects[0]!.originalName).toBe("A-original.tiff");
+  });
+});

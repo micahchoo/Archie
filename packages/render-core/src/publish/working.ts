@@ -18,7 +18,9 @@ import type { OrientationTransform } from "../exif/orientation.js";
 import type { AnnotationLog } from "../wadm/types.js";
 import type { ClientId } from "../wadm/brand.js";
 import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
-import { AnnotationSession } from "../session/session.js";
+import { readAnnotationsReport, AnnotationsCorruptError } from "../spine/persist.js";
+import type { Exhibit, AObject } from "../model/model.js";
+import type { CarryDisposition } from "../model/carry.js";
 
 /** The Studio's working-store root directory name (one project per origin in v1). */
 export const WORKING_PROJECT = "archie-demo-project";
@@ -62,6 +64,15 @@ export interface WorkingObjectMeta extends RightsFields {
   height?: number;
   /** Media kind — "image" (default, OSD) vs "sound"/"video" (the temporal AvEditor). */
   mediaType?: MediaType;
+  /** MIME type of the source (e.g. image/jpeg) — projects to the Canvas body `format`. Round-trip slot
+   *  (Issue 21): recovered on import via `objectsFromManifest`, so `libraryToWorking` must keep it or a
+   *  covered-import→republish drops the declared MIME. */
+  format?: string;
+  /** Preserved-original filename (the EXIF display-master citation master, `assets-original/{name}`).
+   *  Round-trip slot (Issue 21) separate from `provenance` — a `Library` reconstructed from a published
+   *  tree carries `originalName` but NOT the full `provenance` (exifOrientation+transform), so this slot
+   *  lets the import→republish round trip keep the citation ref without inventing a fake provenance. */
+  originalName?: string;
   /** Seconds — for sound/video objects. */
   duration?: number;
   /** Geo-annotation extension (DESIGN.md): when set, this object is a slippy-map basemap — mounted as a
@@ -81,6 +92,10 @@ export interface WorkingExhibitMeta extends RightsFields {
   title: string;
   /** Optional exhibit description — projects to the Manifest `summary`. */
   summary?: string;
+  /** Cover image URL for the Gallery card (UX-Q7). Round-trip slot (Issue 21): recovered on import via
+   *  exhibits.json/loadLibrary, so `libraryToWorking` must keep it or a covered `.archie.zip` import +
+   *  republish makes the covers the viewer renders (`Gallery.svelte`) VANISH. */
+  cover?: string;
   /** @deprecated (ADR-0016) The leading surface is now a pure function of content — `resolveLayout`
    *  always DERIVES the type and IGNORES this field. Kept OPTIONAL only for read-tolerance of legacy
    *  stored data (harmless when present); the Studio MUST NOT write it. Remove once no stored exhibit
@@ -127,6 +142,22 @@ export interface WorkingToLibraryOptions {
   isTemplate?: (ex: WorkingExhibitMeta) => boolean;
 }
 
+// EXHAUSTIVENESS GUARD (Issue 21): workingToLibrary must account for every WORKING field. `seedVersion`
+// is a template marker (not a Library field); `provenance` is Studio-local except `originalName`, which
+// carries as `Library.originalName`. A new working field fails the build here until classified.
+const _workingExhibitCarry = {
+  id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry",
+  layout: "carry", mode: "carry", objects: "carry", sections: "carry", readings: "carry",
+  rights: "carry", requiredStatement: "carry",
+  seedVersion: { drop: "template marker (Playground example); not a Library field — see includeTemplates filter" },
+} satisfies Record<keyof WorkingExhibitMeta, CarryDisposition>;
+const _workingObjectCarry = {
+  id: "carry", source: "carry", label: "carry", summary: "carry", width: "carry", height: "carry",
+  mediaType: "carry", format: "carry", originalName: "carry", duration: "carry", tileSource: "carry",
+  thumbnail: "carry", rights: "carry", requiredStatement: "carry",
+  provenance: { drop: "exif/transform are Studio-local; only originalName round-trips (→ Library.originalName)" },
+} satisfies Record<keyof WorkingObjectMeta, CarryDisposition>;
+
 /** Map the persisted working structure to the publishable `Library` (the pure half of the Studio's
  *  `buildFullLibrary`, extracted so the Viewer's live source and the Studio cannot drift). */
 export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibraryOptions = {}): Library {
@@ -141,6 +172,7 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
     exhibits: source.map((ex) => ({
       id: asExhibitId(ex.id), slug: ex.slug, title: ex.title,
       ...(ex.summary ? { summary: ex.summary } : {}),
+      ...(ex.cover ? { cover: ex.cover } : {}), // round-trip the Gallery cover (Issue 21)
       ...(ex.layout ? { layout: ex.layout } : {}),
       ...(ex.mode ? { mode: ex.mode } : {}),
       ...(ex.sections && ex.sections.length ? { sections: ex.sections } : {}),
@@ -152,24 +184,42 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
         ...(o.width !== undefined ? { width: o.width } : {}),
         ...(o.height !== undefined ? { height: o.height } : {}),
         ...(o.mediaType ? { mediaType: o.mediaType } : {}),
+        ...(o.format ? { format: o.format } : {}), // round-trip the source MIME (Issue 21)
         ...(o.tileSource ? { tileSource: o.tileSource } : {}),
         ...(o.duration !== undefined ? { duration: o.duration } : {}),
         ...(o.thumbnail ? { thumbnail: o.thumbnail } : {}),
-        ...(o.provenance?.originalName ? { originalName: o.provenance.originalName } : {}),
+        // originalName: the standalone import slot wins, else the Studio-native provenance (Issue 21).
+        ...(o.originalName ?? o.provenance?.originalName ? { originalName: o.originalName ?? o.provenance!.originalName } : {}),
         ...rightsOf(o),
       })),
     })),
   };
 }
 
+// EXHAUSTIVENESS GUARD (Issue 21): libraryToWorking must account for every PUBLISHED (`Exhibit`/`AObject`)
+// field, so a field recovered on import is carried into the working store rather than silently dropped
+// (the LIVE bug: `cover`/`format`/`originalName` recovered then dropped → covers vanish on republish).
+// `bakeTiles` is the one named exclusion (a publish-time opt-in never present on a reconstructed Library).
+const _libraryExhibitCarry = {
+  id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry",
+  objects: "carry", sections: "carry", readings: "carry", layout: "carry", mode: "carry",
+  rights: "carry", requiredStatement: "carry",
+} satisfies Record<keyof Exhibit, CarryDisposition>;
+const _libraryObjectCarry = {
+  id: "carry", source: "carry", label: "carry", summary: "carry", mediaType: "carry",
+  tileSource: "carry", width: "carry", height: "carry", duration: "carry", format: "carry",
+  originalName: "carry", thumbnail: "carry", rights: "carry", requiredStatement: "carry",
+  bakeTiles: { drop: "publish-time opt-in (bake remote → local DZI); never on a Library reconstructed from a published tree" },
+} satisfies Record<keyof AObject, CarryDisposition>;
+
 /**
  * The faithful inverse of {@link workingToLibrary}: map a publishable `Library` back to the persisted
  * working structure, mirroring `workingToLibrary`'s field set, its `rightsOf` helper, and its
- * `...(x !== undefined ? {x} : {})` style. Maps ONLY the round-trippable fields — replaces the ~8-field
- * hand-spread the studio inline version did. NB: `cover`/`seedVersion` are NOT carried (no `WorkingExhibitMeta`
- * cover slot; `seedVersion` is a template marker that does not round-trip), and `provenance` is NOT
- * reconstructed: `WorkingObjectProvenance` requires `exifOrientation`+`transform` which a `Library` object
- * lacks (`originalName` alone is insufficient), so a baked import's provenance does not survive this direction.
+ * `...(x !== undefined ? {x} : {})` style. Carries every round-trippable field — the exhibit `cover`
+ * and the object `format`/`originalName` now have working slots (Issue 21), so an import→republish is
+ * lossless (was: covers vanished). NOT carried, by design: `seedVersion` (a template marker, not a
+ * Library field) and full `provenance` — `WorkingObjectProvenance` needs `exifOrientation`+`transform`
+ * a `Library` object lacks; only `originalName` round-trips (into the standalone slot, not provenance).
  */
 export function libraryToWorking(library: Library): WorkingLibraryMeta {
   return {
@@ -179,6 +229,7 @@ export function libraryToWorking(library: Library): WorkingLibraryMeta {
     exhibits: library.exhibits.map((ex) => ({
       id: ex.id, slug: ex.slug, title: ex.title,
       ...(ex.summary !== undefined ? { summary: ex.summary } : {}),
+      ...(ex.cover !== undefined ? { cover: ex.cover } : {}), // carry the Gallery cover (Issue 21 live drop)
       ...(ex.layout !== undefined ? { layout: ex.layout } : {}),
       ...(ex.mode !== undefined ? { mode: ex.mode } : {}),
       ...(ex.sections && ex.sections.length ? { sections: ex.sections } : {}),
@@ -190,8 +241,10 @@ export function libraryToWorking(library: Library): WorkingLibraryMeta {
         ...(o.width !== undefined ? { width: o.width } : {}),
         ...(o.height !== undefined ? { height: o.height } : {}),
         ...(o.mediaType !== undefined ? { mediaType: o.mediaType } : {}),
+        ...(o.format !== undefined ? { format: o.format } : {}), // carry the source MIME (Issue 21 live drop)
         ...(o.tileSource !== undefined ? { tileSource: o.tileSource } : {}), // carry the Map basemap (the studio inline version dropped it)
         ...(o.duration !== undefined ? { duration: o.duration } : {}),
+        ...(o.originalName !== undefined ? { originalName: o.originalName } : {}), // carry the citation master ref (Issue 21)
         ...(o.thumbnail !== undefined ? { thumbnail: o.thumbnail } : {}), // carry the baked-thumbnail ref
         ...rightsOf(o),
       })),
@@ -222,15 +275,22 @@ export interface WorkingLibrary {
   getThumbnail: (slug: string, name: string) => Promise<ArrayBuffer | null>;
 }
 
-async function readExhibitLog(projectDir: FsDirectory, slug: string, editor: ClientId): Promise<AnnotationLog> {
+async function readExhibitLog(projectDir: FsDirectory, slug: string, _editor: ClientId): Promise<AnnotationLog> {
+  let annDir: FsDirectory;
   try {
-    const annDir = slug === SAMPLE_SLUG
+    annDir = slug === SAMPLE_SLUG
       ? await projectDir.getDirectory("annotations")
       : await (await (await projectDir.getDirectory("exhibits")).getDirectory(slug)).getDirectory("annotations");
-    return (await AnnotationSession.load(annDir, editor)).entries;
   } catch {
-    return []; // nothing authored for this exhibit yet
+    return []; // no annotations dir for this exhibit — genuinely nothing authored yet
   }
+  // corrupt ≠ empty (Issue 19): a torn/unparseable page under a committed index must NOT be swallowed
+  // to [] ("nothing authored") — that was how a torn write silently emptied an exhibit. Surface it: the
+  // viewer's live-source probe (initLiveSource) wraps loadWorkingLibrary in try/catch, so this throw
+  // becomes a console.warn + fall-back-to-published instead of a silently-empty exhibit.
+  const { log, corrupt } = await readAnnotationsReport(annDir);
+  if (corrupt.length > 0) throw new AnnotationsCorruptError(corrupt, `exhibit "${slug}"`);
+  return log;
 }
 
 /**

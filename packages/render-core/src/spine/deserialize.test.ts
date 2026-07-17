@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { appendNew, appendEdit, appendDelete, append } from "./log.js";
+import { appendNew, appendEdit, appendDelete, append, linearHead } from "./log.js";
 import { toHistory } from "./serialize.js";
 import { fromHistory, fromHistoryPage } from "./deserialize.js";
 import { asClientId, mintRevId } from "../wadm/brand.js";
@@ -126,5 +126,28 @@ describe("ADR-0007: legacy archie:layers folds into Tags on load (back-compat)",
     expect((rec as { layers?: string[] }).layers).toBeUndefined();
     expect(rec!.reading).toBe("cipher"); // reading is unaffected by the fold
     expect(tagsOf(rec!)).toEqual([]); // no spurious tags introduced
+  });
+});
+
+describe("Issue 19c — fromHistory dedupes by rev (mirrors serialize's dedupe)", () => {
+  it("a duplicated page does not spawn duplicate records / plural heads", () => {
+    const { log: l1, record: a } = appendNew([], { target, body: { type: "TextualBody", value: "v1" }, lastEditor: alice, now: 1 });
+    const { log } = appendEdit(l1, a.logicalId, { body: { type: "TextualBody", value: "v2" }, lastEditor: alice, now: 2 });
+    const { pages } = toHistory(log);
+    const page = Object.values(pages)[0]!;
+    const single = fromHistory([page]);
+    const doubled = fromHistory([page, page]); // a torn/doubled write lists the same page twice
+    expect(doubled.length).toBe(single.length); // deduped by rev — NOT 2x
+    // and linearHead sees ONE head, not spurious plural heads
+    expect(() => linearHead(doubled, a.logicalId)).not.toThrow();
+    expect(linearHead(doubled, a.logicalId).version).toBe(2);
+  });
+
+  it("distinct revs sharing (logicalId, version) — a genuine concurrent pair — are PRESERVED", () => {
+    // richLog() carries a plural-head pair (cA/cB, same version, distinct rev); a round-trip must keep both.
+    const { pages } = toHistory(richLog());
+    const recs = fromHistory(Object.values(pages));
+    const revs = new Set(recs.map((r) => r.rev));
+    expect(revs.size).toBe(recs.length); // no collisions dropped a genuine record
   });
 });

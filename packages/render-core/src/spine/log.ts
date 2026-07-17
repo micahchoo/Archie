@@ -10,6 +10,7 @@
 
 import { mintLogicalId, mintRevId, type LogicalId, type RevId, type ClientId } from "../wadm/brand.js";
 import type { AnnotationLog, AnnotationRecord, Emphasis, GeoAnchor, W3CBody, W3CTarget } from "../wadm/types.js";
+import type { CarryDisposition } from "../model/carry.js";
 
 function isoOf(modifiedAt: string | undefined, now: number | undefined): string {
   if (modifiedAt !== undefined) return modifiedAt;
@@ -49,8 +50,14 @@ export function linearHead(log: AnnotationLog, logicalId: LogicalId): Annotation
   if (heads.length > 1) {
     throw new Error(`plural heads for ${logicalId} — resolve the concurrent merge first (Q-6)`);
   }
-  // A linear chain always has exactly one not-referenced-as-parent tip.
-  return heads[0] ?? versions[versions.length - 1]!;
+  // A finite, acyclic version DAG ALWAYS has exactly one tip not referenced as anyone's parent.
+  // heads.length === 0 ⟺ every version IS referenced as a parent ⟺ a cycle (corruption — Issue 19d).
+  // The old `?? versions[last]` silently HANDED BACK a version here, masking the corruption; a cycle
+  // is not a recoverable state, so report it rather than guess a head.
+  if (heads.length === 0) {
+    throw new Error(`cyclic version DAG for ${logicalId} — corrupt annotation store (no head: every version is referenced as a parent)`);
+  }
+  return heads[0]!;
 }
 
 export interface NewNoteInput {
@@ -118,6 +125,29 @@ export interface EditInput {
   now?: number;
 }
 
+// EXHAUSTIVENESS GUARD (Issue 21): appendEdit's record construction accounts for EVERY
+// AnnotationRecord field — the identity/DAG fields are re-minted/computed, the content fields carry
+// forward from the head (or the input), and `mergeParents` is the one NAMED exclusion (an edit is a
+// single-parent version, not a merge node). A field added to AnnotationRecord fails the build here
+// until it is classified, so an edit can't silently drop a new field.
+const _editCarry = {
+  logicalId: "carry", // set to the edited note's id
+  rev: "carry", // re-minted
+  version: "carry", // head.version + 1
+  parent: "carry", // head.rev
+  mergeParents: { drop: "an edit is a single-parent version; mergeParents is a merge-node-only field" },
+  modifiedAt: "carry",
+  lastEditor: "carry",
+  deleted: "carry", // false (an edit un-nothing; delete is appendDelete)
+  body: "carry", // forwarded from head unless input overrides
+  target: "carry",
+  motivation: "carry",
+  reading: "carry",
+  emphasis: "carry",
+  wholeObject: "carry",
+  geo: "carry",
+} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
+
 /**
  * Append an edited version of an existing note. Version = head.version + 1, parent =
  * the head's version id. Unchanged fields carry forward from the head. Throws if the
@@ -160,6 +190,28 @@ export interface DeleteInput {
   modifiedAt?: string;
   now?: number;
 }
+
+// EXHAUSTIVENESS GUARD (Issue 21): a tombstone DELIBERATELY carries only identity/DAG + `target`
+// (kept for citation/dereference) — the six content fields are dropped ON PURPOSE (a deleted version
+// has no content). Encoding that as NAMED `{drop}`s (not silence) means a NEW AnnotationRecord field
+// forces a decision: does a tombstone keep it, or is it another content field to drop?
+const _deleteCarry = {
+  logicalId: "carry",
+  rev: "carry", // re-minted
+  version: "carry", // head.version + 1
+  parent: "carry", // head.rev
+  mergeParents: { drop: "a tombstone is a single-parent version, not a merge node" },
+  modifiedAt: "carry",
+  lastEditor: "carry",
+  deleted: "carry", // true
+  target: "carry", // kept for citation/dereference of the deleted note
+  body: { drop: "tombstone: a deleted version has no content" },
+  motivation: { drop: "tombstone: a deleted version has no content" },
+  reading: { drop: "tombstone: a deleted version has no content" },
+  emphasis: { drop: "tombstone: a deleted version has no content" },
+  wholeObject: { drop: "tombstone: a deleted version has no content" },
+  geo: { drop: "tombstone: a deleted version has no content" },
+} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
 
 /** Append a tombstone version (a delete is append-only, never a removal). */
 export function appendDelete(log: AnnotationLog, logicalId: LogicalId, input: DeleteInput): AppendResult {

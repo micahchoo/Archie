@@ -8,7 +8,7 @@ import { appendNew, appendEdit, appendDelete } from "../spine/log.js";
 import { isDegenerateTarget } from "../geometry/selector.js";
 import { projectHeads } from "../spine/heads.js";
 import { recordToAnnotation } from "../spine/serialize.js";
-import { writeAnnotations, readAnnotations } from "../spine/persist.js";
+import { writeAnnotations, readAnnotationsReport, type CorruptAnnotationPage } from "../spine/persist.js";
 import type { SerializeOptions } from "../spine/serialize.js";
 import type { FsDirectory } from "../fs/seam.js";
 import { ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_WHOLE_OBJECT, ARCHIE_GEO } from "../wadm/types.js";
@@ -58,6 +58,10 @@ export class AnnotationSession {
   /** True once the full log is known to be on disk (after a full write, or a load FROM disk). Until then
    *  the next save is a FULL write — incremental writes are only safe once every page exists on disk. */
   private persistedFully = false;
+  /** Pages the load could not read (torn write / corruption) — empty on a clean or fresh session. The
+   *  studio-open path reads this to surface corruption AND to refuse to seed-fresh-over a torn store
+   *  (which would orphan the unreadable pages permanently — Issue 19). Public, read-only for callers. */
+  loadCorruption: CorruptAnnotationPage[] = [];
 
   constructor(
     private readonly editor: ClientId,
@@ -76,8 +80,13 @@ export class AnnotationSession {
 
   /** Load a session from a persisted annotations directory (the reload/open path). */
   static async load(annDir: FsDirectory, editor: ClientId): Promise<AnnotationSession> {
-    const s = new AnnotationSession(editor, await readAnnotations(annDir));
-    s.persistedFully = true; // every page is on disk (we just read them) — subsequent saves can be incremental
+    const { log, corrupt } = await readAnnotationsReport(annDir);
+    const s = new AnnotationSession(editor, log);
+    s.loadCorruption = corrupt;
+    // Only mark fully-persisted when EVERY page read cleanly. A partial (corrupt) load must NOT do an
+    // incremental save — that would rewrite an index listing only the survivors, dropping the torn
+    // pages' ids for good (Issue 19). corrupt ⇒ the next save is a full write.
+    s.persistedFully = corrupt.length === 0;
     return s;
   }
 
@@ -164,50 +173,26 @@ export class AnnotationSession {
   }
 
   /**
-   * Resolve a conflict by appending a merge node with the chosen/merged content. `reading`/`emphasis`/
-   * `geo` are CARRIED onto the merge node — from the choice when supplied, else inherited from the same
-   * lexicographically-first ("primary") head `resolveConflict` defaults body/target from — so a note
-   * carrying a reading assignment, authored emphasis, or a geo anchor does NOT lose it on resolution
-   * (the latent data-loss bug: `resolveConflict` reconstructs the node from body/target/motivation
-   * only, dropping these three). Carried here rather than in `resolveConflict` because that primitive's
-   * `ConflictResolution` contract does not model them; this is the session-level fix.
+   * Resolve a conflict by appending a merge node with the chosen/merged content. reading/emphasis/
+   * wholeObject/geo are carried onto the node by `resolveConflict` itself now — from the choice when
+   * supplied, else inherited from whichever head carries them (Issue 21: the carry moved INSIDE the
+   * primitive, so this delegate can no longer be the only thing standing between a note and a silent
+   * data-loss on resolution). This method just threads the editor identity + the user's choice through.
    */
   resolve(
     logicalId: LogicalId,
     choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; motivation?: string | string[]; reading?: string; emphasis?: Emphasis; wholeObject?: boolean; geo?: GeoAnchor } = {},
   ): void {
-    // Inherit reading/emphasis/geo to carry onto the merge node when the choice doesn't override them.
-    // Prefer the primary head (lexicographically-first rev — what resolveConflict builds the node from),
-    // but FALL BACK to any other head that carries the field: a conflict between "has reading" and "no
-    // reading" must keep the reading rather than drop it on rev ordering (that's the data-loss bug).
-    const heads = [...this.conflictHeads(logicalId)].sort((a, b) => (a.rev < b.rev ? -1 : a.rev > b.rev ? 1 : 0));
-    const inherit = <K extends "reading" | "emphasis" | "wholeObject" | "geo">(k: K): AnnotationRecord[K] | undefined =>
-      heads.find((h) => h[k] !== undefined)?.[k];
-    const reading = choice.reading ?? inherit("reading");
-    const emphasis = choice.emphasis ?? inherit("emphasis");
-    const wholeObject = choice.wholeObject ?? inherit("wholeObject");
-    const geo = choice.geo ?? inherit("geo");
-    const merged = resolveConflict(this.log, logicalId, {
+    this.log = resolveConflict(this.log, logicalId, {
       lastEditor: this.editor,
       ...(choice.body !== undefined ? { body: choice.body } : {}),
       ...(choice.target !== undefined ? { target: choice.target } : {}),
       ...(choice.motivation !== undefined ? { motivation: choice.motivation } : {}),
+      ...(choice.reading !== undefined ? { reading: choice.reading } : {}),
+      ...(choice.emphasis !== undefined ? { emphasis: choice.emphasis } : {}),
+      ...(choice.wholeObject !== undefined ? { wholeObject: choice.wholeObject } : {}),
+      ...(choice.geo !== undefined ? { geo: choice.geo } : {}),
     });
-    // Carry reading/emphasis/geo onto the just-appended merge node (the last record) — resolveConflict
-    // does not model them. Only when present, so a plain conflict stays byte-stable.
-    if (reading !== undefined || emphasis !== undefined || wholeObject !== undefined || geo !== undefined) {
-      const head = merged[merged.length - 1]!;
-      const carried: AnnotationRecord = {
-        ...head,
-        ...(reading !== undefined ? { reading } : {}),
-        ...(emphasis !== undefined ? { emphasis } : {}),
-        ...(wholeObject ? { wholeObject: true } : {}),
-        ...(geo !== undefined ? { geo } : {}),
-      };
-      this.log = Object.freeze([...merged.slice(0, -1), carried]);
-    } else {
-      this.log = merged;
-    }
     this.dirty.add(logicalId);
   }
 

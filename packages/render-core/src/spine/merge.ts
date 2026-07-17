@@ -7,8 +7,9 @@
 // drives classification or auto-resolution.
 
 import { mintRevId, type RevId, type LogicalId, type ClientId } from "../wadm/brand.js";
-import type { AnnotationLog, AnnotationRecord, W3CBody, W3CTarget } from "../wadm/types.js";
+import type { AnnotationLog, AnnotationRecord, Emphasis, GeoAnchor, W3CBody, W3CTarget } from "../wadm/types.js";
 import { linearHead, append } from "./log.js";
+import type { CarryDisposition } from "../model/carry.js";
 
 /** Index a log by `rev` (the collision-free node id) for O(1) parent-walk lookups — built ONCE per
  *  traversal so lineage/ancestors stay O(n) instead of O(n²) (was `log.find` per step). First-wins
@@ -180,9 +181,38 @@ export interface ConflictResolution {
   body?: W3CBody | W3CBody[];
   target?: W3CTarget;
   motivation?: string | string[];
+  /** Carried onto the merge node (ADR-0007 reading / 1489 emphasis / ADR-0018 wholeObject / ADR-0015
+   *  geo). Omitted = INHERIT from the heads (any head that carries it), so a conflict between "has a
+   *  reading" and "no reading" keeps the reading rather than dropping it on rev ordering. */
+  reading?: string;
+  emphasis?: Emphasis;
+  wholeObject?: boolean;
+  geo?: GeoAnchor;
   lastEditor: ClientId;
   now?: number;
 }
+
+// EXHAUSTIVENESS GUARD (Issue 21): the merge node accounts for EVERY AnnotationRecord field. The carry
+// of reading/emphasis/wholeObject/geo now lives HERE (was compensated only in session.resolve — any
+// other caller re-introduced the loss, the latent next instance of the drop class). The sentinel fails
+// the build if a new field is added without deciding whether a merge node carries it.
+const _mergeCarry = {
+  logicalId: "carry",
+  rev: "carry", // minted
+  version: "carry", // max(head versions) + 1
+  parent: "carry", // lexicographically-first head
+  mergeParents: "carry", // the other reconciled heads
+  modifiedAt: "carry",
+  lastEditor: "carry",
+  deleted: "carry", // false
+  target: "carry", // resolution.target ?? primary
+  body: "carry", // resolution ?? primary
+  motivation: "carry", // resolution ?? primary
+  reading: "carry", // resolution ?? inherited from any head
+  emphasis: "carry",
+  wholeObject: "carry",
+  geo: "carry",
+} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
 
 /**
  * Resolve a concurrent conflict (Q-7): append a multi-parent MERGE NODE that reconciles the
@@ -190,6 +220,10 @@ export interface ConflictResolution {
  * go in `mergeParents`; version = max(head versions) + 1. After this, headsOf returns a single
  * head. Throws if there is no conflict (< 2 heads). The conflict-card UI calls this with the
  * user's chosen/merged content; modifiedAt-tiebreak is a UI hint only (never auto-resolution).
+ *
+ * reading/emphasis/wholeObject/geo are carried onto the node from `resolution` when supplied, else
+ * INHERITED from whichever head carries them (Issue 21: the carry lives in the primitive now, so no
+ * caller can silently drop it — was compensated only in session.resolve).
  */
 export function resolveConflict(log: AnnotationLog, logicalId: LogicalId, resolution: ConflictResolution): AnnotationLog {
   const heads = headsOf(log, logicalId);
@@ -201,6 +235,14 @@ export function resolveConflict(log: AnnotationLog, logicalId: LogicalId, resolu
   const maxVersion = Math.max(...heads.map((h) => h.version));
   const body = resolution.body ?? primary.body;
   const motivation = resolution.motivation ?? primary.motivation;
+  // Inherit from ANY head that carries the field (not just primary — a conflict between "has reading"
+  // and "no reading" must keep the reading, not drop it on rev ordering; sorted order = deterministic).
+  const inherit = <K extends "reading" | "emphasis" | "wholeObject" | "geo">(k: K): AnnotationRecord[K] | undefined =>
+    sorted.find((h) => h[k] !== undefined)?.[k];
+  const reading = resolution.reading ?? inherit("reading");
+  const emphasis = resolution.emphasis ?? inherit("emphasis");
+  const wholeObject = resolution.wholeObject ?? inherit("wholeObject");
+  const geo = resolution.geo ?? inherit("geo");
   const record: AnnotationRecord = {
     logicalId,
     rev: mintRevId(resolution.now),
@@ -213,6 +255,10 @@ export function resolveConflict(log: AnnotationLog, logicalId: LogicalId, resolu
     target: resolution.target ?? primary.target,
     ...(body !== undefined ? { body } : {}),
     ...(motivation !== undefined ? { motivation } : {}),
+    ...(reading !== undefined ? { reading } : {}),
+    ...(emphasis !== undefined ? { emphasis } : {}),
+    ...(wholeObject ? { wholeObject: true } : {}),
+    ...(geo !== undefined ? { geo } : {}),
   };
   return append(log, record);
 }

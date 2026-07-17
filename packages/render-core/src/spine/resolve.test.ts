@@ -60,3 +60,29 @@ describe("resolveConflict (Q-7 multi-parent merge node)", () => {
     expect(head!.version).toBe(3);
   });
 });
+
+describe("Issue 21 — resolveConflict carries reading/emphasis/wholeObject/geo (carry moved INSIDE the primitive)", () => {
+  it("inherits reading/emphasis/geo from a head when the resolution doesn't override them", () => {
+    // one head carries a reading + emphasis + geo; the other doesn't. A DIRECT resolveConflict caller
+    // (no session compensation) must keep them — the drop this fix closes.
+    const { log: base, record: v1 } = appendNew([], { target, body: { type: "TextualBody", value: "v1" }, lastEditor: alice, now: 1 });
+    const withMeta: AnnotationRecord = { logicalId: v1.logicalId, rev: mintRevId(0, () => 0.2), version: 2, parent: v1.rev, modifiedAt: "tA", lastEditor: alice, deleted: false, target, body: { type: "TextualBody", value: "A" }, reading: "cipher", emphasis: "strong", geo: { type: "bbox", west: 0, south: 0, east: 1, north: 1 } };
+    const plain: AnnotationRecord = { logicalId: v1.logicalId, rev: mintRevId(0, () => 0.8), version: 2, parent: v1.rev, modifiedAt: "tB", lastEditor: bob, deleted: false, target, body: { type: "TextualBody", value: "B" } };
+    const log = append(append(base, withMeta), plain);
+    const resolved = resolveConflict(log, v1.logicalId, { lastEditor: alice, now: 5 });
+    const node = resolved[resolved.length - 1]!;
+    expect(node.mergeParents?.length).toBe(1);
+    expect(node.reading).toBe("cipher");
+    expect(node.emphasis).toBe("strong");
+    expect(node.geo).toEqual({ type: "bbox", west: 0, south: 0, east: 1, north: 1 });
+  });
+
+  it("an explicit resolution value overrides the inherited one", () => {
+    const { log: base, record: v1 } = appendNew([], { target, lastEditor: alice, now: 1 });
+    const a: AnnotationRecord = { logicalId: v1.logicalId, rev: mintRevId(0, () => 0.2), version: 2, parent: v1.rev, modifiedAt: "tA", lastEditor: alice, deleted: false, target, reading: "cipher" };
+    const b: AnnotationRecord = { logicalId: v1.logicalId, rev: mintRevId(0, () => 0.8), version: 2, parent: v1.rev, modifiedAt: "tB", lastEditor: bob, deleted: false, target };
+    const log = append(append(base, a), b);
+    const resolved = resolveConflict(log, v1.logicalId, { lastEditor: alice, now: 5, reading: "hoax" });
+    expect(resolved[resolved.length - 1]!.reading).toBe("hoax");
+  });
+});

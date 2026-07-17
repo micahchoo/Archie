@@ -14,7 +14,7 @@
 // container is never reassigned, so getters stay live across the module boundary. The editor CURSOR
 // (selected / editing / creating / currentObjectId / rev) stays in App — it is `bind:`-bound on the
 // Canvas and mutated per-keystroke, where moving it behind a getter would break two-way binding.
-import { AnnotationSession, type FsDirectory, type ClientId } from "@render/core";
+import { AnnotationSession, type FsDirectory, type ClientId, type CorruptAnnotationPage } from "@render/core";
 import { openExhibitAnnotationsDir } from "./store.js";
 import { enqueueSave } from "./save-queue.svelte.js";
 
@@ -31,6 +31,10 @@ export interface ExhibitSessionDeps {
   autosaveToFolder: (slug: string) => void;
   /** Mark the bound location behind (binding chip) on every edit. */
   touchBinding: () => void;
+  /** A torn/corrupt annotation store was detected on open (Issue 19): some history pages the index
+   *  referenced could not be read. Surface it to the user; the open path keeps whatever survived and
+   *  will NOT seed-fresh-over the store. Optional — a host that doesn't wire it just skips the toast. */
+  onLoadCorruption?: (slug: string, corrupt: CorruptAnnotationPage[]) => void;
 }
 
 /** What `open` needs from the incoming exhibit, plus the side-effects App still owns (asset resolve +
@@ -123,7 +127,13 @@ export function createExhibitSession(deps: ExhibitSessionDeps) {
         nextDir = await openExhibitAnnotationsDir(req.slug);
         if (nextDir) {
           const loaded = await AnnotationSession.load(nextDir, author);
-          if (loaded.notes().length > 0) nextSession = loaded;
+          if (loaded.loadCorruption.length > 0) {
+            // Torn store (Issue 19): keep whatever pages survived and NEVER seed-fresh-over it — a seed
+            // save would rewrite the index without the unreadable pages, orphaning them for good. Surface
+            // so the user knows their exhibit is partially unreadable rather than silently "empty".
+            deps.onLoadCorruption?.(req.slug, loaded.loadCorruption);
+            nextSession = loaded;
+          } else if (loaded.notes().length > 0) nextSession = loaded;
           else { nextSession = freshSeed(); persistFreshSeed = true; }
         } else {
           nextSession = freshSeed();

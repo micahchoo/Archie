@@ -21,6 +21,29 @@ import {
 import type { AnnotationLog, AnnotationRecord, GeoAnchor, W3CAnnotation, W3CAnnotationPage, W3CBody, W3CTarget } from "../wadm/types.js";
 import type { RevId } from "../wadm/brand.js";
 import { foldLayersIntoTags } from "../migrate/migrate.js";
+import type { CarryDisposition } from "../model/carry.js";
+
+// EXHAUSTIVENESS GUARD (Issue 21): the inverse of serialize's history path —
+// `recordFromHistoryAnnotation` reconstructs EVERY AnnotationRecord field from a history-page
+// annotation. This sentinel fails to compile if a field is added to AnnotationRecord without a parse
+// decision here, so serialize and deserialize can't drift (a field written but not read, or vice versa).
+const _historyParse = {
+  logicalId: "carry",
+  rev: "carry",
+  version: "carry",
+  parent: "carry",
+  mergeParents: "carry",
+  modifiedAt: "carry",
+  lastEditor: "carry",
+  deleted: "carry",
+  body: "carry",
+  target: "carry",
+  motivation: "carry",
+  reading: "carry",
+  emphasis: "carry",
+  wholeObject: "carry",
+  geo: "carry",
+} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
 
 function asString(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
@@ -105,9 +128,24 @@ export function fromHistoryPage(page: W3CAnnotationPage): AnnotationRecord[] {
   return out;
 }
 
-/** Reconstruct the full append-only log from a set of history pages. */
+/**
+ * Reconstruct the full append-only log from a set of history pages, DEDUPED by `rev` (first-seen
+ * order), mirroring `serialize.ts`'s `dedupe`. Deserialize is the inverse of serialize, so it must
+ * carry the same rev-uniqueness invariant: a duplicated page or a doubly-listed record (a torn /
+ * doubled write) would otherwise put the same `rev` in the log twice, and `linearHead` reads two
+ * identical records as PLURAL HEADS → a spurious "resolve the concurrent merge first" throw on the
+ * next edit of an otherwise-linear note (Issue 19c). Distinct revs sharing (logicalId, version) —
+ * a genuine unresolved merge — are preserved; only exact `rev` collisions collapse.
+ */
 export function fromHistory(pages: Iterable<W3CAnnotationPage>): AnnotationLog {
+  const seen = new Set<RevId>();
   const out: AnnotationRecord[] = [];
-  for (const page of pages) out.push(...fromHistoryPage(page));
+  for (const page of pages) {
+    for (const rec of fromHistoryPage(page)) {
+      if (seen.has(rec.rev)) continue;
+      seen.add(rec.rev);
+      out.push(rec);
+    }
+  }
   return out;
 }

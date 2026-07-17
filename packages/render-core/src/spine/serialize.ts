@@ -34,6 +34,30 @@ import {
   ARCHIE_DELETED,
 } from "../wadm/types.js";
 import { projectHeads } from "./heads.js";
+import type { CarryDisposition } from "../model/carry.js";
+
+// EXHAUSTIVENESS GUARD (Issue 21): the history serialization — `recordToAnnotation` (base WADM fields)
+// plus `withDagMeta` (the archie: DAG + extension fields) — carries EVERY AnnotationRecord field, so a
+// history page → deserialize round trip is lossless. This sentinel fails to compile if a field is added
+// to AnnotationRecord without a carry-or-drop decision at this boundary (the hand-spread class of bug
+// that silently dropped new fields). Zero runtime; it exists only to break the build loudly.
+const _historyCarry = {
+  target: "carry", // recordToAnnotation
+  modifiedAt: "carry", // recordToAnnotation → `modified`
+  body: "carry", // recordToAnnotation
+  motivation: "carry", // recordToAnnotation
+  logicalId: "carry", // withDagMeta ↓
+  rev: "carry",
+  version: "carry",
+  lastEditor: "carry",
+  parent: "carry",
+  mergeParents: "carry",
+  deleted: "carry",
+  reading: "carry",
+  emphasis: "carry",
+  wholeObject: "carry",
+  geo: "carry",
+} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
 
 export interface SerializeOptions {
   /** Prefix for citation ids, e.g. `https://user.github.io/lib/exhibit/`. Default "" (relative). */
