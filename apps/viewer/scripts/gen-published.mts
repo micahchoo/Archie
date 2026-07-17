@@ -20,6 +20,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, loadLibrary, mergePublishedIndexes, libraryPageHtml, asExhibitId,
+  buildImageIndex, stamp,
   type AnnotationLog, type Library, type ExhibitsJson, type IIIFCollection, type PublishedIndexes,
 } from "@render/core";
 import { library as sampleLibrary, getLog as sampleGetLog } from "../fixtures/sample-data.js";
@@ -156,6 +157,25 @@ if (merged.preservedSlugs.length > 0) {
     ],
   };
   writeFileSync(join(OUT, "index.html"), libraryPageHtml(displayLibrary, { baseUrl: BASE, viewerBase: VIEWER_BASE }));
+
+  // images.json is the FOURTH library-global index (ADR-0023, the Gallery all-images wall) and must
+  // be re-merged over carried exhibits like the three above — the write loop wrote it from the
+  // source-only projection (BAKE-INDEX.md R1). Rebuild it over the UNION with buildImageIndex, the
+  // same manifest-reading projection publishLibrary uses: the source manifests are already in `fs`;
+  // inject each carried exhibit's ON-DISK manifest (the source of truth — preserved untouched by the
+  // targeted clean above, and always present, unlike the possibly-stale/absent prior images.json) so
+  // the projection covers owned ∪ carried. A torn carried manifest is silently skipped by
+  // buildImageIndex's getOptional (BAKE-INDEX.md R2) — same contract as the other manifest readers.
+  const fsRoot = await fs.root();
+  for (const slug of merged.preservedSlugs) {
+    const manifestText = readFileSync(join(OUT, slug, "manifest.json"), "utf8");
+    const dir = await fsRoot.getDirectory(slug, { create: true });
+    const w = await (await dir.getFile("manifest.json", { create: true })).writable();
+    await w.write(manifestText);
+    await w.close();
+  }
+  writeFileSync(join(OUT, "images.json"), JSON.stringify(stamp(await buildImageIndex(fs, displayLibrary)), null, 2));
+
   console.log(`Preserved ${merged.preservedSlugs.length} committed exhibit(s): ${merged.preservedSlugs.join(", ")}`);
 }
 console.log(`Wrote ${n} published files → ${OUT}`);

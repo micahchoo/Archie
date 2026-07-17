@@ -82,3 +82,32 @@ describe("buildImageIndex — library-level image index (ADR-0023, spike-0004)",
     expect(idx.images).toEqual([{ objectId: "s1", exhibitSlug: "s", title: "A Recording" }]); // no thumbnail/width/height
   });
 });
+
+// Merge-preserving bake — Issue 20 / ledgers/BAKE-INDEX.md R1. gen-published bakes a SOURCE library
+// into a tree that already holds CARRIED exhibits (published by a prior run, preserved on disk). The
+// wall's images.json is a UNION projection, so the bake MUST build it over owned ∪ carried. Because
+// buildImageIndex covers exactly the exhibits in its `library` argument, building over the source-only
+// library silently drops every carried exhibit's images — congruence with exhibits.json is lost.
+describe("buildImageIndex — merge-preserving bake covers carried exhibits (Issue 20)", () => {
+  const owned: Library = { id: asLibraryId("lib"), exhibits: [exA] };
+  // A prior bake left exhibit `b`'s manifest on the tree (carried, not owned by this source).
+  const seedCarried = async (fs: MemoryFilesystem) => {
+    await publishLibrary(fs, owned, noLog, opts());
+    await publishLibrary(fs, { id: asLibraryId("lib"), exhibits: [exB] }, noLog, opts()); // writes b/manifest.json
+  };
+
+  it("source-only library omits a carried exhibit whose manifest is present in the tree (the defect)", async () => {
+    const fs = new MemoryFilesystem();
+    await seedCarried(fs);
+    const sourceOnly = await buildImageIndex(fs, owned); // OLD gen: images.json from the source-only projection
+    expect(sourceOnly.images.map((e) => e.exhibitSlug)).toEqual(["a", "a"]); // carried `b` is MISSING
+  });
+
+  it("union library (owned ∪ carried) covers every exhibit's manifest on the tree (the fix)", async () => {
+    const fs = new MemoryFilesystem();
+    await seedCarried(fs);
+    const union = await buildImageIndex(fs, { id: asLibraryId("lib"), exhibits: [exA, exB] });
+    expect(union.images.map((e) => e.objectId)).toEqual(["a1", "a2", "b1"]);
+    expect([...new Set(union.images.map((e) => e.exhibitSlug))]).toEqual(["a", "b"]);
+  });
+});
