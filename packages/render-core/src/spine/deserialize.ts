@@ -21,6 +21,29 @@ import {
 import type { AnnotationLog, AnnotationRecord, GeoAnchor, W3CAnnotation, W3CAnnotationPage, W3CBody, W3CTarget } from "../wadm/types.js";
 import type { RevId } from "../wadm/brand.js";
 import { foldLayersIntoTags } from "../migrate/migrate.js";
+import type { CarryDisposition } from "../model/carry.js";
+
+// EXHAUSTIVENESS GUARD (Issue 21): the inverse of serialize's history path —
+// `recordFromHistoryAnnotation` reconstructs EVERY AnnotationRecord field from a history-page
+// annotation. This sentinel fails to compile if a field is added to AnnotationRecord without a parse
+// decision here, so serialize and deserialize can't drift (a field written but not read, or vice versa).
+const _historyParse = {
+  logicalId: "carry",
+  rev: "carry",
+  version: "carry",
+  parent: "carry",
+  mergeParents: "carry",
+  modifiedAt: "carry",
+  lastEditor: "carry",
+  deleted: "carry",
+  body: "carry",
+  target: "carry",
+  motivation: "carry",
+  reading: "carry",
+  emphasis: "carry",
+  wholeObject: "carry",
+  geo: "carry",
+} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
 
 function asString(v: unknown): string | undefined {
   return typeof v === "string" ? v : undefined;
