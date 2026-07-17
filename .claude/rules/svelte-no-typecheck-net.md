@@ -5,18 +5,21 @@ priority: high
 source: hand-written
 ---
 
-# No safety net for `.svelte` script errors — verify identifiers after edits
+# `.svelte` type errors: svelte-check is the gate — run it after edits
 
-This repo has **no svelte-check** (see ISSUES.md Issue 12): `tsc --noEmit` skips `.svelte`
-files entirely, and `vite build` compiles without type-checking — an undefined identifier in a
-`.svelte` script block passes every gate and becomes a **runtime ReferenceError**.
+**Updated 2026-07-17.** This rule originally documented that the repo had NO svelte-check
+(`tsc --noEmit` skips `.svelte`; an undefined identifier became a runtime ReferenceError — proven
+by the 2026-07-06 `orderedIds()` bite in App.svelte). That gap is closed: ISSUES.md Issue 12
+(merged `6bf45ef`) added `svelte-check` to apps/studio (`pnpm --filter @archie/studio run check`,
+tsconfig `tsconfig.svelte-check.json`) and wired it into CI's checks.yml; apps/viewer is covered
+by `astro check`.
 
-Proven bite (2026-07-06, Issue 11 Phase 2): a rename left `orderedIds()` called-but-undefined
-in `App.svelte`'s `bulkRemove`; implementer + independent code review + green tests/tsc/build
-all missed it — only IDE language-server diagnostics surfaced it, pre-commit.
-
-**How to apply:** after editing a `.svelte` file — especially renames/refactors of script-block
-helpers — grep the file for every identifier you renamed (definition AND all call sites), and
-treat IDE svelte/ts diagnostics on changed lines as blocking, not noise. Cross-component prop
-renames need the same manual check on both sides (`$$ComponentProps` mismatches don't fail any
-build).
+**How to apply now:**
+- After editing any `.svelte` file, run the app's check locally (`svelte-check` for studio,
+  `astro check` for viewer) — don't rely on `tsc`/`vite build`, which still can't see `.svelte`
+  scripts.
+- Treat check errors on changed lines as blocking; studio's 11 standing a11y WARNINGS are known
+  noise — don't add to them.
+- The old manual discipline (grep every renamed identifier's definition AND call sites, both
+  sides of cross-component prop renames) remains the fastest mid-edit pre-check, but the gate is
+  what guarantees it.
