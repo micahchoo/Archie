@@ -122,12 +122,11 @@ describe("PROBE readExhibitTree — optional layer failure policy (read.ts:64/82
   });
 });
 
-describe("PROBE marker/generation write ordering (Issue 25b; site.ts:254)", () => {
-  it("does archie.json carry a generation? (ordering asserted from code read)", async () => {
+describe("marker carries a generation + is the last write (Issue 24 / 25b) [st1]", () => {
+  it("archie.json carries a generation string", async () => {
     const fs = new MemoryFilesystem();
     await publishLibrary(fs, libWith(["a"]), () => [], { baseUrl: base });
-    const marker = await fsJsonSource(fs).getOptional<Record<string, unknown>>("archie.json");
-    console.log("[PROBE] archie.json:", JSON.stringify(marker));
-    expect(marker).toBeDefined();
+    const marker = await fsJsonSource(fs).getOptional<{ generation?: unknown }>("archie.json");
+    expect(typeof marker?.generation).toBe("string");
   });
 });
