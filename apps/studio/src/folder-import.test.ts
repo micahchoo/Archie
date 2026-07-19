@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { folderNameFrom, inferredMime, isHiddenPath, isImportableMedia, mediaFilesInOrder, planFolderImportGroups } from "./folder-import.js";
+import {
+  folderNameFrom, inferredMime, isHiddenPath, isImportableMedia, mediaFilesInOrder, planFolderImportGroups,
+  summarizeFolderFiles, folderGroupCount, flattenedRelativePaths,
+} from "./folder-import.js";
 
 const f = (relativePath: string, type = "") => ({ name: relativePath.split("/").pop() ?? "", relativePath, type });
 
@@ -126,5 +129,50 @@ describe("planFolderImportGroups — mixed camera rolls (review r9)", () => {
       f("Box/b.jpg", "image/jpeg"),
     ]);
     expect(groups.map((g) => g.name).sort()).toEqual(["Box", "Box (loose files)"]);
+  });
+});
+
+describe("summarizeFolderFiles — the create dialog's folder-path summary card (Archie-51cc)", () => {
+  it("counts by kind across the WHOLE folder, ignoring subfolder grouping", () => {
+    const s = summarizeFolderFiles([
+      f("Box 7/1-recto/a.jpg", "image/jpeg"),
+      f("Box 7/2-verso/b.jpg", "image/jpeg"),
+      f("Box 7/clip.mp3", "audio/mpeg"),
+      f("Box 7/1-recto/.DS_Store"),
+      f("Box 7/notes.txt"),
+    ]);
+    expect(s).toEqual({ name: "Box 7", total: 3, images: 2, audio: 1, video: 0 });
+  });
+  it("an empty (no importable media) folder summarizes to zero, not a crash", () => {
+    expect(summarizeFolderFiles([f("Empty/notes.txt")])).toEqual({ name: "Empty", total: 0, images: 0, audio: 0, video: 0 });
+  });
+});
+
+describe("folderGroupCount — drives the progressive-disclosure grouping choice (Archie-8482)", () => {
+  it("is 1 for a folder with only loose top-level media (nothing to choose between)", () => {
+    expect(folderGroupCount([f("Loose/a.jpg", "image/jpeg"), f("Loose/b.jpg", "image/jpeg")])).toBe(1);
+  });
+  it("is >1 once first-level subfolders hold media — the create dialog offers the choice", () => {
+    expect(folderGroupCount([
+      f("Box 7/1-recto/a.jpg", "image/jpeg"),
+      f("Box 7/2-verso/b.jpg", "image/jpeg"),
+    ])).toBe(2);
+  });
+});
+
+describe("flattenedRelativePaths — \"one exhibit from everything\" (Archie-8482)", () => {
+  it("collapses subfolder segments to <root>/<basename>, so planFolderImportGroups sees ONE group", () => {
+    const files = [
+      f("Box 7/1-recto/a.jpg", "image/jpeg"),
+      f("Box 7/2-verso/b.jpg", "image/jpeg"),
+    ];
+    const paths = flattenedRelativePaths(files);
+    expect(paths).toEqual(["Box 7/a.jpg", "Box 7/b.jpg"]);
+    const flattened = files.map((file, i) => ({ ...file, relativePath: paths[i]! }));
+    expect(planFolderImportGroups(flattened)).toHaveLength(1);
+  });
+  it("is a no-op (well, an identity relative to loose grouping) for an already-loose folder", () => {
+    const files = [f("Loose/a.jpg", "image/jpeg"), f("Loose/b.jpg", "image/jpeg")];
+    expect(flattenedRelativePaths(files)).toEqual(["Loose/a.jpg", "Loose/b.jpg"]);
   });
 });

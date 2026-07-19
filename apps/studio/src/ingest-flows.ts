@@ -35,8 +35,9 @@ const ASSET_THUMB_PREFIX = "/assets-thumb/"; // working ref for a baked thumbnai
 // few MB. 32 MB is generous headroom; above it something is wrong (or hostile) rather than merely big.
 // Distinct from @render/core's SRC_MAX_BYTES (256 MB), which caps a DIFFERENT trust boundary (untrusted
 // .archie.zip bytes) — this one guards an arbitrary-JSON fetch that had NO cap at all (tend Issue 7,
-// ledgers/NEGSPACE.md row 5).
-const IIIF_MANIFEST_MAX_BYTES = 32 * 1024 * 1024;
+// ledgers/NEGSPACE.md row 5). Exported (Archie-51cc) so create-exhibit-dialog.ts's validation-preview
+// fetch enforces the SAME cap as the real import below — one definition, not a second copy that could drift.
+export const IIIF_MANIFEST_MAX_BYTES = 32 * 1024 * 1024;
 
 // The three local-file bulk-import vectors (CSV notes, WADM notes, VTT/SRT captions) had no size cap
 // either — a many-hundred-MB file gets `.text()`-read then synchronously parsed on the main thread with
