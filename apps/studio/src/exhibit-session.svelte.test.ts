@@ -12,6 +12,12 @@
 // VIOLATES the invariant, it is pinned as-is (characterization, not correction) and flagged in the
 // handoff, per the ticket.
 //
+// Observational limit (review, Archie-94b6): these are black-box tests — they can only observe at
+// await suspension points that ALREADY exist in open(). A mutation that introduces a NEW await
+// between the swap writes opens a mixed-triple window these tests cannot reach (empirically
+// verified: all 7 stay green under it). That case is guarded only by the `// no await between
+// writes` comment in exhibit-session.svelte.ts — keep the swap batch synchronous.
+//
 // Harness: store.js's OPFS-touching openExhibitAnnotationsDir is the one production seam this module
 // can't run headlessly over — mocked the way replace-structure.test.ts mocks the same module (real
 // MemoryFilesystem directories stand in for OPFS dirs, so save()/AnnotationSession.load() run for
