@@ -63,7 +63,8 @@
   // createPublishFlows is imported DYNAMICALLY (ensurePub below) so its fflate + dompurify + GitHub-publish
   // deps stay OUT of the startup bundle — publishing is a deliberate action, never needed at boot.
   import { createReadingState } from "./reading-state.svelte.js";
-  import { readingBadge, readingNumber } from "./reading-index.js";
+  import { readingBadge, readingNumber, noteAnnouncement } from "./reading-index.js";
+  import { roveIndex } from "./roving.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   // Persisted editor-chrome view preferences (Archie-c7ef): the filmstrip's collapsed state + the docked
   // note editor's width. Same module the overview Canvas/List + library lens live in.
@@ -1161,6 +1162,50 @@
   // Per-NOTE solo: hovering a note in the list lights its mark on the canvas (the rail's hover
   // affordance applied to annotations). null = none.
   let hoverNote = $state<string | null>(null);
+
+  // --- Notes-panel LISTBOX keyboard surface (Archie-f260 §4, docs/research/a11y-interactions.md §4).
+  // The WebGL/PixiJS marks have no per-marker DOM node a screen reader can reach (confirmed: no marker-level
+  // ARIA is possible), so the present-notes list IS the accessible parallel structure: role="listbox",
+  // role="option" per note, roving tabindex, and selection-follows-focus. Arrowing to a note sets `selected`
+  // — the SAME channel a click uses (bind:selected on the Canvas → marker selection + the docked editor), so
+  // one wire gives DOM-level AND canvas-level traversal with no new state. The roving index math is the shared
+  // roveIndex; the spoken position reuses the §3 reading number so legend, chip and announcement agree. ---
+  let notesListEl = $state<HTMLElement | null>(null);
+  let notesRoveId = $state<string | null>(null); // which option holds tabindex 0 (roving)
+  let notesAnnounce = $state(""); // the mounted polite live region's text (toggled, never unmounted)
+  const readingLabelOf = (rd: string | undefined | null): string =>
+    rd ? (currentReadings.find((x) => x.id === rd)?.name ?? rd) : "General notes";
+  // Keep the roving cursor on a real, visible note: follow the open note when there is one, else hold the
+  // current option, else fall back to the first. Runs whenever the visible `notes` set or `editing` changes.
+  $effect(() => {
+    const ids: string[] = notes.map((n) => n.logicalId);
+    if (ids.length === 0) { notesRoveId = null; return; }
+    if (editing && ids.includes(editing)) { notesRoveId = editing; return; }
+    if (notesRoveId && ids.includes(notesRoveId)) return;
+    notesRoveId = ids[0]!;
+  });
+  function focusNoteOption(id: string) {
+    notesListEl?.querySelector<HTMLElement>(`[data-note-id="${CSS.escape(id)}"]`)?.focus();
+  }
+  function onNotesKeyDown(e: KeyboardEvent) {
+    const ids: string[] = notes.map((n) => n.logicalId);
+    const cur = notesRoveId ? ids.indexOf(notesRoveId) : -1;
+    const next = roveIndex(cur, ids.length, e.key);
+    if (next === null) return; // not a nav key — leave Enter/Space to activate the focused option natively
+    e.preventDefault();
+    const r = notes[next]!;
+    notesRoveId = r.logicalId;
+    selected = r.logicalId; // selection follows focus → drives the canvas marker + opens the dock (existing wire)
+    notesAnnounce = noteAnnouncement({
+      comment: stripMarkdown(commentOf(r)),
+      index: next,
+      count: ids.length,
+      readingKey: r.reading ?? "base",
+      readingLabel: readingLabelOf(r.reading),
+      readingIds,
+    });
+    void tick().then(() => focusNoteOption(r.logicalId));
+  }
   // Canvas re-applies styles only when the styleOf PROP IDENTITY changes ($effect dep) — a stable
   // function would freeze the comparing/solo regime (browser-harness finding). This derived mints
   // a fresh identity whenever the display state (visibility/solo/hover/readings/log) changes.
@@ -2065,23 +2110,34 @@
           {#if notes.length === 0}
             <p class="empty">{isAvCurrent ? "No notes on this recording yet. Mark a moment, then add a note to pin it." : objNotes.length > 0 ? "This media item has notes, but they’re hidden. Turn on a reading to show them." : "No notes on this media item yet. Pick Box or Outline above, then draw the region."}</p>
           {/if}
-          <ul class="notes-list">
+          <!-- Notes-panel LISTBOX (Archie-f260 §4): the keyboard/AT surface standing in for the WebGL marks.
+               ul=listbox, each note li=option with roving tabindex + aria-selected; arrows rove and select
+               (selection follows focus), driving the canvas through the existing `selected` wire. The button
+               is retired — the option row IS the interactive element (no nested interactive inside an option). -->
+          <ul class="notes-list" role="listbox" aria-label="Notes on this object" bind:this={notesListEl}>
             {#each notes as r (r.rev)}
               <!-- Hovering a note solos its MARK on the canvas (the rail's hover affordance, per-note). -->
-              <li class:sel={editing === r.logicalId} onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}>
-                <button onclick={() => (selected = r.logicalId)}>
-                  <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
-                  <div class="meta">
+              <li role="option" data-note-id={r.logicalId}
+                class="note-opt" class:sel={editing === r.logicalId}
+                aria-selected={editing === r.logicalId}
+                tabindex={r.logicalId === notesRoveId ? 0 : -1}
+                onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}
+                onclick={() => (selected = r.logicalId)}
+                onkeydown={onNotesKeyDown}
+                onfocus={() => (notesRoveId = r.logicalId)}>
+                <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
+                <div class="meta">
                     {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource?.kind === "xyz" ? currentTileSource : undefined)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
                     {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
                     <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern).
                          The circled reading number (Archie-f260 §3) leads the chip so the note's reading is identified without relying on the border colour. -->
                     {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}><span class="layer-num" aria-hidden="true">{readingBadge(r.reading, readingIds)}</span> {rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}><span class="layer-num" aria-hidden="true">{readingBadge("base", readingIds)}</span> General notes</span>{/if}
-                  </div>
-                </button>
+                </div>
               </li>
             {/each}
           </ul>
+          <!-- Mounted polite live region for keyboard note-traversal position announcements (§4). -->
+          <p class="sr-only" role="status" aria-live="polite">{notesAnnounce}</p>
           <!-- All notes (image / audio / video) edit in the docked editor on the right (ADR-0006 / Archie-b671);
                the sidebar is creation + the present-notes list — no inline form. -->
         </div>
@@ -2554,9 +2610,13 @@
   /* Long note lists scroll HERE (the spine .cards 50vh idiom, NarrativeEditor) so Detail and Remove
      never sink arbitrarily deep in the single sidebar scroll (usability pass 2026-07-18). */
   .notes-list { max-height: 45vh; overflow-y: auto; }
+  /* Visually-hidden live region (keyboard note-traversal announcements) — present for AT, invisible on screen. */
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-  /* Annotation note card — warm paper, soft rounded, separated by tone + shadow (no hard border) */
-  li button {
+  /* Annotation note card — warm paper, soft rounded, separated by tone + shadow (no hard border). The card
+     IS the listbox option now (Archie-f260 §4): the row itself is the interactive/focusable element, so the
+     card styles live on .note-opt rather than an inner button. */
+  .note-opt {
     display: block; width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-3) var(--space-4); margin-bottom: var(--space-2);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
@@ -2565,9 +2625,11 @@
     box-shadow: var(--shadow-lift-low);
     transition: background 160ms ease, box-shadow 160ms ease;
   }
-  li button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
+  .note-opt:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
+  /* The keyboard surface needs a real focus ring now that the row takes focus (roving tabindex). */
+  .note-opt:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
   /* Selected = a quiet signal: a soft accent left-edge + faint tint, never a loud fill. */
-  li.sel button { border-left-color: var(--accent); background: var(--accent-muted); }
+  .note-opt.sel { border-left-color: var(--accent); background: var(--accent-muted); }
   .comment { font-family: var(--font-body); font-size: var(--text-note); line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
   .meta { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
   .tag { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-2); }
