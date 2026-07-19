@@ -55,6 +55,10 @@ export { readExhibitTree, fsJsonSource, FailedReadError, assertArchieTreeMarker,
 // Schema migration runner + version stamping (CONTEXT orphan gap; strategy §39).
 export * from "./migrate/migrate.js";
 
+// Object-id migration engine (Archie-8c10): the five-class in-place legacy→composed id rewrite, behind
+// the snapshot-then-marker safety protocol. The ENGINE only — trigger wiring is Archie-8439.
+export * from "./migrate/object-ids.js";
+
 // Linkability resolution (CONTEXT linkability v1): structured refs -> published URLs + validation.
 export * from "./link/link.js";
 

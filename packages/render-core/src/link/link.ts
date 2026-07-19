@@ -264,3 +264,23 @@ export function rewriteArchieLinks(md: string, opts: RewriteOptions): RewriteRes
   });
   return { md: out, broken };
 }
+
+/**
+ * Structurally rewrite the {@link LinkTarget} of every well-formed in-body `archie:` link via `map`,
+ * re-encoding through {@link encodeLinkRef} — the id-migration primitive (Archie-8c10, the object-id
+ * five-class rewrite). UNLIKE {@link rewriteArchieLinks} (the publish PROJECTION, which resolves refs
+ * to display URLs and DEGRADES broken ones to plain text), this preserves the body EXACTLY except for
+ * the mapped refs: a malformed `archie:` link, or one `map` returns unchanged (re-encodes to the same
+ * uri), is left byte-identical — a migration must never eat or reshape a link it isn't remapping.
+ * Locating the `[text](archie:…)` token uses the SAME `ARCHIE_LINK_RE` grammar this module owns; the id
+ * itself is only ever touched through parse → map → encode, never a regex over the id (the class-3 rule).
+ */
+export function remapArchieRefs(md: string, map: (target: LinkTarget) => LinkTarget): string {
+  if (typeof md !== "string" || md.length === 0) return md ?? "";
+  return md.replace(ARCHIE_LINK_RE, (whole, text: string, uri: string) => {
+    const target = parseLinkRef(uri);
+    if (!target) return whole; // malformed → leave the original link untouched
+    const nextUri = encodeLinkRef(map(target));
+    return nextUri === uri ? whole : `[${text}](${nextUri})`;
+  });
+}
