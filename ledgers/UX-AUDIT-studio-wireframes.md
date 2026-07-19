@@ -104,6 +104,12 @@ Numbers (W1…) match the ⚠ callout boxes on the board.
   leave the app for device-code auth → return. Each hop is a drop-off point; the
   wizard's error/finish-on-github branches put failure recovery outside the app.
   *(Flow continuity.)*
+  **CORRECTION (2026-07-19, resolved as seeds Archie-7d9b):** partial overclaim —
+  the wizard already recovers in-surface (state machine with retryAuth/retryPublish,
+  copy-code, live progress checklist); the out-of-app hops that remain are inherent
+  (device-code auth is the correct serverless mechanism; Pages-enable fallback is an
+  API limitation). What was decided: dialog+wizard merge into one surface, and
+  Esc-mid-auth becomes clean-cancel + session-resumable.
 - **W22 — Help is fragmented and non-contextual.** HelpMenu → tutorial (iframe
   deck) or shortcuts sheet; no in-context help at the moment of confusion (e.g.
   first time in framing mode, first To-place worklist). *(Help & documentation.)*
