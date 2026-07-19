@@ -490,6 +490,7 @@
     committedUrl = url;
     history.pushState({ url }, "", url);
     rememberLastPlace(url);
+    fallbackNotice = null; // any successful (push) navigation clears a stale degrade notice (N2)
   }
   $effect(() => { void currentPlace; syncUrl(); });
   // Desktop-only: remember the last place so a relaunch (no address bar) can restore it (ADR-0024 #5).
@@ -504,7 +505,11 @@
     ovTx = s?.tx ?? 0; ovTy = s?.ty ?? 0; ovZ = s?.z ?? 1;
   }
   $effect(() => {
-    if (view !== "overview") return;
+    // Skip while a transition is in flight (navSyncSuspendCount > 0): during openExhibit, currentSlug
+    // moves to the NEW slug synchronously while view is still "overview" and ovTx/ovTy/ovZ still hold the
+    // OUTGOING exhibit's pan-zoom — an unguarded write would stamp A's transform under B's slug (N1). Once
+    // settled, restoreOverviewScreen has loaded the right values and the count is 0, so this snapshots B.
+    if (view !== "overview" || navSyncSuspendCount > 0) return;
     overviewScreens.set(currentSlug, { tx: ovTx, ty: ovTy, z: ovZ });
   });
 
@@ -515,15 +520,23 @@
   async function applyPlace(target: Place, history_: "push" | "replace" | "silent") {
     const res = resolvePlace(target, librarySnapshot(lib.meta.exhibits));
     fallbackNotice = noticeFor(res.missing);
-    suspendSync();
-    try { await gotoPlace(res.place); }
-    finally { resumeSync(); }
+    // Commit the URL + guard SYNCHRONOUSLY, before the first await (B1). A single back/forward fires
+    // popstate AND hashchange back-to-back; the second handler runs after this function's synchronous
+    // prefix (JS is single-threaded, and gotoPlace's await is below). If committedUrl were only updated
+    // after that await, the second event would see a stale guard and start a CONCURRENT applyPlace
+    // (double backToLibrary/save/revoke, a second openExhibit flushing mid-open). Updating it here — and
+    // doing the history op here — closes that window before we ever yield.
     const url = serializePlace(res.place);
     committedUrl = url;
     rememberLastPlace(url);
     const mode = history_ === "silent" && res.degraded ? "replace" : history_;
     if (mode === "push") history.pushState({ url }, "", url);
     else if (mode === "replace") history.replaceState({ url }, "", url);
+    // Now move the view (async — session load). Suspended so intermediate cursor states don't re-push;
+    // currentPlace settles on res.place, which already equals committedUrl, so the resumed effect no-ops.
+    suspendSync();
+    try { await gotoPlace(res.place); }
+    finally { resumeSync(); }
   }
   // Move the view to a (already-resolved) place, reusing the real transitions so sessions load exactly as a
   // click would. currentSlug is only a cursor (see openObjectInExhibit), so re-open unless we're already
@@ -1408,9 +1421,9 @@
   // Global + image-editor keyboard shortcuts (registry-driven; AV shortcuts live in AvEditor, palette in CmdK).
   function onGlobalKey(e: KeyboardEvent) {
     // ADR-0024 #5: the Tauri webview has no browser chrome, so wire Alt+←/→ to its history (the web target
-    // already has the browser's own back/forward + Alt+Arrow). A navigation chord, not text — fires
-    // regardless of focus, ahead of the other shortcuts.
-    if (isTauri() && e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+    // already has the browser's own back/forward + Alt+Arrow). NOT while a field is focused — Option+arrow
+    // is word-navigation inside macOS text inputs, so stealing it there would break typing (N3).
+    if (isTauri() && e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight") && !typingInField(e)) {
       e.preventDefault();
       if (e.key === "ArrowLeft") history.back(); else history.forward();
       return;

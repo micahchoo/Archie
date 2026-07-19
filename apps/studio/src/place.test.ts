@@ -56,6 +56,11 @@ describe("parsePlace tolerance", () => {
   it("ignores extra segments past the object id", () => {
     expect(parsePlace("#/voynich/o/o1/xywh")).toEqual(editor("voynich", "o1"));
   });
+  it("drops empty segments from doubled slashes", () => {
+    expect(parsePlace("#//voynich")).toEqual(overview("voynich")); // leading double slash
+    expect(parsePlace("#/voynich//o//o1")).toEqual(editor("voynich", "o1")); // internal empties collapse
+    expect(parsePlace("#///")).toEqual(LIBRARY); // nothing but slashes → library
+  });
   it("does not throw on a malformed percent-escape", () => {
     expect(() => parsePlace("#/%E0%A4%A")).not.toThrow();
   });
