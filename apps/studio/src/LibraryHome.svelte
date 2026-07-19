@@ -61,6 +61,8 @@
     ontutorial,
     onshortcuts,
     onopenobject,
+    identity = "",
+    onidentity,
     gallerySearch = $bindable(""),
   }: {
     exhibits: ExhibitMeta[];
@@ -108,6 +110,10 @@
     /** All-images wall click-through (Phase 3.2): open an object in ITS exhibit's editor. App owns the
      *  cross-exhibit navigation (openExhibit → object → editor); this only signals which object. */
     onopenobject: (slug: string, objId: string) => void;
+    /** Local display name (Archie-2bf1) — "" = anonymous/never chosen. The PERMANENT counterpart to the
+     *  lazy IdentityPrompt: always editable here, never gated on a trigger. Persisted as archie.displayName.v1. */
+    identity?: string;
+    onidentity: (name: string) => void;
     // --- Transient screen state (ADR-0024 #6). The search text is bindable so App remembers it within the
     // session (the library is one place; App-level state survives this component's remount, resets on load).
     // (The Exhibits/All-images lens is a PERSISTED view preference owned elsewhere — not bindable here.) ---
@@ -266,6 +272,15 @@
 
     <PropsDrawer open={rightsOpen} title="Library details" onclose={() => (rightsOpen = false)}>
       <DetailsEditor title={libTitle ?? ""} summary={librarySummary ?? ""} rights={rights} scope="library" ontitle={ontitle} onsummary={onsummary} onrights={onrights} />
+      <!-- Your name (Archie-2bf1) — the PERMANENT counterpart to the lazy IdentityPrompt: library-level,
+           not per-form, since it names YOU, not the library. Blank = anonymous (same archie.displayName.v1
+           semantics as skipping the lazy prompt, but an explicit choice here rather than a re-promptable gap). -->
+      <div class="identity-field">
+        <span class="field-head">Your name</span>
+        <input value={identity} placeholder="e.g. Micah Alex" autocomplete="off"
+          oninput={(e) => onidentity((e.currentTarget as HTMLInputElement).value)} aria-label="Your name" />
+        <p class="field-hint">Shown to collaborators next to notes you write, and marks your edits when copies merge. Leave blank to stay anonymous.</p>
+      </div>
     </PropsDrawer>
 
     <!-- Per-card exhibit pencil drawer (Archie-79be): the shared DetailsEditor targeted at the picked card by
@@ -475,6 +490,20 @@
     transition: border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
   }
   .librights:hover { border-color: var(--border-canvas-emphasis); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
+
+  /* Your-name field (Archie-2bf1) — DetailsEditor's field idiom, one level up (library scope, not a form). */
+  .identity-field { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border-paper); }
+  .identity-field .field-head {
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs, 0.7rem); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.18em; color: var(--ink-paper-muted, var(--ink-paper-secondary)); opacity: 0.6;
+  }
+  .identity-field input {
+    font-family: var(--font-body), serif; font-size: 0.85rem; color: var(--ink-paper-primary);
+    background: var(--surface-paper-card); border: 1px solid var(--border-paper);
+    border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); width: 100%; box-sizing: border-box;
+  }
+  .identity-field input:focus { outline: none; border-color: var(--accent); }
+  .identity-field .field-hint { margin: 0; font-family: var(--font-body), serif; font-size: 0.8rem; line-height: 1.5; color: var(--ink-paper-secondary); }
   .librights.set { border-color: var(--border-canvas-emphasis); }
   .librights .dot { color: var(--accent); font-size: 0.55rem; }
   h1 { font-family: var(--font-display); font-weight: 300; font-size: 3rem; line-height: 1.1; margin: var(--space-2) 0 var(--space-3); color: var(--ink-canvas-primary); text-shadow: var(--shadow-text-haze); }

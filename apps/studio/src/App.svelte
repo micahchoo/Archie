@@ -38,6 +38,7 @@
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
+  import IdentityPrompt from "./IdentityPrompt.svelte";
   import TutorialModal from "./TutorialModal.svelte";
   import HelpMenu from "./HelpMenu.svelte";
   import NoteEditor from "./NoteEditor.svelte";
@@ -64,6 +65,8 @@
   // deps stay OUT of the startup bundle — publishing is a deliberate action, never needed at boot.
   import { createReadingState } from "./reading-state.svelte.js";
   import { readingBadge, readingNumber, noteAnnouncement } from "./reading-index.js";
+  import { distinctEditors, hasMultipleEditors, editorLabel, attributionChip } from "./collab-attribution.js";
+  import MergeReview from "./MergeReview.svelte";
   import { roveIndex } from "./roving.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   // Persisted editor-chrome view preferences (Archie-c7ef): the filmstrip's collapsed state + the docked
@@ -106,6 +109,39 @@
   function firstAddSeen(slug: string): boolean { try { return localStorage.getItem(FIRST_ADD_KEY(slug)) === "1"; } catch { return false; } }
   function markFirstAddSeen(slug: string) { try { localStorage.setItem(FIRST_ADD_KEY(slug), "1"); } catch { /* private mode — cue simply re-shows, harmless */ } }
   const author = $derived(asClientId(identity || "anonymous"));
+
+  // Lazy identity prompt (Archie-2bf1, decision Archie-d71c): asked the first time a colleague's copy
+  // lands with OTHERS' notes in it, or the first share/publish action — never at boot, always skippable.
+  // `pendingAfterIdentity` lets a trigger resume its own action (e.g. opening Publish) once the prompt
+  // closes, whether the user named themselves or skipped — skip does NOT persist (identity stays null),
+  // so the same trigger asks again next time (the "gentle re-prompt" the component's header comments).
+  let identityPromptOpen = $state(false);
+  let pendingAfterIdentity: (() => void) | null = null;
+  function maybePromptIdentity(after: () => void) {
+    if (identity === null) { pendingAfterIdentity = after; identityPromptOpen = true; }
+    else after();
+  }
+  function resumePendingIdentity() {
+    identityPromptOpen = false;
+    const after = pendingAfterIdentity;
+    pendingAfterIdentity = null;
+    after?.();
+  }
+  function onIdentitySave(name: string) {
+    identity = name;
+    try { localStorage.setItem(IDENTITY_KEY, name); } catch { /* private mode — the choice just doesn't persist */ }
+    resumePendingIdentity();
+  }
+  function onIdentitySkip() {
+    resumePendingIdentity(); // identity stays null — nothing persisted, so the next trigger asks again
+  }
+  /** Permanent identity edit from Library Details (the other 2bf1 surface) — an explicit name/clear,
+   *  distinct from skip: clearing here writes "" (anonymous), same as IDENTITY_KEY's existing semantics,
+   *  so it will NOT re-prompt (a deliberate choice, not a dodge). */
+  function setIdentity(name: string) {
+    identity = name;
+    try { localStorage.setItem(IDENTITY_KEY, name); } catch { /* private mode — same as above */ }
+  }
   const srcOf = (t: unknown): string | undefined => (typeof t === "string" ? t : (t as { source?: string } | null)?.source);
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
@@ -350,6 +386,7 @@
     clearSel(); selectMode = false; // selection is exhibit-scoped (Phase 2) — the incoming exhibit starts clean
     void loadPendingNotes().then((m) => { pendingNotes = m[slug] ?? []; }); // this exhibit's coordinate-free imports awaiting a box
     rdg.resetForExhibit(); // fresh exhibit = everything visible, pen on base (fixes the cross-exhibit leak)
+    editorFilter = "all"; // the editor lens is exhibit-scoped too — a filter from the outgoing exhibit must not silently hide notes here
     firstAddCueSlug = null; pendingClear = null; clearedSlug = null; // drop any narrative-staging cue from the outgoing exhibit
     // The SESSION swap is now one ATOMIC transition (fix #3): exhibit-session.open flushes the OUTGOING
     // exhibit, resolves THIS exhibit's thumbs, then loads/seeds + installs session/annDir/storeReady in a
@@ -854,7 +891,14 @@
   // binding-chip update on its side (the flow stays binding-agnostic).
   async function openZipFile(file: File) {
     const r = await flows.openZip(file);
-    if (r) bnd.bindToFile(file.name);
+    if (r) {
+      bnd.bindToFile(file.name);
+      // Lazy identity trigger (Archie-2bf1): a colleague's copy just landed — if it carries notes
+      // stamped with a DIFFERENT editor and this browser has never chosen (or explicitly skipped) a
+      // name, ask now (the moment collaboration first becomes real), not at boot.
+      const others = Object.values(r.loaded.logs).some((log) => log.some((rec) => rec.lastEditor !== undefined && rec.lastEditor !== author));
+      if (others) maybePromptIdentity(() => {});
+    }
   }
 
   // --- add media to the current exhibit (Archie-56cf: one scoped chooser) ---
@@ -884,7 +928,11 @@
   // deselect Annotorious fires when setAnnotations replaces the set (which happens on every edit) —
   // otherwise the form would close after every change (P2-5). Cleared explicitly on delete/switch.
   let editing = $state<string | null>(null);
-  $effect(() => { if (selected !== null) editing = selected; });
+  // Per-note edit gate (Archie-90f1, merge contract C4: appendEdit/appendDelete refuse a plural-head
+  // note). Selecting a conflicted note still highlights it on the canvas (`selected`), but `editing`
+  // stays null so the dock shows the "needs review" card (below) instead of a form that would throw on
+  // its first write — resolve in MergeReview first, then it opens normally.
+  $effect(() => { if (selected !== null) editing = conflictedNoteIds.has(selected) ? null : selected; });
   // ADR-0011: creation is gesture-initiated, not a sticky tool mode. Selection is ambient (the canvas
   // resting state). `creating` is the transient armed state for a NEW NOTE — null = not drawing; a chosen
   // shape = "draw the next region, then disarm". Narrative camera framing (framingSectionId) shares the
@@ -1136,10 +1184,25 @@
   // Sections with plural heads (unresolved concurrent edits) — gates the NarrativeEditor's edit
   // affordances (merge contract C4). Empty set whenever the flag is off.
   const conflictedSectionIds = $derived<ReadonlySet<string>>(structure.conflictedLocalIds(currentSlug));
+  // NOTES with plural heads (Archie-90f1, merge contract C4/C5) — the annotation-level sibling of
+  // conflictedSectionIds above. Source-agnostic: session.conflicts() just reads the log, so this reflects
+  // whatever put plural heads there (a merged colleague's zip today; a live-sync transport tomorrow) — the
+  // status strip's summary, MergeReview, and the per-note edit gate below all read this ONE set.
+  const noteConflicts = $derived.by<string[]>(() => { void rev; return sess.session.conflicts(); });
+  const conflictedNoteIds = $derived<ReadonlySet<string>>(new Set(noteConflicts));
+  let mergeReviewOpen = $state(false);
   const allNotes = $derived.by(() => { void rev; return sess.session.notes().filter((r) => !hiddenByStructure.has(r.logicalId)); });
+  // Attribution chrome (Archie-90f1) is gated on ≥2 distinct editors across the WHOLE exhibit's live
+  // notes (not just this object) — a solo library/exhibit shows zero attribution chips or filter lens.
+  const showAttribution = $derived(hasMultipleEditors(allNotes));
+  // Filter-by-editor lens, composing with the Readings visibility filter below ("all" = no narrowing).
+  // Reset on exhibit switch (mirrors rdg.resetForExhibit()) so a filter picked in one exhibit doesn't
+  // silently hide notes in the next.
+  let editorFilter = $state<string>("all");
+  const editorOptions = $derived.by<string[]>(() => { void rev; return [...distinctEditors(allNotes)]; });
   const objNotes = $derived(allNotes.filter((r) => srcOf(r.target) === canvasId));
   const notes = $derived(
-    objNotes.filter((r) => rdg.noteVisible(r)), // visibility = the reading-state set (canvas + margin share it)
+    objNotes.filter((r) => rdg.noteVisible(r) && (editorFilter === "all" || String(r.lastEditor ?? "unknown") === editorFilter)),
   );
   const objAnnotations = $derived.by<W3CAnnotation[]>(() => { void rev; return sess.session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId && !hiddenByStructure.has(a.id)); });
   // O(1) marker lookup for the live styler: Annotorious calls styleOf per marker on every restyle
@@ -1785,6 +1848,8 @@
     onremoveexhibit={(slug) => void removeExhibitById(slug)}
     ontutorial={() => (tutorialOpen = true)}
     onshortcuts={() => (helpOpen = true)}
+    identity={identity ?? ""}
+    onidentity={setIdentity}
     bind:gallerySearch
   />
 {:else if view === "overview" && currentExhibit}
@@ -1868,7 +1933,7 @@
     <SafetyState sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
       bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
       hasRealWork={safetyHasRealWork} onflush={() => void bnd.saveProject()} />
-    <button class="publish-signal" onclick={() => void ensurePub().then((p) => p.openMenu())}>Publish & share…</button>
+    <button class="publish-signal" onclick={() => maybePromptIdentity(() => void ensurePub().then((p) => p.openMenu()))}>Publish & share…</button>
     <HelpMenu ontutorial={() => (tutorialOpen = true)} onshortcuts={() => (helpOpen = true)} />
   </header>
 
@@ -1926,7 +1991,7 @@
   <!-- Status strip (Archie-5e96 / Archie-b671) — ABSENT when idle. Between the rail and the canvas: the ONE
        slim bar the rail's non-nav cargo moved into — mode banners (framing / drawing) and import toasts,
        off the rail and off the canvas. role="status" so a screen reader announces the mode/toast. -->
-  {#if framingSectionId || creating || importStatus || importNote}
+  {#if framingSectionId || creating || importStatus || importNote || noteConflicts.length > 0}
     <div class="status-strip" role="status">
       {#if framingSectionId}
         <span class="ss-tag">Setting the view</span>
@@ -1944,6 +2009,14 @@
       {#if importNote}
         <span class="ss-note">{importNote}<button type="button" class="ss-note-x" onclick={() => (importNote = "")} aria-label="Dismiss">✕</button></span>
       {/if}
+      {#if noteConflicts.length > 0}
+        <!-- Non-blocking merge summary (Archie-90f1, decision Archie-d71c): "am I done? what happened?"
+             lives HERE now, not inside MergeReview — Review opens the scrimmed card-by-card surface. -->
+        <span class="ss-merge">
+          <span class="ss-msg">{noteConflicts.length} {noteConflicts.length === 1 ? "note needs" : "notes need"} a look.</span>
+          <button type="button" class="ss-cancel" onclick={() => (mergeReviewOpen = true)}>Review</button>
+        </span>
+      {/if}
     </div>
   {/if}
 
@@ -1952,6 +2025,7 @@
          docked inspector below — never forked. Declared at .body scope so both sites can {@render} it. -->
     {#snippet noteForm()}
       <NoteEditor sel={sel!} editing={editing!} {currentReadings} bind:commentEl
+        {showAttribution} you={author}
         {commentOf} {tagsOf} {timeOf}
         {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {setNoteScope} {requestCite} {citeIntoComment} {closeNote} {onDelete}
         {coLocatedIndex} coLocatedCount={coLocated.length} {cycleCoLocated} />
@@ -2099,6 +2173,18 @@
               <button type="button" class="readings-manage" onclick={() => (readingsOpen = true)}>{#if currentReadings.length === 0}<span aria-hidden="true">+</span> New reading{:else}Manage readings…{/if}</button>
             </section>
           {/if}
+          {#if showAttribution}
+            <!-- Filter-by-editor lens (Archie-90f1) — composes with the Readings visibility filter above
+                 (both narrow the same notes list); gated on ≥2 distinct editors so a solo exhibit never
+                 shows this control. -->
+            <label class="editor-filter">
+              <span class="field-head">Editor</span>
+              <select value={editorFilter} onchange={(e) => (editorFilter = (e.currentTarget as HTMLSelectElement).value)}>
+                <option value="all">All editors</option>
+                {#each editorOptions as e (e)}<option value={e}>{editorLabel(e, author)}</option>{/each}
+              </select>
+            </label>
+          {/if}
         <div class="notes-create">
           {#if current && !isAvCurrent}
             <!-- ADR-0011: drawing is armed only by creating a note. Choose a shape, draw the region on the
@@ -2135,7 +2221,7 @@
         <div class="notes-body">
           <!-- What's already on this item — the present-notes list (empty-state when none or all hidden). -->
           {#if notes.length === 0}
-            <p class="empty">{isAvCurrent ? "No notes on this recording yet. Mark a moment, then add a note to pin it." : objNotes.length > 0 ? "This media item has notes, but they’re hidden. Turn on a reading to show them." : "No notes on this media item yet. Pick Box or Outline above, then draw the region."}</p>
+            <p class="empty">{isAvCurrent ? "No notes on this recording yet. Mark a moment, then add a note to pin it." : objNotes.length > 0 ? (editorFilter !== "all" ? "No notes here from that editor. Try “All editors”." : "This media item has notes, but they’re hidden. Turn on a reading to show them.") : "No notes on this media item yet. Pick Box or Outline above, then draw the region."}</p>
           {/if}
           <!-- Notes-panel LISTBOX (Archie-f260 §4): the keyboard/AT surface standing in for the WebGL marks.
                ul=listbox, each note li=option with roving tabindex + aria-selected; arrows rove and select
@@ -2159,6 +2245,9 @@
                     <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern).
                          The circled reading number (Archie-f260 §3) leads the chip so the note's reading is identified without relying on the border colour. -->
                     {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}><span class="layer-num" aria-hidden="true">{readingBadge(r.reading, readingIds)}</span> {rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}><span class="layer-num" aria-hidden="true">{readingBadge("base", readingIds)}</span> General notes</span>{/if}
+                    <!-- Attribution chip (Archie-90f1) — "Meera · 2d ago", gated on ≥2 distinct editors. -->
+                    {#if showAttribution}<span class="attribution">{attributionChip(r, author)}</span>{/if}
+                    {#if conflictedNoteIds.has(r.logicalId)}<span class="conflict-badge" title="Two people edited this note — Review to resolve">Needs review</span>{/if}
                 </div>
               </li>
             {/each}
@@ -2280,6 +2369,14 @@
     <aside class="dock" style:--studio-dock-w={dockWidth != null ? `${dockWidth}px` : null} aria-label="Note editor">
       {#if sel && !drawArmed}
         {@render noteForm()}
+      {:else if selected !== null && conflictedNoteIds.has(selected)}
+        <!-- Per-note edit gate (Archie-90f1): this note has plural heads (merge contract C4) — edit
+             actions would throw, so the dock points at Review instead of a form. -->
+        <div class="dock-empty conflict">
+          <p class="de-lead">Two people edited this note.</p>
+          <p class="de-sub">Resolve it in Review before editing — the other version stays in history either way.</p>
+          <button type="button" class="de-review" onclick={() => (mergeReviewOpen = true)}>Review</button>
+        </div>
       {:else}
         <div class="dock-empty">
           <p class="de-lead">Select a note or a marker to edit it here.</p>
@@ -2345,6 +2442,11 @@
 {/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
 <ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
+<!-- GLOBAL: the lazy identity prompt (Archie-2bf1) — opened by maybePromptIdentity, never at boot. -->
+<IdentityPrompt open={identityPromptOpen} onsave={onIdentitySave} onskip={onIdentitySkip} />
+<!-- GLOBAL: MergeReview (Archie-90f1) — opened by the status strip's "Review", source-agnostic over
+     however sess.session got its plural heads (a merged zip today; live sync later). -->
+<MergeReview open={mergeReviewOpen} onclose={() => (mergeReviewOpen = false)} session={sess.session} conflicts={noteConflicts} onchange={bump} />
 <!-- GLOBAL: the onboarding tutorial (embeds docs/learn decks from public/learn). -->
 <TutorialModal open={tutorialOpen} onclose={() => (tutorialOpen = false)} />
 </div>
@@ -2437,6 +2539,7 @@
   .status-strip .ss-note { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; overflow-wrap: anywhere; }
   .status-strip .ss-note-x { flex-shrink: 0; cursor: pointer; background: none; border: none; color: var(--ink-canvas-muted); font-size: var(--text-ui-xs); padding: 0 var(--space-1); }
   .status-strip .ss-note-x:hover { color: var(--ink-canvas-primary); }
+  .status-strip .ss-merge { display: inline-flex; align-items: center; gap: var(--space-2); margin-left: auto; }
 
   /* Two labeled SCOPE zones (Archie-5e96): "Exhibit" over "This object", each with a sticky header that
      holds the boundary while the object zone scrolls. Full-bleed bands (negative margin cancels the aside
@@ -2627,6 +2730,13 @@
   .dock-empty { padding: var(--space-6) var(--space-4); text-align: center; color: var(--ink-paper-muted); }
   .dock-empty .de-lead { margin: 0; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
   .dock-empty .de-sub { margin: var(--space-2) 0 0; font-family: var(--font-body); font-size: var(--text-ui-sm); line-height: 1.5; }
+  /* Per-note edit gate card (Archie-90f1) — same quiet dock-empty tone, plus the one action out of it. */
+  .dock-empty.conflict .de-review {
+    margin-top: var(--space-4); cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em;
+    padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
+    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: box-shadow 160ms ease;
+  }
+  .dock-empty.conflict .de-review:hover { box-shadow: var(--shadow-lift-low); }
 
   /* Sidebar — the two-zone notebook (warm paper) */
   .sidebar {
@@ -2670,6 +2780,18 @@
   .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); border: 1px solid var(--border-paper); padding: 2px var(--space-2); border-radius: var(--radius-sm); }
   /* Reading number leading the layer chip (Archie-f260 §3) — mono, slightly brighter than the uppercase name. */
   .layer .layer-num { font-family: var(--font-mono); letter-spacing: 0; color: var(--ink-paper-primary); }
+  /* Attribution chip (Archie-90f1) — "Meera · 2d ago", quiet, sits among the other meta chips. */
+  .attribution { font-family: var(--font-ui); font-size: 0.65rem; letter-spacing: 0.04em; color: var(--ink-paper-muted); }
+  /* Per-note conflict badge — same quiet weight as a tag, semantic-error tint so it reads as "needs attention". */
+  .conflict-badge { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--semantic-error); }
+  /* Filter-by-editor lens (Archie-90f1) — DetailsEditor's field idiom, one row, sits under Readings. */
+  .editor-filter { display: flex; align-items: center; gap: var(--space-2); margin: var(--space-2) 0; }
+  .editor-filter .field-head { font-family: var(--font-ui); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
+  .editor-filter select {
+    font-family: var(--font-body); font-size: 0.85rem; color: var(--ink-paper-primary);
+    background: var(--surface-paper-card); border: 1px solid var(--border-paper); border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2);
+  }
   .hint { font-family: var(--font-body); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin: 0; }
   .csv-import { align-self: flex-start; background: none; border: none; cursor: pointer; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); transition: color 160ms ease; } /* 24px+ hit box */
   .csv-import:hover { color: var(--accent-2); }

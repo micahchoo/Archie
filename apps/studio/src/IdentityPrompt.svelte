@@ -1,8 +1,15 @@
 <script lang="ts">
   // Identity prompt (CONTEXT invention #6 + UX principle #2 "surface decisions at the moment they
-  // acquire meaning"). A local display name, asked at the FIRST "Import changes" — the instant your work
-  // is about to mix with a collaborator's — never at launch. Skip → Anonymous (gentle re-prompt later).
-  // The name becomes the merge DAG's lastEditor, shown to collaborators in the conflict cards. Browser-only.
+  // acquire meaning"). A local display name, asked lazily — the first time a colleague's copy lands with
+  // OTHERS' notes in it, or the first share/publish action — never at launch. Skip → Anonymous (gentle
+  // re-prompt later: identity stays unset, so the same trigger asks again next time). The name becomes
+  // the merge DAG's lastEditor, shown to collaborators in the conflict cards. Browser-only.
+  //
+  // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return route
+  // through the same single-scrim contract every other dialog uses (ShortcutsHelp, Publish, …) — skipping
+  // via Esc/scrim-click is the SAME "skip for now" as the button (no persisted choice, just closed).
+  import { scrimmed, trapFocus, modality } from "./modality.svelte.js";
+
   let {
     open = false,
     onsave,
@@ -18,8 +25,9 @@
 </script>
 
 {#if open}
-  <div class="scrim" role="presentation" onclick={onskip}></div>
-  <div class="dialog" role="dialog" aria-modal="true" aria-label="Your display name">
+  <div class="scrim" role="presentation" onclick={() => modality.dismiss()}></div>
+  <div class="dialog" role="dialog" aria-modal="true" aria-label="Your display name" tabindex="-1"
+    use:scrimmed={{ onClose: onskip }} onkeydown={trapFocus} onclick={(e) => e.stopPropagation()}>
     <header>
       <p class="eyebrow">Before you sync</p>
       <h2>What name should collaborators see?</h2>
@@ -30,7 +38,7 @@
       <input bind:value={name} placeholder="e.g. Micah Alex" autocomplete="off" autofocus />
       <div class="actions">
         <button type="button" class="ghost" onclick={onskip}>Skip for now</button>
-        <button type="submit" class="primary" disabled={name.trim() === ""}>Save name</button>
+        <button type="submit" class="primary" disabled={name.trim() === ""}>Use this name</button>
       </div>
     </form>
   </div>

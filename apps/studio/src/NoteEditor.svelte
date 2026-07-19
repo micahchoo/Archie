@@ -8,8 +8,9 @@
   // The textarea element is exposed via `bind:commentEl` so App's ⌘K cite-splice (citeIntoComment) and
   // its commit-on-close can read the live value / caret. The reader helpers (commentOf/tagsOf/timeOf)
   // and the mutating actions arrive as props — this component is presentation, the logic stays in App.
-  import type { AnnotationRecord, Reading, Emphasis } from "@render/core";
+  import type { AnnotationRecord, Reading, Emphasis, ClientId } from "@render/core";
   import { readingBadge } from "./reading-index.js";
+  import { attributionChip } from "./collab-attribution.js";
 
   interface Props {
     /** The selected record being edited (the WADM form is keyed to it). */
@@ -18,6 +19,10 @@
     editing: string;
     /** The exhibit's readings (the Reading <select> options). */
     currentReadings: Reading[];
+    /** Attribution chip (Archie-90f1) — "Meera · 2d ago" next to the form title. Gated by the caller on
+     *  ≥2 distinct editors (hasMultipleEditors); `you` resolves "your own edits read 'You'". */
+    showAttribution?: boolean;
+    you?: ClientId;
     /** The comment textarea element — bound out so App's cite-splice + commit-on-close reach it. */
     commentEl?: HTMLTextAreaElement | null;
     // Reader helpers (pure projections off the record) — injected so logic stays in App / core.
@@ -43,6 +48,7 @@
   }
   let {
     sel, editing, currentReadings, commentEl = $bindable(null),
+    showAttribution = false, you,
     commentOf, tagsOf, timeOf,
     applyForm, applyTime, setNoteReading, setNoteEmphasis, setNoteScope, requestCite, citeIntoComment, closeNote, onDelete,
     coLocatedIndex, coLocatedCount, cycleCoLocated,
@@ -71,7 +77,7 @@
 </script>
 
 <form class="wadm" onsubmit={(e) => { e.preventDefault(); }}>
-  <h3>Edit note</h3>
+  <h3>Edit note{#if showAttribution && you}<span class="attribution">{attributionChip(sel, you)}</span>{/if}</h3>
   {#if coLocatedCount > 1}
     <!-- Stacked notes: several notes share this spot (overlapping hitboxes — e.g. rival reading notes on one
          region) and can't be separated by clicking the canvas, so step between them here. -->
@@ -139,7 +145,9 @@
   .stack-nav { display: flex; align-items: center; gap: var(--space-2); margin-top: calc(-1 * var(--space-1)); font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); letter-spacing: 0.04em; color: var(--ink-paper-secondary); }
   .stack-nav button { display: inline-flex; align-items: center; justify-content: center; width: 1.4rem; height: 1.4rem; background: none; border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); cursor: pointer; color: var(--accent-2); font-size: 1rem; line-height: 1; }
   .stack-nav button:hover { border-color: var(--accent); color: var(--accent); }
-  .wadm h3 { margin: 0; font-family: var(--font-display); font-size: 1.3rem; font-weight: 400; letter-spacing: 0; color: var(--ink-paper-primary); }
+  .wadm h3 { margin: 0; display: flex; align-items: baseline; gap: var(--space-2); font-family: var(--font-display); font-size: 1.3rem; font-weight: 400; letter-spacing: 0; color: var(--ink-paper-primary); }
+  /* Attribution chip (Archie-90f1) — "Meera · 2d ago" beside the form title; quiet UI type, not display. */
+  .wadm h3 .attribution { font-family: var(--font-ui); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.04em; color: var(--ink-paper-muted); }
   .wadm label { display: flex; flex-direction: column; gap: var(--space-1); font-family: var(--font-ui); font-size: 0.7rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); }
   /* Comment field header: label + the ⌘K "Cite" link affordance (cord-blue link tone). */
   .wadm .field-head { display: flex; align-items: center; justify-content: space-between; }

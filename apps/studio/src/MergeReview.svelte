@@ -1,19 +1,24 @@
 <script lang="ts">
-  // Merge-review UI (CONTEXT collaboration UX — the #1 validation-priority invention). Drives the
-  // headless-tested AnnotationSession.importChanges/conflicts/resolve. Summary panel answers
-  // "am I done?" + "what happened?"; Review steps through conflict cards (a WADM-form variant
-  // showing both sides). BROWSER + HUMAN-GATED (§83): build the prototype, the user runs the
-  // comprehension test ("does a non-technical author grok the summary panel unprompted?").
+  // Merge-review UI (CONTEXT collaboration UX — the #1 validation-priority invention; decision
+  // Archie-d71c: MergeReview NON-BLOCKING). Drives the headless-tested AnnotationSession.conflicts/
+  // conflictHeads/resolve. The "am I done? what happened?" summary now lives in App's status strip
+  // (absent-when-idle) — this component is ONLY the "Review steps conflict cards at leisure" half: a
+  // scrimmed surface (the shared modality contract, same as ShortcutsHelp/Publish) opened from that
+  // strip's "Review" action, source-agnostic over however `conflicts` got populated (a merged zip
+  // import or a live-sync session — this component reads nothing but the session/conflicts it's given).
+  // KEEP-BOTH CUT: `keep()` calls session.resolve, which appends a keep-one-head merge node — the DAG
+  // preserves the loser in history (MERGE-CONTRACT.md C12); there is no field-level merge here.
   import type { AnnotationSession, LogicalId, AnnotationRecord, W3CBody } from "@render/core";
+  import { scrimmed, trapFocus, modality } from "./modality.svelte.js";
 
-  let { session, conflicts, synced, onchange }: {
+  let { open, onclose, session, conflicts, onchange }: {
+    open: boolean;
+    onclose: () => void;
     session: AnnotationSession;
     conflicts: string[];
-    synced: number;
     onchange: () => void;
   } = $props();
 
-  let reviewing = $state(false);
   const current = $derived(conflicts[0]);
   const heads = $derived<AnnotationRecord[]>(current ? session.conflictHeads(current as LogicalId) : []);
 
@@ -26,25 +31,33 @@
   function keep(head: AnnotationRecord) {
     // ADR-0007: tags (including legacy layers, folded into purpose:tagging bodies at load) ride on
     // `head.body`, so resolving with body+target preserves them — no separate `layers` arg needed.
-    session.resolve(current as LogicalId, { body: head.body, target: head.target });
+    // C14: omitted interpretive fields inherit from whichever head carries them — which would let
+    // "Keep this version" keep the LOSER's reading/emphasis, or pair the chosen target with the other
+    // head's geo anchor. Pass the CHOSEN head's fields explicitly; the undefined guards keep the
+    // inherit fallback for fields absent on both-or-this head (has-reading vs no-reading keeps it).
+    session.resolve(current as LogicalId, {
+      body: head.body,
+      target: head.target,
+      ...(head.motivation !== undefined ? { motivation: head.motivation } : {}),
+      ...(head.reading !== undefined ? { reading: head.reading } : {}),
+      ...(head.section !== undefined ? { section: head.section } : {}),
+      ...(head.emphasis !== undefined ? { emphasis: head.emphasis } : {}),
+      ...(head.wholeObject !== undefined ? { wholeObject: head.wholeObject } : {}),
+      ...(head.geo !== undefined ? { geo: head.geo } : {}),
+    });
     onchange();
-    if (conflicts.length === 0) reviewing = false; // parent recomputed; nothing left
+    if (conflicts.length === 0) onclose(); // deriveds read fresh after onchange(); close only when none remain
   }
 </script>
 
-{#if conflicts.length > 0}
-  {#if !reviewing}
-    <div class="summary" role="status">
-      <span class="msg"><strong>Added {synced} {synced === 1 ? "note" : "notes"} from a colleague's copy.</strong> {conflicts.length} {conflicts.length === 1 ? "needs" : "need"} your decision.</span>
-      <span class="actions">
-        <button class="primary" onclick={() => (reviewing = true)}>Review</button>
-        <button class="ghost" onclick={() => (synced = 0)}>Not now</button>
-      </span>
-    </div>
-  {:else if current}
-    <div class="card">
+{#if open}
+  <div class="scrim" role="presentation" onclick={() => modality.dismiss()}></div>
+  <div class="dialog" role="dialog" aria-modal="true" aria-label="Review conflicting notes" tabindex="-1"
+    use:scrimmed={{ onClose: onclose }} onkeydown={trapFocus} onclick={(e) => e.stopPropagation()}>
+    <button class="close" onclick={onclose} aria-label="Close">✕</button>
+    {#if current}
       <p class="eyebrow">Resolve · {conflicts.length} left</p>
-      <h3>Two people edited this note</h3>
+      <h2>Two people edited this note</h2>
       <p class="lead">Keep one version. The other stays in history.</p>
       {#each heads as h (h.rev)}
         <button class="side" onclick={() => keep(h)}>
@@ -52,43 +65,26 @@
           <span class="text">{bodyText(h)}</span>
         </button>
       {/each}
-    </div>
-  {/if}
+    {:else}
+      <p class="lead">Nothing left to review.</p>
+    {/if}
+  </div>
 {/if}
 
 <style>
-  /* Summary panel — one calm line answering "am I done?" on warm paper, soft lift, a quiet signal edge. */
-  .summary {
-    display: flex; align-items: center; gap: var(--space-4);
-    margin-bottom: var(--space-4); padding: var(--space-3) var(--space-4);
-    background: var(--surface-canvas-raised); border-radius: var(--radius-md);
-    border-left: 3px solid var(--accent-muted);
-    box-shadow: var(--shadow-lift-low);
+  /* Soft Static dialog — warm paper card floating over a hazy warm scrim (matches ShortcutsHelp/IdentityPrompt). */
+  .scrim { position: fixed; inset: 0; background: rgba(59, 49, 56, 0.55); z-index: 40; }
+  .dialog {
+    position: fixed; z-index: 41; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(34rem, calc(100vw - var(--space-8))); box-sizing: border-box;
+    background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-lift-mid); padding: var(--space-6);
+    display: flex; flex-direction: column; gap: var(--space-2);
   }
-  .msg { font-family: var(--font-body); font-size: 1rem; line-height: 1.5; color: var(--ink-paper-primary); }
-  .actions { margin-left: auto; display: flex; gap: var(--space-2); flex-shrink: 0; }
-  .actions button { font-size: 0.875rem; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); cursor: pointer; }
-  /* Primary CTA — the one rationed signal action: accent fill, paper ink, soft glow. */
-  .actions .primary {
-    font-family: var(--font-body); font-weight: 600; letter-spacing: 0.01em;
-    background: var(--accent); color: var(--ink-on-accent);
-    border: none; box-shadow: var(--shadow-signal-glow);
-    transition: background 0.2s ease, box-shadow 0.2s ease;
-  }
-  .actions .primary:hover { background: var(--accent-hover); box-shadow: var(--shadow-lift-mid); }
-  /* Later / secondary — quiet soft button: warm paper, soft border, ink text. */
-  .actions .ghost {
-    font-family: var(--font-body); font-weight: 500; letter-spacing: 0.01em;
-    background: var(--surface-canvas-raised); color: var(--ink-paper-secondary);
-    border: 1px solid var(--border-canvas);
-    transition: background 0.2s ease, color 0.2s ease;
-  }
-  .actions .ghost:hover { background: var(--surface-paper-hover); color: var(--ink-paper-primary); }
-
-  /* Conflict card — the WADM-form variant: both sides, pick one. Warm paper, rounded, soft lift. */
-  .card { margin-bottom: var(--space-4); padding: var(--space-4); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); display: flex; flex-direction: column; gap: var(--space-2); }
-  .card .eyebrow { margin: 0; }
-  .card h3 { margin: 0; font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.3; color: var(--ink-paper-primary); }
+  .close { position: absolute; top: var(--space-4); right: var(--space-4); cursor: pointer; background: none; border: none; font-size: 1rem; color: var(--ink-paper-muted); padding: 0 var(--space-1); border-radius: var(--radius-sm); transition: color 160ms ease; }
+  .close:hover { color: var(--ink-paper-primary); }
+  .eyebrow { margin: 0; }
+  h2 { margin: 0; font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.3; color: var(--ink-paper-primary); }
   .lead { margin: 0 0 var(--space-2); font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
   .side { text-align: left; cursor: pointer; padding: var(--space-3); border: 1px solid var(--border-canvas); border-left: 3px solid transparent; border-radius: var(--radius-sm); background: var(--surface-paper); display: flex; flex-direction: column; gap: var(--space-1); transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; }
   .side:hover { border-left-color: var(--accent); background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-low); }
