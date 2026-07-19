@@ -88,6 +88,27 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
 }
 .soft-btn:hover { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
 
+/* Clickable TEXT — the inline counterpart to .soft-btn, for a <button> or <a> sitting in a run of
+   prose that must read as actionable without becoming a box. Kept byte-identical to the studio's
+   copy (studio/src/atmosphere.css) — same tokens, same values; the two apps must not drift.
+
+   The affordance lives in the RESTING state, deliberately: hover-only cues are invisible to anyone
+   who hasn't already found the target, and touch/keyboard users never hover. Amber per tokens.css
+   ("golden amber (links, connectors)"); emerald stays rationed to primary actions. The underline
+   carries the signal independently of hue. */
+.text-link {
+  background: none; border: none; padding: 0; margin: 0;
+  font: inherit;
+  color: var(--accent-2);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+  transition: color 160ms ease, text-decoration-thickness 160ms ease;
+}
+.text-link:hover { color: var(--accent-2-hover); text-decoration-thickness: 2px; }
+.text-link:disabled { color: var(--ink-paper-muted); text-decoration: none; cursor: default; }
+
 /* ── Safety-net redefinitions: any 8-Bit Orbit utility classes still present render SOFT until the
      component pass converts them (no neon, no hard shadow, no square corners, no uppercase cascade). ── */
 .pixel-btn {

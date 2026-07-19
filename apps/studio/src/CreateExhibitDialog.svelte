@@ -769,7 +769,7 @@
               <span class="fs-name">{folderSummary.name}</span>
               <span class="fs-counts">{folderSummary.images} image{folderSummary.images === 1 ? "" : "s"} · {folderSummary.audio} audio · {folderSummary.video} video</span>
             </span>
-            <button type="button" class="fs-change" onclick={pickFolder}>Change folder…</button>
+            <button type="button" class="text-link fs-change" onclick={pickFolder}>Change folder…</button>
           </div>
           {#if folderSummary.total === 0}
             <p class="empty-folder-note">No images, audio, or video found in that folder.</p>
@@ -879,9 +879,9 @@
           {/if}
           <div class="picker-controls">
             <span class="pc-count">{checkedRowCount} of {iiifCollection.rows.length} selected</span>
-            <button type="button" class="pc-link" onclick={() => selectAllRows(true)}>Select all</button>
+            <button type="button" class="text-link pc-link" onclick={() => selectAllRows(true)}>Select all</button>
             <span class="pc-sep" aria-hidden="true">·</span>
-            <button type="button" class="pc-link" onclick={() => selectAllRows(false)}>Select none</button>
+            <button type="button" class="text-link pc-link" onclick={() => selectAllRows(false)}>Select none</button>
           </div>
           <ul class="picker-list" aria-label="Manifests to import as exhibits">
             {#each iiifCollection.rows as row (row.ref.id)}
@@ -1235,17 +1235,11 @@
     font-size: 0.75rem;
     color: var(--ink-canvas-secondary);
   }
+  /* Chrome comes from .text-link; only the placement + UI face are local. */
   .folder-summary .fs-change {
     margin-left: auto;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--accent-2);
     font-family: var(--font-ui);
     font-size: 0.78rem;
-  }
-  .folder-summary .fs-change:hover {
-    text-decoration: underline;
   }
   .empty-folder-note {
     font-family: var(--font-body);
@@ -1387,17 +1381,10 @@
     color: var(--ink-canvas-muted);
     margin-right: auto;
   }
+  /* Chrome comes from .text-link; only the UI face is local. */
   .picker-controls .pc-link {
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: var(--accent-2);
     font-family: var(--font-ui);
     font-size: 0.78rem;
-    padding: 0;
-  }
-  .picker-controls .pc-link:hover {
-    text-decoration: underline;
   }
   .picker-controls .pc-sep {
     color: var(--ink-canvas-muted);

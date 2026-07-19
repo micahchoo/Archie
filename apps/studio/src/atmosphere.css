@@ -42,6 +42,20 @@ input:focus, textarea:focus, select:focus {
 }
 input::placeholder, textarea::placeholder { color: var(--ink-canvas-muted); }
 
+/* ── Keyboard-only focus ring ──
+   Mirrors the viewer's rule (viewer/src/atmosphere.css) so both apps paint the same keyboard
+   signal. Studio previously styled focus for form fields ONLY, leaving 215 buttons on the
+   browser default — present, but undesigned and inconsistent with the viewer. :focus-visible so
+   a mouse click never paints a ring. */
+a:focus-visible, button:focus-visible, [tabindex]:focus-visible,
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+/* Form fields already carry the accent-muted glow on :focus; don't double the offset border. */
+input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offset: 1px; }
+
 /* ── Scrollbars — quiet warm ── */
 * { scrollbar-color: var(--mist-blue) transparent; scrollbar-width: thin; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -69,6 +83,30 @@ input::placeholder, textarea::placeholder { color: var(--ink-canvas-muted); }
   padding: 10px 20px; cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease;
 }
 .soft-btn:hover { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+
+/* Clickable TEXT — the inline counterpart to .soft-btn, for a <button> or <a> that sits in a run of
+   prose and must read as actionable without becoming a box.
+
+   The affordance is in the RESTING state, deliberately. The bug this replaces was hover-only cues
+   (`:hover { text-decoration: underline }` over inherited ink): you cannot hover what you don't know
+   is clickable, and touch/keyboard users never hover at all. `.csv-import` was the proof — it painted
+   its label in `--ink-paper-secondary`, the exact token the body copy beside it used.
+
+   Amber, not emerald: tokens.css calls --accent-2 "golden amber (links, connectors)" and the three
+   hand-rolled variants this replaces (.linkish, .pc-link, .fs-change) all used it. Emerald is
+   rationed to primary actions. The underline carries the signal for anyone who can't see the hue. */
+.text-link {
+  background: none; border: none; padding: 0; margin: 0;
+  font: inherit;                    /* match surrounding prose — colour+underline carry the signal */
+  color: var(--accent-2);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+  transition: color 160ms ease, text-decoration-thickness 160ms ease;
+}
+.text-link:hover { color: var(--accent-2-hover); text-decoration-thickness: 2px; }
+.text-link:disabled { color: var(--ink-paper-muted); text-decoration: none; cursor: default; }
 
 /* ── Safety-net redefinitions: any 8-Bit Orbit utility classes still present render SOFT until the
      component pass converts them (no neon, no hard shadow, no square corners, no uppercase cascade). ── */

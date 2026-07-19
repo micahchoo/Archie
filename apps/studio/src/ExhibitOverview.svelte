@@ -822,14 +822,19 @@
   .ns-start:hover { background: var(--accent-hover); }
   /* The ordered spine: numbered, scrollable, each row a quiet button that opens the item it's shown with. */
   .ns-spine { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); max-height: 22vh; overflow-y: auto; }
-  .ns-beat { display: flex; align-items: baseline; gap: var(--space-3); width: 100%; text-align: left; cursor: pointer; padding: var(--space-1) var(--space-2); background: transparent; border: none; border-radius: var(--radius-sm); color: inherit; transition: background 140ms ease; }
-  .ns-beat:hover { background: var(--surface-canvas-raised); }
+  /* The left-border channel is the RESTING cue (house pattern: MergeReview .side, CmdK .results button).
+     Without it the spine reads as a static numbered list — every row was transparent-on-transparent and
+     announced itself only on hover, which touch and keyboard users never trigger. */
+  .ns-beat { display: flex; align-items: baseline; gap: var(--space-3); width: 100%; text-align: left; cursor: pointer; padding: var(--space-1) var(--space-2); background: transparent; border: none; border-left: 2px solid var(--border-canvas); border-radius: var(--radius-sm); color: inherit; transition: background 140ms ease, border-left-color 140ms ease; }
+  .ns-beat:hover { background: var(--surface-canvas-raised); border-left-color: var(--accent-2); }
   .ns-beat .ns-n { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent-2); min-width: 1.25rem; }
   .ns-beat .ns-title { flex: 1; font-family: var(--font-display); font-size: 1.05rem; font-weight: 400; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ns-beat .ns-with { font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-canvas-muted); white-space: nowrap; }
   /* A row whose beat object was removed (requirement 5): inert, not a link — dimmed + no pointer/hover
      affordance, so it reads as "can't act on this" rather than a broken/silent click. */
-  .ns-beat-gone { cursor: default; opacity: 0.5; }
+  /* Inert rows drop the channel too — the cue must mean "actionable", so a dead row keeps none of it. */
+  .ns-beat-gone { cursor: default; opacity: 0.5; border-left-color: transparent; }
+  .ns-beat-gone:hover { background: transparent; border-left-color: transparent; }
   .ns-beat-gone:hover { background: transparent; }
   .ns-beat-gone .ns-with { font-style: italic; }
 

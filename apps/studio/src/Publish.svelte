@@ -456,8 +456,8 @@
             <button class="primary big" onclick={() => machine.continueWithGitHub()}>Continue with GitHub</button>
           {/if}
           <div class="quiet-links">
-            <button type="button" class="linkish" onclick={() => defaultOpenUrl("https://github.com/signup")}>No GitHub account? Make one free</button>
-            <button type="button" class="linkish" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
+            <button type="button" class="text-link linkish" onclick={() => defaultOpenUrl("https://github.com/signup")}>No GitHub account? Make one free</button>
+            <button type="button" class="text-link linkish" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
           </div>
         </div>
         <div class="actions"><button type="button" class="ghost" onclick={backToChooser}>← Back</button></div>
@@ -536,10 +536,10 @@
         </header>
         <div class="stack">
           <div class="quiet-links">
-            <button type="button" class="linkish" onclick={() => machine.publishElsewhere()}>Publish somewhere else…</button>
+            <button type="button" class="text-link linkish" onclick={() => machine.publishElsewhere()}>Publish somewhere else…</button>
           </div>
           {#if machine.session}
-            <p class="signed-in">Signed in as <span class="handle">@{machine.session.login}</span> · <button type="button" class="linkish inline" onclick={() => machine.signOut()}>Sign out</button></p>
+            <p class="signed-in">Signed in as <span class="handle">@{machine.session.login}</span> · <button type="button" class="text-link linkish inline" onclick={() => machine.signOut()}>Sign out</button></p>
           {/if}
         </div>
         <div class="actions">
@@ -572,7 +572,7 @@
           <label class="cb"><input type="checkbox" checked disabled /><span class="cb-text">Anyone with the link can see it <span class="cb-sub">— published sites are public for now</span></span></label>
           <label class="cb"><input type="checkbox" bind:checked={machine.staySignedIn} /><span class="cb-text">Stay signed in on this computer</span></label>
           {#if listRepos}
-            <button type="button" class="linkish" onclick={() => machine.openPicker()}>Update an existing site instead…</button>
+            <button type="button" class="text-link linkish" onclick={() => machine.openPicker()}>Update an existing site instead…</button>
           {/if}
         </div>
         <div class="actions">
@@ -634,7 +634,7 @@
           <h2>Your site is live.</h2>
         </header>
         <div class="stack">
-          <a class="hero-url" href={machine.result?.url} target="_blank" rel="noopener">{machine.result?.url}</a>
+          <a class="text-link hero-url" href={machine.result?.url} target="_blank" rel="noopener">{machine.result?.url}</a>
           <div class="hero-actions">
             <button class="primary" onclick={() => machine.openSite()}>Open my site</button>
             <button type="button" class="ghost" onclick={() => machine.copyLink()}>Copy link</button>
@@ -645,13 +645,13 @@
             <p class="note muted">We couldn't keep you signed in on this computer — you'll sign in again next time.</p>
           {/if}
           <div class="details">
-            <button type="button" class="linkish" onclick={() => (showDomain = !showDomain)}>{showDomain ? "▾" : "▸"} Use your own domain</button>
+            <button type="button" class="text-link linkish" onclick={() => (showDomain = !showDomain)}>{showDomain ? "▾" : "▸"} Use your own domain</button>
             {#if showDomain}
               <p class="note">Want <code>library.yoursite.com</code> instead? GitHub Pages lets you point your own domain at this site — you add the domain in the repository's Pages settings and a matching record at your domain host. <a href={CUSTOM_DOMAIN_DOCS} target="_blank" rel="noopener">GitHub's guide walks through it.</a></p>
             {/if}
           </div>
           <div class="details">
-            <button type="button" class="linkish" onclick={() => (showDetails = !showDetails)}>{showDetails ? "▾" : "▸"} Details</button>
+            <button type="button" class="text-link linkish" onclick={() => (showDetails = !showDetails)}>{showDetails ? "▾" : "▸"} Details</button>
             {#if showDetails}
               <p class="note"><a href={commitUrl} target="_blank" rel="noopener">Commit {machine.result?.commitSha.slice(0, 7)}</a></p>
             {/if}
@@ -712,7 +712,7 @@
           <button class="primary" onclick={backToChooser}>Share with a link</button>
           <p class="note">Want a permanent site you own? Open Archie on your desktop to publish straight to GitHub Pages.</p>
           <div class="quiet-links">
-            <button type="button" class="linkish" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
+            <button type="button" class="text-link linkish" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
           </div>
         </div>
         <div class="actions"><button type="button" class="ghost" onclick={backToChooser}>← Back</button></div>
@@ -895,11 +895,9 @@
   /* Vertical stack used by the wizard states (intro / device-code / name-site / success / web). */
   .stack { display: flex; flex-direction: column; gap: var(--space-3); }
   .quiet-links { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
-  .linkish {
-    background: none; border: none; padding: 0; cursor: pointer; text-align: left;
-    font-family: var(--font-body); font-size: 0.875rem; color: var(--accent-2);
-  }
-  .linkish:hover { text-decoration: underline; }
+  /* Chrome comes from .text-link (this class was one of three hand-rolled copies of that recipe);
+     only the body font + left alignment are local. */
+  .linkish { text-align: left; font-family: var(--font-body); font-size: 0.875rem; }
   .linkish.inline { display: inline; font-size: inherit; }
 
   /* return-visit "Signed in as @handle · Sign out" — a quiet footer under the confirm. */
@@ -962,8 +960,9 @@
   .checklist li.pending .tick { color: var(--ink-paper-muted); }
 
   /* Success hero — the live URL is the focal element. */
-  .hero-url { display: block; font-family: var(--font-mono); font-size: 1.15rem; color: var(--accent-2); word-break: break-all; text-decoration: none; }
-  .hero-url:hover { text-decoration: underline; }
+  /* Chrome comes from .text-link; the mono face + wrapping are local. It no longer suppresses its
+     underline at rest — this is the published URL, the one thing on the panel meant to be clicked. */
+  .hero-url { display: block; font-family: var(--font-mono); font-size: 1.15rem; word-break: break-all; }
   .hero-actions { display: flex; gap: var(--space-3); }
   .details { margin-top: var(--space-1); }
 

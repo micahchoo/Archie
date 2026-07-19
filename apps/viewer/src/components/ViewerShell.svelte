@@ -235,9 +235,9 @@
               <!-- R2: in a multi-object exhibit viewing an object, the Exhibit crumb returns to the
                    OVERVIEW (its natural start). Selection is un-routed, so reset via the lifted callback
                    rather than an href that points at the current hash (which would no-op). -->
-              <button type="button" class="crumb-link" onclick={() => carousel?.toOverview?.()}>{c.label}</button>
+              <button type="button" class="text-link crumb-link" onclick={() => carousel?.toOverview?.()}>{c.label}</button>
             {:else}
-              <a href={c.hash}>{c.label}</a>
+              <a class="text-link" href={c.hash}>{c.label}</a>
             {/if}
           {/each}
         </nav>
@@ -246,7 +246,7 @@
              lived inside the collapsible sidebar — collapse it and you were stranded on an object (#5). The
              bar now guarantees it: in an object → "Back to Exhibit"; at the overview → the exhibit's name. -->
         {#if carousel?.toOverview}
-          <button type="button" class="crumb-link" onclick={() => carousel?.toOverview?.()}>← Back to Exhibit</button>
+          <button type="button" class="text-link crumb-link" onclick={() => carousel?.toOverview?.()}>← Back to Exhibit</button>
         {:else}
           <span class="bar-title">{crumbs[1]?.label}</span>
         {/if}
@@ -262,7 +262,7 @@
       {/if}
     </div>
     <div class="zone right">
-      <button class="open-another" onclick={openAnother}>Open another library</button>
+      <button class="text-link open-another" onclick={openAnother}>Open another library</button>
     </div>
   </div>
 {/if}
@@ -333,16 +333,11 @@
   /* Breadcrumb — understated; the way back up (CONTEXT §125). Connector-blue hover (the secondary
      signal for links/up-nav) keeps the rationed orange free for the one focal action. */
   .crumbs { display: flex; align-items: center; gap: var(--space-2); }
-  .crumbs a { color: var(--ink-canvas-secondary); text-decoration: none; }
-  .crumbs a:hover { color: var(--accent-2); }
   .crumbs .sep { color: var(--ink-canvas-muted); }
-  /* The Exhibit crumb in a multi-object object view is a button (resets selection → overview), but reads
-     identically to the anchor crumbs — same ink, same connector-blue hover. */
-  .crumbs .crumb-link {
-    background: none; border: none; padding: 0; cursor: pointer; font: inherit;
-    color: var(--ink-canvas-secondary);
-  }
-  .crumbs .crumb-link:hover { color: var(--accent-2); }
+  /* The Exhibit crumb in a multi-object object view is a button (resets selection → overview); it and the
+     anchor crumbs both carry .text-link so they read identically to each other AND differ from the inert
+     text beside them. They used to paint --ink-canvas-secondary — the same token as .bar-title below,
+     which is explicitly non-interactive and occupies the SAME slot in this bar. */
   /* Single-exhibit orientation label where the breadcrumb would be — quiet, non-interactive (the name,
      not a link, since there's nothing above to return to). */
   .bar-title { color: var(--ink-canvas-secondary); font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); }
@@ -388,20 +383,28 @@
     border-radius: var(--radius-sm);
     background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low);
   }
-    .open-another {
-    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); cursor: pointer;
+  /* Chrome + resting underline from .text-link. It kept the uppercase/0.14em eyebrow recipe — the same
+     one the INERT "GALLERY · N EXHIBITS" label uses — painted in --ink-canvas-secondary, so the only
+     action in this corner of the bar read as a caption. The tracking stays; the link ink is what tells
+     you it does something. */
+  .open-another {
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs);
     text-transform: uppercase; letter-spacing: 0.14em;
-    background: none; border: none; padding: var(--space-2) 0; color: var(--ink-canvas-secondary); /* 24px+ hit box (Fitts) — transparent, no visual shift */
+    padding: var(--space-2) 0; /* 24px+ hit box (Fitts) */
   }
-  .open-another:hover { color: var(--accent-2); }
 
   /* Over the gallery wall (light) the bar's canvas inks fail contrast (axe: 2.1) — swap the quiet
      chrome to paper inks; the bar floats over BOTH surface families, so ink follows the backdrop. */
+  /* The LINKS keep link ink here (the paper-tuned amber), or this rule would out-specify .text-link and
+     silently undo the affordance on the gallery wall. Only the inert .bar-title takes the quiet ink. */
   .topbar.on-paper .crumbs a,
   .topbar.on-paper .crumbs .crumb-link,
+  .topbar.on-paper .open-another { color: var(--accent-2-paper); }
+  .topbar.on-paper .crumbs a:hover,
+  .topbar.on-paper .crumbs .crumb-link:hover,
+  .topbar.on-paper .open-another:hover { color: var(--accent-2-paper-hover); }
   .topbar.on-paper .bar-title { color: var(--ink-paper-secondary); }
   .topbar.on-paper .crumbs .sep { color: var(--ink-paper-muted); }
-  .topbar.on-paper .open-another { color: var(--ink-paper-secondary); }
 
   .state {
     display: flex; align-items: center; justify-content: center; gap: 10px; height: 100vh;

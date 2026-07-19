@@ -81,11 +81,11 @@
 {:else if safety === "saving"}
   <span class="safety-state saving" role="status">Saving…</span>
 {:else if safety === "failed"}
-  <button type="button" class="safety-state failed" onclick={act} title={bindingError ?? undefined}>
+  <button type="button" class="text-link safety-state failed" onclick={act} title={bindingError ?? undefined}>
     <span aria-hidden="true">⚠</span> Retry save
   </button>
 {:else}
-  <button type="button" class="safety-state action-needed" onclick={act}>
+  <button type="button" class="text-link safety-state action-needed" onclick={act}>
     {actionLabel}
   </button>
 {/if}
@@ -99,11 +99,10 @@
   .safety-state.saved { color: var(--ink-canvas-secondary); font-weight: 400; transition: color 200ms ease; }
   .safety-state.saved.affirm { color: var(--semantic-success); }
   .safety-state.saving { color: var(--ink-canvas-secondary); font-weight: 400; }
-  button.safety-state {
-    border: none; background: none; padding: 0; cursor: pointer; font: inherit;
-    color: inherit; letter-spacing: inherit;
-  }
+  /* Chrome + the resting underline come from .text-link. The COLOUR is deliberately kept local and
+     semantic (rust = failed, ochre = needs action) rather than the primitive's amber — the state is
+     the message here. Local specificity wins, so .text-link supplies only the underline. */
+  button.safety-state { letter-spacing: inherit; }
   button.safety-state.failed { color: var(--semantic-error); }
   button.safety-state.action-needed { color: var(--semantic-warning); }
-  button.safety-state:hover { text-decoration: underline; }
 </style>
