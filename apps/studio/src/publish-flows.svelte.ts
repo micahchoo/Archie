@@ -51,9 +51,11 @@ export interface PublishDeps {
 const ZIP_WARN_BYTES = 250 * 1024 * 1024; // ~250 MB
 
 export function createPublishFlows(deps: PublishDeps) {
-  const s = $state<{ publishOpen: boolean; dialogOpen: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }>({
-    publishOpen: false, // the GitHub publish dialog
-    dialogOpen: false, // the unified Publish & Share menu
+  // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
+  // the old `dialogOpen`/`publishOpen` pair (one per dialog, toggled in lockstep by the chooser's
+  // "Publish to the web" card) is gone now that there's only one surface to show or hide.
+  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }>({
+    open: false, // the merged Publish & Share surface
     brokenLinks: [], // intra-Library links that degrade to plain text on publish (dialog advisory)
     incompleteCanvases: [], // Image objects publishing with no width/height (IIIF Pres 3 §5.3; dialog advisory)
   });
@@ -190,13 +192,11 @@ export function createPublishFlows(deps: PublishDeps) {
 
   return {
     // — reactive chrome state —
-    get publishOpen(): boolean { return s.publishOpen; },
-    get dialogOpen(): boolean { return s.dialogOpen; },
+    get open(): boolean { return s.open; },
     get brokenLinks(): BrokenLink[] { return s.brokenLinks; },
     get incompleteCanvases(): IncompleteCanvas[] { return s.incompleteCanvases; },
-    openDialog() { s.dialogOpen = true; },
-    closeDialog() { s.dialogOpen = false; },
-    closePublish() { s.publishOpen = false; },
+    openMenu() { s.open = true; },
+    close() { s.open = false; },
 
     /** Write the whole published tree into a bound folder's Filesystem (FSA or Tauri — the git /
      *  GH-Pages on-ramp; also the binding store's folder sink). */
@@ -232,18 +232,30 @@ export function createPublishFlows(deps: PublishDeps) {
       s.incompleteCanvases = incompleteCanvases;
       return fs;
     },
-    /** Open the GitHub dialog immediately (no invisible gap), then project ONCE: caches the tree and
-     *  surfaces broken intra-Library links so the author sees them before publishing. */
-    async openPublish() {
-      if (!(await publishSizeOk())) return; // size guard before the network push (its confirm IS the feedback)
+    /** Entering the GitHub wizard step from the destination chooser (Archie-1921 — one merged surface
+     *  now, so this no longer flips its own open flag). Returns false (stay on the chooser) if the
+     *  size-guard confirm was declined — the confirm dialog IS the feedback. Returns true as soon as that
+     *  guard passes, WITHOUT waiting for the site projection: the caller flips to the wizard screen right
+     *  away (no invisible gap staring at the chooser while a large library tiles/projects), and the
+     *  projection keeps running in the background, filling in `brokenLinks`/`incompleteCanvases`
+     *  reactively once it lands — same timing the old two-dialog code had (PublishDialog closed and the
+     *  GitHub dialog opened immediately; only the advisory warnings arrived a moment later). */
+    async openPublish(): Promise<boolean> {
+      if (!(await publishSizeOk())) return false; // size guard before the network push
       s.brokenLinks = [];
       s.incompleteCanvases = [];
       cachedSiteFs = null;
-      s.publishOpen = true;
-      const { fs, brokenLinks: bl, incompleteCanvases: ic } = await projectSite(false);
-      cachedSiteFs = fs;
-      s.brokenLinks = bl;
-      s.incompleteCanvases = ic;
+      void projectSite(false).then(({ fs, brokenLinks: bl, incompleteCanvases: ic }) => {
+        cachedSiteFs = fs;
+        s.brokenLinks = bl;
+        s.incompleteCanvases = ic;
+      }).catch((e) => {
+        // A projection failure here degrades to "no cached tree yet" — collectSiteFiles() re-projects on
+        // demand at actual publish time, so this is a lost warm cache, not a lost publish. Log rather
+        // than swallow silently (this is now a fire-and-forget promise with no caller to report to).
+        console.error("Publish: background site projection failed", e);
+      });
+      return true;
     },
     /** Local flow: pick a folder + write the published tree; returns the folder name (null = cancelled). */
     async localPublishFolder(): Promise<string | null> {

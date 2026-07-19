@@ -25,6 +25,7 @@ import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
 export type PublishState =
   | "intro-desktop"
   | "device-code"
+  | "auth-expired"
   | "auth-cancelled"
   | "auth-config-error"
   | "update-confirm"
@@ -37,6 +38,18 @@ export type PublishState =
   | "error"
   | "advanced"
   | "web-intro";
+
+/** States that represent real progress a close (Esc / scrim-click / the surface's own destination-chooser
+ *  "‹ Back") must NOT discard (Archie-7d9b): a pending device code, an in-flight publish, or one that
+ *  finished/failed while the surface was closed. `open()` resumes into these rather than recomputing the
+ *  entry screen; the merged Publish surface reads this set too, to decide whether reopening should skip
+ *  straight past the destination chooser into the wizard. */
+const RESUMABLE_STATES: ReadonlySet<PublishState> = new Set<PublishState>([
+  "device-code", "auth-expired", "publishing", "success", "manual-pages", "error",
+]);
+export function isResumableState(state: PublishState): boolean {
+  return RESUMABLE_STATES.has(state);
+}
 
 /** Publish intent: `new` creates a fresh site (and must NOT clobber an existing repo — so it's pre-flight
  *  checked); `update` deliberately re-publishes into a repo the author already picked. */
@@ -223,14 +236,33 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     s.state = "name-site";
   }
 
-  /** (Re)compute the opening state — call when the dialog opens. */
+  /** (Re)compute the opening state — call when the dialog opens. Session-resumable (Archie-7d9b): if
+   *  we're sitting on real progress (a pending device code, an in-flight publish, or one that finished or
+   *  failed while the surface was closed), stay there instead of recomputing the entry screen — a close
+   *  mid-auth is a clean, non-destructive cancel, not a reset. An expired device code is the one resumable
+   *  state that itself transitions, to the plain start-again sentinel. */
   function open(): void {
+    if (isResumableState(s.state)) {
+      if (s.state === "device-code" && s.code && now() >= s.expiresAt) s.state = "auth-expired";
+      if (deps.initialSession) s.session = deps.initialSession;
+      return;
+    }
     s.error = null;
     s.progress = null;
     s.result = null;
     s.recheckPending = false;
     s.recheckSaysOff = false;
     if (deps.initialSession) s.session = deps.initialSession;
+    s.state = computeInitial();
+    if (s.state === "name-site" || s.state === "update-confirm") seedTarget();
+  }
+
+  /** Acknowledge a finished attempt (success / manual-pages / error) and return to the normal entry screen
+   *  for the next visit — called when the author explicitly dismisses the result (Done / Cancel on a
+   *  terminal screen), as opposed to an Esc/close mid-flight, which must never clear anything. */
+  function dismissResult(): void {
+    s.result = null;
+    s.error = null;
     s.state = computeInitial();
     if (s.state === "name-site" || s.state === "update-confirm") seedTarget();
   }
@@ -252,7 +284,14 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     } catch (e) {
       const err = asDeployError(e);
       if (err.kind === "denied") s.state = "auth-cancelled";
-      else if (err.kind === "expired") { void continueWithGitHub(); } // the code died — quietly fetch a fresh one
+      // The code died — show the plain start-again sentinel (Archie-7d9b), never silently re-mint. A
+      // silent restart here (the old behavior) swaps the visible code out from under an author who's
+      // still looking at it, AND — worse — turns a closed surface into a background re-mint loop: since
+      // this poll runs independently of the component's lifecycle, an abandoned auth attempt would keep
+      // calling deps.signIn() again every ~15min for as long as the app stays open (an unbounded
+      // gh_device_start rate-limit risk), and because each re-mint refreshes `expiresAt`, open()'s own
+      // client-side expiry check could never fire — the code always LOOKED fresh, never actually was.
+      else if (err.kind === "expired") { s.code = null; s.state = "auth-expired"; }
       else if (err.kind === "device-flow-disabled") { s.error = err; s.state = "auth-config-error"; }
       else { s.error = err; s.state = "error"; }
     }
@@ -550,6 +589,7 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     publishElsewhere,
     signOut: doSignOut,
     recheck,
+    dismissResult,
   };
 }
 
