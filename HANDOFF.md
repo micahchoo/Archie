@@ -1,6 +1,14 @@
 # HANDOFF — Archie
 
-## IN FLIGHT — IIIF Collection ingest (2026-07-19, wayfinder map `Archie-b290`) — RESUMED ~16:50
+## COMPLETE — IIIF Collection ingest (2026-07-19, wayfinder map `Archie-b290`) — 10/10 CLOSED, MAP CLOSED ~18:35
+
+Verify ticket Archie-9422 passed ALL browser checks (round-trip e2e, cancel/partial paths,
+real remote collection, 500-exhibit smoke: NO chokepoints). Final gates: studio 646/646,
+tsc 0, svelte-check 0/0, viewer astro 0/0, e2e 5/5. Committed through `7ed7345`;
+LATER WORK UNCOMMITTED (cbf6 review fixes, bulk delete + exhibit-teardown.ts seam,
+gallery-data search, plan amendment) — pending user ask. Remaining fog lives on the
+closed map: import-batch durability across reload; bulk-edit growth; viewer-side
+published-gallery provenance search. Stale detail below kept for archaeology:
 
 Feature: pasting a IIIF Collection URL unpacks into N exhibits (ADR-0025). Session runs
 implementer+reviewer subagent waves (spend-limit outage 09:41–16:48; recovered). As of

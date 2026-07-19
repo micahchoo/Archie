@@ -71,6 +71,7 @@
     onpatchexhibit,
     onremoveexhibit,
     onbulkrights,
+    onbulkdelete,
     ontutorial,
     onshortcuts,
     onopenobject,
@@ -95,7 +96,8 @@
      *  `previewcollection` = ingest-flows' fetchCollectionPreview (the ONE fetch head); `hydratemanifest` =
      *  its fetchManifestPlan (background label hydration); `oncreatefromcollection` runs the batch (App →
      *  newExhibitsFromCollection) and resolves the outcome the dialog turns into progress + summary;
-     *  `onundoimport` removes the batch's created slugs in one act (App → lib.removeExhibits). */
+     *  `onundoimport` removes the batch's created slugs in one act (App → removeExhibitsById, the full
+     *  per-slug teardown — an imported exhibit may be annotated before Undo is clicked). */
     previewcollection: (url: string, signal?: AbortSignal) => Promise<CollectionPreview>;
     hydratemanifest: (url: string, opts: { signal?: AbortSignal; onError?: (msg: string) => void }) => Promise<ManifestPlan | null>;
     oncreatefromcollection: (
@@ -137,6 +139,12 @@
     /** Bulk rights edit (Phase 2, §9): apply ONE license/credit patch to the selected exhibits at once.
      *  Only the gated fields are in the patch (see bulk-rights.ts) — App threads it to lib.patchExhibits. */
     onbulkrights: (slugs: string[], patch: RightsFieldsPatch) => void;
+    /** Bulk delete (Phase 2, §9): remove the selected exhibits from the library in ONE act (App →
+     *  removeExhibitsById — the full per-slug session + on-disk-log teardown, NOT meta-only). Same shape as
+     *  onundoimport, but a distinct intent — the selection-bar's destructive sibling of onbulkrights, not the
+     *  import summary's Undo — so it gets its own prop rather than overloading either. Selection only ever holds
+     *  non-template slugs (selectableSlugs), so this can never delete a template. */
+    onbulkdelete: (slugs: string[]) => void;
     /** Help menu actions (threaded from App): open the onboarding tutorial / the shortcuts cheat-sheet. */
     ontutorial: () => void;
     onshortcuts: () => void;
@@ -260,6 +268,30 @@
   function applyBulkRights(patch: RightsFieldsPatch) {
     onbulkrights([...selection], patch);
   }
+
+  // Bulk delete (Phase 2, §9 / Archie-ddaa): the destructive sibling of Rights…, reusing the per-exhibit
+  // DetailsEditor two-step inline-morph confirm (3f4c) verbatim rather than a new surface — first click ARMS,
+  // the sel-btn morphs in place into a vermillion count-naming guard, the SECOND commits; blur cancels the arm
+  // (so clicking a card to change the selection disarms it). removeExhibits (onbulkdelete → App →
+  // lib.removeExhibits) is ONE act; the reconcileSelection $effect above then prunes the now-gone slugs, so the
+  // selection empties itself — no manual clear. Select-mode is left ON (as bulk-rights leaves it), the mode is
+  // orthogonal to the selection: after a delete the user is still curating and can select-and-delete again.
+  let deleteConfirming = $state(false);
+  function onBulkDeleteClick() {
+    if (!deleteConfirming) { deleteConfirming = true; return; }
+    deleteConfirming = false;
+    onbulkdelete([...selection]);
+  }
+  // Disarm the guard on ANY selection change (Archie-ddaa FIX 2). Blur alone is not enough: Esc clears the
+  // selection without moving focus, and on WebKit (the Tauri desktop target) a click may not focus the button,
+  // so the blur-cancel never fires — after re-selecting, a single click could then commit UNARMED. The arm is
+  // selection-scoped, so keying the reset on `selection` covers every write path — card toggle, select-all,
+  // Clear/Esc, and the reconcile-prune — in one place. Arming doesn't touch `selection`, so it stays armed
+  // until the selection actually moves or the second click commits.
+  $effect(() => {
+    selection;
+    deleteConfirming = false;
+  });
 
   function applyCardSelect(slug: string, mods: ClickMods) {
     const r = applyClick({ selection, anchor: selAnchor }, slug, mods, selectable);
@@ -605,6 +637,15 @@
         <button type="button" class="sel-btn primary" onclick={() => (bulkRightsOpen = true)} disabled={selectedCount === 0}>
           Rights…
         </button>
+        <!-- Bulk delete (Phase 2, §9 / Archie-ddaa): the destructive sibling, sat at the trailing edge. Reuses the
+             DetailsEditor two-step morph (see onBulkDeleteClick) — the label names the count on the armed guard,
+             echoing the per-exhibit "…this can't be undone" vocabulary. Blur disarms; disabled with no selection. -->
+        <button type="button" class="sel-btn danger" class:confirming={deleteConfirming} onclick={onBulkDeleteClick}
+          onblur={() => (deleteConfirming = false)} disabled={selectedCount === 0}>
+          {deleteConfirming
+            ? `Delete ${selectedCount} ${selectedCount === 1 ? "exhibit" : "exhibits"}? — can’t be undone`
+            : "Delete…"}
+        </button>
       </span>
     </div>
   {/if}
@@ -824,6 +865,11 @@
   /* The bulk-action button in the trailing .sel-actions slot reads as the primary act on the selection. */
   .sel-btn.primary { color: var(--ink-on-accent); background: var(--accent); border-color: var(--accent); font-weight: 600; }
   .sel-btn.primary:hover:not(:disabled) { color: var(--ink-on-accent); background: var(--accent-hover); border-color: var(--accent-hover); }
+  /* Destructive bulk action (Archie-ddaa): a quiet error-tinted button that warms into a semantic-error fill on
+     hover and on the armed second-click guard — the toolbar echo of DetailsEditor's per-exhibit .remove (3f4c). */
+  .sel-btn.danger { color: var(--semantic-error); }
+  .sel-btn.danger:hover:not(:disabled) { color: var(--ink-on-accent); background: var(--semantic-error); border-color: transparent; }
+  .sel-btn.danger.confirming { color: var(--ink-on-accent); background: var(--semantic-error); border-color: transparent; font-weight: 600; box-shadow: var(--shadow-lift-mid); }
   /* Reserved slot for bulk actions (Archie-ddaa / Archie-d2cc) — pushes future buttons to the trailing edge. */
   .sel-actions { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-2); }
 

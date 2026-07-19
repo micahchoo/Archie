@@ -114,7 +114,7 @@ describe("quota preflight refuses cleanly (Issue 26 / ASSETQ Q3)", () => {
     const { ctx, exhibits, notes } = makeCtx();
     const flows = makeFlows(ctx);
     stubEstimate(1000, 999); // ~1 byte free; the import is 3 bytes
-    const files = { 0: av(), length: 1, item: (i: number) => av() } as unknown as FileList;
+    const files = { 0: av(), length: 1, item: () => av() } as unknown as FileList;
     await flows.addFiles(files);
     expect(saveAssetFile).not.toHaveBeenCalled(); // zero writes attempted
     expect(exhibits[0]!.objects.length).toBe(0); // zero partial references

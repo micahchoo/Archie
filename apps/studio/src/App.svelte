@@ -47,6 +47,7 @@
   // ladder (topmost floater → the one scrimmed surface) routes through `modality.handleEsc()` here.
   import { modality } from "./modality.svelte";
   import { applyClick, selectAll as selectAllIds, applyMarquee, type ClickMods } from "./overview-selection.js";
+  import { teardownAndRemoveExhibits } from "./exhibit-teardown.js";
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
@@ -491,25 +492,29 @@
     // (unmounted) editor cursor valid: if it pointed at the removed object, advance it to a survivor.
     if (objId === currentObjectId) { const surv = OBJECTS.find((o) => o.id !== objId); if (surv) switchObject(surv.id); }
   }
-  // Remove an exhibit by slug — meta + on-disk annotation log. Safe for a NON-loaded exhibit (library-grid
-  // pencil CRUD, Archie-79be): session/asset teardown runs ONLY when the target is the loaded exhibit, so
-  // deleting another exhibit can't tear down the one currently in the session.
+  // Remove exhibits by slug — the ONE teardown definition (Archie-ddaa), used by singular pencil delete,
+  // bulk delete, and undo-import. NOT meta-only: each slug's session + on-disk structure/annotation logs are
+  // torn down BEFORE the library.json entries go, or a recreated same-slug exhibit resurrects the orphaned
+  // logs. Safe for NON-loaded exhibits (Archie-79be): session/asset teardown runs only for the loaded target.
+  // The full ordering rationale (forgetCurrent Archie-79be; structure.forget + clearExhibitStructure Archie-2a9a;
+  // content-first / meta-last) lives with the sequence in exhibit-teardown.ts.
+  async function removeExhibitsById(slugs: string[]) {
+    await teardownAndRemoveExhibits(
+      {
+        currentSlug,
+        forgetCurrentSession: () => sess.forgetCurrent(),
+        forgetStructure: (slug) => structure.forget(slug),
+        clearStructure: clearExhibitStructure,
+        clearAnnotations: clearExhibitAnnotations,
+        removeMeta: (ss) => lib.removeExhibits(ss),
+        revokeAssets: () => assets.revokeAll(),
+      },
+      slugs,
+    );
+  }
+  // Singular delete delegates to the bulk helper so there is exactly ONE teardown definition.
   async function removeExhibitById(slug: string) {
-    const isLoaded = slug === currentSlug;
-    // forgetCurrent (not just cancelPendingSave): nulls the session's annDir so the NEXT openExhibit's
-    // outgoing-flush can't re-create the log we're about to clear (Archie-79be — newly easy to hit now that
-    // the library grid can delete the loaded exhibit; the pre-existing overview-remove path is fixed too).
-    if (isLoaded) sess.forgetCurrent();
-    // Archie-2a9a: drop the structure session's cached log FIRST (bumps the forget generation, so an
-    // in-flight load or queued persist can't recreate what the delete removes), then the on-disk dir.
-    // Both are FLAG-INDEPENDENT: the dir may exist from a previous archie.structureRevlog session
-    // even with the flag off now, and a recreated same-slug exhibit (deterministic `ex-${slug}` id)
-    // would inherit the stale log wholesale.
-    structure.forget(slug);
-    await clearExhibitStructure(slug); // wipe its section rev-log on disk (sibling of the annotations clear)
-    await clearExhibitAnnotations(slug); // wipe its annotation log on disk (do NOT re-save it via backToLibrary)
-    await lib.removeExhibit(slug);
-    if (isLoaded) assets.revokeAll();
+    await removeExhibitsById([slug]);
   }
   async function removeCurrentExhibit() {
     await removeExhibitById(currentSlug);
@@ -1860,7 +1865,7 @@
       // exhibits appear behind the scrim reactively (lib.addExhibit). No backToLibrary needed. Returns the
       // outcome to the dialog, which owns the progress/summary/undo UI (Archie-cbf6).
       flows.newExhibitsFromCollection(selected, { signal: hooks.signal, onProgress: hooks.onProgress, planCache })}
-    onundoimport={(slugs) => void lib.removeExhibits(slugs)}
+    onundoimport={(slugs) => void removeExhibitsById(slugs)}
     {isTemplate}
     binding={bnd.binding}
     bindingDirty={bnd.dirty}
@@ -1883,6 +1888,7 @@
     onpatchexhibit={patchExhibitMeta}
     onremoveexhibit={(slug) => void removeExhibitById(slug)}
     onbulkrights={(slugs, patch) => void lib.patchExhibits(slugs, patch)}
+    onbulkdelete={(slugs) => void removeExhibitsById(slugs)}
     ontutorial={() => (tutorialOpen = true)}
     onshortcuts={() => (helpOpen = true)}
     identity={identity ?? ""}

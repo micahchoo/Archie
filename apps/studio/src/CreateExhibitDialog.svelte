@@ -444,6 +444,15 @@
   // While a batch is RUNNING, dismissing must NOT close-and-orphan it — it aborts the batch instead (same
   // as the Cancel button); the batch then resolves cancelled and the summary shows, from which a second
   // dismiss closes normally. In every other phase (picker, or the finished summary), dismiss closes.
+  //
+  // Modality contract tension (documented, not currently reachable): the running branch cancels but does NOT
+  // flip the parent `open` bool, so this dialog stays mounted. modality's ScrimHandle.onClose is ALSO how a
+  // NEWLY-presenting scrimmed surface REPLACES this one (presentScrim fires the incumbent's onClose) — if
+  // that fired mid-import it would cancel the batch (correct) yet leave this panel mounted beside the new
+  // surface, breaking the single-scrim invariant. It can't happen today: a running import is scrimmed +
+  // focus-trapped, so nothing behind it can open another scrimmed surface. If a non-UI trigger ever could,
+  // this needs a phase-aware split (distinguish user-dismiss from replace) — a real change, not a one-liner,
+  // so it's deliberately left as this note rather than speculative code.
   function requestDismiss() {
     if (importPhase.kind === "running") { cancelImport(); return; }
     close();
@@ -594,11 +603,20 @@
     const total = selected.length;
     importAbort = new AbortController();
     importPhase = { kind: "running", done: 0, total };
-    const outcome: CollectionImportOutcome = await oncreatefromcollection(selected, planCache, {
-      signal: importAbort.signal,
-      onProgress: (done, t) => { if (importPhase.kind === "running") importPhase = { kind: "running", done, total: t }; },
-    });
-    importPhase = { kind: "done", summary: summarizeImport(outcome, total), createdSlugs: outcome.createdSlugs };
+    try {
+      const outcome: CollectionImportOutcome = await oncreatefromcollection(selected, planCache, {
+        signal: importAbort.signal,
+        onProgress: (done, t) => { if (importPhase.kind === "running") importPhase = { kind: "running", done, total: t }; },
+      });
+      importPhase = { kind: "done", summary: summarizeImport(outcome, total), createdSlugs: outcome.createdSlugs };
+    } catch (e) {
+      // The batch (newExhibitsFromCollection) NEVER throws today — it always resolves a summary. This guard
+      // is cheap insurance against a future wiring change that could reject: without it, importPhase would
+      // stick at "running" forever (an unclosable modal with a dead Cancel). Map any rejection to a fatal
+      // summary the user can dismiss. The created slugs are unknown on a throw → empty (so no Undo offered).
+      const message = e instanceof Error ? e.message : String(e);
+      importPhase = { kind: "done", summary: summarizeImport({ createdSlugs: [], skipped: [], cancelled: false, fatal: message }, total), createdSlugs: [] };
+    }
   }
   // Cancel a running import — abort the batch's signal (it checks between jobs/commits, keeps the committed
   // prefix, and resolves cancelled). submitCollection's await then flips to the summary. Also the target of

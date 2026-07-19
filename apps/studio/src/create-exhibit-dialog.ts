@@ -390,9 +390,13 @@ export function summarizeImport(outcome: CollectionImportOutcome, total: number)
   // clean-but-partial result, else full success. fatal + cancelled can BOTH be set if an abort raced the
   // storage failure — fatal wins because it's the condition the user has to act on (free space / re-save).
   if (outcome.fatal !== null) {
+    // Zero committed (the very first mint threw, or the batch rejected before committing) — don't say "Kept
+    // the 0 exhibits that imported first"; say plainly that nothing landed.
     return {
       tone: "fatal",
-      headline: `Couldn't save to this device, so the import stopped. Kept the ${created} ${exhibitsWord(created)} that imported first.`,
+      headline: created === 0
+        ? "Couldn't save to this device — nothing was imported."
+        : `Couldn't save to this device, so the import stopped. Kept the ${created} ${exhibitsWord(created)} that imported first.`,
       failures, overflow, createdCount: created,
     };
   }

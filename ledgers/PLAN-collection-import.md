@@ -67,7 +67,12 @@ unpacking", "Import batch").
    - `removeExhibitsIn(meta, slugs)` plural reducer
      (`library-meta-reducers.ts`, mirroring `removeObjectsIn`): one patch, one
      persist, one `signalLibraryChanged` — never 520 sequential persists.
-     Deletion is metadata-only (imported media is remote).
+     The `removeExhibitsIn` REDUCER is metadata-only (imported media is remote),
+     but bulk delete / undo-import route through App's `removeExhibitsById` for
+     the full per-slug session + on-disk structure/annotation-log teardown
+     first — an exhibit can be annotated before it's deleted or undone, and a
+     recreated same-slug exhibit would otherwise resurrect the orphaned logs
+     (Archie-ddaa review; parity with singular `removeExhibitById`).
    - **Undo import**: batch records created slugs; completion toast AND failure
      alert carry an "Undo import" action → plural remove.
    - **Provenance stamping**: each imported exhibit's description gets its

@@ -467,6 +467,22 @@ describe("summarizeImport — the finished-batch summary surface (Archie-cbf6, P
     expect(s.failures).toEqual(["Half one — Couldn't save this exhibit to this device — import stopped."]);
     expect(s.createdCount).toBe(2); // Undo removes both, including the orphan
   });
+
+  it("fatal with ZERO committed says nothing was imported (not 'Kept the 0 exhibits…')", () => {
+    const s = summarizeImport(outcome({ createdSlugs: [], fatal: "storage exploded" }), 5);
+    expect(s.tone).toBe("fatal");
+    expect(s.headline).toBe("Couldn't save to this device — nothing was imported.");
+    expect(s.createdCount).toBe(0); // no Undo offered — nothing to remove
+  });
+
+  it("the reject-insurance shape (dialog's catch: unknown slugs → empty + fatal message) yields a dismissible fatal done-summary", () => {
+    // submitCollection maps a batch REJECTION (unreachable today) to exactly this outcome so the dialog can't
+    // stick at 'running'. createdSlugs is unknown on a throw → empty, so the summary is fatal + Undo-less.
+    const s = summarizeImport({ createdSlugs: [], skipped: [], cancelled: false, fatal: "boom" }, 8);
+    expect(s.tone).toBe("fatal");
+    expect(s.createdCount).toBe(0);
+    expect(s.headline).toBe("Couldn't save to this device — nothing was imported.");
+  });
 });
 
 // Type-only guard: PickerRow shape stays what the component binds to (checked is a plain boolean).
