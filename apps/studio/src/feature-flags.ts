@@ -1,7 +1,9 @@
-// Feature flags (Archie-42f3). A flag is a localStorage boolean read ONCE at module init — the
-// same metadata idiom as IDENTITY_KEY / archie.lastPlace.v1 (App.svelte), not authored content.
-// Read-once on purpose: a flag flip applies on the next load, so one session never runs half of
-// its writes down one code path and half down the other.
+// Feature flags (Archie-42f3). A flag is a localStorage boolean — the same metadata idiom as
+// IDENTITY_KEY / archie.lastPlace.v1 (App.svelte), not authored content. structureRevlogEnabled()
+// itself reads storage live; the boot-stability that matters (a flag flip applies on the next
+// load, so one session never runs half of its writes down one code path and half down the other)
+// comes from CALLERS caching the value once at startup — App.svelte's `STRUCTURE_REVLOG` const.
+// New call sites must follow that pattern: read once at boot, never mid-session.
 
 /** The structure rev-log flag: section create/edit/reorder/delete/un-delete append to a
  *  rev-logged structure store (spine/structure.ts) and the working Section[] becomes a
