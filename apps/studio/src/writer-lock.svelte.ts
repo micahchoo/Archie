@@ -41,6 +41,23 @@ export interface BroadcastChannelLike {
 
 const LOCK_PREFIX = "archie.writer.";
 
+// Same key App.svelte's identity code reads/writes (Archie-198c). Read lazily at message-send time
+// (never captured once at module init) so a rename in Library Details reaches the next heartbeat
+// without a reload — cheap here, unlike the session-identity capture lag documented for Archie-7e5b S4.
+const DISPLAY_NAME_KEY = "archie.displayName.v1";
+// Names cross a same-origin BroadcastChannel/localStorage boundary — still untrusted text (devtools,
+// a stale/hostile script could write the key). Cap defensively; render via plain Svelte interpolation
+// at the call site, never {@html}.
+const MAX_NAME_LEN = 60;
+
+/** The current tab's display name, or null for anonymous (absent/blank/unreadable — private mode etc). */
+function readDisplayName(): string | null {
+  let raw: string | null;
+  try { raw = localStorage.getItem(DISPLAY_NAME_KEY); } catch { return null; }
+  const trimmed = raw?.trim();
+  return trimmed ? trimmed.slice(0, MAX_NAME_LEN) : null;
+}
+
 function defaultLocks(): LocksLike | null {
   const nav = (globalThis as { navigator?: { locks?: LocksLike } }).navigator;
   return nav?.locks ?? null;
@@ -56,19 +73,26 @@ export function createWriterLock(libraryId: string, opts: WriterLockOptions = {}
   const makeChannel = opts.makeChannel ?? defaultChannel;
   const beat = opts.fallbackIntervalMs ?? 3000;
 
-  const s = $state<{ canWrite: boolean; otherTabActive: boolean; ready: boolean; usingFallback: boolean }>({
+  const s = $state<{
+    canWrite: boolean;
+    otherTabActive: boolean;
+    ready: boolean;
+    usingFallback: boolean;
+    otherName: string | null;
+  }>({
     canWrite: false, // this tab may persist
     otherTabActive: false, // another tab holds the writer role
     ready: false, // a claim has resolved (writer or reader determined)
     usingFallback: false, // true when coordinating via BroadcastChannel (no Web Locks)
+    otherName: null, // display name of the tab holding the writer role; null = unknown/anonymous
   });
 
   // — Web Locks path state —
   let releaseHeld: (() => void) | null = null; // resolves the held-promise → frees our lock
   let readerWatch: AbortController | null = null; // the queued blocking request that auto-promotes a reader
 
-  function becomeWriter() { s.canWrite = true; s.otherTabActive = false; s.ready = true; }
-  function becomeReader() { s.canWrite = false; s.otherTabActive = true; s.ready = true; }
+  function becomeWriter() { s.canWrite = true; s.otherTabActive = false; s.otherName = null; s.ready = true; startPresenceHeartbeat(); }
+  function becomeReader() { s.canWrite = false; s.otherTabActive = true; s.ready = true; stopPresenceHeartbeat(); }
   /** Flip to read-only AND queue for the writer's release, so if the current writer later closes this
    *  tab auto-promotes to writer (only one tab left → it should be able to save). */
   function demoteToReader() { becomeReader(); watchForRelease(); }
@@ -117,12 +141,18 @@ export function createWriterLock(libraryId: string, opts: WriterLockOptions = {}
     ch = makeChannel(name);
     if (!ch) { becomeWriter(); return; } // no channel either → optimistic solo writer (single-tab floor)
     ch.onmessage = (ev) => {
-      const m = ev.data as { t?: string; from?: string };
+      const m = ev.data as { t?: string; from?: string; name?: string | null };
       if (!m || m.from === tabId) return;
-      if (m.t === "who") { if (s.canWrite) ch!.postMessage({ t: "held", from: tabId }); return; }
-      if (m.t === "held" || m.t === "beat") { lastHolderBeat = Date.now(); if (s.canWrite) return; becomeReader(); return; }
-      if (m.t === "takeover") { if (s.canWrite) { stopHeartbeat(); becomeReader(); } return; }
-      if (m.t === "bye") { /* holder left — a reader will win the next claim window */ lastHolderBeat = 0; }
+      if (m.t === "who") { if (s.canWrite) ch!.postMessage({ t: "held", from: tabId, name: readDisplayName() }); return; }
+      if (m.t === "held" || m.t === "beat") {
+        lastHolderBeat = Date.now();
+        if (s.canWrite) return;
+        becomeReader();
+        s.otherName = m.name ?? null;
+        return;
+      }
+      if (m.t === "takeover") { if (s.canWrite) { stopHeartbeat(); becomeReader(); s.otherName = m.name ?? null; } return; }
+      if (m.t === "bye") { lastHolderBeat = 0; s.otherName = null; } // holder left — a reader will win the next claim window
     };
     // Ask who holds it; if nobody answers within a claim window, we become the writer.
     lastHolderBeat = 0;
@@ -139,9 +169,38 @@ export function createWriterLock(libraryId: string, opts: WriterLockOptions = {}
   }
   function startHeartbeat() {
     stopHeartbeat();
-    heartbeat = setInterval(() => ch?.postMessage({ t: "beat", from: tabId }), beat);
+    heartbeat = setInterval(() => ch?.postMessage({ t: "beat", from: tabId, name: readDisplayName() }), beat);
   }
   function stopHeartbeat() { if (heartbeat) { clearInterval(heartbeat); heartbeat = null; } }
+
+  // — Presence channel (name-only; carries the display name where the lock mechanism itself can't) —
+  // Web Locks (navigator.locks) hands back an opaque lock object — no payload travels with it, so a
+  // reader that wins the claim purely via Web Locks has no way to learn WHO the writer is. A lightweight
+  // BroadcastChannel, used ONLY to announce a name (never for canWrite/otherTabActive — Web Locks still
+  // decides those), fills the gap. The BroadcastChannel fallback path doesn't need this: its own
+  // "held"/"beat"/"takeover" messages above already carry `name` directly.
+  let presenceCh: BroadcastChannelLike | null = null;
+  let presenceHeartbeat: ReturnType<typeof setInterval> | null = null;
+
+  function setupPresenceListener() {
+    if (!locks) return; // fallback path already carries names on its coordination messages
+    presenceCh = makeChannel(`${name}.presence`);
+    if (!presenceCh) return; // no BroadcastChannel either → otherName stays unknown, banner falls back to impersonal copy
+    presenceCh.onmessage = (ev) => {
+      const m = ev.data as { t?: string; from?: string; name?: string | null };
+      if (!m || m.from === tabId || m.t !== "iam") return;
+      s.otherName = m.name ?? null;
+    };
+  }
+  function announcePresence() { presenceCh?.postMessage({ t: "iam", from: tabId, name: readDisplayName() }); }
+  function startPresenceHeartbeat() {
+    if (!presenceCh) return;
+    stopPresenceHeartbeat();
+    announcePresence();
+    presenceHeartbeat = setInterval(announcePresence, beat);
+  }
+  function stopPresenceHeartbeat() { if (presenceHeartbeat) { clearInterval(presenceHeartbeat); presenceHeartbeat = null; } }
+  setupPresenceListener();
 
   return {
     /** This tab may persist (it is the writer). The save-queue gate reads this. */
@@ -152,6 +211,9 @@ export function createWriterLock(libraryId: string, opts: WriterLockOptions = {}
     get ready(): boolean { return s.ready; },
     /** True when coordinating via the BroadcastChannel fallback (no Web Locks). */
     get usingFallback(): boolean { return s.usingFallback; },
+    /** Display name of the tab holding the writer role (Archie-198c), or null when unknown/anonymous —
+     *  callers fall back to impersonal copy in that case. Only meaningful while `otherTabActive`. */
+    get otherName(): string | null { return s.otherName; },
 
     /** Acquire the writer role if free, else become a read-only reader (auto-promoting if the writer
      *  later closes). Idempotent-ish: call once at library open. */
@@ -169,7 +231,7 @@ export function createWriterLock(libraryId: string, opts: WriterLockOptions = {}
     takeOver(): void {
       if (!locks) {
         if (!ch) { becomeWriter(); return; }
-        ch.postMessage({ t: "takeover", from: tabId });
+        ch.postMessage({ t: "takeover", from: tabId, name: readDisplayName() });
         startWritingFallback();
         return;
       }
@@ -183,9 +245,13 @@ export function createWriterLock(libraryId: string, opts: WriterLockOptions = {}
       readerWatch?.abort();
       releaseHeld?.();
       releaseHeld = null;
+      stopPresenceHeartbeat();
+      presenceCh?.close();
+      presenceCh = null;
       if (s.usingFallback) { stopHeartbeat(); if (claimTimer) clearTimeout(claimTimer); ch?.postMessage({ t: "bye", from: tabId }); ch?.close(); ch = null; }
       s.canWrite = false;
       s.otherTabActive = false;
+      s.otherName = null;
     },
   };
 }

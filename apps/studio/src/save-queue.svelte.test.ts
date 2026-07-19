@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { enqueueSave, saveStatus, resetSaveQueueForTests, setWriterGate } from "./save-queue.svelte";
+import { enqueueSave, saveStatus, resetSaveQueueForTests, setWriterGate, setWriterOtherName } from "./save-queue.svelte";
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
@@ -82,6 +82,31 @@ describe("save-queue", () => {
     const ok = await enqueueSave("k", "K", async () => {});
     expect(ok).toBe(true);
     expect(saveStatus.error).toBeNull(); // stale read-only status cleared
+  });
+
+  it("single-writer gate: names the other tab in the refusal message when known (Archie-198c)", async () => {
+    setWriterGate(() => false);
+    setWriterOtherName(() => "Meera");
+    const ok = await enqueueSave("annotations", "Notes", async () => {});
+    expect(ok).toBe(false);
+    expect(saveStatus.error).toContain("Meera is editing this library in another tab");
+  });
+
+  it("single-writer gate: falls back to the impersonal message when the other tab is anonymous", async () => {
+    setWriterGate(() => false);
+    setWriterOtherName(() => null);
+    const ok = await enqueueSave("annotations", "Notes", async () => {});
+    expect(ok).toBe(false);
+    expect(saveStatus.error).toBe(
+      "This tab is read-only — another tab is editing this library. Choose “Take over editing” to make changes here.",
+    );
+  });
+
+  it("single-writer gate: no otherName getter installed behaves exactly as before (impersonal message)", async () => {
+    setWriterGate(() => false);
+    const ok = await enqueueSave("annotations", "Notes", async () => {});
+    expect(ok).toBe(false);
+    expect(saveStatus.error).toContain("another tab is editing this library");
   });
 
   it("pending counts across keys while writes are in flight", async () => {

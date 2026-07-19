@@ -47,6 +47,13 @@ let writerGate: (() => boolean) | null = null;
 /** Install (or clear, with null) the single-writer gate. `gate()` returns true when THIS tab may write. */
 export function setWriterGate(gate: (() => boolean) | null): void { writerGate = gate; }
 
+// Archie-198c: names the tab holding the writer role in the refusal message, when known. Read via a
+// getter (not a captured value) so it's live at refusal time — mirrors writer-lock.svelte.ts's own
+// lazy read of the display name, one hop further down the plumbing.
+let writerOtherName: (() => string | null) | null = null;
+/** Install (or clear, with null) the "who holds the writer role" getter for the read-only message. */
+export function setWriterOtherName(getter: (() => string | null) | null): void { writerOtherName = getter; }
+
 /**
  * Serialize `job` after all prior jobs for `key`, recording health. `label` is the human name used
  * in the error surface ("Notes", "Library details"). Resolves `true` on success, `false` on failure.
@@ -57,7 +64,10 @@ export function enqueueSave(key: string, label: string, job: () => Promise<void>
   // overwritten. Returning false lets boolean-branching callers keep `dirty` set (they'll persist once
   // this tab takes over). A gate that passes clears any stale read-only status.
   if (writerGate && !writerGate()) {
-    s.errors[READ_ONLY_KEY] = "This tab is read-only — another tab is editing this library. Choose “Take over editing” to make changes here.";
+    const who = writerOtherName?.() ?? null;
+    s.errors[READ_ONLY_KEY] = who
+      ? `This tab is read-only — ${who} is editing this library in another tab. Choose “Take over editing” to make changes here.`
+      : "This tab is read-only — another tab is editing this library. Choose “Take over editing” to make changes here.";
     return Promise.resolve(false);
   }
   delete s.errors[READ_ONLY_KEY];
@@ -88,4 +98,5 @@ export function resetSaveQueueForTests(): void {
   s.errors = {};
   tails.clear();
   writerGate = null;
+  writerOtherName = null;
 }
