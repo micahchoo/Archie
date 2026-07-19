@@ -7,6 +7,7 @@
 
 import { describe, it, expect } from "vitest";
 import { asClientId, asExhibitId } from "../wadm/brand.js";
+import { assertSafeName } from "../fs/names.js"; // TEST-ONLY import — the parity drift-detector below
 import type { AnnotationLog } from "../wadm/types.js";
 import { linearHead } from "./log.js";
 import { mergeLogs, headsOf, classifyLogical } from "./merge.js";
@@ -79,6 +80,16 @@ describe("sectionKey — composed branded identity with containment (#4)", () =>
   it("accepts ordinary ids (dots inside, dashes, unicode)", () => {
     expect(localSectionId(sectionKey(EX, "s.1-intro"))).toBe("s.1-intro");
     expect(localSectionId(sectionKey(EX, "sección"))).toBe("sección");
+  });
+
+  it("parity: the key-segment guard accepts/rejects EXACTLY like fs/names.ts assertSafeName (drift detector)", () => {
+    // structure.ts restates the predicate with domain wording instead of importing it; this
+    // table is what keeps the two in step. A vector added to one rule set must be added here.
+    const vectors = ["", ".", "..", "/", "\\", "\0", "a/b", "/a", "a/", "a\\b", "a\0b", "..a", "a..", ".hidden", "s.1-ok", "ordinary", "sección"];
+    const throws = (fn: () => void) => { try { fn(); return true; } catch { return false; } };
+    for (const v of vectors) {
+      expect(throws(() => sectionKey(EX, v)), `vector ${JSON.stringify(v)}`).toBe(throws(() => assertSafeName(v)));
+    }
   });
 });
 
@@ -317,6 +328,18 @@ describe("resolveSectionConflict — the ONE merge contract, section fields (C12
     expect(node.prose).toBe("Alice's prose"); // optional → inherited from the head that carries it
   });
 
+  it("C14 determinism: when BOTH heads carry different optional values, the lexicographically-first carrier wins", () => {
+    const base = appendNewSection([], {
+      key: keyOf("s1"), order: "i", objectId: "o1", title: "Original", lastEditor: alice, modifiedAt: "t0", now: 6100, rng,
+    }).log;
+    // bob's rev is minted earlier → sorts first → the deterministic carrier for BOTH fields.
+    const rBob = appendEditSection(base, keyOf("s1"), { prose: "Bob's prose", start: "t=1,2", lastEditor: bob, modifiedAt: "tB", now: 6101, rng }).log;
+    const rAlice = appendEditSection(base, keyOf("s1"), { prose: "Alice's prose", start: "t=3,4", lastEditor: alice, modifiedAt: "tA", now: 6102, rng }).log;
+    const node = linearHead(resolveSectionConflict(mergeLogs(rAlice, rBob), keyOf("s1"), { lastEditor: alice, now: 6103, rng }), keyOf("s1"));
+    expect(node.prose).toBe("Bob's prose"); // NOT alice's — sorted-first carrier, not merge order
+    expect(node.start).toBe("t=1,2");
+  });
+
   it("explicit resolution content wins over every default", () => {
     const { merged } = conflictedPair();
     const node = linearHead(resolveSectionConflict(merged, keyOf("s1"), {
@@ -327,9 +350,10 @@ describe("resolveSectionConflict — the ONE merge contract, section fields (C12
 });
 
 describe("projection — ordered working Section[] with tolerance (#5)", () => {
-  it("projects (order asc, key asc) rows in the working Section shape", () => {
-    const { log } = trio();
+  it("projects (order asc, key asc) rows in the working Section shape, each row carrying its head's order key", () => {
+    const { log, orders } = trio();
     const proj = projectSections(log, liveIds);
+    expect(proj.sections.map((p) => p.order)).toEqual(orders); // the row exposes the head's order key
     expect(toWorkingSections(proj)).toEqual([
       { id: "sa", title: "SA", objectId: "o1" },
       { id: "sb", title: "SB", objectId: "o1" },
