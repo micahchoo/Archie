@@ -25,6 +25,8 @@ import type { PortableExhibit } from "./portable.js"; // type-only (erased) — 
 import { readExhibitTree, fsJsonSource } from "./read.js";
 import { libraryPageHtml, exhibitPageHtml, sitemapTxt, sitemapXml } from "./static-pages.js";
 import { readAnnotations } from "../spine/persist.js";
+import { writeStructure } from "../spine/structure-persist.js";
+import type { SectionLog } from "../spine/structure.js";
 import { asExhibitId, asLibraryId } from "../wadm/brand.js";
 import { toHistory } from "../spine/serialize.js";
 import { projectHeads } from "../spine/heads.js";
@@ -121,6 +123,22 @@ export interface PublishOptions {
    */
   removedExhibits?: string[];
   removedObjects?: { slug: string; objId: string; assetName?: string }[];
+  /**
+   * Provide the SECTION REV-LOG for an exhibit at publish time (Archie-aef4 — the collab exchange
+   * leg). When it returns a non-empty log, the exhibit's tree carries
+   * `{slug}/structure/history/{localId}.json` + `history/index.json` — written by `writeStructure`
+   * (pages first, index LAST), the EXACT layout the zip/folder import merge
+   * (`mergeImportedStructure` → `readStructureReport`) reads, so publish → exchange → import is a
+   * real round trip. Absent callback or empty log → NO `structure/` dir is written and the
+   * published tree stays byte-identical to the pre-structure output (the no-log compatibility pin).
+   *
+   * FLAG POSTURE: emission is deliberately NOT gated on the `archie.structureRevlog` flag at
+   * publish time — it is driven by log EXISTENCE. A log only exists if the flag was ON while
+   * authoring; a library that HAS section history must carry it in every published/exported tree
+   * regardless of the flag's current position, or a flag flip would silently strand history at the
+   * next exchange.
+   */
+  getStructure?: StructureLookup;
 }
 
 /**
@@ -141,6 +159,11 @@ const ASSET_PREFIX = "/assets/";
 
 /** Look up the annotation log for an Exhibit (by Exhibit id). */
 export type LogLookup = (exhibitId: string) => AnnotationLog;
+
+/** Look up the section rev-log for an Exhibit — the structure sibling of {@link LogLookup}.
+ *  Async-friendly (app stores read it off disk); the `slug` rides along because app stores key
+ *  their per-exhibit structure dirs by slug. Return `[]` for an exhibit without a log. */
+export type StructureLookup = (exhibitId: string, slug: string) => Promise<SectionLog> | SectionLog;
 
 /** An in-body `archie:` link whose target didn't resolve in the Library at publish time. */
 export interface BrokenLink {
@@ -463,6 +486,21 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     const histDir = await (await exDir.getDirectory("annotations", { create: true })).getDirectory("history", { create: true });
     await writeJson(histDir, "index.json", index);
     for (const [logicalId, page] of Object.entries(pages)) await writeJson(histDir, `${logicalId}.json`, page);
+
+    // Structure rev-log sidecar (Archie-aef4): {slug}/structure/history/ beside the annotation
+    // history — the exchange leg that makes the import merge (mergeImportedStructure) reachable
+    // from an Archie-produced zip/folder. Same writer the studio store uses (writeStructure:
+    // pages first, index LAST — rule #1), and the whole emission sits inside the exhibit loop,
+    // well before the archie.json commit point at the end of this function (the global
+    // marker-LAST ordering contract is untouched). Emitted ONLY when the exhibit HAS a log —
+    // see PublishOptions.getStructure for the existence-not-flag posture and the no-log
+    // byte-identical pin.
+    if (opts.getStructure) {
+      const structLog = await opts.getStructure(exhibit.id, exhibit.slug);
+      if (structLog.length > 0) {
+        await writeStructure(await exDir.getDirectory("structure", { create: true }), structLog);
+      }
+    }
 
     // Per-canvas heads pages — grouped by the canvas (target.source) they annotate, at the path
     // the manifest references: {slug}/canvas/{objId}/annotations.json.

@@ -68,6 +68,26 @@ export async function openExhibitStructureDir(slug: string): Promise<FsDirectory
 }
 
 /**
+ * The READ-ONLY sibling of openExhibitStructureDir: open an exhibit's structure dir only if it
+ * already exists — NEVER creating it (or any parent). Null when absent or OPFS is unsupported.
+ * The publish/export leg (Archie-aef4) probes with this, flag-independent: emission is driven by
+ * log EXISTENCE, and an exhibit that never authored under archie.structureRevlog must not grow an
+ * empty structure/ dir just because the library was published.
+ */
+export async function openExhibitStructureDirIfExists(slug: string): Promise<FsDirectory | null> {
+  const project = await openProjectDir();
+  if (!project) return null;
+  try {
+    if (slug === SAMPLE_SLUG) return await project.getDirectory("structure");
+    const exhibits = await project.getDirectory("exhibits");
+    const ex = await exhibits.getDirectory(slug);
+    return await ex.getDirectory("structure");
+  } catch {
+    return null; // some segment absent — this exhibit has no persisted structure log
+  }
+}
+
+/**
  * A corrupt authored sidecar reads as "absent" (JSON.parse throws → the loader returns empty), which
  * would then let the next save overwrite it and destroy the authored structure for good. Before an
  * overwrite, if the existing file is present but unparseable, copy it aside to `{name}.corrupt` so the
