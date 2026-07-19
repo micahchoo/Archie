@@ -21,6 +21,7 @@
   import { flattenLibraryImages, coverOf, filterExhibits, filterImages } from "./gallery-data.js";
   import { saveStatus } from "./save-queue.svelte.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
+  import { viewPrefs } from "./view-prefs.svelte.js";
 
   let {
     exhibits,
@@ -110,12 +111,25 @@
   const hasRealWork = $derived(hasRealWorkIn(exhibits, isTemplate));
 
   // Two views, one search (Phase 3.2): visual Exhibit cards ⟷ the all-images wall; the search box filters
-  // the ACTIVE view (exhibit titles / object titles) via the shared matchesTitle primitive. `gallerySearch`
-  // is a bindable prop now (transient screen state, ADR-0024 #6 — see $props above). The wall reads the
-  // library LIVE (flatten OPFS meta) — never the baked images.json (unpublished edits would make it stale).
-  // "All images" only offered once there's media to browse.
-  let galleryView = $state<"exhibits" | "wall">("exhibits");
+  // the ACTIVE view (exhibit titles / object titles) via the shared matchesTitle primitive. The lens is a
+  // persisted VIEW PREFERENCE (Archie-a9fc / CONTEXT.md Navigation § "View preference") — last choice wins
+  // and survives app restarts, read through the same shared store as ExhibitOverview's Canvas/List toggle.
+  // `gallerySearch` is a bindable prop (transient screen state, ADR-0024 #6 — see $props above), never
+  // persisted. The wall reads the library LIVE (flatten OPFS meta) — never the baked images.json
+  // (unpublished edits would make it stale). "All images" only offered once there's media to browse.
+  //
+  // GUARD (code review, Archie-a9fc follow-up): persistence made "wall" reachable with nothing to show it —
+  // on the pre-persistence base, galleryView reset to "exhibits" every mount, so a bound-but-empty library
+  // (0 exhibits) could never land on "wall". Now the last-picked lens survives across libraries/restarts,
+  // so a fresh/emptied library opened while "wall" is persisted would hide BOTH the gallery-bar toggle
+  // (gated on exhibits.length > 0) AND the {:else} create-exhibit form (gated on galleryView !== "wall") —
+  // stranding the user with no way back to "exhibits" or to create one. Read is guarded to fall back to
+  // "exhibits" whenever there's no media to show ("wall" with nothing to browse is never a real choice);
+  // writes still go to viewPrefs.setGalleryView unguarded, so the true preference is preserved for when
+  // there IS something to show again. allImages.length > 0 implies exhibits.length > 0, so this single
+  // check covers both the dead-end and the toggle-hidden case.
   const allImages = $derived(flattenLibraryImages(exhibits));
+  const galleryView = $derived(allImages.length > 0 ? viewPrefs.galleryView : "exhibits");
   const shownExhibits = $derived(filterExhibits(exhibits, gallerySearch));
   const shownImages = $derived(filterImages(allImages, gallerySearch));
 
@@ -261,9 +275,9 @@
   {#if exhibits.length > 0}
     <div class="gallery-bar">
       <div class="views" role="group" aria-label="Library view">
-        <button type="button" class:on={galleryView === "exhibits"} aria-pressed={galleryView === "exhibits"} onclick={() => (galleryView = "exhibits")}>Exhibits</button>
+        <button type="button" class:on={galleryView === "exhibits"} aria-pressed={galleryView === "exhibits"} onclick={() => viewPrefs.setGalleryView("exhibits")}>Exhibits</button>
         {#if allImages.length > 0}
-          <button type="button" class:on={galleryView === "wall"} aria-pressed={galleryView === "wall"} onclick={() => (galleryView = "wall")}>All images</button>
+          <button type="button" class:on={galleryView === "wall"} aria-pressed={galleryView === "wall"} onclick={() => viewPrefs.setGalleryView("wall")}>All images</button>
         {/if}
       </div>
       <label class="g-search">
