@@ -10,6 +10,17 @@
 import { matchesTitle } from "@render/core";
 import type { ExhibitMeta, ObjectMeta } from "./store.js";
 
+// PERF (scale/library-search): matchesTitle NFKD-normalizes + strips diacritics + lowercases BOTH its
+// arguments on every call (render-core text/match.ts `fold`) — fine for filterExhibits (library-sized:
+// tens of exhibits) but at 10k Objects, filterImages running matchesTitle per tile per keystroke was ~10k
+// redundant title folds every time a key was pressed, with no debounce. `fold` itself isn't exported (only
+// `matchesTitle` is) and render-core is out of territory for this change, so it's duplicated here — SAME
+// two-line body — to precompute each image's folded title ONCE at flatten time instead of per keystroke.
+// Follow-up: render-core could export `fold` directly so this wrapper isn't a second copy of the primitive.
+function foldForSearch(s: string): string {
+  return s.normalize("NFKD").replace(/\p{Diacritic}/gu, "").toLowerCase();
+}
+
 /** One tile on the all-images wall — every Object across every Exhibit, in library → reading order. */
 export interface GalleryImage {
   objectId: string;
@@ -17,6 +28,9 @@ export interface GalleryImage {
   exhibitTitle: string;
   /** Object label (the wall's search + caption key). */
   title: string;
+  /** `title`, NFKD-folded ONCE at flatten time (PERF: see foldForSearch above) — filterImages' search key,
+   *  so a keystroke does a plain `.includes` over 10k precomputed strings instead of re-folding every title. */
+  searchKey: string;
   /** The object's source (`/assets/{name}` OPFS import, or a remote/IIIF URL) — drives thumb resolution. */
   source: string;
   mediaType?: string;
@@ -43,6 +57,7 @@ export function flattenLibraryImages(exhibits: ReadonlyArray<ExhibitMeta>): Gall
         exhibitSlug: e.slug,
         exhibitTitle: e.title,
         title: o.label,
+        searchKey: foldForSearch(o.label),
         source: o.source,
         ...(o.mediaType ? { mediaType: o.mediaType } : {}),
         ...(o.width !== undefined ? { width: o.width } : {}),
@@ -74,10 +89,41 @@ export function filterExhibits(exhibits: ReadonlyArray<ExhibitMeta>, query: stri
   return exhibits.filter((e) => matchesTitle(e.title, q) || matchesTitle(e.summary ?? "", q));
 }
 
-/** Filter wall tiles by object title (same primitive as the cards + the overview toolbar — ONE definition). */
+/** Filter wall tiles by object title (same primitive as the cards + the overview toolbar — ONE definition,
+ *  same MATCH semantics as matchesTitle — see foldForSearch above). PERF: folds the query ONCE here rather
+ *  than per-tile (matchesTitle would re-fold both sides on every call); each tile's side of the fold is
+ *  already sitting in `searchKey` from flatten time, so this is a plain substring test per tile, not a
+ *  normalize+strip+lowercase per tile. Empty / whitespace query still returns the input array unchanged
+ *  (identity — no needless re-render), matching filterExhibits and the pre-PERF behavior exactly. */
 export function filterImages(images: ReadonlyArray<GalleryImage>, query: string): ReadonlyArray<GalleryImage> {
-  const q = query.trim();
-  return q ? images.filter((im) => matchesTitle(im.title, q)) : images;
+  const trimmed = query.trim();
+  if (!trimmed) return images;
+  const q = foldForSearch(trimmed);
+  // A query that folds away to nothing (e.g. a lone combining-diacritic keystroke) matches every title —
+  // same as matchesTitle("", title) — but as an explicit filter, not the identity fast-path above.
+  return images.filter((im) => q === "" || im.searchKey.includes(q));
+}
+
+/**
+ * A debounced "commit" for the wall's search box (SCALE-GALLERY perf fix): call `schedule(query)` on every
+ * keystroke; `onCommit` fires with the LATEST query after `delayMs` of typing silence — EXCEPT an empty
+ * (trimmed) query commits immediately (clearing the box shouldn't wait to show everything again). At 10k
+ * Objects, filterImages is the expensive part of a keystroke (not updating the input), so the box itself
+ * stays instant while the FILTER recompute is what's coalesced. Framework-free (setTimeout/clearTimeout
+ * only, mirrors library-meta.svelte.ts's schedulePersist idiom) so the debounce timing is unit-testable
+ * headless, same reasoning as the rest of this module — LibraryHome.svelte just wires an oninput handler
+ * to `schedule` and reads the committed query back out of `onCommit`.
+ */
+export function createSearchDebouncer(onCommit: (query: string) => void, delayMs = 130): { schedule: (query: string) => void; cancel: () => void } {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  return {
+    schedule(query: string) {
+      clearTimeout(timer);
+      if (query.trim() === "") { onCommit(query); return; }
+      timer = setTimeout(() => onCommit(query), delayMs);
+    },
+    cancel() { clearTimeout(timer); },
+  };
 }
 
 /**

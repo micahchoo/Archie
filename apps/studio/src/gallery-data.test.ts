@@ -1,7 +1,8 @@
 // Phase 3.2 — Library-Gallery data shaping (flatten / cover / filter). matchesTitle itself is render-core's
 // (already tested); here we pin the shaping + that filtering routes through it (case/diacritic-insensitive).
-import { describe, it, expect } from "vitest";
-import { flattenLibraryImages, coverOf, filterExhibits, filterImages, commitMintedThumb } from "./gallery-data.js";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { flattenLibraryImages, coverOf, filterExhibits, filterImages, createSearchDebouncer, commitMintedThumb } from "./gallery-data.js";
+import { matchesTitle } from "@render/core";
 import type { ExhibitMeta } from "./store.js";
 
 const lib = (): ExhibitMeta[] => [
@@ -81,6 +82,97 @@ describe("filterExhibits — matches DESCRIPTION as well as title (provenance tr
   });
   it("a query matching neither title nor description excludes the exhibit", () => {
     expect(filterExhibits(trailed(), "no-such-term").map((e) => e.slug)).toEqual([]);
+  });
+});
+
+describe("flattenLibraryImages — precomputed searchKey (PERF, scale/library-search)", () => {
+  // Every scenario the shared matchesTitle primitive is documented to handle (match.test.ts's own table) —
+  // pins that the ONE-TIME fold at flatten time never drifts from what matchesTitle itself would compute
+  // per-keystroke, so precomputing it is never a silent behavior change.
+  const withTitles = (titles: string[]): ExhibitMeta[] => [
+    { id: "e1", slug: "s", title: "S", objects: titles.map((t, i) => ({ id: `o${i}`, source: `/x${i}`, label: t })) },
+  ];
+
+  it("carries a searchKey per image (NFKD-folded once) alongside the untouched display title", () => {
+    const imgs = flattenLibraryImages(withTitles(["Müller", "café society", "naïve", "Coastal Survey"]));
+    expect(imgs.map((i) => i.title)).toEqual(["Müller", "café society", "naïve", "Coastal Survey"]); // display unchanged
+    expect(imgs.map((i) => i.searchKey)).toEqual(["muller", "cafe society", "naive", "coastal survey"]);
+  });
+
+  it.each([
+    ["Müller", "muller"],
+    ["café society", "cafe"],
+    ["naïve", "naive"],
+    ["Field Notes", "eld"],
+    ["Field Notes", "NOTES"],
+  ] as const)("filterImages(%j, %j) matches — same verdict as matchesTitle", (title, query) => {
+    const [img] = flattenLibraryImages(withTitles([title]));
+    expect(filterImages([img!], query)).toHaveLength(1);
+    expect(matchesTitle(title, query)).toBe(true); // the precomputed path and the shared primitive agree
+  });
+
+  it.each([
+    ["Field Notes", "xyz"],
+    ["Coastal Survey", "archive"],
+  ] as const)("filterImages(%j, %j) excludes — same verdict as matchesTitle", (title, query) => {
+    const [img] = flattenLibraryImages(withTitles([title]));
+    expect(filterImages([img!], query)).toHaveLength(0);
+    expect(matchesTitle(title, query)).toBe(false);
+  });
+});
+
+describe("createSearchDebouncer — coalesces a keystroke burst into ONE filter recompute (PERF)", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("commits only the LATEST query, after delayMs of silence following a burst", () => {
+    const commits: string[] = [];
+    const d = createSearchDebouncer((q) => commits.push(q), 130);
+    d.schedule("d");
+    d.schedule("du");
+    d.schedule("dun");
+    d.schedule("dune");
+    expect(commits).toEqual([]); // nothing committed mid-burst
+    vi.advanceTimersByTime(129);
+    expect(commits).toEqual([]); // still inside the window
+    vi.advanceTimersByTime(1);
+    expect(commits).toEqual(["dune"]); // ONE commit — the final value, not one per keystroke
+  });
+
+  it("a query that clears to empty commits IMMEDIATELY — no debounce wait to show everything again", () => {
+    const commits: string[] = [];
+    const d = createSearchDebouncer((q) => commits.push(q), 130);
+    d.schedule("dune");
+    vi.advanceTimersByTime(130);
+    expect(commits).toEqual(["dune"]);
+    d.schedule("");
+    expect(commits).toEqual(["dune", ""]); // no setTimeout round-trip for the clear
+  });
+
+  it("a whitespace-only query also clears immediately (trimmed, not raw emptiness)", () => {
+    const commits: string[] = [];
+    const d = createSearchDebouncer((q) => commits.push(q), 130);
+    d.schedule("   ");
+    expect(commits).toEqual(["   "]);
+  });
+
+  it("cancel() drops a pending commit (component teardown mid-debounce)", () => {
+    const commits: string[] = [];
+    const d = createSearchDebouncer((q) => commits.push(q), 130);
+    d.schedule("dune");
+    d.cancel();
+    vi.advanceTimersByTime(500);
+    expect(commits).toEqual([]);
+  });
+
+  it("defaults to a 130ms window when delayMs is omitted", () => {
+    const commits: string[] = [];
+    const d = createSearchDebouncer((q) => commits.push(q));
+    d.schedule("x");
+    vi.advanceTimersByTime(129);
+    expect(commits).toEqual([]);
+    vi.advanceTimersByTime(1);
+    expect(commits).toEqual(["x"]);
   });
 });
 

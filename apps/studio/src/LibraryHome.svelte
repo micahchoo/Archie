@@ -29,7 +29,7 @@
   import GalleryWall from "./GalleryWall.svelte";
   import SafetyState from "./SafetyState.svelte";
   import { untrack } from "svelte";
-  import { flattenLibraryImages, coverOf, filterExhibits, filterImages } from "./gallery-data.js";
+  import { flattenLibraryImages, coverOf, filterExhibits, filterImages, createSearchDebouncer } from "./gallery-data.js";
   import { bindingLocationLabel, examplesDefaultOpen, partitionExhibits } from "./library-home.js";
   import { applyClick, selectAll, selectableSlugs, allSelected, reconcileSelection, type ClickMods } from "./library-selection.js";
   import { modality } from "./modality.svelte";
@@ -210,11 +210,35 @@
   // check covers both the dead-end and the toggle-hidden case.
   const allImages = $derived(flattenLibraryImages(exhibits));
   const galleryView = $derived(allImages.length > 0 ? viewPrefs.galleryView : "exhibits");
-  const shownExhibits = $derived(filterExhibits(exhibits, gallerySearch));
-  const shownImages = $derived(filterImages(allImages, gallerySearch));
-  // Unified search (Archie-2308): a non-empty query switches BOTH the bar (hides the now-moot lens) and
-  // the body (renders both result groups) into "search results" mode, regardless of the persisted lens.
-  const hasQuery = $derived(gallerySearch.trim() !== "");
+
+  // PERF (scale/library-search): at 10k Objects, filterImages recomputing on EVERY keystroke (gallery-data.ts
+  // was also re-folding all 10k titles per keystroke — fixed separately by precomputing `searchKey` at
+  // flatten time) was the expensive part of typing, not updating the box. `gallerySearch` itself stays
+  // instant (the input reads/writes it every keystroke, same as the old bind:value, so typing never feels
+  // laggy and App still gets the live value for its cross-remount memory — see the prop doc above); the
+  // FILTER inputs read a separately-DEBOUNCED `filterQuery` instead, coalescing a burst of keystrokes into
+  // one recompute (mirrors library-meta.svelte.ts's schedulePersist / CreateExhibitDialog's iiifTimer idiom:
+  // an explicit handler + a closured timer, not an $effect). Clearing the box resets immediately (no reason
+  // to wait to show "everything" again) — createSearchDebouncer's contract. Seeded via `untrack` (like
+  // examplesOpen below): gallerySearch can already be non-empty on mount (App remembers it across a
+  // remount), and this is a deliberate one-time snapshot, not a live binding.
+  let filterQuery = $state(untrack(() => gallerySearch));
+  const searchDebouncer = createSearchDebouncer((q) => { filterQuery = q; });
+  $effect(() => () => searchDebouncer.cancel()); // no committing into a destroyed component
+  function onGallerySearchInput(e: Event) {
+    const v = (e.currentTarget as HTMLInputElement).value;
+    gallerySearch = v;
+    searchDebouncer.schedule(v);
+  }
+
+  const shownExhibits = $derived(filterExhibits(exhibits, filterQuery));
+  const shownImages = $derived(filterImages(allImages, filterQuery));
+  // Unified search (Archie-2308): a non-empty (debounced) query switches BOTH the bar (hides the now-moot
+  // lens) and the body (renders both result groups) into "search results" mode, regardless of the persisted
+  // lens. Gated on filterQuery (not the raw gallerySearch) so this mode-switch never outpaces the filtered
+  // results it's supposed to be showing — flipping on the instant keystroke would otherwise render the
+  // "results" chrome around a still-stale (pre-debounce) shownExhibits/shownImages for one frame.
+  const hasQuery = $derived(filterQuery.trim() !== "");
 
   // The exhibit whose per-card pencil drawer is open (Archie-79be) — transient view state, like rightsOpen.
   // Resolves to its full ExhibitMeta so the shared DetailsEditor can read title/description/rights.
@@ -603,7 +627,7 @@
       {/if}
       <label class="g-search">
         <span class="glass" aria-hidden="true">⌕</span>
-        <input type="search" bind:value={gallerySearch}
+        <input type="search" value={gallerySearch} oninput={onGallerySearchInput}
           placeholder="Search your library"
           aria-label="Search exhibits and media" />
       </label>
@@ -665,14 +689,14 @@
     <section class="results">
       <h2 class="group-head">Exhibits ({shownExhibits.length})</h2>
       {#if shownExhibits.length === 0}
-        <p class="no-match">No exhibits match “{gallerySearch.trim()}”.</p>
+        <p class="no-match">No exhibits match “{filterQuery.trim()}”.</p>
       {:else}
         <ul class="grid">
           {#each shownExhibits as ex (ex.slug)}{@render exhibitCard(ex)}{/each}
         </ul>
       {/if}
       <h2 class="group-head">Media ({shownImages.length})</h2>
-      <GalleryWall images={shownImages} query={gallerySearch} {onopenobject} />
+      <GalleryWall images={shownImages} query={filterQuery} {onopenobject} />
     </section>
   {:else if galleryView === "wall"}
     <GalleryWall images={allImages} query="" {onopenobject} />
