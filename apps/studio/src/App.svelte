@@ -1,3 +1,14 @@
+<script module lang="ts">
+  // Session-only transient screen state (ADR-0024 #6): how a PLACE looks beyond its address — the
+  // overview's canvas pan-zoom. Module-level so it survives a component remount WITHIN the session (leave
+  // an exhibit, come back, find it framed as you left it) but resets on a fresh load (the URL alone is
+  // honored then). Best-effort — a plain Map keyed by exhibit slug. (The Canvas/List mode is a persisted
+  // view preference owned elsewhere, NOT a transient — excluded here.) Library transient (search text) is
+  // one place, so it rides App-instance state instead (see gallerySearch).
+  type OverviewScreen = { tx: number; ty: number; z: number };
+  const overviewScreens = new Map<string, OverviewScreen>();
+</script>
+
 <script lang="ts">
   // Studio editor (Phase-2 UI, browser-verified later). Real annotate loop over the headless-
   // tested @render/core AnnotationSession: draw on the canvas → create note → edit body/tags/
@@ -54,6 +65,9 @@
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
   import { createAssetUrls } from "./asset-urls.svelte.js";
+  // Place-addressable navigation (ADR-0024): the pure place model (parse/serialize/resolve) + Tauri detection.
+  import { parsePlace, serializePlace, resolvePlace, librarySnapshot, LIBRARY, type Place, type Missing } from "./place.js";
+  import { isTauri } from "./tauri-fs.js";
 
   // Local display name → the clientId stamped as lastEditor in the merge DAG (CONTEXT invention #6).
   // Persisted in localStorage (metadata, not content). null = never prompted (ask on first Import);
@@ -87,6 +101,34 @@
     },
   });
   let view = $state<"library" | "overview" | "editor">("library");
+
+  // --- Place-addressable navigation (ADR-0024). A *place* — library | overview(slug) | editor(slug,objId)
+  // — is mirrored to the URL as a hash route (docs/research/routing-mechanism.md). Every place change pushes
+  // a history entry (#3), and back/forward + a pasted bookmark drive the view through resolvePlace, which
+  // degrades an unresolvable place to its nearest surviving ancestor (#4). Modals/drawers are NOT places
+  // (currentPlace reads only the view triple), so they never enter history (#6). ---
+  let fallbackNotice = $state<string | null>(null); // the "what wasn't found" strip after a degrade (#4)
+  // committedUrl = the hash currently reflected in history; syncUrl pushes only when currentPlace diverges.
+  // navReady gates out the pre-boot library render; the suspend COUNT silences intermediate states during a
+  // multi-step async transition. All three are plain lets (NOT $state) — mutating them must never re-run the
+  // sync effect (that would recurse); the effect is driven by currentPlace alone.
+  let committedUrl: string | null = null;
+  let navReady = false;
+  let navSyncSuspendCount = 0;
+  function suspendSync() { navSyncSuspendCount++; }
+  function resumeSync() { navSyncSuspendCount = Math.max(0, navSyncSuspendCount - 1); }
+  // Desktop (Tauri) has no address bar: the last place is remembered in localStorage and restored on launch
+  // through the SAME resolver, so a stale remembered place degrades per #4. Read ONCE at init, before any
+  // effect can overwrite it (the persist effect writes on every place change).
+  const LAST_PLACE_KEY = "archie.lastPlace.v1";
+  const savedLastPlace: Place = (() => { try { return parsePlace(localStorage.getItem(LAST_PLACE_KEY) ?? ""); } catch { return LIBRARY; } })();
+
+  // --- Transient screen state mirrors (ADR-0024 #6). Bound into the child screens; App remembers them
+  // across the child's remount within the session. Overview pan-zoom is per-slug (overviewScreens map); the
+  // library search is one place, so App-instance state is its session memory (resets on reload). (The two
+  // toggles — overview Canvas/List, library Exhibits/All-images — are PERSISTED prefs owned elsewhere.) ---
+  let ovTx = $state(0), ovTy = $state(0), ovZ = $state(1);
+  let gallerySearch = $state("");
   // Lazy deep-zoom canvas (OpenSeadragon + Annotorious — the largest dep). Loaded the moment the user
   // enters an exhibit (overview or editor), so it's warm by the time an object opens, while staying OUT
   // of the startup bundle (the library landing parses less JS). The editor's existing "Loading…" branch
@@ -219,10 +261,23 @@
     // it lands, so a return visit opens straight on the one-click update. Dynamic import keeps the deploy
     // module out of the startup parse.
     void import("./deploy/deploy-flows.svelte.js").then((m) => m.restoreSession()).then((sess) => { initialSession = sess; }).catch(() => {});
+    // --- Place-addressable navigation boot (ADR-0024 #5). Wire back/forward + manual hash edits, then install
+    // the INITIAL place through the resolver. Web: the URL is authoritative (a bare URL is Library Home).
+    // Desktop (Tauri, no address bar): restore the remembered place. Both degrade a stale place per #4. Runs
+    // AFTER the library meta is loaded above so resolvePlace sees the real exhibits. replaceState (not push)
+    // so boot leaves exactly one history entry. ---
+    window.addEventListener("popstate", onLocationChange);
+    window.addEventListener("hashchange", onLocationChange);
+    navReady = true;
+    await applyPlace(isTauri() ? savedLastPlace : parsePlace(location.hash), "replace");
   });
 
-  // Open an exhibit into the editor: load its per-exhibit annotation log (seed the sample if empty).
+  // Open an exhibit: load its per-exhibit annotation log (seed the sample if empty) and land on its
+  // Overview. Wrapped in suspend/resume so this multi-step async transition pushes ONE history entry — the
+  // settled landing place — not the intermediate cursor mutations (see syncUrl).
   async function openExhibit(slug: string) {
+    suspendSync();
+    try {
     const prevSlug = currentSlug;
     const ex = lib.meta.exhibits.find((e) => e.slug === slug);
     // The editor CURSOR + reading display are App-owned VIEW state — reset them synchronously up front
@@ -249,13 +304,21 @@
       resolveAssets: () => assets.resolveThumbs(slug, ex?.objects ?? []), // OPFS /assets → thumb blob: URLs
     });
     rev += 1;
-    // Land at the exhibit's OVERVIEW scale (invention #1) UNLESS it's exactly one object, which goes
-    // straight to its annotation surface (auto-open the only object; the back affordance is suppressed).
-    // An EMPTY (0-object) exhibit also lands at the overview — that's the only place to name it + add
-    // objects (the Details drawer lives there). The overview is an OBJECT-COUNT affordance only: sections
-    // (a narrative) do NOT trigger it (ADR-0016 — narrative is an emergent reading mode of the published
-    // exhibit, not an authoring gate). MUST stay in sync with `hasOverview` below (same predicate).
-    view = (ex?.objects.length ?? 0) !== 1 ? "overview" : "editor";
+    // ADR-0024 #2: Overview is MANDATORY. Every exhibit — one object, many, or empty — lands on its
+    // Overview; the old single-object skip (→ editor) is removed, so the same click always reaches the
+    // same screen and the editor is always one explicit step deeper. Single-object exhibits still need
+    // the overview's narrative strip, details, and add-media surface — the skip stranded those.
+    enterOverview(slug);
+    } finally {
+      resumeSync();
+      syncUrl(); // push the settled landing place (no-op if a caller/history replay is still suspending)
+    }
+  }
+  // Enter the overview scale for `slug`, restoring the transient look (mode + pan-zoom) remembered for it
+  // within this session (ADR-0024 #6). The single funnel for "show overview" so restore never gets skipped.
+  function enterOverview(slug: string) {
+    restoreOverviewScreen(slug);
+    view = "overview";
   }
   async function backToLibrary() {
     sess.cancelPendingSave();
@@ -276,7 +339,7 @@
     await openExhibit(slug);
     openObject(objId);
   }
-  async function backToOverview() { editingObjectId = null; await save(); view = "overview"; }
+  async function backToOverview() { editingObjectId = null; await save(); enterOverview(currentSlug); }
 
   // --- Destructive removes (Archie-3f4c). Object → tombstone its notes (ADR-0003 append-only; recoverable
   // via history, orphaned tombstones don't project), then drop the object. Exhibit → clear its annotation
@@ -306,10 +369,9 @@
   // If the cursor pointed at the removed object, advance it to a survivor so the (unmounted) editor stays valid.
   async function removeObjectById(objId: string) {
     await deleteObjectNotesAndMeta(objId);
-    // Keep the view==overview ⟺ hasOverview invariant: openExhibit routes a 1-object exhibit straight to the
-    // editor, so deleting down to a lone survivor drops into ITS editor, not a 1-plate "overview" the rest of
-    // the app never enters. (0 survivors → stay; an empty overview is valid, the only place to re-add.)
-    if (OBJECTS.length === 1) { switchObject(OBJECTS[0]!.id); view = "editor"; return; }
+    // ADR-0024 #2: Overview is mandatory at every object count, so a delete from the overview STAYS on the
+    // overview (even down to one, or zero — the empty overview is the only place to re-add). Just keep the
+    // (unmounted) editor cursor valid: if it pointed at the removed object, advance it to a survivor.
     if (objId === currentObjectId) { const surv = OBJECTS.find((o) => o.id !== objId); if (surv) switchObject(surv.id); }
   }
   // Remove an exhibit by slug — meta + on-disk annotation log. Safe for a NON-loaded exhibit (library-grid
@@ -409,6 +471,87 @@
   // Which object of the exhibit the editor is showing. Switching resets transient view state. Declared here
   // (not with the other object state below) because canvasFocus reads it — svelte-check flags the TDZ (Issue 12).
   let currentObjectId = $state("o1");
+
+  // --- Place navigation machinery (declared here — after currentObjectId, which currentPlace reads). ---
+  // The current place is a pure function of the view triple. Reading ONLY view/slug/object means modals,
+  // panels, selections and viewports can never leak into the URL (ADR-0024 #6, the "not a place" guarantee).
+  const currentPlace = $derived<Place>(
+    view === "library" ? LIBRARY
+    : view === "overview" ? { kind: "overview", slug: currentSlug }
+    : { kind: "editor", slug: currentSlug, objectId: currentObjectId },
+  );
+  // STATE → URL. Runs after any SETTLED place change and pushes a NEW history entry (ADR-0024 #3 — including
+  // filmstrip object switches, which flow through currentObjectId). Suspended during multi-step transitions
+  // and history replay; a hash-only URL keeps the /studio/ pathname, so this is base-path/static-host safe.
+  function syncUrl() {
+    if (!navReady || navSyncSuspendCount > 0) return;
+    const url = serializePlace(currentPlace);
+    if (url === committedUrl) return;
+    committedUrl = url;
+    history.pushState({ url }, "", url);
+    rememberLastPlace(url);
+  }
+  $effect(() => { void currentPlace; syncUrl(); });
+  // Desktop-only: remember the last place so a relaunch (no address bar) can restore it (ADR-0024 #5).
+  function rememberLastPlace(url: string) {
+    if (!isTauri()) return;
+    try { localStorage.setItem(LAST_PLACE_KEY, url); } catch { /* best-effort — private mode just won't restore */ }
+  }
+  // Best-effort session memory for the overview's transient look (ADR-0024 #6): snapshot the tableau
+  // pan-zoom under the current slug whenever it changes while the overview is showing.
+  function restoreOverviewScreen(slug: string) {
+    const s = overviewScreens.get(slug);
+    ovTx = s?.tx ?? 0; ovTy = s?.ty ?? 0; ovZ = s?.z ?? 1;
+  }
+  $effect(() => {
+    if (view !== "overview") return;
+    overviewScreens.set(currentSlug, { tx: ovTx, ty: ovTy, z: ovZ });
+  });
+
+  // URL → STATE. Apply a place to the view, degrading an unresolvable one to its nearest surviving ancestor
+  // (ADR-0024 #4) and naming what was missing. Suspends the sync effect for the whole transition, then does
+  // its OWN history bookkeeping: push a fresh entry, replace the bar in place (boot + a degrade correction),
+  // or stay silent (a back/forward we're only reflecting).
+  async function applyPlace(target: Place, history_: "push" | "replace" | "silent") {
+    const res = resolvePlace(target, librarySnapshot(lib.meta.exhibits));
+    fallbackNotice = noticeFor(res.missing);
+    suspendSync();
+    try { await gotoPlace(res.place); }
+    finally { resumeSync(); }
+    const url = serializePlace(res.place);
+    committedUrl = url;
+    rememberLastPlace(url);
+    const mode = history_ === "silent" && res.degraded ? "replace" : history_;
+    if (mode === "push") history.pushState({ url }, "", url);
+    else if (mode === "replace") history.replaceState({ url }, "", url);
+  }
+  // Move the view to a (already-resolved) place, reusing the real transitions so sessions load exactly as a
+  // click would. currentSlug is only a cursor (see openObjectInExhibit), so re-open unless we're already
+  // inside this exhibit at a non-library scale.
+  async function gotoPlace(place: Place) {
+    if (place.kind === "library") {
+      if (view !== "library") await backToLibrary(); else view = "library";
+      return;
+    }
+    if (view === "library" || currentSlug !== place.slug) await openExhibit(place.slug); // lands overview (#2)
+    if (place.kind === "overview") enterOverview(place.slug);
+    else openObject(place.objectId); // switchObject + view = editor
+  }
+  // The fallback strip copy (ADR-0024 #4): one plain sentence naming what wasn't found (WWWWH-first).
+  function noticeFor(m: Missing | null): string | null {
+    if (!m) return null;
+    if (m.kind === "exhibit") return `That exhibit (“${m.slug}”) isn’t in this library anymore, so this is your library.`;
+    const title = lib.meta.exhibits.find((e) => e.slug === m.slug)?.title ?? m.slug;
+    return `That item isn’t in “${title}” anymore, so this is the exhibit.`;
+  }
+  // Back/forward AND a manually-typed hash both land here (popstate + hashchange). The committedUrl guard
+  // dedupes the two events browsers fire together and ignores echoes of the place we already show.
+  function onLocationChange() {
+    const place = parsePlace(location.hash);
+    if (serializePlace(place) === committedUrl) return;
+    void applyPlace(place, "silent");
+  }
+
   // The framed region the active card points at, passed to Canvas.focus to fit the viewport to it (ADR-0005
   // Section.start). Gated on object-match so a stale fragment never fits the wrong canvas; a temporal `t=` AV
   // fragment no-ops on the spatial canvas anyway (AV uses AvEditor, which takes no focus).
@@ -581,9 +724,8 @@
     bump();
     await lib.removeObjects(currentSlug, list); // single persist → single onAfterPersist mirror
     clearSel(); selectMode = false;
-    // View invariant (mirror removeObjectById): a lone survivor drops into ITS editor (a 1-plate overview is
-    // never entered); if the open object was among the deleted, advance the cursor to a survivor.
-    if (OBJECTS.length === 1) { switchObject(OBJECTS[0]!.id); view = "editor"; return; }
+    // ADR-0024 #2 (mirror removeObjectById): bulk delete from the overview STAYS on the overview at any
+    // object count; just keep the (unmounted) editor cursor valid if the open object was among the deleted.
     if (list.includes(currentObjectId)) { const surv = OBJECTS.find((o) => !list.includes(o.id)); if (surv) switchObject(surv.id); }
   }
   // Two-step inline confirm (DetailsEditor idiom — no window.confirm, off-brand for the study): first call
@@ -834,10 +976,9 @@
   // survives headless-tested for a future presentation redesign: core layoutMarginalia(+pinId),
   // mount markerScreenRects, Canvas rectIds/onmarkerrects, render-svelte MarginColumn. See
   // IMPROVEMENT-WORKLIST ledger + the marginalia-redesign seeds issue.)
-  // Whether this exhibit has an overview scale (invention #1): NOT exactly one object (so: 0 to name/fill,
-  // or >1 to arrange). An OBJECT-COUNT affordance only — sections/narrative do NOT trigger it (ADR-0016).
-  // MUST stay in sync with openExhibit's routing predicate above.
-  const hasOverview = $derived((currentExhibit?.objects.length ?? 0) !== 1);
+  // ADR-0024 #2: Overview is mandatory for every exhibit (the single-object skip is gone), so the editor
+  // always sits one explicit step below an Overview — the back affordance and the Esc ladder are
+  // unconditional (`← Overview`, editor→overview→library). `hasOverview` is retired.
   // The current exhibit's notes, shaped for the NarrativeEditor's "add section from a Note" shortcut
   // (ADR-0005 mitigation): objectId from the target canvas, start = the selector fragment, lead = the prose.
   const narrativeNotes = $derived.by(() => {
@@ -1266,6 +1407,14 @@
   let tutorialOpen = $state(false); // the onboarding tutorial modal (embeds the learn decks)
   // Global + image-editor keyboard shortcuts (registry-driven; AV shortcuts live in AvEditor, palette in CmdK).
   function onGlobalKey(e: KeyboardEvent) {
+    // ADR-0024 #5: the Tauri webview has no browser chrome, so wire Alt+←/→ to its history (the web target
+    // already has the browser's own back/forward + Alt+Arrow). A navigation chord, not text — fires
+    // regardless of focus, ahead of the other shortcuts.
+    if (isTauri() && e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+      e.preventDefault();
+      if (e.key === "ArrowLeft") history.back(); else history.forward();
+      return;
+    }
     // ? toggles the cheat-sheet (not while typing); Esc closes it first.
     if (matches(e, "?") && !typingInField(e)) { e.preventDefault(); helpOpen = !helpOpen; return; }
     if (helpOpen && matches(e, "Esc")) { e.preventDefault(); helpOpen = false; return; }
@@ -1291,7 +1440,7 @@
       // Phase 2 rungs — clear a selection first, then leave select-mode, BEFORE backing out of the overview.
       if (view === "overview" && selection.size > 0) { e.preventDefault(); clearSel(); return; }
       if (view === "overview" && selectMode) { e.preventDefault(); selectMode = false; return; }
-      if (view === "editor" && hasOverview) { e.preventDefault(); void backToOverview(); return; }
+      if (view === "editor") { e.preventDefault(); void backToOverview(); return; }
       if (view === "overview") { e.preventDefault(); void backToLibrary(); return; }
       return;
     }
@@ -1459,6 +1608,15 @@
     <button class="pg-keep" onclick={() => writerLock.takeOver()}>Take over editing</button>
   </div>
 {/if}
+{#if fallbackNotice}
+  <!-- ADR-0024 #4: the place in the URL no longer resolved, so we degraded to its nearest surviving
+       ancestor. Name what wasn't found so this isn't a silent redirect. Dismissible; reuses the
+       collab-note info strip. Modals/drawers never trigger this — only unresolvable PLACES do. -->
+  <div class="collab-note" role="status">
+    <span class="cn-msg">{fallbackNotice}</span>
+    <button type="button" class="cn-x" onclick={() => (fallbackNotice = null)} aria-label="Dismiss">✕</button>
+  </div>
+{/if}
 {#if view === "library"}
   {#if collabNote}
     <!-- ⑧ collaboration summary (draft copy — human-gated): amber=transient, the playground
@@ -1501,6 +1659,7 @@
     onremoveexhibit={(slug) => void removeExhibitById(slug)}
     ontutorial={() => (tutorialOpen = true)}
     onshortcuts={() => (helpOpen = true)}
+    bind:gallerySearch
   />
 {:else if view === "overview" && currentExhibit}
   <div class="overview-stage">
@@ -1526,6 +1685,9 @@
       onbulkdelete={requestBulkDelete}
       {bulkConfirming}
       onvisible={(ids) => (visibleIds = ids)}
+      bind:tx={ovTx}
+      bind:ty={ovTy}
+      bind:z={ovZ}
       onstartnarrative={() => openObject(OBJECTS[0]?.id ?? currentObjectId)}
       rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}
@@ -1554,7 +1716,7 @@
   </div>
 {:else}
   <header>
-    <button class="exhibit-back" onclick={hasOverview ? backToOverview : backToLibrary}>← {hasOverview ? "Overview" : "Exhibits"}</button>
+    <button class="exhibit-back" onclick={backToOverview}>← Overview</button>
     <!-- Breadcrumb: Exhibit › Object — surfaces the two scales (the spine lives at the exhibit level, notes
          at the object level; the crumb names where you are). -->
     <h1 class="wordmark">{currentExhibit?.title}</h1>{#if current}<span class="crumb">› {current.label}</span>{/if}<span class="sub">Studio</span>

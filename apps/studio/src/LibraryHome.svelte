@@ -48,6 +48,7 @@
     ontutorial,
     onshortcuts,
     onopenobject,
+    gallerySearch = $bindable(""),
   }: {
     exhibits: ExhibitMeta[];
     onopen: (slug: string) => void;
@@ -92,17 +93,22 @@
     /** All-images wall click-through (Phase 3.2): open an object in ITS exhibit's editor. App owns the
      *  cross-exhibit navigation (openExhibit → object → editor); this only signals which object. */
     onopenobject: (slug: string, objId: string) => void;
+    // --- Transient screen state (ADR-0024 #6). The search text is bindable so App remembers it within the
+    // session (the library is one place; App-level state survives this component's remount, resets on load).
+    // (The Exhibits/All-images lens is a PERSISTED view preference owned elsewhere — not bindable here.) ---
+    /** The shared search box text (filters the active view). */
+    gallerySearch?: string;
   } = $props();
 
   let rightsOpen = $state(false);
   const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
 
   // Two views, one search (Phase 3.2): visual Exhibit cards ⟷ the all-images wall; the search box filters
-  // the ACTIVE view (exhibit titles / object titles) via the shared matchesTitle primitive. View-only local
-  // state. The wall reads the library LIVE (flatten OPFS meta) — never the baked images.json (unpublished
-  // edits would make it stale). "All images" only offered once there's media to browse.
+  // the ACTIVE view (exhibit titles / object titles) via the shared matchesTitle primitive. `gallerySearch`
+  // is a bindable prop now (transient screen state, ADR-0024 #6 — see $props above). The wall reads the
+  // library LIVE (flatten OPFS meta) — never the baked images.json (unpublished edits would make it stale).
+  // "All images" only offered once there's media to browse.
   let galleryView = $state<"exhibits" | "wall">("exhibits");
-  let gallerySearch = $state("");
   const allImages = $derived(flattenLibraryImages(exhibits));
   const shownExhibits = $derived(filterExhibits(exhibits, gallerySearch));
   const shownImages = $derived(filterImages(allImages, gallerySearch));
