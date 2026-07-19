@@ -314,7 +314,7 @@
         {#if recents.length > 0}
           <span class="sep">·</span>
           <button class="link" onclick={() => (recentsOpen = !recentsOpen)} aria-expanded={recentsOpen}>
-            Recents {recentsOpen ? "▴" : "▾"}
+            Recents <span aria-hidden="true">{recentsOpen ? "▴" : "▾"}</span>
           </button>
         {/if}
       </p>
@@ -322,7 +322,7 @@
         <!-- Worklist 0.1 (loud saves): a failed write is never silent — the queue's last error, verbatim.
              SafetyState (header) already flips to "Failed"/"⚠ Retry save"; this is the one place the
              actual message text still surfaces. -->
-        <p class="save-error" role="alert">⚠ {saveStatus.error}</p>
+        <p class="save-error" role="alert"><span aria-hidden="true">⚠</span> {saveStatus.error}</p>
       {/if}
     </section>
 
@@ -384,7 +384,7 @@
       <!-- ONE entry point (Archie-51cc/Archie-8482) — the old title-field/hidden-folder-input/
            window.prompt trio now lives entirely in CreateExhibitDialog, mounted once below. -->
       <button type="button" class="new" onclick={() => openCreate()}>
-        <span class="plus">+</span>
+        <span class="plus" aria-hidden="true">+</span>
         <span class="label">New exhibit</span>
       </button>
     </li>
@@ -442,7 +442,7 @@
            they have their own exhibit to look at instead — still expandable any time. -->
       <section class="examples">
         <button type="button" class="examples-head" onclick={() => (examplesOpen = !examplesOpen)} aria-expanded={examplesOpen}>
-          Examples ({exampleExhibits.length}) <span class="chevron">{examplesOpen ? "▴" : "▾"}</span>
+          Examples ({exampleExhibits.length}) <span class="chevron" aria-hidden="true">{examplesOpen ? "▴" : "▾"}</span>
         </button>
         {#if examplesOpen}
           <p class="examples-contract">Explore how exhibits work — edits here aren't saved unless you keep a copy.</p>

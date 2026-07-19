@@ -461,7 +461,7 @@
         <h2>{activePath === "empty" ? "Start empty" : activePath === "folder" ? "From a media folder" : activePath === "iiif" ? "From a IIIF link" : "Add a map"}</h2>
         <button type="button" class="close-x" onclick={close} aria-label="Close">×</button>
       </div>
-      <button type="button" class="back-link" onclick={backToMenu}>‹ Back</button>
+      <button type="button" class="back-link" onclick={backToMenu}><span aria-hidden="true">‹</span> Back</button>
 
       {#if activePath === "empty"}
         <div class="field">
@@ -599,8 +599,8 @@
           <legend class="f-label">Area shown to visitors</legend>
           <div class="presets">
             {#each REGIONS as r}<button type="button" onclick={() => applyRegion(r.bounds)}>{r.name}</button>{/each}
-            <button type="button" class="preset-action" onclick={selectCurrent} title="Set the area to exactly what the map below shows right now">⊡ Use view</button>
-            <button type="button" onclick={fitToBox} title="Recentre the map below so the whole area fits in view">Fit ⤢</button>
+            <button type="button" class="preset-action" onclick={selectCurrent} title="Set the area to exactly what the map below shows right now"><span aria-hidden="true">⊡</span> Use view</button>
+            <button type="button" onclick={fitToBox} title="Recentre the map below so the whole area fits in view">Fit <span aria-hidden="true">⤢</span></button>
           </div>
           <div class="locator" bind:this={locatorEl} role="application"
             aria-label="Region locator — drag to set the visible area, or type exact edges below"
@@ -613,8 +613,8 @@
               {/each}
             </svg>
             <div class="zoom-ctrls">
-              <button type="button" onclick={() => zoomBy(1)} aria-label="Zoom in">+</button>
-              <button type="button" onclick={() => zoomBy(-1)} aria-label="Zoom out">−</button>
+              <button type="button" onclick={() => zoomBy(1)} aria-label="Zoom in" title="Zoom in">+</button>
+              <button type="button" onclick={() => zoomBy(-1)} aria-label="Zoom out" title="Zoom out">−</button>
             </div>
             <span class="loc-z">z{locZoom}</span>
           </div>
