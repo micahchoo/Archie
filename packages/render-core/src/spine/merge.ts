@@ -111,7 +111,7 @@ export function headsOf<R extends DagRecord<string>>(log: readonly R[], logicalI
 }
 
 /** Union two logs, deduping shared history by `rev` (shared ancestors appear once). */
-export function mergeLogs<R extends DagRecord<string>>(local: readonly R[], incoming: readonly R[]): readonly R[] {
+export function mergeLogs<R extends DagRecord<string>>(local: readonly R[], incoming: readonly NoInfer<R>[]): readonly R[] {
   const seen = new Set<RevId>();
   const out: R[] = [];
   for (const r of local) {
@@ -158,7 +158,7 @@ export type LogicalMergeResult =
  * (single head each); resolve your own conflicts before exchanging zips.
  */
 export function classifyLogical(local: AnnotationLog, incoming: AnnotationLog, logicalId: LogicalId): LogicalMergeResult;
-export function classifyLogical<R extends DagRecord<string>>(local: readonly R[], incoming: readonly R[], logicalId: R["logicalId"]): LogicalMergeResult;
+export function classifyLogical<R extends DagRecord<string>>(local: readonly R[], incoming: readonly NoInfer<R>[], logicalId: R["logicalId"]): LogicalMergeResult;
 export function classifyLogical<R extends DagRecord<string>>(local: readonly R[], incoming: readonly R[], logicalId: R["logicalId"]): LogicalMergeResult {
   const inLocal = local.some((r) => r.logicalId === logicalId);
   const inIncoming = incoming.some((r) => r.logicalId === logicalId);
@@ -175,7 +175,7 @@ export function classifyLogical<R extends DagRecord<string>>(local: readonly R[]
  * use of modifiedAt, and it is a UI suggestion inside a conflict card, NEVER automatic
  * resolution (Q-3). Callers must surface both sides to the user regardless.
  */
-export function conflictTiebreak<R extends DagRecord<string>>(a: R, b: R): R {
+export function conflictTiebreak<R extends DagRecord<string>>(a: R, b: NoInfer<R>): R {
   return b.modifiedAt > a.modifiedAt ? b : a;
 }
 

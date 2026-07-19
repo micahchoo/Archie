@@ -53,7 +53,9 @@ function isoOf(modifiedAt: string | undefined, now: number | undefined): string 
  * lives in the typed helpers below; direct callers (e.g. the future mergeLog) may assemble
  * logs with colliding (logicalId, version) plural-head records.
  */
-export function append<R extends DagRecord<string>>(log: readonly R[], record: R): readonly R[] {
+export function append<R extends DagRecord<string>>(log: readonly R[], record: NoInfer<R>): readonly R[] {
+  // NoInfer: R comes from the LOG alone, so appending a foreign record type (e.g. a structure
+  // record onto an annotation log) is a compile error instead of a silent union widening.
   return Object.freeze([...log, record]);
 }
 
