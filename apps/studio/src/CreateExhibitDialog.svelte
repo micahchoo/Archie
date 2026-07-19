@@ -24,9 +24,9 @@
   import { lngLatToPixel, pixelToLngLat, type XyzTileSource } from "@render/core";
   import {
     type CreateSurfaceScope, type IiifStatus,
-    surfaceTitle, createActionLabel, offersStartEmpty, offersMap,
+    surfaceTitle, createActionLabel, offersStartEmpty, offersMap, offersLink,
     pickedFromFiles, emptyPathValid, folderPathValid, iiifPathValid, looksLikeUrl, previewManifest,
-    folderTitleFieldApplies, iiifTitleFieldApplies, prefillTitle,
+    folderTitleFieldApplies, iiifTitleFieldApplies, prefillTitle, linkPathValid,
   } from "./create-exhibit-dialog.js";
   import { summarizeFolderFiles, folderGroupCount, flattenedRelativePaths, type FolderSummary } from "./folder-import.js";
   import { readDroppedFolderFiles } from "./folder-drop.js";
@@ -44,6 +44,7 @@
     oncreatefromfolder,
     oncreatefrommanifest,
     onaddmap,
+    onaddlink,
     onclose,
   }: {
     open: boolean;
@@ -67,10 +68,15 @@
     /** The Map path's submit (Archie-56cf — absorbed from the retired AddMapModal). Only fires in
      *  add-to-exhibit scope (offersMap); wired to ingest-flows' addMapObject. */
     onaddmap?: (m: { label: string; tileSource: XyzTileSource }) => void;
+    /** The "From a link" path's submit (Archie-32e8 — restores the pre-Archie-56cf URL-add UI onto
+     *  ingest-flows.ts's addObject(source, label), which survived that cut ready-made but UI-less). Only
+     *  fires in add-to-exhibit scope (offersLink); label is "" when the optional field was left blank —
+     *  addObject itself falls back to "Untitled object". */
+    onaddlink?: (source: string, label: string) => void;
     onclose: () => void;
   } = $props();
 
-  type PathKind = "empty" | "folder" | "iiif" | "map";
+  type PathKind = "empty" | "folder" | "iiif" | "link" | "map";
   let activePath = $state<PathKind | null>(null);
   let dialogEl = $state<HTMLElement | null>(null);
 
@@ -101,6 +107,12 @@
   let iiifAbort: AbortController | undefined;
   // Archie-46bf: whether the IIIF path's editable title field applies right now — new-exhibit scope only.
   const iiifTitleApplies = $derived(iiifTitleFieldApplies(scope));
+
+  // "From a link" path (Archie-32e8 — restores the pre-Archie-56cf URL-add UI onto ingest-flows.ts's
+  // addObject). No fetch/sniff preview here (that's what keeps this path cheap) — addObject itself does
+  // the media-type sniff + best-effort image dimension probe once submitted.
+  let linkUrl = $state("");
+  let linkLabel = $state("");
 
   // ── "Map" path (Archie-56cf) — absorbed from the retired AddMapModal.svelte. Pick a CURATED basemap
   // (terms permit static-site embedding, attribution baked in), set the bounded extent on a pan/zoom
@@ -172,23 +184,40 @@
   ];
   let locatorEl = $state<HTMLDivElement | null>(null);
   let drag = $state<{ mode: DragMode; ox: number; oy: number } | null>(null);
+  // Hover-only mode (no active drag) — drives the per-element cursor feedback below (review nit: the
+  // consolidated single-pointerdown container had dropped the old AddMapModal's per-element cursors —
+  // handle/box/background each had their own — when the svg+rects went handler-free/aria-hidden).
+  let hoverMode = $state<DragMode | null>(null);
   function ptr(e: MouseEvent): { x: number; y: number } { const r = locatorEl!.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
   function order(): void { if (west > east) [west, east] = [east, west]; if (south > north) [south, north] = [north, south]; }
   function dragDown(mode: DragMode, e: PointerEvent): void { if (!locatorEl) return; e.preventDefault(); locatorEl.setPointerCapture(e.pointerId); const p = ptr(e); drag = { mode, ox: p.x, oy: p.y }; }
-  // The ONE pointerdown for the whole locator: hit-test which drag mode the press starts (handle / box
-  // move / pan), so the svg + rects stay handler-free decoration (their a11y warnings die). Mirrors the
-  // old per-element dispatch exactly — container coords == the inset:0 svg's coords.
-  function locatorDown(e: PointerEvent): void {
-    if (!locatorEl || (e.target as HTMLElement).closest(".zoom-ctrls")) return; // let the zoom buttons act
-    const p = ptr(e), b = boxPx;
+  // Shared hit-test (which drag mode a press/hover at p resolves to: handle / box move / pan) — used by
+  // both locatorDown (press) and dragMove's hover branch (cursor feedback) so they can never disagree.
+  function hitTest(p: { x: number; y: number }): DragMode {
+    const b = boxPx;
     for (const h of HANDLES) {
-      if (Math.abs(p.x - h.fx(b)) <= 6 && Math.abs(p.y - h.fy(b)) <= 6) { dragDown(h.m, e); return; }
+      if (Math.abs(p.x - h.fx(b)) <= 6 && Math.abs(p.y - h.fy(b)) <= 6) return h.m;
     }
     const inBox = p.x >= Math.min(b.x, b.x + b.w) && p.x <= Math.max(b.x, b.x + b.w) && p.y >= Math.min(b.y, b.y + b.h) && p.y <= Math.max(b.y, b.y + b.h);
-    dragDown(inBox ? "move" : "pan", e);
+    return inBox ? "move" : "pan";
+  }
+  // The ONE pointerdown for the whole locator: hit-test which drag mode the press starts (handle / box
+  // move / pan), so the svg + rects stay handler-free decoration (their a11y warnings die). Mirrors the
+  // old per-element dispatch exactly — container coords == the inset:0 svg's coords. The zoom buttons AND
+  // the z-level badge (review nit: it sat inside the pan hit area, so a click meant to just read the
+  // current zoom silently started a pan) are excluded — a press there is not a locator gesture.
+  function locatorDown(e: PointerEvent): void {
+    if (!locatorEl || (e.target as HTMLElement).closest(".zoom-ctrls, .loc-z")) return;
+    dragDown(hitTest(ptr(e)), e);
   }
   function dragMove(e: PointerEvent): void {
-    if (!drag || !locatorEl) return;
+    if (!locatorEl) return;
+    if (!drag) {
+      // Not dragging — just update the hover-driven cursor (skip over the zoom controls/z-badge, which
+      // have their own default cursor and aren't locator gestures).
+      hoverMode = (e.target as HTMLElement).closest(".zoom-ctrls, .loc-z") ? null : hitTest(ptr(e));
+      return;
+    }
     const p = ptr(e);
     if (drag.mode === "pan") {
       const c = llToWorld(locCenter.lng, locCenter.lat, origin.z);
@@ -210,6 +239,18 @@
     }
   }
   function dragUp(): void { drag = null; }
+  function locatorLeave(): void { if (!drag) hoverMode = null; }
+  // Per-element cursor feedback (mirrors the retired AddMapModal's `.sel`/`.handle`/background rules,
+  // lost when the svg+rects went pointer-events:none/handler-free — see locatorDown's docstring): a
+  // handle reads "pointer", the box body "move", the background "grab"/"grabbing" while panning.
+  const locatorCursor = $derived.by(() => {
+    if (drag) return drag.mode === "pan" ? "grabbing" : drag.mode === "move" ? "move" : "pointer";
+    switch (hoverMode) {
+      case "nw": case "ne": case "sw": case "se": return "pointer";
+      case "move": return "move";
+      default: return "grab";
+    }
+  });
   // Zoom keeping the geographic point under (mx,my) fixed on screen — "zoom at mouse", not at centre.
   function zoomAt(mx: number, my: number, d: number): void {
     const nz = clampN(locZoom + d, 0, Math.min(provider.maxZoom, 18));
@@ -258,6 +299,9 @@
     clearTimeout(iiifTimer);
     iiifAbort?.abort();
     iiifAbort = undefined;
+    // Link path
+    linkUrl = "";
+    linkLabel = "";
     // Map path
     providerId = PROVIDERS[0]!.id;
     mapLabel = "";
@@ -348,6 +392,12 @@
   function submitIiif() {
     if (!iiifPathValid(iiifStatus, iiifTitleApplies, title)) return;
     oncreatefrommanifest(iiifUrl.trim(), iiifTitleApplies ? title.trim() : undefined);
+    close();
+  }
+
+  function submitLink() {
+    if (!linkPathValid(linkUrl)) return;
+    onaddlink?.(linkUrl.trim(), linkLabel.trim());
     close();
   }
 
@@ -448,6 +498,13 @@
           <span class="p-title">From a IIIF link</span>
           <span class="p-desc">Paste a IIIF link (from a library or museum site) and Archie fetches its pages for you.</span>
         </button>
+        {#if offersLink(scope)}
+          <button type="button" class="path-card" onclick={() => selectPath("link")}>
+            <span class="glyph" aria-hidden="true">↗</span>
+            <span class="p-title">From a link</span>
+            <span class="p-desc">Add a picture, audio, or video that lives at a web address — it stays there; Archie only keeps the link.</span>
+          </button>
+        {/if}
         {#if offersMap(scope)}
           <button type="button" class="path-card" onclick={() => selectPath("map")}>
             <span class="glyph" aria-hidden="true">◎</span>
@@ -458,7 +515,7 @@
       </div>
     {:else}
       <div class="chooser-head">
-        <h2>{activePath === "empty" ? "Start empty" : activePath === "folder" ? "From a media folder" : activePath === "iiif" ? "From a IIIF link" : "Add a map"}</h2>
+        <h2>{activePath === "empty" ? "Start empty" : activePath === "folder" ? "From a media folder" : activePath === "iiif" ? "From a IIIF link" : activePath === "link" ? "From a link" : "Add a map"}</h2>
         <button type="button" class="close-x" onclick={close} aria-label="Close">×</button>
       </div>
       <button type="button" class="back-link" onclick={backToMenu}><span aria-hidden="true">‹</span> Back</button>
@@ -580,6 +637,23 @@
           <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
           <button type="button" class="btn btn-primary" disabled={!iiifPathValid(iiifStatus, iiifTitleApplies, title)} onclick={submitIiif}>{createActionLabel(scope)}</button>
         </div>
+      {:else if activePath === "link"}
+        <!-- "From a link" (Archie-32e8, restoring the pre-Archie-56cf URL-add UI onto ingest-flows.ts's
+             addObject) — a URL field + an optional label, no preview: addObject itself sniffs media type
+             and best-effort probes image dimensions once submitted. -->
+        <div class="field">
+          <label class="f-label" for="linkUrl">Link</label>
+          <input id="linkUrl" type="url" bind:value={linkUrl} placeholder="https://…/image.jpg" autocomplete="off" />
+          <span class="f-hint">Add a picture, audio, or video that lives at a web address — it stays there; Archie only keeps the link.</span>
+        </div>
+        <div class="field">
+          <label class="f-label" for="linkLabel">Label (optional)</label>
+          <input id="linkLabel" type="text" bind:value={linkLabel} placeholder="e.g. Herbal folio 12r" autocomplete="off" />
+        </div>
+        <div class="path-actions">
+          <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
+          <button type="button" class="btn btn-primary" disabled={!linkPathValid(linkUrl)} onclick={submitLink}>{createActionLabel(scope)}</button>
+        </div>
       {:else}
         <!-- Map path (Archie-56cf, absorbed from AddMapModal). Basemap + name + bounded extent. The
              pan/zoom locator is a pointer-only VISUAL over the real numeric edges below — keyboard users
@@ -604,9 +678,10 @@
           </div>
           <div class="locator" bind:this={locatorEl} role="application"
             aria-label="Region locator — drag to set the visible area, or type exact edges below"
-            style="width:{S}px;height:{S}px" onpointerdown={locatorDown} onpointermove={dragMove} onpointerup={dragUp} onpointercancel={dragUp} onwheel={onWheel}>
+            style="width:{S}px;height:{S}px" style:cursor={locatorCursor}
+            onpointerdown={locatorDown} onpointermove={dragMove} onpointerup={dragUp} onpointercancel={dragUp} onpointerleave={locatorLeave} onwheel={onWheel}>
             <div class="tiles" aria-hidden="true">{#each tiles as t (t.key)}<img src={t.url} alt="" draggable="false" style="left:{t.left}px;top:{t.top}px" />{/each}</div>
-            <svg width={S} height={S} class:dragging={drag !== null} aria-hidden="true">
+            <svg width={S} height={S} aria-hidden="true">
               <rect class="sel" x={boxPx.x} y={boxPx.y} width={Math.max(0, boxPx.w)} height={Math.max(0, boxPx.h)} />
               {#each HANDLES as h}
                 <rect class="handle" x={h.fx(boxPx) - 5} y={h.fy(boxPx) - 5} width="10" height="10" />
@@ -1096,9 +1171,6 @@
     inset: 0;
     pointer-events: none; /* decoration only — the container owns the drag (a11y: real inputs below) */
   }
-  .locator svg.dragging {
-    cursor: grabbing;
-  }
   .locator .sel {
     fill: var(--accent);
     fill-opacity: 0.2;
@@ -1131,6 +1203,7 @@
   }
   .loc-z {
     position: absolute;
+    cursor: default; /* press here is inert (excluded from pan-start) — don't promise a grab */
     bottom: 6px;
     left: 6px;
     font: 0.7rem var(--font-mono);

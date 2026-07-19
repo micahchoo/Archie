@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
-  surfaceTitle, createActionLabel, offersStartEmpty, offersMap, pickedFromFiles,
+  surfaceTitle, createActionLabel, offersStartEmpty, offersMap, offersLink, pickedFromFiles,
   emptyPathValid, folderPathValid, iiifPathValid, looksLikeUrl, previewManifest,
-  folderTitleFieldApplies, iiifTitleFieldApplies, prefillTitle,
+  folderTitleFieldApplies, iiifTitleFieldApplies, prefillTitle, linkPathValid,
 } from "./create-exhibit-dialog.js";
 
 describe("CreateSurfaceScope copy (Archie-beb6's prop-level parameter)", () => {
@@ -21,6 +21,36 @@ describe("CreateSurfaceScope copy (Archie-beb6's prop-level parameter)", () => {
   it("the new-exhibit scope offers Start-empty but NOT the Map path (a map needs an existing exhibit)", () => {
     expect(offersMap({ kind: "new-exhibit" })).toBe(false);
     expect(offersStartEmpty({ kind: "new-exhibit" })).toBe(true);
+  });
+});
+
+describe("offersLink — where the 'From a link' path shows (Archie-32e8)", () => {
+  it("shows only in add-to-exhibit scope — same reasoning as offersMap: a remote object needs an existing exhibit to append onto", () => {
+    expect(offersLink({ kind: "add-to-exhibit", slug: "herbal-quires", title: "Herbal quires" })).toBe(true);
+  });
+  it("never shows in new-exhibit scope — a lone remote object isn't a sensible new exhibit", () => {
+    expect(offersLink({ kind: "new-exhibit" })).toBe(false);
+  });
+});
+
+describe("linkPathValid — light gating for the 'From a link' path (non-empty, http(s) only)", () => {
+  it("rejects an empty or whitespace-only URL", () => {
+    expect(linkPathValid("")).toBe(false);
+    expect(linkPathValid("   ")).toBe(false);
+  });
+  it("rejects a non-URL string", () => {
+    expect(linkPathValid("not a link")).toBe(false);
+  });
+  it("rejects a well-formed URL with a non-http(s) scheme", () => {
+    expect(linkPathValid("ftp://example.org/file.jpg")).toBe(false);
+    expect(linkPathValid("javascript:alert(1)")).toBe(false);
+  });
+  it("accepts a well-formed http(s) URL", () => {
+    expect(linkPathValid("https://example.org/herbal.jpg")).toBe(true);
+    expect(linkPathValid("http://example.org/herbal.jpg")).toBe(true);
+  });
+  it("trims surrounding whitespace before validating", () => {
+    expect(linkPathValid("  https://example.org/herbal.jpg  ")).toBe(true);
   });
 });
 

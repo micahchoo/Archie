@@ -1631,12 +1631,6 @@
     setImportStatus: (s) => { importStatus = s; },
     setImportNote: (s) => { importNote = s; },
     addPendingNotes,
-    // The inline add-media form + standalone map modal these three drove are retired (Archie-56cf): the
-    // scoped CreateExhibitDialog owns its own open state and closes itself on submit, so these post-add
-    // "close the add chrome" hooks are now no-ops kept only to satisfy the IngestContext contract.
-    setAddingObject: () => {},
-    clearAddForm: () => {},
-    setMapModalOpen: () => {},
     setCollabNote: (s) => { collabNote = s; },
     canvasIdOf,
     switchObject,
@@ -2333,8 +2327,10 @@
 <!-- GLOBAL: the scoped add-media chooser (Archie-56cf). ONE instance, opened in add-to-exhibit scope by
      BOTH the overview Add-media plate (onaddobject) and the editor "+ Add media" button. Its paths route
      to the into-exhibit ingest flows: folder → addFiles (straight into this exhibit), IIIF →
-     addManifestToExhibit, Map → addMapObject (the flow the retired AddMapModal used). Start-empty/oncreate
-     never fire in this scope. Mounted only with a current exhibit so the scope's slug/title are real. -->
+     addManifestToExhibit, Map → addMapObject (the flow the retired AddMapModal used), Link → addObject
+     (Archie-32e8 — restores the pre-Archie-56cf URL-add UI onto the ingest flow, which survived that cut
+     ready-made but UI-less). Start-empty/oncreate never fire in this scope. Mounted only with a current
+     exhibit so the scope's slug/title are real. -->
 {#if currentExhibit}
   <CreateExhibitDialog
     open={addMediaOpen}
@@ -2342,7 +2338,8 @@
     oncreate={() => {}}
     oncreatefromfolder={(files) => { flows.addFiles(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add those files."); }); }}
     oncreatefrommanifest={(url) => { flows.addManifestToExhibit(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
-    onaddmap={(m) => { void flows.addMapObject(m); }}
+    onaddmap={(m) => { flows.addMapObject(m).catch((e) => { console.error("Map add failed", e); window.alert("Couldn't add that map."); }); }}
+    onaddlink={(source, label) => { flows.addObject(source, label).catch((e) => { console.error("Link add failed", e); window.alert("Couldn't add that link."); }); }}
     onclose={() => (addMediaOpen = false)}
   />
 {/if}
