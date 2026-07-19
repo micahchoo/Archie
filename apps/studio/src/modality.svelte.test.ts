@@ -109,8 +109,9 @@ describe("modality — focus return", () => {
 
   it("a replacement opened from the PAGE keeps its OWN opener (return to what was clicked)", () => {
     // Repro of the review's SHOULD-FIX 1: rights drawer open (A) → page-level 'New exhibit' opens the
-    // dialog (B, opener NOT inside A) → close B → focus must land on 'New exhibit', not the drawer's ⓘ.
-    const a = fakeSurface("a", { opener: { tag: "drawer-opener-info" }, contains: () => false });
+    // dialog (B, opener NOT inside A) → close B → focus must land on 'New exhibit', not the drawer's
+    // Details opener (word + ✎ now — decision Archie-3e0a retired the ⓘ this comment used to name).
+    const a = fakeSurface("a", { opener: { tag: "drawer-opener-details" }, contains: () => false });
     const b = fakeSurface("b", { opener: { tag: "new-exhibit-cell" } });
     present(a);
     present(b);

@@ -394,7 +394,7 @@
          collapse to the same accessible name as the per-plate/row pencils elsewhere on this page. -->
     <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)}
       title="Details — title, description, credit & license for this exhibit"
-      aria-label={`Details — ${title}`}
+      aria-label={`Details — ${title && title.trim() ? title : "Exhibit"}`}
       >✎ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     <div class="viewtoggle" role="group" aria-label="Overview mode">
       <button class:on={mode === "canvas"} onclick={() => viewPrefs.setOverviewMode("canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>
@@ -799,7 +799,9 @@
   /* One fixed row height (Archie-a9fc chrome trim retired the density slider that used to feed this via
      --row-h; 3.3rem is the former slider's midpoint value). */
   .list li:not(.dropstart-row):not(.end) { content-visibility: auto; contain-intrinsic-size: auto 3.3rem; }
-  .list li:not(.dropstart-row):not(.end) button { min-height: 3.3rem; box-sizing: border-box; }
+  /* :not(.row-edit) — the row-open button gets the fixed row height, but the trailing Details pencil
+     must stay the shared .details-pencil 1.85rem square (review fix: min-height was beating its height). */
+  .list li:not(.dropstart-row):not(.end) button:not(.row-edit) { min-height: 3.3rem; box-sizing: border-box; }
   .list li.dragging { opacity: 0.4; }
   .list li.over { box-shadow: 0 -3px 0 var(--accent); } /* insert-before line */
   /* Leading "insert before first" drop zone (list): collapsed until a drag is active. */
@@ -820,11 +822,18 @@
   /* Per-row pencil (Archie-79be): a trailing quiet glyph — the shared .details-pencil (atmosphere.css)
      look, same as the canvas plate's pencil and the LibraryHome card's. Selector outspecifies
      `.list li button` (which sets flex:1) so flex:none holds and the open-button keeps the row width;
-     `.list li button:hover` also matches this (it's a button), so transform is explicitly cancelled. */
+     `.list li button:hover` also matches this (it's a button), so transform is explicitly cancelled.
+     Review fix: `.list li .row-edit` (0,2,1) still beats the GLOBAL `.details-pencil` (0,1,0) on every
+     property they both set (padding, border-radius, color, transition) and `.list li .row-edit:hover`
+     (0,3,1) beats `.details-pencil:hover` (0,2,0) too — so those contested properties are re-asserted
+     here instead of assumed inherited from the shared class, or the row pencil silently reverts to the
+     plain list-button look. */
   .list li .row-edit {
     flex: 0 0 auto; margin-left: var(--space-1);
+    padding: 0; min-height: 0; border-radius: var(--radius-sm); color: var(--ink-canvas-secondary);
+    transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
-  .list li .row-edit:hover { transform: none; }
+  .list li .row-edit:hover { color: var(--accent); border-color: var(--accent); transform: none; }
   .li-add { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); padding: var(--space-3); cursor: pointer; width: 100%; transition: color 160ms ease, border-color 160ms ease; }
   .li-add:hover { color: var(--ink-canvas-primary); border-color: var(--accent); }
 
