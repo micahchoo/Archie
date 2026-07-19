@@ -1757,7 +1757,7 @@
   {/if}
 
   <!-- Filmstrip rail (Archie-5e96) — NAVIGATION ONLY now: pick which object to annotate. The +Media/+Map
-       adders left for the object-zone header (Archie-beb6 will decide their real home); the mode/toast
+       adders left for the EXHIBIT-zone header (adding media is an exhibit action); the mode/toast
        banners left for the status strip below. A collapse control shrinks the rail to a slim strip; its
        collapsed state is a persisted view preference (Archie-c7ef), default EXPANDED (Archie-b671).
        Horizontal overflow scrolls; a vertical wheel maps onto it. -->
@@ -1770,7 +1770,7 @@
     <nav class="objects" aria-label="Exhibit objects" bind:this={railEl}
       onwheel={(e) => { const el = e.currentTarget as HTMLElement; if (el.scrollWidth <= el.clientWidth || e.deltaY === 0) return; el.scrollLeft += e.deltaY; e.preventDefault(); }}>
       {#if OBJECTS.length === 0}
-        <span class="no-objects">No media yet — add one from the “This object” panel.</span>
+        <span class="no-objects">No media yet — add one from the “Exhibit” panel.</span>
       {/if}
       {#if OBJECTS.length > 1}
         <!-- Orientation at scale: sticky, so "where am I" survives scrolling a 100+ rail. -->
@@ -1834,8 +1834,29 @@
         <header class="zone-header">
           <span class="zone-kicker">Exhibit</span>
           <span class="zone-name">{currentExhibit?.title}</span>
+          <!-- The +Media / +Map adders live in the EXHIBIT zone: adding media grows the exhibit's
+               collection (the form itself says "Add media to {exhibit}"), it doesn't act on the object
+               in view. Settled here after a stint parked in the object-zone header (Archie-beb6 history:
+               evicted from the nav-only filmstrip first). Do NOT delete the capability. -->
+          <div class="obj-add">
+            <button type="button" class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Media</button>
+            <button type="button" class="add-obj-toggle" onclick={() => { mapModalOpen = true; void import("./AddMapModal.svelte").then((m) => (AddMapModalComp = m.default)); }} title="Add a map (geo-annotation)">+ Map</button>
+          </div>
         </header>
         <div class="zone-body">
+          {#if addingObject}
+            <form class="add-obj" aria-label={`Add media to ${currentExhibit?.title ?? "this exhibit"}`} onsubmit={(e) => { e.preventDefault(); void flows.addObject(addSource, addLabel); }}>
+              <span class="add-obj-head">Add media to “{currentExhibit?.title ?? "this exhibit"}”</span>
+              <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; flows.addFiles(el.files).catch((err) => { console.error("File add failed", err); window.alert("Couldn't add that file."); }).finally(() => { el.value = ""; }); }} /></label>
+              <span class="or">or</span>
+              <input bind:value={addSource} placeholder="Link to an image, audio, or video" aria-label="Object source URL" title="A link points to the media where it lives, so your library stays small." />
+              <input class="lbl" bind:value={addLabel} placeholder="Label" aria-label="Object label" />
+              <button type="submit" disabled={addSource.trim() === ""}>Add</button>
+              <button type="button" class="cancel" onclick={() => { addingObject = false; addSource = ""; addLabel = ""; }}>✕</button>
+              <span class="add-obj-hint">Files live in this browser. Use <strong>Publish</strong> to save them as a shareable file.</span>
+            </form>
+          {/if}
+          {#if mapModalOpen && AddMapModalComp}{@const AddMap = AddMapModalComp}<AddMap onadd={(m) => { void flows.addMapObject(m); }} onclose={() => (mapModalOpen = false)} />{/if}
       {#if firstAddCueSlug === currentSlug}
         <!-- KEYSTONE matched-pair cue, FIRST-ADD (0→1): the one-time, non-blocking, dismissible note that
              adding beat #1 changed the exhibit's published front door. Sits directly above the spine card so
@@ -1873,7 +1894,7 @@
           <div class="panel-create">
             <button type="button" class="create-add" onclick={addSection} disabled={OBJECTS.length === 0} title="Add a new section to this exhibit's narrative">＋ Add a section</button>
             {#if narrativeNotes.length > 0}
-              <select class="from-note" aria-label="Add a section from an existing note"
+              <select class="from-note" aria-label="Add a section from an existing note" title="Turn an existing note into a new section"
                 onchange={(e) => { const el = e.currentTarget as HTMLSelectElement; const n = narrativeNotes.find((x) => x.id === el.value); if (n) addSectionFromNote(n); el.selectedIndex = 0; }}>
                 <option value="">＋ from a note…</option>
                 {#each narrativeNotes as n (n.id)}<option value={n.id}>{n.lead.slice(0, 40)}</option>{/each}
@@ -1904,33 +1925,33 @@
       <section class="zone zone-object">
         <header class="zone-header">
           <span class="zone-kicker">This object</span>
-          <span class="zone-name">{current?.label ?? "No media yet"}</span>
-          <!-- TEMP home for the add-grammar (Archie-beb6): the +Media / +Map adders were evicted from the
-               nav-only filmstrip and parked in this header until Archie-beb6 decides their real home. Do NOT
-               delete the capability — only its location is provisional. -->
-          <div class="obj-add">
-            <button type="button" class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Media</button>
-            <button type="button" class="add-obj-toggle" onclick={() => { mapModalOpen = true; void import("./AddMapModal.svelte").then((m) => (AddMapModalComp = m.default)); }} title="Add a map (geo-annotation)">+ Map</button>
-          </div>
+          {#if current}
+            <!-- THE object title — editable in place (Enter or blur commits via renameObject). Was doubled:
+                 this header span + a big .object-title input above the note list; the input had no edit
+                 affordance and clipped long labels with no ellipsis (usability pass 2026-07-18). The ✎ is
+                 the affordance; title= carries the full label when it ellipsizes. -->
+            <input class="zone-name-edit" value={current.label} title={current.label}
+              onchange={(e) => renameObject(currentObjectId, (e.currentTarget as HTMLInputElement).value)}
+              onkeydown={(e) => { if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur(); }}
+              aria-label="Object label" />
+            <span class="zone-name-pen" aria-hidden="true">✎</span>
+          {:else}
+            <span class="zone-name">No media yet</span>
+          {/if}
         </header>
         <div class="zone-body">
-          {#if addingObject}
-            <form class="add-obj" aria-label={`Add media to ${currentExhibit?.title ?? "this exhibit"}`} onsubmit={(e) => { e.preventDefault(); void flows.addObject(addSource, addLabel); }}>
-              <span class="add-obj-head">Add media to “{currentExhibit?.title ?? "this exhibit"}”</span>
-              <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; flows.addFiles(el.files).catch((err) => { console.error("File add failed", err); window.alert("Couldn't add that file."); }).finally(() => { el.value = ""; }); }} /></label>
-              <span class="or">or</span>
-              <input bind:value={addSource} placeholder="Link to an image, audio, or video" aria-label="Object source URL" title="A link points to the media where it lives, so your library stays small." />
-              <input class="lbl" bind:value={addLabel} placeholder="Label" aria-label="Object label" />
-              <button type="submit" disabled={addSource.trim() === ""}>Add</button>
-              <button type="button" class="cancel" onclick={() => { addingObject = false; addSource = ""; addLabel = ""; }}>✕</button>
-              <span class="add-obj-hint">Files live in this browser. Use <strong>Publish</strong> to save them as a shareable file.</span>
-            </form>
-          {/if}
-          {#if mapModalOpen && AddMapModalComp}{@const AddMap = AddMapModalComp}<AddMap onadd={(m) => { void flows.addMapObject(m); }} onclose={() => (mapModalOpen = false)} />{/if}
-
+          <!-- Notes (this item) — the object-local annotate loop. Title, the readings legend (now grouped
+               inside the Notes group), create tools, the present-notes list, and the folded "To place"
+               worklist group below. -->
+          <div class="panel-title-row">
+            <h3 class="panel-title">Notes</h3>
+            <span class="panel-note">{notes.length} {notes.length === 1 ? "note" : "notes"}</span>
+          </div>
           <!-- Readings — SUBORDINATE to Notes (Archie-b671 amendment): a quiet legend, not a peer workspace.
                Visibility checkbox + colour swatch + name + count on THIS object + the file-into pen radio;
-               "Manage readings…" opens the existing ReadingsModal. (The floating rail is retired.) -->
+               "Manage readings…" opens the existing ReadingsModal. (The floating rail is retired.)
+               Sits UNDER the Notes header now, so the subordination reads in layout, not just type style
+               (usability pass 2026-07-18). -->
           {#if current}
             <section class="readings-panel" aria-label="Readings">
               <h3 class="panel-title subordinate">Readings</h3>
@@ -1952,13 +1973,6 @@
               <button type="button" class="readings-manage" onclick={() => (readingsOpen = true)}>{currentReadings.length === 0 ? "+ New reading" : "Manage readings…"}</button>
             </section>
           {/if}
-
-          <!-- Notes (this item) — the object-local annotate loop. Title, create tools, the present-notes list,
-               and the folded "To place" worklist group below. -->
-          <div class="panel-title-row">
-            <h3 class="panel-title">Notes</h3>
-            <span class="panel-note">{notes.length} {notes.length === 1 ? "note" : "notes"}</span>
-          </div>
         <div class="notes-create">
           {#if current && !isAvCurrent}
             <!-- ADR-0011: drawing is armed only by creating a note. Choose a shape, draw the region on the
@@ -1973,35 +1987,31 @@
               <button type="button" onclick={() => createWholeObjectNote()} title={isMapCurrent ? "Note on the whole map (no region)" : "Note on the whole image (no region)"}>▣ Whole {isMapCurrent ? "map" : "image"}</button>
             </div>
           {/if}
-          {#if current && !isAvCurrent}
-            <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
-            <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, comment — x, y, w, h, tags, reading all optional, header row first. Rows with no x,y,w,h arrive as “needs placement”: draw each box with Set area. Use a media item’s label in the object column, or leave it blank for the current one.">… or add notes from a CSV</button>
-            <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
-              onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
-            <button type="button" class="csv-import" onclick={downloadCsvTemplate} title="Download a starter CSV pre-filled with this exhibit's items. Fill in the blanks in Excel or Sheets, then add it back — rows without x,y,w,h become “needs placement”.">… or download a starter CSV to fill in</button>
-          {/if}
-          <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
-          <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="Import notes from Archie or another annotation tool.">… or add notes from a file</button>
-          <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Add notes from a file"
-            onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesWadm(f).catch((err) => { console.error("Notes add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
           <p class="hint">{isAvCurrent ? "Play the recording · “Mark start” then “Add note” pins a note to that moment · click any note to jump back and edit." : "Pick a shape · draw the region · click a marker to edit it in the dock on the right."}</p>
+          <!-- Bulk on-ramps (⑥ CSV, ⑦ WADM) folded into ONE quiet disclosure — three always-visible
+               "… or add notes from…" rows crowded the create column (usability pass 2026-07-18). Native
+               <details>, the "To place" idiom. -->
+          <details class="import-notes">
+            <summary>Import notes…</summary>
+            {#if current && !isAvCurrent}
+              <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
+              <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, comment — x, y, w, h, tags, reading all optional, header row first. Rows with no x,y,w,h arrive as “needs placement”: draw each box with Set area. Use a media item’s label in the object column, or leave it blank for the current one.">From a CSV</button>
+              <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
+                onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+              <button type="button" class="csv-import" onclick={downloadCsvTemplate} title="Download a starter CSV pre-filled with this exhibit's items. Fill in the blanks in Excel or Sheets, then add it back — rows without x,y,w,h become “needs placement”.">Download a starter CSV to fill in</button>
+            {/if}
+            <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
+            <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="Import notes from Archie or another annotation tool.">From an annotation file</button>
+            <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Add notes from a file"
+              onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesWadm(f).catch((err) => { console.error("Notes add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+          </details>
         </div>
         <div class="notes-body">
-          {#if current}
-            <!-- editable object label (authored structure; persists). Enter or blur commits. -->
-            <input
-              class="object-title"
-              value={current.label}
-              onchange={(e) => renameObject(currentObjectId, (e.currentTarget as HTMLInputElement).value)}
-              onkeydown={(e) => { if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur(); }}
-              aria-label="Object label"
-            />
-          {/if}
           <!-- What's already on this item — the present-notes list (empty-state when none or all hidden). -->
           {#if notes.length === 0}
             <p class="empty">{isAvCurrent ? "No notes on this recording yet. Mark a moment, then add a note to pin it." : objNotes.length > 0 ? "This media item has notes, but they’re hidden. Turn on a reading to show them." : "No notes on this media item yet. Pick Box or Outline above, then draw the region."}</p>
           {/if}
-          <ul>
+          <ul class="notes-list">
             {#each notes as r (r.rev)}
               <!-- Hovering a note solos its MARK on the canvas (the rail's hover affordance, per-note). -->
               <li class:sel={editing === r.logicalId} onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}>
@@ -2099,7 +2109,11 @@
       {:else if current && assets.sourceReadyFor(currentSlug, current)}
         {#key canvasId}
           {#if CanvasComp}
-            <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} />
+            <!-- noteViewFraction 0.5: selecting a note frames it at HALF the view, not edge-to-edge —
+                 an editing canvas needs the surrounding context and the shape's resize handles on
+                 screen, and a full-bleed fit shoved the marker under the viewport edges. Section
+                 camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
+            <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} />
           {:else}
             <div class="no-canvas">Loading…</div>
           {/if}
@@ -2112,7 +2126,7 @@
       {:else if current}
         <div class="no-canvas">Loading…</div>
       {:else}
-        <div class="no-canvas">Add media — drop an image here, or use “+ Media” in the “This object” panel.</div>
+        <div class="no-canvas">Add media — drop an image here, or use “+ Media” in the “Exhibit” panel.</div>
       {/if}
       <!-- The canvas carries ZERO chrome now (Archie-a9fc / Archie-b671): the note editor is docked to the
            right edge (below), the readings controls live in the sidebar, and mode/toast messaging lives in the
@@ -2278,15 +2292,20 @@
   .zone-kicker { flex-basis: 100%; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-paper-muted); }
   .zone-object .zone-kicker { color: var(--accent-2); }
   .zone-name { font-family: var(--font-display); font-size: 1.15rem; font-weight: 400; line-height: 1.2; color: var(--ink-paper-primary); overflow-wrap: anywhere; }
+  .zone-name-edit { flex: 1 1 auto; min-width: 0; margin: 0; font-family: var(--font-display); font-size: 1.15rem; font-weight: 400; line-height: 1.2; color: var(--ink-paper-primary); background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); padding: 0 var(--space-1); text-overflow: ellipsis; transition: background 160ms ease, box-shadow 160ms ease; }
+  .zone-name-edit:hover { background: var(--surface-paper-hover); }
+  .zone-name-edit:focus { outline: none; background: var(--surface-paper-card); box-shadow: var(--shadow-lift-low); }
+  .zone-name-pen { align-self: center; font-size: 0.8rem; color: var(--ink-paper-muted); opacity: 0.55; transition: color 120ms ease, opacity 120ms ease; }
+  .zone-header:hover .zone-name-pen, .zone-header:focus-within .zone-name-pen { color: var(--accent-2); opacity: 1; }
   .zone-body { padding: var(--space-3) var(--space-5) var(--space-4); }
-  /* The +Media / +Map adders, parked in the object-zone header until Archie-beb6 (add-grammar). */
+  /* The +Media / +Map adders, in the exhibit-zone header (adding media is an exhibit action). */
   .obj-add { margin-left: auto; display: flex; gap: var(--space-2); }
   /* Section title inside a zone body — a quiet eyebrow with an optional count/note on the right. */
   .panel-title-row { display: flex; align-items: baseline; gap: var(--space-3); margin: var(--space-4) 0 var(--space-2); }
   .panel-title-row:first-child { margin-top: 0; }
   .panel-title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.1rem; line-height: 1; color: var(--ink-paper-primary); }
   /* Readings is SUBORDINATE to Notes (Archie-b671): a smaller, quieter eyebrow, not a peer title. */
-  .panel-title.subordinate { font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-paper-secondary); margin: var(--space-4) 0 var(--space-1); }
+  .panel-title.subordinate { font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-paper-secondary); margin: 0 0 var(--space-1); }
   .panel-note { margin-left: auto; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); letter-spacing: 0.04em; color: var(--ink-paper-muted); }
   .panel-create { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
   /* Notes create stacks its rows (draw tools → import links → hint). */
@@ -2311,12 +2330,15 @@
   .readings-manage { margin-top: var(--space-1); cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-xs); letter-spacing: 0.12em; text-transform: uppercase; padding: var(--space-1) var(--space-2); background: none; color: var(--ink-paper-secondary); border: 1px solid var(--border-paper); border-radius: var(--radius-sm); transition: color 0.16s ease, border-color 0.16s ease; }
   .readings-manage:hover { color: var(--accent-2); border-color: var(--accent-2); }
 
-  /* "To place" — a folded collapsible group inside Notes (Archie-b671), native <details>. */
+  /* "To place" — a folded collapsible group inside Notes (Archie-b671), native <details>. The same
+     summary dress covers .import-notes (the folded bulk on-ramps, usability pass 2026-07-18). */
   .to-place { margin: 0 0 var(--space-3); }
-  .to-place > summary { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; list-style: none; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-paper-secondary); padding: var(--space-1) 0; }
-  .to-place > summary::-webkit-details-marker { display: none; }
-  .to-place > summary::before { content: "▸"; font-size: 0.7rem; color: var(--ink-paper-muted); transition: transform 0.16s ease; }
-  .to-place[open] > summary::before { content: "▾"; }
+  .import-notes { margin: 0; }
+  .import-notes .csv-import { display: block; padding: 4px 0 4px 1.05rem; } /* indent under the ▸ caret */
+  .to-place > summary, .import-notes > summary { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; list-style: none; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-paper-secondary); padding: var(--space-1) 0; }
+  .to-place > summary::-webkit-details-marker, .import-notes > summary::-webkit-details-marker { display: none; }
+  .to-place > summary::before, .import-notes > summary::before { content: "▸"; font-size: 0.7rem; color: var(--ink-paper-muted); transition: transform 0.16s ease; }
+  .to-place[open] > summary::before, .import-notes[open] > summary::before { content: "▾"; }
   .to-place .count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.4rem; padding: 1px var(--space-2); font-family: var(--font-ui); font-size: 0.72rem; font-weight: 600; color: var(--ink-paper-primary); background: var(--surface-paper-card); border: 1px solid var(--border-paper-emphasis); border-radius: 999px; }
   /* Primary CTA — the ONE rationed signal here: signal-orange fill, warm body text, soft glow. */
   .create-add { align-self: flex-start; cursor: pointer; font-family: var(--font-body); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.01em; padding: var(--space-2) var(--space-3); background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-signal-glow); transition: background 140ms ease; }
@@ -2477,17 +2499,10 @@
   }
   /* Collapsed = give the canvas the whole width (image-first). The divider stays (anti-trap: always expandable). */
   .sidebar.collapsed { width: 0; min-width: 0; padding: 0; border-left: 0; overflow: hidden; }
-  /* Editable object label — reads as a Fraunces title, reveals as an input on hover/focus */
-  .object-title {
-    display: block; width: 100%; box-sizing: border-box; margin: 0 0 var(--space-1);
-    font-family: var(--font-display); font-size: 1.7rem; font-weight: 300; line-height: 1.15; color: var(--ink-paper-primary);
-    background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm);
-    padding: var(--space-1) var(--space-2);
-    transition: background 160ms ease, box-shadow 160ms ease;
-  }
-  .object-title:hover { background: var(--surface-paper-hover); }
-  .object-title:focus { outline: none; background: var(--surface-paper-card); box-shadow: var(--shadow-lift-low); }
   ul { list-style: none; margin: 0; padding: 0; }
+  /* Long note lists scroll HERE (the spine .cards 50vh idiom, NarrativeEditor) so Detail and Remove
+     never sink arbitrarily deep in the single sidebar scroll (usability pass 2026-07-18). */
+  .notes-list { max-height: 45vh; overflow-y: auto; }
 
   /* Annotation note card — warm paper, soft rounded, separated by tone + shadow (no hard border) */
   li button {
@@ -2502,13 +2517,13 @@
   li button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
   /* Selected = a quiet signal: a soft accent left-edge + faint tint, never a loud fill. */
   li.sel button { border-left-color: var(--accent); background: var(--accent-muted); }
-  .comment { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+  .comment { font-family: var(--font-body); font-size: var(--text-note); line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
   .meta { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
   .tag { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-2); }
   /* Geo-annotation: the pin's lng/lat readout in the note list (derived from its basemap position). */
   .geo { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.02em; color: var(--ink-paper-secondary); }
   .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); border: 1px solid var(--border-paper); padding: 2px var(--space-2); border-radius: var(--radius-sm); }
-  .hint { font-family: var(--font-body); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin-top: var(--space-4); }
+  .hint { font-family: var(--font-body); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin: 0; }
   .csv-import { align-self: flex-start; background: none; border: none; cursor: pointer; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); transition: color 160ms ease; } /* 24px+ hit box */
   .csv-import:hover { color: var(--accent-2); }
   /* "To place" worklist cards (Archie-79c0 sub-cycle B) — width-responsive: text WRAPS, never truncates. */

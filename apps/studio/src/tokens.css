@@ -70,6 +70,10 @@
   /* ── Type scale (UI) ── */
   --text-ui-sm: 0.8125rem; --text-ui-xs: 0.7rem; --text-ui-md: 0.75rem;
 
+  /* ── Type scale (prose) — descriptive copy and note bodies ── */
+  --text-lede: 1.0625rem;  /* intro/lede + summary copy — one step above body, NOT display-size */
+  --text-note: 0.95rem;    /* note/annotation body text — same size reading and editing */
+
   /* ── Spacing (8px base — loose, space-led) ── */
   --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
   --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px;

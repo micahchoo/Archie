@@ -151,7 +151,13 @@
   {:else}
   <header>
     <p class="eyebrow">Exhibit narrative</p>
-    <p class="lede">A section is one passage in this exhibit's narrative, shown with one media item. Sections flow in order, carrying the reader from one to the next — and stay put as you switch between media items.</p>
+    <!-- Once the narrative is started the definition has been read — fold the lede behind a quiet
+         disclosure so section cards start higher (usability pass 2026-07-18). Empty state keeps the
+         full teaching line (that's where it's needed). -->
+    <details class="about">
+      <summary>What's a section?</summary>
+      <p class="lede">A section is one passage in this exhibit's narrative, shown with one media item. Sections flow in order, carrying the reader from one to the next — and stay put as you switch between media items.</p>
+    </details>
   </header>
 
   {#if objects.length === 0}
@@ -239,6 +245,13 @@
   .spine.recessed .empty { font-size: 0.82rem; line-height: 1.55; opacity: 0.9; }
   .spine > header .eyebrow { margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.6; color: var(--ink-paper-secondary); }
   .spine > header .lede { margin: var(--space-1) 0 0; font-family: var(--font-body); font-size: 0.85rem; line-height: 1.6; color: var(--ink-paper-secondary); }
+  /* The folded lede's disclosure (usability pass 2026-07-18) — quiet, eyebrow-adjacent dress. */
+  .about { margin: var(--space-1) 0 0; }
+  .about > summary { cursor: pointer; list-style: none; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); letter-spacing: 0.06em; color: var(--ink-paper-muted); transition: color 120ms ease; }
+  .about > summary:hover { color: var(--accent-2); }
+  .about > summary::-webkit-details-marker { display: none; }
+  .about > summary::before { content: "▸ "; font-size: 0.7rem; }
+  .about[open] > summary::before { content: "▾ "; }
   .empty { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
   /* Item-switch cue — a quiet teaching line above the (all-dimmed) cards; reads as guidance, not an error.
      The accent left-rule ties it to the spine without shouting. */
