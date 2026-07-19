@@ -50,7 +50,42 @@ requires no model rewrite. The probe additionally *decided the layer*, which was
 - **CRDT dep** — `yjs` (+ only `lib0`) collides with **none** of the pnpm-workspace security overrides
   (`yaml`/`esbuild`/`dompurify`/`vite`/`undici`). Full advisory-level adoption vetting remains C2's job.
 
+## Scale-up confirmation — D1, browser/multi-tab (2026-07-18, ticket `Archie-a66d`)
+
+Model B re-proven at product scale: `prototypes/multi-tab-live-sync/` (throwaway; `bun run dev`,
+two tabs) drives the REAL render-core merge machinery — `appendNew`/`appendEdit` (spine/log),
+`headsOf`/`resolveConflict` (spine/merge), `projectHeads` (spine/heads), nothing stubbed — over a
+grow-only `Y.Map<rev, AnnotationRecord>` synced across tabs via BroadcastChannel. Verified
+end-to-end by a Playwright two-tab driver (`verify-two-tab.mjs`), **12/12 checks**: live edit
+propagation; concurrent same-annotation edits → 2 heads + conflict panel in BOTH tabs; resolve in
+one tab → real merge node → both converge; grow-only log (5 revs, nothing overwritten).
+
+Load-bearing findings (beyond the terminal probe):
+- **Key the Y.Map by `rev`, not `logicalId`** — that is what makes it grow-only + idempotent;
+  logicalId-keying would re-create Model A's LWW overwrite. Do not "simplify" this.
+- **`AnnotationRecord` round-trips Yjs as a plain object** — no codec, no brand-type friction,
+  `Object.freeze` harmless.
+- **`appendEdit` refuses a plural-head note** (`linearHead` throws) — a feature: any live-collab UI
+  must gate editing while a conflict is open and route to resolve.
+- **The live path uses the SAME merge contract as async-zip** (`resolveConflict` node,
+  `mergeParents`, deterministic primary = lexicographically-first head). B2/`Archie-697c` and
+  MergeReview/`Archie-d71c` must spec/surface this ONE contract, never fork a second. The branch
+  data MergeReview needs (body+lastEditor+rev per head) is exactly `headsOf`'s output.
+- **Transport is a seam** (`RevLogTransport`): BroadcastChannel proves the logic same-browser;
+  a network transport (y-webrtc/y-websocket) slots in without touching the merge layer.
+- API-surface note (C2 evidence, corrected after re-test): `@render/core/spine` tree-shakes
+  browser-clean for the merge path (11 modules / 3.35 KB — persist/serialize shaken out); the
+  prototype's leaf imports were defensible but not necessary. The REAL surface gaps: the root
+  `.` barrel is genuinely heavy (one `headsOf` import → 67 modules / 120 KB; fs seam, tauri,
+  sanitize via `export *`), there is no id-constructor subpath (`asClientId`/`asLogicalId`/
+  `asRevId` reachable only via the heavy root), no dist/`.d.ts` (raw-TS `main` — outside
+  consumers need a TS-native toolchain), and the exports map declares only `.` + `./spine`.
+
+Spine gate (`Archie-494c`) inherits: annotations need no spine surgery for live collab — confirmed
+in-browser; the gate's open question remains authored structure only.
+
 ## Reproduce / clean up
 
-`cd prototypes/crdt-annotation-merge && bun probe.ts`. Throwaway — delete the dir once this ledger is
-read; the *answer* above is the only thing worth keeping (Model B, no rewrite).
+Terminal probe: `cd prototypes/crdt-annotation-merge && bun probe.ts`. Multi-tab demo:
+`cd prototypes/multi-tab-live-sync && bun run dev` (two tabs), `node verify-two-tab.mjs` to
+re-verify. Both throwaway — delete once read; this ledger holds the answers.
