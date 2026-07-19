@@ -2,6 +2,10 @@
   // The ? help affordance — a round button that drops a small menu (Tutorial / Shortcuts).
   // Moored in a header; used in BOTH the editor chrome and the library home so they never drift.
   // Owns only its own open state; the actions are delegated to the parent.
+  // The dropdown is a FLOATER, not a scrimmed surface (CONTEXT.md → Surfaces): it leaves the page usable,
+  // so it takes NO focus trap — only `use:floating`, which registers it on the shared dismissal ladder so
+  // Esc closes it first (the ladder's top rung, ahead of any scrimmed surface). Archie-5968.
+  import { floating } from "./modality.svelte";
   let { ontutorial, onshortcuts }: { ontutorial: () => void; onshortcuts: () => void } = $props();
   let open = $state(false);
 </script>
@@ -11,7 +15,7 @@
     aria-label="Help" aria-haspopup="menu" aria-expanded={open}>?</button>
   {#if open}
     <div class="help-backdrop" role="presentation" onclick={() => (open = false)}></div>
-    <div class="help-menu" role="menu">
+    <div class="help-menu" role="menu" use:floating={{ onClose: () => (open = false) }}>
       <button role="menuitem" onclick={() => { open = false; ontutorial(); }}>Start the tutorial</button>
       <button role="menuitem" onclick={() => { open = false; onshortcuts(); }}>Keyboard shortcuts <kbd>?</kbd></button>
     </div>

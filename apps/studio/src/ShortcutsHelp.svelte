@@ -2,6 +2,9 @@
   // The `?` cheat-sheet — a read-only overlay GENERATED from the shortcut registry (never hand-maintained,
   // so it can't drift from the wired handlers). Curator voice; "curator's study" paper card over a dark scrim.
   import { SHORTCUTS, SHORTCUT_GROUPS, type Shortcut } from "./shortcuts.js";
+  // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return. Esc
+  // itself arrives through App's global keydown → modality.handleEsc (the ? key also toggles it there).
+  import { scrimmed, trapFocus, modality } from "./modality.svelte";
 
   let { open, onclose }: { open: boolean; onclose: () => void } = $props();
 
@@ -11,8 +14,9 @@
 </script>
 
 {#if open}
-  <div class="scrim" role="presentation" onclick={onclose}>
-    <div class="sheet" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" onclick={(e) => e.stopPropagation()}>
+  <div class="scrim" role="presentation" onclick={() => modality.dismiss()}>
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts" tabindex="-1"
+      use:scrimmed={{ onClose: onclose }} onkeydown={trapFocus} onclick={(e) => e.stopPropagation()}>
       <header>
         <h2>Keyboard shortcuts</h2>
         <button class="close" onclick={onclose} aria-label="Close">✕</button>

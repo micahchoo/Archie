@@ -39,6 +39,10 @@
   // ONE config source (ADR-0013 amendment): archie.config.json — build-gh-pages.sh reads the
   // same file via node -p, so the minted links and the deploy can't drift apart.
   import archieConfig from "../../../archie.config.json";
+  // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return. This
+  // ticket does NOT merge the dialog + wizard (that's Archie-1921) — the publish surface just adopts the
+  // helper as-is. Esc/scrim-click run `close()` (resets phase, clears the share URL), then onclose.
+  import { scrimmed, trapFocus, modality } from "./modality.svelte";
   // Feature flag (Task 13): when the build offers the one-motion desktop deploy, "Publish to the web" LEADS
   // the chooser (durability-first, Q-3). Off (a fork with no deploy infra) → today's quieter "To GitHub
   // Pages" card as the escape hatch; the same `ongithub` handler routes to the machine either way (the
@@ -112,8 +116,9 @@
 </script>
 
 {#if open}
-  <div class="scrim" role="presentation" onclick={close}></div>
-  <div class="dialog" role="dialog" aria-modal="true" aria-label="Publish">
+  <div class="scrim" role="presentation" onclick={() => modality.dismiss()}></div>
+  <div class="dialog" role="dialog" aria-modal="true" aria-label="Publish" tabindex="-1"
+    use:scrimmed={{ onClose: close }} onkeydown={trapFocus}>
     <header>
       <p class="eyebrow">Publish</p>
       {#if phase === "choose"}

@@ -7,7 +7,12 @@
   // the note-writing surface — and each candidate is a catalog card in the exact idiom of the sidebar
   // note cards (forest-green active border = the "link affordance" accent, system.md §19). Presentation
   // only: the parent builds the entries (incl. the encoded `archie:` ref) and performs the insertion.
-  import { tick } from "svelte";
+  //
+  // Modality (Archie-5968, CONTEXT.md → Surfaces): a scrimmed surface via the shared helper — the Browse
+  // (tile) view is where the old cite-by-image MediaPicker was absorbed, so this is ONE surface with two
+  // internal views and ONE Esc. Scrim-click + Esc + focus trap/return come from `modality`; only the
+  // list-navigation keys (↑↓ / ↵) stay local.
+  import { scrimmed, trapFocus, modality } from "./modality.svelte";
 
   interface CmdEntry {
     id: string;
@@ -34,7 +39,6 @@
   let query = $state("");
   let active = $state(0);
   let view = $state<"search" | "browse">("search"); // Search = text list · Browse = thumbnail tiles (one picker, two views)
-  let inputEl = $state<HTMLInputElement | null>(null);
 
   const filtered = $derived.by(() => {
     const q = query.trim().toLowerCase();
@@ -42,15 +46,17 @@
     return entries.filter((e) => `${e.label} ${e.exhibitTitle} ${e.exhibitSlug}`.toLowerCase().includes(q));
   });
 
-  // Reset + focus each time the drawer opens; keep `active` in range as the filter narrows.
+  // Reset each time the drawer opens; keep `active` in range as the filter narrows. (Initial focus is the
+  // modality helper's job — `use:scrimmed` focuses the search input, the first focusable in the panel.)
   $effect(() => {
-    if (open) { query = ""; active = 0; view = "search"; void tick().then(() => inputEl?.focus()); }
+    if (open) { query = ""; active = 0; view = "search"; }
   });
   const kindLabel = (k: CmdEntry["kind"]) => (k === "exhibit" ? "exhibit" : k === "object" ? "object" : "note");
   $effect(() => { if (active >= filtered.length) active = Math.max(0, filtered.length - 1); });
 
+  // List navigation only — Esc/scrim-click/focus-trap are the shared helper's (Esc arrives via App's
+  // global keydown → modality.handleEsc, so it works whether or not focus is in this input).
   function onKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") { e.preventDefault(); onclose(); return; }
     if (e.key === "ArrowDown") { e.preventDefault(); active = Math.min(active + 1, filtered.length - 1); return; }
     if (e.key === "ArrowUp") { e.preventDefault(); active = Math.max(active - 1, 0); return; }
     if (e.key === "Enter") { e.preventDefault(); const sel = filtered[active]; if (sel) onpick(sel); }
@@ -59,12 +65,12 @@
 
 {#if open}
   <!-- Soft warm scrim over the gallery ground; the drawer itself is warm paper. Click-away closes. -->
-  <div class="scrim" role="presentation" onclick={() => onclose()}>
-    <div class="drawer" role="dialog" aria-label="Cite a note or exhibit" onclick={(e) => e.stopPropagation()}>
+  <div class="scrim" role="presentation" onclick={() => modality.dismiss()}>
+    <div class="drawer" role="dialog" aria-modal="true" aria-label="Cite a note or exhibit" tabindex="-1"
+      use:scrimmed={{ onClose: onclose }} onkeydown={trapFocus} onclick={(e) => e.stopPropagation()}>
       <div class="search">
         <span class="seal" aria-hidden="true">¶</span>
         <input
-          bind:this={inputEl}
           bind:value={query}
           onkeydown={onKeydown}
           type="text"

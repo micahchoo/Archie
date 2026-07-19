@@ -24,8 +24,8 @@
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
   // Publish + PublishDialog are lazy-loaded with the publish flows (ensurePub) — see *Comp below.
   import LibraryHome from "./LibraryHome.svelte";
-  // CmdK + MediaPicker components are lazy-loaded on first open (see *Comp below); PickItem is type-only.
-  import type { PickItem } from "./MediaPicker.svelte";
+  // CmdK is lazy-loaded on first open (see CmdKComp below). Cite-by-image is CmdK's internal Browse tab
+  // now (Archie-5968) — the old standalone MediaPicker surface was already orphaned and is deleted.
   // AvEditor (AV objects) is lazy-loaded — see AvEditorComp below (kept out of the startup bundle).
   import ExhibitOverview from "./ExhibitOverview.svelte";
   // NarrativeEditor (narrative panel) is lazy-loaded — see NarrativeEditorComp below.
@@ -37,6 +37,9 @@
   // AddMapModal (map add) is lazy-loaded — see AddMapModalComp below.
   import NoteEditor from "./NoteEditor.svelte";
   import { matches, typingInField } from "./shortcuts.js";
+  // The shared modality gate (Archie-5968): App owns the single global keydown, so the Esc dismissal
+  // ladder (topmost floater → the one scrimmed surface) routes through `modality.handleEsc()` here.
+  import { modality } from "./modality.svelte";
   import { applyClick, selectAll as selectAllIds, applyMarquee, type ClickMods } from "./overview-selection.js";
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
@@ -151,11 +154,9 @@
   // The publish dialogs load alongside the publish flows (ensurePub) — they only render under {#if pub}.
   let PublishDialogComp = $state<typeof import("./PublishDialog.svelte").default | null>(null);
   let PublishComp = $state<typeof import("./Publish.svelte").default | null>(null);
-  // CmdK (⌘K palette) + MediaPicker (cite-by-image) load on first open — both rarely used at startup.
+  // CmdK (⌘K cite palette — text Search + image Browse in one surface) loads on first open (rare at startup).
   let CmdKComp = $state<typeof import("./CmdK.svelte").default | null>(null);
-  let MediaPickerComp = $state<typeof import("./MediaPicker.svelte").default | null>(null);
   $effect(() => { if (cmdkOpen && !CmdKComp) void import("./CmdK.svelte").then((m) => { CmdKComp = m.default; }); });
-  $effect(() => { if (mediaPickerOpen && !MediaPickerComp) void import("./MediaPicker.svelte").then((m) => { MediaPickerComp = m.default; }); });
   // Per-exhibit Playground/Project (CONTEXT §115, the coherent model): a bundled EXAMPLE is a template —
   // opening it is a playground (banner, nothing saved); a USER-CREATED exhibit is a project (saved, no
   // banner). One role per exhibit, one path in/out. "Keep a copy" forks an example into a saved exhibit.
@@ -1323,9 +1324,9 @@
     const logsById = await loadAllLogs();
     const out: CmdEntry[] = [];
     for (const ex of lib.meta.exhibits) {
-      // Thumbnails feed the picker's Browse (tile) view. Resolve them for the CURRENT exhibit only —
-      // thumbSrc works against the live OBJECTS there (the same set requestVisualCite used); cross-exhibit
-      // objects stay text-only in Browse (no thumb), matching the prior visual-cite scope.
+      // Thumbnails feed the picker's Browse (tile) view — the cite-by-image path (Archie-5968). Resolve
+      // them for the CURRENT exhibit only — thumbSrc works against the live OBJECTS there; cross-exhibit
+      // objects stay text-only in Browse (no thumb), so image-citing is scoped to this exhibit's media.
       const isCur = ex.slug === currentSlug;
       const objThumb = (objId: string): string => {
         if (!isCur || !objId) return "";
@@ -1364,29 +1365,10 @@
     // Confirm the outcome via the existing status idiom — the dogfood gap was "wasn't sure what the cite did".
     importNote = `Added a link to “${entry.label}”. Readers can click through to it in your published exhibit.`;
   }
-  // The VISUAL companion to ⌘K (Archie-ea50): same `pendingCiteInsert` target, eyes-first surface. Tiles
-  // are THIS exhibit's notes shown by their media (the resolvable + thumbnail-bearing set; cross-exhibit
-  // citing stays on ⌘K's text path). Picking inserts the same `[label](ref)` — one insertion, two doors.
-  let mediaPickerOpen = $state(false);
-  let mediaPickerItems = $state<PickItem[]>([]);
-  function requestVisualCite(insert: (md: string) => void) {
-    pendingCiteInsert = insert;
-    mediaPickerItems = allNotes
-      .filter((r) => !r.deleted)
-      .map((r) => {
-        const objId = (srcOf(r.target) ?? "").split("/canvas/")[1] ?? "";
-        const obj = OBJECTS.find((o) => o.id === objId);
-        return { id: r.logicalId, label: linkLabel(stripMarkdown(commentOf(r))), thumb: obj ? thumbSrc(obj) : "", sub: obj?.label ?? "" };
-      });
-    mediaPickerOpen = true;
-  }
-  function pickVisualCite(it: PickItem) {
-    const ref = encodeLinkRef({ exhibitSlug: currentSlug, noteLogicalId: it.id as LogicalId });
-    pendingCiteInsert?.(`[${it.label}](${ref})`);
-    pendingCiteInsert = null;
-    mediaPickerOpen = false;
-    importNote = `Added a link to “${it.label}”. Readers can click through to it in your published exhibit.`;
-  }
+  // Cite-by-image is CmdK's internal Browse tab now (Archie-5968): the palette's `entries` already carry
+  // per-note thumbnails (buildCmdEntries), so the eyes-first path is one view of the one surface — no
+  // separate MediaPicker surface, no second `pendingCiteInsert` door. (The old requestVisualCite was
+  // already unreachable; its removal completes "MediaPicker becomes the image tab inside CmdK".)
   // The note-Comment cite target: splice at the cursor, persist via applyForm, restore focus past the link.
   async function citeIntoComment(md: string) {
     if (!sel) return;
@@ -1404,6 +1386,23 @@
   let tutorialOpen = $state(false); // the onboarding tutorial modal (embeds the learn decks)
   // Global + image-editor keyboard shortcuts (registry-driven; AV shortcuts live in AvEditor, palette in CmdK).
   function onGlobalKey(e: KeyboardEvent) {
+    // ? opens the shortcuts cheat-sheet when NOTHING is scrimmed (not while typing). When ShortcutsHelp IS
+    // the open scrim, ? also closes it (the sheet's own toggle, handled in the gate); while any OTHER scrim
+    // is open, ? is swallowed by the gate below like every shortcut — it never silently replaces that surface.
+    if (matches(e, "?") && !typingInField(e) && !modality.hasScrim) { e.preventDefault(); helpOpen = true; return; }
+    // A scrimmed surface owns the keyboard while open (single-scrim, focus-trapped, CONTEXT.md → Surfaces):
+    // route Esc through the shared ladder and swallow every OTHER global shortcut so none leaks to the page
+    // behind the scrim — but let ordinary typing reach the surface's own fields (no preventDefault there).
+    // ⌘S is the ONE deliberate exception: SafetyState's own window listener still flushes while a scrim is
+    // open (it preventDefaults the browser Save dialog; autosave makes the flush lossless — CONTEXT.md
+    // Persistence). (Archie-5968; this one gate replaces the old scattered `if (cmdkOpen) return` cases.)
+    if (modality.hasScrim) {
+      if (matches(e, "Esc")) { e.preventDefault(); modality.handleEsc(); }
+      else if (matches(e, "?") && helpOpen && !typingInField(e)) { e.preventDefault(); helpOpen = false; } // ? closes the shortcuts sheet
+      return;
+    }
+    // No scrim, but a floater (e.g. the help menu) is open: Esc closes it first — the ladder's top rung.
+    if (matches(e, "Esc") && modality.hasFloater) { e.preventDefault(); modality.handleEsc(); return; }
     // ADR-0024 #5: the Tauri webview has no browser chrome, so wire Alt+←/→ to its history (the web target
     // already has the browser's own back/forward + Alt+Arrow). NOT while a field is focused — Option+arrow
     // is word-navigation inside macOS text inputs, so stealing it there would break typing (N3).
@@ -1412,9 +1411,6 @@
       if (e.key === "ArrowLeft") history.back(); else history.forward();
       return;
     }
-    // ? toggles the cheat-sheet (not while typing); Esc closes it first.
-    if (matches(e, "?") && !typingInField(e)) { e.preventDefault(); helpOpen = !helpOpen; return; }
-    if (helpOpen && matches(e, "Esc")) { e.preventDefault(); helpOpen = false; return; }
     // ⌘K — cite into the note being edited (works inside the textarea too). With nothing selected, give a
     // hint instead of a silent no-op (shortcuts.ts advertises ⌘K; the dead-key was a dogfood gap).
     if (matches(e, "⌘K") && view === "editor") {
@@ -1427,9 +1423,10 @@
     // typing in the toolbar search. ⌘A must preventDefault or the browser selects the whole page's text.
     if (matches(e, "⌘A") && view === "overview" && !typingInField(e)) { e.preventDefault(); selectAllObjects(); return; }
     if (matches(e, "⌫") && view === "overview" && !typingInField(e) && selection.size > 0) { e.preventDefault(); requestBulkDelete(); return; }
-    // Esc dismiss-ladder: palette (self-closes) → note popover → camera framing → SELECTION → select-mode → overview → library.
+    // Esc page-level ladder (only reached with NO scrimmed surface open — the modality gate above returns
+    // first): disarm a new-note gesture → camera framing → pending placement → SELECTION → select-mode →
+    // overview → library.
     if (matches(e, "Esc")) {
-      if (cmdkOpen || mediaPickerOpen) return; // those dialogs handle their own Esc
       if (creating) { e.preventDefault(); creating = null; return; } // disarm a new-note gesture first
       if (framingSectionId) { e.preventDefault(); cancelFraming(); return; }
       if (placingPendingId) { e.preventDefault(); cancelPlacing(); return; } // disarm a pending-note placement
@@ -2186,7 +2183,6 @@
     {/if}
   {/if}
   {#if cmdkOpen && CmdKComp}{@const CK = CmdKComp}<CK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />{/if}
-  {#if mediaPickerOpen && MediaPickerComp}{@const MP = MediaPickerComp}<MP open={mediaPickerOpen} title="Cite a note by its image" items={mediaPickerItems} onpick={pickVisualCite} onclose={() => (mediaPickerOpen = false)} />{/if}
 {/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
 <ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />

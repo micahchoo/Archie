@@ -2,21 +2,19 @@
   // Onboarding tutorial — embeds the docs/learn slide decks (synced to public/learn) in an
   // iframe. The decks own their own slide nav + cross-step flow; this is just the framed shell.
   let { open, onclose }: { open: boolean; onclose: () => void } = $props();
+  // Scrimmed surface via the shared helper (Archie-5968): drops the private svelte:window Esc handler —
+  // Esc now arrives through App's global keydown → modality.handleEsc, with scrim-click + focus trap/return.
+  import { scrimmed, trapFocus, modality } from "./modality.svelte";
 
   // public/learn is served under the app's base ( /studio/ in build, configured base in dev ).
   const base = (import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env?.BASE_URL ?? "/";
   const src = `${base}learn/0001-the-archie-journey.html`;
-
-  function onKey(e: KeyboardEvent) {
-    if (open && e.key === "Escape") { e.preventDefault(); onclose(); }
-  }
 </script>
 
-<svelte:window onkeydown={onKey} />
-
 {#if open}
-  <div class="scrim" role="presentation" onclick={onclose}>
-    <div class="panel" role="dialog" aria-modal="true" aria-label="Archie tutorial" onclick={(e) => e.stopPropagation()}>
+  <div class="scrim" role="presentation" onclick={() => modality.dismiss()}>
+    <div class="panel" role="dialog" aria-modal="true" aria-label="Archie tutorial" tabindex="-1"
+      use:scrimmed={{ onClose: onclose }} onkeydown={trapFocus} onclick={(e) => e.stopPropagation()}>
       <header>
         <h2>Tutorial</h2>
         <button class="close" onclick={onclose} aria-label="Close tutorial">✕</button>

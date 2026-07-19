@@ -6,6 +6,7 @@
   // `t=…&xywh=percent:…` via core `mediaFragmentValue`. Notes edit in the marker popover (App); browser-only.
   import { parseMediaFragment, activeNoteIndex, type W3CAnnotation, type TimeRange } from "@render/core";
   import { matches, typingInField } from "./shortcuts.js";
+  import { modality } from "./modality.svelte";
   import { isTauri, fetchRemoteAsBlobUrl } from "./tauri-fs.js";
   import { readPeaks, savePeaks } from "./store.js";
   import { LOCAL_TEXT_IMPORT_MAX_BYTES } from "./ingest-flows.js";
@@ -354,6 +355,9 @@
   // AV keyboard shortcuts (registry-driven). Active whenever this editor is mounted (an AV object is open).
   // Space / ← → defer to the native <video> controls when the video element itself is focused.
   function onAvKey(e: KeyboardEvent) {
+    // A scrimmed surface over the AV editor (ShortcutsHelp / Tutorial / Readings …) owns the keyboard —
+    // don't let Space/←/→/I/N play media, step markers, or ADD a note behind the scrim (Archie-5968).
+    if (modality.hasScrim) return;
     if (typingInField(e)) return;
     const onMedia = e.target === mediaEl;
     if (matches(e, "Space") && !onMedia) { e.preventDefault(); togglePlay(); }

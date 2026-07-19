@@ -4,6 +4,10 @@
   // pan/zoom world locator (drag the box / drag handles to clamp · drag the map to pan · wheel/± to zoom),
   // name it; emits a tileSource descriptor + label. Bounds fields + presets remain for precision.
   import { lngLatToPixel, pixelToLngLat, type XyzTileSource } from "@render/core";
+  // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return. (This
+  // modal is scheduled for retirement by Archie-56cf; the map-locator svg/rect drag surfaces keep their
+  // own pointer handling — those a11y warnings are the retiring locator's, not the modality contract's.)
+  import { scrimmed, trapFocus, modality } from "./modality.svelte";
 
   let { onadd, onclose }: {
     onadd: (m: { label: string; tileSource: XyzTileSource }) => void;
@@ -137,8 +141,9 @@
   }
 </script>
 
-<div class="scrim" role="presentation" onclick={onclose}>
-  <div class="modal" role="dialog" aria-modal="true" aria-label="Add a map" onclick={(e) => e.stopPropagation()}>
+<div class="scrim" role="presentation" onclick={() => modality.dismiss()}>
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Add a map" tabindex="-1"
+    use:scrimmed={{ onClose: onclose }} onkeydown={trapFocus} onclick={(e) => e.stopPropagation()}>
     <header><h2>Add a map</h2><button class="x" type="button" onclick={onclose} aria-label="Close">✕</button></header>
 
     <label class="field">Basemap

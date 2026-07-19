@@ -12,6 +12,10 @@
   import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
   import { createPublishMachine } from "./publish-machine.svelte.js";
   import { isTauri } from "./tauri-fs.js";
+  // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return. Esc/
+  // scrim-click run the same `close()` the ✕ does — a mid-auth close is a clean, resumable cancel
+  // (close() drops the token + resets phase; warn-or-not is delegated to Archie-7d9b, not this ticket).
+  import { scrimmed, trapFocus, modality } from "./modality.svelte";
 
   let {
     open = false,
@@ -186,8 +190,9 @@
 </script>
 
 {#if open}
-  <div class="scrim" role="presentation" onclick={close}></div>
-  <div class="dialog" role="dialog" aria-modal="true" aria-label="Publish to the web">
+  <div class="scrim" role="presentation" onclick={() => modality.dismiss()}></div>
+  <div class="dialog" role="dialog" aria-modal="true" aria-label="Publish to the web" tabindex="-1"
+    use:scrimmed={{ onClose: close }} onkeydown={trapFocus}>
 
     {#if machine.state === "intro-desktop"}
       <header>

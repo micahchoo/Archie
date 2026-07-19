@@ -6,6 +6,9 @@
   // Editing itself stays in ReadingsEditor (id-stable renames, descriptions, palette swatches).
   import type { Reading } from "@render/core";
   import ReadingsEditor from "./ReadingsEditor.svelte";
+  // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return, replacing
+  // the bare scrim-only dismissal this modal had (it never trapped focus or handled Esc before).
+  import { scrimmed, trapFocus, modality } from "./modality.svelte";
 
   let { open, readings, palette, onchange, onadd, onclose }: {
     open: boolean;
@@ -19,8 +22,9 @@
 </script>
 
 {#if open}
-  <div class="scrim" role="presentation" onclick={onclose}></div>
-  <div class="dialog" role="dialog" aria-modal="true" aria-label="Readings">
+  <div class="scrim" role="presentation" onclick={() => modality.dismiss()}></div>
+  <div class="dialog" role="dialog" aria-modal="true" aria-label="Readings" tabindex="-1"
+    use:scrimmed={{ onClose: onclose }} onkeydown={trapFocus}>
     <button class="x" onclick={onclose} aria-label="Close">×</button>
     <header>
       <p class="eyebrow">Readings</p>
