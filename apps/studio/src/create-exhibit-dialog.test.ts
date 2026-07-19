@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
-  surfaceTitle, createActionLabel, offersStartEmpty, pickedFromFiles,
+  surfaceTitle, createActionLabel, offersStartEmpty, offersMap, pickedFromFiles,
   emptyPathValid, folderPathValid, iiifPathValid, looksLikeUrl, previewManifest,
 } from "./create-exhibit-dialog.js";
 
@@ -10,11 +10,16 @@ describe("CreateSurfaceScope copy (Archie-beb6's prop-level parameter)", () => {
     expect(createActionLabel({ kind: "new-exhibit" })).toBe("Create exhibit");
     expect(offersStartEmpty({ kind: "new-exhibit" })).toBe(true);
   });
-  it("the unwired add-to-exhibit scope still resolves sensible copy (structurally ready for Archie-56cf)", () => {
+  it("the add-to-exhibit scope resolves its copy + offers the Map path, not Start-empty (Archie-56cf)", () => {
     const scope = { kind: "add-to-exhibit" as const, slug: "herbal-quires", title: "Herbal quires" };
     expect(surfaceTitle(scope)).toBe("Add to “Herbal quires”");
     expect(createActionLabel(scope)).toBe("Add to exhibit");
     expect(offersStartEmpty(scope)).toBe(false);
+    expect(offersMap(scope)).toBe(true);
+  });
+  it("the new-exhibit scope offers Start-empty but NOT the Map path (a map needs an existing exhibit)", () => {
+    expect(offersMap({ kind: "new-exhibit" })).toBe(false);
+    expect(offersStartEmpty({ kind: "new-exhibit" })).toBe(true);
   });
 });
 
