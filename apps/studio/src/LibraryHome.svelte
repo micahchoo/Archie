@@ -114,7 +114,14 @@
   let rightsOpen = $state(false);
   const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
   // SafetyState's unbound "Action needed" input (CONTEXT.md — never for untouched seed/template content).
-  const hasRealWork = $derived(hasRealWorkIn(exhibits, isTemplate));
+  // Archie-c76d (d): library-level meta edits (title/summary/credit) count as real work too, so binding an
+  // unbound library that has only a title set is still surfaced as Action needed.
+  const hasRealWork = $derived(hasRealWorkIn(exhibits, isTemplate, {
+    ...(libTitle !== undefined ? { title: libTitle } : {}),
+    ...(librarySummary !== undefined ? { summary: librarySummary } : {}),
+    ...(rights.rights !== undefined ? { rights: rights.rights } : {}),
+    ...(rights.requiredStatement !== undefined ? { requiredStatement: rights.requiredStatement } : {}),
+  }));
 
   // Archie-2308: own exhibits + the New-exhibit cell lead the browsing grid; bundled Examples sit in their
   // own collapsible shelf below (pure split lives in library-home.ts, same reasoning as gallery-data.ts —

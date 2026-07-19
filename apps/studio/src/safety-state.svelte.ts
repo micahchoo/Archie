@@ -41,10 +41,31 @@ export interface SafetyStateInputs {
   hasRealWork: boolean;
 }
 
-/** Any exhibit not (still) a template/seed slug counts as real, user-authored content. Shared so every
- *  mount site derives "real work" the same way App.svelte's per-exhibit playground gate does (§115). */
-export function hasRealWorkIn(exhibits: readonly { slug: string }[], isTemplate: (slug: string) => boolean): boolean {
-  return exhibits.some((e) => !isTemplate(e.slug));
+/** Library-level identity a user can author WITHOUT creating an exhibit: title / summary / credit /
+ *  required-statement (App.svelte's setLibraryTitle/Summary/Rights → lib.meta). No stored "dirty" flag
+ *  exists for these (they're not model additions — Archie-c76d forbids new fields), so "edited" = any of
+ *  them is present. Empty strings / undefined = untouched. */
+export interface LibraryMetaLike {
+  title?: string;
+  summary?: string;
+  rights?: string;
+  requiredStatement?: unknown;
+}
+export function libraryMetaEdited(meta: LibraryMetaLike | undefined): boolean {
+  if (!meta) return false;
+  return !!(meta.title?.trim() || meta.summary?.trim() || meta.rights || meta.requiredStatement);
+}
+
+/** Real, user-authored content exists when either (a) some exhibit is no longer a template/seed slug —
+ *  the per-exhibit playground gate (§115) — OR (b) library-level meta has been edited (Archie-c76d
+ *  decision (d): title/summary/rights count as work for the unbound Action-needed gate). `libraryMeta`
+ *  is optional so the original two-arg callers (and tests) that only weigh exhibits stay valid. */
+export function hasRealWorkIn(
+  exhibits: readonly { slug: string }[],
+  isTemplate: (slug: string) => boolean,
+  libraryMeta?: LibraryMetaLike,
+): boolean {
+  return exhibits.some((e) => !isTemplate(e.slug)) || libraryMetaEdited(libraryMeta);
 }
 
 /**

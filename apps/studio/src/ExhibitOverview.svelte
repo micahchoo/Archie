@@ -6,6 +6,7 @@
   // pretending to be one? The 1b fallback (an explicit List view) ships alongside so the contrast is in hand.
   // Browser-verified (pointer/wheel transforms). Narrative SECTION authoring lives in the editor sidebar
   // (NarrativeEditor), not here — this overview is the zoomed-OUT viewing/arranging scale only.
+  import type { Snippet } from "svelte";
   import type { LayoutType, RightsFields, Section } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
@@ -44,6 +45,7 @@
     onbulkdelete,
     bulkConfirming,
     onvisible,
+    safety,
     tx = $bindable(0),
     ty = $bindable(0),
     z = $bindable(1),
@@ -100,6 +102,9 @@
     /** Report the current VISIBLE (filtered/sorted) object order UP to App, so shift-range and ⌘A operate on
      *  what's on screen — never on filtered-out objects a bulk delete would then remove unseen. */
     onvisible: (orderedIds: string[]) => void;
+    /** The shared SafetyState indicator (Archie-c76d) — App owns the save/binding wiring and passes it as a
+     *  snippet so it mounts in this header's one save slot, identical to the editor + library headers. */
+    safety?: Snippet;
     // --- Transient screen state (ADR-0024 #6). The tableau pan/zoom is bindable so App can remember it per
     // exhibit within the session and restore it on return (a fresh load resets to these defaults). NOT part
     // of the place. (Canvas/List `mode` is a PERSISTED view preference owned elsewhere — not bindable here.) ---
@@ -300,6 +305,10 @@
       <p class="intent">{LAYOUT_INTENT[layout]}</p>
     </div>
     <span class="spacer"></span>
+    <!-- The one save UI (Archie-0b7b / Archie-c76d) — the SAME SafetyState the editor + library headers
+         mount, threaded in as a snippet so App keeps the save/binding wiring. Its ⌘S handler is live while
+         the overview shows, so ⌘S flushes here too. -->
+    {@render safety?.()}
     <!-- The "Exhibit layout" chip is RETIRED (ADR-0016): the reading mode is no longer a picked layout but
          an emergent property of content; the intent line under the title still names what visitors get. -->
     <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for this exhibit">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
