@@ -29,13 +29,17 @@
   // now (Archie-5968) — the old standalone MediaPicker surface was already orphaned and is deleted.
   // AvEditor (AV objects) is lazy-loaded — see AvEditorComp below (kept out of the startup bundle).
   import ExhibitOverview from "./ExhibitOverview.svelte";
+  // The scoped add-media chooser (Archie-56cf): the SAME dialog LibraryHome uses to mint exhibits,
+  // opened here in "add-to-exhibit" scope so the overview Add-media plate + the editor "+ Add media"
+  // button funnel every "bring something in" through one surface (folder / IIIF / Map). It absorbed the
+  // retired AddMapModal's Map path, so there is no longer a standalone map modal to lazy-load.
+  import CreateExhibitDialog from "./CreateExhibitDialog.svelte";
   // NarrativeEditor (narrative panel) is lazy-loaded — see NarrativeEditorComp below.
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
   import TutorialModal from "./TutorialModal.svelte";
   import HelpMenu from "./HelpMenu.svelte";
-  // AddMapModal (map add) is lazy-loaded — see AddMapModalComp below.
   import NoteEditor from "./NoteEditor.svelte";
   import { matches, typingInField } from "./shortcuts.js";
   // The shared modality gate (Archie-5968): App owns the single global keydown, so the Esc dismissal
@@ -153,7 +157,6 @@
   });
   // Lazy heavy editors, loaded only on the (rare) paths that use them — out of the startup bundle.
   let AvEditorComp = $state<typeof import("./AvEditor.svelte").default | null>(null);
-  let AddMapModalComp = $state<typeof import("./AddMapModal.svelte").default | null>(null);
   let NarrativeEditorComp = $state<typeof import("./NarrativeEditor.svelte").default | null>(null);
   $effect(() => { if (view === "editor" && !NarrativeEditorComp) void import("./NarrativeEditor.svelte").then((m) => { NarrativeEditorComp = m.default; }); });
   // The Publish surface loads alongside the publish flows (ensurePub) — it only renders under {#if pub}.
@@ -844,19 +847,16 @@
     if (r) bnd.bindToFile(file.name);
   }
 
-  // --- add an object to the current exhibit (Phase D authoring) ---
-  let addingObject = $state(false);
+  // --- add media to the current exhibit (Archie-56cf: one scoped chooser) ---
+  // The overview Add-media plate + the editor "+ Add media" button both open the SAME CreateExhibitDialog
+  // in add-to-exhibit scope (folder / IIIF / Map paths). This flag backs that dialog's open chrome; the
+  // ingest FLOWS it routes to (addFiles / addManifestToExhibit / addMapObject) live in ingest-flows.ts.
+  let addMediaOpen = $state(false);
   // Import feedback (AV ingest/upload UX): a large recording can take a beat to land in OPFS, so show
   // which file is importing; `importNote` carries a transient curator-voice message (unsupported file,
   // or a gentle link-by-URL nudge for very large media). Cleared at the start of each new import.
   let importStatus = $state<{ name: string; index: number; total: number } | null>(null);
   let importNote = $state("");
-  let addSource = $state("");
-  let addLabel = $state("");
-  // Add-map modal (Phase 3 / Q3 — invented UX, human-gated): a Map is an Object whose source is its tile
-  // template and which carries the tileSource descriptor (medium = Map). The modal supplies template + bounds.
-  // The add-map FLOW (addMapObject) lives in ingest-flows.ts; this `$state` backs the modal's open chrome.
-  let mapModalOpen = $state(false);
   // Drag-and-drop onto the canvas area → the ingest flows' addFiles.
   let dragOver = $state(false);
   function onDrop(e: DragEvent) {
@@ -1544,9 +1544,12 @@
     setImportStatus: (s) => { importStatus = s; },
     setImportNote: (s) => { importNote = s; },
     addPendingNotes,
-    setAddingObject: (v) => { addingObject = v; },
-    clearAddForm: () => { addSource = ""; addLabel = ""; },
-    setMapModalOpen: (v) => { mapModalOpen = v; },
+    // The inline add-media form + standalone map modal these three drove are retired (Archie-56cf): the
+    // scoped CreateExhibitDialog owns its own open state and closes itself on submit, so these post-add
+    // "close the add chrome" hooks are now no-ops kept only to satisfy the IngestContext contract.
+    setAddingObject: () => {},
+    clearAddForm: () => {},
+    setMapModalOpen: () => {},
     setCollabNote: (s) => { collabNote = s; },
     canvasIdOf,
     switchObject,
@@ -1722,7 +1725,7 @@
       onopenobject={openObject}
       onopenbeat={openBeat}
       oneditobject={(objId) => (editingObjectId = objId)}
-      onaddobject={() => { editingObjectId = null; view = "editor"; addingObject = true; }}
+      onaddobject={() => (addMediaOpen = true)}
       onback={backToLibrary}
       onreorder={reorderObjects}
       {lastAnnotatedOf}
@@ -1878,29 +1881,15 @@
         <header class="zone-header">
           <span class="zone-kicker">Exhibit</span>
           <span class="zone-name">{currentExhibit?.title}</span>
-          <!-- The +Media / +Map adders live in the EXHIBIT zone: adding media grows the exhibit's
-               collection (the form itself says "Add media to {exhibit}"), it doesn't act on the object
-               in view. Settled here after a stint parked in the object-zone header (Archie-beb6 history:
-               evicted from the nav-only filmstrip first). Do NOT delete the capability. -->
+          <!-- ONE "bring something in" affordance (Archie-beb6 / Archie-56cf): the split +Media / +Map
+               pair is retired for a single "+ Add media" that opens the scoped chooser (folder / IIIF /
+               Map) in add-to-exhibit scope — the same dialog the overview plate opens. Adding media grows
+               the EXHIBIT's collection, so it lives in the Exhibit zone, not the object nav. -->
           <div class="obj-add">
-            <button type="button" class="add-obj-toggle" onclick={() => (addingObject = true)}>+ Media</button>
-            <button type="button" class="add-obj-toggle" onclick={() => { mapModalOpen = true; void import("./AddMapModal.svelte").then((m) => (AddMapModalComp = m.default)); }} title="Add a map (geo-annotation)">+ Map</button>
+            <button type="button" class="add-obj-toggle" onclick={() => (addMediaOpen = true)}>+ Add media</button>
           </div>
         </header>
         <div class="zone-body">
-          {#if addingObject}
-            <form class="add-obj" aria-label={`Add media to ${currentExhibit?.title ?? "this exhibit"}`} onsubmit={(e) => { e.preventDefault(); void flows.addObject(addSource, addLabel); }}>
-              <span class="add-obj-head">Add media to “{currentExhibit?.title ?? "this exhibit"}”</span>
-              <label class="file-btn">Choose file…<input type="file" accept="image/*,audio/*,video/*" multiple onchange={(e) => { const el = e.currentTarget as HTMLInputElement; flows.addFiles(el.files).catch((err) => { console.error("File add failed", err); window.alert("Couldn't add that file."); }).finally(() => { el.value = ""; }); }} /></label>
-              <span class="or">or</span>
-              <input bind:value={addSource} placeholder="Link to an image, audio, or video" aria-label="Object source URL" title="A link points to the media where it lives, so your library stays small." />
-              <input class="lbl" bind:value={addLabel} placeholder="Label" aria-label="Object label" />
-              <button type="submit" disabled={addSource.trim() === ""}>Add</button>
-              <button type="button" class="cancel" onclick={() => { addingObject = false; addSource = ""; addLabel = ""; }}>✕</button>
-              <span class="add-obj-hint">Files live in this browser. Use <strong>Publish</strong> to save them as a shareable file.</span>
-            </form>
-          {/if}
-          {#if mapModalOpen && AddMapModalComp}{@const AddMap = AddMapModalComp}<AddMap onadd={(m) => { void flows.addMapObject(m); }} onclose={() => (mapModalOpen = false)} />{/if}
       {#if firstAddCueSlug === currentSlug}
         <!-- KEYSTONE matched-pair cue, FIRST-ADD (0→1): the one-time, non-blocking, dismissible note that
              adding beat #1 changed the exhibit's published front door. Sits directly above the spine card so
@@ -2229,6 +2218,22 @@
   {/if}
   {#if cmdkOpen && CmdKComp}{@const CK = CmdKComp}<CK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />{/if}
 {/if}
+<!-- GLOBAL: the scoped add-media chooser (Archie-56cf). ONE instance, opened in add-to-exhibit scope by
+     BOTH the overview Add-media plate (onaddobject) and the editor "+ Add media" button. Its paths route
+     to the into-exhibit ingest flows: folder → addFiles (straight into this exhibit), IIIF →
+     addManifestToExhibit, Map → addMapObject (the flow the retired AddMapModal used). Start-empty/oncreate
+     never fire in this scope. Mounted only with a current exhibit so the scope's slug/title are real. -->
+{#if currentExhibit}
+  <CreateExhibitDialog
+    open={addMediaOpen}
+    scope={{ kind: "add-to-exhibit", slug: currentSlug, title: currentExhibit.title }}
+    oncreate={() => {}}
+    oncreatefromfolder={(files) => { flows.addFiles(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add those files."); }); }}
+    oncreatefrommanifest={(url) => { flows.addManifestToExhibit(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
+    onaddmap={(m) => { void flows.addMapObject(m); }}
+    onclose={() => (addMediaOpen = false)}
+  />
+{/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
 <ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
 <!-- GLOBAL: the onboarding tutorial (embeds docs/learn decks from public/learn). -->
@@ -2469,7 +2474,7 @@
   }
   .obj.on .obj-count { color: var(--accent); }
 
-  /* Add-object affordance on the rail */
+  /* The "+ Add media" affordance in the Exhibit zone header (opens the scoped chooser, Archie-56cf). */
   .add-obj-toggle {
     align-self: center; cursor: pointer; padding: var(--space-2) var(--space-3);
     background: none; color: var(--ink-canvas-secondary);
@@ -2477,30 +2482,9 @@
     font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
   }
   .add-obj-toggle:hover { color: var(--accent-2); border-color: var(--accent-2); background: var(--surface-canvas-overlay); }
-  .add-obj { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-  .add-obj-head { flex-basis: 100%; font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-primary); }
-  .add-obj-hint { flex-basis: 100%; max-width: 28rem; font-family: var(--font-body); font-size: var(--text-ui-xs); line-height: 1.5; color: var(--ink-canvas-muted); }
-  .add-obj-hint strong { color: var(--ink-canvas-secondary); font-weight: 600; }
-  .add-obj input {
-    font-family: var(--font-body); font-size: 0.875rem; padding: var(--space-2) var(--space-3);
-    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); width: 14rem;
-  }
-  .add-obj input.lbl { width: 8rem; }
-  .add-obj input:focus { outline: none; border-color: var(--accent-2); }
-  .add-obj button { cursor: pointer; padding: var(--space-2) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: background 160ms ease, box-shadow 160ms ease; }
-  .add-obj button:hover { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
-  .add-obj button:disabled { background: var(--surface-canvas-raised); color: var(--ink-canvas-muted); box-shadow: none; cursor: default; }
-  .add-obj .cancel { background: none; color: var(--ink-canvas-secondary); }
-  .add-obj .cancel:hover { color: var(--ink-canvas-primary); }
   /* Import spinner (the status strip's "Adding…" toast) — the accent, spinning. */
   .import-spinner { flex-shrink: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent-muted); border-top-color: var(--accent); animation: import-spin 0.7s linear infinite; }
   @keyframes import-spin { to { transform: rotate(360deg); } }
-  /* File-pick button (hides the native input) + the "or" separator */
-  .file-btn { display: inline-flex; align-items: center; cursor: pointer; padding: var(--space-2) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: color 160ms ease, box-shadow 160ms ease; }
-  .file-btn:hover { color: var(--accent-2); box-shadow: var(--shadow-lift-low); }
-  .file-btn input { display: none; }
-  .add-obj .or { font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-canvas-muted); }
 
   .body { display: flex; flex: 1; min-height: 0; }
   main { flex: 1; min-width: 0; background: var(--surface-canvas); position: relative; }
