@@ -70,14 +70,14 @@ export function createPublishFlows(deps: PublishDeps) {
   // contributes nothing and no structure/ dir ever appears as a publish side effect.
   //
   // Torn-store posture — a KNOWN rule-2 tension, shared with the annotation publish path
-  // (loadAllLogs → AnnotationSession.load → readAnnotationsReport → `.entries`, which ships the
-  // readable subset and never consults `loadCorruption` at publish): publish exports what READS.
+  // (loadAllLogs → AnnotationSession.load → `.entries`, which ships the readable subset and warns
+  // via publish-warnings.ts#warnAnnotationPublishCorruption, Archie-a690): publish exports what READS.
   // A partially-corrupt store therefore exports its readable pages; an ALL-corrupt store exports
   // NOTHING, and the published artifact is indistinguishable from "never authored" — a receiving
   // import will seed-from-array (the corruption→absence collapse rule #2 exists to prevent).
   // Parity decision (Archie-aef4 review): match the annotation posture rather than invent a
   // structure-only refusal; the distinct warns below make each collapse visible instead of
-  // silent. Surfacing/repairing a torn store at publish time (for BOTH log families) is future
+  // silent. Surfacing/repairing a torn store in the publish UI (for BOTH log families) is future
   // work — the session layer already refuses incremental saves over torn stores (Issue 19), so
   // the source of truth is protected; only the exported copy under-represents it.
   const getStructure = async (exhibitId: string, slug: string): Promise<SectionLog> => {

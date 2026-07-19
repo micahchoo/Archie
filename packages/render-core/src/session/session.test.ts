@@ -239,3 +239,37 @@ describe("AnnotationSession — section attribution threading (Archie-42f3, foll
     expect(local.notes().find((r) => r.logicalId === id)!.section).toBe("s-9");
   });
 });
+
+describe("AnnotationSession — editor thunk (Archie-7e5b S4: mid-session rename reaches new stamps)", () => {
+  const text = (value: string) => ({ type: "TextualBody" as const, value });
+
+  it("a thunk editor is resolved at ACTION time — a rename stamps the very next append", async () => {
+    let who = asClientId("anonymous");
+    const s = new AnnotationSession(() => who);
+    const id1 = s.createNote({ target: rect(0, 0, 10, 10), body: text("before rename") });
+    who = asClientId("meera"); // the Library Details / publish-prompt rename, mid-session
+    s.editNote(id1, { body: text("after rename") });
+    const id2 = s.createNote({ target: rect(5, 5, 10, 10), body: text("new after rename") });
+    s.deleteNote(id2 as LogicalId);
+
+    const stamps = new Map(s.entries.map((r) => [`${r.logicalId}v${r.version}`, r.lastEditor]));
+    expect(stamps.get(`${id1}v1`)).toBe("anonymous"); // pre-rename stamp is history — unchanged
+    expect(stamps.get(`${id1}v2`)).toBe("meera");
+    expect(stamps.get(`${id2}v1`)).toBe("meera");
+    expect(s.entries.find((r) => r.logicalId === id2 && r.deleted)!.lastEditor).toBe("meera");
+
+    // The thunk survives the persistence round-trip contract too: load() accepts it.
+    const root = await (await new MemoryFilesystem().root()).getDirectory("ann", { create: true });
+    await s.save(root, { baseUrl: "https://x.test/" });
+    const reloaded = await AnnotationSession.load(root, () => who);
+    who = asClientId("meera-v2");
+    reloaded.editNote(id1, { body: text("post-reload edit") });
+    expect(reloaded.notes().find((r) => r.logicalId === id1)!.lastEditor).toBe("meera-v2");
+  });
+
+  it("a plain ClientId keeps the original captured-for-life contract", () => {
+    const s = new AnnotationSession(alice);
+    const id = s.createNote({ target: rect(0, 0, 10, 10), body: text("v1") });
+    expect(s.notes().find((r) => r.logicalId === id)!.lastEditor).toBe("alice");
+  });
+});

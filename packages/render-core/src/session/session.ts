@@ -6,7 +6,7 @@
 
 import { appendNew, appendEdit, appendDelete } from "../spine/log.js";
 import { isDegenerateTarget } from "../geometry/selector.js";
-import { projectHeads } from "../spine/heads.js";
+import { projectHeads, headsByLogicalId } from "../spine/heads.js";
 import { recordToAnnotation } from "../spine/serialize.js";
 import { writeAnnotations, readAnnotationsReport, type CorruptAnnotationPage } from "../spine/persist.js";
 import type { SerializeOptions } from "../spine/serialize.js";
@@ -95,10 +95,20 @@ export class AnnotationSession {
   loadCorruption: CorruptAnnotationPage[] = [];
 
   constructor(
-    private readonly editor: ClientId,
+    editor: ClientId | (() => ClientId),
     log: AnnotationLog = [],
   ) {
+    this.editorSource = editor;
     this.log = log;
+  }
+
+  /** The identity every append stamps as `lastEditor`. A plain ClientId is captured for the session's
+   *  life (the original contract); a THUNK is resolved at action time, so a mid-session rename reaches
+   *  every subsequent stamp without reopening the session (Archie-7e5b S4 — the studio passes its live
+   *  `author` rune through here). */
+  private readonly editorSource: ClientId | (() => ClientId);
+  private stamp(): ClientId {
+    return typeof this.editorSource === "function" ? this.editorSource() : this.editorSource;
   }
 
   /** The head records, memoized by `this.log` identity (recomputed only when the log actually changed). */
@@ -110,7 +120,7 @@ export class AnnotationSession {
   }
 
   /** Load a session from a persisted annotations directory (the reload/open path). */
-  static async load(annDir: FsDirectory, editor: ClientId): Promise<AnnotationSession> {
+  static async load(annDir: FsDirectory, editor: ClientId | (() => ClientId)): Promise<AnnotationSession> {
     const { log, corrupt } = await readAnnotationsReport(annDir);
     const s = new AnnotationSession(editor, log);
     s.loadCorruption = corrupt;
@@ -135,7 +145,7 @@ export class AnnotationSession {
     if (isDegenerateTarget(input.target)) throw new Error("createNote: degenerate target selector (empty/NaN geometry) must not enter the log");
     const { log, record } = appendNew(this.log, {
       target: input.target,
-      lastEditor: this.editor,
+      lastEditor: this.stamp(),
       ...(input.body !== undefined ? { body: input.body } : {}),
       ...(input.reading !== undefined ? { reading: input.reading } : {}),
       ...(input.section !== undefined ? { section: input.section } : {}),
@@ -154,7 +164,7 @@ export class AnnotationSession {
   editNote(logicalId: LogicalId, changes: NoteEdit): void {
     if (changes.target !== undefined && isDegenerateTarget(changes.target)) throw new Error("editNote: degenerate target selector (empty/NaN geometry) must not enter the log");
     const { log } = appendEdit(this.log, logicalId, {
-      lastEditor: this.editor,
+      lastEditor: this.stamp(),
       ...(changes.target !== undefined ? { target: changes.target } : {}),
       ...(changes.body !== undefined ? { body: changes.body } : {}),
       ...(changes.reading !== undefined ? { reading: changes.reading } : {}),
@@ -170,7 +180,7 @@ export class AnnotationSession {
 
   /** Append a tombstone (append-only delete). */
   deleteNote(logicalId: LogicalId): void {
-    const { log } = appendDelete(this.log, logicalId, { lastEditor: this.editor });
+    const { log } = appendDelete(this.log, logicalId, { lastEditor: this.stamp() });
     this.log = log;
     this.dirty.add(logicalId);
   }
@@ -194,10 +204,21 @@ export class AnnotationSession {
     return this.conflicts();
   }
 
+  /** Memoized conflicts, keyed by log identity like headsCache — the Studio re-derives conflicts on
+   *  every `rev` bump, most of which don't touch the log (Archie-7e5b: was an unmemoized O(ids × log)
+   *  scan per bump). NOTE deliberately not derived from heads(): projectHeads drops tombstone heads,
+   *  but a delete concurrent with an edit IS a conflict — headsByLogicalId keeps the raw per-id heads
+   *  (identical semantics to per-key headsOf, in one O(records) pass). */
+  private conflictsCache: { log: AnnotationLog; ids: LogicalId[] } | null = null;
+
   /** LogicalIds with an unresolved concurrent conflict (plural heads). */
   conflicts(): LogicalId[] {
-    const ids = [...new Set(this.log.map((r) => r.logicalId))];
-    return ids.filter((id) => headsOf(this.log, id).length > 1);
+    if (this.conflictsCache === null || this.conflictsCache.log !== this.log) {
+      const ids: LogicalId[] = [];
+      for (const [id, heads] of headsByLogicalId(this.log)) if (heads.length > 1) ids.push(id);
+      this.conflictsCache = { log: this.log, ids };
+    }
+    return this.conflictsCache.ids;
   }
 
   /** The competing heads of a conflicted note (for the conflict card to show both sides). */
@@ -217,7 +238,7 @@ export class AnnotationSession {
     choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; motivation?: string | string[]; reading?: string; section?: string; emphasis?: Emphasis; wholeObject?: boolean; geo?: GeoAnchor } = {},
   ): void {
     this.log = resolveConflict(this.log, logicalId, {
-      lastEditor: this.editor,
+      lastEditor: this.stamp(),
       ...(choice.body !== undefined ? { body: choice.body } : {}),
       ...(choice.target !== undefined ? { target: choice.target } : {}),
       ...(choice.motivation !== undefined ? { motivation: choice.motivation } : {}),

@@ -50,7 +50,9 @@ export interface OpenRequest {
 
 export function createExhibitSession(deps: ExhibitSessionDeps) {
   const s = $state<{ session: AnnotationSession; storeReady: boolean; dirty: boolean }>({
-    session: new AnnotationSession(deps.author()),
+    // deps.author is passed as a THUNK (Archie-7e5b S4): stamps resolve the CURRENT author at action
+    // time, so a mid-session rename reaches the very next edit without reopening the exhibit.
+    session: new AnnotationSession(deps.author),
     storeReady: false,
     dirty: false,
   });
@@ -113,9 +115,9 @@ export function createExhibitSession(deps: ExhibitSessionDeps) {
       //    paints resolved plates — the current object's master is minted on-demand, separately).
       await req.resolveAssets();
       // 3) Compute the incoming session + dir into LOCALS — all awaits happen here, BEFORE any state write.
-      const author = deps.author();
       const seed = deps.seedFor(req.slug);
-      const freshSeed = () => (seed ? seed() : new AnnotationSession(author));
+      // deps.author threads through as a thunk (Archie-7e5b S4) — see the boot session above.
+      const freshSeed = () => (seed ? seed() : new AnnotationSession(deps.author));
       let nextDir: FsDirectory | null = null;
       let nextSession: AnnotationSession;
       let persistFreshSeed = false;
@@ -126,7 +128,7 @@ export function createExhibitSession(deps: ExhibitSessionDeps) {
       } else {
         nextDir = await openExhibitAnnotationsDir(req.slug);
         if (nextDir) {
-          const loaded = await AnnotationSession.load(nextDir, author);
+          const loaded = await AnnotationSession.load(nextDir, deps.author);
           if (loaded.loadCorruption.length > 0) {
             // Torn store (Issue 19): keep whatever pages survived and NEVER seed-fresh-over it — a seed
             // save would rewrite the index without the unreadable pages, orphaning them for good. Surface

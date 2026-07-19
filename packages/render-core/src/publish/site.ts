@@ -597,7 +597,7 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   // publish and a full republish of identical content stamp the SAME generation — the byte-stable
   // contract), folding in `publishedAt` so each real timestamped publish is unique (busts caches on any
   // republish, note-only included). The Viewer keys hosted fetches on `?g=<generation>`.
-  const generation = opts.generation ?? generationHash(JSON.stringify(exhibitsJson) + " " + JSON.stringify(imageIndex) + " " + (opts.publishedAt ?? ""));
+  const generation = opts.generation ?? generationHash(JSON.stringify(exhibitsJson) + "\u0000" + JSON.stringify(imageIndex) + "\u0000" + (opts.publishedAt ?? ""));
   await writeJson(root, "archie.json", { ...ARCHIE_LIBRARY_MARKER, generation });
   return { brokenLinks, incompleteCanvases };
 }
