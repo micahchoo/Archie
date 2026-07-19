@@ -33,3 +33,8 @@ export { formatZoomRatio } from "./zoom-cue.js";
 // container dataset AND a host can call this to weight marks by band through the style channel
 // (Archie-a6fb — the CSS that read the dataset was inert against the WebGL mark layer).
 export { zoomBand, type ZoomBand } from "./zoom-band.js";
+
+// Marker dots (Archie-c1d9): the pure geometry behind the far-band dot layer (dotsVisibleForBand /
+// rectCenter) and the OSD navigator note-dots (imageToNavigatorPixel). The mount plots the navigator
+// dots itself (setNavigatorDots); Canvas plots the far-band layer from markerScreenRects + rectCenter.
+export { dotsVisibleForBand, rectCenter, imageToNavigatorPixel, type ScreenRect, type NavigatorDot } from "./marker-dots.js";
