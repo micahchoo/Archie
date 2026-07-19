@@ -38,12 +38,18 @@ export interface NoteTransform {
  * a partially-loaded exhibit instead of rendering it as complete. Carries the offending `path` + `cause`.
  */
 export class FailedReadError extends Error {
+  /** The HTTP status when the failure IS a non-OK response (an HTTP-shaped source sets it; a
+   *  transport fault or torn body leaves it unset). Lets a caller preserve "server said no" vs
+   *  "the network broke" without sniffing `cause` messages. */
+  readonly status?: number;
   constructor(
     public readonly path: string,
     public override readonly cause?: unknown,
+    opts?: { status?: number },
   ) {
     super(`failed to read ${path}: ${cause instanceof Error ? cause.message : String(cause)}`);
     this.name = "FailedReadError";
+    if (opts?.status !== undefined) this.status = opts.status;
   }
 }
 
@@ -76,6 +82,7 @@ export function fsJsonSource(fs: Filesystem): JsonSource {
         bytes = await readBytes(path);
       } catch (e) {
         if (isNotFound(e)) return null; // absent → null
+        if (e instanceof FailedReadError) throw e; // already classified by the backend (e.g. HTTP) — keep its path/status
         throw new FailedReadError(path, e); // a read fault that is NOT "missing" → failed
       }
       try {

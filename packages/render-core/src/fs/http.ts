@@ -74,7 +74,7 @@ class HttpFile implements FsFile {
       throw new FailedReadError(this.path, e); // network fault — FAILED, never absent
     }
     if (res.status === 404) throw new Error(`no such file: ${this.name}`); // absent — canonical seam phrasing
-    if (!res.ok) throw new FailedReadError(this.path, new Error(`HTTP ${res.status}`));
+    if (!res.ok) throw new FailedReadError(this.path, new Error(`HTTP ${res.status}`), { status: res.status });
     const declared = Number(res.headers.get("content-length"));
     if (Number.isFinite(declared) && declared > this.cfg.maxBytes) {
       throw new FailedReadError(this.path, new Error(`declared content-length ${declared} exceeds the ${this.cfg.maxBytes}-byte cap`));
