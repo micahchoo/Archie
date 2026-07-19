@@ -235,9 +235,9 @@
               <!-- R2: in a multi-object exhibit viewing an object, the Exhibit crumb returns to the
                    OVERVIEW (its natural start). Selection is un-routed, so reset via the lifted callback
                    rather than an href that points at the current hash (which would no-op). -->
-              <button type="button" class="crumb-link" onclick={() => carousel?.toOverview?.()}>{c.label}</button>
+              <button type="button" class="text-link crumb-link" onclick={() => carousel?.toOverview?.()}>{c.label}</button>
             {:else}
-              <a href={c.hash}>{c.label}</a>
+              <a class="text-link" href={c.hash}>{c.label}</a>
             {/if}
           {/each}
         </nav>
@@ -246,7 +246,7 @@
              lived inside the collapsible sidebar — collapse it and you were stranded on an object (#5). The
              bar now guarantees it: in an object → "Back to Exhibit"; at the overview → the exhibit's name. -->
         {#if carousel?.toOverview}
-          <button type="button" class="crumb-link" onclick={() => carousel?.toOverview?.()}>← Back to Exhibit</button>
+          <button type="button" class="text-link crumb-link" onclick={() => carousel?.toOverview?.()}>← Back to Exhibit</button>
         {:else}
           <span class="bar-title">{crumbs[1]?.label}</span>
         {/if}
@@ -333,16 +333,11 @@
   /* Breadcrumb — understated; the way back up (CONTEXT §125). Connector-blue hover (the secondary
      signal for links/up-nav) keeps the rationed orange free for the one focal action. */
   .crumbs { display: flex; align-items: center; gap: var(--space-2); }
-  .crumbs a { color: var(--ink-canvas-secondary); text-decoration: none; }
-  .crumbs a:hover { color: var(--accent-2); }
   .crumbs .sep { color: var(--ink-canvas-muted); }
-  /* The Exhibit crumb in a multi-object object view is a button (resets selection → overview), but reads
-     identically to the anchor crumbs — same ink, same connector-blue hover. */
-  .crumbs .crumb-link {
-    background: none; border: none; padding: 0; cursor: pointer; font: inherit;
-    color: var(--ink-canvas-secondary);
-  }
-  .crumbs .crumb-link:hover { color: var(--accent-2); }
+  /* The Exhibit crumb in a multi-object object view is a button (resets selection → overview); it and the
+     anchor crumbs both carry .text-link so they read identically to each other AND differ from the inert
+     text beside them. They used to paint --ink-canvas-secondary — the same token as .bar-title below,
+     which is explicitly non-interactive and occupies the SAME slot in this bar. */
   /* Single-exhibit orientation label where the breadcrumb would be — quiet, non-interactive (the name,
      not a link, since there's nothing above to return to). */
   .bar-title { color: var(--ink-canvas-secondary); font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); }
