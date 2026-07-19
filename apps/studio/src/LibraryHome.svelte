@@ -17,6 +17,7 @@
   import GalleryWall from "./GalleryWall.svelte";
   import { flattenLibraryImages, coverOf, filterExhibits, filterImages } from "./gallery-data.js";
   import { saveStatus } from "./save-queue.svelte.js";
+  import { viewPrefs } from "./view-prefs.svelte.js";
 
   let {
     exhibits,
@@ -98,10 +99,13 @@
   const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
 
   // Two views, one search (Phase 3.2): visual Exhibit cards ⟷ the all-images wall; the search box filters
-  // the ACTIVE view (exhibit titles / object titles) via the shared matchesTitle primitive. View-only local
-  // state. The wall reads the library LIVE (flatten OPFS meta) — never the baked images.json (unpublished
-  // edits would make it stale). "All images" only offered once there's media to browse.
-  let galleryView = $state<"exhibits" | "wall">("exhibits");
+  // the ACTIVE view (exhibit titles / object titles) via the shared matchesTitle primitive. The lens is a
+  // persisted VIEW PREFERENCE (Archie-a9fc / CONTEXT.md Navigation § "View preference") — last choice wins
+  // and survives app restarts, read through the same shared store as ExhibitOverview's Canvas/List toggle.
+  // `gallerySearch` stays local $state — search text is transient screen state, never persisted. The wall
+  // reads the library LIVE (flatten OPFS meta) — never the baked images.json (unpublished edits would make
+  // it stale). "All images" only offered once there's media to browse.
+  const galleryView = $derived(viewPrefs.galleryView);
   let gallerySearch = $state("");
   const allImages = $derived(flattenLibraryImages(exhibits));
   const shownExhibits = $derived(filterExhibits(exhibits, gallerySearch));
@@ -242,9 +246,9 @@
   {#if exhibits.length > 0}
     <div class="gallery-bar">
       <div class="views" role="group" aria-label="Library view">
-        <button type="button" class:on={galleryView === "exhibits"} aria-pressed={galleryView === "exhibits"} onclick={() => (galleryView = "exhibits")}>Exhibits</button>
+        <button type="button" class:on={galleryView === "exhibits"} aria-pressed={galleryView === "exhibits"} onclick={() => viewPrefs.setGalleryView("exhibits")}>Exhibits</button>
         {#if allImages.length > 0}
-          <button type="button" class:on={galleryView === "wall"} aria-pressed={galleryView === "wall"} onclick={() => (galleryView = "wall")}>All images</button>
+          <button type="button" class:on={galleryView === "wall"} aria-pressed={galleryView === "wall"} onclick={() => viewPrefs.setGalleryView("wall")}>All images</button>
         {/if}
       </div>
       <label class="g-search">
