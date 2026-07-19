@@ -247,7 +247,7 @@ gets the same rev-log treatment, the clauses split cleanly:
 | C1 | `C1 — creation appends a v1 root` (2 tests) |
 | C2 | `C2 — an edit is a single-parent child of the single head` (3 tests) |
 | C3 | `C3 — a delete is a tombstone version` (2 tests) |
-| C4 | `C4 — writes require a single head` (3 tests, incl. OQ-1 pin) |
+| C4 | `C4 — writes require a single head` (4 tests, incl. OQ-1 pin) |
 | C5 | `C5 — heads are the unreferenced tips, mergeParents-aware` (3 tests) |
 | C6 | `C6 — the heads projection is deterministic and tombstone-hiding` (2 tests) |
 | C7 | `C7 — mergeLogs is a set union by rev; local wins collisions` (3 tests, incl. OQ-2 pin) |
