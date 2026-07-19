@@ -523,15 +523,15 @@
       <p class="line">
         Living in {bindingLocationLabel(binding)}
         <span class="sep">·</span>
-        <button class="link" onclick={onopenproject} disabled={bindingBusy}>Open a library…</button>
+        <button class="text-link link" onclick={onopenproject} disabled={bindingBusy}>Open a library…</button>
         {#if binding.kind !== "unbound"}
           <span class="sep">·</span>
-          <button class="link" onclick={onclose} disabled={bindingBusy}
+          <button class="text-link link" onclick={onclose} disabled={bindingBusy}
             title="Detach from disk — your work stays in this browser">Close</button>
         {/if}
         {#if recents.length > 0}
           <span class="sep">·</span>
-          <button class="link" onclick={() => (recentsOpen = !recentsOpen)} aria-expanded={recentsOpen}>
+          <button class="text-link link" onclick={() => (recentsOpen = !recentsOpen)} aria-expanded={recentsOpen}>
             Recents <span aria-hidden="true">{recentsOpen ? "▴" : "▾"}</span>
           </button>
         {/if}
@@ -775,13 +775,12 @@
   .projectbar { max-width: 60rem; margin: var(--space-4) auto 0; }
   .line { margin: 0; font-family: var(--font-body); font-size: 0.85rem; color: var(--ink-canvas-secondary); display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
   .sep { color: var(--ink-canvas-muted); }
+  /* Chrome comes from .text-link; only the UI face is local. These sit inside `.line`, which paints
+     --ink-canvas-secondary — the same token these buttons used to use. */
   .link {
     font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em;
-    color: var(--ink-canvas-secondary); background: none; border: none; padding: 0; cursor: pointer;
-    transition: color 160ms ease;
   }
-  .link:hover:not(:disabled) { color: var(--ink-canvas-primary); text-decoration: underline; }
-  .link:disabled { opacity: 0.5; cursor: default; text-decoration: none; }
+  .link:disabled { opacity: 0.5; }
   .save-error { margin: var(--space-2) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--semantic-error); }
 
   /* Lost-binding recovery — warm warning (a missing folder is recoverable, not destructive). */
@@ -924,7 +923,11 @@
     background: none; border: none; padding: 0; cursor: pointer; transition: color 160ms ease;
   }
   .examples-head:hover { color: var(--ink-canvas-primary); }
-  .chevron { font-size: 0.7rem; }
+  /* Deliberately NOT .text-link: this is a disclosure toggle, not a link, and amber+underline on an
+     uppercase tracked heading would fight the house heading recipe. The problem it shares with the
+     links — indistinguishable from an inert heading at rest — is solved by tinting the chevron, which
+     is always rendered (▴/▾) and paired with aria-expanded. That hue is the resting cue. */
+  .chevron { font-size: 0.7rem; color: var(--accent-2); }
   .examples-contract { margin: var(--space-2) 0 var(--space-4); font-family: var(--font-body); font-size: 0.85rem; line-height: 1.5; color: var(--ink-canvas-secondary); }
 
   /* Unified search results (Archie-2308 item 3) — both corpora, labeled, regardless of the browsing lens. */

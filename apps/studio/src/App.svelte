@@ -2398,13 +2398,13 @@
         <summary>Import notes…</summary>
         {#if current && !isAvCurrent}
           <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
-          <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, comment — x, y, w, h, tags, reading all optional, header row first. Rows with no x,y,w,h arrive as “needs placement”: draw each box with Set area. Use a media item’s label in the object column, or leave it blank for the current one.">From a CSV</button>
+          <button type="button" class="text-link csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, comment — x, y, w, h, tags, reading all optional, header row first. Rows with no x,y,w,h arrive as “needs placement”: draw each box with Set area. Use a media item’s label in the object column, or leave it blank for the current one.">From a CSV</button>
           <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
             onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
-          <button type="button" class="csv-import" onclick={downloadCsvTemplate} title="Download a starter CSV pre-filled with this exhibit's items. Fill in the blanks in Excel or Sheets, then add it back — rows without x,y,w,h become “needs placement”.">Download a starter CSV to fill in</button>
+          <button type="button" class="text-link csv-import" onclick={downloadCsvTemplate} title="Download a starter CSV pre-filled with this exhibit's items. Fill in the blanks in Excel or Sheets, then add it back — rows without x,y,w,h become “needs placement”.">Download a starter CSV to fill in</button>
         {/if}
         <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
-        <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="Import notes from Archie or another annotation tool.">From an annotation file</button>
+        <button type="button" class="text-link csv-import" onclick={() => wadmEl?.click()} title="Import notes from Archie or another annotation tool.">From an annotation file</button>
         <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Add notes from a file"
           onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesWadm(f).catch((err) => { console.error("Notes add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
       </details>
@@ -2481,10 +2481,10 @@
                 <div class="np-actions">
                   {#if p.id === placingPendingId}
                     <span class="np-drawing">Drawing… pick a spot on the {isMapCurrent ? "map" : "image"}</span>
-                    <button type="button" class="np-del" onclick={cancelPlacing}>Cancel</button>
+                    <button type="button" class="text-link np-del" onclick={cancelPlacing}>Cancel</button>
                   {:else}
                     <button type="button" class="np-set" onclick={() => startPlacing(p.id)} title="Go to {objectLabelOf(p.objectId)} and draw this note’s box on the image">Place on image</button>
-                    <button type="button" class="np-del" onclick={() => removePending(p.id)} title="Remove this imported note">Remove</button>
+                    <button type="button" class="text-link np-del" onclick={() => removePending(p.id)} title="Remove this imported note">Remove</button>
                   {/if}
                 </div>
               </li>
@@ -2950,8 +2950,10 @@
     padding: var(--space-1) var(--space-2);
   }
   .hint { font-family: var(--font-body); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin: 0; }
-  .csv-import { align-self: flex-start; background: none; border: none; cursor: pointer; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); transition: color 160ms ease; } /* 24px+ hit box */
-  .csv-import:hover { color: var(--accent-2); }
+  /* Chrome comes from .text-link (atmosphere.css); only the layout + UI font are local. These used to
+     paint --ink-paper-secondary — the SAME token as the .hint copy directly above them, which is why
+     three stacked import actions read as one paragraph. */
+  .csv-import { align-self: flex-start; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); } /* 24px+ hit box */
   /* "To place" worklist cards (Archie-79c0 sub-cycle B) — width-responsive: text WRAPS, never truncates. */
   .np-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
   .np-row { display: flex; flex-direction: column; gap: 4px; min-width: 0; padding: 8px; border: 1px solid var(--ink-paper-muted); border-radius: var(--radius-md); font-family: var(--font-ui); font-size: var(--text-ui-md); }
@@ -2964,8 +2966,8 @@
   .np-drawing { color: var(--accent-2); overflow-wrap: anywhere; }
   .np-set { background: none; border: 1px solid var(--accent-2); border-radius: var(--radius-md); cursor: pointer; padding: 3px 10px; font: inherit; color: var(--accent-2); transition: filter 160ms ease; }
   .np-set:hover { filter: brightness(1.2); }
-  .np-del { background: none; border: none; cursor: pointer; padding: 3px 6px; color: var(--ink-paper-muted); font: inherit; }
-  .np-del:hover { color: var(--accent-2); }
+  /* Chrome comes from .text-link; keep only the hit-box padding. */
+  .np-del { padding: 3px 6px; }
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); border: 1px dashed var(--border-paper-emphasis); border-radius: var(--radius-md); }
 
   /* The WADM form CSS (.wadm family + .save/.del/.wadm-actions) lives in NoteEditor.svelte now. */
