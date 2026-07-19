@@ -102,12 +102,17 @@ final gates 925/925, tsc 0, root 0, studio check 0 errors). Reviews clean both a
 all three. MERGE-CONTRACT/CARRY six→seven content-fields prose fixed. session.ts
 `section` threading folded into 42f3's ticket (spec-review follow-up: NewNote/NoteEdit/
 resolve choice/workingAnnotations re-emit; record layer already carries losslessly).
-**Wave 4 (final): `Archie-42f3` studio wiring behind archie.structureRevlog flag —
-implementer dispatching off `22809e6`.** CAUTION: concurrent UX session actively merging
-studio work in shared checkout (their `5e7899b` modality merge mid-conflict on App.svelte
-at time of writing) — expect studio-file merge reconciliation at 42f3 landing; my
-tracker/doc commit briefly blocked by their unmerged App.svelte, retry then. (Spend limit
-killed wave-3 agents once; resumed OK; if deaths recur, stop and surface.)
+**Wave 4 MERGED — BUILD PLAN COMPLETE.** `build/studio-revlog-flag` (b7097a8 + 2d77368)
+merged after the UX session's checkout settled (auto-merged cleanly with their App.svelte
+work). 42f3 closed: archie.structureRevlog flag (default OFF, off-path pinned
+byte-identical), structure-reconcile array-diff → minimal appends, plural-head gating,
+hidden-note filtering, session.ts section threading + new _workingAnnotationCarry
+sentinel. Final gates: render-core 928/928, studio 413/413, svelte-check 0 err/3 warn,
+build ok, root 0. All six build tickets (f1c6/08af/c16d/a911/6b8e/42f3) landed with
+two-axis reviews clean. Lifecycle gaps (zip-import structure-log merge; structure/ dir
+cleanup on exhibit delete) filed as `Archie-2a9a` (open, unclaimed). Map `Archie-f849`:
+enactment done; remaining fog = graduation-tier items (sync server, Yjs-vs-Automerge,
+writable HTTP backend, identity/presence) — unspecifiable until graduation is bet on.
 
 **Ops (verified this session):** worktrees ALWAYS stale (5/5) — Step 0 reset + file-existence
 check in every brief. Review agents must END with SendMessage to main (plain text lost).
