@@ -426,21 +426,21 @@
   <div class="markbar">
     <span class="now-lbl">Now at</span><span class="clock" title="Where you are in the recording">{fmt(currentTime)}</span>
     {#if markedIn !== null}
-      <span class="chip" title="The note will run from here to the current time">from {fmt(markedIn)}<button class="x" title="Clear the start mark" onclick={() => (markedIn = null)}>✕</button></span>
+      <span class="chip" title="The note will run from here to the current time">from {fmt(markedIn)}<button class="x" title="Clear the start mark" aria-label="Clear the start mark" onclick={() => (markedIn = null)}>✕</button></span>
     {/if}
     {#if isVideo && draftBox}
-      <span class="chip" title="The note will cover this spot on the frame. Drag again to redraw.">▭ box set<button class="x" title="Clear the frame box" onclick={() => (draftBox = null)}>✕</button></span>
+      <span class="chip" title="The note will cover this spot on the frame. Drag again to redraw."><span aria-hidden="true">▭</span> box set<button class="x" title="Clear the frame box" aria-label="Clear the frame box" onclick={() => (draftBox = null)}>✕</button></span>
     {/if}
     <button class="mark" onclick={setIn} title="Marks the start of a time range — the note runs from here to where you are when you add it.">Mark start</button>
     <button class="add" onclick={addNote} title="Create a note covering this moment">{addLabel}</button>
     {#if oncreatewhole}
       <!-- Whole-object Note (ADR-0018): the whole recording, no time range — the AV analogue of "Whole image". -->
-      <button class="mark" onclick={() => oncreatewhole?.()} title="A note about the WHOLE recording — no time range">▣ Whole recording</button>
+      <button class="mark" onclick={() => oncreatewhole?.()} title="A note about the WHOLE recording — no time range"><span aria-hidden="true">▣</span> Whole recording</button>
     {/if}
     {#if onimport}
-      <label class="import" title="Add captions (.vtt or .srt) — each line becomes a note at its time">⊕ Add captions<input type="file" accept=".vtt,.srt,text/vtt,application/x-subrip" onchange={loadTranscript} /></label>
+      <label class="import" title="Add captions (.vtt or .srt) — each line becomes a note at its time"><span aria-hidden="true">⊕</span> Add captions<input type="file" accept=".vtt,.srt,text/vtt,application/x-subrip" onchange={loadTranscript} /></label>
     {/if}
-    {#if activeText}<span class="active" title={activeText}>▸ {activeText}</span>{/if}
+    {#if activeText}<span class="active" title={activeText}><span aria-hidden="true">▸</span> {activeText}</span>{/if}
   </div>
 </div>
 
