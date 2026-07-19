@@ -624,9 +624,10 @@ function generationHash(s: string): string {
   return (h >>> 0).toString(36);
 }
 
-/** Assemble the whole site into an in-memory ZipFilesystem (the architectural publish primitive),
- *  WITHOUT serializing — the caller chooses `fs.toZip()` (eager) or `fs.streamZip(sink)` (A.1, stream
- *  straight to a disk handle so the archive never fully materializes). */
+/** Assemble the whole site into an in-memory ZipFilesystem (the EAGER publish primitive): the tree
+ *  fully materializes, then `fs.toZip()` serializes it — the non-Chromium fallback, size-guarded by
+ *  the caller. Bounded-memory export goes through `ZipStreamFilesystem` (fs/zip-stream.ts) instead:
+ *  publish straight into the streaming sink, skipping this function entirely. */
 export async function libraryToZipFs(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ fs: ZipFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }> {
   const fs = new ZipFilesystem();
   const { brokenLinks, incompleteCanvases } = await publishLibrary(fs, library, getLog, opts);
