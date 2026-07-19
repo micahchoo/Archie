@@ -90,11 +90,14 @@ sentinels intact, refactor type-only, gates re-verified independently (tsc 0, 86
 (3) sectionKey containment needs a negative test; (4) replace per-key headsOf scan
 (single-pass group-by) before logs grow.
 
-**AWAITING USER — checkpoint 1: pursue/park verdict presented.** On pursue: chart
-structure-DAG build plan as tickets, show shape (checkpoint 2) → implementer agents in
-worktrees → two-axis review per landing → merge. Probe branch NOT merged yet — merge/absorb
-decision is part of build-plan chartering (A1 generics are candidate-to-keep; probe slice is
-throwaway).
+**BOTH CHECKPOINTS PASSED (user: pursue; dispatch serial waves, no asking between waves).**
+Build plan charted + committed (`9bdc4cd`): f1c6 generics → 08af SectionRecord → {c16d
+projection, a911 persist, 6b8e attribution} → 42f3 studio flag. Probe ledger landed on main.
+**Wave 1 MERGED** (`7728b08`, f1c6 closed): DagRecord generics + 5 type pins on main;
+review clean both axes; post-merge 852/852, tsc 0, root typecheck 0. **Wave 2 next:**
+`Archie-08af` SectionRecord model (worktree implementer → two-axis review → merge). Then
+wave 3 parallel c16d+a911+6b8e (disjoint territory); wave 4 = 42f3. (User pre-approved
+serial waves, no asking between.)
 
 **Ops (verified this session):** worktrees ALWAYS stale (5/5) — Step 0 reset + file-existence
 check in every brief. Review agents must END with SendMessage to main (plain text lost).
