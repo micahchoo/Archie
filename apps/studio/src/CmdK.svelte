@@ -205,7 +205,8 @@
   }
   .tile {
     display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer;
-    background: none; border: 1px solid transparent; border-radius: var(--radius-sm); padding: var(--space-1);
+    /* Resting border, not transparent: the tile announced itself only on hover. */
+    background: none; border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: var(--space-1);
     transition: border-color 140ms ease, background 140ms ease;
   }
   .tile:hover { border-color: var(--accent); background: var(--accent-muted); }
