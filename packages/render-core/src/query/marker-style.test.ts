@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { readingMarkerStyle } from "./marker-style.js";
+import {
+  readingMarkerStyle,
+  withZoomBand,
+  arrivalPulseIntensity,
+  withArrivalPulse,
+  ARRIVAL_PULSE_MS,
+} from "./marker-style.js";
 
 // P-2 grill Q2: comparing = outline-only (no fill blend can lie about reading identity);
 // solo restores one fill; emphasis modifiers always apply. The ONE source for both apps' numbers.
@@ -60,5 +66,101 @@ describe("readingMarkerStyle", () => {
       expect(s.fillOpacity).toBeLessThanOrEqual(1);
       expect(s.strokeOpacity).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+// Archie-a6fb — the screen-space modulations that replaced the inert `.a9s-annotation` CSS.
+
+describe("withZoomBand", () => {
+  const base = readingMarkerStyle("#a33", "normal"); // width 2, strokeOpacity .95, fillOpacity .18
+
+  it("mid = the authored resting weight (no change)", () => {
+    expect(withZoomBand(base, "mid")).toEqual(base);
+  });
+
+  it("far = presence boost: heavier stroke, colour/opacity untouched", () => {
+    const s = withZoomBand(base, "far");
+    expect(s.strokeWidth).toBeGreaterThan(base.strokeWidth); // 2 → 3
+    expect(s.strokeOpacity).toBe(base.strokeOpacity);
+    expect(s.fillOpacity).toBe(base.fillOpacity);
+    expect(s.stroke).toBe(base.stroke);
+  });
+
+  it("near = recede: stroke + fill opacity halve, width unchanged", () => {
+    const s = withZoomBand(base, "near");
+    expect(s.strokeOpacity).toBeCloseTo(base.strokeOpacity * 0.5);
+    expect(s.fillOpacity).toBeCloseTo(base.fillOpacity * 0.5);
+    expect(s.strokeWidth).toBe(base.strokeWidth);
+  });
+
+  it("composes with the comparing regime (outline-only stays fill-zero at every band)", () => {
+    const comparing = readingMarkerStyle("#a33", "normal", { comparing: true }); // fillOpacity 0
+    for (const band of ["far", "mid", "near"] as const) {
+      expect(withZoomBand(comparing, band).fillOpacity).toBe(0);
+    }
+  });
+
+  it("never produces an out-of-range opacity", () => {
+    const bright = readingMarkerStyle("#a33", "strong", { highlighted: true });
+    for (const band of ["far", "mid", "near"] as const) {
+      const s = withZoomBand(bright, band);
+      expect(s.strokeOpacity).toBeLessThanOrEqual(1);
+      expect(s.fillOpacity).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
+describe("arrivalPulseIntensity", () => {
+  it("is full (1) at the moment of arrival and before it", () => {
+    expect(arrivalPulseIntensity(0)).toBe(1);
+    expect(arrivalPulseIntensity(-50)).toBe(1); // clamps below 0
+  });
+
+  it("has decayed to 0 by the duration and stays there after", () => {
+    expect(arrivalPulseIntensity(ARRIVAL_PULSE_MS)).toBe(0);
+    expect(arrivalPulseIntensity(ARRIVAL_PULSE_MS * 2)).toBe(0);
+  });
+
+  it("decays monotonically and eases out (steeper early)", () => {
+    const q1 = arrivalPulseIntensity(ARRIVAL_PULSE_MS * 0.25);
+    const q2 = arrivalPulseIntensity(ARRIVAL_PULSE_MS * 0.5);
+    const q3 = arrivalPulseIntensity(ARRIVAL_PULSE_MS * 0.75);
+    expect(q1).toBeGreaterThan(q2);
+    expect(q2).toBeGreaterThan(q3);
+    // ease-out: the first quarter sheds more intensity than the third
+    expect(1 - q1).toBeGreaterThan(q2 - q3);
+  });
+
+  it("a zero/negative duration is an instant no-pulse", () => {
+    expect(arrivalPulseIntensity(0, 0)).toBe(0);
+  });
+});
+
+describe("withArrivalPulse", () => {
+  const base = readingMarkerStyle("#a33", "normal");
+
+  it("intensity 0 leaves the resting spec untouched", () => {
+    expect(withArrivalPulse(base, 0)).toEqual(base);
+  });
+
+  it("peak intensity emphasizes: heavier stroke, full stroke opacity, fuller fill", () => {
+    const s = withArrivalPulse(base, 1);
+    expect(s.strokeWidth).toBe(base.strokeWidth * 2);
+    expect(s.strokeOpacity).toBe(1);
+    expect(s.fillOpacity).toBeGreaterThan(base.fillOpacity);
+  });
+
+  it("mid intensity lands between resting and peak", () => {
+    const mid = withArrivalPulse(base, 0.5);
+    expect(mid.strokeWidth).toBeGreaterThan(base.strokeWidth);
+    expect(mid.strokeWidth).toBeLessThan(base.strokeWidth * 2);
+  });
+
+  it("keeps opacities in range and preserves colour (composes with reading style)", () => {
+    const s = withArrivalPulse(readingMarkerStyle("#0af", "strong"), 1);
+    expect(s.stroke).toBe("#0af");
+    expect(s.fill).toBe("#0af");
+    expect(s.strokeOpacity).toBeLessThanOrEqual(1);
+    expect(s.fillOpacity).toBeLessThanOrEqual(1);
   });
 });
