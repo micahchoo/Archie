@@ -49,7 +49,7 @@
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import type { DrawTool, MarkerStyle, FrameOverlay } from "@render/mount";
-  import { openExhibitAnnotationsDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
+  import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus, setWriterGate } from "./save-queue.svelte.js";
   import { createWriterLock } from "./writer-lock.svelte.js";
@@ -73,6 +73,10 @@
   import { buildCsvTemplate, type CsvPendingNote } from "./csv-import.js";
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
+  // Structure rev-log behind archie.structureRevlog (Archie-42f3) — default OFF; the session module
+  // is inert when the flag is off (no reads, no writes, no structure/ dir).
+  import { createStructureSession } from "./structure-session.svelte.js";
+  import { structureRevlogEnabled } from "./feature-flags.js";
   import { createAssetUrls } from "./asset-urls.svelte.js";
   // Place-addressable navigation (ADR-0024): the pure place model (parse/serialize/resolve) + Tauri detection.
   import { parsePlace, serializePlace, resolvePlace, librarySnapshot, LIBRARY, type Place, type Missing } from "./place.js";
@@ -214,6 +218,38 @@
   // Thin App-side wrappers preserve the zero-arg save()/scheduleSave() call sites (they thread the live slug).
   const save = () => sess.save(currentSlug);
   const scheduleSave = () => sess.scheduleSave(currentSlug);
+
+  // --- Structure rev-log (Archie-42f3), behind archie.structureRevlog — read ONCE at boot. OFF (the
+  // default): everything below is inert — no structure/ dir, no reads/writes, setSections behaves
+  // byte-identically to the pre-revlog build. ON: section mutations reconcile into the append-only
+  // structure log (spine/structure.ts), persist beside the annotation history, and library.json's
+  // `sections` becomes the log's projection snapshot. Conflict RESOLUTION UI is Studio-UX map
+  // territory (Archie-d71c/90f1) — here plural heads only GATE editing (NarrativeEditor conflictedIds).
+  const STRUCTURE_REVLOG = structureRevlogEnabled();
+  const structure = createStructureSession({
+    author: () => author,
+    openStructDir: openExhibitStructureDir,
+    enqueue: enqueueSave,
+    isTemplate,
+  });
+  // Load the entered exhibit's structure log (once per slug; seeds from a pre-revlog `sections` array
+  // on the first flag-on run). Reruns on meta changes but ensureLoaded no-ops once loaded.
+  $effect(() => {
+    if (!STRUCTURE_REVLOG || view === "library") return;
+    const ex = currentExhibit;
+    if (!ex) return;
+    void structure.ensureLoaded(ex.slug, ex.id, ex.sections ?? []);
+  });
+  // Flag-ON commit hook (called from setSections/confirmClear AFTER today's patch): reconcile the
+  // array into the log; when the log's projection disagrees with the array (a gated conflict kept a
+  // row, an un-delete restored content), re-snapshot the PROJECTION into library.json — the log is
+  // the source when the flag is on, library.json its snapshot.
+  function applyStructure(slug: string, sections: Section[]) {
+    const ex = lib.meta.exhibits.find((e) => e.slug === slug);
+    if (!ex) return;
+    const ws = structure.apply(slug, ex.id, sections);
+    if (ws && JSON.stringify(ws.sections) !== JSON.stringify(sections)) lib.patchExhibit(slug, { sections: ws.sections });
+  }
 
   // --- Library binding (invention #3, CONTEXT three-configs persistence): WHERE this Library's canonical
   // bytes live. unbound = OPFS-only (this browser); folder = Chromium FSA autosave-in-place; file = a
@@ -436,6 +472,9 @@
     // intent pending the inline confirm strip ("Remove" → confirmClear, "Keep" → cancelClear). Don't commit.
     if (!v.commit) { pendingClear = { slug: currentSlug }; return; }
     lib.patchExhibit(currentSlug, { sections });
+    // Flag-ON (Archie-42f3): the committed array ALSO reconciles into the structure rev-log (the
+    // appends are the source; the patch above is its snapshot). Inert when the flag is off.
+    if (STRUCTURE_REVLOG) applyStructure(currentSlug, sections);
     // MF-2: every committed write retires any pending last→0 confirm. Resolving a last-remove by ADDING (or
     // editing a title while the strip is up) commits a non-empty spine — the strip's "Remove the last
     // section?" copy is now false and confirmClear would wipe the spine without a fresh confirm. Reset it.
@@ -453,6 +492,7 @@
   function confirmClear() {
     if (!pendingClear) return;
     lib.patchExhibit(pendingClear.slug, { sections: [] });
+    if (STRUCTURE_REVLOG) applyStructure(pendingClear.slug, []); // the clear tombstones every section in the log too
     firstAddCueSlug = null;
     clearedSlug = pendingClear.slug; // arm the NarrativeEditor's "Narrative cleared…" empty-state copy
     pendingClear = null;
@@ -1051,12 +1091,19 @@
   // Notes + working annotations are scoped to the CURRENT object's canvas (then the layer filter).
   // `void rev;` registers the revision counter as a reactive dep (bumped on every log write) without the
   // bare-comma idiom svelte-check flags as an unused expression.
-  const allNotes = $derived.by(() => { void rev; return sess.session.notes(); });
+  // Hide-by-ancestry (Archie-42f3, flag-on only): notes attributed to a TOMBSTONED section are
+  // filtered from the working surfaces at data level (spine/visibility.ts hiddenNoteIds). Flag off
+  // ⇒ structure.hiddenIds returns the constant empty set and both filters are identity.
+  const hiddenByStructure = $derived.by<ReadonlySet<string>>(() => { void rev; return structure.hiddenIds(currentSlug, sess.session.entries); });
+  // Sections with plural heads (unresolved concurrent edits) — gates the NarrativeEditor's edit
+  // affordances (merge contract C4). Empty set whenever the flag is off.
+  const conflictedSectionIds = $derived<ReadonlySet<string>>(structure.conflictedLocalIds(currentSlug));
+  const allNotes = $derived.by(() => { void rev; return sess.session.notes().filter((r) => !hiddenByStructure.has(r.logicalId)); });
   const objNotes = $derived(allNotes.filter((r) => srcOf(r.target) === canvasId));
   const notes = $derived(
     objNotes.filter((r) => rdg.noteVisible(r)), // visibility = the reading-state set (canvas + margin share it)
   );
-  const objAnnotations = $derived.by<W3CAnnotation[]>(() => { void rev; return sess.session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId); });
+  const objAnnotations = $derived.by<W3CAnnotation[]>(() => { void rev; return sess.session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId && !hiddenByStructure.has(a.id)); });
   // O(1) marker lookup for the live styler: Annotorious calls styleOf per marker on every restyle
   // (hover / solo / reading toggle), so a per-call array scan was O(n²) across the canvas. Rebuilt only
   // when the working-annotation set changes.
@@ -1904,6 +1951,7 @@
               sections={currentExhibit?.sections ?? []}
               objects={OBJECTS}
               {currentObjectId}
+              conflictedIds={conflictedSectionIds}
               activeSectionId={focusSectionId}
               framingId={framingSectionId}
               cleared={clearedSlug === currentSlug}
