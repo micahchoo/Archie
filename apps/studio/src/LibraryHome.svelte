@@ -105,9 +105,20 @@
   // `gallerySearch` stays local $state — search text is transient screen state, never persisted. The wall
   // reads the library LIVE (flatten OPFS meta) — never the baked images.json (unpublished edits would make
   // it stale). "All images" only offered once there's media to browse.
-  const galleryView = $derived(viewPrefs.galleryView);
-  let gallerySearch = $state("");
+  //
+  // GUARD (code review, Archie-a9fc follow-up): persistence made "wall" reachable with nothing to show it —
+  // on the pre-persistence base, galleryView reset to "exhibits" every mount, so a bound-but-empty library
+  // (0 exhibits) could never land on "wall". Now the last-picked lens survives across libraries/restarts,
+  // so a fresh/emptied library opened while "wall" is persisted would hide BOTH the gallery-bar toggle
+  // (gated on exhibits.length > 0) AND the {:else} create-exhibit form (gated on galleryView !== "wall") —
+  // stranding the user with no way back to "exhibits" or to create one. Read is guarded to fall back to
+  // "exhibits" whenever there's no media to show ("wall" with nothing to browse is never a real choice);
+  // writes still go to viewPrefs.setGalleryView unguarded, so the true preference is preserved for when
+  // there IS something to show again. allImages.length > 0 implies exhibits.length > 0, so this single
+  // check covers both the dead-end and the toggle-hidden case.
   const allImages = $derived(flattenLibraryImages(exhibits));
+  const galleryView = $derived(allImages.length > 0 ? viewPrefs.galleryView : "exhibits");
+  let gallerySearch = $state("");
   const shownExhibits = $derived(filterExhibits(exhibits, gallerySearch));
   const shownImages = $derived(filterImages(allImages, gallerySearch));
 
