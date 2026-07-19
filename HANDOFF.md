@@ -66,15 +66,32 @@ copy+tombstone) · referential TOLERANCE (write-time enforcement unsound under m
 per-type read degrades + advisory MergeReview items) · deletes hide-by-ancestry (one
 tombstone, atomic un-delete; explicit bulk-delete verb; write-cascade retired).
 
-**IN FLIGHT — agent `probe-structure-revlog`** (worktree `agent-a4620b9ff7368be6e`, branch
-`probe/structure-revlog`, ticket `Archie-b766`): sections as rev-logged structure records.
-Riskiest A1 = primitives generalize with ZERO annotation change (847 untouched tests stay
-green). Kill (fixed): lossless seed round-trip working→publish→open; >16ms/edit-projection
-flagged. Writes `ledgers/PROBE-structure-revlog.md`. Briefed to reset to `2c47bdb`.
+**PROBE LANDED — verdict PURSUE** (ticket `Archie-b766`, branch `probe/structure-revlog` in
+worktree `agent-a4620b9ff7368be6e`, base `2c47bdb`, commits 55cb040/26d342c/d50fd01/099f622,
+NOT yet merged). All four assumptions HOLD: A1 DAG primitives generalized over `DagRecord<Id>`
+(AnnotationLog overloads-first + NoInfer preserve inference; 847 existing tests green
+UNTOUCHED, suite 860/860); A2 seed round-trip working→publish→open deep-equal; A3 per-edit
+projection ~0.1ms seed / 8–12ms synthetic-2000 (O(records×keys) scan flagged, fix in build);
+A4 fractional order key + id tiebreak converges both replicas. Ledger (in worktree):
+`ledgers/PROBE-structure-revlog.md` — 7 sharp edges for the build plan (tombstone carries
+content vs annotation drop; un-delete first-class; persist shape NOT probed; SectionKey strip
+at boundaries; note→section attribution field trips every carry sentinel).
 
-**User-ordered pipeline on landing:** two-axis review → (pursue) build plan as tickets →
-implementer agents → two-axis review per landing → merge. **User checkpoints:** probe
-pursue/park verdict; build-plan shape before implementer dispatch.
+**Two-axis review of probe: BOTH AXES DONE, CLEAN.** Spec: PURSUE honestly earned; all six
+gate decisions demonstrated in tests; no existing test modified; A2 genuinely publish→open.
+Standards: production changes (log/merge/heads generics) ship-worthy, zero violations, carry
+sentinels intact, refactor type-only, gates re-verified independently (tsc 0, 860/860).
+**Build-plan debts from review (must not inherit blind):** (1) SectionRecord mappers
+(append*/resolveSectionConflict/contentOf) need rule-3 carry sentinels when promoted;
+(2) NoInfer/foreign-record rejection + R=never hazard need @ts-expect-error negative pins;
+(3) sectionKey containment needs a negative test; (4) replace per-key headsOf scan
+(single-pass group-by) before logs grow.
+
+**AWAITING USER — checkpoint 1: pursue/park verdict presented.** On pursue: chart
+structure-DAG build plan as tickets, show shape (checkpoint 2) → implementer agents in
+worktrees → two-axis review per landing → merge. Probe branch NOT merged yet — merge/absorb
+decision is part of build-plan chartering (A1 generics are candidate-to-keep; probe slice is
+throwaway).
 
 **Ops (verified this session):** worktrees ALWAYS stale (5/5) — Step 0 reset + file-existence
 check in every brief. Review agents must END with SendMessage to main (plain text lost).
