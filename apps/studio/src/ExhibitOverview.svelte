@@ -388,7 +388,14 @@
     {@render safety?.()}
     <!-- The "Exhibit layout" chip is RETIRED (ADR-0016): the reading mode is no longer a picked layout but
          an emergent property of content; the intent line under the title still names what visitors get. -->
-    <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for this exhibit">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
+    <!-- The ONE "Details" affordance (decision Archie-3e0a, ticket Archie-ebf4): word + ✎, never the
+         retired ⓘ. Title leads with "Details" per the copy rule, then names the scope it opens;
+         aria-label mirrors it (label-in-name: starts with "Details", then the exhibit) so it doesn't
+         collapse to the same accessible name as the per-plate/row pencils elsewhere on this page. -->
+    <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)}
+      title="Details — title, description, credit & license for this exhibit"
+      aria-label={`Details — ${title && title.trim() ? title : "Exhibit"}`}
+      >✎ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     <div class="viewtoggle" role="group" aria-label="Overview mode">
       <button class:on={mode === "canvas"} onclick={() => viewPrefs.setOverviewMode("canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>
       <button class:on={mode === "list"} onclick={() => viewPrefs.setOverviewMode("list")} title="Plain list">List</button>
@@ -526,8 +533,12 @@
             </button>
             <!-- Per-plate pencil (Archie-79be): edit this media item's details without opening it. A SIBLING
                  of the plate button (no button-in-button); stops pointerdown/click so it neither pans the
-                 canvas nor opens the object. -->
-            <button class="plate-edit" title="Edit details for {o.label}" aria-label="Edit details for {o.label}"
+                 canvas nor opens the object. The ONE "Details" affordance (Archie-3e0a / Archie-ebf4): tight
+                 space, so pencil-alone, visible tooltip always "Details" — .details-pencil (atmosphere.css)
+                 is the shared look every card/plate/row pencil uses — but aria-label carries the per-item
+                 scope (label-in-name: starts with "Details", then the item) so a canvas full of plates
+                 stays distinguishable to screen-reader users. -->
+            <button class="plate-edit details-pencil" title="Details" aria-label={`Details — ${o.label}`}
               onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); oneditobject(o.id); }}>✎</button>
           </div>
         {/each}
@@ -616,8 +627,13 @@
             <span class="li-lbl">{o.label}</span>
             <span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
           </button>
-          <!-- Per-row pencil (Archie-79be): edit this media item's details without opening it. -->
-          <button class="row-edit" title="Edit details for {o.label}" aria-label="Edit details for {o.label}"
+          <!-- Per-row pencil (Archie-79be): edit this media item's details without opening it. The ONE
+               "Details" affordance (Archie-3e0a / Archie-ebf4): tight space, so pencil-alone, visible
+               tooltip always "Details" — .details-pencil (atmosphere.css) is the shared look every
+               card/plate/row pencil uses — but aria-label carries the per-item scope (label-in-name:
+               starts with "Details", then the item) so a list of rows stays distinguishable to
+               screen-reader users tabbing through it. -->
+          <button class="row-edit details-pencil" title="Details" aria-label={`Details — ${o.label}`}
             onclick={(e) => { e.stopPropagation(); oneditobject(o.id); }}>✎</button>
         </li>
       {/each}
@@ -748,19 +764,14 @@
   /* Per-plate pencil (Archie-79be): a quiet glyph over the plate's top-right corner. The wrapper is both the
      flex/drag child AND the positioning context. Faint at rest (still visible on touch), bright on hover/focus. */
   .plate-wrap { position: relative; }
+  /* Position + idle-visibility only — the pencil's own look is the shared .details-pencil
+     (atmosphere.css), so it's identical to the LibraryHome card pencil and the list-row pencil below. */
   .plate-edit {
     position: absolute; top: var(--space-2); right: var(--space-2); z-index: 1;
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 1.85rem; height: 1.85rem; padding: 0; cursor: pointer; line-height: 1;
-    font-family: var(--font-ui); font-size: 0.95rem;
-    color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised);
-    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-lift-low);
-    opacity: 0.5; transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    opacity: 0.5;
   }
   .plate-wrap:hover .plate-edit, .plate-wrap:focus-within .plate-edit { opacity: 1; }
-  .plate-edit:hover { color: var(--accent); border-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
-  .plate-edit:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+  .plate-edit:focus-visible { opacity: 1; }
   .plate.add.over { border-color: var(--accent); border-style: solid; color: var(--accent); }
   .canvas-legend .lead { color: var(--ink-canvas-secondary); }
   /* Leading "insert before first" drop zone (canvas): a thin column that only takes space while armed;
@@ -788,7 +799,9 @@
   /* One fixed row height (Archie-a9fc chrome trim retired the density slider that used to feed this via
      --row-h; 3.3rem is the former slider's midpoint value). */
   .list li:not(.dropstart-row):not(.end) { content-visibility: auto; contain-intrinsic-size: auto 3.3rem; }
-  .list li:not(.dropstart-row):not(.end) button { min-height: 3.3rem; box-sizing: border-box; }
+  /* :not(.row-edit) — the row-open button gets the fixed row height, but the trailing Details pencil
+     must stay the shared .details-pencil 1.85rem square (review fix: min-height was beating its height). */
+  .list li:not(.dropstart-row):not(.end) button:not(.row-edit) { min-height: 3.3rem; box-sizing: border-box; }
   .list li.dragging { opacity: 0.4; }
   .list li.over { box-shadow: 0 -3px 0 var(--accent); } /* insert-before line */
   /* Leading "insert before first" drop zone (list): collapsed until a drag is active. */
@@ -806,19 +819,21 @@
   .li-thumb .glyph { color: var(--accent-2); }
   .li-lbl { flex: 1; font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; color: var(--ink-canvas-primary); }
   .li-cnt { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
-  /* Per-row pencil (Archie-79be): a trailing quiet glyph. Selector outspecifies `.list li button` (which sets
-     flex:1) so flex:none holds and the open-button keeps the row width. */
+  /* Per-row pencil (Archie-79be): a trailing quiet glyph — the shared .details-pencil (atmosphere.css)
+     look, same as the canvas plate's pencil and the LibraryHome card's. Selector outspecifies
+     `.list li button` (which sets flex:1) so flex:none holds and the open-button keeps the row width;
+     `.list li button:hover` also matches this (it's a button), so transform is explicitly cancelled.
+     Review fix: `.list li .row-edit` (0,2,1) still beats the GLOBAL `.details-pencil` (0,1,0) on every
+     property they both set (padding, border-radius, color, transition) and `.list li .row-edit:hover`
+     (0,3,1) beats `.details-pencil:hover` (0,2,0) too — so those contested properties are re-asserted
+     here instead of assumed inherited from the shared class, or the row pencil silently reverts to the
+     plain list-button look. */
   .list li .row-edit {
-    flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
-    width: 2rem; height: 2rem; margin-left: var(--space-1); padding: 0; cursor: pointer; line-height: 1;
-    font-family: var(--font-ui); font-size: 0.95rem;
-    color: var(--ink-canvas-muted); background: var(--surface-canvas-raised);
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-lift-low);
-    transition: color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+    flex: 0 0 auto; margin-left: var(--space-1);
+    padding: 0; min-height: 0; border-radius: var(--radius-sm); color: var(--ink-canvas-secondary);
+    transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
-  .list li .row-edit:hover { color: var(--accent); border-color: var(--accent); box-shadow: var(--shadow-lift-mid); transform: none; }
-  .list li .row-edit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .list li .row-edit:hover { color: var(--accent); border-color: var(--accent); transform: none; }
   .li-add { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); padding: var(--space-3); cursor: pointer; width: 100%; transition: color 160ms ease, border-color 160ms ease; }
   .li-add:hover { color: var(--ink-canvas-primary); border-color: var(--accent); }
 

@@ -250,7 +250,15 @@
           {hasRealWork}
           onflush={onsave}
         />
-        <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
+        <!-- The ONE "Details" affordance (decision Archie-3e0a, ticket Archie-ebf4): word + ✎, never
+             the retired ⓘ (which promised read-only info; this opens an editor). Title leads with
+             "Details" per the copy rule, then names the scope it opens; aria-label mirrors it in the
+             APG label-in-name shape (starts with the visible word, then names the library) so it reads
+             distinctly from the per-card pencils' accessible names below. -->
+        <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)}
+          title="Details — title, description, credit & license for the whole library"
+          aria-label={`Details — ${libTitle && libTitle.trim() ? libTitle : "Library"}`}
+          >✎ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
         <HelpMenu {ontutorial} {onshortcuts} />
       </div>
     </div>
@@ -361,8 +369,12 @@
         {#if isTemplate(ex.slug)}<span class="ex-hint">Explore freely — changes aren't kept. Keep a copy to make it yours.</span>{/if}
       </button>
       <!-- Per-card pencil (Archie-79be): edit this exhibit's title/description/credit + remove, without
-           opening it. A SIBLING of the card button (no button-in-button); sits over the top-right corner. -->
-      <button class="edit-meta" title="Edit details for {ex.title}" aria-label="Edit details for {ex.title}"
+           opening it. A SIBLING of the card button (no button-in-button); sits over the top-right corner.
+           The ONE "Details" affordance (Archie-3e0a / Archie-ebf4): tight space, so pencil-alone, visible
+           tooltip always "Details" for the uniform hover presentation — but the accessible name carries
+           the per-item scope (APG label-in-name: starts with the visible word "Details", then the item),
+           so screen-reader users tabbing a grid of cards can still tell them apart. -->
+      <button class="edit-meta details-pencil" title="Details" aria-label={`Details — ${ex.title}`}
         onclick={() => (editingSlug = ex.slug)}>✎</button>
     </li>
   {/snippet}
@@ -519,19 +531,14 @@
   /* Per-card pencil (Archie-79be): a quiet glyph button over the card's top-right corner. Faint at rest so
      the grid stays calm (and still visible on touch, where there's no hover), brightening on hover/focus. */
   .card-wrap { position: relative; }
+  /* Position + idle-visibility only — the pencil's own look (size/color/border/shadow/hover/focus) is
+     the shared .details-pencil (atmosphere.css), so it's identical to every other Details pencil. */
   .edit-meta {
     position: absolute; top: var(--space-3); right: var(--space-3); z-index: 1;
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 1.85rem; height: 1.85rem; padding: 0; cursor: pointer; line-height: 1;
-    font-family: var(--font-ui); font-size: 0.95rem;
-    color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised);
-    border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-lift-low);
-    opacity: 0.45; transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    opacity: 0.5;
   }
   .card-wrap:hover .edit-meta, .card-wrap:focus-within .edit-meta { opacity: 1; }
-  .edit-meta:hover { color: var(--accent); border-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
-  .edit-meta:focus-visible { opacity: 1; outline: 2px solid var(--accent); outline-offset: 1px; }
+  .edit-meta:focus-visible { opacity: 1; }
   /* padding-right reserves the top-right pencil's gutter (--space-3 inset + ~1.85rem button) so a long title wraps before it. */
   .title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); padding-right: calc(var(--space-3) + 1.85rem); }
   .meta { font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
