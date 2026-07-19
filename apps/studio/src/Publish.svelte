@@ -231,7 +231,7 @@
   async function saveZip() {
     menuPhase = "working"; destErrorMsg = "";
     try { zipName = await onzip(); menuPhase = "done-zip"; }
-    catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't save the zip."; menuPhase = "error"; }
+    catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't download the zip."; menuPhase = "error"; }
   }
   /** Step 1 → the GitHub wizard: run the size-guard + cache the projection, then enter — the guard's own
    *  confirm dialog is the feedback, so declining it just leaves the author on the chooser. */
@@ -356,7 +356,7 @@
         <!-- Stay on the chooser until the save actually happens (the OS picker is modal anyway) —
              done-download must never claim a save the user cancelled. -->
         <button class="choice" onclick={async () => { if (await ondownload().catch(() => false)) menuPhase = "done-download"; }}>
-          <span class="c-title">Save a copy — or share a link</span>
+          <span class="c-title">Download a copy — or share a link</span>
           <span class="c-desc">Keep a copy, share a link, or hand it to a colleague — packed into one <code>.archie.zip</code>. Best for a draft, not a permanent citation.</span>
         </button>
         {#if !deployToPages}
@@ -372,11 +372,11 @@
     {:else if menuPhase === "done-download"}
       <header>
         <p class="eyebrow">Publish</p>
-        <h2>Save a copy</h2>
+        <h2>Download a copy</h2>
         <p class="lede">A portable <code>.archie.zip</code> — and, if you host it, a shareable link.</p>
       </header>
       <div class="result">
-        <p class="ok">Saved your <code>.archie.zip</code>.</p>
+        <p class="ok">Downloaded your <code>.archie.zip</code>.</p>
         <p class="line">Keep it, re-open it here any time, or hand it to a colleague. <strong>Working with someone?</strong> They open your zip in their Studio, add their own notes, and send the file back — when you open their copy here, Archie shows who added what.</p>
         <p class="line"><strong>Share it as a link (no install for the reader):</strong> upload the zip anywhere public — your site, a GitHub release, the Internet Archive — then paste its URL:</p>
         <input class="share-url" type="url" placeholder="https://…/my-library.archie.zip" bind:value={zipUrl} aria-label="Public URL of the uploaded .archie.zip" />
@@ -422,7 +422,7 @@
         <p class="lede">Put the site in the one folder the Viewer reads, then open it — no GitHub.</p>
       </header>
       <div class="result">
-        <p class="ok">Saved <code>{zipName}</code>.</p>
+        <p class="ok">Downloaded <code>{zipName}</code>.</p>
         <p class="line">Unzip its contents into the one folder the Viewer reads, replacing what's there:</p>
         <pre class="cmd"><code>{viewerTree}</code></pre>
         <p class="line">Then start the Viewer:</p>
@@ -786,7 +786,7 @@
           <pre class="cmd"><code>{viewerTree}</code></pre>
           <p class="line muted">Pick it once, then re-publish any time — Archie clears out old files for you.</p>
         {:else}
-          <p class="line">Your browser can't pick a folder, so this saves a <code>.archie.zip</code> instead. You'll then unzip it into the folder the Viewer reads from — instructions next.</p>
+          <p class="line">Your browser can't pick a folder, so this downloads a <code>.archie.zip</code> instead. You'll then unzip it into the folder the Viewer reads from — instructions next.</p>
         {/if}
         {#if menuPhase === "error"}<p class="err">⚠ {destErrorMsg}</p>{/if}
         <div class="actions">
@@ -794,7 +794,7 @@
           {#if canFolder}
             <button class="primary" disabled={menuPhase === "working"} onclick={chooseFolder}>{menuPhase === "working" ? "Writing…" : "Choose folder…"}</button>
           {:else}
-            <button class="primary" disabled={menuPhase === "working"} onclick={saveZip}>{menuPhase === "working" ? "Saving…" : "Save .archie.zip"}</button>
+            <button class="primary" disabled={menuPhase === "working"} onclick={saveZip}>{menuPhase === "working" ? "Downloading…" : "Download .archie.zip"}</button>
           {/if}
         </div>
       </div>
