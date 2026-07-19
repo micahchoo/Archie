@@ -1203,6 +1203,7 @@
   }
   .loc-z {
     position: absolute;
+    cursor: default; /* press here is inert (excluded from pan-start) — don't promise a grab */
     bottom: 6px;
     left: 6px;
     font: 0.7rem var(--font-mono);
