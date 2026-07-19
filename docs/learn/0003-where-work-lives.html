@@ -39,23 +39,29 @@
           <div class="noun"><b>A <span class="term" data-term="portable">.archie.zip</span></b>
             <span class="rel">One self-contained file — move it, back it up, or hand it over.</span></div>
         </div>
+        <p class="flow-cap"><span class="hint">Safety state ·</span> One small indicator in every header answers <em>"will my work survive?"</em> — <b>Saved</b>, <b>Saving…</b>, <b>Action needed</b>, or <b>Retry save</b>. Nothing to click for routine saves; <kbd>⌘S</kbd> just flushes right now.</p>
       </div>
     </section>
 
-    <!-- Slide 2 · in-app warning + Playground vs Project -->
+    <!-- Slide 2 · Safety state nudge + Examples ("Keep a copy") -->
     <section class="slide">
       <div class="slide-inner">
         <h2>Make it yours, keep it safe</h2>
-        <figure class="real">
-          <img src="assets/img/studio-projectbar.png" alt="Studio bar: 'This library lives only in this browser. Save it to disk to keep it safe — and to open it on another machine.' with Save to disk and Open a library buttons">
-          <figcaption><b>The app warns you</b> — browser-only until you <b>Save to disk</b> (real screenshot).</figcaption>
-        </figure>
-        <div class="flow">
-          <div class="node"><span class="term" data-term="playground">Playground</span><small>a template; changes aren't kept</small></div>
-          <div class="arrow">→</div>
-          <div class="out">Your <span class="term" data-term="project">Project</span><small>saved &amp; yours</small></div>
+        <!-- SCREENSHOT REMOVED: studio-projectbar.png showed the pre-redesign full-width warning
+             banner ("This library lives only in this browser… Save to disk"). That banner is gone;
+             the browser-only state now reads as the Safety state indicator saying "Action needed",
+             whose action button is "Save to disk", above a quiet one-line project bar with Recents.
+             FLAG: a human should re-shoot the current header (Safety state + project bar). -->
+        <div class="callout">
+          <span class="label">How the app nudges you</span>
+          A browser-only library isn't an error — the <b>Safety state</b> reads <b>Action needed</b>, and its button is <b>Save to disk</b>. Click it, pick a folder, and from then on Archie mirrors every change there.
         </div>
-        <p>Open an <b>Example</b> and you're in a Playground — explore freely, but changes aren't kept. <b>"Keep a copy"</b> turns it into a Project you own.</p>
+        <div class="flow">
+          <div class="node">An <b>Example</b><small>a template; edits aren't kept</small></div>
+          <div class="arrow">→</div>
+          <div class="out">Your own <span class="term" data-term="exhibit">exhibit</span><small>saved &amp; yours</small></div>
+        </div>
+        <p>Open an <span class="term" data-term="example">Example</span> and you're exploring a template — a banner reminds you edits here aren't saved. <b>"Keep a copy"</b> turns it into an exhibit you own, saved wherever your library is bound.</p>
         <div class="aside-adv adv">
           <span class="label">Under the hood</span>
           Browser storage is OPFS; "Save to disk" uses a real folder (File System Access on Chromium) or a <code>.archie.zip</code> elsewhere. On disk it's plain JSON plus media — Git-friendly. The same zip is the unit of async collaboration: share a copy, import changes back, merged by version history.

@@ -24,13 +24,18 @@
         <p class="standfirst">Drawing a <span class="term" data-term="note">Note</span> is the obvious part. The non-obvious part is how you organise them — and Archie gives two opposite tools.</p>
         <div class="nouns">
           <div class="noun"><b><span class="term" data-term="reading">Readings</span></b><span class="flag">exclusive</span>
-            <span class="rel">A curated lens. A Note belongs to <em>one</em> Reading or none. The reader switches lenses in a legend — e.g. <em>Cipher</em> vs <em>Hoax</em> vs <em>Natural-language</em>. For rival interpretations that shouldn't mix.</span></div>
+            <span class="rel">A curated lens. A Note belongs to <em>one</em> Reading or none. The reader switches lenses in a legend — e.g. <em>Cipher</em> vs <em>Hoax</em> vs <em>Natural-language</em>. In Studio, each Reading also carries a number in the readings panel and note chips, so you can tell them apart without relying on colour. For rival interpretations that shouldn't mix.</span></div>
           <div class="noun"><b><span class="term" data-term="tag">Tags</span></b><span class="flag">additive</span>
             <span class="rel">Plain labels — stack as many per Note as you like. The reader filters by them — e.g. <em>watermark</em>, <em>paleography</em>. For cross-cutting discovery.</span></div>
         </div>
+        <!-- FLAG: narrative-led.png is a Viewer screenshot. The top-left "Readings" legend it shows
+             is confirmed current (ReadingLegend.svelte — title "Readings", gloss "Compare
+             interpretations", top-left over the canvas; swatch + name + note count per reading), but
+             the a11y pass added a "Hide all / Show notes" declutter toggle that may post-date this
+             capture. A human should re-shoot the current legend to confirm chrome. -->
         <figure class="real">
           <img src="assets/img/narrative-led.png" alt="An Archie exhibit with a Readings legend top-left listing General notes, Cipher, Hoax, Natural-language readings">
-          <figcaption><b>Readings become a legend</b> the reader toggles (top-left) — real screenshot.</figcaption>
+          <figcaption><b>Readings become a legend</b> the reader toggles — top-left over the canvas, titled <em>Readings</em>.</figcaption>
         </figure>
       </div>
     </section>
@@ -41,10 +46,10 @@
         <h2>Connect and weight them</h2>
         <p>Two more moves you'd never find by clicking around:</p>
         <div class="nouns">
-          <div class="noun"><b>Cite — <kbd>⌘K</kbd></b>
-            <span class="rel">While writing a note or section, press <kbd>⌘K</kbd> (or pick visually) to drop a link to another Note or <span class="term" data-term="exhibit">Exhibit</span>. The link lands the reader right in that spot.</span></div>
+          <div class="noun"><b>¶ Cite — <kbd>⌘K</kbd></b>
+            <span class="rel">While writing a note or section, hit the <b>¶ Cite</b> button on the comment field (or <kbd>⌘K</kbd>) to open one command surface with two tabs — <b>Search</b> to find a Note or <span class="term" data-term="exhibit">Exhibit</span> by text, <b>Browse</b> to pick one from thumbnails. Drop the link and it lands the reader right in that spot.</span></div>
           <div class="noun"><b>Emphasis</b>
-            <span class="rel">Mark a note <em>Normal</em> or <em>Strong</em> to control how loud its marker reads on the canvas — guide the eye without clutter.</span></div>
+            <span class="rel">Mark a note <em>Normal</em> or <em>Strong (stand out)</em> to control how loud its marker reads on the canvas — guide the eye without clutter.</span></div>
         </div>
         <div class="aside-adv">
           <span class="label">Why it matters for citation</span>

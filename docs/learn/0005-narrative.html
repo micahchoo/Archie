@@ -29,6 +29,9 @@
             <span class="flip-count"></span>
             <span class="flip-mode"></span>
           </div>
+          <!-- FLAG: grid-led.png and narrative-led.png are Viewer front-door screenshots. The
+               grid-vs-narrative behaviour is confirmed current (layout.ts), but the Viewer chrome
+               may have shifted since capture. A human should re-shoot both front doors. -->
           <div class="flip-stage">
             <figure class="shot" data-mode="grid">
               <img src="assets/img/grid-led.png" alt="Archie Viewer, grid-led: the exhibit opens as a grid of folio cards">
@@ -39,7 +42,7 @@
               <figcaption><b>With a narrative.</b> The same exhibit now walks visitors through it — your words beside the matching view.</figcaption>
             </figure>
           </div>
-          <p class="model-cap"><span class="hint">Notice ·</span> You never picked a layout — <b>writing a narrative (or not) chose it for you</b>. <span class="source">model.ts — <code>sections.length &gt; 0 ? 'narrative' : 'grid'</code></span></p>
+          <p class="model-cap"><span class="hint">Notice ·</span> You never picked a layout — <b>writing a narrative (or not) chose it for you</b>. <span class="source">layout.ts — <code>sections.length &gt; 0 → narrative</code> (else a grid; a lone object gets a single view)</span></p>
         </div>
       </div>
     </section>
