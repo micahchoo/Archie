@@ -42,6 +42,7 @@
   import TutorialModal from "./TutorialModal.svelte";
   import HelpMenu from "./HelpMenu.svelte";
   import NoteEditor from "./NoteEditor.svelte";
+  import Marginalia from "./Marginalia.svelte";
   import { matches, typingInField } from "./shortcuts.js";
   // The shared modality gate (Archie-5968): App owns the single global keydown, so the Esc dismissal
   // ladder (topmost floater → the one scrimmed surface) routes through `modality.handleEsc()` here.
@@ -1295,6 +1296,17 @@
   // affordance applied to annotations). null = none.
   let hoverNote = $state<string | null>(null);
 
+  // --- Marginalia rail (Archie-dff3, direction C) — the surviving marginalia engine, re-presented as
+  // a near-invisible density rail beside the canvas (NOT the reverted floating card column). Canvas
+  // streams each visible note's on-screen region rect via `onmarkerrects`; the rail clusters near
+  // notes into counted chips and draws a heat band where they pile up. It's a spatial index that
+  // DRIVES `selected`/`hoverNote` — the same channels the inspector list and canvas marks use — so it
+  // never becomes a second edit surface. Image/Map objects only (regions have a screen rect; AV notes
+  // are temporal). `markerRects` is the latest batched frame; the rail re-solves off it. ---
+  let markerRects = $state<Record<string, { left: number; top: number; right: number; bottom: number } | null>>({});
+  const marginaliaItems = $derived(notes.map((r) => ({ id: r.logicalId, lead: stripMarkdown(commentOf(r)).slice(0, 90) || "(untitled)" })));
+  const marginaliaRectIds = $derived(notes.map((r) => r.logicalId));
+
   // --- Notes-panel DISCLOSURE surface (Archie-f260 §4 obligation, re-derived for Archie-d48e).
   // The WebGL/PixiJS marks have no per-marker DOM node a screen reader can reach (confirmed: no marker-level
   // ARIA is possible), so the inspector's notes list IS the accessible parallel structure standing in for the
@@ -2327,7 +2339,7 @@
                    an editing canvas needs the surrounding context and the shape's resize handles on
                    screen, and a full-bleed fit shoved the marker under the viewport edges. Section
                    camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
-              <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} onzoom={(r) => (zoomRatio = r)} />
+              <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} />
             {:else}
               <div class="no-canvas">Loading…</div>
             {/if}
@@ -2347,6 +2359,21 @@
            new-note tools are the strip on this canvas's TOP EDGE (above), readings live in the navigator, and
            mode/toast messaging is the status strip. -->
     </main>
+    <!-- Marginalia rail (Archie-dff3, direction C) — a near-invisible density index BETWEEN the canvas
+         and the inspector (a layout column, never over the artefact — Archie-a9fc). Only for image/map
+         objects with notes: AV notes are temporal (no screen rect), and a note-less object gets no rail
+         at all. Sparse exhibits show only faint ticks (revealed on hover); crowded ones show counted
+         cluster chips + a heat band. Chips DRIVE selection/hover, they don't edit — the inspector on the
+         right is still where a note opens. -->
+    {#if current && !isAvCurrent && marginaliaItems.length > 0}
+      <Marginalia
+        items={marginaliaItems}
+        rects={markerRects}
+        {selected}
+        onselect={(id) => (selected = selected === id ? null : id)}
+        onhover={(id) => (hoverNote = id)}
+      />
+    {/if}
     <!-- Inspector panel (Archie-d48e) — "what is selected", a STABLE right-edge element (layout, not a
          floater): the object's notes list, where the selected card expands IN PLACE into the WADM form
          (no dock, no cross-canvas twin). Selecting a note here OR a marker on the canvas expands it; Esc
