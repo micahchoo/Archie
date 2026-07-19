@@ -51,6 +51,23 @@ export async function openExhibitAnnotationsDir(slug: string): Promise<FsDirecto
 }
 
 /**
+ * The OPFS STRUCTURE directory for one exhibit (creating if needed) — the section rev-log's home
+ * (spine/structure-persist.ts writes `history/` inside it), a SIBLING of the annotations dir so the
+ * two logs live side by side per exhibit. Same legacy-location rule as openExhibitAnnotationsDir:
+ * "sample" keeps the project root, every other exhibit lives under `exhibits/{slug}/`. Only the
+ * archie.structureRevlog flag's ON path calls this (structure-session.svelte.ts) — with the flag
+ * off the directory is never created. Null if OPFS is unsupported.
+ */
+export async function openExhibitStructureDir(slug: string): Promise<FsDirectory | null> {
+  const project = await openProjectDir();
+  if (!project) return null;
+  if (slug === SAMPLE_SLUG) return project.getDirectory("structure", { create: true });
+  const exhibits = await project.getDirectory("exhibits", { create: true });
+  const ex = await exhibits.getDirectory(slug, { create: true });
+  return ex.getDirectory("structure", { create: true });
+}
+
+/**
  * A corrupt authored sidecar reads as "absent" (JSON.parse throws → the loader returns empty), which
  * would then let the next save overwrite it and destroy the authored structure for good. Before an
  * overwrite, if the existing file is present but unparseable, copy it aside to `{name}.corrupt` so the

@@ -11,17 +11,20 @@ import { recordToAnnotation } from "../spine/serialize.js";
 import { writeAnnotations, readAnnotationsReport, type CorruptAnnotationPage } from "../spine/persist.js";
 import type { SerializeOptions } from "../spine/serialize.js";
 import type { FsDirectory } from "../fs/seam.js";
-import { ARCHIE_READING, ARCHIE_EMPHASIS, ARCHIE_WHOLE_OBJECT, ARCHIE_GEO } from "../wadm/types.js";
+import { ARCHIE_READING, ARCHIE_SECTION, ARCHIE_EMPHASIS, ARCHIE_WHOLE_OBJECT, ARCHIE_GEO } from "../wadm/types.js";
 import type { Emphasis, GeoAnchor } from "../wadm/types.js";
 import { mergeLogs, headsOf, resolveConflict } from "../spine/merge.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CBody, W3CTarget } from "../wadm/types.js";
 import type { ClientId, LogicalId } from "../wadm/brand.js";
+import type { CarryDisposition } from "../model/carry.js";
 
 export interface NewNote {
   target: W3CTarget;
   body?: W3CBody | W3CBody[];
   /** The single Reading this note belongs to (ADR-0007), or undefined = base. */
   reading?: string;
+  /** The Section this note is attributed to (Archie-6b8e) — the section's LOCAL id; undefined = unattributed. */
+  section?: string;
   /** Authored per-note emphasis (1489), or undefined = default `"normal"`. */
   emphasis?: Emphasis;
   /** Region-override (ADR-0018): force the whole-object frame on a region note; undefined = none. */
@@ -36,6 +39,8 @@ export interface NoteEdit {
   body?: W3CBody | W3CBody[];
   /** Reading id; undefined here leaves it unchanged (carried forward). To CLEAR it, pass null. */
   reading?: string | null;
+  /** Section attribution (LOCAL id); undefined = carry forward, null = clear. Mirrors `reading`. */
+  section?: string | null;
   /** Emphasis; undefined here leaves it unchanged (carried forward). To CLEAR to `"normal"`, pass null. */
   emphasis?: Emphasis | null;
   /** Region-override (ADR-0018); undefined = carry forward, null/false = clear, true = set. */
@@ -44,6 +49,32 @@ export interface NoteEdit {
   geo?: GeoAnchor | null;
   motivation?: string | string[];
 }
+
+// EXHAUSTIVENESS GUARD (rule render-core-data-integrity #3) for `workingAnnotations()` below — the
+// working-surface re-emit is a hand-map over AnnotationRecord (recordToAnnotation for the base WADM
+// fields + per-extension re-attachment), previously un-sentineled. Every record field is classified:
+// a field added to AnnotationRecord fails the build HERE until the working projection decides whether
+// the editing surface carries it (reading/section/emphasis/wholeObject/geo all had to be added by
+// hand before this guard existed — section was the one that nearly slipped, Archie-42f3).
+const _workingAnnotationCarry = {
+  target: "carry", // recordToAnnotation
+  modifiedAt: "carry", // recordToAnnotation → `modified`
+  body: "carry", // recordToAnnotation
+  motivation: "carry", // recordToAnnotation
+  logicalId: "carry", // becomes the working annotation's stable `id` (recordToAnnotation id param)
+  reading: "carry", // re-attached as archie:reading below
+  section: "carry", // re-attached as archie:section below (Archie-6b8e attribution, Archie-42f3)
+  emphasis: "carry", // re-attached as archie:emphasis below
+  wholeObject: "carry", // re-attached as archie:wholeObject below (only when true — byte-stable)
+  geo: "carry", // re-attached as archie:geo below
+  rev: { drop: "DAG node id — the working surface keys by logicalId; versioned ids are the publish projection (toHeadsPage)" },
+  version: { drop: "citation ordinal — publish-projection concern, not part of the editing surface" },
+  parent: { drop: "DAG topology — the working surface reads heads only" },
+  mergeParents: { drop: "DAG topology — the working surface reads heads only" },
+  lastEditor: { drop: "stamp — not rendered on the editing surface (MergeReview reads it off the record, not this shape)" },
+  deleted: { drop: "heads() excludes tombstones (projectHeads) — a working annotation is live by construction" },
+} satisfies Record<keyof AnnotationRecord, CarryDisposition>;
+void _workingAnnotationCarry; // zero-runtime: exists only to break the build on an unclassified field
 
 export class AnnotationSession {
   private log: AnnotationLog;
@@ -107,6 +138,7 @@ export class AnnotationSession {
       lastEditor: this.editor,
       ...(input.body !== undefined ? { body: input.body } : {}),
       ...(input.reading !== undefined ? { reading: input.reading } : {}),
+      ...(input.section !== undefined ? { section: input.section } : {}),
       ...(input.emphasis !== undefined ? { emphasis: input.emphasis } : {}),
       ...(input.wholeObject ? { wholeObject: true } : {}),
       ...(input.geo !== undefined ? { geo: input.geo } : {}),
@@ -126,6 +158,7 @@ export class AnnotationSession {
       ...(changes.target !== undefined ? { target: changes.target } : {}),
       ...(changes.body !== undefined ? { body: changes.body } : {}),
       ...(changes.reading !== undefined ? { reading: changes.reading } : {}),
+      ...(changes.section !== undefined ? { section: changes.section } : {}),
       ...(changes.emphasis !== undefined ? { emphasis: changes.emphasis } : {}),
       ...(changes.wholeObject !== undefined ? { wholeObject: changes.wholeObject } : {}),
       ...(changes.geo !== undefined ? { geo: changes.geo } : {}),
@@ -173,15 +206,15 @@ export class AnnotationSession {
   }
 
   /**
-   * Resolve a conflict by appending a merge node with the chosen/merged content. reading/emphasis/
-   * wholeObject/geo are carried onto the node by `resolveConflict` itself now — from the choice when
+   * Resolve a conflict by appending a merge node with the chosen/merged content. reading/section/
+   * emphasis/wholeObject/geo are carried onto the node by `resolveConflict` itself now — from the choice when
    * supplied, else inherited from whichever head carries them (Issue 21: the carry moved INSIDE the
    * primitive, so this delegate can no longer be the only thing standing between a note and a silent
    * data-loss on resolution). This method just threads the editor identity + the user's choice through.
    */
   resolve(
     logicalId: LogicalId,
-    choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; motivation?: string | string[]; reading?: string; emphasis?: Emphasis; wholeObject?: boolean; geo?: GeoAnchor } = {},
+    choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; motivation?: string | string[]; reading?: string; section?: string; emphasis?: Emphasis; wholeObject?: boolean; geo?: GeoAnchor } = {},
   ): void {
     this.log = resolveConflict(this.log, logicalId, {
       lastEditor: this.editor,
@@ -189,6 +222,7 @@ export class AnnotationSession {
       ...(choice.target !== undefined ? { target: choice.target } : {}),
       ...(choice.motivation !== undefined ? { motivation: choice.motivation } : {}),
       ...(choice.reading !== undefined ? { reading: choice.reading } : {}),
+      ...(choice.section !== undefined ? { section: choice.section } : {}),
       ...(choice.emphasis !== undefined ? { emphasis: choice.emphasis } : {}),
       ...(choice.wholeObject !== undefined ? { wholeObject: choice.wholeObject } : {}),
       ...(choice.geo !== undefined ? { geo: choice.geo } : {}),
@@ -205,6 +239,7 @@ export class AnnotationSession {
     return this.heads().map((record) => {
       const ann = recordToAnnotation(record, record.logicalId);
       if (record.reading !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_READING] = record.reading;
+      if (record.section !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_SECTION] = record.section;
       if (record.emphasis !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_EMPHASIS] = record.emphasis;
       if (record.wholeObject === true) (ann as unknown as Record<string, unknown>)[ARCHIE_WHOLE_OBJECT] = true;
       if (record.geo !== undefined) (ann as unknown as Record<string, unknown>)[ARCHIE_GEO] = record.geo;

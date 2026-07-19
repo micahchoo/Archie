@@ -186,3 +186,56 @@ describe("AnnotationSession — persistence round-trip", () => {
     expect(valueOf(reloaded.notes()[0])).toBe("seed");
   });
 });
+
+describe("AnnotationSession — section attribution threading (Archie-42f3, follows `reading`)", () => {
+  const text = (value: string) => ({ type: "TextualBody" as const, value });
+
+  it("createNote sets `section`; editNote carries it when omitted, replaces on a value, clears on null", () => {
+    const s = new AnnotationSession(alice);
+    const id = s.createNote({ target: rect(0, 0, 10, 10), body: text("v1"), section: "s-1" });
+    expect(s.notes()[0]!.section).toBe("s-1");
+
+    s.editNote(id, { body: text("v2") }); // omitted → carried forward
+    expect(s.notes()[0]!.section).toBe("s-1");
+
+    s.editNote(id, { section: "s-2" }); // value → replaced
+    expect(s.notes()[0]!.section).toBe("s-2");
+
+    s.editNote(id, { section: null }); // null → cleared (unattributed)
+    expect(s.notes()[0]!.section).toBeUndefined();
+  });
+
+  it("workingAnnotations re-emits `archie:section` (only when set — byte-stable when absent)", () => {
+    const s = new AnnotationSession(alice);
+    const attributed = s.createNote({ target: rect(0, 0, 10, 10), section: "s-1" });
+    const bare = s.createNote({ target: rect(20, 0, 10, 10) });
+    const byId = new Map(s.workingAnnotations().map((a) => [a.id, a as unknown as Record<string, unknown>]));
+    expect(byId.get(attributed)!["archie:section"]).toBe("s-1");
+    expect("archie:section" in byId.get(bare)!).toBe(false);
+  });
+
+  it("resolve() inherits `section` from the heads when the choice omits it, and honors an explicit choice", () => {
+    const local = new AnnotationSession(alice);
+    const id = local.createNote({ target: rect(0, 0, 10, 10), body: text("v1"), section: "s-1" });
+    const v1 = local.entries[0]!;
+    local.editNote(id, { body: text("mine") }); // local v2 carries section forward
+
+    const theirV2 = { logicalId: v1.logicalId, rev: mintRevId(0, () => 0.9), version: 2, parent: v1.rev, modifiedAt: "tT", lastEditor: bob, deleted: false, target: rect(0, 0, 10, 10), body: text("theirs") };
+    local.importChanges([v1, theirV2]);
+    expect(local.conflictHeads(id as LogicalId)).toHaveLength(2);
+
+    // No section in the choice → inherited from whichever head carries it (C14 disposition).
+    local.resolve(id as LogicalId, { body: text("merged") });
+    expect(local.notes().find((r) => r.logicalId === id)!.section).toBe("s-1");
+
+    // A second conflict (both sides branch off the merge node), resolved WITH an explicit section
+    // choice → the choice wins.
+    const head = local.notes().find((r) => r.logicalId === id)!;
+    local.editNote(id, { body: text("mine2") }); // local child of the merge node
+    const theirV4 = { logicalId: head.logicalId, rev: mintRevId(0, () => 0.8), version: head.version + 1, parent: head.rev, modifiedAt: "tU", lastEditor: bob, deleted: false, target: rect(0, 0, 10, 10), body: text("again") };
+    local.importChanges([theirV4]); // concurrent child of the same merge node → plural heads again
+    expect(local.conflictHeads(id as LogicalId)).toHaveLength(2);
+    local.resolve(id as LogicalId, { body: text("merged2"), section: "s-9" });
+    expect(local.notes().find((r) => r.logicalId === id)!.section).toBe("s-9");
+  });
+});

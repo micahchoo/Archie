@@ -21,6 +21,7 @@
     sections,
     objects,
     currentObjectId,
+    conflictedIds = new Set<string>(),
     activeSectionId = null,
     framingId = null,
     cleared = false,
@@ -34,6 +35,11 @@
     objects: ReadonlyArray<{ id: string; label: string; mediaType?: "image" | "sound" | "video" }>;
     /** The object the editor canvas is currently showing — sections targeting it are lit, the rest dimmed. */
     currentObjectId: string;
+    /** Section ids with UNRESOLVED concurrent edits (plural rev-log heads; archie.structureRevlog ON —
+     *  Archie-42f3). Their cards gate every edit affordance until resolved (merge contract C4); the
+     *  resolve flow itself is Studio-UX territory (Archie-d71c/90f1), not built here. Default empty
+     *  (flag off / no conflicts) ⇒ nothing changes. */
+    conflictedIds?: ReadonlySet<string>;
     /** The section whose framed region is CURRENTLY shown on the canvas (App's focusSectionId) — this card is
      *  lit "active", distinguishing the navigated-to section from its object-siblings (which also light via .here). */
     activeSectionId?: string | null;
@@ -171,6 +177,7 @@
   <ol class="cards">
     {#each sections as s, i (s.id)}
       {@const here = s.objectId === currentObjectId}
+      {@const conflicted = conflictedIds.has(s.id)}
       {@const cam = cameraLabel(s)}
       {@const goLabel = here ? "Center the canvas on this section's framed view" : `Go to ${objectLabel(s.objectId)} and show this section's framed view`}
       <!-- tabindex="-1" + bind:this: a one-shot focus TARGET for the deep-link jump (Archie-696d) — not
@@ -185,13 +192,19 @@
                (staging spec §6). -->
           {#if canReorder}
             <div class="mv">
-              <button onclick={() => move(i, -1)} disabled={i === 0} aria-label="Move up" title="Move up">▲</button>
-              <button onclick={() => move(i, 1)} disabled={i === sections.length - 1} aria-label="Move down" title="Move down">▼</button>
+              <button onclick={() => move(i, -1)} disabled={i === 0 || conflicted} aria-label="Move up" title="Move up">▲</button>
+              <button onclick={() => move(i, 1)} disabled={i === sections.length - 1 || conflicted} aria-label="Move down" title="Move down">▼</button>
             </div>
           {/if}
         </div>
         <div class="fields">
-          <input class="title" value={s.title} placeholder="Section title" aria-label="Section title"
+          {#if conflicted}
+            <!-- Plural-head gate (Archie-42f3): this section was edited in two places at once — every edit
+                 affordance below is disabled until the versions are reconciled (the resolve flow is the
+                 Studio-UX map's Archie-d71c/90f1; this is data-honesty only, not conflict UI). -->
+            <p class="conflict-note" role="status">Edited in two places at once — editing is paused until the versions are reconciled.</p>
+          {/if}
+          <input class="title" value={s.title} placeholder="Section title" aria-label="Section title" disabled={conflicted}
             onchange={(e) => update(i, { title: (e.currentTarget as HTMLInputElement).value })} />
           <!-- The card's NAVIGATION control: clicking the "Go to [object]" / "Showing [object]" line jumps the rail to that
                section's object and focuses its framed region on the canvas (onnavigate) — the editor
@@ -205,8 +218,8 @@
             <span class="on-obj">{here ? "Showing" : "Go to"} {objectLabel(s.objectId)}</span>
           </button>
           <div class="prose-wrap">
-            <button type="button" class="cite" onclick={() => citeInto(i, s.id)} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button>
-            <textarea class="prose" rows="2" bind:this={proseEls[s.id]} value={s.prose ?? ""} placeholder="Write this section…" aria-label="Section prose"
+            <button type="button" class="cite" onclick={() => citeInto(i, s.id)} disabled={conflicted} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button>
+            <textarea class="prose" rows="2" bind:this={proseEls[s.id]} value={s.prose ?? ""} placeholder="Write this section…" aria-label="Section prose" disabled={conflicted}
               onkeydown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); citeInto(i, s.id); } }}
               onchange={(e) => update(i, { prose: (e.currentTarget as HTMLTextAreaElement).value })}></textarea>
           </div>
@@ -216,11 +229,11 @@
               <button class="cancel" onclick={oncancelframe}>Cancel</button>
             {:else}
               <span class="cam" class:set={!!cam}>{cam ? (avBound(s.objectId) ? `⏱ ${cam}` : `▭ ${cam}`) : "Whole item shown"}</span>
-              <button class="set-cam" onclick={() => onframe(s.id)}>{cam ? "Change view" : avBound(s.objectId) ? "Set moment" : "Set area"}</button>
+              <button class="set-cam" onclick={() => onframe(s.id)} disabled={conflicted}>{cam ? "Change view" : avBound(s.objectId) ? "Set moment" : "Set area"}</button>
             {/if}
           </div>
         </div>
-        <button class="del" onclick={() => remove(i)} aria-label="Remove section" title="Remove section">✕</button>
+        <button class="del" onclick={() => remove(i)} disabled={conflicted} aria-label="Remove section" title="Remove section">✕</button>
       </li>
     {/each}
   </ol>
@@ -326,5 +339,11 @@
 
   .del { align-self: flex-start; cursor: pointer; font-size: 0.8rem; padding: 2px var(--space-1); background: none; border: none; border-radius: var(--radius-sm); color: var(--ink-paper-muted); transition: color 120ms ease; }
   .del:hover { color: var(--semantic-error); }
+  .del:disabled { opacity: 0.3; cursor: default; }
+  .del:disabled:hover { color: var(--ink-paper-muted); }
+
+  /* Plural-head gate (Archie-42f3): a quiet warning line above the disabled fields — reads as a
+     pause, not an error (the semantic-error red is reserved for destructive/failed states). */
+  .conflict-note { margin: 0; padding: var(--space-1) var(--space-2); font-family: var(--font-body); font-size: 0.8rem; line-height: 1.5; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); border-left: 2px solid var(--ink-paper-muted); border-radius: var(--radius-sm); }
 
 </style>
