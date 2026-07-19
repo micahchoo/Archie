@@ -16,6 +16,10 @@ esac
 
 echo "=== Building Studio (Vite SPA) ==="
 cd "$ROOT/apps/studio"
+# Raw vite (not `pnpm build`) for the --base flag — so run the tutorial-deck sync
+# the package build script would have run; public/learn is gitignored and absent
+# on a fresh CI checkout (deployed tutorial 404s without this).
+node scripts/sync-learn.mjs
 pnpm exec vite build --base="/$REPO/studio/"
 
 echo "=== Building Viewer (Astro static) ==="
