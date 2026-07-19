@@ -252,8 +252,13 @@
         />
         <!-- The ONE "Details" affordance (decision Archie-3e0a, ticket Archie-ebf4): word + ✎, never
              the retired ⓘ (which promised read-only info; this opens an editor). Title leads with
-             "Details" per the copy rule, then names the scope it opens. -->
-        <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Details — title, description, credit & license for the whole library">✎ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
+             "Details" per the copy rule, then names the scope it opens; aria-label mirrors it in the
+             APG label-in-name shape (starts with the visible word, then names the library) so it reads
+             distinctly from the per-card pencils' accessible names below. -->
+        <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)}
+          title="Details — title, description, credit & license for the whole library"
+          aria-label={`Details — ${libTitle && libTitle.trim() ? libTitle : "Library"}`}
+          >✎ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
         <HelpMenu {ontutorial} {onshortcuts} />
       </div>
     </div>
@@ -365,10 +370,11 @@
       </button>
       <!-- Per-card pencil (Archie-79be): edit this exhibit's title/description/credit + remove, without
            opening it. A SIBLING of the card button (no button-in-button); sits over the top-right corner.
-           The ONE "Details" affordance (Archie-3e0a / Archie-ebf4): tight space, so pencil-alone with
-           title/aria-label "Details" — .details-pencil (atmosphere.css) is the shared look every
-           card/plate/row pencil uses. -->
-      <button class="edit-meta details-pencil" title="Details" aria-label="Details"
+           The ONE "Details" affordance (Archie-3e0a / Archie-ebf4): tight space, so pencil-alone, visible
+           tooltip always "Details" for the uniform hover presentation — but the accessible name carries
+           the per-item scope (APG label-in-name: starts with the visible word "Details", then the item),
+           so screen-reader users tabbing a grid of cards can still tell them apart. -->
+      <button class="edit-meta details-pencil" title="Details" aria-label={`Details — ${ex.title}`}
         onclick={() => (editingSlug = ex.slug)}>✎</button>
     </li>
   {/snippet}

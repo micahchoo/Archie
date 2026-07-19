@@ -389,8 +389,13 @@
     <!-- The "Exhibit layout" chip is RETIRED (ADR-0016): the reading mode is no longer a picked layout but
          an emergent property of content; the intent line under the title still names what visitors get. -->
     <!-- The ONE "Details" affordance (decision Archie-3e0a, ticket Archie-ebf4): word + ✎, never the
-         retired ⓘ. Title leads with "Details" per the copy rule, then names the scope it opens. -->
-    <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Details — title, description, credit & license for this exhibit">✎ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
+         retired ⓘ. Title leads with "Details" per the copy rule, then names the scope it opens;
+         aria-label mirrors it (label-in-name: starts with "Details", then the exhibit) so it doesn't
+         collapse to the same accessible name as the per-plate/row pencils elsewhere on this page. -->
+    <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)}
+      title="Details — title, description, credit & license for this exhibit"
+      aria-label={`Details — ${title}`}
+      >✎ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     <div class="viewtoggle" role="group" aria-label="Overview mode">
       <button class:on={mode === "canvas"} onclick={() => viewPrefs.setOverviewMode("canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>
       <button class:on={mode === "list"} onclick={() => viewPrefs.setOverviewMode("list")} title="Plain list">List</button>
@@ -529,9 +534,11 @@
             <!-- Per-plate pencil (Archie-79be): edit this media item's details without opening it. A SIBLING
                  of the plate button (no button-in-button); stops pointerdown/click so it neither pans the
                  canvas nor opens the object. The ONE "Details" affordance (Archie-3e0a / Archie-ebf4): tight
-                 space, so pencil-alone with title/aria-label "Details" — .details-pencil (atmosphere.css)
-                 is the shared look every card/plate/row pencil uses. -->
-            <button class="plate-edit details-pencil" title="Details" aria-label="Details"
+                 space, so pencil-alone, visible tooltip always "Details" — .details-pencil (atmosphere.css)
+                 is the shared look every card/plate/row pencil uses — but aria-label carries the per-item
+                 scope (label-in-name: starts with "Details", then the item) so a canvas full of plates
+                 stays distinguishable to screen-reader users. -->
+            <button class="plate-edit details-pencil" title="Details" aria-label={`Details — ${o.label}`}
               onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); oneditobject(o.id); }}>✎</button>
           </div>
         {/each}
@@ -621,10 +628,12 @@
             <span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
           </button>
           <!-- Per-row pencil (Archie-79be): edit this media item's details without opening it. The ONE
-               "Details" affordance (Archie-3e0a / Archie-ebf4): tight space, so pencil-alone with
-               title/aria-label "Details" — .details-pencil (atmosphere.css) is the shared look every
-               card/plate/row pencil uses. -->
-          <button class="row-edit details-pencil" title="Details" aria-label="Details"
+               "Details" affordance (Archie-3e0a / Archie-ebf4): tight space, so pencil-alone, visible
+               tooltip always "Details" — .details-pencil (atmosphere.css) is the shared look every
+               card/plate/row pencil uses — but aria-label carries the per-item scope (label-in-name:
+               starts with "Details", then the item) so a list of rows stays distinguishable to
+               screen-reader users tabbing through it. -->
+          <button class="row-edit details-pencil" title="Details" aria-label={`Details — ${o.label}`}
             onclick={(e) => { e.stopPropagation(); oneditobject(o.id); }}>✎</button>
         </li>
       {/each}
