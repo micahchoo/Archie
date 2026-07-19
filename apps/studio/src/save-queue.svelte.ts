@@ -57,7 +57,7 @@ export function enqueueSave(key: string, label: string, job: () => Promise<void>
   // overwritten. Returning false lets boolean-branching callers keep `dirty` set (they'll persist once
   // this tab takes over). A gate that passes clears any stale read-only status.
   if (writerGate && !writerGate()) {
-    s.errors[READ_ONLY_KEY] = "This tab is read-only — another tab is editing this library. Choose “Take over editing” to save here.";
+    s.errors[READ_ONLY_KEY] = "This tab is read-only — another tab is editing this library. Choose “Take over editing” to make changes here.";
     return Promise.resolve(false);
   }
   delete s.errors[READ_ONLY_KEY];
@@ -74,7 +74,7 @@ export function enqueueSave(key: string, label: string, job: () => Promise<void>
     },
     (err: unknown) => {
       console.error(`Save failed for "${key}" (${label}):`, err);
-      s.errors[key] = `${label} couldn't be saved. Try again, or save your library as a new copy to be safe.`;
+      s.errors[key] = `${label} couldn't be stored. Try again, or save your library as a new copy to be safe.`;
       s.pending -= 1;
       return false;
     },

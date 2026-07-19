@@ -63,13 +63,13 @@ export function createBindingStore(deps: BindingDeps) {
   function invalidateFolderOnWriteFailure(): void {
     folderFs = null;
     if (s.binding.kind === "folder") {
-      s.error = `Couldn't save to "${s.binding.name ?? "the folder"}". If you moved, renamed, or lost access to it, reopen the folder (Open → choose it again) to reconnect — your work is safe in this browser.`;
+      s.error = `Couldn't store to "${s.binding.name ?? "the folder"}". If you moved, renamed, or lost access to it, reopen the folder (Open → choose it again) to reconnect — your work is safe in this browser.`;
     }
   }
 
   // Issue 25 row (c): the recovery copy when the bound folder was written by something other than Archie.
   const EXTERNAL_CHANGE_MSG =
-    "This folder was changed outside Archie since your last save (another program, a sync tool, or a second Archie window). To avoid mixing versions, Archie paused folder autosave. Save to overwrite the folder with your current library, or reopen the folder to load its version — your work is safe in this browser either way.";
+    "This folder was changed outside Archie since it was last written (another program, a sync tool, or a second Archie window). To avoid mixing versions, Archie paused folder autosave. Save to overwrite the folder with your current library, or reopen the folder to load its version — your work is safe in this browser either way.";
 
   /** Re-stamp the folder with a fresh generation token after a SUCCESSFUL write, recording it as the
    *  baseline the next incremental mirror checks. An Archie write reclaims the folder, so this also

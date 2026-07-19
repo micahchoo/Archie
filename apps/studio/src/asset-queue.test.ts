@@ -94,7 +94,7 @@ describe("asset writes route through the save-queue (Issue 26 / ASSETQ Q1)", () 
     expect(r.added).toBe(false); // reference-after-bytes: no object appended
     expect(exhibits[0]!.objects.length).toBe(0); // library.json would reference nothing
     expect(saveStatus.health).toBe("error"); // NO LONGER invisible — the contract holds
-    expect(saveStatus.error).toContain("Media couldn't be saved");
+    expect(saveStatus.error).toContain("Media couldn't be stored");
   });
 });
 
