@@ -6,6 +6,10 @@ export * from "./heads.js";
 // The section structure family (Archie-08af): SectionRecord + its append family ride the same
 // generic DAG primitives; content helpers are parallel to (not shared with) the annotation ones.
 export * from "./structure.js";
+// Structure-log durable shape (Archie-a911): serialize/deserialize + fs persistence, parallel
+// to the annotation serialize/deserialize/persist trio below.
+export * from "./structure-serialize.js";
+export * from "./structure-persist.js";
 export * from "./serialize.js";
 export * from "./deserialize.js";
 export * from "./persist.js";
