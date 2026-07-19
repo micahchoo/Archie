@@ -4,7 +4,7 @@ import { describe, it, expect } from "vitest";
 // publish-machine.svelte.ts so it's drivable headlessly in the node test env (the studio suite has no
 // DOM / component-mount harness — cf. library-meta.svelte.test.ts). We drive it with fake platform
 // seams and assert the transitions GHPAGES-PUBLISH-UX §"Every dialog state" specifies.
-const { createPublishMachine, slugifyTitle, errorCopyFor, validateSiteName } = await import("./publish-machine.svelte.js");
+const { createPublishMachine, slugifyTitle, errorCopyFor, validateSiteName, isResumableState } = await import("./publish-machine.svelte.js");
 type DeploySession = import("./deploy/types.js").DeploySession;
 type DeployProgress = import("./deploy/types.js").DeployProgress;
 type DeployTarget = import("./deploy/types.js").DeployTarget;
@@ -503,5 +503,158 @@ describe("publish machine — return visit + fallbacks (Task 12)", () => {
     await m.publish();
     expect(m.state).toBe("manual-pages");
     expect(m.canRecheck).toBe(false);
+  });
+});
+
+// Archie-1921 / decision Archie-7d9b: PublishDialog + the Publish wizard merged into one scrimmed surface,
+// and Esc/scrim-click mid-device-code-auth must be a clean, SESSION-RESUMABLE cancel — the machine keeps
+// the pending device code (valid ~15min); reopening resumes at the same waiting state/code; an expired
+// code shows a plain start-again sentence. `open()` is the merge point: it's called every time the (now
+// single) surface opens, so these tests drive it directly rather than through a component mount.
+describe("publish machine — session-resumable auth & progress (Archie-7d9b)", () => {
+  it("isResumableState marks device-code / auth-expired / publishing / success / manual-pages / error, and nothing else", () => {
+    const resumable = ["device-code", "auth-expired", "publishing", "success", "manual-pages", "error"] as const;
+    const cold = ["intro-desktop", "web-intro", "auth-cancelled", "auth-config-error", "update-confirm", "name-site", "name-taken", "repo-picker", "advanced"] as const;
+    for (const s of resumable) expect(isResumableState(s)).toBe(true);
+    for (const s of cold) expect(isResumableState(s)).toBe(false);
+  });
+
+  it("a close mid-device-code (no machine transition) then reopen() resumes on the SAME code, not a fresh intro", async () => {
+    const d = deferredSignIn();
+    const m = createPublishMachine(makeDeps({ signIn: d.signIn }));
+    m.open();
+    void m.continueWithGitHub();
+    await flush();
+    expect(m.state).toBe("device-code");
+    const code = m.code?.userCode;
+
+    // Esc/scrim-click never calls a machine transition (the view's close() only touches its own local
+    // state) — simulate the surface reopening later by calling open() again, same as the view does.
+    m.open();
+    expect(m.state).toBe("device-code");
+    expect(m.code?.userCode).toBe(code);
+    // The in-flight signIn() promise is untouched — it's still the same pending poll, not restarted.
+    expect(m.remainingSeconds).toBe(900);
+  });
+
+  it("reopening after the device code's expiry shows the plain start-again sentinel, not the live code", async () => {
+    let t = 1_000_000;
+    const d = deferredSignIn();
+    const m = createPublishMachine(makeDeps({ signIn: d.signIn, now: () => t }));
+    m.open();
+    void m.continueWithGitHub();
+    await flush();
+    expect(m.state).toBe("device-code");
+
+    t += 901_000; // past the 900s (~15min) expiry
+    m.open(); // reopening the surface — no ticking interval runs while it was closed
+    expect(m.state).toBe("auth-expired");
+  });
+
+  it("'start again' from auth-expired restarts the device flow with a fresh code and expiry", async () => {
+    let t = 1_000_000;
+    let calls = 0;
+    const codes = ["CODE-1", "CODE-2"];
+    const resolvers: Array<(s: DeploySession) => void> = [];
+    const signIn: Deps["signIn"] = (onCode) =>
+      new Promise<DeploySession>((res) => {
+        const code = codes[calls]!;
+        calls++;
+        resolvers.push(res);
+        onCode({ userCode: code, verificationUri: "https://github.com/login/device", expiresIn: 900 });
+      });
+    const m = createPublishMachine(makeDeps({ now: () => t, signIn }));
+    m.open();
+    void m.continueWithGitHub();
+    await flush();
+    expect(m.state).toBe("device-code");
+    expect(m.code?.userCode).toBe("CODE-1");
+
+    t += 901_000; // past expiry
+    m.open();
+    expect(m.state).toBe("auth-expired");
+
+    m.retryAuth(); // "Start again" — the old (dead) code is dropped, a fresh device flow starts
+    await flush();
+    expect(calls).toBe(2);
+    expect(m.state).toBe("device-code");
+    expect(m.code?.userCode).toBe("CODE-2");
+    expect(m.remainingSeconds).toBe(900); // fresh expiry off the CURRENT clock, not the dead one
+
+    resolvers[1]!(SESSION); // the fresh poll succeeds
+    await flush();
+    expect(m.state).toBe("name-site");
+  });
+
+  it("a close mid-publish never stops the deploy — reopen() reflects live progress, then the finished result", async () => {
+    const dd = deferredDeploy();
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION, deploy: dd.deploy }));
+    m.open();
+    void m.publish();
+    await flush();
+    expect(m.state).toBe("publishing");
+
+    dd.progress({ phase: "pushing", detail: "3 of 10 images" });
+    // Reopen mid-flight: the checklist must show the SAME live progress, not reset to the first step.
+    m.open();
+    expect(m.state).toBe("publishing");
+    expect(m.steps[2]!.label).toContain("3 of 10 images");
+
+    // The publish completes while the surface is (hypothetically) still closed — nothing in the machine
+    // depends on the component being mounted to finish the deploy.
+    dd.resolve({ url: "https://micah.github.io/voynich-folios/", commitSha: "deadbeef" });
+    await flush();
+    expect(m.state).toBe("success");
+
+    // Reopening again must show the finished result, not silently drop it (requirement 3).
+    m.open();
+    expect(m.state).toBe("success");
+    expect(m.result?.url).toBe("https://micah.github.io/voynich-folios/");
+  });
+
+  it("a publish that fails while closed is reflected as 'error' on reopen, not lost", async () => {
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      deploy: async () => Promise.reject({ kind: "network", message: "offline" }),
+    }));
+    m.open();
+    await m.publish();
+    expect(m.state).toBe("error");
+    m.open(); // reopen — the error must still be there to show
+    expect(m.state).toBe("error");
+    expect(m.errorCopy.message).toContain("internet");
+  });
+
+  it("dismissResult acknowledges a finished attempt: the NEXT open computes a fresh entry screen instead of re-showing it", async () => {
+    const REMEMBERED = { target: { owner: "micah", repo: "voynich-folios", branch: "gh-pages" } as DeployTarget, url: "https://micah.github.io/voynich-folios/" };
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION, remembered: REMEMBERED, deploy: async () => ({ url: REMEMBERED.url, commitSha: "abc123" }) }));
+    m.open();
+    m.publishUpdate();
+    await flush();
+    expect(m.state).toBe("success");
+
+    // "Done" (the merged component's finishWizard) calls dismissResult, THEN the view calls close().
+    m.dismissResult();
+    expect(m.result).toBeNull();
+
+    // The next open (a genuine return visit) now recomputes normally — update-confirm, per the remembered
+    // target — rather than showing the stale success screen forever.
+    m.open();
+    expect(m.state).toBe("update-confirm");
+  });
+
+  it("manual-pages 'I'll do it later' (a plain close, no dismissResult) stays resumable on reopen", async () => {
+    const m = createPublishMachine(makeDeps({
+      initialSession: SESSION,
+      deploy: async () => ({ url: "https://micah.github.io/voynich-folios/", commitSha: "abc123", manualPagesNeeded: true }),
+    }));
+    m.open();
+    await m.publish();
+    expect(m.state).toBe("manual-pages");
+
+    // No dismissResult call here — just a reopen, mirroring the "I'll do it later" ghost close().
+    m.open();
+    expect(m.state).toBe("manual-pages");
+    expect(m.result?.url).toBe("https://micah.github.io/voynich-folios/");
   });
 });

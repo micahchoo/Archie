@@ -22,7 +22,8 @@
   // largest dependency, and Studio boots into the library view that never mounts it. Keeping it out of
   // the static graph drops that weight from the startup bundle.
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
-  // Publish + PublishDialog are lazy-loaded with the publish flows (ensurePub) — see *Comp below.
+  // Publish (the merged chooser + wizard surface, Archie-1921) is lazy-loaded with the publish flows
+  // (ensurePub) — see PublishComp below.
   import LibraryHome from "./LibraryHome.svelte";
   // CmdK is lazy-loaded on first open (see CmdKComp below). Cite-by-image is CmdK's internal Browse tab
   // now (Archie-5968) — the old standalone MediaPicker surface was already orphaned and is deleted.
@@ -151,8 +152,8 @@
   let AddMapModalComp = $state<typeof import("./AddMapModal.svelte").default | null>(null);
   let NarrativeEditorComp = $state<typeof import("./NarrativeEditor.svelte").default | null>(null);
   $effect(() => { if (view === "editor" && !NarrativeEditorComp) void import("./NarrativeEditor.svelte").then((m) => { NarrativeEditorComp = m.default; }); });
-  // The publish dialogs load alongside the publish flows (ensurePub) — they only render under {#if pub}.
-  let PublishDialogComp = $state<typeof import("./PublishDialog.svelte").default | null>(null);
+  // The Publish surface loads alongside the publish flows (ensurePub) — it only renders under {#if pub}.
+  // ONE component now (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface).
   let PublishComp = $state<typeof import("./Publish.svelte").default | null>(null);
   // CmdK (⌘K cite palette — text Search + image Browse in one surface) loads on first open (rare at startup).
   let CmdKComp = $state<typeof import("./CmdK.svelte").default | null>(null);
@@ -1566,8 +1567,7 @@
     const deployMod = await import("./deploy/deploy-flows.svelte.js");
     df = deployMod;
     deploy = deployMod.createDeployFlows({ library: deployLibrary, projectSite: () => created.projectSiteFs() });
-    // Load the publish dialog UI now too (they render under {#if pub} once ready).
-    void import("./PublishDialog.svelte").then((m) => { PublishDialogComp = m.default; });
+    // Load the Publish surface UI now too (it renders under {#if pub} once ready).
     void import("./Publish.svelte").then((m) => { PublishComp = m.default; });
     return created;
   }
@@ -1736,7 +1736,7 @@
     <SafetyState sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
       bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
       hasRealWork={safetyHasRealWork} onflush={() => void bnd.saveProject()} />
-    <button class="publish-signal" onclick={() => void ensurePub().then((p) => p.openDialog())}>Publish & share…</button>
+    <button class="publish-signal" onclick={() => void ensurePub().then((p) => p.openMenu())}>Publish & share…</button>
     <HelpMenu ontutorial={() => (tutorialOpen = true)} onshortcuts={() => (helpOpen = true)} />
   </header>
 
@@ -2146,41 +2146,38 @@
     </aside>
   </div>
 
-  {#if pub && PublishDialogComp && PublishComp}
+  {#if pub && PublishComp}
     {@const p = pub}
-    {@const PD = PublishDialogComp}
     {@const Pub = PublishComp}
-    <PD
-      open={p.dialogOpen}
+    {@const dp = deployProps}
+    <!-- ONE merged Publish & Share surface (Archie-1921): the old PublishDialog (destination chooser) +
+         Publish (GitHub wizard) are now one component with one open flag. The GitHub-specific seams below
+         degrade gracefully (optional props, `?.`) for the brief window before `deployProps` resolves —
+         the destination chooser itself is available the moment `pub`/PublishComp are ready, same as
+         PublishDialog was before the merge. -->
+    <Pub
+      open={p.open}
       canFolder={bnd.canFolder}
-      onclose={() => p.closeDialog()}
+      onclose={() => p.close()}
       onfolder={p.localPublishFolder}
       onzip={p.localPublishZip}
-      ongithub={() => { p.closeDialog(); void p.openPublish(); }}
       ondownload={p.download}
+      onenterweb={p.openPublish}
+      library={deployLibrary}
+      deviceFlowAvailable={dp?.deviceFlowAvailable ?? false}
+      remembered={dp?.remembered ?? null}
+      initialSession={initialSession}
+      signIn={dp?.signIn}
+      persistSession={dp?.persistSession}
+      signOut={dp?.signOut}
+      deploy={dp?.deployToPages}
+      checkRepoExists={dp?.checkRepoExists}
+      listRepos={dp?.listRepos}
+      recheckPages={dp?.recheckPages}
+      onpublish={p.publish}
+      brokenLinks={p.brokenLinks}
+      incompleteCanvases={p.incompleteCanvases}
     />
-    {#if deployProps}
-      {@const dp = deployProps}
-      <Pub
-        open={p.publishOpen}
-        onclose={() => p.closePublish()}
-        library={deployLibrary}
-        deviceFlowAvailable={dp.deviceFlowAvailable}
-        remembered={dp.remembered}
-        initialSession={initialSession}
-        signIn={dp.signIn}
-        persistSession={dp.persistSession}
-        signOut={dp.signOut}
-        deploy={dp.deployToPages}
-        checkRepoExists={dp.checkRepoExists}
-        listRepos={dp.listRepos}
-        recheckPages={dp.recheckPages}
-        onusezip={() => { p.closePublish(); p.openDialog(); }}
-        onpublish={p.publish}
-        brokenLinks={p.brokenLinks}
-        incompleteCanvases={p.incompleteCanvases}
-      />
-    {/if}
   {/if}
   {#if cmdkOpen && CmdKComp}{@const CK = CmdKComp}<CK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />{/if}
 {/if}

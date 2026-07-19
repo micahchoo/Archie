@@ -25,6 +25,7 @@ import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
 export type PublishState =
   | "intro-desktop"
   | "device-code"
+  | "auth-expired"
   | "auth-cancelled"
   | "auth-config-error"
   | "update-confirm"
@@ -37,6 +38,18 @@ export type PublishState =
   | "error"
   | "advanced"
   | "web-intro";
+
+/** States that represent real progress a close (Esc / scrim-click / the surface's own destination-chooser
+ *  "‹ Back") must NOT discard (Archie-7d9b): a pending device code, an in-flight publish, or one that
+ *  finished/failed while the surface was closed. `open()` resumes into these rather than recomputing the
+ *  entry screen; the merged Publish surface reads this set too, to decide whether reopening should skip
+ *  straight past the destination chooser into the wizard. */
+const RESUMABLE_STATES: ReadonlySet<PublishState> = new Set<PublishState>([
+  "device-code", "auth-expired", "publishing", "success", "manual-pages", "error",
+]);
+export function isResumableState(state: PublishState): boolean {
+  return RESUMABLE_STATES.has(state);
+}
 
 /** Publish intent: `new` creates a fresh site (and must NOT clobber an existing repo — so it's pre-flight
  *  checked); `update` deliberately re-publishes into a repo the author already picked. */
@@ -223,14 +236,33 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     s.state = "name-site";
   }
 
-  /** (Re)compute the opening state — call when the dialog opens. */
+  /** (Re)compute the opening state — call when the dialog opens. Session-resumable (Archie-7d9b): if
+   *  we're sitting on real progress (a pending device code, an in-flight publish, or one that finished or
+   *  failed while the surface was closed), stay there instead of recomputing the entry screen — a close
+   *  mid-auth is a clean, non-destructive cancel, not a reset. An expired device code is the one resumable
+   *  state that itself transitions, to the plain start-again sentinel. */
   function open(): void {
+    if (isResumableState(s.state)) {
+      if (s.state === "device-code" && s.code && now() >= s.expiresAt) s.state = "auth-expired";
+      if (deps.initialSession) s.session = deps.initialSession;
+      return;
+    }
     s.error = null;
     s.progress = null;
     s.result = null;
     s.recheckPending = false;
     s.recheckSaysOff = false;
     if (deps.initialSession) s.session = deps.initialSession;
+    s.state = computeInitial();
+    if (s.state === "name-site" || s.state === "update-confirm") seedTarget();
+  }
+
+  /** Acknowledge a finished attempt (success / manual-pages / error) and return to the normal entry screen
+   *  for the next visit — called when the author explicitly dismisses the result (Done / Cancel on a
+   *  terminal screen), as opposed to an Esc/close mid-flight, which must never clear anything. */
+  function dismissResult(): void {
+    s.result = null;
+    s.error = null;
     s.state = computeInitial();
     if (s.state === "name-site" || s.state === "update-confirm") seedTarget();
   }
@@ -550,6 +582,7 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     publishElsewhere,
     signOut: doSignOut,
     recheck,
+    dismissResult,
   };
 }
 

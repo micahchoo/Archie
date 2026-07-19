@@ -1,25 +1,52 @@
 <script lang="ts">
-  // "Publish to the web" dialog (plan Task 10) — the desktop one-button, novice-first GitHub-Pages path
-  // that replaces the old 5-field PAT wall. The state machine + all copy live in publish-machine.svelte.ts
-  // (owned there so it's typechecked + headlessly testable — see that file's header + Publish.test.ts);
-  // THIS file is the thin view that renders each state and wires the real platform seams.
+  // Publish & Share — the ONE merged surface (Archie-1921, decision Archie-7d9b) for every "Library → the
+  // world" path. Formerly two dialogs that opened one behind the other (PublishDialog.svelte → Publish.svelte);
+  // now a single scrimmed surface with an in-surface step sequence:
+  //   Step 1 (`menuPhase === "choose"`) — the destination chooser: web / local folder / zip download. This is
+  //   PublishDialog.svelte's old content, folded in unchanged (Local/zip destinations are unchanged per spec).
+  //   Choosing "Publish to the web" enters the GitHub wizard (`menuPhase === "wizard"`) IN THE SAME surface —
+  //   no second modal opens over/behind the first. The wizard's entry screens (intro-desktop / web-intro) get
+  //   an in-surface "‹ Back" that returns to step 1 — the modality contract's nested-flow rule (CONTEXT.md →
+  //   Surfaces: "opening one from inside another replaces it — in-surface back affordance if the flow is
+  //   nested"). The wizard state machine + all its copy live in publish-machine.svelte.ts (typechecked +
+  //   headlessly testable — see that file's header + Publish.test.ts); this file is the thin view.
   //
-  // The legacy 5-field token form survives VERBATIM as the `advanced` state (the browser GitHub path and
-  // the power-user / fork escape hatch), behind "I already use GitHub →". It keeps its own local state and
-  // the original `onpublish` prop — nothing about it changed.
+  // Session-resumable auth (Archie-7d9b, requirement 2): Esc / scrim-click mid-device-code-auth is a clean,
+  // non-destructive cancel — no warning (CONTEXT.md's no-close-confirmation rule: "autosave makes dismissal
+  // lossless" — the same posture applies here: a pending device code is cheap state, not user work, but the
+  // principle is the same — fix the cost of re-doing the flow, not the exit). The machine is constructed
+  // exactly ONCE: this component is mounted for the app's lifetime once `ensurePub()` has resolved — App.svelte
+  // only ever toggles `open`, it never remounts <Publish>. So the machine's `$state` — including a pending
+  // device code and its expiry — lives OUTSIDE the `{#if open}` block that gates the visible surface, and
+  // survives a close untouched. `open()` (called every time the surface opens) resumes into it instead of
+  // recomputing the entry screen whenever real progress is pending; see `isResumableState` in
+  // publish-machine.svelte.ts. Device-code polling and the GitHub push are plain async functions with no
+  // cancellation wired to component lifecycle, so they keep running in the background across a close — a
+  // publish that finishes while the surface is closed lands on success/manual-pages/error and is reflected
+  // the moment the surface reopens (requirement 3).
   import type { GitHubTarget, BrokenLink, IncompleteCanvas, GitHubPublishResult, PublishProgress } from "@render/core";
   import type { DeploySession, DeployTarget, DeployProgress } from "./deploy/types.js";
   import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
-  import { createPublishMachine } from "./publish-machine.svelte.js";
+  import { createPublishMachine, isResumableState } from "./publish-machine.svelte.js";
   import { isTauri } from "./tauri-fs.js";
-  // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return. Esc/
-  // scrim-click run the same `close()` the ✕ does — a mid-auth close is a clean, resumable cancel
-  // (close() drops the token + resets phase; warn-or-not is delegated to Archie-7d9b, not this ticket).
+  // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return, single-scrim
+  // invariant. ONE `use:scrimmed` now (was two, one per dialog) — merging removes the unmount/remount that
+  // used to happen when the old chooser closed and the wizard dialog opened in its place.
   import { scrimmed, trapFocus, modality } from "./modality.svelte";
+  // ?src= share path (contributor-broadening ④, Archie-fd32): the zero-GitHub publish — host the .archie.zip
+  // anywhere public, share one link into the canonical Viewer instance (ADR-0009). ONE config source
+  // (ADR-0013 amendment): archie.config.json — build-gh-pages.sh reads the same file via node -p.
+  import archieConfig from "../../../archie.config.json";
 
   let {
     open = false,
+    canFolder = false,
+    viewerTree = "apps/viewer/public/published/",
     onclose,
+    onfolder,
+    onzip,
+    ondownload,
+    onenterweb,
     // --- desktop device-flow seams (App.svelte wires these from deploy-flows in Task 13) ---
     library = { id: "", title: "" },
     deviceFlowAvailable = false,
@@ -32,15 +59,24 @@
     checkRepoExists,
     listRepos,
     recheckPages,
-    /** Optional: web-intro "share a link instead" → route back to the chooser's zip/?src= path (Task 13). */
-    onusezip,
     // --- legacy advanced (token) form — verbatim, unchanged interface ---
     onpublish,
     brokenLinks = [],
     incompleteCanvases = [],
   }: {
     open?: boolean;
+    canFolder?: boolean;
+    /** The single fixed path the Viewer serves from — the set target for folder-pick / zip-extract. */
+    viewerTree?: string;
     onclose: () => void;
+    onfolder: () => Promise<string | null>;
+    onzip: () => Promise<string>;
+    /** Save the whole library as a portable .archie.zip — a copy to keep, re-open, or hand to someone.
+     *  Resolves true only if a save actually happened (false = size-guard declined / picker cancelled). */
+    ondownload: () => Promise<boolean>;
+    /** Entering the GitHub wizard step from the chooser: runs the size-guard confirm + caches the site
+     *  projection (publish-flows' openPublish). Resolves false if the author declined the guard — stay put. */
+    onenterweb: () => Promise<boolean>;
     library?: { id: string; title: string };
     deviceFlowAvailable?: boolean;
     remembered?: { target: DeployTarget; url: string } | null;
@@ -56,7 +92,6 @@
     listRepos?: (session: DeploySession) => Promise<string[]>;
     /** Re-attempt the Pages enable for the manual-pages fallback ([recheck]). Wired in Task 13. */
     recheckPages?: (session: DeploySession, target: DeployTarget) => Promise<boolean>;
-    onusezip?: () => void;
     onpublish: (target: GitHubTarget, opts: { includeOriginals: boolean }, onProgress: (p: PublishProgress) => void) => Promise<GitHubPublishResult>;
     /** Intra-Library links that won't resolve in the published site — they degrade to plain text. */
     brokenLinks?: BrokenLink[];
@@ -79,12 +114,10 @@
     if (typeof navigator !== "undefined" && navigator.clipboard) await navigator.clipboard.writeText(text);
   }
 
-  // The machine is constructed ONCE (App.svelte mounts this dialog for the app's lifetime and toggles
-  // `open`), but the data props above resolve LATE — a session restored after mount, a library switch —
-  // so every data/seam dep is read through a GETTER. That keeps each `deps.X` read live at call time
-  // (on each dialog open); capturing prop snapshots here would freeze the first-render values (and emit
-  // 9 `state_referenced_locally` warnings). Fallbacks stay inside the getters so an unwired seam still
-  // never throws before Task 13 wires the real ones.
+  // The machine is constructed ONCE (this component is mounted for the app's lifetime; App.svelte only
+  // toggles `open`) — see the file header for why that's what makes auth session-resumable. Every data/seam
+  // dep is read through a GETTER (a session restored after mount, a library switch) so it stays live on
+  // every `machine.open()` call; capturing prop snapshots here would freeze first-render values.
   const machine = createPublishMachine({
     isTauriEnv,
     get deviceFlowAvailable() { return deviceFlowAvailable; },
@@ -102,8 +135,67 @@
     copy: defaultCopy,
   });
 
-  // (Re)compute the opening screen each time the dialog opens.
-  $effect(() => { if (open) machine.open(); });
+  // === step 1: the destination chooser (former PublishDialog.svelte) ===================================
+  type MenuPhase = "choose" | "local" | "working" | "done-folder" | "done-zip" | "done-download" | "error" | "wizard";
+  let menuPhase = $state<MenuPhase>("choose");
+  let folderName = $state("");
+  let zipName = $state("");
+  let destErrorMsg = $state("");
+
+  // Feature flag (Task 13): when the build offers the one-motion desktop deploy, "Publish to the web" LEADS
+  // the chooser (durability-first, Q-3). Off (a fork with no deploy infra) → today's quieter "To GitHub
+  // Pages" card as the escape hatch; both route into the same wizard (the machine self-degrades honestly —
+  // web-intro on the web, the token form via "I already use GitHub").
+  const deployToPages = archieConfig.deployToPages === true;
+  const CANONICAL_VIEWER = `${archieConfig.canonicalOrigin}${archieConfig.viewerPath}`;
+  const CANONICAL_HOST = new URL(CANONICAL_VIEWER).host;
+  let zipUrl = $state("");
+  let copied = $state(false);
+  const shareLink = $derived.by(() => {
+    const u = zipUrl.trim();
+    if (!u) return "";
+    try {
+      const p = new URL(u);
+      if (p.protocol !== "https:" && p.protocol !== "http:") return ""; // a junk string composes a junk link
+    } catch { return ""; }
+    return `${CANONICAL_VIEWER}?src=${encodeURIComponent(u)}`;
+  });
+  const canCopy = typeof navigator !== "undefined" && !!navigator.clipboard;
+  function copyShareLink() {
+    navigator.clipboard.writeText(shareLink)
+      .then(() => { copied = true; setTimeout(() => (copied = false), 1500); })
+      .catch(() => { copied = false; }); // permission denied — the link is still selectable above
+  }
+  // Embed snippet (contributor-broadening ⑩ slice A): TWO ways to embed, per the locked v1 contract
+  // (ADR-0021) and the iframe floor (anvil ADR-0006).
+  const CDN_RUNTIME = "https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js";
+  // The closing script tag is split (`</scr" + "ipt>`) so the literal doesn't terminate THIS Svelte
+  // <script> block — the snippet text is identical to recipes/README.md §1.
+  const wcSnippet = $derived(zipUrl.trim() === "" ? "" :
+`<script type="module" src="${CDN_RUNTIME}" crossorigin="anonymous"></scr` + `ipt>
+<archie-viewer src="${zipUrl.trim()}"></archie-viewer>`);
+  const embedSnippet = $derived(shareLink === "" ? "" : `<iframe src="${shareLink}" width="100%" height="600" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer" title="Archie exhibit"></iframe>`);
+  let copiedWc = $state(false);
+  let copiedEmbed = $state(false);
+  function copyWc() {
+    navigator.clipboard.writeText(wcSnippet)
+      .then(() => { copiedWc = true; setTimeout(() => (copiedWc = false), 1500); })
+      .catch(() => { copiedWc = false; });
+  }
+  function copyEmbed() {
+    navigator.clipboard.writeText(embedSnippet)
+      .then(() => { copiedEmbed = true; setTimeout(() => (copiedEmbed = false), 1500); })
+      .catch(() => { copiedEmbed = false; });
+  }
+
+  // Whenever the surface (re)opens: reset the chooser's transient bits, then resume the wizard exactly
+  // where it was left (a pending device code, an in-flight/finished publish) — or land fresh on step 1.
+  $effect(() => {
+    if (!open) return;
+    destErrorMsg = ""; zipUrl = ""; copied = false; copiedWc = false; copiedEmbed = false;
+    machine.open();
+    menuPhase = isResumableState(machine.state) ? "wizard" : "choose";
+  });
   // Tick the device-code countdown once a second while it's showing.
   $effect(() => {
     if (machine.state !== "device-code") return;
@@ -111,6 +203,46 @@
     return () => clearInterval(id);
   });
 
+  async function chooseFolder() {
+    menuPhase = "working"; destErrorMsg = "";
+    try {
+      const name = await onfolder();
+      if (name === null) { menuPhase = "local"; return; } // cancelled the picker
+      folderName = name;
+      menuPhase = "done-folder";
+    } catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't write to the folder."; menuPhase = "error"; }
+  }
+  async function saveZip() {
+    menuPhase = "working"; destErrorMsg = "";
+    try { zipName = await onzip(); menuPhase = "done-zip"; }
+    catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't save the zip."; menuPhase = "error"; }
+  }
+  /** Step 1 → the GitHub wizard: run the size-guard + cache the projection, then enter — the guard's own
+   *  confirm dialog is the feedback, so declining it just leaves the author on the chooser. */
+  async function enterWizard() {
+    if (await onenterweb()) menuPhase = "wizard";
+  }
+  /** In-surface "‹ Back" from the wizard's entry screens to step 1 (the modality contract's nested-flow
+   *  rule) — NOT a close, so it never touches machine state. */
+  function backToChooser() { menuPhase = "choose"; }
+
+  function close() {
+    menuPhase = "choose";
+    destErrorMsg = "";
+    zipUrl = ""; copied = false; copiedWc = false; copiedEmbed = false;
+    token = ""; // never retain the advanced-form secret across a close
+    advPhase = "idle";
+    advProgress = null;
+    onclose();
+  }
+  /** Dismiss a FINISHED wizard attempt (Done on success / Cancel on error) — unlike `close()`, this
+   *  acknowledges the result so the next open recomputes a fresh entry screen (e.g. the return-visit
+   *  update-confirm) instead of showing the same stale success/error screen forever. A close mid-flight —
+   *  Esc, scrim-click, "‹ Back", or manual-pages' "I'll do it later" — must NEVER call this; only an
+   *  explicit, deliberate dismissal of a completed attempt does. */
+  function finishWizard() { machine.dismissResult(); close(); }
+
+  // === the GitHub wizard (former Publish.svelte) ==========================================================
   // The commit link on the success screen (the ▸ Details disclosure).
   const commitUrl = $derived(
     machine.result ? `https://github.com/${machine.owner.trim()}/${machine.repo.trim()}/commit/${machine.result.commitSha}` : "",
@@ -122,15 +254,6 @@
   let showDomain = $state(false); // success: the collapsed "Use your own domain" guidance (copy only)
   // GitHub's own custom-domain walkthrough — we point at it rather than automating CNAME (PRFAQ item 5).
   const CUSTOM_DOMAIN_DOCS = "https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site/about-custom-domains-and-github-pages";
-
-  function close() {
-    token = ""; // never retain the advanced-form secret across a close
-    // Reset the advanced form's result state so reopening it shows a fresh form, not the stale
-    // done/error screen from the previous publish.
-    phase = "idle";
-    progress = null;
-    onclose();
-  }
 
   // ===========================================================================================
   // Advanced (token) form — VERBATIM from the pre-Task-10 dialog. Its own local state + the legacy
@@ -146,18 +269,18 @@
   let repo = $state("");
   let branch = $state("gh-pages");
   let token = $state("");
-  let phase = $state<"idle" | "publishing" | "done" | "error">("idle");
+  let advPhase = $state<"idle" | "publishing" | "done" | "error">("idle");
   let commitUrlAdv = $state("");
   let pagesUrl = $state("");          // visitor-facing URL, returned by publishToGitHub (project- vs user-site aware)
   let pagesEnabled = $state(false);   // false ⇒ the push landed but Pages must be enabled manually
-  let errorMsg = $state("");
-  let progress = $state<PublishProgress | null>(null); // live step from publishToGitHub while publishing
+  let advErrorMsg = $state("");
+  let advProgress = $state<PublishProgress | null>(null); // live step from publishToGitHub while publishing
 
   // Human-readable progress for the long push (media upload is one request per asset → show the count).
   const progressText = $derived(
-    progress?.phase === "uploading" ? `Uploading media — ${progress.done} of ${progress.total}…`
-    : progress?.phase === "committing" ? "Creating the commit…"
-    : progress?.phase === "enabling-pages" ? "Turning on GitHub Pages…"
+    advProgress?.phase === "uploading" ? `Uploading media — ${advProgress.done} of ${advProgress.total}…`
+    : advProgress?.phase === "committing" ? "Creating the commit…"
+    : advProgress?.phase === "enabling-pages" ? "Turning on GitHub Pages…"
     : "Preparing the library…",
   );
 
@@ -165,25 +288,25 @@
   const nameError = $derived(
     /[/\s]/.test(owner.trim()) || /[/\s]/.test(repo.trim()) ? "Enter just the names — no slashes, spaces, or full URLs." : "",
   );
-  const canPublish = $derived(owner.trim() !== "" && repo.trim() !== "" && token.trim() !== "" && nameError === "" && phase !== "publishing");
+  const canPublish = $derived(owner.trim() !== "" && repo.trim() !== "" && token.trim() !== "" && nameError === "" && advPhase !== "publishing");
   // Where the author flips Pages on if we couldn't (private repo / token without Pages scope).
   const pagesSettingsUrl = $derived(`https://github.com/${owner.trim()}/${repo.trim()}/settings/pages`);
 
   async function advPublish() {
-    phase = "publishing";
-    errorMsg = "";
-    progress = null;
+    advPhase = "publishing";
+    advErrorMsg = "";
+    advProgress = null;
     try {
       const target: GitHubTarget = { owner: owner.trim(), repo: repo.trim(), branch: branch.trim() || "gh-pages", token: token.trim() };
-      const res = await onpublish(target, { includeOriginals }, (p) => (progress = p));
+      const res = await onpublish(target, { includeOriginals }, (p) => (advProgress = p));
       commitUrlAdv = res.commitUrl;
       pagesUrl = res.pagesUrl;
       pagesEnabled = res.pagesEnabled;
-      phase = "done";
+      advPhase = "done";
       token = ""; // drop the secret the instant we're done with it
     } catch (e) {
-      errorMsg = e instanceof Error ? e.message : "Couldn't publish. Check the repository name and that your token has Contents and Pages write access.";
-      phase = "error";
+      advErrorMsg = e instanceof Error ? e.message : "Couldn't publish. Check the repository name and that your token has Contents and Pages write access.";
+      advPhase = "error";
       token = ""; // never retain the secret across an error either
     }
   }
@@ -191,337 +314,477 @@
 
 {#if open}
   <div class="scrim" role="presentation" onclick={() => modality.dismiss()}></div>
-  <div class="dialog" role="dialog" aria-modal="true" aria-label="Publish to the web" tabindex="-1"
+  <div class="dialog" role="dialog" aria-modal="true" aria-label="Publish" tabindex="-1"
     use:scrimmed={{ onClose: close }} onkeydown={trapFocus}>
 
-    {#if machine.state === "intro-desktop"}
+    {#if menuPhase === "choose"}
       <header>
         <p class="eyebrow">Publish</p>
-        <h2>Put this on the web — free, and it's yours.</h2>
-        <p class="lede">Archie publishes your library as a real website on GitHub Pages. It's free, permanent, and the address belongs to you.</p>
+        <h2>Where should this go?</h2>
+        <p class="lede">Archie builds the same finished site each way — pick where to put it.</p>
       </header>
-      <div class="stack">
-        {#if machine.canContinueWithGitHub}
-          <button class="primary big" onclick={() => machine.continueWithGitHub()}>Continue with GitHub</button>
+      <div class="choices">
+        {#if deployToPages}
+          <!-- The leading, durability-first path (Q-3). Enters the GitHub wizard below, which handles
+               desktop sign-in + one-button deploy, or degrades honestly on the web. -->
+          <button class="choice lead" onclick={enterWizard}>
+            <span class="c-eyebrow">Recommended</span>
+            <span class="c-title">Publish to the web</span>
+            <span class="c-desc">A free, permanent website that's yours — Archie builds it and puts it online in one motion. Best when you want a real address to share or cite.</span>
+          </button>
         {/if}
-        <div class="quiet-links">
-          <button type="button" class="linkish" onclick={() => defaultOpenUrl("https://github.com/signup")}>No GitHub account? Make one free</button>
-          <button type="button" class="linkish" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
-        </div>
+        <button class="choice" onclick={() => (menuPhase = "local")}>
+          <span class="c-title">Locally</span>
+          <span class="c-desc">Write the site to the Viewer's folder and preview it. No account.</span>
+        </button>
+        <!-- Stay on the chooser until the save actually happens (the OS picker is modal anyway) —
+             done-download must never claim a save the user cancelled. -->
+        <button class="choice" onclick={async () => { if (await ondownload().catch(() => false)) menuPhase = "done-download"; }}>
+          <span class="c-title">Save a copy — or share a link</span>
+          <span class="c-desc">Keep a copy, share a link, or hand it to a colleague — packed into one <code>.archie.zip</code>. Best for a draft, not a permanent citation.</span>
+        </button>
+        {#if !deployToPages}
+          <!-- Flag off (no deploy infra): the quieter escape hatch — same wizard. -->
+          <button class="choice" onclick={enterWizard}>
+            <span class="c-title">To GitHub Pages</span>
+            <span class="c-desc">Publish to the web on a GitHub Pages branch — standalone, no server.</span>
+          </button>
+        {/if}
       </div>
       <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>
 
-    {:else if machine.state === "device-code"}
+    {:else if menuPhase === "done-download"}
       <header>
         <p class="eyebrow">Publish</p>
-        <h2>One quick step to connect.</h2>
+        <h2>Save a copy</h2>
+        <p class="lede">A portable <code>.archie.zip</code> — and, if you host it, a shareable link.</p>
       </header>
-      <div class="stack">
-        <div class="code-row">
-          <span class="code" aria-label="Your one-time code">{machine.code?.userCode}</span>
-          <button type="button" class="ghost" onclick={() => machine.copyCode()}>Copy code</button>
-        </div>
-        <button class="primary" onclick={() => machine.openDevicePage()}>Open GitHub to enter it</button>
-        <p class="note">Paste the code there and click Authorize. We'll pick it up automatically — come back here.</p>
-        <p class="waiting" role="status">
-          <span class="spinner" aria-hidden="true"></span>
-          Waiting for you to authorize… <span class="muted">(expires {machine.countdownLabel})</span>
-        </p>
-      </div>
-      <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>
-
-    {:else if machine.state === "auth-cancelled"}
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>Sign-in was cancelled.</h2>
-        <p class="lede">No problem — try again when you're ready.</p>
-      </header>
-      <div class="actions">
-        <button type="button" class="ghost" onclick={close}>Cancel</button>
-        <button class="primary" onclick={() => machine.retryAuth()}>Try again</button>
-      </div>
-
-    {:else if machine.state === "auth-config-error"}
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>GitHub sign-in isn't set up.</h2>
-        <p class="lede">{machine.errorCopy.message}</p>
-      </header>
-      <div class="actions">
-        <button type="button" class="ghost" onclick={close}>Cancel</button>
-        <button class="primary" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
-      </div>
-
-    {:else if machine.state === "update-confirm"}
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>Update {updateHost} with your latest changes?</h2>
-        <p class="lede">One click republishes everything in your library right now to the site you already made — no re-typing, no signing in again.</p>
-      </header>
-      <div class="stack">
-        <div class="quiet-links">
-          <button type="button" class="linkish" onclick={() => machine.publishElsewhere()}>Publish somewhere else…</button>
-        </div>
-        {#if machine.session}
-          <p class="signed-in">Signed in as <span class="handle">@{machine.session.login}</span> · <button type="button" class="linkish inline" onclick={() => machine.signOut()}>Sign out</button></p>
+      <div class="result">
+        <p class="ok">Saved your <code>.archie.zip</code>.</p>
+        <p class="line">Keep it, re-open it here any time, or hand it to a colleague. <strong>Working with someone?</strong> They open your zip in their Studio, add their own notes, and send the file back — when you open their copy here, Archie shows who added what.</p>
+        <p class="line"><strong>Share it as a link (no install for the reader):</strong> upload the zip anywhere public — your site, a GitHub release, the Internet Archive — then paste its URL:</p>
+        <input class="share-url" type="url" placeholder="https://…/my-library.archie.zip" bind:value={zipUrl} aria-label="Public URL of the uploaded .archie.zip" />
+        {#if shareLink}
+          <pre class="cmd"><code>{shareLink}</code></pre>
+          <p class="line">Or embed the exhibit in a blog, LMS page, or site. Two ways:</p>
+          <p class="line"><strong>Web Component</strong> <span class="muted">— the recommended embed: a one-time script tag plus an <code>&lt;archie-viewer&gt;</code> element. Paste both into an HTML/code block.</span></p>
+          <pre class="cmd"><code>{wcSnippet}</code></pre>
+          <p class="line"><strong>iframe</strong> <span class="muted">— the fallback for hosts that strip scripts / custom elements (Notion, Substack, Squarespace, locked-down WordPress).</span></p>
+          <pre class="cmd"><code>{embedSnippet}</code></pre>
+          {#if canCopy}
+            <div class="actions share-actions">
+              <button type="button" class="ghost" onclick={copyShareLink}>{copied ? "Copied" : "Copy link"}</button>
+              <button type="button" class="ghost" onclick={copyWc}>{copiedWc ? "Copied" : "Copy Web Component"}</button>
+              <button type="button" class="ghost" onclick={copyEmbed}>{copiedEmbed ? "Copied" : "Copy iframe"}</button>
+            </div>
+          {:else}
+            <p class="line muted">Select the link or embed code above to copy it.</p>
+          {/if}
         {/if}
-      </div>
-      <div class="actions">
-        <button type="button" class="ghost" onclick={close}>Cancel</button>
-        <button class="primary" onclick={() => machine.publishUpdate()}>Publish update</button>
+        <p class="line muted">This link depends on two things staying online: the place you uploaded the zip, and the Archie viewer at <code>{CANONICAL_HOST}</code>. If either moves or goes away, the link stops working — so it's best for sharing a draft, not for a permanent citation. To publish something that stands on its own, use "To GitHub Pages" instead.</p>
+        <div class="actions"><button class="primary" onclick={close}>Done</button></div>
       </div>
 
-    {:else if machine.state === "name-site"}
+    {:else if menuPhase === "done-folder"}
       <header>
-        <p class="eyebrow">Publish{#if machine.session}<span class="handle"> · @{machine.session.login}</span>{/if}</p>
-        <h2>Name your site.</h2>
+        <p class="eyebrow">Publish</p>
+        <h2>Publish locally</h2>
+        <p class="lede">Put the site in the one folder the Viewer reads, then open it — no GitHub.</p>
       </header>
-      <div class="stack">
-        <label class="field">Site name<input bind:value={machine.repo} autocomplete="off" spellcheck="false" /></label>
-        {#if machine.nameError}
-          <p class="err">{machine.nameError}</p>
-        {:else}
-          <p class="note">Letters, numbers and dashes. This becomes part of your web address.</p>
-        {/if}
-        {#if machine.sitePreview}
-          <div class="preview">
-            <span class="preview-label">Your site will live at</span>
-            <span class="preview-url">{machine.sitePreview.url}{#if machine.sitePreview.isUserSite} <span class="muted">(your main site)</span>{/if}</span>
-            {#if !machine.sitePreview.isUserSite}
-              <span class="preview-tip">Name it <code>{machine.sitePreview.userSiteName}</code> to publish to your top-level address.</span>
+      <div class="result">
+        <p class="ok">Published locally.</p>
+        <p class="line">Wrote the site into <code>{folderName}</code>. Start the Viewer and open it:</p>
+        <pre class="cmd"><code>pnpm --filter @archie/viewer dev</code></pre>
+        <p class="line muted">Then visit <code>http://localhost:4321</code>. Re-publish any time — it safely replaces what's there.</p>
+        <div class="actions"><button class="primary" onclick={close}>Done</button></div>
+      </div>
+
+    {:else if menuPhase === "done-zip"}
+      <header>
+        <p class="eyebrow">Publish</p>
+        <h2>Publish locally</h2>
+        <p class="lede">Put the site in the one folder the Viewer reads, then open it — no GitHub.</p>
+      </header>
+      <div class="result">
+        <p class="ok">Saved <code>{zipName}</code>.</p>
+        <p class="line">Unzip its contents into the one folder the Viewer reads, replacing what's there:</p>
+        <pre class="cmd"><code>{viewerTree}</code></pre>
+        <p class="line">Then start the Viewer:</p>
+        <pre class="cmd"><code>pnpm --filter @archie/viewer dev</code></pre>
+        <p class="line muted">Open <code>http://localhost:4321</code>.</p>
+        <div class="actions"><button class="primary" onclick={close}>Done</button></div>
+      </div>
+
+    {:else if menuPhase === "wizard"}
+      {#if machine.state === "intro-desktop"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>Put this on the web — free, and it's yours.</h2>
+          <p class="lede">Archie publishes your library as a real website on GitHub Pages. It's free, permanent, and the address belongs to you.</p>
+        </header>
+        <div class="stack">
+          {#if machine.canContinueWithGitHub}
+            <button class="primary big" onclick={() => machine.continueWithGitHub()}>Continue with GitHub</button>
+          {/if}
+          <div class="quiet-links">
+            <button type="button" class="linkish" onclick={() => defaultOpenUrl("https://github.com/signup")}>No GitHub account? Make one free</button>
+            <button type="button" class="linkish" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
+          </div>
+        </div>
+        <div class="actions"><button type="button" class="ghost" onclick={backToChooser}>‹ Back</button></div>
+
+      {:else if machine.state === "device-code"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>One quick step to connect.</h2>
+        </header>
+        <div class="stack">
+          <div class="code-row">
+            <span class="code" aria-label="Your one-time code">{machine.code?.userCode}</span>
+            <button type="button" class="ghost" onclick={() => machine.copyCode()}>Copy code</button>
+          </div>
+          <button class="primary" onclick={() => machine.openDevicePage()}>Open GitHub to enter it</button>
+          <p class="note">Paste the code there and click Authorize. We'll pick it up automatically — come back here.</p>
+          <p class="waiting" role="status">
+            <span class="spinner" aria-hidden="true"></span>
+            Waiting for you to authorize… <span class="muted">(expires {machine.countdownLabel})</span>
+          </p>
+        </div>
+        <!-- Cancel here is a CLEAN, session-resumable cancel (Archie-7d9b): the machine keeps this pending
+             code, and reopening lands right back on this screen with the same code — no warning needed. -->
+        <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>
+
+      {:else if machine.state === "auth-expired"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>That sign-in code expired.</h2>
+          <p class="lede">Start again to get a new one.</p>
+        </header>
+        <div class="actions">
+          <button type="button" class="ghost" onclick={close}>Cancel</button>
+          <button class="primary" onclick={() => machine.retryAuth()}>Start again</button>
+        </div>
+
+      {:else if machine.state === "auth-cancelled"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>Sign-in was cancelled.</h2>
+          <p class="lede">No problem — try again when you're ready.</p>
+        </header>
+        <div class="actions">
+          <button type="button" class="ghost" onclick={close}>Cancel</button>
+          <button class="primary" onclick={() => machine.retryAuth()}>Try again</button>
+        </div>
+
+      {:else if machine.state === "auth-config-error"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>GitHub sign-in isn't set up.</h2>
+          <p class="lede">{machine.errorCopy.message}</p>
+        </header>
+        <div class="actions">
+          <button type="button" class="ghost" onclick={close}>Cancel</button>
+          <button class="primary" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
+        </div>
+
+      {:else if machine.state === "update-confirm"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>Update {updateHost} with your latest changes?</h2>
+          <p class="lede">One click republishes everything in your library right now to the site you already made — no re-typing, no signing in again.</p>
+        </header>
+        <div class="stack">
+          <div class="quiet-links">
+            <button type="button" class="linkish" onclick={() => machine.publishElsewhere()}>Publish somewhere else…</button>
+          </div>
+          {#if machine.session}
+            <p class="signed-in">Signed in as <span class="handle">@{machine.session.login}</span> · <button type="button" class="linkish inline" onclick={() => machine.signOut()}>Sign out</button></p>
+          {/if}
+        </div>
+        <div class="actions">
+          <button type="button" class="ghost" onclick={close}>Cancel</button>
+          <button class="primary" onclick={() => machine.publishUpdate()}>Publish update</button>
+        </div>
+
+      {:else if machine.state === "name-site"}
+        <header>
+          <p class="eyebrow">Publish{#if machine.session}<span class="handle"> · @{machine.session.login}</span>{/if}</p>
+          <h2>Name your site.</h2>
+        </header>
+        <div class="stack">
+          <label class="field">Site name<input bind:value={machine.repo} autocomplete="off" spellcheck="false" /></label>
+          {#if machine.nameError}
+            <p class="err">{machine.nameError}</p>
+          {:else}
+            <p class="note">Letters, numbers and dashes. This becomes part of your web address.</p>
+          {/if}
+          {#if machine.sitePreview}
+            <div class="preview">
+              <span class="preview-label">Your site will live at</span>
+              <span class="preview-url">{machine.sitePreview.url}{#if machine.sitePreview.isUserSite} <span class="muted">(your main site)</span>{/if}</span>
+              {#if !machine.sitePreview.isUserSite}
+                <span class="preview-tip">Name it <code>{machine.sitePreview.userSiteName}</code> to publish to your top-level address.</span>
+              {/if}
+            </div>
+          {/if}
+          <!-- Public-only at launch (PRFAQ): shown as a checked, non-editable reassurance — never the word "private". -->
+          <label class="cb"><input type="checkbox" checked disabled /><span class="cb-text">Anyone with the link can see it <span class="cb-sub">— published sites are public for now</span></span></label>
+          <label class="cb"><input type="checkbox" bind:checked={machine.staySignedIn} /><span class="cb-text">Stay signed in on this computer</span></label>
+          {#if listRepos}
+            <button type="button" class="linkish" onclick={() => machine.openPicker()}>Update an existing site instead…</button>
+          {/if}
+        </div>
+        <div class="actions">
+          <button type="button" class="ghost" onclick={close}>Cancel</button>
+          <button class="primary" disabled={!machine.canPublish} onclick={() => machine.publish()}>Publish</button>
+        </div>
+
+      {:else if machine.state === "name-taken"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>You already have a site called {machine.repo}.</h2>
+          <p class="lede">Pick another name, or update the site that's already there with your latest changes.</p>
+        </header>
+        <div class="actions">
+          <button type="button" class="ghost" onclick={() => machine.useNewName()}>Use a new name</button>
+          <button class="primary" onclick={() => machine.updateExisting()}>Update the existing site</button>
+        </div>
+
+      {:else if machine.state === "repo-picker"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>Update an existing site.</h2>
+          <p class="lede">Pick one of your GitHub repositories to publish this library into.</p>
+        </header>
+        <div class="stack">
+          <input class="filter" placeholder="Search your repositories…" bind:value={machine.repoFilter} autocomplete="off" />
+          <ul class="repo-list">
+            {#each machine.filteredRepos as name}
+              <li><button type="button" class="repo-item" onclick={() => machine.chooseRepo(name)}>{name}</button></li>
+            {:else}
+              <li class="repo-empty">No repositories match.</li>
+            {/each}
+          </ul>
+        </div>
+        <div class="actions"><button type="button" class="ghost" onclick={() => machine.useNewName()}>← Back</button></div>
+
+      {:else if machine.state === "publishing"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>Publishing…</h2>
+        </header>
+        <ul class="checklist">
+          {#each machine.steps as step}
+            <li class={step.status}>
+              <span class="tick" aria-hidden="true">{step.status === "done" ? "✓" : step.status === "active" ? "" : "○"}</span>
+              {#if step.status === "active"}<span class="spinner sm" aria-hidden="true"></span>{/if}
+              <span class="step-label">{step.label}</span>
+            </li>
+          {/each}
+          {#if machine.buildingPages}
+            <li class="active"><span class="spinner sm" aria-hidden="true"></span><span class="step-label">GitHub is building your site…</span></li>
+          {/if}
+        </ul>
+        <p class="note">This usually takes under a minute. You can leave this open.</p>
+
+      {:else if machine.state === "success"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>Your site is live.</h2>
+        </header>
+        <div class="stack">
+          <a class="hero-url" href={machine.result?.url} target="_blank" rel="noopener">{machine.result?.url}</a>
+          <div class="hero-actions">
+            <button class="primary" onclick={() => machine.openSite()}>Open my site</button>
+            <button type="button" class="ghost" onclick={() => machine.copyLink()}>Copy link</button>
+          </div>
+          <p class="note">GitHub may take a minute to finish the first build — if it's blank, refresh in a moment.</p>
+          <p class="note">Made changes? Just hit <strong>Publish to the web</strong> again — it updates the same site.</p>
+          {#if machine.persistFailed}
+            <p class="note muted">We couldn't keep you signed in on this computer — you'll sign in again next time.</p>
+          {/if}
+          <div class="details">
+            <button type="button" class="linkish" onclick={() => (showDomain = !showDomain)}>{showDomain ? "▾" : "▸"} Use your own domain</button>
+            {#if showDomain}
+              <p class="note">Want <code>library.yoursite.com</code> instead? GitHub Pages lets you point your own domain at this site — you add the domain in the repository's Pages settings and a matching record at your domain host. <a href={CUSTOM_DOMAIN_DOCS} target="_blank" rel="noopener">GitHub's guide walks through it.</a></p>
             {/if}
           </div>
-        {/if}
-        <!-- Public-only at launch (PRFAQ): shown as a checked, non-editable reassurance — never the word "private". -->
-        <label class="cb"><input type="checkbox" checked disabled /><span class="cb-text">Anyone with the link can see it <span class="cb-sub">— published sites are public for now</span></span></label>
-        <label class="cb"><input type="checkbox" bind:checked={machine.staySignedIn} /><span class="cb-text">Stay signed in on this computer</span></label>
-        {#if listRepos}
-          <button type="button" class="linkish" onclick={() => machine.openPicker()}>Update an existing site instead…</button>
-        {/if}
-      </div>
-      <div class="actions">
-        <button type="button" class="ghost" onclick={close}>Cancel</button>
-        <button class="primary" disabled={!machine.canPublish} onclick={() => machine.publish()}>Publish</button>
-      </div>
+          <div class="details">
+            <button type="button" class="linkish" onclick={() => (showDetails = !showDetails)}>{showDetails ? "▾" : "▸"} Details</button>
+            {#if showDetails}
+              <p class="note"><a href={commitUrl} target="_blank" rel="noopener">Commit {machine.result?.commitSha.slice(0, 7)}</a></p>
+            {/if}
+          </div>
+        </div>
+        <!-- Done ACKNOWLEDGES this result (finishWizard, not close) — the next open recomputes the normal
+             entry screen (a return-visit lands on update-confirm) instead of re-showing this success screen. -->
+        <div class="actions"><button type="button" class="ghost" onclick={finishWizard}>Done</button></div>
 
-    {:else if machine.state === "name-taken"}
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>You already have a site called {machine.repo}.</h2>
-        <p class="lede">Pick another name, or update the site that's already there with your latest changes.</p>
-      </header>
-      <div class="actions">
-        <button type="button" class="ghost" onclick={() => machine.useNewName()}>Use a new name</button>
-        <button class="primary" onclick={() => machine.updateExisting()}>Update the existing site</button>
-      </div>
+      {:else if machine.state === "manual-pages"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>Almost done — one quick switch on GitHub.</h2>
+          <p class="lede">Your library is uploaded. GitHub couldn't turn the site on automatically for this repository, so flip it on yourself — it takes about thirty seconds.</p>
+        </header>
+        <div class="stack">
+          <ol class="steps">
+            <li>Open <a href={machine.pagesSettingsUrl} target="_blank" rel="noopener">your repository's Settings › Pages</a>.</li>
+            <li>Under <strong>Build and deployment</strong>, set <em>Source</em> to <strong>Deploy from a branch</strong>.</li>
+            <li>Choose the <code>gh-pages</code> branch and the <code>/ (root)</code> folder, then <strong>Save</strong>.</li>
+          </ol>
+          {#if machine.recheckSaysOff}
+            <p class="note warn">GitHub still shows the site as off. Give it a moment after saving, then check again.</p>
+          {/if}
+          <p class="note">Once you've saved, your site will live at <a href={machine.result?.url} target="_blank" rel="noopener">{machine.result?.url}</a>.</p>
+        </div>
+        <div class="actions">
+          <!-- "Later" is a plain close (stays resumable) — the site IS live, but Pages isn't flipped on
+               yet, so reopening should remind the author, not silently drop them into a fresh entry. -->
+          <button type="button" class="ghost" onclick={close}>I'll do it later</button>
+          {#if machine.canRecheck}
+            <button class="primary" disabled={machine.recheckPending} onclick={() => machine.recheck()}>{machine.recheckPending ? "Checking…" : "I did it — recheck"}</button>
+          {/if}
+        </div>
 
-    {:else if machine.state === "repo-picker"}
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>Update an existing site.</h2>
-        <p class="lede">Pick one of your GitHub repositories to publish this library into.</p>
-      </header>
-      <div class="stack">
-        <input class="filter" placeholder="Search your repositories…" bind:value={machine.repoFilter} autocomplete="off" />
-        <ul class="repo-list">
-          {#each machine.filteredRepos as name}
-            <li><button type="button" class="repo-item" onclick={() => machine.chooseRepo(name)}>{name}</button></li>
+      {:else if machine.state === "error"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>Something went wrong.</h2>
+          <p class="lede">{machine.errorCopy.message}</p>
+        </header>
+        <div class="actions">
+          <button type="button" class="ghost" onclick={finishWizard}>Cancel</button>
+          {#if machine.errorCopy.offerSignInAgain}
+            <button class="primary" onclick={() => machine.signInAgain()}>Sign in again</button>
           {:else}
-            <li class="repo-empty">No repositories match.</li>
-          {/each}
-        </ul>
-      </div>
-      <div class="actions"><button type="button" class="ghost" onclick={() => machine.useNewName()}>← Back</button></div>
-
-    {:else if machine.state === "publishing"}
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>Publishing…</h2>
-      </header>
-      <ul class="checklist">
-        {#each machine.steps as step}
-          <li class={step.status}>
-            <span class="tick" aria-hidden="true">{step.status === "done" ? "✓" : step.status === "active" ? "" : "○"}</span>
-            {#if step.status === "active"}<span class="spinner sm" aria-hidden="true"></span>{/if}
-            <span class="step-label">{step.label}</span>
-          </li>
-        {/each}
-        {#if machine.buildingPages}
-          <li class="active"><span class="spinner sm" aria-hidden="true"></span><span class="step-label">GitHub is building your site…</span></li>
-        {/if}
-      </ul>
-      <p class="note">This usually takes under a minute. You can leave this open.</p>
-
-    {:else if machine.state === "success"}
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>Your site is live.</h2>
-      </header>
-      <div class="stack">
-        <a class="hero-url" href={machine.result?.url} target="_blank" rel="noopener">{machine.result?.url}</a>
-        <div class="hero-actions">
-          <button class="primary" onclick={() => machine.openSite()}>Open my site</button>
-          <button type="button" class="ghost" onclick={() => machine.copyLink()}>Copy link</button>
-        </div>
-        <p class="note">GitHub may take a minute to finish the first build — if it's blank, refresh in a moment.</p>
-        <p class="note">Made changes? Just hit <strong>Publish to the web</strong> again — it updates the same site.</p>
-        {#if machine.persistFailed}
-          <p class="note muted">We couldn't keep you signed in on this computer — you'll sign in again next time.</p>
-        {/if}
-        <div class="details">
-          <button type="button" class="linkish" onclick={() => (showDomain = !showDomain)}>{showDomain ? "▾" : "▸"} Use your own domain</button>
-          {#if showDomain}
-            <p class="note">Want <code>library.yoursite.com</code> instead? GitHub Pages lets you point your own domain at this site — you add the domain in the repository's Pages settings and a matching record at your domain host. <a href={CUSTOM_DOMAIN_DOCS} target="_blank" rel="noopener">GitHub's guide walks through it.</a></p>
+            <button class="primary" onclick={() => machine.retryPublish()}>Try again</button>
           {/if}
         </div>
-        <div class="details">
-          <button type="button" class="linkish" onclick={() => (showDetails = !showDetails)}>{showDetails ? "▾" : "▸"} Details</button>
-          {#if showDetails}
-            <p class="note"><a href={commitUrl} target="_blank" rel="noopener">Commit {machine.result?.commitSha.slice(0, 7)}</a></p>
-          {/if}
+
+      {:else if machine.state === "web-intro"}
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>Share your library.</h2>
+          <p class="lede">GitHub sign-in can't run safely from a browser tab, so the one-button publish lives in the Archie desktop app. From here you can still share your library as a link.</p>
+        </header>
+        <div class="stack">
+          <button class="primary" onclick={backToChooser}>Share with a link</button>
+          <p class="note">Want a permanent site you own? Open Archie on your desktop to publish straight to GitHub Pages.</p>
+          <div class="quiet-links">
+            <button type="button" class="linkish" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
+          </div>
         </div>
-      </div>
-      <div class="actions"><button type="button" class="ghost" onclick={close}>Done</button></div>
+        <div class="actions"><button type="button" class="ghost" onclick={backToChooser}>‹ Back</button></div>
 
-    {:else if machine.state === "manual-pages"}
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>Almost done — one quick switch on GitHub.</h2>
-        <p class="lede">Your library is uploaded. GitHub couldn't turn the site on automatically for this repository, so flip it on yourself — it takes about thirty seconds.</p>
-      </header>
-      <div class="stack">
-        <ol class="steps">
-          <li>Open <a href={machine.pagesSettingsUrl} target="_blank" rel="noopener">your repository's Settings › Pages</a>.</li>
-          <li>Under <strong>Build and deployment</strong>, set <em>Source</em> to <strong>Deploy from a branch</strong>.</li>
-          <li>Choose the <code>gh-pages</code> branch and the <code>/ (root)</code> folder, then <strong>Save</strong>.</li>
-        </ol>
-        {#if machine.recheckSaysOff}
-          <p class="note warn">GitHub still shows the site as off. Give it a moment after saving, then check again.</p>
-        {/if}
-        <p class="note">Once you've saved, your site will live at <a href={machine.result?.url} target="_blank" rel="noopener">{machine.result?.url}</a>.</p>
-      </div>
-      <div class="actions">
-        <button type="button" class="ghost" onclick={close}>I'll do it later</button>
-        {#if machine.canRecheck}
-          <button class="primary" disabled={machine.recheckPending} onclick={() => machine.recheck()}>{machine.recheckPending ? "Checking…" : "I did it — recheck"}</button>
-        {/if}
-      </div>
+      {:else if machine.state === "advanced"}
+        <!-- ADVANCED (token) form — verbatim pre-Task-10 dialog. -->
+        <header>
+          <p class="eyebrow">Publish</p>
+          <h2>Connect to GitHub</h2>
+          <p class="lede">Publish your whole library, every exhibit, to a GitHub Pages branch. Your token is used once to publish and is never stored.</p>
+        </header>
 
-    {:else if machine.state === "error"}
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>Something went wrong.</h2>
-        <p class="lede">{machine.errorCopy.message}</p>
-      </header>
-      <div class="actions">
-        <button type="button" class="ghost" onclick={close}>Cancel</button>
-        {#if machine.errorCopy.offerSignInAgain}
-          <button class="primary" onclick={() => machine.signInAgain()}>Sign in again</button>
+        {#if advPhase === "done"}
+          <div class="result">
+            <p class="ok">Published to GitHub Pages.</p>
+            <p class="line">Commit · <a href={commitUrlAdv} target="_blank" rel="noopener">{commitUrlAdv}</a></p>
+            {#if pagesEnabled}
+              <p class="line">Pages · <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a> <span class="muted">(may take a minute to go live)</span></p>
+            {:else}
+              <p class="line">Your files are on the <code>{branch}</code> branch. One step left to put them on the web: turn on GitHub Pages for this repository.</p>
+              <p class="line">Open <a href={pagesSettingsUrl} target="_blank" rel="noopener">Settings, then Pages</a>, choose <em>Deploy from a branch</em>, and pick the <code>{branch}</code> branch. Your site then appears at <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a>.</p>
+            {/if}
+            <p class="line muted">A published Pages site is read-only. To keep editing, open your library in Studio.</p>
+            <button class="primary" onclick={close}>Done</button>
+          </div>
         {:else}
-          <button class="primary" onclick={() => machine.retryPublish()}>Try again</button>
-        {/if}
-      </div>
-
-    {:else if machine.state === "web-intro"}
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>Share your library.</h2>
-        <p class="lede">GitHub sign-in can't run safely from a browser tab, so the one-button publish lives in the Archie desktop app. From here you can still share your library as a link.</p>
-      </header>
-      <div class="stack">
-        {#if onusezip}
-          <button class="primary" onclick={onusezip}>Share with a link</button>
-        {/if}
-        <p class="note">Want a permanent site you own? Open Archie on your desktop to publish straight to GitHub Pages.</p>
-        <div class="quiet-links">
-          <button type="button" class="linkish" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
-        </div>
-      </div>
-      <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>
-
-    {:else if machine.state === "advanced"}
-      <!-- ADVANCED (token) form — verbatim pre-Task-10 dialog. -->
-      <header>
-        <p class="eyebrow">Publish</p>
-        <h2>Connect to GitHub</h2>
-        <p class="lede">Publish your whole library, every exhibit, to a GitHub Pages branch. Your token is used once to publish and is never stored.</p>
-      </header>
-
-      {#if phase === "done"}
-        <div class="result">
-          <p class="ok">Published to GitHub Pages.</p>
-          <p class="line">Commit · <a href={commitUrlAdv} target="_blank" rel="noopener">{commitUrlAdv}</a></p>
-          {#if pagesEnabled}
-            <p class="line">Pages · <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a> <span class="muted">(may take a minute to go live)</span></p>
-          {:else}
-            <p class="line">Your files are on the <code>{branch}</code> branch. One step left to put them on the web: turn on GitHub Pages for this repository.</p>
-            <p class="line">Open <a href={pagesSettingsUrl} target="_blank" rel="noopener">Settings, then Pages</a>, choose <em>Deploy from a branch</em>, and pick the <code>{branch}</code> branch. Your site then appears at <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a>.</p>
-          {/if}
-          <p class="line muted">A published Pages site is read-only. To keep editing, open your library in Studio.</p>
-          <button class="primary" onclick={close}>Done</button>
-        </div>
-      {:else}
-        <form onsubmit={(e) => { e.preventDefault(); if (canPublish) void advPublish(); }}>
-          {#if brokenLinks.length > 0}
-            <div class="broken" role="status">
-              <p class="b-head">{brokenLinks.length} cited {brokenLinks.length === 1 ? "link" : "links"} will publish as plain text</p>
-              <p class="b-sub">These links point to a note or exhibit that isn't in this library, so they have nowhere to go. Publishing continues — the words stay readable, just without the link.</p>
-              <ul>
-                {#each brokenLinks.slice(0, 5) as b}
-                  <li>in <code>/{b.exhibitSlug}</code>{#if tgt(b).exhibitSlug} → <code>/{tgt(b).exhibitSlug}</code>{/if}{#if tgt(b).noteLogicalId} · a cited note{/if}</li>
-                {/each}
-                {#if brokenLinks.length > 5}<li class="more">…and {brokenLinks.length - 5} more</li>{/if}
-              </ul>
+          <form onsubmit={(e) => { e.preventDefault(); if (canPublish) void advPublish(); }}>
+            {#if brokenLinks.length > 0}
+              <div class="broken" role="status">
+                <p class="b-head">{brokenLinks.length} cited {brokenLinks.length === 1 ? "link" : "links"} will publish as plain text</p>
+                <p class="b-sub">These links point to a note or exhibit that isn't in this library, so they have nowhere to go. Publishing continues — the words stay readable, just without the link.</p>
+                <ul>
+                  {#each brokenLinks.slice(0, 5) as b}
+                    <li>in <code>/{b.exhibitSlug}</code>{#if tgt(b).exhibitSlug} → <code>/{tgt(b).exhibitSlug}</code>{/if}{#if tgt(b).noteLogicalId} · a cited note{/if}</li>
+                  {/each}
+                  {#if brokenLinks.length > 5}<li class="more">…and {brokenLinks.length - 5} more</li>{/if}
+                </ul>
+              </div>
+            {/if}
+            {#if incompleteCanvases.length > 0}
+              <div class="broken" role="status">
+                <p class="b-head">{incompleteCanvases.length} {incompleteCanvases.length === 1 ? "image has" : "images have"} no known width/height</p>
+                <p class="b-sub">Some IIIF viewers need an image's pixel dimensions to display it — these will still publish, but may not render correctly outside Archie. This usually means the image couldn't be loaded when added; try re-adding it.</p>
+                <ul>
+                  {#each incompleteCanvases.slice(0, 5) as c}
+                    <li>{c.label}</li>
+                  {/each}
+                  {#if incompleteCanvases.length > 5}<li class="more">…and {incompleteCanvases.length - 5} more</li>{/if}
+                </ul>
+              </div>
+            {/if}
+            <div class="row">
+              <label>Owner<input bind:value={owner} placeholder="your-username" autocomplete="off" /></label>
+              <label>Repository<input bind:value={repo} placeholder="my-exhibit" autocomplete="off" /></label>
             </div>
-          {/if}
-          {#if incompleteCanvases.length > 0}
-            <div class="broken" role="status">
-              <p class="b-head">{incompleteCanvases.length} {incompleteCanvases.length === 1 ? "image has" : "images have"} no known width/height</p>
-              <p class="b-sub">Some IIIF viewers need an image's pixel dimensions to display it — these will still publish, but may not render correctly outside Archie. This usually means the image couldn't be loaded when added; try re-adding it.</p>
-              <ul>
-                {#each incompleteCanvases.slice(0, 5) as c}
-                  <li>{c.label}</li>
-                {/each}
-                {#if incompleteCanvases.length > 5}<li class="more">…and {incompleteCanvases.length - 5} more</li>{/if}
-              </ul>
+            {#if nameError}<p class="err">{nameError}</p>{/if}
+            <label>Branch<input bind:value={branch} placeholder="gh-pages" autocomplete="off" /></label>
+            <p class="note">Publishing <strong>replaces everything</strong> on this branch with the current library — use a branch you keep for the published site (<code>gh-pages</code> by default).</p>
+            <label>Access token (fine-grained, with Contents and Pages write access)
+              <input type="password" bind:value={token} placeholder="github_pat_…" autocomplete="off" />
+            </label>
+            <label class="cb"><input type="checkbox" bind:checked={includeOriginals} /><span class="cb-text">Include source originals for citation <span class="cb-sub">— preserved un-edited uploads, published beside the exhibit</span></span></label>
+            <p class="note">Your token stays in this browser — it's sent only to GitHub to publish, then dropped the moment it's done. Archie never stores it. Giving the token <strong>Pages</strong> write access lets Archie switch on your live site for you; without it, publishing still works and you flip the switch yourself (we'll show you where).</p>
+            {#if advPhase === "publishing"}<p class="note" role="status">{progressText} <span class="muted">Keep this tab open.</span></p>{/if}
+            {#if advPhase === "error"}<p class="err">{advErrorMsg}</p>{/if}
+            <div class="actions">
+              <button type="button" class="ghost" onclick={() => machine.backToIntro()}>← Back</button>
+              <button type="submit" class="primary" disabled={!canPublish}>{advPhase === "publishing" ? "Publishing…" : "Publish"}</button>
             </div>
-          {/if}
-          <div class="row">
-            <label>Owner<input bind:value={owner} placeholder="your-username" autocomplete="off" /></label>
-            <label>Repository<input bind:value={repo} placeholder="my-exhibit" autocomplete="off" /></label>
-          </div>
-          {#if nameError}<p class="err">{nameError}</p>{/if}
-          <label>Branch<input bind:value={branch} placeholder="gh-pages" autocomplete="off" /></label>
-          <p class="note">Publishing <strong>replaces everything</strong> on this branch with the current library — use a branch you keep for the published site (<code>gh-pages</code> by default).</p>
-          <label>Access token (fine-grained, with Contents and Pages write access)
-            <input type="password" bind:value={token} placeholder="github_pat_…" autocomplete="off" />
-          </label>
-          <label class="cb"><input type="checkbox" bind:checked={includeOriginals} /><span class="cb-text">Include source originals for citation <span class="cb-sub">— preserved un-edited uploads, published beside the exhibit</span></span></label>
-          <p class="note">Your token stays in this browser — it's sent only to GitHub to publish, then dropped the moment it's done. Archie never stores it. Giving the token <strong>Pages</strong> write access lets Archie switch on your live site for you; without it, publishing still works and you flip the switch yourself (we'll show you where).</p>
-          {#if phase === "publishing"}<p class="note" role="status">{progressText} <span class="muted">Keep this tab open.</span></p>{/if}
-          {#if phase === "error"}<p class="err">{errorMsg}</p>{/if}
-          <div class="actions">
-            <button type="button" class="ghost" onclick={() => machine.backToIntro()}>← Back</button>
-            <button type="submit" class="primary" disabled={!canPublish}>{phase === "publishing" ? "Publishing…" : "Publish"}</button>
-          </div>
-        </form>
+          </form>
+        {/if}
       {/if}
+
+    {:else}
+      <!-- menuPhase: local | working | error -->
+      <header>
+        <p class="eyebrow">Publish</p>
+        <h2>Publish locally</h2>
+        <p class="lede">Put the site in the one folder the Viewer reads, then open it — no GitHub.</p>
+      </header>
+      <div class="body">
+        {#if canFolder}
+          <p class="line">Choose the folder the Viewer reads from:</p>
+          <pre class="cmd"><code>{viewerTree}</code></pre>
+          <p class="line muted">Pick it once, then re-publish any time — Archie clears out old files for you.</p>
+        {:else}
+          <p class="line">Your browser can't pick a folder, so this saves a <code>.archie.zip</code> instead. You'll then unzip it into the folder the Viewer reads from — instructions next.</p>
+        {/if}
+        {#if menuPhase === "error"}<p class="err">⚠ {destErrorMsg}</p>{/if}
+        <div class="actions">
+          <button type="button" class="ghost" onclick={() => (menuPhase = "choose")}>← Back</button>
+          {#if canFolder}
+            <button class="primary" disabled={menuPhase === "working"} onclick={chooseFolder}>{menuPhase === "working" ? "Writing…" : "Choose folder…"}</button>
+          {:else}
+            <button class="primary" disabled={menuPhase === "working"} onclick={saveZip}>{menuPhase === "working" ? "Saving…" : "Save .archie.zip"}</button>
+          {/if}
+        </div>
+      </div>
     {/if}
   </div>
 {/if}
 
 <style>
-  /* Soft Static: warm paper dialog floating on a warm-charcoal scrim — soft lift shadow,
-     generous rounded corners, no hard border. The single Publish action carries the
-     rationed signal-orange; Cancel and the warning stay quiet. */
+  /* Soft Static: warm paper modal floating on a warm-charcoal scrim, soft lift shadow, generous rounded
+     corners, no hard border. The single publish action carries the rationed signal-orange; everything
+     else stays quiet. */
   .scrim { position: fixed; inset: 0; background: rgba(59,49,56,0.55); backdrop-filter: blur(2px); z-index: 40; }
   .dialog {
     position: fixed; z-index: 41; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: min(34rem, calc(100vw - var(--space-8))); box-sizing: border-box;
     background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lift-mid);
-    padding: var(--space-6);
+    box-shadow: var(--shadow-lift-mid); padding: var(--space-6);
   }
   header { margin-bottom: var(--space-5); }
   .eyebrow { color: var(--ink-paper-muted); }
@@ -529,7 +792,42 @@
   h2 { font-family: var(--font-display); font-size: 1.75rem; font-weight: 400; line-height: 1.15; margin: var(--space-1) 0 var(--space-2); color: var(--ink-paper-primary); text-shadow: var(--shadow-text-haze); }
   .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
 
-  /* Vertical stack used by the machine states (intro / device-code / name-site / success / web). */
+  /* Step 1 — the destination chooser. */
+  .choices { display: flex; flex-direction: column; gap: var(--space-3); }
+  .choice {
+    display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer;
+    padding: var(--space-4) var(--space-5);
+    background: var(--surface-paper-card); border: none; border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
+    transition: background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+  .choice:hover { background: var(--surface-paper-hover); transform: translateY(-1px); box-shadow: var(--shadow-lift-mid); }
+  /* The leading card — marked with the CALM accent (accent-2), not the rationed signal-orange (that stays
+     reserved for the publish action inside the wizard). A hairline + eyebrow, not a loud fill. */
+  .choice.lead { border: 1px solid var(--accent-2); box-shadow: var(--shadow-lift-mid); }
+  .c-eyebrow { font-family: var(--font-ui); font-size: 0.66rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-2); }
+  .c-title { font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; color: var(--ink-paper-primary); }
+  .c-desc { font-family: var(--font-body); font-size: 0.875rem; line-height: 1.5; color: var(--ink-paper-secondary); }
+
+  .body, .result { display: flex; flex-direction: column; gap: var(--space-3); }
+  .result a { color: var(--accent-2); }
+  .result .primary { align-self: flex-end; margin-top: var(--space-2); }
+  .share-url {
+    width: 100%; box-sizing: border-box; font-family: var(--font-mono); font-size: 0.8rem;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-paper-card); color: var(--ink-paper-primary);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
+  }
+  .share-url:focus { outline: none; border-color: var(--accent-2); }
+  .share-actions { justify-content: flex-start; margin: 0; }
+  .line { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; word-break: break-all; }
+  .line.muted { color: var(--ink-paper-muted); font-size: 0.82rem; }
+  code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-primary); }
+  .cmd { margin: 0; padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-radius: var(--radius-sm); box-shadow: var(--shadow-inset-fog); font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-primary); white-space: pre-wrap; word-break: break-all; }
+  .ok { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; color: var(--semantic-success); margin: 0; }
+  .err { font-family: var(--font-ui); font-size: 0.8rem; line-height: 1.5; color: var(--semantic-error); margin: 0; }
+
+  /* Vertical stack used by the wizard states (intro / device-code / name-site / success / web). */
   .stack { display: flex; flex-direction: column; gap: var(--space-3); }
   .quiet-links { display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; }
   .linkish {
@@ -633,9 +931,8 @@
   .broken li { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.6; color: var(--ink-paper-secondary); }
   .broken code { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-paper-primary); }
   .broken .more { list-style: none; color: var(--ink-paper-muted); }
-  .err { font-family: var(--font-ui); font-size: 0.8rem; line-height: 1.5; color: var(--semantic-error); margin: 0; }
 
-  .actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-2); }
+  .actions { display: flex; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-4); }
   /* The ONE focal action → rationed signal-orange, soft rounded, signal glow. */
   .primary {
     font-family: var(--font-body); font-size: 0.9rem; font-weight: 600;
@@ -658,12 +955,5 @@
   }
   .ghost:hover { background: var(--surface-paper-hover); border-color: var(--border-canvas-emphasis); }
 
-  .result { display: flex; flex-direction: column; gap: var(--space-3); }
-  .result .ok { font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; color: var(--semantic-success); margin: 0; }
-  .result .line { font-family: var(--font-body); font-size: 0.9rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; word-break: break-all; }
-  .result a { color: var(--accent-2); }
-  .result .muted { color: var(--ink-paper-muted); }
-  .result .primary { align-self: flex-end; margin-top: var(--space-2); }
-  code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-paper-primary); }
   .muted { color: var(--ink-paper-muted); }
 </style>
