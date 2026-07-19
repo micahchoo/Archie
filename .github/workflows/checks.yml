@@ -127,3 +127,40 @@ jobs:
 
       - name: Build Studio + Viewer (verification only — deploy.yml owns the real deploy build)
         run: bash scripts/build-gh-pages.sh
+
+  e2e:
+    # Studio back/forward navigation gate (Archie-d80f). Separate job so the unit gates above stay fast;
+    # this one pays the browser-download + dev-server cost the others don't need. Playwright's own
+    # webServer boots the studio vite dev server on :5198 (see apps/studio/e2e/playwright.config.ts).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium (+ OS deps)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Studio navigation e2e
+        run: pnpm --filter @archie/studio run e2e
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/studio/playwright-report
+          retention-days: 7
