@@ -1,48 +1,90 @@
 # HANDOFF — Archie
 
-**Updated:** 2026-07-19 (Studio UX overhaul session). **Branch:** `main` (pushed through
-`b564ac2`). Trackers: seeds (`sd`) — map **Studio UX overhaul** `Archie-21b1`; sibling map
-**collab-readiness** `Archie-f849` (another session; boundary: they own the merge contract,
-UX map owns collab UI — see both maps' Notes).
+## IN FLIGHT — IIIF Collection ingest (2026-07-19, wayfinder map `Archie-b290`) — RESUMED ~16:50
 
-## IN FLIGHT — UX overhaul implementation wave 2 (2026-07-19)
+Feature: pasting a IIIF Collection URL unpacks into N exhibits (ADR-0025). Session runs
+implementer+reviewer subagent waves (spend-limit outage 09:41–16:48 killed one review
+mid-flight; since re-dispatched). Currently running: rev-multiselect-2 (re-review of
+Archie-d366) and imp-glue (Archie-656a). All work is UNCOMMITTED on `main` in the shared
+checkout. Authority chain:
+`ledgers/PLAN-collection-import.md` (spec, 9 locked decisions) ·
+`docs/adr/0025-collection-unpacks-into-exhibits.md` · `CONTEXT.md` §Ingest (new terms) ·
+seeds map `Archie-b290` (`sd list --label map:collection-import`).
 
-Decision phase DONE: all 13 decision tickets on `Archie-21b1` resolved + indexed
-(navigation ADR-0024, safety-state, canvas trims, narrative locality, editor scope,
-modality, details, publish, help, collab-maximal, bulk selection, library layout, chrome
-prototype). Glossary: `CONTEXT.md`. Audit + corrections: `ledgers/UX-AUDIT-studio-wireframes.md`.
+**CLOSED (implemented + reviewed + orchestrator-verified, studio 530/530, check 0/0):**
+- `Archie-06a3` ADR written.
+- `Archie-0dfe` plural reducer `removeExhibitsIn` + store `removeExhibits` (ONE
+  patch/persist/signal; per-slug onDirty verified vs sole consumer). Review: APPROVE.
+- `Archie-cc77` pure layer: `classifyIiifDocument` (refusal strings pinned exact in tests);
+  `collection-import.ts` `collectionToRefs` + `traverseCollection` (DFS, injected fetch,
+  visited-before-fetch, depth 3 / 25-doc ATTEMPT budget `docsAttempted` / 1000-manifest
+  cap → `status:"over-manifest-cap"` w/ exact total, counted skips, label trails).
+  Review: APPROVE + 2 fixes landed.
 
-**Merged to main + pushed (wave 1, all gates green):** `fbf1d24` docs · `5ffe9b9`
-save/safety-state · `f8fc422` nav/place-addressable · `f159b94` canvas/light-table-trims ·
-`b564ac2` tutorial-deck deploy fix. Post-merge: svelte-check 0/11, 342/342 studio tests.
+**IMPLEMENTED, REVIEW LOST — resume here:** `Archie-d366` LibraryHome multi-select
+(new `library-selection.ts` + 10 tests reusing overview-selection grammar; LibraryHome.svelte
++154/-2; select-all respects search; templates excluded; empty `.sel-actions` slot for later
+bulk buttons). Reviewer died at spend limit with NO verdict. Unverified review points:
+(a) is `pruneSelection` called anywhere or dead code; (b) Esc/⌘A deferral to App.svelte's
+onGlobalKey — mount-order claim; (c) implementer says the 11 standing a11y warnings now
+report 0 — reconcile with a fresh `pnpm --filter @archie/studio run check`.
 
-**Merged wave 2 so far:** `2c47bdb` library/home-layout (`Archie-606d` closed) ·
-chrome/editor-redesign (`Archie-c7ef` + `Archie-c76d` closed; two-zone sidebar, docked
-note editor, SafetyState everywhere, single ⌘S owner; review fixes `19276c4`). Gates
-post-merge each time: svelte-check 0/11, 350 studio tests, studio+viewer builds. Main
-also carries the sibling collab session's merges (render-core/spine, no studio overlap).
+**NOT STARTED (dep order):** `Archie-656a` ingest glue (UNBLOCKED — consumes
+traverseCollection; spec in ticket) → `Archie-a9e2` dialog preview+picker → `Archie-cbf6`
+progress/cancel/Undo → `Archie-9422` verify (round-trip e2e + 500-exhibit smoke);
+`Archie-ddaa` bulk delete (needs d366+cbf6) · `Archie-d2cc` bulk rights (needs d366).
 
-Also merged: `564f975` create/import-dialog (`Archie-51cc` closed; ship deviation:
-read-only derived titles on folder/IIIF paths → follow-up `Archie-46bf`) · `d226a4f`
-beats/spine-deep-links (`Archie-696d` closed). 370 studio tests post-merge.
+**This effort's uncommitted files:** apps/studio/src/{collection-import.ts,.test.ts (new),
+iiif-import.ts,.test.ts, library-meta-reducers.ts,.test.ts, library-meta.svelte.ts,.test.ts,
+library-selection.ts,.test.ts (new), LibraryHome.svelte} · CONTEXT.md · docs/adr/0025 ·
+ledgers/PLAN-collection-import.md · .seeds/. Other dirty files belong to other streams
+(see below) — don't touch.
 
-**Agents running:** none (wave 2 agents all merged). NOTE: a concurrent session has
-uncommitted visual-token WIP in the shared checkout (tokens.css, viewer components,
-App/LibraryHome one-liners) — merges here used stash-around; don't clobber it.
+**Loose ends:** `Archie-e51e` NUL byte in render-core publish/site.ts (plain grep silently
+fails there — grep -a / fff; memory note updated to "recurring hazard") · rev-reducer
+non-blocking nit: widen removeExhibits param to match removeObjects · map Fog: import-batch
+durability, 500+ LibraryHome perf, bulk-edit growth.
 
-**Process per branch (user directive, updated 2026-07-19): AUTO-MERGE WHEN GREEN** —
-code-review agent on completion → fix loop if needed → once review-clean, merge to main
-WITHOUT asking → full gates post-merge → close tickets with implementer resolution
-paragraphs → update map → push.
+---
 
-**Queued behind merges** (see `sd ready` as deps close): modality impl `5968` → publish
-`1921` → round-trip collab `abf9`; beat links `696d`; a11y adoption `f260`; details `ebf4`;
-legend split `adae`; glyphs `d7ab`; deck refresh `6595`; selection bar `3b03`; collab
-identity `2bf1`; MergeReview+attribution `90f1` (also needs collab-readiness `697c` spec);
-e2e `d80f` (needs Playwright gate).
+**Updated:** 2026-07-19 late (Studio UX overhaul session, post-compaction 2). **Branch:** `main`
+(pushed through `585d23b`). Map **Studio UX overhaul** `Archie-21b1` (seeds).
 
-Wireframes + collab wiring diagrams: tldraw board `archie-studio-wireframes`
-(http://localhost:3002/?board=archie-studio-wireframes).
+## UX OVERHAUL — 20 tickets MERGED+PUSHED; collab pair awaiting review verdict
+
+Decision phase done (14/14). ALL implementation waves merged: library home 2c47bdb ·
+chrome/editor-redesign (c7ef+c76d) · create dialog 564f975 (51cc) · beats d226a4f (696d) ·
+modality 5e7899b (5968; MediaPicker deleted, a11y 11->3) · legend split (adae) · publish
+one-surface (1921; browser-drive verified) · selection tray (3b03) · scoped chooser (56cf;
+AddMapModal deleted, 0 WARNINGS) · editable titles (46bf) · details (ebf4) · glyph labels
+(d7ab) + AvEditor (ba74) · a11y epic (f260; APG grid/move-mode/listbox/numbers/roving) ·
+publish Save-vocab (363e) · From-a-link (32e8) · deck refresh (6595; 5 screenshots need
+human re-shoot, flagged in-file) · Playwright gate + nav e2e (d80f; 5/5). Suite: 0 errors /
+0 WARNINGS, ~530 unit + 5 e2e.
+
+**IN FLIGHT:** branch `collab/wire-maximal` (worktree agent-acd8eecfffe0d96cb, commits
+f0bfcea+e2f2b87, gates green) = tickets 2bf1 (lazy IdentityPrompt + Your-name field
+archie.displayName.v1) + 90f1 (MergeReview in status strip, note-level C4 edit gate,
+attribution chips/lens). `collab-reviewer` agent reviewing now. Two HONEST GAPS flagged by
+implementer (verify in review): no production importChanges caller (conflicts unreachable
+until collab-readiness wires zip-merge/live-sync — file cross-map follow-up); writer-lock
+broadcasts tabId only (no display name — file small follow-up). On clean verdict:
+AUTO-MERGE WHEN GREEN (standing user directive) → close both with implementer paragraphs
+(in agent report) → map → push.
+
+**THEN (last 2):** round-trip package `abf9` (unblocks after pair; share-a-copy reframe +
+app-local freshness badge — NEVER model fields) · residual save-verbs `2318` (NoteEditor
+Done button etc.; IdentityPrompt already reworded on the collab branch).
+
+**USER RATIFICATIONS (all recorded in map):** From-a-link restored; collab collision call =
+this map's single-scrim/MediaPicker-deletion stands (concurrent session's NotePicker WIP
+preserved in stash 'concurrent-session WIP (App/LibraryHome) — modality merge'; must come
+through modality contract); Playwright gate stood up.
+
+**HAZARD:** opus agent died at MONTHLY SPEND LIMIT ~09:41 (outage till ~16:48); sonnet
+continuation worked. If agents die with that error, finish work inline in the main session.
+Worktrees always stale — reset-to-current-sha Step 0 in every brief. Shared checkout: other
+sessions' WIP dirty files — stash-around for merges, commit via pathspec only.
 
 ---
 
