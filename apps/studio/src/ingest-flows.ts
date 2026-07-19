@@ -55,7 +55,7 @@ export const LOCAL_TEXT_IMPORT_MAX_BYTES = 64 * 1024 * 1024;
 // refuse to append the object on false; that preserves the reference-after-bytes invariant (a
 // library.json ref only lands once its bytes did) while making the failure visible in the chrome.
 const STORAGE_FAIL_NOTE =
-  "Couldn't save that to this device's storage — it wasn't added. Check the save indicator; free some space or save your library as a new copy.";
+  "Couldn't store that on this device — it wasn't added. Check the save indicator; free some space or save your library as a new copy.";
 /** Persist one exhibit's asset bytes through the queue (serialized per exhibit). False = write failed
  *  (recorded in saveStatus); the caller must NOT append the referencing object. */
 function persistAsset(slug: string, write: () => Promise<void>): Promise<boolean> {
@@ -296,7 +296,7 @@ export function createIngestFlows(ctx: IngestContext) {
     // (addObjectFromFile → storeReady false) left the user with a spinner flash and no explanation —
     // the inverse of the folder-import path, which already warns. (Archie image-upload UX fix.)
     if (!ctx.storeReady()) {
-      ctx.setImportNote("This browser can’t save files here — you may be in a private window. Use a normal window to add media.");
+      ctx.setImportNote("This browser can’t store files here — you may be in a private window. Use a normal window to add media.");
       return;
     }
     const opened = exhibit();
@@ -381,7 +381,7 @@ export function createIngestFlows(ctx: IngestContext) {
         // storeReady is PER-EXHIBIT state — openExhibit (inside newExhibit) just set it. Without
         // it, addObjectFromFile would no-op per file = titled, silently-empty exhibits; stop loudly.
         if (!ctx.storeReady()) {
-          ctx.alert("Made the exhibit, but this browser can't save files — open a normal window to add them.");
+          ctx.alert("Made the exhibit, but this browser can't store files — open a normal window to add them.");
           return;
         }
         for (let i = 0; i < g.files.length; i++) {

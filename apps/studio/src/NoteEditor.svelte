@@ -3,7 +3,7 @@
   // (the DOMINO cut — the seam was already drawn). Rendered as a marker-anchored POPOVER over the canvas
   // (App's <main>); its drag-grip + position stay in App (the popover chrome), this owns the FORM only.
   // Comment + tags + reading + emphasis + (for AV) a mm:ss time fieldset. Edits autosave live via the
-  // injected `applyForm`/`applyTime`; "Save" commits any uncommitted comment then closes (`closeNote`).
+  // injected `applyForm`/`applyTime`; "Done" commits any uncommitted comment then closes (`closeNote`).
   //
   // The textarea element is exposed via `bind:commentEl` so App's ⌘K cite-splice (citeIntoComment) and
   // its commit-on-close can read the live value / caret. The reader helpers (commentOf/tagsOf/timeOf)
@@ -127,13 +127,13 @@
     </select>
   </label>
   <div class="wadm-actions">
-    <button type="button" class="save" onclick={closeNote}>Save</button>
+    <button type="button" class="save" onclick={closeNote}>Done</button>
     <button type="button" class="del" onclick={() => onDelete(editing)}>Delete note</button>
   </div>
 </form>
 
 <style>
-  /* WADM form — editing on paper. Labels are quiet mono eyebrows; the one focal action (Save) is the signal. */
+  /* WADM form — editing on paper. Labels are quiet mono eyebrows; the one focal action (Done) is the signal. */
   .wadm { margin-top: var(--space-5); border-top: 1px solid var(--border-paper); padding-top: var(--space-4); display: flex; flex-direction: column; gap: var(--space-3); }
   /* Scope control — eyebrow label (matching the other fields) over a read-out + contextual actions (ADR-0018).
      The `.field-head` here is NOT inside a <label>, so it needs the eyebrow type explicitly. */
@@ -178,12 +178,12 @@
   }
   .wadm .time input:focus { outline: none; border-color: var(--accent-2); }
   .wadm legend { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 400; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-muted); padding: 0 var(--space-1); }
-  /* Delete = a quiet destructive-toned soft button (not orange — the signal is reserved for Save). */
+  /* Delete = a quiet destructive-toned soft button (not orange — the signal is reserved for Done). */
   .del { align-self: flex-start; font-family: var(--font-ui); font-size: 0.8rem; letter-spacing: 0.04em; padding: var(--space-2) var(--space-3); background: var(--surface-paper-card); color: var(--semantic-error); border: 1px solid var(--border-paper-emphasis); border-radius: var(--radius-sm); cursor: pointer; transition: box-shadow 160ms ease; }
   .del:hover { box-shadow: var(--shadow-lift-low); }
-  /* Note-editor action row — Save (commit + close the popover) beside Delete. */
+  /* Note-editor action row — Done (commit + close the popover) beside Delete. */
   .wadm-actions { display: flex; align-items: center; gap: var(--space-3); }
-  /* Save = the ONE focal action in this popover → the orange signal. */
+  /* Done = the ONE focal action in this popover → the orange signal. */
   .save { cursor: pointer; font-family: var(--font-ui); font-size: 0.8rem; font-weight: 500; letter-spacing: 0.04em; padding: var(--space-2) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-signal-glow); transition: background 160ms ease; }
   .save:hover { background: var(--accent-hover); box-shadow: var(--shadow-signal-glow); }
   /* When inside App's marker popover, the form sheds its top margin/border (the popover IS the frame).
