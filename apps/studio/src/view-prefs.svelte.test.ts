@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 // localStorage is stubbed (node env) — same idiom as binding.test.ts. reloadViewPrefsForTests re-reads
 // the module-singleton $state container from the stub so each test can prime storage first.
-import { viewPrefs, reloadViewPrefsForTests } from "./view-prefs.svelte";
+import { viewPrefs, reloadViewPrefsForTests, overviewDensityMetrics } from "./view-prefs.svelte";
 
 const store = new Map<string, string>();
 vi.stubGlobal("localStorage", {
@@ -16,8 +16,8 @@ beforeEach(() => {
 });
 
 describe("view-prefs — overviewMode", () => {
-  it("defaults to canvas", () => {
-    expect(viewPrefs.overviewMode).toBe("canvas");
+  it("defaults to grid", () => {
+    expect(viewPrefs.overviewMode).toBe("grid");
   });
 
   it("persists a set value and survives a reload", () => {
@@ -31,16 +31,61 @@ describe("view-prefs — overviewMode", () => {
 
   it("last-set wins", () => {
     viewPrefs.setOverviewMode("list");
-    viewPrefs.setOverviewMode("canvas");
-    expect(viewPrefs.overviewMode).toBe("canvas");
+    viewPrefs.setOverviewMode("grid");
+    expect(viewPrefs.overviewMode).toBe("grid");
     reloadViewPrefsForTests();
-    expect(viewPrefs.overviewMode).toBe("canvas");
+    expect(viewPrefs.overviewMode).toBe("grid");
+  });
+
+  it("migrates a legacy stored \"canvas\" to grid on read (spatial canvas retired)", () => {
+    store.set("archie.overviewMode.v1", "canvas"); // a user who last used the retired canvas mode
+    reloadViewPrefsForTests();
+    expect(viewPrefs.overviewMode).toBe("grid"); // never resolves to "canvas" again
   });
 
   it("tolerates garbage in storage by falling back to the default", () => {
     store.set("archie.overviewMode.v1", "bogus");
     reloadViewPrefsForTests();
-    expect(viewPrefs.overviewMode).toBe("canvas");
+    expect(viewPrefs.overviewMode).toBe("grid");
+  });
+});
+
+describe("view-prefs — overviewDensity", () => {
+  it("defaults to comfortable", () => {
+    expect(viewPrefs.overviewDensity).toBe("comfortable");
+  });
+
+  it("persists a set value and survives a reload", () => {
+    viewPrefs.setOverviewDensity("compact");
+    expect(viewPrefs.overviewDensity).toBe("compact");
+    expect(store.get("archie.overviewDensity.v1")).toBe("compact");
+
+    reloadViewPrefsForTests();
+    expect(viewPrefs.overviewDensity).toBe("compact");
+  });
+
+  it("tolerates garbage in storage by falling back to comfortable", () => {
+    store.set("archie.overviewDensity.v1", "bogus");
+    reloadViewPrefsForTests();
+    expect(viewPrefs.overviewDensity).toBe("comfortable");
+  });
+
+  it("is independent of overviewMode (separate keys)", () => {
+    viewPrefs.setOverviewMode("list");
+    viewPrefs.setOverviewDensity("compact");
+    expect(viewPrefs.overviewMode).toBe("list");
+    expect(viewPrefs.overviewDensity).toBe("compact");
+  });
+
+  it("metrics couple min-column and intrinsic-size, and move together per density", () => {
+    const comfy = overviewDensityMetrics("comfortable");
+    const compact = overviewDensityMetrics("compact");
+    // both fields present for each density (lockstep — a caller can't set one and forget the other)
+    expect(comfy).toEqual({ minCol: "12.5rem", intrinsic: "15.5rem" });
+    expect(compact).toEqual({ minCol: "9rem", intrinsic: "12rem" });
+    // compact packs more (smaller column) AND reserves a shorter row — the two never diverge in direction
+    expect(parseFloat(compact.minCol)).toBeLessThan(parseFloat(comfy.minCol));
+    expect(parseFloat(compact.intrinsic)).toBeLessThan(parseFloat(comfy.intrinsic));
   });
 });
 
@@ -129,9 +174,11 @@ describe("view-prefs — private-mode tolerance", () => {
       removeItem: () => { throw new Error("SecurityError"); },
     });
     expect(() => reloadViewPrefsForTests()).not.toThrow();
-    expect(viewPrefs.overviewMode).toBe("canvas"); // treated as unset — resets to default, harmless
+    expect(viewPrefs.overviewMode).toBe("grid"); // treated as unset — resets to default, harmless
+    expect(viewPrefs.overviewDensity).toBe("comfortable");
     expect(viewPrefs.galleryView).toBe("exhibits");
     expect(() => viewPrefs.setOverviewMode("list")).not.toThrow();
+    expect(() => viewPrefs.setOverviewDensity("compact")).not.toThrow();
     expect(() => viewPrefs.setGalleryView("wall")).not.toThrow();
     // the in-memory $state still updates even though the persist write was swallowed — the preference
     // just won't survive a reload this session (same contract as App.svelte's FIRST_ADD_KEY idiom).

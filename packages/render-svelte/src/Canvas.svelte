@@ -201,20 +201,11 @@
 <style>
   .archie-canvas-wrap { position: relative; width: 100%; height: 100%; }
   .archie-canvas { width: 100%; height: 100%; }
-  /* Markers need a shadow to stay recognizable on LIGHT surfaces (light folios/paper) — the thin
-     stroke alone vanishes against pale parchment. A subtle drop-shadow on the SVG shape group. */
-  :global(.a9s-annotationlayer .a9s-annotation) { filter: drop-shadow(0 1px 2px rgba(59, 49, 56, 0.5)); }
-  /* Worklist 1.1 (scale-aware marks): weight by zoom band — the mount stamps data-archie-zoom on
-     the canvas root. Screen-space channels only (opacity / drop-shadow); never stroke-width (it is
-     inline-set by the style expression in scaled coordinates). far = fit-width, marks need
-     PRESENCE to be findable; near = inside-a-mark territory, outlines recede off the pixels. */
-  :global([data-archie-zoom="far"] .a9s-annotationlayer .a9s-annotation) {
-    filter: drop-shadow(0 0 3px rgba(59, 49, 56, 0.7)) drop-shadow(0 0 8px rgba(251, 246, 243, 0.4));
-  }
-  :global([data-archie-zoom="near"] .a9s-annotationlayer .a9s-annotation) {
-    opacity: 0.45;
-    transition: opacity 200ms ease;
-  }
+  /* NOTE (Archie-a6fb): the mark drop-shadow + zoom-band weighting CSS that used to live here
+     targeted `.a9s-annotation`, which Annotorious 3 never renders (marks go to a WebGL canvas, no
+     per-shape SVG node — probe 2026-07-19). It matched zero elements for a month; deleted. The
+     zoom-band weight is now applied through the style channel (withZoomBand → setStyle) by the
+     host that wants it (studio App.svelte); the arrival pulse likewise (viewer Reader.svelte). */
   /* Loading / error states (Soft Static §Reader States). Quiet Spline-mono caption chrome —
      wide tracking, uppercase, reduced opacity — over warm paper. Reads as a found label, not
      announced arcade status. */
