@@ -63,6 +63,7 @@
   // createPublishFlows is imported DYNAMICALLY (ensurePub below) so its fflate + dompurify + GitHub-publish
   // deps stay OUT of the startup bundle — publishing is a deliberate action, never needed at boot.
   import { createReadingState } from "./reading-state.svelte.js";
+  import { readingBadge, readingNumber } from "./reading-index.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   // Persisted editor-chrome view preferences (Archie-c7ef): the filmstrip's collapsed state + the docked
   // note editor's width. Same module the overview Canvas/List + library lens live in.
@@ -1022,6 +1023,12 @@
     currentExhibit ? resolveLayoutType(currentExhibit.objects, currentExhibit.sections) : "single",
   );
   const currentReadings = $derived<Reading[]>(currentExhibit?.readings ?? []);
+  // Reading identity is no longer colour-only (W25 / Archie-f260 §3, WCAG 1.4.1): a shared NUMBER — base is
+  // ①, each reading follows in registry order — labels the reading in the readings panel, the notes-list
+  // layer chip, the note editor's picker, the filing cue, AND the keyboard note-selection announcement, so a
+  // reader who can't tell the hues apart still reads which reading a mark belongs to. reading-index.ts derives
+  // it from THIS id order (the same order the panel/legend iterate) — no model/persist change.
+  const readingIds = $derived(currentReadings.map((r) => r.id));
   // (Marginalia cuts D+E reverted 2026-06-11 on user review — "does not look good". The ENGINE
   // survives headless-tested for a future presentation redesign: core layoutMarginalia(+pinId),
   // mount markerScreenRects, Canvas rectIds/onmarkerrects, render-svelte MarginColumn. See
@@ -1856,7 +1863,7 @@
       {:else if creating}
         <span class="ss-tag">Drawing a region</span>
         <span class="ss-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"} — it becomes your note’s place{isMapCurrent ? ", anchored to its longitude/latitude" : ""}. Drag pans again once you’ve drawn.</span>
-        <span class="ss-into" title="This note files into the active reading (the pen in the readings panel).">Filing into <span class="ss-rd" style={`border-color:${activeReadingColour}`}>{activeReadingLabel}</span></span>
+        <span class="ss-into" title="This note files into the active reading (the pen in the readings panel).">Filing into <span class="ss-rd" style={`border-color:${activeReadingColour}`}><span class="ss-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {activeReadingLabel}</span></span>
         <button type="button" class="ss-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
       {/if}
       {#if importStatus}
@@ -2001,8 +2008,12 @@
               <div class="readings-rows">
                 {#each [{ id: "base", name: "General notes", colour: "var(--accent)" }, ...currentReadings] as r (r.id)}
                   <div class="reading-row" class:active-reading={rdg.active === r.id}
-                    onmouseenter={() => (soloReading = r.id)} onmouseleave={() => (soloReading = null)} role="group" aria-label={r.name}>
+                    onmouseenter={() => (soloReading = r.id)} onmouseleave={() => (soloReading = null)} role="group" aria-label={`${r.name} — reading ${readingNumber(r.id, readingIds)}`}>
                     <input type="checkbox" class="rd-vis" checked={rdg.isVisible(r.id)} onchange={() => rdg.toggle(r.id)} aria-label={`Show ${r.name} notes`} title={`Show “${r.name}” notes on the image`} />
+                    <!-- Colour-independent identifier (Archie-f260 §3): a small circled number paired with the
+                         swatch, so the reading is legible without perceiving the hue. aria-hidden — the reading
+                         name + the group's "reading N" label already carry identity for AT. -->
+                    <span class="reading-num" aria-hidden="true">{readingBadge(r.id, readingIds)}</span>
                     <span class="reading-dot" style={`background:${r.colour ?? "var(--accent)"}`}></span>
                     <span class="reading-name">{r.name}</span>
                     <span class="reading-count">{r.id === "base" ? objNotes.filter((n) => !n.reading).length : objNotes.filter((n) => n.reading === r.id).length}</span>
@@ -2063,8 +2074,9 @@
                   <div class="meta">
                     {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource?.kind === "xyz" ? currentTileSource : undefined)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
                     {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
-                    <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
-                    {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}>General notes</span>{/if}
+                    <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern).
+                         The circled reading number (Archie-f260 §3) leads the chip so the note's reading is identified without relying on the border colour. -->
+                    {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}><span class="layer-num" aria-hidden="true">{readingBadge(r.reading, readingIds)}</span> {rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}><span class="layer-num" aria-hidden="true">{readingBadge("base", readingIds)}</span> General notes</span>{/if}
                   </div>
                 </button>
               </li>
@@ -2331,6 +2343,7 @@
   .status-strip .ss-msg { color: var(--ink-canvas-primary); }
   .status-strip .ss-into { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-secondary); }
   .status-strip .ss-rd { font-weight: 500; letter-spacing: 0; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
+  .status-strip .ss-rd .ss-rd-num { font-family: var(--font-mono); color: var(--ink-canvas-secondary); }
   .status-strip .ss-cancel { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: var(--space-2); transition: box-shadow 160ms ease; }
   .status-strip .ss-cancel:hover { box-shadow: var(--shadow-lift-low); }
   .status-strip .ss-cancel kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-canvas-muted); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
@@ -2377,6 +2390,8 @@
   .reading-row.active-reading { background: var(--surface-paper-card); box-shadow: inset 2px 0 0 var(--accent); }
   .reading-row .rd-vis { margin: 0; accent-color: var(--accent-2); cursor: pointer; }
   .reading-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--border-paper); flex: none; }
+  /* Colour-independent reading number (Archie-f260 §3) — a small mono circled digit beside the swatch. */
+  .reading-num { flex: none; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1; color: var(--ink-paper-secondary); }
   .reading-name { flex: 1; min-width: 0; font-size: var(--text-ui-sm); color: var(--ink-paper-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .reading-count { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-paper-muted); }
   .reading-pen { display: inline-flex; align-items: center; cursor: pointer; color: var(--ink-paper-muted); }
@@ -2559,6 +2574,8 @@
   /* Geo-annotation: the pin's lng/lat readout in the note list (derived from its basemap position). */
   .geo { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.02em; color: var(--ink-paper-secondary); }
   .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); border: 1px solid var(--border-paper); padding: 2px var(--space-2); border-radius: var(--radius-sm); }
+  /* Reading number leading the layer chip (Archie-f260 §3) — mono, slightly brighter than the uppercase name. */
+  .layer .layer-num { font-family: var(--font-mono); letter-spacing: 0; color: var(--ink-paper-primary); }
   .hint { font-family: var(--font-body); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin: 0; }
   .csv-import { align-self: flex-start; background: none; border: none; cursor: pointer; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); transition: color 160ms ease; } /* 24px+ hit box */
   .csv-import:hover { color: var(--accent-2); }

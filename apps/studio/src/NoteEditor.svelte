@@ -9,6 +9,7 @@
   // its commit-on-close can read the live value / caret. The reader helpers (commentOf/tagsOf/timeOf)
   // and the mutating actions arrive as props — this component is presentation, the logic stays in App.
   import type { AnnotationRecord, Reading, Emphasis } from "@render/core";
+  import { readingBadge } from "./reading-index.js";
 
   interface Props {
     /** The selected record being edited (the WADM form is keyed to it). */
@@ -50,6 +51,9 @@
   // Scope (ADR-0018): a note is a "region" if its target carries a selector, else it's whole-object.
   const isRegion = $derived(typeof sel.target !== "string" && !!(sel.target as { selector?: unknown }).selector);
 
+  // The reading number (Archie-f260 §3) — base is ①, then registry order — prefixes the picker options so
+  // the same colour-independent number identifies a reading here, in the readings panel, and on the layer chip.
+  const readingIds = $derived(currentReadings.map((r) => r.id));
   const comment = $derived(commentOf(sel));
   const tags = $derived(tagsOf(sel).join(", "));
   const reading = $derived(sel.reading ?? null);
@@ -105,8 +109,8 @@
   <label>Tags (comma-separated)<input value={tags} onchange={(e) => applyForm(comment, (e.currentTarget as HTMLInputElement).value)} /></label>
   <label>Reading
     <select value={reading ?? ""} onchange={(e) => setNoteReading((e.currentTarget as HTMLSelectElement).value || null)}>
-      <option value="">— No reading —</option>
-      {#each currentReadings as r (r.id)}<option value={r.id}>{r.name}</option>{/each}
+      <option value="">{readingBadge("base", readingIds)} — General notes —</option>
+      {#each currentReadings as r (r.id)}<option value={r.id}>{readingBadge(r.id, readingIds)} {r.name}</option>{/each}
     </select>
   </label>
   <label>Emphasis
