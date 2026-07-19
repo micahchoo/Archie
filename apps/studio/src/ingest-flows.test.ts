@@ -137,6 +137,76 @@ describe("newExhibitFromFolder — mid-flow exhibit switch (NEGSPACE row 4)", ()
   });
 });
 
+describe("newExhibitFromFolder / newExhibitFromManifest — optional title override (Archie-46bf)", () => {
+  const makeFile = (dir: string, name: string) =>
+    Object.assign(new File([new Uint8Array([0])], name, { type: "audio/mpeg" }), { webkitRelativePath: `${dir}/${name}` });
+
+  it("uses the override title when the folder makes exactly one exhibit", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    await flows.newExhibitFromFolder([makeFile("roll", "a.mp3")], "My custom title");
+    expect(exhibits[0]!.title).toBe("My custom title");
+  });
+
+  it("falls back to the folder-derived name when no override is given", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    await flows.newExhibitFromFolder([makeFile("roll", "a.mp3")]);
+    expect(exhibits[0]!.title).toBe("roll");
+  });
+
+  it("falls back to the folder-derived name when the override is blank/whitespace", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    await flows.newExhibitFromFolder([makeFile("roll", "a.mp3")], "   ");
+    expect(exhibits[0]!.title).toBe("roll");
+  });
+
+  it("ignores an override when the folder makes SEVERAL exhibits (per-subfolder groups) — a single title is inapplicable there", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    // planFolderImportGroups needs a THIRD path segment to see a first-level subfolder (root/sub/file)
+    // — a two-segment path (root/file) reads as a loose file at the root, one group either way.
+    const files = [makeFile("roll/box-a", "a.mp3"), makeFile("roll/box-b", "b.mp3")];
+    await flows.newExhibitFromFolder(files, "Should be ignored");
+    expect(exhibits.map((e) => e.title).sort()).toEqual(["box-a", "box-b"]);
+  });
+
+  const oneCanvasManifest = {
+    type: "Manifest",
+    label: { none: ["Manifest label"] },
+    items: [{ type: "Canvas", items: [{ items: [{ body: { id: "https://x/1.jpg", type: "Image" } }] }] }],
+  };
+  function stubManifestFetch() {
+    const body = new TextEncoder().encode(JSON.stringify(oneCanvasManifest));
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, headers: new Headers(), arrayBuffer: async () => body.buffer })));
+  }
+
+  it("uses the override title over the manifest's own label", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    stubManifestFetch();
+    await flows.newExhibitFromManifest("https://x/manifest.json", "My custom title");
+    expect(exhibits[0]!.title).toBe("My custom title");
+  });
+
+  it("falls back to the manifest's own label when no override is given", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    stubManifestFetch();
+    await flows.newExhibitFromManifest("https://x/manifest.json");
+    expect(exhibits[0]!.title).toBe("Manifest label");
+  });
+
+  it("falls back to the manifest's own label when the override is blank/whitespace", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    stubManifestFetch();
+    await flows.newExhibitFromManifest("https://x/manifest.json", "   ");
+    expect(exhibits[0]!.title).toBe("Manifest label");
+  });
+});
+
 describe("no-byte-cap fixes (NEGSPACE rows 5-7)", () => {
   it("newExhibitFromManifest rejects a huge response via the declared content-length, before reading the body", async () => {
     const { ctx } = makeCtx();

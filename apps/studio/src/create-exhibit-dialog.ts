@@ -52,14 +52,47 @@ export function emptyPathValid(title: string): boolean {
   return title.trim() !== "";
 }
 
-export function folderPathValid(summary: { total: number } | null): boolean {
-  return !!summary && summary.total > 0;
+/** Whether the folder path's title field applies (Archie-46bf, restoring the prototype's editable
+ *  title after the Archie-51cc ship deviation). New-exhibit scope only — add-to-exhibit never names
+ *  anything, it appends into an exhibit that already has a title. Within new-exhibit scope: a flat
+ *  folder or the "flatten" grouping choice makes exactly ONE exhibit, which the title names; the
+ *  "per-subfolder" choice makes SEVERAL exhibits (one per subfolder name), where a single title is
+ *  semantically inapplicable — hidden there. */
+export function folderTitleFieldApplies(
+  scope: CreateSurfaceScope,
+  folderGroups: number,
+  grouping: "per-subfolder" | "flatten",
+): boolean {
+  return scope.kind === "new-exhibit" && !(folderGroups > 1 && grouping === "per-subfolder");
+}
+
+/** Whether the IIIF path's title field applies — new-exhibit scope only (same reasoning as
+ *  folderTitleFieldApplies); an add-to-exhibit IIIF import always appends into one existing
+ *  exhibit, never names one. */
+export function iiifTitleFieldApplies(scope: CreateSurfaceScope): boolean {
+  return scope.kind === "new-exhibit";
+}
+
+/** Prefill precedence for a derived title (folder name / manifest label): user edit wins — only
+ *  overwrite an EMPTY title, mirroring the prototype's `if (!state.title.trim()) state.title = …`
+ *  guard (prototypes/create-surface/app.js, applyFolderFiles / setIiifUrl). Called on folder
+ *  pick/re-pick and on a successful IIIF validation. */
+export function prefillTitle(currentTitle: string, derived: string): string {
+  return currentTitle.trim() === "" ? derived : currentTitle;
+}
+
+/** @param titleApplies whether this path is currently showing an editable title field (see
+ *  folderTitleFieldApplies) — when it is, the prototype gates Create on a non-blank title too. */
+export function folderPathValid(summary: { total: number } | null, titleApplies = false, title = ""): boolean {
+  return !!summary && summary.total > 0 && (!titleApplies || title.trim() !== "");
 }
 
 export type IiifStatus = "idle" | "checking" | "valid" | "invalid";
 
-export function iiifPathValid(status: IiifStatus): boolean {
-  return status === "valid";
+/** @param titleApplies whether this path is currently showing an editable title field (see
+ *  iiifTitleFieldApplies) — when it is, the prototype gates Create on a non-blank title too. */
+export function iiifPathValid(status: IiifStatus, titleApplies = false, title = ""): boolean {
+  return status === "valid" && (!titleApplies || title.trim() !== "");
 }
 
 /** A pasted/typed IIIF value that isn't even a well-formed URL yet — checked BEFORE fetching, so a
