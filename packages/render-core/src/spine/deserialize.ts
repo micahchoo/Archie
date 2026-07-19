@@ -8,6 +8,7 @@ import {
   ARCHIE_LOGICAL_ID,
   ARCHIE_LAYERS,
   ARCHIE_READING,
+  ARCHIE_SECTION,
   ARCHIE_EMPHASIS,
   ARCHIE_WHOLE_OBJECT,
   ARCHIE_GEO,
@@ -40,6 +41,7 @@ const _historyParse = {
   target: "carry",
   motivation: "carry",
   reading: "carry",
+  section: "carry", // archie:section, string-or-skip — same parse contract as reading
   emphasis: "carry",
   wholeObject: "carry",
   geo: "carry",
@@ -88,6 +90,7 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
   const layersRaw = a[ARCHIE_LAYERS];
   const legacyLayers = Array.isArray(layersRaw) && layersRaw.every((x) => typeof x === "string") ? (layersRaw as string[]) : undefined;
   const reading = asString(a[ARCHIE_READING]);
+  const section = asString(a[ARCHIE_SECTION]);
   const emphRaw = a[ARCHIE_EMPHASIS];
   const emphasis = emphRaw === "muted" || emphRaw === "normal" || emphRaw === "strong" ? emphRaw : undefined;
   const wholeObject = a[ARCHIE_WHOLE_OBJECT] === true ? true : undefined;
@@ -106,6 +109,7 @@ export function recordFromHistoryAnnotation(ann: W3CAnnotation): AnnotationRecor
     ...(ann.body !== undefined ? { body: ann.body as W3CBody | W3CBody[] } : {}),
     ...(ann.motivation !== undefined ? { motivation: ann.motivation } : {}),
     ...(reading !== undefined ? { reading } : {}),
+    ...(section !== undefined ? { section } : {}),
     ...(emphasis !== undefined ? { emphasis } : {}),
     ...(wholeObject !== undefined ? { wholeObject } : {}),
     ...(geo !== undefined ? { geo } : {}),

@@ -114,6 +114,8 @@ export interface NewNoteInput {
   motivation?: string | string[];
   /** The single Reading this note belongs to (mutually exclusive — ADR-0007). */
   reading?: string;
+  /** Section attribution (Archie-6b8e): the section's LOCAL id, exhibit-scoped; omitted = unattributed. Mirrors `reading`. */
+  section?: string;
   /** Authored per-note emphasis (1489); omitted = default `"normal"`. Mirrors `reading`. */
   emphasis?: Emphasis;
   /** Region-override (ADR-0018): force the whole-object frame on a region note; omitted/false = none. */
@@ -147,6 +149,7 @@ export function appendNew(log: AnnotationLog, input: NewNoteInput): AppendResult
     ...(input.body !== undefined ? { body: input.body } : {}),
     ...(input.motivation !== undefined ? { motivation: input.motivation } : {}),
     ...(input.reading !== undefined ? { reading: input.reading } : {}),
+    ...(input.section !== undefined ? { section: input.section } : {}),
     ...(input.emphasis !== undefined ? { emphasis: input.emphasis } : {}),
     ...(input.wholeObject ? { wholeObject: true } : {}),
     ...(input.geo !== undefined ? { geo: input.geo } : {}),
@@ -160,6 +163,8 @@ export interface EditInput {
   motivation?: string | string[];
   /** Reading id (ADR-0007); omitted = carry forward, `null` = clear to base, string = set. */
   reading?: string | null;
+  /** Section attribution (Archie-6b8e); omitted = carry forward, `null` = clear to unattributed, string = set. Mirrors `reading`. */
+  section?: string | null;
   /** Emphasis (1489); omitted = carry forward, `null` = clear to default `"normal"`, value = set. */
   emphasis?: Emphasis | null;
   /** Region-override (ADR-0018); omitted = carry forward, `null`/`false` = clear, `true` = set. */
@@ -189,6 +194,7 @@ const _editCarry = {
   target: "carry",
   motivation: "carry",
   reading: "carry",
+  section: "carry", // forwarded from head unless input overrides — same tri-state as reading
   emphasis: "carry",
   wholeObject: "carry",
   geo: "carry",
@@ -207,6 +213,7 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
   const body = input.body ?? head.body;
   const motivation = input.motivation ?? head.motivation;
   const reading = input.reading === undefined ? head.reading : input.reading === null ? undefined : input.reading;
+  const section = input.section === undefined ? head.section : input.section === null ? undefined : input.section;
   const emphasis = input.emphasis === undefined ? head.emphasis : input.emphasis === null ? undefined : input.emphasis;
   // wholeObject normalizes to true|undefined (only `true` is meaningful — emit-when-true): carry forward
   // on undefined, clear on null/false.
@@ -224,6 +231,7 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
     ...(body !== undefined ? { body } : {}),
     ...(motivation !== undefined ? { motivation } : {}),
     ...(reading !== undefined ? { reading } : {}),
+    ...(section !== undefined ? { section } : {}),
     ...(emphasis !== undefined ? { emphasis } : {}),
     ...(wholeObject ? { wholeObject: true } : {}),
     ...(geo !== undefined ? { geo } : {}),
@@ -238,7 +246,7 @@ export interface DeleteInput {
 }
 
 // EXHAUSTIVENESS GUARD (Issue 21): a tombstone DELIBERATELY carries only identity/DAG + `target`
-// (kept for citation/dereference) — the six content fields are dropped ON PURPOSE (a deleted version
+// (kept for citation/dereference) — the seven content fields are dropped ON PURPOSE (a deleted version
 // has no content). Encoding that as NAMED `{drop}`s (not silence) means a NEW AnnotationRecord field
 // forces a decision: does a tombstone keep it, or is it another content field to drop?
 const _deleteCarry = {
@@ -254,6 +262,7 @@ const _deleteCarry = {
   body: { drop: "tombstone: a deleted version has no content" },
   motivation: { drop: "tombstone: a deleted version has no content" },
   reading: { drop: "tombstone: a deleted version has no content" },
+  section: { drop: "tombstone: a deleted version has no content — mirrors reading; a note tombstone severs the attribution, so section un-delete never auto-revives bulk-deleted notes (visibility.ts documents the asymmetry)" },
   emphasis: { drop: "tombstone: a deleted version has no content" },
   wholeObject: { drop: "tombstone: a deleted version has no content" },
   geo: { drop: "tombstone: a deleted version has no content" },

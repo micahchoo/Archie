@@ -6,6 +6,8 @@ export * from "./heads.js";
 // The section structure family (Archie-08af): SectionRecord + its append family ride the same
 // generic DAG primitives; content helpers are parallel to (not shared with) the annotation ones.
 export * from "./structure.js";
+// Hide-by-ancestry read derivation + the bulk section-and-notes delete verb (Archie-6b8e, #6).
+export * from "./visibility.js";
 export * from "./serialize.js";
 export * from "./deserialize.js";
 export * from "./persist.js";

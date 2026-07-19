@@ -188,6 +188,8 @@ export interface ConflictResolution {
    *  geo). Omitted = INHERIT from the heads (any head that carries it), so a conflict between "has a
    *  reading" and "no reading" keeps the reading rather than dropping it on rev ordering. */
   reading?: string;
+  /** Section attribution (Archie-6b8e) — optional-inherited like reading (C14, not C13). */
+  section?: string;
   emphasis?: Emphasis;
   wholeObject?: boolean;
   geo?: GeoAnchor;
@@ -212,6 +214,7 @@ const _mergeCarry = {
   body: "carry", // resolution ?? primary
   motivation: "carry", // resolution ?? primary
   reading: "carry", // resolution ?? inherited from any head
+  section: "carry", // resolution ?? inherited from any head (C14 disposition — matches reading exactly)
   emphasis: "carry",
   wholeObject: "carry",
   geo: "carry",
@@ -224,7 +227,7 @@ const _mergeCarry = {
  * head. Throws if there is no conflict (< 2 heads). The conflict-card UI calls this with the
  * user's chosen/merged content; modifiedAt-tiebreak is a UI hint only (never auto-resolution).
  *
- * reading/emphasis/wholeObject/geo are carried onto the node from `resolution` when supplied, else
+ * reading/section/emphasis/wholeObject/geo are carried onto the node from `resolution` when supplied, else
  * INHERITED from whichever head carries them (Issue 21: the carry lives in the primitive now, so no
  * caller can silently drop it — was compensated only in session.resolve).
  */
@@ -240,9 +243,10 @@ export function resolveConflict(log: AnnotationLog, logicalId: LogicalId, resolu
   const motivation = resolution.motivation ?? primary.motivation;
   // Inherit from ANY head that carries the field (not just primary — a conflict between "has reading"
   // and "no reading" must keep the reading, not drop it on rev ordering; sorted order = deterministic).
-  const inherit = <K extends "reading" | "emphasis" | "wholeObject" | "geo">(k: K): AnnotationRecord[K] | undefined =>
+  const inherit = <K extends "reading" | "section" | "emphasis" | "wholeObject" | "geo">(k: K): AnnotationRecord[K] | undefined =>
     sorted.find((h) => h[k] !== undefined)?.[k];
   const reading = resolution.reading ?? inherit("reading");
+  const section = resolution.section ?? inherit("section");
   const emphasis = resolution.emphasis ?? inherit("emphasis");
   const wholeObject = resolution.wholeObject ?? inherit("wholeObject");
   const geo = resolution.geo ?? inherit("geo");
@@ -259,6 +263,7 @@ export function resolveConflict(log: AnnotationLog, logicalId: LogicalId, resolu
     ...(body !== undefined ? { body } : {}),
     ...(motivation !== undefined ? { motivation } : {}),
     ...(reading !== undefined ? { reading } : {}),
+    ...(section !== undefined ? { section } : {}),
     ...(emphasis !== undefined ? { emphasis } : {}),
     ...(wholeObject ? { wholeObject: true } : {}),
     ...(geo !== undefined ? { geo } : {}),

@@ -23,6 +23,7 @@ import {
   PROV_WAS_REVISION_OF,
   ARCHIE_LOGICAL_ID,
   ARCHIE_READING,
+  ARCHIE_SECTION,
   ARCHIE_EMPHASIS,
   ARCHIE_WHOLE_OBJECT,
   ARCHIE_GEO,
@@ -54,6 +55,7 @@ const _historyCarry = {
   mergeParents: "carry",
   deleted: "carry",
   reading: "carry",
+  section: "carry", // withDagMeta/withExtensions → archie:section, emitted only when set (byte-stable)
   emphasis: "carry",
   wholeObject: "carry",
   geo: "carry",
@@ -136,6 +138,7 @@ function withDagMeta(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnn
   if (record.mergeParents !== undefined && record.mergeParents.length > 0) a[ARCHIE_MERGE_PARENTS] = record.mergeParents;
   if (record.deleted) a[ARCHIE_DELETED] = true;
   if (record.reading !== undefined) a[ARCHIE_READING] = record.reading;
+  if (record.section !== undefined) a[ARCHIE_SECTION] = record.section;
   if (record.emphasis !== undefined) a[ARCHIE_EMPHASIS] = record.emphasis;
   if (record.wholeObject === true) a[ARCHIE_WHOLE_OBJECT] = true;
   if (record.geo !== undefined) a[ARCHIE_GEO] = record.geo;
@@ -153,6 +156,7 @@ function withDagMeta(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnn
 function withExtensions(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
   const a = ann as ArchieAnnotation & Record<string, unknown>;
   if (record.reading !== undefined) a[ARCHIE_READING] = record.reading;
+  if (record.section !== undefined) a[ARCHIE_SECTION] = record.section;
   if (record.emphasis !== undefined) a[ARCHIE_EMPHASIS] = record.emphasis;
   if (record.wholeObject === true) a[ARCHIE_WHOLE_OBJECT] = true;
   if (record.geo !== undefined) a[ARCHIE_GEO] = record.geo;

@@ -35,6 +35,12 @@ export const ARCHIE_LAYERS = "archie:layers" as const;
  *  serialized as the AnnotationPage the note lands in (`partOf` → the reading's AnnotationCollection).
  *  On heads + history (round-trip). A pure consumer ignores it (three-tier: Archie filters, pure shows all). */
 export const ARCHIE_READING = "archie:reading" as const;
+/** Note→Section attribution (Archie-6b8e; spine-gate #6 hide-by-ancestry). The section LOCAL id
+ *  (exhibit-scoped, resolving against the exhibit's structure log — same scoping as ARCHIE_READING's
+ *  registry lookup). On heads + history (round-trip), emitted ONLY when authored (byte-stable when
+ *  absent), mirroring ARCHIE_READING. Read by `spine/visibility.ts` to hide notes whose section is
+ *  tombstoned — a READ derivation, never a cascade write. */
+export const ARCHIE_SECTION = "archie:section" as const;
 /** Per-note visual emphasis (1489). The ONLY per-note styling — colour stays reading-driven (ADR-0007).
  *  On heads + history (round-trip), mirroring ARCHIE_READING. Emitted ONLY when authored (no default-serialize,
  *  so existing snapshots stay byte-stable); absence reads back as `"normal"` via `emphasisOf`. */
@@ -231,6 +237,13 @@ export interface AnnotationRecord {
   /** The single Reading this Note belongs to (mutually exclusive — ADR-0007), or undefined = base.
    *  A Reading is a curated interpretive pass; the id resolves against the Exhibit's reading registry. */
   reading?: string;
+  /** The Section this Note is attributed to (Archie-6b8e; spine-gate #6), or undefined = unattributed.
+   *  The section's LOCAL id — exhibit-scoped exactly like `reading` (the id resolves against the
+   *  exhibit's section structure log; working `Section.id` IS the local id — the composed
+   *  `SectionKey` would redundantly embed the exhibitId inside an already exhibit-scoped log).
+   *  Serialized to `archie:section` only when set (byte-stable when absent), mirroring `reading`.
+   *  A dangling id is read-time-tolerated (structure semantic #5), never fatal. */
+  section?: string;
   /** Authored per-note visual emphasis (1489), or undefined = default `"normal"`. Mirrors `reading`'s
    *  optional shape; serialized to `archie:emphasis` only when set, so existing records stay byte-stable. */
   emphasis?: Emphasis;
