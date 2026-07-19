@@ -745,7 +745,7 @@
   // boundary while the object zone scrolls. The old exclusive Narrative/Notes accordion (openPanel /
   // togglePanel / openPanelTo) is retired: both scopes are present at once, so nothing to expand or reveal.
 
-  // "Save" on the note editor: commit any uncommitted comment text (edits already autosave live, but a click
+  // "Done" on the note editor: commit any uncommitted comment text (edits already autosave live, but a click
   // might not have blurred the textarea first), then deselect → the dock returns to its empty state.
   function closeNote() {
     if (sel && commentEl) applyForm(commentEl.value, tagsOf(sel).join(", "));
@@ -1793,7 +1793,7 @@
        banner styling (attention, not error). -->
   <div class="playground-banner" role="status">
     <span class="pg-tag">Read-only</span>
-    <span class="pg-msg">This library is open in another tab that's editing it — changes here won't save, to protect that tab's work.</span>
+    <span class="pg-msg">This library is open in another tab that's editing it — changes here won't be kept, to protect that tab's work.</span>
     <button class="pg-keep" onclick={() => writerLock.takeOver()}>Take over editing</button>
   </div>
 {/if}
@@ -1945,7 +1945,7 @@
          not vermillion=error). A user's own exhibit shows no banner (it's saved). -->
     <div class="playground-banner" role="status">
       <span class="pg-tag">Example</span>
-      <span class="pg-msg">This is a template — your changes here aren't saved. Keep a copy to make it your own.</span>
+      <span class="pg-msg">This is a template — your changes here aren't kept. Keep a copy to make it your own.</span>
       <button class="pg-keep" onclick={() => void keepCopy()} disabled={keeping}>{keeping ? "Keeping…" : "Keep a copy"}</button>
     </div>
   {/if}

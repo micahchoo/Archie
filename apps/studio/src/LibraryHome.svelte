@@ -268,7 +268,7 @@
         <HelpMenu {ontutorial} {onshortcuts} />
       </div>
     </div>
-    <p class="lede">An exhibit is a collection of annotated media — images, audio, video, or maps you mark up with notes. Create one any time; your work saves as you go.</p>
+    <p class="lede">An exhibit is a collection of annotated media — images, audio, video, or maps you mark up with notes. Create one any time; your work is kept automatically as you go.</p>
 
     <PropsDrawer open={rightsOpen} title="Library details" onclose={() => (rightsOpen = false)}>
       <DetailsEditor title={libTitle ?? ""} summary={librarySummary ?? ""} rights={rights} scope="library" ontitle={ontitle} onsummary={onsummary} onrights={onrights} />
@@ -460,7 +460,7 @@
           Examples ({exampleExhibits.length}) <span class="chevron" aria-hidden="true">{examplesOpen ? "▴" : "▾"}</span>
         </button>
         {#if examplesOpen}
-          <p class="examples-contract">Explore how exhibits work — edits here aren't saved unless you keep a copy.</p>
+          <p class="examples-contract">Explore how exhibits work — edits here aren't kept unless you keep a copy.</p>
           <ul class="grid">
             {#each exampleExhibits as ex (ex.slug)}{@render exhibitCard(ex)}{/each}
           </ul>
