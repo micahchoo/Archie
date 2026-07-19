@@ -17,9 +17,13 @@ import {
 beforeEach(() => _resetModalityForTests());
 
 /** A fake surface: an id, an onClose that flips a local `open` bool AND (mimicking the real unmount →
- *  action.destroy) calls releaseScrim, plus a spy restore. Lets a test drive the same present→close→
- *  release lifecycle the Svelte action produces, without a DOM. */
-function fakeSurface(label: string) {
+ *  action.destroy) calls releaseScrim, plus a spy restore. Optionally carries an `opener` token and a
+ *  `contains` predicate for its panel `node`, so a test can model "opened from inside this surface" vs
+ *  "opened from the page" — the axis the focus-return inheritance rule turns on. All DOM-free. */
+function fakeSurface(
+  label: string,
+  opts: { opener?: unknown; contains?: (el: unknown) => boolean } = {},
+) {
   const id = nextModalityId();
   const restore = vi.fn();
   const surface = {
@@ -27,12 +31,19 @@ function fakeSurface(label: string) {
     label,
     open: true,
     restore,
+    opener: opts.opener ?? null,
+    node: { contains: opts.contains ?? (() => false) },
     onClose: () => {
       surface.open = false;
       releaseScrim(id); // the real action's destroy() runs on unmount
     },
   };
   return surface;
+}
+
+/** Present a fake surface with all its handle fields — the shape the `scrimmed` action passes. */
+function present(su: ReturnType<typeof fakeSurface>) {
+  presentScrim({ id: su.id, onClose: su.onClose, restore: su.restore, node: su.node, opener: su.opener });
 }
 
 describe("modality — single-scrim invariant", () => {
@@ -44,10 +55,10 @@ describe("modality — single-scrim invariant", () => {
   it("presenting a second surface REPLACES the first (closes it)", () => {
     const a = fakeSurface("a");
     const b = fakeSurface("b");
-    presentScrim({ id: a.id, onClose: a.onClose, restore: a.restore });
+    present(a);
     expect(modality.hasScrim).toBe(true);
 
-    presentScrim({ id: b.id, onClose: b.onClose, restore: b.restore });
+    present(b);
     // A was closed by the replace; B is now the one scrimmed surface.
     expect(a.open).toBe(false);
     expect(b.open).toBe(true);
@@ -56,8 +67,8 @@ describe("modality — single-scrim invariant", () => {
 
   it("re-presenting the SAME id (e.g. action update) does not close itself", () => {
     const a = fakeSurface("a");
-    presentScrim({ id: a.id, onClose: a.onClose, restore: a.restore });
-    presentScrim({ id: a.id, onClose: a.onClose, restore: a.restore });
+    present(a);
+    present(a);
     expect(a.open).toBe(true);
     expect(modality.hasScrim).toBe(true);
   });
@@ -66,7 +77,7 @@ describe("modality — single-scrim invariant", () => {
 describe("modality — focus return", () => {
   it("restores focus to the opener when the surface is dismissed", () => {
     const a = fakeSurface("a");
-    presentScrim({ id: a.id, onClose: a.onClose, restore: a.restore });
+    present(a);
     releaseScrim(a.id);
     expect(a.restore).toHaveBeenCalledTimes(1);
     expect(modality.hasScrim).toBe(false);
@@ -75,22 +86,37 @@ describe("modality — focus return", () => {
   it("does NOT restore a replaced surface's focus (the replacer owns focus)", () => {
     const a = fakeSurface("a");
     const b = fakeSurface("b");
-    presentScrim({ id: a.id, onClose: a.onClose, restore: a.restore });
-    presentScrim({ id: b.id, onClose: b.onClose, restore: b.restore });
+    present(a);
+    present(b);
     // Replacing A already ran A's onClose → releaseScrim(a) — but A was no longer current, so no restore.
     expect(a.restore).not.toHaveBeenCalled();
     expect(modality.hasScrim).toBe(true);
   });
 
-  it("a replacement inherits the ORIGINAL opener's restore, so dismissing it returns focus there", () => {
-    const a = fakeSurface("a"); // opened from the page
-    const b = fakeSurface("b"); // opened from inside A (replaces it)
-    presentScrim({ id: a.id, onClose: a.onClose, restore: a.restore });
-    presentScrim({ id: b.id, onClose: b.onClose, restore: b.restore });
+  it("a replacement opened from INSIDE the surface inherits its opener (return there on close)", () => {
+    const bOpener = { tag: "control-inside-a" };
+    // A's opener is a page control; A's panel CONTAINS B's opener (B was opened from a button in A).
+    const a = fakeSurface("a", { opener: { tag: "page-a" }, contains: (el) => el === bOpener });
+    const b = fakeSurface("b", { opener: bOpener });
+    present(a);
+    present(b);
     dismissScrim(); // closes B
-    // B's own restore is never used; A's opener (carried forward) is where focus returns.
+    // B's own opener is about to unmount, so it inherited A's restore; focus returns to A's opener.
     expect(b.restore).not.toHaveBeenCalled();
     expect(a.restore).toHaveBeenCalledTimes(1);
+    expect(modality.hasScrim).toBe(false);
+  });
+
+  it("a replacement opened from the PAGE keeps its OWN opener (return to what was clicked)", () => {
+    // Repro of the review's SHOULD-FIX 1: rights drawer open (A) → page-level 'New exhibit' opens the
+    // dialog (B, opener NOT inside A) → close B → focus must land on 'New exhibit', not the drawer's ⓘ.
+    const a = fakeSurface("a", { opener: { tag: "drawer-opener-info" }, contains: () => false });
+    const b = fakeSurface("b", { opener: { tag: "new-exhibit-cell" } });
+    present(a);
+    present(b);
+    dismissScrim(); // closes B
+    expect(a.restore).not.toHaveBeenCalled();
+    expect(b.restore).toHaveBeenCalledTimes(1);
     expect(modality.hasScrim).toBe(false);
   });
 });
@@ -99,7 +125,7 @@ describe("modality — Esc ladder", () => {
   it("closes the topmost floater before the scrimmed surface", () => {
     const a = fakeSurface("a");
     const floaterClose = vi.fn();
-    presentScrim({ id: a.id, onClose: a.onClose, restore: a.restore });
+    present(a);
     const unregister = registerFloater({ id: nextModalityId(), close: floaterClose });
 
     // First Esc closes the floater, not the surface.

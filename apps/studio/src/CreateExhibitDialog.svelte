@@ -18,8 +18,8 @@
   //
   // Single-scrim invariant: this component does NOT close other surfaces itself (it doesn't know about
   // them) — the helper's `presentScrim` REPLACES whatever scrimmed surface was open (an open PropsDrawer)
-  // the moment this dialog mounts, so opening it structurally closes the drawer. (LibraryHome's opener
-  // still nulls the drawer state too — belt-and-braces, and it keeps the parent's booleans honest.)
+  // the moment this dialog mounts, so opening it structurally closes the drawer. That is the ONE mechanism:
+  // LibraryHome's openers no longer hand-close the other surface (removed as redundant, Archie-5968).
   import { tick } from "svelte";
   import {
     type CreateSurfaceScope, type IiifStatus,

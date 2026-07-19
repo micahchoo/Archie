@@ -182,11 +182,12 @@
   // dialog's folder path (Variant B's grafted trait); openCreate() clears it for a plain button-open.
   let createOpen = $state(false);
   let createPrefillFolder = $state<File[] | null>(null);
-  // Single-scrim invariant (CONTEXT.md → Surfaces): opening the create dialog replaces any open
-  // PropsDrawer rather than stacking a second scrim.
+  // Single-scrim invariant (CONTEXT.md → Surfaces): just open the dialog — the modality helper's
+  // `presentScrim` REPLACES any open PropsDrawer on mount, so no opener hand-closes the other surface.
+  // (Archie-5968: this is the ONE mechanism now; the old rightsOpen=false/editingSlug=null belt-and-
+  // braces here — and the reverse createOpen=false on the drawer openers — were removed as redundant,
+  // and dropping them is what lets a page-opened dialog return focus to the page, not the drawer's opener.)
   function openCreate(prefill: File[] | null = null) {
-    rightsOpen = false;
-    editingSlug = null;
     createPrefillFolder = prefill;
     createOpen = true;
   }
@@ -247,7 +248,7 @@
           {hasRealWork}
           onflush={onsave}
         />
-        <button class="librights" class:set={hasRights} onclick={() => { createOpen = false; rightsOpen = true; }} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
+        <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
         <HelpMenu {ontutorial} {onshortcuts} />
       </div>
     </div>
@@ -360,7 +361,7 @@
       <!-- Per-card pencil (Archie-79be): edit this exhibit's title/description/credit + remove, without
            opening it. A SIBLING of the card button (no button-in-button); sits over the top-right corner. -->
       <button class="edit-meta" title="Edit details for {ex.title}" aria-label="Edit details for {ex.title}"
-        onclick={() => { createOpen = false; editingSlug = ex.slug; }}>✎</button>
+        onclick={() => (editingSlug = ex.slug)}>✎</button>
     </li>
   {/snippet}
 

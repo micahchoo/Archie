@@ -1386,15 +1386,19 @@
   let tutorialOpen = $state(false); // the onboarding tutorial modal (embeds the learn decks)
   // Global + image-editor keyboard shortcuts (registry-driven; AV shortcuts live in AvEditor, palette in CmdK).
   function onGlobalKey(e: KeyboardEvent) {
-    // ? toggles the shortcuts cheat-sheet (not while typing); like every scrimmed surface it also closes
-    // on Esc through the shared dismissal ladder below.
-    if (matches(e, "?") && !typingInField(e)) { e.preventDefault(); helpOpen = !helpOpen; return; }
+    // ? opens the shortcuts cheat-sheet when NOTHING is scrimmed (not while typing). When ShortcutsHelp IS
+    // the open scrim, ? also closes it (the sheet's own toggle, handled in the gate); while any OTHER scrim
+    // is open, ? is swallowed by the gate below like every shortcut — it never silently replaces that surface.
+    if (matches(e, "?") && !typingInField(e) && !modality.hasScrim) { e.preventDefault(); helpOpen = true; return; }
     // A scrimmed surface owns the keyboard while open (single-scrim, focus-trapped, CONTEXT.md → Surfaces):
     // route Esc through the shared ladder and swallow every OTHER global shortcut so none leaks to the page
     // behind the scrim — but let ordinary typing reach the surface's own fields (no preventDefault there).
-    // (Archie-5968; this one gate replaces the old scattered `if (cmdkOpen) return` / per-surface Esc cases.)
+    // ⌘S is the ONE deliberate exception: SafetyState's own window listener still flushes while a scrim is
+    // open (it preventDefaults the browser Save dialog; autosave makes the flush lossless — CONTEXT.md
+    // Persistence). (Archie-5968; this one gate replaces the old scattered `if (cmdkOpen) return` cases.)
     if (modality.hasScrim) {
       if (matches(e, "Esc")) { e.preventDefault(); modality.handleEsc(); }
+      else if (matches(e, "?") && helpOpen && !typingInField(e)) { e.preventDefault(); helpOpen = false; } // ? closes the shortcuts sheet
       return;
     }
     // No scrim, but a floater (e.g. the help menu) is open: Esc closes it first — the ladder's top rung.

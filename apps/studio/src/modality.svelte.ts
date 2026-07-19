@@ -26,6 +26,10 @@ interface ScrimHandle {
   onClose: () => void;
   /** Return focus to the surface's opener. A no-op token in headless tests. */
   restore: () => void;
+  /** The surface's panel — used on a replace to decide whether the replacer's opener will survive. */
+  node: { contains(el: unknown): boolean } | null;
+  /** The element focused when THIS surface opened (its opener). Null = none/unknown. */
+  opener: unknown;
 }
 interface FloaterHandle {
   id: number;
@@ -40,14 +44,18 @@ export function nextModalityId(): number {
   return ++seq;
 }
 
-/** Register a scrimmed surface, enforcing single-scrim. If another is current, it is REPLACED: its
- *  `onClose` fires and the NEW surface inherits the previous one's `restore` — so dismissing the
- *  replacement eventually returns focus to the opener that started the whole stack, not to a control
- *  inside a surface that has since unmounted. */
+/** Register a scrimmed surface, enforcing single-scrim. If another is current, it is REPLACED.
+ *
+ *  Focus-return on a replace is opener-directed: the replacement inherits the previous surface's
+ *  `restore` target ONLY when its own opener is about to unmount — i.e. the new surface was opened from
+ *  INSIDE the one it replaces (opener contained in `prev.node`), or captured no opener at all. A surface
+ *  opened from the still-present PAGE (a page button that survives the replace) keeps its OWN opener, so
+ *  closing it returns focus to what the user actually clicked — not to a control in the vanished surface. */
 export function presentScrim(handle: ScrimHandle): void {
   const prev = s.current;
   if (prev && prev.id !== handle.id) {
-    s.current = { ...handle, restore: prev.restore };
+    const openerWillUnmount = handle.opener == null || (prev.node?.contains(handle.opener) ?? false);
+    s.current = openerWillUnmount ? { ...handle, restore: prev.restore } : handle;
     prev.onClose();
   } else {
     s.current = handle;
@@ -124,7 +132,7 @@ export function scrimmed(node: HTMLElement, params: { onClose: () => void }) {
   const id = nextModalityId();
   let onClose = params.onClose;
   const opener = typeof document !== "undefined" ? (document.activeElement as HTMLElement | null) : null;
-  presentScrim({ id, onClose: () => onClose(), restore: () => opener?.focus?.() });
+  presentScrim({ id, onClose: () => onClose(), restore: () => opener?.focus?.(), node, opener });
   const first = focusablesWithin(node)[0];
   (first ?? node).focus?.();
   return {
