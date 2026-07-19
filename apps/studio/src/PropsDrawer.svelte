@@ -3,12 +3,16 @@
   // (LibraryHome) and Exhibit (ExhibitOverview) rights surfaces (rights grill Q6, the "header-button →
   // drawer" pattern). Paper-surfaced so it hosts the RightsEditor's paper-toned fields. Scrim-dismiss.
   import type { Snippet } from "svelte";
+  // A drawer is a scrimmed surface (CONTEXT.md → Surfaces: drawer-vs-dialog is presentational only), so it
+  // takes the SAME modality helper as the dialogs — single-scrim, scrim-click + Esc + focus trap/return.
+  import { scrimmed, trapFocus, modality } from "./modality.svelte";
   let { open, title, onclose, children }: { open: boolean; title: string; onclose: () => void; children: Snippet } = $props();
 </script>
 
 {#if open}
-  <div class="scrim" onclick={onclose} role="presentation"></div>
-  <div class="drawer" role="dialog" aria-label={title} aria-modal="true">
+  <div class="scrim" onclick={() => modality.dismiss()} role="presentation"></div>
+  <div class="drawer" role="dialog" aria-label={title} aria-modal="true" tabindex="-1"
+    use:scrimmed={{ onClose: onclose }} onkeydown={trapFocus}>
     <header>
       <h2>{title}</h2>
       <button class="x" onclick={onclose} aria-label="Close">×</button>

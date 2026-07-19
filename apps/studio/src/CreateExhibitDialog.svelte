@@ -10,15 +10,16 @@
   // pure/DOM helpers, which likewise only orchestrate existing ingest-flows.ts / iiif-import.ts /
   // folder-import.ts exports).
   //
-  // Scrim/dismissal (CONTEXT.md → Surfaces): scrim-click and Esc both close the WHOLE dialog (no
-  // stepped back-then-close ladder — CONTEXT.md's dismissal contract names one action per surface,
-  // and no other scrimmed surface in this app implements a multi-step Esc; the in-surface `‹ Back`
-  // link is the return-to-chooser affordance instead, exactly as prototyped). No close-confirmation
-  // guard (autosave makes dismissal lossless); a mid-flight IIIF check cancels cleanly on close or
-  // supersede — iiifToken discards its result AND iiifAbort stops the actual network request.
+  // Scrim/dismissal (CONTEXT.md → Surfaces): via the shared modality helper (Archie-5968) — scrim-click
+  // and Esc both close the WHOLE dialog in one action (the in-surface `‹ Back` link is the return-to-
+  // chooser affordance, NOT an Esc rung). No close-confirmation guard (autosave makes dismissal lossless);
+  // a mid-flight IIIF check cancels cleanly on close or supersede — iiifToken discards its result AND
+  // iiifAbort stops the actual network request. Focus trap + return are the helper's, not hand-rolled.
   //
-  // Single-scrim invariant: this component does NOT close other surfaces itself (it doesn't know
-  // about them) — LibraryHome.svelte's opener closes any open PropsDrawer before setting `open`.
+  // Single-scrim invariant: this component does NOT close other surfaces itself (it doesn't know about
+  // them) — the helper's `presentScrim` REPLACES whatever scrimmed surface was open (an open PropsDrawer)
+  // the moment this dialog mounts, so opening it structurally closes the drawer. (LibraryHome's opener
+  // still nulls the drawer state too — belt-and-braces, and it keeps the parent's booleans honest.)
   import { tick } from "svelte";
   import {
     type CreateSurfaceScope, type IiifStatus,
@@ -27,6 +28,11 @@
   } from "./create-exhibit-dialog.js";
   import { summarizeFolderFiles, folderGroupCount, flattenedRelativePaths, type FolderSummary } from "./folder-import.js";
   import { readDroppedFolderFiles } from "./folder-drop.js";
+  // Scrimmed surface via the shared helper (Archie-5968): the hand-rolled Esc handler, Tab-trap, and
+  // focus-return this dialog carried are now the ONE modality implementation. `focusFirst` stays — it is
+  // surface-specific (re-focus after switching path view / a prefill open), richer than the helper's
+  // generic "focus the first control", not part of the modal-open/return contract the helper owns.
+  import { scrimmed, trapFocus, modality } from "./modality.svelte";
 
   let {
     open,
@@ -53,7 +59,6 @@
   type PathKind = "empty" | "folder" | "iiif";
   let activePath = $state<PathKind | null>(null);
   let dialogEl = $state<HTMLElement | null>(null);
-  let restoreFocusEl: HTMLElement | null = null;
 
   // "Start empty" path.
   let title = $state("");
@@ -115,7 +120,6 @@
   // straight into the folder path with its summary already computed (skips the dropzone step).
   $effect(() => {
     if (open) {
-      restoreFocusEl = (document.activeElement as HTMLElement | null) ?? null;
       resetAll();
       if (prefillFolderFiles && prefillFolderFiles.length > 0) {
         activePath = "folder";
@@ -125,13 +129,15 @@
     }
   });
 
+  // Esc/scrim-click both route here through the shared helper (onClose: close): the WHOLE dialog closes
+  // in one action (the `‹ Back` link is the return-to-chooser affordance, not an Esc rung). No close
+  // confirmation — autosave makes it lossless. A mid-flight IIIF check cancels cleanly (discard + abort);
+  // focus-return to the opener is the helper's job now.
   function close() {
     clearTimeout(iiifTimer);
     iiifToken++; // discards any in-flight IIIF check's result — the "cancels cleanly" contract
     iiifAbort?.abort(); // and actually stops the network request, not just its result
     onclose();
-    restoreFocusEl?.focus?.();
-    restoreFocusEl = null;
   }
 
   function selectPath(p: PathKind) {
@@ -141,33 +147,6 @@
   function backToMenu() {
     activePath = null;
     void focusFirst();
-  }
-
-  function onGlobalKey(e: KeyboardEvent) {
-    if (open && e.key === "Escape") {
-      e.preventDefault();
-      close();
-    }
-  }
-
-  // Minimal focus trap: Tab wraps within the dialog's focusable controls rather than escaping to
-  // the (inert-behind-the-scrim) page. Initial focus + focus-return (above) are the load-bearing
-  // half of the contract; this closes the gap for a keyboard-only Tab loop.
-  function trapTab(e: KeyboardEvent) {
-    if (e.key !== "Tab" || !dialogEl) return;
-    const focusables = Array.from(
-      dialogEl.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), [tabindex]:not([tabindex="-1"])'),
-    ).filter((el) => el.offsetParent !== null);
-    if (focusables.length === 0) return;
-    const first = focusables[0]!;
-    const last = focusables[focusables.length - 1]!;
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
   }
 
   function submitEmpty() {
@@ -264,13 +243,12 @@
   }
 </script>
 
-<svelte:window onkeydown={onGlobalKey} />
-
 {#if open}
   <!-- Sibling scrim + dialog (PropsDrawer/TutorialModal's shape): the panel needs no click-stop
        handler since a click inside it never bubbles to a non-ancestor sibling. -->
-  <div class="scrim" role="presentation" onclick={close}></div>
-  <div class="dialog" bind:this={dialogEl} role="dialog" aria-modal="true" aria-label={surfaceTitle(scope)} tabindex="-1" onkeydown={trapTab}>
+  <div class="scrim" role="presentation" onclick={() => modality.dismiss()}></div>
+  <div class="dialog" bind:this={dialogEl} role="dialog" aria-modal="true" aria-label={surfaceTitle(scope)} tabindex="-1"
+    use:scrimmed={{ onClose: close }} onkeydown={trapFocus}>
     {#if activePath === null}
       <div class="chooser-head">
         <h2>{surfaceTitle(scope)}</h2>
