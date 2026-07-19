@@ -954,6 +954,27 @@
     railEl?.querySelector(".obj.on")?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
   });
   const currentObjectIndex = $derived(OBJECTS.findIndex((o) => o.id === currentObjectId));
+
+  // --- Filmstrip rail roving tabindex + aria-current (Archie-f260 §2, docs/research/a11y-interactions.md §2).
+  // The rail is the one nav scheme ([ / ] is its keyboard face, Archie-5e96); this adds APG-grid roving so
+  // exactly ONE tile is in the Tab sequence (the current object), and arrows move focus between tiles
+  // (activation stays Enter/Space/click → switchObject). aria-current marks the open object. Works the same in
+  // collapsed slim-tick mode (same buttons, narrower chrome). The tab stop snaps to the current object whenever
+  // it changes (click / [ ] / narrative jump) so tabbing in lands on where you are; arrows then rove freely. ---
+  let railFocusId = $state<string | null>(null);
+  $effect(() => {
+    railFocusId = OBJECTS.some((o) => o.id === currentObjectId) ? currentObjectId : (OBJECTS[0]?.id ?? null);
+  });
+  function onRailKeyDown(e: KeyboardEvent) {
+    const ids = OBJECTS.map((o) => o.id);
+    const cur = railFocusId ? ids.indexOf(railFocusId) : ids.indexOf(currentObjectId);
+    const next = roveIndex(cur, ids.length, e.key);
+    if (next === null) return; // Enter/Space activate the focused tile natively (onclick → switchObject)
+    e.preventDefault();
+    const id = ids[next]!;
+    railFocusId = id;
+    railEl?.querySelector<HTMLElement>(`[data-obj-id="${CSS.escape(id)}"]`)?.focus();
+  }
   // --- pending notes (coordinate-free imports → "Set area" placement; Archie-79c0 sub-cycle B) ---
   const objectLabelOf = (id: string) => OBJECTS.find((o) => o.id === id)?.label ?? id;
   const newPendingId = () => `p-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
@@ -1885,7 +1906,13 @@
         <span class="rail-pos" aria-live="polite">{currentObjectIndex + 1} / {OBJECTS.length}</span>
       {/if}
       {#each OBJECTS as o (o.id)}
-        <button class="obj" class:on={o.id === currentObjectId} onclick={() => switchObject(o.id)} title={o.label}>
+        <button class="obj" class:on={o.id === currentObjectId} data-obj-id={o.id}
+          onclick={() => switchObject(o.id)}
+          onkeydown={onRailKeyDown}
+          onfocus={() => (railFocusId = o.id)}
+          tabindex={o.id === railFocusId ? 0 : -1}
+          aria-current={o.id === currentObjectId ? "true" : undefined}
+          title={o.label}>
           <span class="obj-thumb" style={`background-image:url(${thumbSrc(o)})`}></span>
           <span class="obj-meta">
             <span class="obj-label">{o.label}</span>
@@ -2532,6 +2559,8 @@
     transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
   }
   .obj:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  /* Keyboard focus ring for the roving rail (Archie-f260 §2) — arrows move focus between tiles; make it visible. */
+  .obj:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
   .obj.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
   /* The IMAGE is the tile's identity (you choose visually, P2-6): thumb leads, caption recedes. */
   .obj-thumb { flex-shrink: 0; width: 72px; height: 54px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; box-shadow: var(--shadow-inset-fog); }
