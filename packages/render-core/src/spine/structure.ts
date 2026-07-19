@@ -19,6 +19,7 @@ import { mintRevId, type ExhibitId, type RevId, type ClientId, type Brand } from
 import type { IsoDateTime } from "../wadm/types.js";
 import { append, linearHead, type DagRecord } from "./log.js";
 import { headsOf } from "./merge.js";
+import { headsByLogicalId } from "./heads.js";
 import type { Section } from "../model/model.js";
 import type { CarryDisposition } from "../model/carry.js";
 
@@ -448,15 +449,14 @@ const _projectionCarry = {
  * object-id set; a dangling reference degrades to a flag on the row (never a throw, never a
  * write) — semantic #5. Tombstoned keys are omitted from `sections` and reported in `tombstoned`.
  *
- * Cost is O(records × keys) via per-key `headsOf` — DELIBERATELY naive here; ticket Archie-c16d
- * owns the single-pass group-by (probe ledger sharp edge #3). Do not optimize in this module.
+ * Cost is O(records) via the single-pass group-by `headsByLogicalId` (heads.ts, Archie-c16d) —
+ * replaced the per-key `headsOf` O(records × keys) scan the probe ledger flagged (sharp edge #3;
+ * 8–12ms at 2000 records). Per-key semantics are identical, pinned by projection-groupby.test.ts.
  */
 export function projectSections(log: SectionLog, liveObjectIds: ReadonlySet<string>): StructureProjection {
-  const keys: SectionKey[] = [...new Set(log.map((r) => r.logicalId))];
   const rows: ProjectedSection[] = [];
   const tombstoned = new Set<SectionKey>();
-  for (const key of keys) {
-    const heads = headsOf(log, key);
+  for (const [key, heads] of headsByLogicalId(log)) {
     const live = heads.filter((h) => !h.deleted);
     if (live.length === 0) {
       tombstoned.add(key);
