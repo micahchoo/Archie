@@ -50,7 +50,7 @@ durability, 500+ LibraryHome perf, bulk-edit growth.
 **Updated:** 2026-07-19 late (Studio UX overhaul session, post-compaction 2). **Branch:** `main`
 (pushed through `585d23b`). Map **Studio UX overhaul** `Archie-21b1` (seeds).
 
-## UX OVERHAUL — 20 tickets MERGED+PUSHED; collab pair awaiting review verdict
+## UX OVERHAUL — 22 tickets MERGED+PUSHED; ONE left in flight (abf9)
 
 Decision phase done (14/14). ALL implementation waves merged: library home 2c47bdb ·
 chrome/editor-redesign (c7ef+c76d) · create dialog 564f975 (51cc) · beats d226a4f (696d) ·
@@ -59,22 +59,24 @@ one-surface (1921; browser-drive verified) · selection tray (3b03) · scoped ch
 AddMapModal deleted, 0 WARNINGS) · editable titles (46bf) · details (ebf4) · glyph labels
 (d7ab) + AvEditor (ba74) · a11y epic (f260; APG grid/move-mode/listbox/numbers/roving) ·
 publish Save-vocab (363e) · From-a-link (32e8) · deck refresh (6595; 5 screenshots need
-human re-shoot, flagged in-file) · Playwright gate + nav e2e (d80f; 5/5). Suite: 0 errors /
-0 WARNINGS, ~530 unit + 5 e2e.
+human re-shoot, flagged in-file) · Playwright gate + nav e2e (d80f; 5/5) · **collab pair
+a2a67eb** (2bf1+90f1; reviewer verdict SHOULD-FIX/no-blockers, S1+S2 fixed pre-merge
+a1ee49b: keep() carries chosen head's C14 fields, close only at zero conflicts; follow-ups
+filed: wiring rider Archie-7e5b dep-on 697c carries S3 gate-bypasses/S4 identity-lag/
+synced-count/dup-ids, writer-lock name Archie-198c) · **save-verbs 2318 merged**
+(copy/save-verbs; 'Done' on NoteEditor, kept/stored elsewhere + 4 sweep-found sites).
+Suite: 0 errors / 0 WARNINGS (612 files), 603 unit + 5 e2e, tsc clean, build clean.
+Pushed through dc18eca.
 
-**IN FLIGHT:** branch `collab/wire-maximal` (worktree agent-acd8eecfffe0d96cb, commits
-f0bfcea+e2f2b87, gates green) = tickets 2bf1 (lazy IdentityPrompt + Your-name field
-archie.displayName.v1) + 90f1 (MergeReview in status strip, note-level C4 edit gate,
-attribution chips/lens). `collab-reviewer` agent reviewing now. Two HONEST GAPS flagged by
-implementer (verify in review): no production importChanges caller (conflicts unreachable
-until collab-readiness wires zip-merge/live-sync — file cross-map follow-up); writer-lock
-broadcasts tabId only (no display name — file small follow-up). On clean verdict:
-AUTO-MERGE WHEN GREEN (standing user directive) → close both with implementer paragraphs
-(in agent report) → map → push.
-
-**THEN (last 2):** round-trip package `abf9` (unblocks after pair; share-a-copy reframe +
-app-local freshness badge — NEVER model fields) · residual save-verbs `2318` (NoteEditor
-Done button etc.; IdentityPrompt already reworded on the collab branch).
+**IN FLIGHT (LAST TICKET):** `abf9-implementer` (sonnet, own worktree, branch
+`share/round-trip`, base 34e2f23) building the round-trip package: Share-a-working-copy
+reframe inside Publish + app-local per-exhibit "+N since your last import" freshness badge
+(localStorage watermark — NEVER model fields; told to zoom Archie-d71c for semantics and
+report what it chose). On report: review (dispatch or direct) → stash-around merge (App/
+LibraryHome/ingest-flows carry concurrent IIIF-session WIP) → gates → close abf9 → map →
+push. THE MAP CLOSES when abf9 lands — then check remaining open map:studio-ux-overhaul
+tickets (7e5b is dep-blocked on 697c, 198c is small+open; both are follow-ups, decide with
+user whether map closes over them or 198c gets done first).
 
 **USER RATIFICATIONS (all recorded in map):** From-a-link restored; collab collision call =
 this map's single-scrim/MediaPicker-deletion stands (concurrent session's NotePicker WIP
