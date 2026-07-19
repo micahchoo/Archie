@@ -31,9 +31,22 @@
   function keep(head: AnnotationRecord) {
     // ADR-0007: tags (including legacy layers, folded into purpose:tagging bodies at load) ride on
     // `head.body`, so resolving with body+target preserves them — no separate `layers` arg needed.
-    session.resolve(current as LogicalId, { body: head.body, target: head.target });
+    // C14: omitted interpretive fields inherit from whichever head carries them — which would let
+    // "Keep this version" keep the LOSER's reading/emphasis, or pair the chosen target with the other
+    // head's geo anchor. Pass the CHOSEN head's fields explicitly; the undefined guards keep the
+    // inherit fallback for fields absent on both-or-this head (has-reading vs no-reading keeps it).
+    session.resolve(current as LogicalId, {
+      body: head.body,
+      target: head.target,
+      ...(head.motivation !== undefined ? { motivation: head.motivation } : {}),
+      ...(head.reading !== undefined ? { reading: head.reading } : {}),
+      ...(head.section !== undefined ? { section: head.section } : {}),
+      ...(head.emphasis !== undefined ? { emphasis: head.emphasis } : {}),
+      ...(head.wholeObject !== undefined ? { wholeObject: head.wholeObject } : {}),
+      ...(head.geo !== undefined ? { geo: head.geo } : {}),
+    });
     onchange();
-    if (conflicts.length <= 1) onclose(); // parent recomputed; this was the last one — nothing left to review
+    if (conflicts.length === 0) onclose(); // deriveds read fresh after onchange(); close only when none remain
   }
 </script>
 
