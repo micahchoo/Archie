@@ -58,7 +58,7 @@
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import { formatZoomRatio, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
-  import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, clearExhibitStructure, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
+  import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, migrateResidentStoreIds, readAssetUrl, readThumbUrl, clearExhibitAnnotations, clearExhibitStructure, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus, setWriterGate, setWriterOtherName } from "./save-queue.svelte.js";
   import { createWriterLock } from "./writer-lock.svelte.js";
@@ -332,6 +332,19 @@
   // differs from the current code default — i.e. a fixture was re-imported), replace its structure and
   // clear its annotations so it reseeds. Unchanged defaults (+ user edits) + user exhibits are preserved.
   onMount(async () => {
+    // ADR-0026 trigger 1 (studio-open): migrate the resident store's object ids to the composed global
+    // scheme BEFORE anything reads them — loadLibraryMeta below, and every session/annotation read that
+    // follows. The engine is idempotent (a store already on the current scheme no-ops) and NEVER throws
+    // for a corrupt page (it skips-and-reports); a THROW is a genuine fs failure, so we must NOT boot a
+    // session against a half-understood store. A torn migration leaves the marker absent (reads as legacy)
+    // so the next boot re-runs it — safe to abort and retry.
+    try {
+      await migrateResidentStoreIds();
+    } catch (e) {
+      console.error("[migrate] object-id migration failed — refusing to boot the session", e);
+      window.alert("Couldn't prepare your library for this version of Archie. Your work is safe and untouched — reload to try again. If this keeps happening, restore from the pre-migration/ backup folder inside your library.");
+      return; // abort boot: no loadLibraryMeta, no session — nothing writes over a partially-migrated store
+    }
     const meta = await loadLibraryMeta();
     if (meta && meta.exhibits.length > 0) {
       const isStale = (d: ExhibitMeta, p: ExhibitMeta | undefined): boolean =>

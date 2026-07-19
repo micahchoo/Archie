@@ -17,9 +17,10 @@ import {
 import { bakeDisplayMaster, downscaleIfNeeded, bakeThumbnail } from "./bake.js";
 import {
   openExhibitAnnotationsDir, openExhibitStructureDir, saveAssetFile, saveOriginalFile, saveThumbFile, clearExhibitAnnotations,
+  migrateResidentStoreIds, resetIdSchemeState, loadLibraryMeta,
   ASSET_PREFIX, type ExhibitMeta, type ObjectProvenance,
 } from "./store.js";
-import { mergeImportedStructure } from "./structure-import.js";
+import { mergeImportedStructure, migrateSectionLogIds } from "./structure-import.js";
 import { structureRevlogEnabled } from "./feature-flags.js";
 import { inferredMime, planFolderImportGroups } from "./folder-import.js";
 import { manifestToExhibit, ManifestImportError, classifyIiifDocument, labelToString, type ManifestPlan } from "./iiif-import.js";
@@ -926,6 +927,11 @@ export function createIngestFlows(ctx: IngestContext) {
     // Absent incoming pages → nothing is written and the next open seeds from the array as today.
     if (STRUCTURE_REVLOG && srcFs) {
       const srcRoot = await srcFs.root();
+      // ADR-0026 trigger 3: the local store is already on the composed scheme (trigger 1 ran at boot),
+      // so an incoming legacy-scheme section log must be composed BEFORE it merges. Cross-links in
+      // section prose name their target exhibit by slug, so the migrator needs the whole incoming
+      // library's slug → exhibitId map, not just the enclosing exhibit's.
+      const exhibitIdBySlug = new Map(loaded.library.exhibits.map((e) => [e.slug, e.id] as const));
       for (const e of loaded.library.exhibits) {
         let exDir: FsDirectory;
         try {
@@ -935,7 +941,8 @@ export function createIngestFlows(ctx: IngestContext) {
         }
         // e.id is the id this exhibit will carry post-replace (libraryToWorking keeps it), i.e. the
         // id structure-session's ensureLoaded will read the merged log back under.
-        const res = await mergeImportedStructure(exDir, e.id, () => openExhibitStructureDir(e.slug));
+        const res = await mergeImportedStructure(exDir, e.id, () => openExhibitStructureDir(e.slug),
+          (log) => migrateSectionLogIds(log, e.id, exhibitIdBySlug));
         if (res.corruptIncoming.length > 0) {
           console.warn(`[structure] ${e.slug}: ${res.corruptIncoming.length} incoming structure page(s) couldn't be read and were skipped`, res.corruptIncoming);
         }
@@ -950,6 +957,22 @@ export function createIngestFlows(ctx: IngestContext) {
     // object lacks exifOrientation+transform) — same as the inline version, which never reconstructed it.
     ctx.lib.setMeta(libraryToWorking(loaded.library));
     await ctx.lib.persist();
+    // ADR-0026 trigger 2 (untrusted-archive ADOPTION boundary): the incoming library now sits in the
+    // resident OPFS store, but with WHATEVER id scheme it was published under — legacy ids if it predates
+    // the migration. The open seam itself (open.ts) does NOT migrate: it hands back a ZipFilesystem in the
+    // published-tree LAYOUT (root `archie.json`/`collection.json`/`exhibits.json`, per-exhibit dirs at
+    // root), which the working-store-shaped engine can't read — migration runs HERE, where the data has
+    // landed in the working-store layout the engine understands (see the note in open.ts). resetIdSchemeState
+    // clears the OUTGOING library's stale scheme-2 marker + snapshot so the freshly-written content reads as
+    // legacy and gets migrated + snapshotted fresh; the engine is idempotent, so an already-composed archive
+    // is a no-op rewrite. Reload the migrated meta so the in-memory library matches disk (else the next save
+    // would write legacy ids back over the composed store).
+    await resetIdSchemeState();
+    const migration = await migrateResidentStoreIds();
+    if (migration?.migrated) {
+      const reloaded = await loadLibraryMeta();
+      if (reloaded) ctx.lib.setMeta(reloaded);
+    }
     ctx.finishReplace(); // currentSlug = first exhibit; view = "library" (atomic for BOTH callers)
   }
   // Open a published .archie.zip as the project — the symmetric inverse of Download: read it via

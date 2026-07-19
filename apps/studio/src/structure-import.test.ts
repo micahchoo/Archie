@@ -12,13 +12,14 @@ import {
   asClientId,
   asExhibitId,
   headsOf,
+  isLegacyObjectId,
   readStructureReport,
   sectionKey,
   writeStructure,
   type FsDirectory,
   type SectionLog,
 } from "@render/core";
-import { mergeImportedStructure } from "./structure-import.js";
+import { mergeImportedStructure, migrateSectionLogIds } from "./structure-import.js";
 import { workingStructure } from "./structure-reconcile.js";
 
 const alice = asClientId("alice");
@@ -154,5 +155,64 @@ describe("mergeImportedStructure — the one-contract merge (Archie-2a9a deliver
     const indexAfter = new TextDecoder().decode(await (await (await dir.getDirectory("history")).getFile("index.json")).readable());
     expect(indexAfter).toBe(indexBefore); // nothing rewritten — the unreadable page is not orphaned
     expect((await readStructureReport(dir, exId)).corrupt.length).toBe(1); // still surfaced as torn, not empty
+  });
+});
+
+// The exhibit id / slug are the same token ("voynich") in this harness (loadLibrary recovers ids as slugs),
+// so the slug → exhibitId map used for prose cross-links maps voynich → voynich.
+const idBySlug = new Map<string, string>([[EX, exId]]);
+
+describe("migrateSectionLogIds — incoming-log migration (ADR-0026 trigger 3)", () => {
+  it("composes a legacy section objectId under the owning exhibit AND its prose archie: refs", () => {
+    const log = appendNewSection([], {
+      key: k1, order: "i", objectId: "o1", title: "Intro",
+      prose: "compare [that](archie:voynich/#/o/o2) here", lastEditor: alice, now: 1,
+    }).log;
+
+    const out = migrateSectionLogIds(log, exId, idBySlug);
+    expect(out[0]!.objectId).toBe(`${exId}.o1`);
+    expect(out[0]!.prose).toContain(`archie:voynich/#/o/${exId}.o2`);
+  });
+
+  it("is idempotent — already-composed ids pass through untouched (no double-compose)", () => {
+    const legacy = appendNewSection([], { key: k1, order: "i", objectId: "o1", title: "Intro", lastEditor: alice, now: 1 }).log;
+    const once = migrateSectionLogIds(legacy, exId, idBySlug);
+    const twice = migrateSectionLogIds(once, exId, idBySlug);
+    expect(twice[0]!.objectId).toBe(`${exId}.o1`); // not `${exId}.${exId}.o1`
+    expect(twice).toBe(once); // nothing to change ⇒ same array reference
+  });
+
+  it("ticket (c): a LEGACY incoming log merges cleanly against a COMPOSED local store — ids align, zero legacy", async () => {
+    // A shared base; the local copy is already migrated (composed), the incoming copy is still legacy.
+    const base = appendNewSection([], { key: k1, order: "i", objectId: "o1", title: "Intro", lastEditor: alice, now: 1 }).log;
+    const localBase = migrateSectionLogIds(base, exId, idBySlug); // composed local history
+    const local = appendEditSection(localBase, k1, { title: "Intro (local)", lastEditor: alice, now: 2 }).log;
+    const incoming = appendEditSection(base, k1, { title: "Intro (incoming)", lastEditor: bob, now: 3 }).log; // legacy o1
+
+    const dir = await localStructDir(local);
+    const res = await mergeImportedStructure(
+      await incomingExhibitDir(incoming), EX, async () => dir,
+      (log) => migrateSectionLogIds(log, exId, idBySlug), // trigger 3
+    );
+
+    expect(res.action).toBe("merged");
+    const merged = (await readStructureReport(dir, exId)).log;
+    // Determinism: the migrated incoming base composes to the SAME id as the local base, so the shared
+    // root dedups by rev to ONE record; the two diverged edits stay as plural heads.
+    expect(headsOf(merged, k1).length).toBe(2);
+    // The whole merged log is on the composed scheme — no legacy o<n> survived the merge into the store.
+    expect(merged.every((r) => !isLegacyObjectId(r.objectId))).toBe(true);
+  });
+
+  it("WITHOUT the migrator, a legacy incoming edit survives into the merged log (the bug trigger 3 prevents)", async () => {
+    const base = appendNewSection([], { key: k1, order: "i", objectId: "o1", title: "Intro", lastEditor: alice, now: 1 }).log;
+    const local = appendEditSection(migrateSectionLogIds(base, exId, idBySlug), k1, { title: "local", lastEditor: alice, now: 2 }).log;
+    const incoming = appendEditSection(base, k1, { title: "incoming", lastEditor: bob, now: 3 }).log; // legacy
+
+    const dir = await localStructDir(local);
+    await mergeImportedStructure(await incomingExhibitDir(incoming), EX, async () => dir); // no migrator
+
+    const merged = (await readStructureReport(dir, exId)).log;
+    expect(merged.some((r) => isLegacyObjectId(r.objectId))).toBe(true); // a legacy id leaked in — coexistence
   });
 });
