@@ -26,28 +26,46 @@
     onselect,
     onhover,
   }: {
-    /** The visible notes, in list order (ids match `rects` keys). `lead` is the chip's first line. */
-    items: { id: string; lead: string }[];
+    /** The visible notes, in list order (ids match `rects` keys). `colour` is the note's reading
+     *  colour (hex) — the rail shows WHERE notes sit and HOW MANY, never note text (the inspector
+     *  owns reading the note; user-verdict strip, Archie-dff3). */
+    items: { id: string; colour: string }[];
     /** Marker screen rects in PAGE coords (Canvas `onmarkerrects` stream). Null = unresolvable. */
     rects: Record<string, Rect | null>;
     /** The focused note (drives which chip/cluster is pinned + ringed). */
     selected?: string | null;
-    /** Selecting a chip/row selects the note — the SAME channel a canvas-marker click uses. */
+    /** Selecting a chip/dot selects the note — the SAME channel a canvas-marker click uses. */
     onselect?: (id: string) => void;
-    /** Hovering a chip solos the note's mark on the canvas (null clears). */
+    /** Hovering a chip/dot solos the note's mark on the canvas (null clears). */
     onhover?: (id: string | null) => void;
   } = $props();
 
-  const CHIP_H = 46; // compact chip height estimate (count badge + 2-line lead clamp)
-  const ROW_H = 30; // a stack row inside an expanded multi-note cluster
+  const CHIP_H = 30; // closed-chip height: count badge + reading-dots row, one line
+  const DOT_H = 20; // an individual note's dot button, laid out when its cluster is expanded
   const GAP = 8;
 
   let el = $state<HTMLElement | null>(null);
-  let openCluster = $state<string | null>(null); // the expanded multi-note stack
+  let openCluster = $state<string | null>(null); // the expanded multi-note cluster
   let revealed = $state(false); // sparse-mode pointer-intent disclosure
 
   const density = $derived(marginaliaDensity(items.length));
-  const leadOf = $derived(Object.fromEntries(items.map((i) => [i.id, i.lead] as const)));
+  const colourOf = $derived(Object.fromEntries(items.map((i) => [i.id, i.colour] as const)));
+
+  // The distinct reading colours present in a cluster, in first-seen (top-to-bottom) order — the
+  // closed chip's dot row is a composition signal ("which readings pile up here"), not one dot per
+  // note (that would just be a second count).
+  function readingColoursOf(c: { ids: string[] }): string[] {
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const id of c.ids) {
+      const colour = colourOf[id];
+      if (colour !== undefined && !seen.has(colour)) {
+        seen.add(colour);
+        out.push(colour);
+      }
+    }
+    return out;
+  }
 
   // Cluster + place on every rect frame. The rail box is re-read each pass so scroll/pan/zoom ride
   // along with the rect stream (the canvas emits on every viewport change).
@@ -63,15 +81,30 @@
       items.map((i) => ({ id: i.id, anchorY: anchor(i.id) })),
       CHIP_H + GAP,
     );
-    // Place the chips without overlap — reusing the ported solver. The cluster holding the selection
-    // is PINNED (its expanded stack must never evict itself); the rest solve into the bands around it.
+    // Place the chips without overlap — reusing the ported solver. Every cluster contributes its
+    // chip; an OPEN multi-note cluster additionally contributes one small dot per member, positioned
+    // at the MEMBER'S OWN anchor — expanding reveals each note's real screen position instead of a
+    // text stack (the chip stays put as the collapse control).
+    const entries: { id: string; anchorY: number; height: number }[] = [];
+    for (const c of clusters) {
+      entries.push({ id: c.id, anchorY: c.anchorY, height: CHIP_H });
+      if (openCluster === c.id && c.ids.length > 1) {
+        for (const id of c.ids) entries.push({ id, anchorY: anchor(id), height: DOT_H });
+      }
+    }
+    // The pin keeps the selection's own row from being evicted: the selected note's dot when its
+    // cluster is open and expanded, otherwise the cluster's chip.
     const selCluster = selected ? clusters.find((c) => c.ids.includes(selected)) : undefined;
-    const heightOf = (c: (typeof clusters)[number]) =>
-      openCluster === c.id && c.ids.length > 1 ? CHIP_H + c.ids.length * ROW_H : CHIP_H;
-    const layout = layoutMarginalia(
-      clusters.map((c) => ({ id: c.id, anchorY: c.anchorY, height: heightOf(c) })),
-      { viewportH: box.height, gap: GAP, ...(selCluster ? { pinId: selCluster.id } : {}) },
-    );
+    const pinId = selCluster
+      ? selected && openCluster === selCluster.id && selCluster.ids.length > 1
+        ? selected
+        : selCluster.id
+      : undefined;
+    const layout = layoutMarginalia(entries, {
+      viewportH: box.height,
+      gap: GAP,
+      ...(pinId ? { pinId } : {}),
+    });
     return {
       clusters,
       byId: new Map(clusters.map((c) => [c.id, c] as const)),
@@ -136,7 +169,7 @@
         {#each model.clusters as c (c.id)}
           {#if c.id in model.topOf}
             {@const multi = c.ids.length > 1}
-            {@const open = openCluster === c.id}
+            {@const open = openCluster === c.id && multi}
             {@const selHere = selected != null && c.ids.includes(selected)}
             <div
               class="cluster"
@@ -149,28 +182,39 @@
                 type="button"
                 class="chip"
                 aria-expanded={multi ? open : undefined}
+                aria-label={multi ? `${c.ids.length} notes` : "Note"}
                 onclick={() => clickCluster(c.id)}
                 onpointerenter={() => onhover?.(c.ids[0]!)}
               >
-                <span class="count" class:one={!multi} aria-hidden="true">{c.ids.length}</span>
-                <span class="lead">{leadOf[c.ids[0]!] ?? "(untitled)"}</span>
+                {#if multi}
+                  <span class="count" aria-hidden="true">{c.ids.length}</span>
+                  <span class="reading-dots" aria-hidden="true">
+                    {#each readingColoursOf(c) as colour (colour)}
+                      <span class="dot" style={`background:${colour}`}></span>
+                    {/each}
+                  </span>
+                {:else}
+                  <span class="dot solo" aria-hidden="true" style={`background:${colourOf[c.ids[0]!]}`}></span>
+                {/if}
               </button>
-              {#if multi && open}
-                <div class="stack">
-                  {#each c.ids as id (id)}
-                    <button
-                      type="button"
-                      class="row"
-                      class:sel={selected === id}
-                      onclick={() => onselect?.(id)}
-                      onpointerenter={() => onhover?.(id)}
-                    >
-                      {leadOf[id] ?? "(untitled)"}
-                    </button>
-                  {/each}
-                </div>
-              {/if}
             </div>
+            {#if open}
+              {#each c.ids as id, i (id)}
+                {#if id in model.topOf}
+                  <button
+                    type="button"
+                    class="note-dot"
+                    class:sel={selected === id}
+                    style={`top:${model.topOf[id]}px`}
+                    aria-label={`Note ${i + 1} of ${c.ids.length}`}
+                    onclick={() => onselect?.(id)}
+                    onpointerenter={() => onhover?.(id)}
+                  >
+                    <span class="dot" aria-hidden="true" style={`background:${colourOf[id]}`}></span>
+                  </button>
+                {/if}
+              {/each}
+            {/if}
           {/if}
         {/each}
       </div>
@@ -232,34 +276,38 @@
   .cluster.sel { border-color: var(--accent); box-shadow: 0 2px 10px #0000001f; }
 
   .chip {
-    display: flex; gap: 8px; align-items: flex-start; width: 100%;
-    padding: 8px 10px; cursor: pointer; text-align: left;
+    display: flex; gap: 8px; align-items: center; width: 100%;
+    padding: 6px 10px; cursor: pointer; text-align: left;
     background: none; border: none; color: var(--ink-canvas-primary); font: inherit;
   }
+  .chip:hover { background: var(--surface-canvas-overlay); }
   .count {
     flex: 0 0 auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
     background: var(--accent); color: #fff; font-size: 0.72rem; font-weight: 600; line-height: 1;
   }
-  /* A single-note "cluster" gets a quiet neutral dot, not the accent — the count only earns colour
-     once it's aggregating more than one note (the crowded signal). */
-  .count.one { background: var(--surface-canvas-overlay); color: var(--ink-canvas-secondary); }
-  .lead {
-    font-size: 0.8rem; line-height: 1.35; color: var(--ink-canvas-primary);
-    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical;
+  .reading-dots { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+  /* Pure where + how-much (user-verdict strip, Archie-dff3): a dot per DISTINCT reading colour in the
+     cluster, never note text — reading the note itself is the inspector's job. */
+  .dot {
+    width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto;
+    border: 1px solid #00000022;
   }
+  /* A single-note "cluster" IS its dot, slightly larger so it reads as content, not a stray mark. */
+  .dot.solo { width: 11px; height: 11px; }
 
-  .stack { border-top: 1px solid var(--border-canvas); }
-  .row {
-    display: block; width: 100%; text-align: left; cursor: pointer;
-    padding: 7px 10px 7px 38px; border: none; border-bottom: 1px solid #0000000d;
-    background: none; color: var(--ink-canvas-primary); font: inherit;
-    font-size: 0.78rem; line-height: 1.35;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  /* An expanded cluster's individual members — each note's own dot, positioned at ITS anchor via the
+     same overlap solver (layoutMarginalia), never a text list under the chip. */
+  .note-dot {
+    position: absolute; left: 10px; z-index: 2;
+    width: 20px; height: 20px; padding: 0; margin: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: 50%;
+    cursor: pointer; transition: top 120ms ease-out, border-color 140ms ease;
+    box-shadow: var(--shadow-lift-low);
   }
-  .row:last-child { border-bottom: none; }
-  .row.sel { background: color-mix(in srgb, var(--accent) 12%, transparent); }
-  .chip:hover, .row:hover { background: var(--surface-canvas-overlay); }
+  .note-dot:hover { border-color: var(--ink-canvas-secondary); }
+  .note-dot.sel { border-color: var(--accent); box-shadow: 0 2px 10px #0000001f; }
 
   .gutter {
     position: absolute; left: 8px; right: 8px; z-index: 3;
@@ -273,6 +321,6 @@
   .gutter.down { bottom: 4px; }
 
   @media (prefers-reduced-motion: reduce) {
-    .marginalia-rail, .cluster, .heat { transition: none; }
+    .marginalia-rail, .cluster, .heat, .note-dot { transition: none; }
   }
 </style>

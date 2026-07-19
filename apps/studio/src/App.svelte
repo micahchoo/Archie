@@ -1302,9 +1302,18 @@
   // notes into counted chips and draws a heat band where they pile up. It's a spatial index that
   // DRIVES `selected`/`hoverNote` — the same channels the inspector list and canvas marks use — so it
   // never becomes a second edit surface. Image/Map objects only (regions have a screen rect; AV notes
-  // are temporal). `markerRects` is the latest batched frame; the rail re-solves off it. ---
+  // are temporal). `markerRects` is the latest batched frame; the rail re-solves off it.
+  //
+  // User-verdict strip (Archie-dff3): the chips' text previews duplicated the inspector, so the rail
+  // now carries WHERE + HOW MUCH only — each note's reading colour (mirroring markerStyleOf's base
+  // fallback), never a text lead. ---
   let markerRects = $state<Record<string, { left: number; top: number; right: number; bottom: number } | null>>({});
-  const marginaliaItems = $derived(notes.map((r) => ({ id: r.logicalId, lead: stripMarkdown(commentOf(r)).slice(0, 90) || "(untitled)" })));
+  const marginaliaItems = $derived(
+    notes.map((r) => ({
+      id: r.logicalId,
+      colour: (r.reading ? currentReadings.find((x) => x.id === r.reading)?.colour : undefined) ?? BASE_MARKER,
+    })),
+  );
   const marginaliaRectIds = $derived(notes.map((r) => r.logicalId));
 
   // --- Notes-panel DISCLOSURE surface (Archie-f260 §4 obligation, re-derived for Archie-d48e).
