@@ -218,7 +218,7 @@
             <span class="on-obj">{here ? "Showing" : "Go to"} {objectLabel(s.objectId)}</span>
           </button>
           <div class="prose-wrap">
-            <button type="button" class="cite" onclick={() => citeInto(i, s.id)} disabled={conflicted} title="Cite a note or exhibit (⌘K)">¶ Cite <kbd>⌘K</kbd></button>
+            <button type="button" class="cite" onclick={() => citeInto(i, s.id)} disabled={conflicted} title="Cite a note or exhibit (⌘K)"><span aria-hidden="true">¶</span> Cite <kbd>⌘K</kbd></button>
             <textarea class="prose" rows="2" bind:this={proseEls[s.id]} value={s.prose ?? ""} placeholder="Write this section…" aria-label="Section prose" disabled={conflicted}
               onkeydown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); citeInto(i, s.id); } }}
               onchange={(e) => update(i, { prose: (e.currentTarget as HTMLTextAreaElement).value })}></textarea>

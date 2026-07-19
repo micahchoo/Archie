@@ -84,8 +84,8 @@
 
       <!-- One picker, two views (the merged "Cite" + "By image"): Search finds by text, Browse finds by image. -->
       <div class="views" role="tablist" aria-label="Find a target by">
-        <button type="button" role="tab" class:on={view === "search"} aria-selected={view === "search"} onclick={() => (view = "search")}>¶ Search</button>
-        <button type="button" role="tab" class:on={view === "browse"} aria-selected={view === "browse"} onclick={() => (view = "browse")}>▦ Browse</button>
+        <button type="button" role="tab" class:on={view === "search"} aria-selected={view === "search"} onclick={() => (view = "search")}><span aria-hidden="true">¶</span> Search</button>
+        <button type="button" role="tab" class:on={view === "browse"} aria-selected={view === "browse"} onclick={() => (view = "browse")}><span aria-hidden="true">▦</span> Browse</button>
       </div>
 
       {#if view === "search"}

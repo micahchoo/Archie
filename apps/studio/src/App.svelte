@@ -1778,7 +1778,7 @@
   </div>
 {:else}
   <header>
-    <button class="exhibit-back" onclick={backToOverview}>← Overview</button>
+    <button class="exhibit-back" onclick={backToOverview}><span aria-hidden="true">←</span> Overview</button>
     <!-- Breadcrumb: Exhibit › Object — surfaces the two scales (the spine lives at the exhibit level, notes
          at the object level; the crumb names where you are). -->
     <h1 class="wordmark">{currentExhibit?.title}</h1>{#if current}<span class="crumb">› {current.label}</span>{/if}<span class="sub">Studio</span>
@@ -1895,7 +1895,7 @@
                Map) in add-to-exhibit scope — the same dialog the overview plate opens. Adding media grows
                the EXHIBIT's collection, so it lives in the Exhibit zone, not the object nav. -->
           <div class="obj-add">
-            <button type="button" class="add-obj-toggle" onclick={() => (addMediaOpen = true)}>+ Add media</button>
+            <button type="button" class="add-obj-toggle" onclick={() => (addMediaOpen = true)}><span aria-hidden="true">+</span> Add media</button>
           </div>
         </header>
         <div class="zone-body">
@@ -1934,7 +1934,7 @@
             <span class="panel-note">{narrativeSectionCount > 0 ? `${narrativeSectionCount} ${narrativeSectionCount === 1 ? "section" : "sections"}` : "Not started"}</span>
           </div>
           <div class="panel-create">
-            <button type="button" class="create-add" onclick={addSection} disabled={OBJECTS.length === 0} title="Add a new section to this exhibit's narrative">＋ Add a section</button>
+            <button type="button" class="create-add" onclick={addSection} disabled={OBJECTS.length === 0} title="Add a new section to this exhibit's narrative"><span aria-hidden="true">＋</span> Add a section</button>
             {#if narrativeNotes.length > 0}
               <select class="from-note" aria-label="Add a section from an existing note" title="Turn an existing note into a new section"
                 onchange={(e) => { const el = e.currentTarget as HTMLSelectElement; const n = narrativeNotes.find((x) => x.id === el.value); if (n) addSectionFromNote(n); el.selectedIndex = 0; }}>
@@ -2013,7 +2013,7 @@
                   </div>
                 {/each}
               </div>
-              <button type="button" class="readings-manage" onclick={() => (readingsOpen = true)}>{currentReadings.length === 0 ? "+ New reading" : "Manage readings…"}</button>
+              <button type="button" class="readings-manage" onclick={() => (readingsOpen = true)}>{#if currentReadings.length === 0}<span aria-hidden="true">+</span> New reading{:else}Manage readings…{/if}</button>
             </section>
           {/if}
         <div class="notes-create">
@@ -2023,11 +2023,11 @@
             <div class="new-note">
               <span class="nn-lead">New note</span>
               <!-- Geo-annotations reuse Box/Outline on a Map (no pin tool — 2026-06-18 grilling Q4); geo-truth is captured on draw. -->
-              <button type="button" onclick={() => (creating = "rectangle")} title={isMapCurrent ? "Draw a rectangular region on the map" : "Draw a rectangular region"}>▭ Box</button>
-              <button type="button" onclick={() => (creating = "polygon")} title={isMapCurrent ? "Trace an irregular region on the map" : "Trace an irregular outline"}>⬠ Outline</button>
+              <button type="button" onclick={() => (creating = "rectangle")} title={isMapCurrent ? "Draw a rectangular region on the map" : "Draw a rectangular region"}><span aria-hidden="true">▭</span> Box</button>
+              <button type="button" onclick={() => (creating = "polygon")} title={isMapCurrent ? "Trace an irregular region on the map" : "Trace an irregular outline"}><span aria-hidden="true">⬠</span> Outline</button>
               <!-- Whole-object Note (ADR-0018): no region — targets the bare canvas IRI, frames the whole
                    object. (Converting an EXISTING note is the Scope control in the note form, not here.) -->
-              <button type="button" onclick={() => createWholeObjectNote()} title={isMapCurrent ? "Note on the whole map (no region)" : "Note on the whole image (no region)"}>▣ Whole {isMapCurrent ? "map" : "image"}</button>
+              <button type="button" onclick={() => createWholeObjectNote()} title={isMapCurrent ? "Note on the whole map (no region)" : "Note on the whole image (no region)"}><span aria-hidden="true">▣</span> Whole {isMapCurrent ? "map" : "image"}</button>
             </div>
           {/if}
           <p class="hint">{isAvCurrent ? "Play the recording · “Mark start” then “Add note” pins a note to that moment · click any note to jump back and edit." : "Pick a shape · draw the region · click a marker to edit it in the dock on the right."}</p>

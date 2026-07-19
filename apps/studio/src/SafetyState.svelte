@@ -82,7 +82,7 @@
   <span class="safety-state saving" role="status">Saving…</span>
 {:else if safety === "failed"}
   <button type="button" class="safety-state failed" onclick={act} title={bindingError ?? undefined}>
-    ⚠ Retry save
+    <span aria-hidden="true">⚠</span> Retry save
   </button>
 {:else}
   <button type="button" class="safety-state action-needed" onclick={act}>

@@ -78,7 +78,7 @@
     </div>
   {/if}
   <label>
-    <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note, object, or exhibit (⌘K) — search by text or browse by image">¶ Cite <kbd>⌘K</kbd></button></span>
+    <span class="field-head">Comment<button type="button" class="cite" onclick={() => void requestCite(citeIntoComment)} title="Cite a note, object, or exhibit (⌘K) — search by text or browse by image"><span aria-hidden="true">¶</span> Cite <kbd>⌘K</kbd></button></span>
     <textarea bind:this={commentEl} rows="3" value={comment} onchange={(e) => applyForm((e.currentTarget as HTMLTextAreaElement).value, tags)}></textarea>
   </label>
   {#if trange}
@@ -95,10 +95,10 @@
     <div class="scope-row">
       <span class="scope-now">{isRegion ? "A region of this object" : "The whole object (no region)"}</span>
       {#if isRegion}
-        <button type="button" class="cite" onclick={() => setNoteScope("whole")} title="Drop the region — make this note apply to the whole object">▣ Make whole-object</button>
-        <button type="button" class="cite" onclick={() => setNoteScope("region")} title="Re-draw this note's region — draw a new box or outline on the object">▭ Redraw bounds</button>
+        <button type="button" class="cite" onclick={() => setNoteScope("whole")} title="Drop the region — make this note apply to the whole object"><span aria-hidden="true">▣</span> Make whole-object</button>
+        <button type="button" class="cite" onclick={() => setNoteScope("region")} title="Re-draw this note's region — draw a new box or outline on the object"><span aria-hidden="true">▭</span> Redraw bounds</button>
       {:else}
-        <button type="button" class="cite" onclick={() => setNoteScope("region")} title="Give this note a region — draw a box or outline on the object">▭ Draw a region</button>
+        <button type="button" class="cite" onclick={() => setNoteScope("region")} title="Give this note a region — draw a box or outline on the object"><span aria-hidden="true">▭</span> Draw a region</button>
       {/if}
     </div>
   </div>

@@ -375,7 +375,7 @@
 <main class="overview">
   <!-- Exhibit-scale header: where you are + the exhibit's reading-intent + the canvas/list switch. -->
   <header>
-    <button class="back" onclick={onback}>← Exhibits</button>
+    <button class="back" onclick={onback}><span aria-hidden="true">←</span> Exhibits</button>
     <div class="titles">
       <p class="eyebrow">Exhibit · {objects.length} {objects.length === 1 ? "media item" : "media items"} · reading order</p>
       <h1>{title}</h1>
@@ -443,7 +443,7 @@
           <p class="ns-eyebrow">Exhibit narrative</p>
           <p class="ns-line">Guide visitors through the media with your writing.</p>
         </div>
-        <button class="ns-start" onclick={() => onstartnarrative?.()}>＋ Start the narrative</button>
+        <button class="ns-start" onclick={() => onstartnarrative?.()}><span aria-hidden="true">＋</span> Start the narrative</button>
       </div>
     {:else}
       <div class="narrative-strip spine">
@@ -524,7 +524,7 @@
               {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
               <span class="order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
               <span class="frame" class:av={!thumb}>
-                {#if thumb}<span class="img" style={`background-image:url(${thumb})`}></span>{:else}<span class="glyph">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}
+                {#if thumb}<span class="img" style={`background-image:url(${thumb})`}></span>{:else}<span class="glyph" aria-hidden="true">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}
               </span>
               <span class="caption">
                 <span class="lbl">{o.label}</span>
@@ -547,7 +547,7 @@
           ondrop={(e) => { e.preventDefault(); commitReorder(null); }}
           ondragleave={() => { if (overId === END) overId = null; }}
           onpointerdown={(e) => e.stopPropagation()} onclick={onaddobject}>
-          <span class="frame add-frame"><span class="glyph">{dragId ? "↧" : "+"}</span></span>
+          <span class="frame add-frame"><span class="glyph" aria-hidden="true">{dragId ? "↧" : "+"}</span></span>
           <span class="caption"><span class="lbl">{dragId ? "Move to end" : "Add media"}</span></span>
         </button>
       </div>
@@ -623,7 +623,7 @@
             aria-pressed={selectMode ? selection.has(o.id) : undefined}>
             {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
             <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
-            <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}</span>
+            <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph" aria-hidden="true">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}</span>
             <span class="li-lbl">{o.label}</span>
             <span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
           </button>
@@ -638,7 +638,7 @@
         </li>
       {/each}
       <li class="end" class:over={overId === END} ondragover={(e) => { if (dragId) { e.preventDefault(); overId = END; } }} ondrop={(e) => { e.preventDefault(); commitReorder(null); }} ondragleave={() => { if (overId === END) overId = null; }}>
-        <button class="li-add" onclick={onaddobject}>{dragId ? "↧ Move to end" : "+ Add media"}</button>
+        <button class="li-add" onclick={onaddobject}>{#if dragId}<span aria-hidden="true">↧</span> Move to end{:else}<span aria-hidden="true">+</span> Add media{/if}</button>
       </li>
     </ul>
   {/if}
