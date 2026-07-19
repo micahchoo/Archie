@@ -48,7 +48,7 @@
   import { modality } from "./modality.svelte";
   import { applyClick, selectAll as selectAllIds, applyMarquee, type ClickMods } from "./overview-selection.js";
   import { teardownAndRemoveExhibits } from "./exhibit-teardown.js";
-  import { warnAnnotationPublishCorruption } from "./publish-warnings.js";
+  import { warnAnnotationPublishCorruption, type CorruptLogFinding } from "./publish-warnings.js";
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
@@ -1256,9 +1256,12 @@
   const sel = $derived(notes.find((r) => r.logicalId === editing));
   // Note count per canvas, built ONCE per allNotes change — the overview/library lists call this per
   // object, so the old per-call filter was O(objects × notes) on every `rev` bump. O(1) lookup now.
+  // Deduped by logicalId first (Archie-d7ee): allNotes carries EVERY live head, so an edit-vs-edit
+  // conflict holds 2+ records for one note — counting raw heads would tally that note twice. The count
+  // is per-NOTE (like objNotes / the inspector list), not per-head.
   const noteCountByCanvas = $derived.by(() => {
     const m = new Map<string, number>();
-    for (const r of allNotes) { const c = srcOf(r.target); if (c === undefined) continue; m.set(c, (m.get(c) ?? 0) + 1); }
+    for (const r of dedupeHeadsByLogicalId(allNotes)) { const c = srcOf(r.target); if (c === undefined) continue; m.set(c, (m.get(c) ?? 0) + 1); }
     return m;
   });
   const noteCountOf = (objId: string) => noteCountByCanvas.get(canvasIdOf(objId)) ?? 0;
@@ -1677,13 +1680,22 @@
   // the current exhibit uses the live session (freshest, incl. unsaved); others load from their dir.
   // `forPublish` gates the torn-store warns (Archie-a690): publish ships what reads, and each
   // collapse must be loud there — but this loader also feeds citation building, which stays silent.
+  // Annotation-side torn-store findings from the LAST forPublish loadAllLogs run — read by the publish
+  // flows (deps.annotationCorruption) right after loadAllLogs to build the dialog advisory (Archie-a690).
+  // Not $state: it's a transport into publish-flows' own reactive `s.corruptLogs`, never rendered here.
+  let publishAnnotationCorruption: CorruptLogFinding[] = [];
   async function loadAllLogs(forPublish = false): Promise<Record<string, AnnotationLog>> {
     const map: Record<string, AnnotationLog> = {};
+    const corruption: CorruptLogFinding[] = [];
     for (const ex of lib.meta.exhibits) {
       const s = ex.slug === currentSlug ? sess.session : await openExhibitAnnotationsDir(ex.slug).then((dir) => (dir ? AnnotationSession.load(dir, author) : null));
       map[ex.id] = s?.entries ?? [];
-      if (forPublish && s) warnAnnotationPublishCorruption(ex.slug, s.entries.length, s.loadCorruption);
+      if (forPublish && s) {
+        const finding = warnAnnotationPublishCorruption(ex.slug, s.entries.length, s.loadCorruption);
+        if (finding) corruption.push(finding);
+      }
     }
+    if (forPublish) publishAnnotationCorruption = corruption;
     return map;
   }
 
@@ -1764,6 +1776,7 @@
       baseUrl: BASE,
       flushExhibit: () => save(),
       loadAllLogs: () => loadAllLogs(true), // publish path — torn-store warns ON (Archie-a690)
+      annotationCorruption: () => publishAnnotationCorruption, // findings from that same loadAllLogs pass → dialog advisory
       buildFullLibrary: () => buildFullLibrary(),
       exhibits: () => lib.meta.exhibits,
       canFolder: () => bnd.canFolder,
@@ -2466,6 +2479,7 @@
       onpublish={p.publish}
       brokenLinks={p.brokenLinks}
       incompleteCanvases={p.incompleteCanvases}
+      corruptLogs={p.corruptLogs}
     />
   {/if}
   {#if cmdkOpen && CmdKComp}{@const CK = CmdKComp}<CK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />{/if}

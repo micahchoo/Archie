@@ -10,6 +10,7 @@ import {
   type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog,
 } from "@render/core";
 import { supportsFileStreamSave, saveZipToDisk } from "./binding.js";
+import type { CorruptLogFinding } from "./publish-warnings.js";
 import { pickFolderBinding } from "./folder-backend.js";
 import { sliceToDzi } from "./dzi-slicer.js";
 import { resolveTileSource, type AObject } from "@render/core";
@@ -39,6 +40,13 @@ export interface PublishDeps {
   loadAllLogs: () => Promise<Record<string, AnnotationLog>>;
   /** The publishable Library (authored structure; templates excluded). */
   buildFullLibrary: () => Library;
+  /** Torn ANNOTATION-store findings from the LAST publish-path loadAllLogs (Archie-a690): loadAllLogs
+   *  detects annotation corruption (warnAnnotationPublishCorruption) as it reads each exhibit, so this
+   *  returns what that pass just found. Read immediately after `loadAllLogs()` in `projectSite`, where
+   *  it's combined with the structure-side findings into the dialog's pre-publish advisory. Optional —
+   *  absent (e.g. the structure-only test harness) simply contributes no annotation advisory; the
+   *  console warns fire independently inside loadAllLogs regardless. */
+  annotationCorruption?: () => CorruptLogFinding[];
   /** Authored exhibits (for the metadata-only size estimate). */
   exhibits: () => ExhibitMeta[];
   /** Whether the folder sink exists on this browser (steers the size-guard copy). */
@@ -54,10 +62,11 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
   // the old `dialogOpen`/`publishOpen` pair (one per dialog, toggled in lockstep by the chooser's
   // "Publish to the web" card) is gone now that there's only one surface to show or hide.
-  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }>({
+  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[] }>({
     open: false, // the merged Publish & Share surface
     brokenLinks: [], // intra-Library links that degrade to plain text on publish (dialog advisory)
     incompleteCanvases: [], // Image objects publishing with no width/height (IIIF Pres 3 §5.3; dialog advisory)
+    corruptLogs: [], // torn annotation/structure stores publishing under-represented (Archie-a690; dialog advisory)
   });
   let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish
 
@@ -80,17 +89,24 @@ export function createPublishFlows(deps: PublishDeps) {
   // silent. Surfacing/repairing a torn store in the publish UI (for BOTH log families) is future
   // work — the session layer already refuses incremental saves over torn stores (Issue 19), so
   // the source of truth is protected; only the exported copy under-represents it.
-  const getStructure = async (exhibitId: string, slug: string): Promise<SectionLog> => {
+  // Factory so `projectSite` can pass a `collect` sink that carries per-exhibit structure findings into
+  // the dialog advisory (Archie-a690), while the zip/folder sinks use the plain `getStructure()` — same
+  // read + same console warns either way (the warns are NEVER gated on `collect`, so every publish path
+  // stays loud). `collect` is called ONLY when there's corruption, mirroring the annotation-side finding.
+  const makeGetStructure = (collect?: (f: CorruptLogFinding) => void) => async (exhibitId: string, slug: string): Promise<SectionLog> => {
     const dir = await openExhibitStructureDirIfExists(slug);
     if (!dir) return [];
     const { log, corrupt } = await readStructureReport(dir, asExhibitId(exhibitId));
-    if (corrupt.length > 0 && log.length === 0) {
+    const allCorrupt = corrupt.length > 0 && log.length === 0;
+    if (allCorrupt) {
       console.warn(`Publish: exhibit "${slug}" section history was NOT exported — all ${corrupt.length} of its history page(s) are unreadable, so the published library will look as if it never had section history. The local store is untouched; repair it before sharing.`, corrupt);
     } else if (corrupt.length > 0) {
       console.warn(`Publish: exhibit "${slug}" has ${corrupt.length} unreadable structure history page(s); publishing the readable history`, corrupt);
     }
+    if (corrupt.length > 0) collect?.({ slug, family: "sections", corruptCount: corrupt.length, allCorrupt });
     return log;
   };
+  const getStructure = makeGetStructure();
   // Baked grid/overview thumbnails ride along every publish sink (folder / zip / GH / memory) so the
   // published viewer's overview loads small plates, not full masters. Absent → publishLibrary drops the ref.
   const getThumbnail = (slug: string, name: string) => readThumbBytes(slug, name);
@@ -180,13 +196,18 @@ export function createPublishFlows(deps: PublishDeps) {
   }
   // Project the Library into the static site tree (in a MemoryFilesystem). Same projection the zip
   // uses — different sink. withOriginals (opt-in) re-projects with preserved source files included.
-  async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }> {
+  async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[] }> {
+    // Torn-store advisory (Archie-a690): the annotation findings come back from the loadAllLogs pass
+    // (which just warned on them); the structure findings are collected as publishLibrary reads each
+    // exhibit's section log via this per-run `collect` sink. Combined, they feed the dialog advisory.
+    const structureCorruption: CorruptLogFinding[] = [];
     const logs = await deps.loadAllLogs();
+    const annotationCorruption = deps.annotationCorruption?.() ?? [];
     const fs = new MemoryFilesystem();
-    const { brokenLinks, incompleteCanvases } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks, incompleteCanvases } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
-    return { fs, brokenLinks, incompleteCanvases };
+    return { fs, brokenLinks, incompleteCanvases, corruptLogs: [...annotationCorruption, ...structureCorruption] };
   }
   // Flatten the projected tree to the path→FileContent map the git-trees push consumes. A no-originals
   // publish reuses the tree openPublish already built; an originals publish re-projects (rare, opt-in).
@@ -224,6 +245,7 @@ export function createPublishFlows(deps: PublishDeps) {
     get open(): boolean { return s.open; },
     get brokenLinks(): BrokenLink[] { return s.brokenLinks; },
     get incompleteCanvases(): IncompleteCanvas[] { return s.incompleteCanvases; },
+    get corruptLogs(): CorruptLogFinding[] { return s.corruptLogs; },
     openMenu() { s.open = true; },
     close() { s.open = false; },
 
@@ -256,9 +278,10 @@ export function createPublishFlows(deps: PublishDeps) {
      *  broken-links / incomplete-canvas advisories the same way `openPublish` does. */
     async projectSiteFs(): Promise<Filesystem> {
       await deps.flushExhibit();
-      const { fs, brokenLinks, incompleteCanvases } = await projectSite(false);
+      const { fs, brokenLinks, incompleteCanvases, corruptLogs } = await projectSite(false);
       s.brokenLinks = brokenLinks;
       s.incompleteCanvases = incompleteCanvases;
+      s.corruptLogs = corruptLogs;
       return fs;
     },
     /** Entering the GitHub wizard step from the destination chooser (Archie-1921 — one merged surface
@@ -273,11 +296,13 @@ export function createPublishFlows(deps: PublishDeps) {
       if (!(await publishSizeOk())) return false; // size guard before the network push
       s.brokenLinks = [];
       s.incompleteCanvases = [];
+      s.corruptLogs = [];
       cachedSiteFs = null;
-      void projectSite(false).then(({ fs, brokenLinks: bl, incompleteCanvases: ic }) => {
+      void projectSite(false).then(({ fs, brokenLinks: bl, incompleteCanvases: ic, corruptLogs: cl }) => {
         cachedSiteFs = fs;
         s.brokenLinks = bl;
         s.incompleteCanvases = ic;
+        s.corruptLogs = cl;
       }).catch((e) => {
         // A projection failure here degrades to "no cached tree yet" — collectSiteFiles() re-projects on
         // demand at actual publish time, so this is a lost warm cache, not a lost publish. Log rather

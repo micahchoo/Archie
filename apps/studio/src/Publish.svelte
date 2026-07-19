@@ -25,6 +25,7 @@
   // publish that finishes while the surface is closed lands on success/manual-pages/error and is reflected
   // the moment the surface reopens (requirement 3).
   import type { GitHubTarget, BrokenLink, IncompleteCanvas, GitHubPublishResult, PublishProgress } from "@render/core";
+  import type { CorruptLogFinding } from "./publish-warnings.js";
   import type { DeploySession, DeployTarget, DeployProgress } from "./deploy/types.js";
   import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
   import { untrack } from "svelte";
@@ -64,6 +65,7 @@
     onpublish,
     brokenLinks = [],
     incompleteCanvases = [],
+    corruptLogs = [],
   }: {
     open?: boolean;
     canFolder?: boolean;
@@ -98,6 +100,9 @@
     brokenLinks?: BrokenLink[];
     /** Image objects publishing with no width/height (IIIF Pres 3 §5.3) — usually a failed ingest-time probe. */
     incompleteCanvases?: IncompleteCanvas[];
+    /** Exhibits whose annotation/section history reads from a torn store — the readable subset (or, when
+     *  all-corrupt, nothing) ships. Surfaced as a pre-publish advisory (Archie-a690). */
+    corruptLogs?: CorruptLogFinding[];
   } = $props();
 
   const isTauriEnv = isTauri();
@@ -280,6 +285,13 @@
 
   // A broken link's target, typed for display (the cited exhibit/note that isn't in this library).
   const tgt = (b: BrokenLink) => b.target as { exhibitSlug?: string; noteLogicalId?: string };
+
+  // Torn-store advisory (Archie-a690), split on the load-bearing distinction: an all-corrupt store
+  // drops that content from the export entirely (reads as never-authored); a partial one still ships
+  // its readable pages. Reader-facing family words.
+  const lostLogs = $derived(corruptLogs.filter((c) => c.allCorrupt));
+  const partialLogs = $derived(corruptLogs.filter((c) => !c.allCorrupt));
+  const familyWord = (f: CorruptLogFinding["family"]) => (f === "annotations" ? "annotations" : "section history");
 
   let owner = $state("");
   let repo = $state("");
@@ -749,6 +761,30 @@
                     <li>{c.label}</li>
                   {/each}
                   {#if incompleteCanvases.length > 5}<li class="more">…and {incompleteCanvases.length - 5} more</li>{/if}
+                </ul>
+              </div>
+            {/if}
+            {#if lostLogs.length > 0}
+              <div class="broken" role="status">
+                <p class="b-head">Some saved work won't be in the published site</p>
+                <p class="b-sub">These histories can't be read at all, so the site will look as if that content was never made. Publishing goes ahead without them — your local copy is untouched, so you can repair it and publish again.</p>
+                <ul>
+                  {#each lostLogs.slice(0, 5) as c}
+                    <li><code>/{c.slug}</code> · {familyWord(c.family)}</li>
+                  {/each}
+                  {#if lostLogs.length > 5}<li class="more">…and {lostLogs.length - 5} more</li>{/if}
+                </ul>
+              </div>
+            {/if}
+            {#if partialLogs.length > 0}
+              <div class="broken" role="status">
+                <p class="b-head">Some saved work is partly unreadable — the readable part still publishes</p>
+                <p class="b-sub">A few history pages couldn't be read and are skipped; everything readable publishes as usual. Your local copy is untouched.</p>
+                <ul>
+                  {#each partialLogs.slice(0, 5) as c}
+                    <li><code>/{c.slug}</code> · {familyWord(c.family)} · {c.corruptCount} unreadable {c.corruptCount === 1 ? "page" : "pages"}</li>
+                  {/each}
+                  {#if partialLogs.length > 5}<li class="more">…and {partialLogs.length - 5} more</li>{/if}
                 </ul>
               </div>
             {/if}
