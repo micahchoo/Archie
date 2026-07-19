@@ -7,6 +7,7 @@
   // Browser-verified (pointer/wheel transforms). Narrative SECTION authoring lives in the editor sidebar
   // (NarrativeEditor), not here — this overview is the zoomed-OUT viewing/arranging scale only.
   import type { Snippet } from "svelte";
+  import { tick } from "svelte";
   import type { LayoutType, RightsFields, Section } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
@@ -14,6 +15,11 @@
   import { viewPrefs } from "./view-prefs.svelte.js";
   import { legendSeen, markLegendSeen, hintSeen, markHintSeen } from "./canvas-first-use.js";
   import { isReorderable, reorderBlockedMessage } from "./reorder-state.js";
+  import {
+    liftRow, moveRow, moveRowTo,
+    liftAnnouncement, moveAnnouncement, dropAnnouncement, cancelAnnouncement,
+    type MoveState,
+  } from "./overview-move-mode.js";
 
   type OverviewObject = { id: string; label: string; source: string; mediaType?: "image" | "sound" | "video" };
 
@@ -370,9 +376,81 @@
   const commitReorder = (beforeId: string | null) => commit(beforeId ?? END);
   const commitToStart = () => commit(START);
   function onDragEnd() { dragId = null; overId = null; }
+
+  // --- Keyboard "move mode" reorder (Archie-f260, docs/research/a11y-interactions.md §1 — the WAI-ARIA APG
+  // Grid pattern's rearrangeable-row grammar: the ⠿ grip toggles move mode, arrows move the row, Home/End
+  // jump it to an end, Enter/Space drops, Escape cancels — the keyboard twin of the pointer drag above, and
+  // its ONLY keyboard path (canvas stays mouse/touch-primary per Archie-a9fc, so this is list-mode only).
+  // The pure reducer + announcement grammar live in overview-move-mode.ts (headless-tested). A lift snapshots
+  // the canonical order into moveState.order (the list renders THAT while lifted); arrows re-index within the
+  // copy so Escape is a pure discard and only a Drop reaches onreorder — same single commit channel the drag
+  // uses. The announcement text feeds the one mounted polite live region (#move-live) below. ---
+  let moveState = $state<MoveState | null>(null);
+  let announce = $state(""); // the live-region text (position announcements); the region stays mounted, text toggles
+  const byId = $derived(new Map(objects.map((o) => [o.id, o] as const)));
+  // The rows the LIST renders: the working move order while a row is lifted, else the normal display order.
+  // (Move mode only ever enters in reading order with no filter — reorderable — so the working order and the
+  // display order carry the same set; mapping through byId just re-sequences them.)
+  const listRows = $derived(
+    moveState ? moveState.order.map((id) => byId.get(id)).filter((o): o is OverviewObject => !!o) : displayObjects,
+  );
+  async function refocusGrip(id: string) {
+    await tick(); // let the reordered rows re-render, then keep focus on the moving row's grip
+    listRoot?.querySelector<HTMLElement>(`[data-grip-id="${CSS.escape(id)}"]`)?.focus();
+  }
+  function dropMove(id: string) {
+    if (!moveState) return;
+    const dropped = dropAnnouncement(objectLabel(id), moveState);
+    const next = moveState.order;
+    const cur = objects.map((o) => o.id);
+    if (!sameOrder(cur, next)) { onreorder(next); markLegendSeen(mode); } // same commit path as a drag drop
+    moveState = null;
+    announce = dropped;
+    void refocusGrip(id);
+  }
+  function cancelMove(id: string) {
+    if (!moveState) return;
+    announce = cancelAnnouncement(objectLabel(id), moveState); // ORIGIN position — canonical order never changed
+    moveState = null;
+    void refocusGrip(id);
+  }
+  function onGripKeyDown(e: KeyboardEvent, id: string) {
+    if (moveState && moveState.movingId === id) {
+      // Lifted: arrows move the row, Home/End jump it, Enter/Space drops, Escape cancels. stopPropagation so
+      // the grid container's select-mode roving handler (onGridKeyDown) never also acts on these keys.
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); e.stopPropagation(); moveState = moveRow(moveState, -1); announce = moveAnnouncement(moveState); void refocusGrip(id); return; }
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); moveState = moveRow(moveState, 1); announce = moveAnnouncement(moveState); void refocusGrip(id); return; }
+      if (e.key === "Home") { e.preventDefault(); e.stopPropagation(); moveState = moveRowTo(moveState, 0); announce = moveAnnouncement(moveState); void refocusGrip(id); return; }
+      if (e.key === "End") { e.preventDefault(); e.stopPropagation(); moveState = moveRowTo(moveState, moveState.order.length - 1); announce = moveAnnouncement(moveState); void refocusGrip(id); return; }
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); e.stopPropagation(); dropMove(id); return; }
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancelMove(id); return; }
+      return;
+    }
+    // Not lifted: Enter/Space lifts (enters move mode) — only when a drag WOULD reorder (reading order, no filter).
+    if (e.key === " " || e.key === "Enter") {
+      if (!reorderable) return;
+      const s = liftRow(objects.map((o) => o.id), id);
+      if (!s) return;
+      e.preventDefault(); e.stopPropagation();
+      moveState = s;
+      announce = liftAnnouncement(objectLabel(id), s);
+      void refocusGrip(id);
+    }
+  }
+  // Exit move mode if the surface changes underneath it (mode switch to canvas, a search/sort that turns
+  // reordering off, or the lifted object disappearing) — a silent discard, never a stranded lifted row.
+  $effect(() => {
+    if (moveState && (mode !== "list" || !reorderable || !objects.some((o) => o.id === moveState!.movingId))) {
+      moveState = null;
+    }
+  });
 </script>
 
 <main class="overview">
+  <!-- One mounted polite live region for keyboard move-mode position announcements (docs §1). Stays in the
+       DOM always (text-toggled, never {#if}-mounted) so AT reliably announces each change — the same lesson
+       the .reorder-state indicator below already follows. Visually hidden; screen-reader only. -->
+  <p class="sr-only" role="status" aria-live="polite">{announce}</p>
   <!-- Exhibit-scale header: where you are + the exhibit's reading-intent + the canvas/list switch. -->
   <header>
     <button class="back" onclick={onback}><span aria-hidden="true">←</span> Exhibits</button>
@@ -493,10 +571,11 @@
       role="application"
       aria-label="Exhibit canvas — drag to pan, scroll to zoom"
     >
-      <!-- svelte-ignore a11y_no_static_element_interactions -- keydown is pure focus management
-           (roving tabindex); the honest APG Grid triple (grid/row/gridcell) lands with Archie-f260 —
-           a bare grid role without rows/cells announces broken structure to AT. -->
-      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z});`} onkeydown={onGridKeyDown}>
+      <!-- Canvas stays mouse/touch-primary (Archie-a9fc); the roving-tabindex keydown lives on the plate
+           BUTTONS themselves (real interactive elements — no static-element handler), not this container, so
+           the honest structure holds without forcing a grid role onto the spatial canvas (docs §1 scopes the
+           APG Grid triple to the LIST). -->
+      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z});`}>
         <!-- Leading drop zone: the ONLY way to express "insert before the first object" (Archie-1933).
              Inert unless a drag is active and the dragged plate isn't already first. -->
         <div class="dropstart" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
@@ -518,6 +597,7 @@
               onclick={(e) => onPlateClick(e, o.id)}
               ondblclick={() => openPlate(o.id)}
               onfocus={() => onPlateFocus(o.id)}
+              onkeydown={onGridKeyDown}
               tabindex={selectMode ? (o.id === roveId ? 0 : -1) : undefined}
               aria-pressed={selectMode ? selection.has(o.id) : undefined}
               title={o.label}>
@@ -604,43 +684,72 @@
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
     <p class="list-hint">{reorderMessage || (hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order.")}</p>
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -- keydown is pure focus
-         management (roving tabindex); the honest APG Grid triple lands with Archie-f260. -->
-    <ul class="list" bind:this={listRoot} onkeydown={onGridKeyDown}>
-      <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
+    <!-- The honest APG Grid triple (docs/research/a11y-interactions.md §1): rows-with-interactive-children
+         are a Grid, not a Listbox — this container is role="grid", each media row is role="row", and its
+         grip / open-button / pencil sit in role="gridcell" cells. It's a <div> (not <ul>): svelte-a11y
+         won't allow the widget role 'grid' on a <ul>, and a grid IS the honest structure here anyway (the
+         list semantics are subsumed by the grid). `grid` is a widget role, so the roving-tabindex keydown
+         (select-mode arrow nav) is honest — retiring the old svelte-ignore. aria-multiselectable + per-row
+         aria-selected expose the multi-select state to AT while select-mode is on. -->
+    <div class="list" role="grid" aria-label="Media items — reading order"
+      aria-multiselectable={selectMode ? true : undefined}
+      tabindex="-1"
+      bind:this={listRoot} onkeydown={onGridKeyDown}>
+      <div class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
         ondrop={(e) => { e.preventDefault(); commitToStart(); }}
         ondragleave={() => { if (overId === START) overId = null; }}
-        aria-hidden="true"></li>
-      {#each displayObjects as o (o.id)}
-        <li class:dragging={dragId === o.id} class:over={overId === o.id} class:selected={selection.has(o.id)}
+        role="presentation" aria-hidden="true"></div>
+      {#each listRows as o (o.id)}
+        <div role="row" tabindex="-1" class:dragging={dragId === o.id} class:over={overId === o.id} class:selected={selection.has(o.id)}
+          class:moving={moveState?.movingId === o.id}
+          aria-selected={selectMode ? selection.has(o.id) : undefined}
           ondragover={(e) => onPlateDragOver(e, o.id)}
           ondrop={(e) => { e.preventDefault(); commitReorder(o.id); }}>
-          <button type="button" class="grip" class:off={!reorderable} draggable={reorderable} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd} title={reorderable ? "Drag to reorder" : reorderMessage} aria-label="Reorder {o.label}">⠿</button>
-          <button data-plate-id={o.id} onclick={(e) => onPlateClick(e, o.id)} ondblclick={() => openPlate(o.id)}
-            onfocus={() => onPlateFocus(o.id)}
-            tabindex={selectMode ? (o.id === roveId ? 0 : -1) : undefined}
-            aria-pressed={selectMode ? selection.has(o.id) : undefined}>
-            {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
-            <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
-            <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph" aria-hidden="true">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}</span>
-            <span class="li-lbl">{o.label}</span>
-            <span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
-          </button>
+          <!-- The reorder handle (docs §1 grip spec): drag with a pointer, OR Enter/Space to enter keyboard
+               move mode, then arrows to move, Enter/Space to drop, Escape to cancel — announced by position
+               in #move-live above. aria-roledescription names it a reorder handle; aria-pressed reflects the
+               lifted state. -->
+          <span role="gridcell" class="cell-grip">
+            <button type="button" class="grip" class:off={!reorderable} class:lifted={moveState?.movingId === o.id}
+              data-grip-id={o.id}
+              draggable={reorderable} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd}
+              onkeydown={(e) => onGripKeyDown(e, o.id)}
+              aria-roledescription="Reorder handle"
+              aria-pressed={moveState?.movingId === o.id}
+              title={reorderable ? "Drag, or press Enter to move with the keyboard" : reorderMessage}
+              aria-label={moveState?.movingId === o.id
+                ? `Moving ${o.label} — arrow keys to move, Enter to drop, Escape to cancel`
+                : `Reorder ${o.label}`}>⠿</button>
+          </span>
+          <span role="gridcell" class="cell-main">
+            <button data-plate-id={o.id} onclick={(e) => onPlateClick(e, o.id)} ondblclick={() => openPlate(o.id)}
+              onfocus={() => onPlateFocus(o.id)}
+              tabindex={selectMode ? (o.id === roveId ? 0 : -1) : undefined}
+              aria-pressed={selectMode ? selection.has(o.id) : undefined}>
+              {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
+              <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
+              <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph" aria-hidden="true">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}</span>
+              <span class="li-lbl">{o.label}</span>
+              <span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
+            </button>
+          </span>
           <!-- Per-row pencil (Archie-79be): edit this media item's details without opening it. The ONE
                "Details" affordance (Archie-3e0a / Archie-ebf4): tight space, so pencil-alone, visible
                tooltip always "Details" — .details-pencil (atmosphere.css) is the shared look every
                card/plate/row pencil uses — but aria-label carries the per-item scope (label-in-name:
                starts with "Details", then the item) so a list of rows stays distinguishable to
                screen-reader users tabbing through it. -->
-          <button class="row-edit details-pencil" title="Details" aria-label={`Details — ${o.label}`}
-            onclick={(e) => { e.stopPropagation(); oneditobject(o.id); }}>✎</button>
-        </li>
+          <span role="gridcell" class="cell-edit">
+            <button class="row-edit details-pencil" title="Details" aria-label={`Details — ${o.label}`}
+              onclick={(e) => { e.stopPropagation(); oneditobject(o.id); }}>✎</button>
+          </span>
+        </div>
       {/each}
-      <li class="end" class:over={overId === END} ondragover={(e) => { if (dragId) { e.preventDefault(); overId = END; } }} ondrop={(e) => { e.preventDefault(); commitReorder(null); }} ondragleave={() => { if (overId === END) overId = null; }}>
+      <div class="end" role="presentation" class:over={overId === END} ondragover={(e) => { if (dragId) { e.preventDefault(); overId = END; } }} ondrop={(e) => { e.preventDefault(); commitReorder(null); }} ondragleave={() => { if (overId === END) overId = null; }}>
         <button class="li-add" onclick={onaddobject}>{#if dragId}<span aria-hidden="true">↧</span> Move to end{:else}<span aria-hidden="true">+</span> Add media{/if}</button>
-      </li>
-    </ul>
+      </div>
+    </div>
   {/if}
 
   <!-- Selection tray (decision Archie-315e, closes audit W10). The toolbar above NEVER morphs — this is a
@@ -790,7 +899,7 @@
   /* 1b list fallback. */
   .list-hint { max-width: 48rem; margin: var(--space-6) auto 0; padding: 0 var(--space-6); font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
   .list { list-style: none; margin: 0; padding: var(--space-4) var(--space-6) var(--space-6); overflow-y: auto; flex: 1; max-width: 48rem; }
-  .list li { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+  .list > div { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
   /* PERF (SCALE-GALLERY Phase 1.3): skip layout/paint/decode of off-screen rows in a large list — the
      same treatment the Viewer's ObjectGrid uses (ObjectGrid.svelte). `auto` remembers each row's real
      height after first render so the scrollbar never jumps; the fixed estimate covers never-seen rows.
@@ -798,22 +907,32 @@
      would break the insert-line affordance. */
   /* One fixed row height (Archie-a9fc chrome trim retired the density slider that used to feed this via
      --row-h; 3.3rem is the former slider's midpoint value). */
-  .list li:not(.dropstart-row):not(.end) { content-visibility: auto; contain-intrinsic-size: auto 3.3rem; }
+  .list > div:not(.dropstart-row):not(.end) { content-visibility: auto; contain-intrinsic-size: auto 3.3rem; }
   /* :not(.row-edit) — the row-open button gets the fixed row height, but the trailing Details pencil
      must stay the shared .details-pencil 1.85rem square (review fix: min-height was beating its height). */
-  .list li:not(.dropstart-row):not(.end) button:not(.row-edit) { min-height: 3.3rem; box-sizing: border-box; }
-  .list li.dragging { opacity: 0.4; }
-  .list li.over { box-shadow: 0 -3px 0 var(--accent); } /* insert-before line */
+  .list > div:not(.dropstart-row):not(.end) button:not(.row-edit) { min-height: 3.3rem; box-sizing: border-box; }
+  .list > div.dragging { opacity: 0.4; }
+  .list > div.over { box-shadow: 0 -3px 0 var(--accent); } /* insert-before line */
   /* Leading "insert before first" drop zone (list): collapsed until a drag is active. */
-  .list li.dropstart-row { height: 0; margin: 0; padding: 0; border-radius: var(--radius-sm); transition: height 120ms ease; }
-  .list li.dropstart-row.armed { height: var(--space-4); }
-  .list li.dropstart-row.over { box-shadow: 0 3px 0 var(--accent); }
+  .list > div.dropstart-row { height: 0; margin: 0; padding: 0; border-radius: var(--radius-sm); transition: height 120ms ease; }
+  .list > div.dropstart-row.armed { height: var(--space-4); }
+  .list > div.dropstart-row.over { box-shadow: 0 3px 0 var(--accent); }
+  /* APG Grid triple (Archie-f260): the grip / open / pencil buttons now sit in role="gridcell" span cells.
+     The cells carry the row's flex layout (the open cell grows, the grip + pencil cells size to content) so
+     the inner buttons keep their existing looks unchanged — this is structure/ARIA only, not a redesign. */
+  .list > div .cell-main { display: flex; flex: 1 1 auto; min-width: 0; }
+  .list > div .cell-grip, .list > div .cell-edit { display: inline-flex; flex: 0 0 auto; align-items: center; }
   .list .grip { cursor: grab; user-select: none; color: var(--ink-canvas-muted); font-size: 1.15rem; padding: 0 var(--space-2); background: none; border: none; line-height: 1; transition: color 160ms ease; }
   .list .grip:hover { color: var(--ink-canvas-secondary); }
   .list .grip:active { cursor: grabbing; }
-  .list li button { display: flex; flex: 1; align-items: center; gap: var(--space-4); text-align: left; cursor: pointer; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); color: inherit; transition: transform 180ms ease, box-shadow 180ms ease; }
-  .list li button:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
-  .list li.end.over button { border: 1px solid var(--accent); color: var(--accent); }
+  /* Keyboard move-mode (Archie-f260, docs §1): the grip glows accent while lifted, and the whole row carries
+     a visible accent outline so a sighted keyboard user sees which row is travelling. Static (no transition)
+     so there's nothing for prefers-reduced-motion to suppress. */
+  .list .grip.lifted { color: var(--accent); }
+  .list > div.moving { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-md); }
+  .list > div button { display: flex; flex: 1; align-items: center; gap: var(--space-4); text-align: left; cursor: pointer; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); color: inherit; transition: transform 180ms ease, box-shadow 180ms ease; }
+  .list > div button:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
+  .list > div.end.over button { border: 1px solid var(--accent); color: var(--accent); }
   .li-order { font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.14em; color: var(--ink-canvas-muted); min-width: 1.5rem; }
   .li-thumb { width: 3rem; height: 2.25rem; border-radius: var(--radius-sm); background: var(--surface-canvas-overlay) center/cover; display: flex; align-items: center; justify-content: center; }
   .li-thumb .glyph { color: var(--accent-2); }
@@ -821,19 +940,19 @@
   .li-cnt { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
   /* Per-row pencil (Archie-79be): a trailing quiet glyph — the shared .details-pencil (atmosphere.css)
      look, same as the canvas plate's pencil and the LibraryHome card's. Selector outspecifies
-     `.list li button` (which sets flex:1) so flex:none holds and the open-button keeps the row width;
-     `.list li button:hover` also matches this (it's a button), so transform is explicitly cancelled.
-     Review fix: `.list li .row-edit` (0,2,1) still beats the GLOBAL `.details-pencil` (0,1,0) on every
-     property they both set (padding, border-radius, color, transition) and `.list li .row-edit:hover`
+     `.list > div button` (which sets flex:1) so flex:none holds and the open-button keeps the row width;
+     `.list > div button:hover` also matches this (it's a button), so transform is explicitly cancelled.
+     Review fix: `.list > div .row-edit` (0,2,1) still beats the GLOBAL `.details-pencil` (0,1,0) on every
+     property they both set (padding, border-radius, color, transition) and `.list > div .row-edit:hover`
      (0,3,1) beats `.details-pencil:hover` (0,2,0) too — so those contested properties are re-asserted
      here instead of assumed inherited from the shared class, or the row pencil silently reverts to the
      plain list-button look. */
-  .list li .row-edit {
+  .list > div .row-edit {
     flex: 0 0 auto; margin-left: var(--space-1);
     padding: 0; min-height: 0; border-radius: var(--radius-sm); color: var(--ink-canvas-secondary);
     transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   }
-  .list li .row-edit:hover { color: var(--accent); border-color: var(--accent); transform: none; }
+  .list > div .row-edit:hover { color: var(--accent); border-color: var(--accent); transform: none; }
   .li-add { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); padding: var(--space-3); cursor: pointer; width: 100%; transition: color 160ms ease, border-color 160ms ease; }
   .li-add:hover { color: var(--ink-canvas-primary); border-color: var(--accent); }
 
@@ -876,14 +995,17 @@
   .tray-done:hover { background: var(--accent); color: var(--ink-on-accent); }
 
   /* Selected state — a rationed accent ring on the plate/row; the checkbox corner appears in select-mode. */
-  .plate-wrap.selected .plate, .list li.selected button:not(.grip):not(.row-edit) { box-shadow: var(--shadow-lift-low), 0 0 0 2px var(--accent); }
+  .plate-wrap.selected .plate, .list > div.selected button:not(.grip):not(.row-edit) { box-shadow: var(--shadow-lift-low), 0 0 0 2px var(--accent); }
   .checkbox { position: absolute; top: var(--space-2); left: var(--space-2); z-index: 1; width: 1.15rem; height: 1.15rem; border-radius: var(--radius-sm); border: 2px solid var(--border-canvas-emphasis); background: var(--surface-canvas-raised); }
   .checkbox.checked { background: var(--accent); border-color: var(--accent); }
   .checkbox.checked::after { content: "✓"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: var(--ink-on-accent); }
-  .list li button { position: relative; } /* anchor the row checkbox */
+  .list > div button { position: relative; } /* anchor the row checkbox */
   .plate.sel-on { cursor: default; } /* in select-mode a click toggles, not opens — signal it's not the open gesture */
   .grip.off { opacity: 0.3; cursor: default; }
 
   /* Marquee rubber-band — a faint accent-tinted rectangle over the canvas while background-dragging in select-mode. */
   .marquee { position: absolute; z-index: 5; pointer-events: none; border: 1px solid var(--accent); background: var(--accent-muted); border-radius: 2px; }
+
+  /* Visually-hidden live region (keyboard move-mode announcements) — present for AT, invisible on screen. */
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 </style>
