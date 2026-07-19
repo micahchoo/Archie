@@ -58,6 +58,7 @@
     safety,
     scrollTop = 0,
     onscrolled,
+    onscrollflush,
   }: {
     title: string;
     layout: LayoutType;
@@ -129,8 +130,12 @@
     // + density are PERSISTED view preferences owned in view-prefs — not transients.) ---
     /** The grid's vertical scroll offset to restore on enter (grid mode). */
     scrollTop?: number;
-    /** Report the live grid scroll offset so App can remember it per slug. */
+    /** Report the live grid scroll offset (native scroll event) so App can remember it per slug. */
     onscrolled?: (top: number) => void;
+    /** Flush the final grid scroll offset synchronously on unmount — the correctness backstop for the live
+     *  report, which can be lost when scrollTop is set programmatically / wheel events are coalesced (no
+     *  synchronous 'scroll' before teardown). App writes this UNGUARDED (it fires inside a suspended nav). */
+    onscrollflush?: (top: number) => void;
   } = $props();
 
   let rightsOpen = $state(false);
@@ -334,21 +339,39 @@
     };
   });
 
-  // Grid scroll offset (transient screen state, ADR-0024 #6). Decoupled into two one-way channels so a
-  // scroll position — which produces a DOM event when written — can't feedback-loop the way a two-way bind
-  // would:
+  // Grid scroll offset (transient screen state, ADR-0024 #6). Decoupled into one-way channels so a scroll
+  // position — which produces a DOM event when written — can't feedback-loop the way a two-way bind would.
+  // `lastScrollTop` shadows the live offset (updated by BOTH user scroll and the programmatic restore) so
+  // the unmount backstop has a value to flush WITHOUT re-reading the DOM at teardown — the browser has
+  // already zeroed a scroll container's scrollTop by the time the cleanup runs (proven: a teardown-time
+  // el.scrollTop read returns 0 and would clobber the good live value).
+  let lastScrollTop = 0;
   //  • report: onscroll → onscrolled(top) reports the live offset UP; App writes it into its per-slug map.
+  function onGridScroll() { if (gridScroll) { lastScrollTop = gridScroll.scrollTop; onscrolled?.(lastScrollTop); } }
   //  • restore: the effect applies the `scrollTop` restore target DOWN into the DOM. It tracks ONLY
   //    `scrollTop` (which App changes solely on enter), never a user scroll — so applying never fights an
   //    active scroll and a user scroll never re-triggers a restore. The rAF defers the write until after
-  //    layout settles: a freshly-mounted grid whose plates haven't laid out yet would clamp the target to 0
-  //    (the bug this fixes). contain-intrinsic-size then keeps scrollHeight stable so the offset sticks.
-  function onGridScroll() { if (gridScroll) onscrolled?.(gridScroll.scrollTop); }
+  //    layout settles: a freshly-mounted grid whose plates haven't laid out yet would clamp the target to 0.
+  //    contain-intrinsic-size keeps scrollHeight stable so the offset sticks; lastScrollTop then mirrors the
+  //    applied value so an immediate leave-without-scrolling still flushes the restored offset, not 0.
   $effect(() => {
     const top = scrollTop; // re-applies ONLY when App hands us a new restore target (an exhibit enter)
     if (mode !== "grid" || !gridScroll) return; // list owns its own scroll; nothing to restore into
     const el = gridScroll;
-    requestAnimationFrame(() => { if (el.isConnected && Math.abs(el.scrollTop - top) > 1) el.scrollTop = top; });
+    requestAnimationFrame(() => {
+      if (el.isConnected && Math.abs(el.scrollTop - top) > 1) el.scrollTop = top;
+      lastScrollTop = el.isConnected ? el.scrollTop : top;
+    });
+  });
+  //  • backstop: the report path can miss a FINAL offset — setting scrollTop programmatically doesn't
+  //    dispatch 'scroll' at all, and real wheel/trackpad scrolling coalesces, so the last event before a
+  //    fast scroll-then-open can be dropped (or its live write suspend-guarded during the nav). This cleanup
+  //    runs synchronously on unmount (and on a mode switch) and flushes lastScrollTop — the last OBSERVED
+  //    offset, NOT a teardown-time DOM read (which is already 0). App writes it UNGUARDED (it fires inside
+  //    the suspended nav) — see flushOverviewScroll.
+  $effect(() => {
+    if (mode !== "grid" || !gridScroll) return;
+    return () => onscrollflush?.(lastScrollTop);
   });
 
   // Drag-to-reorder reading order — the overview's REASON TO EXIST (the published Grid display order /
@@ -850,7 +873,11 @@
   /* Grid mode: a plain scrollable region (NOT a pan/zoom viewport) holding plates that flow, wrap, and
      scroll vertically. content-visibility per plate (below) virtualizes off-screen plates so large exhibits
      stay cheap — the retired canvas rendered every plate eagerly under one CSS transform. */
-  .grid-scroll { position: relative; flex: 1; min-height: 0; overflow-y: auto; padding: var(--space-6); background: var(--focal-bloom); }
+  /* overflow-anchor: none — the plates are content-visibility:auto, so their real heights only finalize as
+     they paint; the browser's scroll anchoring would otherwise nudge scrollTop by the estimate error right
+     after a restore (measured ~15px), fighting the exact offset we just set. Turning it off keeps the
+     restored (and user's) scrollTop stable as off-screen plates settle. */
+  .grid-scroll { position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; padding: var(--space-6); background: var(--focal-bloom); }
   /* Flex-wrap of fixed-width plates; --plate-w (density) sets the width, so a Compact column packs more per
      row. flex-start (not centre) reads as a browsable grid, not a small centred cluster. */
   .grid { display: flex; flex-wrap: wrap; gap: var(--space-6); align-content: flex-start; }

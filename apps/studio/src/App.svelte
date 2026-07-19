@@ -190,6 +190,7 @@
   // Grid/List mode + grid density are PERSISTED prefs owned in view-prefs, not transients.) ---
   const overviewScrollTops = new Map<string, number>();
   let ovScrollInitial = $state(0); // the offset handed DOWN to restore on enter (set only by restoreOverviewScroll)
+  let ovScrollSlug = ""; // the exhibit the CURRENT overview grid belongs to — the map key for its scroll writes
   let gallerySearch = $state("");
   // Lazy deep-zoom canvas (OpenSeadragon + Annotorious — the largest dep). Loaded the moment the user
   // enters an exhibit (overview or editor), so it's warm by the time an object opens, while staying OUT
@@ -646,17 +647,31 @@
   }
   // Best-effort session memory for the overview's transient look (ADR-0024 #6): restore/remember the GRID
   // scroll offset per slug (replaces the retired canvas's tx/ty/z restore — the grid persists no pan/zoom).
-  // Restore is a one-way hand-DOWN set on enter; remember is a report-driven write UP (see the decoupling
-  // rationale on ExhibitOverview's scrollTop/onscrolled props — a scroll position can't be two-way bound).
+  // Restore hands the saved offset DOWN on enter; the child reports UP via two channels (see the decoupling
+  // rationale on ExhibitOverview's scrollTop/onscrolled/onscrollflush props — a scroll position can't be
+  // two-way bound). BOTH writes key on `ovScrollSlug` — the exhibit captured at enter time — never
+  // `currentSlug`: a URL/back-forward jump can move currentSlug to another place before the outgoing grid's
+  // write lands, and the flush in particular fires from unmount cleanup after currentSlug has moved.
   function restoreOverviewScroll(slug: string) {
+    ovScrollSlug = slug;
     ovScrollInitial = overviewScrollTops.get(slug) ?? 0;
   }
+  // LIVE report (native scroll event). Suspend-guarded: during an A→B overview switch (grid stays mounted,
+  // no unmount) the browser can fire a stray scroll for A's leftover offset after ovScrollSlug has flipped
+  // to B — the guard drops it; the post-transition reports + B's restore are the truth.
   function rememberOverviewScroll(top: number) {
-    // Skip while a transition is in flight (navSyncSuspendCount > 0): currentSlug can move to a NEW slug
-    // before the outgoing grid's last scroll report lands, which would stamp A's offset under B (the same
-    // N1 the removed pan-zoom effect guarded).
-    if (view !== "overview" || navSyncSuspendCount > 0) return;
-    overviewScrollTops.set(currentSlug, top);
+    if (navSyncSuspendCount > 0 || !ovScrollSlug) return;
+    overviewScrollTops.set(ovScrollSlug, top);
+  }
+  // UNMOUNT flush (synchronous, from the grid's $effect cleanup). Deliberately UNGUARDED: it fires while
+  // leaving overview (→ editor/library), which happens inside applyPlace's suspended window — a suspend
+  // guard here would drop the very write that fixes the lost-final-offset race (the reason the native scroll
+  // report alone is insufficient: setting scrollTop / coalesced wheel events don't dispatch 'scroll'
+  // synchronously). It's safe unguarded because leaving overview never re-enters (never re-keys
+  // ovScrollSlug), so this always targets the grid's own exhibit.
+  function flushOverviewScroll(top: number) {
+    if (!ovScrollSlug) return;
+    overviewScrollTops.set(ovScrollSlug, top);
   }
 
   // URL → STATE. Apply a place to the view, degrading an unresolvable one to its nearest surviving ancestor
@@ -1923,6 +1938,7 @@
       onvisible={(ids) => (visibleIds = ids)}
       scrollTop={ovScrollInitial}
       onscrolled={rememberOverviewScroll}
+      onscrollflush={flushOverviewScroll}
       onstartnarrative={() => openObject(OBJECTS[0]?.id ?? currentObjectId)}
       rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}

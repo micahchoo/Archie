@@ -238,8 +238,11 @@ test.describe("Studio place navigation (Archie-d80f)", () => {
     const overflow = await grid.evaluate((el) => el.scrollHeight - el.clientHeight);
     expect(overflow, "grid must overflow for the scroll-restore assertion to mean anything").toBeGreaterThan(40);
 
-    // Scroll down; the container's onscroll reports the offset up into App's per-slug memory.
-    await grid.evaluate((el) => { el.scrollTop = 180; });
+    // Scroll down with a REAL wheel gesture (not a programmatic scrollTop set, which never dispatches a
+    // 'scroll' event) so the live report + the unmount backstop are exercised the way a user drives them.
+    await grid.hover();
+    await page.mouse.wheel(0, 260);
+    await expect.poll(async () => grid.evaluate((el) => el.scrollTop), { timeout: 2000 }).toBeGreaterThan(0);
     const saved = await grid.evaluate((el) => el.scrollTop);
     expect(saved, "scroll did not take").toBeGreaterThan(0);
 
