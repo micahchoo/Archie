@@ -38,6 +38,7 @@
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import ShortcutsHelp from "./ShortcutsHelp.svelte";
+  import IdentityPrompt from "./IdentityPrompt.svelte";
   import TutorialModal from "./TutorialModal.svelte";
   import HelpMenu from "./HelpMenu.svelte";
   import NoteEditor from "./NoteEditor.svelte";
@@ -106,6 +107,39 @@
   function firstAddSeen(slug: string): boolean { try { return localStorage.getItem(FIRST_ADD_KEY(slug)) === "1"; } catch { return false; } }
   function markFirstAddSeen(slug: string) { try { localStorage.setItem(FIRST_ADD_KEY(slug), "1"); } catch { /* private mode — cue simply re-shows, harmless */ } }
   const author = $derived(asClientId(identity || "anonymous"));
+
+  // Lazy identity prompt (Archie-2bf1, decision Archie-d71c): asked the first time a colleague's copy
+  // lands with OTHERS' notes in it, or the first share/publish action — never at boot, always skippable.
+  // `pendingAfterIdentity` lets a trigger resume its own action (e.g. opening Publish) once the prompt
+  // closes, whether the user named themselves or skipped — skip does NOT persist (identity stays null),
+  // so the same trigger asks again next time (the "gentle re-prompt" the component's header comments).
+  let identityPromptOpen = $state(false);
+  let pendingAfterIdentity: (() => void) | null = null;
+  function maybePromptIdentity(after: () => void) {
+    if (identity === null) { pendingAfterIdentity = after; identityPromptOpen = true; }
+    else after();
+  }
+  function resumePendingIdentity() {
+    identityPromptOpen = false;
+    const after = pendingAfterIdentity;
+    pendingAfterIdentity = null;
+    after?.();
+  }
+  function onIdentitySave(name: string) {
+    identity = name;
+    try { localStorage.setItem(IDENTITY_KEY, name); } catch { /* private mode — the choice just doesn't persist */ }
+    resumePendingIdentity();
+  }
+  function onIdentitySkip() {
+    resumePendingIdentity(); // identity stays null — nothing persisted, so the next trigger asks again
+  }
+  /** Permanent identity edit from Library Details (the other 2bf1 surface) — an explicit name/clear,
+   *  distinct from skip: clearing here writes "" (anonymous), same as IDENTITY_KEY's existing semantics,
+   *  so it will NOT re-prompt (a deliberate choice, not a dodge). */
+  function setIdentity(name: string) {
+    identity = name;
+    try { localStorage.setItem(IDENTITY_KEY, name); } catch { /* private mode — same as above */ }
+  }
   const srcOf = (t: unknown): string | undefined => (typeof t === "string" ? t : (t as { source?: string } | null)?.source);
 
   // --- library / exhibit state (authored structure; persisted at {PROJECT}/library.json) ---
@@ -854,7 +888,14 @@
   // binding-chip update on its side (the flow stays binding-agnostic).
   async function openZipFile(file: File) {
     const r = await flows.openZip(file);
-    if (r) bnd.bindToFile(file.name);
+    if (r) {
+      bnd.bindToFile(file.name);
+      // Lazy identity trigger (Archie-2bf1): a colleague's copy just landed — if it carries notes
+      // stamped with a DIFFERENT editor and this browser has never chosen (or explicitly skipped) a
+      // name, ask now (the moment collaboration first becomes real), not at boot.
+      const others = Object.values(r.loaded.logs).some((log) => log.some((rec) => rec.lastEditor !== undefined && rec.lastEditor !== author));
+      if (others) maybePromptIdentity(() => {});
+    }
   }
 
   // --- add media to the current exhibit (Archie-56cf: one scoped chooser) ---
@@ -1785,6 +1826,8 @@
     onremoveexhibit={(slug) => void removeExhibitById(slug)}
     ontutorial={() => (tutorialOpen = true)}
     onshortcuts={() => (helpOpen = true)}
+    identity={identity ?? ""}
+    onidentity={setIdentity}
     bind:gallerySearch
   />
 {:else if view === "overview" && currentExhibit}
@@ -1868,7 +1911,7 @@
     <SafetyState sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
       bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
       hasRealWork={safetyHasRealWork} onflush={() => void bnd.saveProject()} />
-    <button class="publish-signal" onclick={() => void ensurePub().then((p) => p.openMenu())}>Publish & share…</button>
+    <button class="publish-signal" onclick={() => maybePromptIdentity(() => void ensurePub().then((p) => p.openMenu()))}>Publish & share…</button>
     <HelpMenu ontutorial={() => (tutorialOpen = true)} onshortcuts={() => (helpOpen = true)} />
   </header>
 
@@ -2345,6 +2388,8 @@
 {/if}
 <!-- GLOBAL: the ? shortcuts cheat-sheet (generated from the registry) — reachable from any view. -->
 <ShortcutsHelp open={helpOpen} onclose={() => (helpOpen = false)} />
+<!-- GLOBAL: the lazy identity prompt (Archie-2bf1) — opened by maybePromptIdentity, never at boot. -->
+<IdentityPrompt open={identityPromptOpen} onsave={onIdentitySave} onskip={onIdentitySkip} />
 <!-- GLOBAL: the onboarding tutorial (embeds docs/learn decks from public/learn). -->
 <TutorialModal open={tutorialOpen} onclose={() => (tutorialOpen = false)} />
 </div>
