@@ -247,7 +247,11 @@ test.describe("Studio place navigation (Archie-d80f)", () => {
     expect(saved, "scroll did not take").toBeGreaterThan(0);
 
     // Open an object (in-app hash change so the Map survives), confirm the editor, then history-back.
-    await page.evaluate(() => { location.hash = "#/voynich/o/o5"; });
+    // Discover a real plate id from the DOM rather than assuming an id scheme — ADR-0026 moved seeds
+    // from ordinal o1..oN to ULID-based ids, and this test must survive either.
+    const targetId = await grid.evaluate((el) => el.querySelectorAll("[data-plate-id]")[4]?.getAttribute("data-plate-id"));
+    expect(targetId, "expected at least 5 plates in the seeded exhibit").toBeTruthy();
+    await page.evaluate((id) => { location.hash = `#/voynich/o/${id}`; }, targetId);
     await expect(page.getByRole("navigation", { name: "Exhibit objects" })).toBeVisible();
     await page.goBack();
     await expect(grid).toBeVisible();
