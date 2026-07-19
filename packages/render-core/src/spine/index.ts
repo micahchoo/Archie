@@ -10,6 +10,8 @@ export * from "./structure.js";
 // to the annotation serialize/deserialize/persist trio below.
 export * from "./structure-serialize.js";
 export * from "./structure-persist.js";
+// Hide-by-ancestry read derivation + the bulk section-and-notes delete verb (Archie-6b8e, #6).
+export * from "./visibility.js";
 export * from "./serialize.js";
 export * from "./deserialize.js";
 export * from "./persist.js";
