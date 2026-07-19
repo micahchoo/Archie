@@ -5,6 +5,7 @@ import { objectsFromManifest } from "../iiif/manifest.js";
 import type { DziTileSource } from "../iiif/resolve.js";
 import { ZipFilesystem } from "../fs/zip.js";
 import { MemoryFilesystem } from "../fs/memory.js";
+import type { Filesystem, FsDirectory, FsFile, FsWritable } from "../fs/seam.js";
 import { readAnnotations } from "../spine/persist.js";
 import { appendNew } from "../spine/log.js";
 import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
@@ -486,5 +487,61 @@ describe("publishLibrary — incremental scope (spike-0002)", () => {
     const manifest = (await collectFiles(await fs.root()))["q/manifest.json"] as { text: string } | undefined;
     expect(manifest).toBeDefined(); // NOT deleted by a post-loop prune
     expect(manifest!.text).toContain("Q REBORN"); // and it's the fresh write
+  });
+});
+
+// A Filesystem that delegates to a MemoryFilesystem but records the path of every file at the moment its
+// writer COMMITS (writable().close()) — the durable-write instant. Lets a test observe actual write order
+// under the concurrent publish scheduler, which collectFiles (a content snapshot) cannot.
+function recordingFs(): { fs: Filesystem; order: string[] } {
+  const inner = new MemoryFilesystem();
+  const order: string[] = [];
+  const wrapWritable = (w: FsWritable, path: string): FsWritable => ({
+    write: (d) => w.write(d),
+    close: async () => { await w.close(); order.push(path); },
+  });
+  const wrapFile = (f: FsFile, path: string): FsFile => ({
+    readable: () => f.readable(),
+    getFile: () => f.getFile(),
+    writable: async () => wrapWritable(await f.writable(), path),
+  });
+  const wrapDir = (d: FsDirectory, prefix: string): FsDirectory => ({
+    getDirectory: async (name, opts) => wrapDir(await d.getDirectory(name, opts), `${prefix}${name}/`),
+    getFile: async (name, opts) => wrapFile(await d.getFile(name, opts), `${prefix}${name}`),
+    remove: (name) => d.remove(name),
+    entries: () => d.entries(),
+  });
+  return { fs: { root: async () => wrapDir(await inner.root(), "") }, order };
+}
+
+describe("publishLibrary — archie.json is the COMMIT MARKER, written LAST under the concurrent scheduler (Issue 25b)", () => {
+  it("commits archie.json strictly after every exhibit's content, even with exhibits fanned out", async () => {
+    // 8 exhibits > PUBLISH_CONCURRENCY so the pool actually interleaves; each has an object + a note log so
+    // real content (manifest, canvas heads page, history index + page) is written per exhibit.
+    const slugs = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    const exhibits = slugs.map((s) => ({
+      id: asExhibitId(`ex-${s}`), slug: s, title: s.toUpperCase(),
+      objects: [{ id: asObjectId(`o-${s}`), source: `https://img/${s}.jpg`, label: s, width: 10, height: 10 }],
+    }));
+    const lib: Library = { id: asLibraryId("lib"), title: "Lib", exhibits };
+    const byId: Record<string, AnnotationLog> = {};
+    for (const e of exhibits) {
+      byId[e.id] = appendNew([], { target: `https://img/${e.slug}.jpg`, body: { type: "TextualBody", value: `note-${e.slug}` }, lastEditor: alice, modifiedAt: "t", now: 1 }).log;
+    }
+    const getLogL = (id: string): AnnotationLog => byId[id] ?? [];
+
+    const { fs, order } = recordingFs();
+    await publishLibrary(fs, lib, getLogL, { baseUrl: "https://u.gh.io/lib/" });
+
+    const marker = order.indexOf("archie.json");
+    expect(marker).toBe(order.length - 1); // archie.json is the very last committed file, nothing after it
+    // Every exhibit-subtree file (a/…, b/…, … h/…) commits BEFORE the marker — a torn publish that stops
+    // partway has no current marker, so a consumer reads it as stale/refused, never as complete.
+    const exhibitWrites = order.filter((p) => /^[a-h]\//.test(p));
+    expect(exhibitWrites.length).toBeGreaterThan(slugs.length); // manifests + canvas pages + history pages
+    for (const p of exhibitWrites) expect(order.indexOf(p)).toBeLessThan(marker);
+    // The library-level projections (images.json, exhibits.json) likewise precede the marker.
+    expect(order.indexOf("images.json")).toBeLessThan(marker);
+    expect(order.indexOf("exhibits.json")).toBeLessThan(marker);
   });
 });

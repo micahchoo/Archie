@@ -21,6 +21,7 @@ import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.
 import { readAnnotationsReport, AnnotationsCorruptError } from "../spine/persist.js";
 import type { Exhibit, AObject } from "../model/model.js";
 import type { CarryDisposition } from "../model/carry.js";
+import { mapLimit, PUBLISH_CONCURRENCY } from "../concurrency.js";
 
 /** The Studio's working-store root directory name (one project per origin in v1). */
 export const WORKING_PROJECT = "archie-demo-project";
@@ -312,9 +313,17 @@ export async function loadWorkingLibrary(fs: Filesystem, opts: LoadWorkingOption
   const editor = opts.editor ?? asClientId("working-reader");
   const logs: Record<string, AnnotationLog> = {};
   const included = new Set(library.exhibits.map((e) => e.id));
-  for (const ex of meta.exhibits) {
-    if (included.has(asExhibitId(ex.id))) logs[ex.id] = await readExhibitLog(projectDir, ex.slug, editor);
-  }
+  // Read every included exhibit's log under a bounded pool (SCALE-GALLERY: this was 100 serialized awaits
+  // on every viewer live-preview and publish). Load set is UNCHANGED — ALL included exhibits, because the
+  // whole-library `archie:` link index needs every log (SCALE.md: narrowing corrupts cross-exhibit cites).
+  // Error tolerance is UNCHANGED: readExhibitLog returns [] for an absent dir but THROWS AnnotationsCorruptError
+  // for a torn page (corrupt ≠ empty, Issue 19); a rejection here propagates out of loadWorkingLibrary exactly
+  // as the serial `await` did, so the viewer's initLiveSource try/catch degrades identically.
+  const toLoad = meta.exhibits.filter((ex) => included.has(asExhibitId(ex.id)));
+  const loaded = await mapLimit(toLoad, PUBLISH_CONCURRENCY, async (ex) =>
+    [ex.id, await readExhibitLog(projectDir, ex.slug, editor)] as const,
+  );
+  for (const [id, log] of loaded) logs[id] = log;
   const getAsset = async (slug: string, name: string): Promise<ArrayBuffer | null> => {
     try {
       const dir = await (await (await projectDir.getDirectory("exhibits")).getDirectory(slug)).getDirectory("assets");
