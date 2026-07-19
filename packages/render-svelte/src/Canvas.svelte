@@ -28,6 +28,7 @@
     onmarkerrects,
     styleOf,
     frame,
+    onzoom,
   }: {
     /** Reader UX: clicking a marker on the canvas zooms to it (controller option). */
     zoomOnSelect?: boolean;
@@ -62,6 +63,13 @@
     styleOf?: (id: string) => MarkerStyle | undefined;
     /** A canvas-wide coverage border framing the whole object (7e1f). null clears; undefined = leave as-is. */
     frame?: FrameOverlay | null;
+    /** Live zoom-magnitude readout (Archie-93fd scale cue) — fired once the surface is ready and again
+     *  on every viewport change, with the SAME raw ratio (current zoom / home zoom) zoom-band.ts bands.
+     *  The host formats it with `formatZoomRatio` (@render/mount) and renders its own chrome — this
+     *  component stays free of app-specific chrome placement (studio's a9fc "nothing floats over the
+     *  artefact" vs. the viewer's canvas-corner overlays are contradictory idioms; see App.svelte /
+     *  Reader.svelte for where each surface actually renders the cue). */
+    onzoom?: (ratio: number) => void;
   } = $props();
 
   // Emit the selected marker's current screen rect (OSD re-anchors natively, so this just re-reads).
@@ -77,6 +85,12 @@
       rectsRaf = 0;
       if (surface && onmarkerrects && rectIds) onmarkerrects(surface.markerScreenRects(rectIds));
     });
+  }
+  // Scale cue (Archie-93fd) — OSD re-derives the ratio itself (getZoomRatio), so this just re-reads,
+  // same shape as emitRect. Not rAF-throttled: it's a single division, and the host only ever renders
+  // the ROUNDED text (formatZoomRatio), so an extra call between two identical-looking frames is free.
+  function emitZoom() {
+    if (surface && onzoom) onzoom(surface.getZoomRatio());
   }
 
   // a11y marker labels (Q-5): Annotorious renders each region as an SVG `.a9s-annotation[data-id=<id>]`,
@@ -143,9 +157,10 @@
       // narrative card → another object, and the viewer's cross-object section) never frames its region.
       if (focus) surface.fitRegion(focus);
       // Follow the selected marker as the viewport moves (OSD-native re-anchor — donor pattern, no dep).
-      offViewport = surface.onViewportChange(() => { emitRect(); emitRects(); });
+      offViewport = surface.onViewportChange(() => { emitRect(); emitRects(); emitZoom(); });
       emitRect();
       emitRects();
+      emitZoom();
       status = "ready";
     } catch (e) {
       status = "error";

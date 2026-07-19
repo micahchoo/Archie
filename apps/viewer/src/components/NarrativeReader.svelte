@@ -13,7 +13,7 @@
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import ProseCites from "./ProseCites.svelte";
-  import { type MarkerStyle, type FrameOverlay } from "@render/svelte";
+  import { type MarkerStyle, type FrameOverlay, formatZoomRatio } from "@render/svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
   import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
@@ -98,6 +98,10 @@
 
   let activeIndex = $state(arrivalSection);
   let selected = $state<string | null>(initialSelected); // a clicked marker (highlight), distinct from the active section
+  // Scale cue (Archie-93fd): current zoom / home zoom, streamed live from Canvas's onzoom. Defaults
+  // to 1 (home/fit) — the value it settles back to once the canvas mounts and reports its own home.
+  // Only meaningful for the spatial (non-AV) branch — see the `{#if !isAV}` guard below.
+  let zoomRatio = $state(1);
 
   // Re-selection seam (A0): when ExhibitView's arriveAtNote re-fires on an ALREADY-mounted narrative
   // (search jump Q-4, keyboard index Q-5), `initialSelected` changes to a new note. `selected` and
@@ -232,6 +236,7 @@
             frame={canvasFrame}
             focus={activeSection?.start ?? null}
             bind:selected
+            onzoom={(r) => (zoomRatio = r)}
           />
         {/key}
       {/if}
@@ -242,14 +247,23 @@
     <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
   {/if}
 
-  <!-- Grid-index escape (ADR-0016 keystone): the narrative leads, but the object grid stays reachable
-       BEHIND it as an index (§137 precision-in/escape-out; §223 anti-trap). Quiet canvas-side chrome,
-       sibling to the legend — shown only when there's a grid to reach (>1 object). -->
-  {#if onindex && objects.length > 1}
-    <button type="button" class="to-index" onclick={onindex}>
-      <span class="grid-mark" aria-hidden="true">▦</span>All objects
-    </button>
-  {/if}
+  <!-- Top-right canvas chrome group (ADR-0016 keystone + Archie-93fd): the grid-index escape and the
+       scale cue share ONE anchored flex row instead of two separately-positioned absolutes, so they
+       stack deterministically (gap, not guessed offsets) instead of risking overlap when both are
+       present. Grid-index escape: the narrative leads, but the object grid stays reachable BEHIND it
+       as an index (§137 precision-in/escape-out; §223 anti-trap) — shown only when there's a grid to
+       reach (>1 object). Scale cue: the locator's missing companion, HOW FAR IN vs WHERE — hidden
+       during an AV section (no OSD zoom to report then). -->
+  <div class="canvas-chrome-right">
+    {#if onindex && objects.length > 1}
+      <button type="button" class="to-index" onclick={onindex}>
+        <span class="grid-mark" aria-hidden="true">▦</span>All objects
+      </button>
+    {/if}
+    {#if !isAV}
+      <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
+    {/if}
+  </div>
 
   <!-- min/max match the spine's responsive clamp(360px … 620px) so a resize can't escape the designed
        reading-measure (#14). -->
@@ -405,13 +419,19 @@
   /* Pulled quotes read as soft serif set off by a warm clay hairline rule. */
   .prose :global(blockquote) { margin: var(--space-3) 0; padding: 0 0 0 var(--space-4); border-left: 1px solid var(--accent-3); font-family: var(--font-display-2); font-weight: 600; font-style: italic; font-size: 1.2rem; line-height: 1.5; color: var(--ink-paper-secondary); }
 
-  /* Grid-index escape — a quiet canvas overlay, sibling to the legend (same warm-paper pill language).
-     Anchored top-right of the canvas (the legend owns top-left); recedes so the read stays the star,
-     but is always reachable so the narrative can never trap the visitor (§223 anti-trap, §137 escape-out).
-     Connector-blue (--accent-2) hover — the secondary up/nav signal — keeps the rationed orange for the
-     one focal action, and is the established green-on-dark-canvas contrast rescue (system.md §contrast). */
-  .to-index {
+  /* Top-right canvas chrome group (Archie-93fd) — the grid-index escape and the scale cue anchor
+     together, top-right of the canvas (the legend owns top-left), so a gap keeps them apart instead
+     of each guessing an offset around the other. */
+  .canvas-chrome-right {
     position: absolute; z-index: 20; top: var(--topbar-h); right: var(--space-5);
+    display: flex; align-items: center; gap: var(--space-2);
+  }
+  /* Grid-index escape — a quiet canvas overlay, sibling to the legend (same warm-paper pill language).
+     Recedes so the read stays the star, but is always reachable so the narrative can never trap the
+     visitor (§223 anti-trap, §137 escape-out). Connector-blue (--accent-2) hover — the secondary
+     up/nav signal — keeps the rationed orange for the one focal action, and is the established
+     green-on-dark-canvas contrast rescue (system.md §contrast). */
+  .to-index {
     display: inline-flex; align-items: center; gap: var(--space-2);
     padding: var(--space-2) var(--space-3);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
@@ -423,6 +443,20 @@
   .to-index:hover { color: var(--accent-2); }
   .to-index .grid-mark { font-size: 0.95rem; line-height: 1; color: var(--ink-canvas-muted); transition: color 160ms ease; }
   .to-index:hover .grid-mark { color: var(--accent-2); }
+  /* Scale cue — the locator's missing companion (HOW FAR IN vs WHERE), ported verbatim from
+     Reader.svelte so the two readers' cues read identically. Deliberately the quietest thing in the
+     group: no button chrome, muted mono text — a readout, not an action. */
+  .scale-cue {
+    padding: var(--space-1) var(--space-2);
+    font-family: var(--font-mono), monospace; font-size: 0.72rem; letter-spacing: 0.02em;
+    color: var(--ink-canvas-muted);
+    background: var(--surface-canvas-raised); border-radius: var(--radius-sm);
+    pointer-events: none;
+  }
+  .scale-cue .sc-label {
+    font-family: var(--font-ui), sans-serif; font-size: 0.65rem; font-weight: 500;
+    letter-spacing: 0.18em; text-transform: uppercase; margin-right: 2px;
+  }
 
   /* Notes pane — the Reader sidebar's note-card idiom, ported verbatim so the two note lists read as
      one component (warm paper card, 3px Reading-colour edge, 3-line scan clamp, per-card tag chips). */

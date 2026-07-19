@@ -64,6 +64,12 @@ export interface MountSurface {
   /** Subscribe to OSD pan/zoom (`update-viewport`) — fires each frame the viewport moves, so a popover can
    *  follow its marker (donor: OpenSeadragonPopup.svelte:70-81). Returns an unsubscribe fn. */
   onViewportChange(cb: () => void): () => void;
+  /** Current zoom / home zoom (Archie-93fd scale cue) — the SAME raw ratio zoom-band.ts bands, so 1
+   *  means OSD's home zoom (fit-to-viewport), matching zoomBand's own baseline. Like the ratio fed to
+   *  `zoomBand`, this can read NaN/Infinity on a degenerate first-paint race (before `getHomeZoom`
+   *  resolves) — callers format it with `formatZoomRatio` (zoom-cue.ts), which owns the degrade-to-"1×"
+   *  policy, the same division of labour zoomBand already uses. Recompute via onViewportChange. */
+  getZoomRatio(): number;
   /** Tear down OSD + Annotorious instances and release listeners. */
   destroy(): void;
   /** Subscribe to user selection on the surface. Returns an unsubscribe fn. */

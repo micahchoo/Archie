@@ -24,3 +24,7 @@ export { guardImageDimensions, MAX_DECODE_DIM, type DeclaredImageSource, type Im
 
 // Custom XYZ/slippy-map OSD tile source (geo-annotation extension; DESIGN.md T1).
 export { xyzTileSource, type OsdXyzConfig } from "./xyz.js";
+
+// Scale cue (Archie-93fd): the "3.2×" zoom-magnitude formatter, paired with MountSurface.getZoomRatio
+// (surface.ts) — the ONE place both apps' canvas chrome derive the SAME text for the SAME ratio.
+export { formatZoomRatio } from "./zoom-cue.js";
