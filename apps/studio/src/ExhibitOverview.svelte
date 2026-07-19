@@ -146,6 +146,7 @@
   // the only writer today; LibraryHome's Exhibits/All-images lens is the other reader/writer of that module).
   const mode = $derived(viewPrefs.overviewMode);
   let viewport = $state<HTMLDivElement | null>(null);
+  let listRoot = $state<HTMLElement | null>(null); // list-mode's <ul> — the roving-focus query root there
 
   // First-use-only chrome (Archie-a9fc chrome trim): the pan/zoom legend teaches its gesture ONCE per
   // MODE (canvas-first-use.ts LegendMode — Archie-adae review: a reorder demonstrated in list mode used
@@ -211,6 +212,60 @@
     if (selectMode) { onselect(id, { meta: !mods.shift, shift: mods.shift }); return; } // plain → toggle, shift → range
     if (mods.meta || mods.shift) { onselect(id, mods); return; }
     openPlate(id);
+  }
+
+  // --- Keyboard range-select while selection mode is active (Archie-3b03 requirement 4, applying
+  // docs/research/a11y-interactions.md §1 "Multi-select without marquee" — the WAI-ARIA APG Grid
+  // pattern's row-selection keys: Shift+Arrow extends, bare Space toggles without moving focus,
+  // roving tabindex so exactly ONE plate sits in the page Tab sequence and arrow keys move between
+  // them without leaving the grid). Ctrl/Cmd+A is already wired app-wide in App.svelte's
+  // onGlobalKey (unconditional on selectMode, guarded by typingInField) — not duplicated here.
+  // Space needs NO new code: a plate is a real <button>, so native Space/Enter activation already
+  // fires onPlateClick, whose selectMode branch above already treats a plain click as a toggle
+  // (`meta: !mods.shift`) — roving tabindex just makes sure that activation lands on the FOCUSED
+  // plate. The listener lives on the grid container (.tableau / .list), a sibling of the toolbar's
+  // search field, not an ancestor of it — so it structurally never sees keys typed there; no
+  // typingInField() guard needed. ---
+  let roveId = $state<string | null>(null);
+  $effect(() => {
+    if (!selectMode) { roveId = null; return; } // roving tabindex only applies during selection mode
+    if (roveId && displayObjects.some((o) => o.id === roveId)) return; // still on-screen — leave it
+    roveId = displayObjects[0]?.id ?? null; // just entered select-mode, or the roved plate got filtered out
+  });
+  function plateEl(id: string): HTMLElement | null {
+    const root = mode === "canvas" ? viewport : listRoot;
+    return root?.querySelector<HTMLElement>(`[data-plate-id="${CSS.escape(id)}"]`) ?? null;
+  }
+  // Arrow moves the roving focus by one step in DISPLAY order (the same visible/filtered sequence
+  // onvisible reports up — never the canonical order, so keyboard nav can't range over
+  // filtered-out plates either). Shift held: also fold this id into the selection via the SAME
+  // reducer path a literal shift-click uses (onselect's shift branch, applyClick in
+  // overview-selection.ts) — one range implementation, not a second copy for the keyboard.
+  function moveRove(delta: 1 | -1, extend: boolean) {
+    const ids = displayObjects.map((o) => o.id);
+    if (ids.length === 0) return;
+    const at = roveId ? ids.indexOf(roveId) : -1;
+    const next = ids[Math.min(ids.length - 1, Math.max(0, (at === -1 ? 0 : at) + delta))]!;
+    roveId = next;
+    if (extend) onselect(next, { meta: false, shift: true });
+    // Canvas viewport is overflow:hidden with transform panning — a plain focus() on an
+    // off-screen plate makes the browser scroll the hidden-overflow container, a phantom
+    // offset the tx/ty pan math never sees. List mode's overflow-y:auto scroll is desirable.
+    plateEl(next)?.focus(mode === "canvas" ? { preventScroll: true } : undefined);
+  }
+  function onGridKeyDown(e: KeyboardEvent) {
+    if (!selectMode) return;
+    const forward = e.key === "ArrowDown" || e.key === "ArrowRight";
+    const backward = e.key === "ArrowUp" || e.key === "ArrowLeft";
+    if (!forward && !backward) return;
+    e.preventDefault();
+    moveRove(forward ? 1 : -1, e.shiftKey);
+  }
+  // Keep the roving cursor in sync when focus lands on a plate some OTHER way (a mouse click — some
+  // browsers focus a clicked button, some don't; either way this is the single source of truth so
+  // a following arrow-key press always continues from wherever focus actually is).
+  function onPlateFocus(id: string) {
+    if (selectMode) roveId = id;
   }
 
   // Pan/zoom transform of the whole tableau (the canvas gesture). tx/ty/z are now bindable props
@@ -361,19 +416,14 @@
           <option value="recent">Recently annotated</option>
         </select>
       </label>
+      <!-- Select toggle only — the row itself NEVER morphs (decision Archie-315e / audit W10: the old
+           inline "N selected · Remove N · Clear" used to grow here beside Size/Sort). Entering select-mode
+           now slides in a DISTINCT bottom tray (.selection-tray below) that carries the bulk actions;
+           search/sort/this toggle keep their fixed home regardless of selection state. -->
       <button type="button" class="tb-select" class:on={selectMode} onclick={onselectmode} aria-pressed={selectMode}
         title="Select several media items to reorder or remove together">
-        {selectMode ? "Done selecting" : "Select"}
+        Select
       </button>
-      {#if selection.size > 0}
-        <span class="tb-gap"></span>
-        <span class="sel-count" aria-live="polite">{selection.size} selected</span>
-        <!-- Two-step inline confirm (DetailsEditor idiom): first click/Delete arms the guard, second commits. -->
-        <button type="button" class="sel-del" class:confirming={bulkConfirming} onclick={onbulkdelete}>
-          {bulkConfirming ? `Confirm — remove ${selection.size} ${selection.size === 1 ? "item" : "items"} & their notes` : `Remove ${selection.size}`}
-        </button>
-        <button type="button" class="sel-clear" onclick={onclear}>Clear</button>
-      {/if}
     </div>
   {/if}
 
@@ -436,7 +486,10 @@
       role="application"
       aria-label="Exhibit canvas — drag to pan, scroll to zoom"
     >
-      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z});`}>
+      <!-- svelte-ignore a11y_no_static_element_interactions -- keydown is pure focus management
+           (roving tabindex); the honest APG Grid triple (grid/row/gridcell) lands with Archie-f260 —
+           a bare grid role without rows/cells announces broken structure to AT. -->
+      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z});`} onkeydown={onGridKeyDown}>
         <!-- Leading drop zone: the ONLY way to express "insert before the first object" (Archie-1933).
              Inert unless a drag is active and the dragged plate isn't already first. -->
         <div class="dropstart" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
@@ -457,6 +510,8 @@
               onpointerdown={(e) => e.stopPropagation()}
               onclick={(e) => onPlateClick(e, o.id)}
               ondblclick={() => openPlate(o.id)}
+              onfocus={() => onPlateFocus(o.id)}
+              tabindex={selectMode ? (o.id === roveId ? 0 : -1) : undefined}
               aria-pressed={selectMode ? selection.has(o.id) : undefined}
               title={o.label}>
               {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
@@ -538,7 +593,9 @@
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
     <p class="list-hint">{reorderMessage || (hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order.")}</p>
-    <ul class="list">
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -- keydown is pure focus
+         management (roving tabindex); the honest APG Grid triple lands with Archie-f260. -->
+    <ul class="list" bind:this={listRoot} onkeydown={onGridKeyDown}>
       <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
         ondrop={(e) => { e.preventDefault(); commitToStart(); }}
@@ -549,7 +606,10 @@
           ondragover={(e) => onPlateDragOver(e, o.id)}
           ondrop={(e) => { e.preventDefault(); commitReorder(o.id); }}>
           <button type="button" class="grip" class:off={!reorderable} draggable={reorderable} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd} title={reorderable ? "Drag to reorder" : reorderMessage} aria-label="Reorder {o.label}">⠿</button>
-          <button data-plate-id={o.id} onclick={(e) => onPlateClick(e, o.id)} ondblclick={() => openPlate(o.id)} aria-pressed={selectMode ? selection.has(o.id) : undefined}>
+          <button data-plate-id={o.id} onclick={(e) => onPlateClick(e, o.id)} ondblclick={() => openPlate(o.id)}
+            onfocus={() => onPlateFocus(o.id)}
+            tabindex={selectMode ? (o.id === roveId ? 0 : -1) : undefined}
+            aria-pressed={selectMode ? selection.has(o.id) : undefined}>
             {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
             <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
             <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}</span>
@@ -565,6 +625,32 @@
         <button class="li-add" onclick={onaddobject}>{dragId ? "↧ Move to end" : "+ Add media"}</button>
       </li>
     </ul>
+  {/if}
+
+  <!-- Selection tray (decision Archie-315e, closes audit W10). The toolbar above NEVER morphs — this is a
+       DISTINCT surface that slides in only while select-mode is active ("appears-when-real": the element
+       itself is mount/unmount via {#if}, not just opacity-toggled — unlike .reorder-state above, a toolbar
+       doesn't need that live-region nuance). Entering select-mode (the toolbar toggle, OR starting a
+       marquee — background-drag-to-marquee only fires once already in select-mode, so it lands here too)
+       shows the tray; Done (same onselectmode as the toolbar toggle) or the app's Esc ladder
+       (App.svelte onGlobalKey "Phase 2 rungs": clears the selection first, THEN exits select-mode) leaves
+       it. Two-step inline Remove confirm is unchanged (DetailsEditor idiom — bulkConfirming is App-owned so
+       the keyboard Delete/⌫ path and this button share one guard). role="toolbar" — a labelled control
+       group, not a status announcement (the live count uses aria-live on its own span). -->
+  <!-- selectMode OR a live off-mode selection (⌘A / ctrl-click power path): the tray is the
+       two-step Remove confirm's ONLY UI — without it an off-mode ⌫⌫ would bulk-delete with
+       zero visible confirmation. -->
+  {#if selectMode || selection.size > 0}
+    <div class="selection-tray" role="toolbar" aria-label="Selection actions">
+      <span class="tray-count" aria-live="polite">{selection.size} selected</span>
+      <button type="button" class="tray-remove" class:confirming={bulkConfirming} onclick={onbulkdelete} disabled={selection.size === 0}>
+        {bulkConfirming ? `Confirm — remove ${selection.size} ${selection.size === 1 ? "item" : "items"} & their notes` : `Remove ${selection.size}`}
+      </button>
+      <button type="button" class="tray-clear" onclick={onclear} disabled={selection.size === 0}>Clear</button>
+      <!-- Off-mode (⌘A / ctrl-click) the tray shows without selectMode: Done then means
+           "dismiss this selection" (clear), not "toggle select mode ON". -->
+      <button type="button" class="tray-done" onclick={() => (selectMode ? onselectmode() : onclear())}>Done</button>
+    </div>
   {/if}
 </main>
 
@@ -748,14 +834,31 @@
   .tb-select { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 160ms ease, border-color 160ms ease, background 160ms ease; }
   .tb-select:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
   .tb-select.on { background: var(--accent-muted); color: var(--ink-canvas-primary); border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
-  .tb-gap { flex: 1; }
-  .sel-count { font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-canvas-secondary); }
-  /* Bulk delete — quiet at rest, warms to the semantic-error fill on the armed second-click guard (DetailsEditor idiom). */
-  .sel-del { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: color 160ms ease, background 160ms ease, border-color 160ms ease; }
-  .sel-del:hover { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; }
-  .sel-del.confirming { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; font-weight: 600; box-shadow: var(--shadow-lift-mid); }
-  .sel-clear { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-2) var(--space-2); background: none; border: none; color: var(--ink-canvas-muted); transition: color 160ms ease; }
-  .sel-clear:hover { color: var(--accent-2); }
+
+  /* Selection tray (Archie-315e / audit W10) — a DISTINCT bottom-centre surface, deliberately NOT part of
+     the toolbar's flex flow (the toolbar never morphs — see the .toolbar rule above, unchanged by this
+     ticket). A REAL flex child of .overview (last, after the {#if mode}canvas/list{/if} block) — NOT a
+     position:absolute overlay: .viewport/.list are flex:1, so this sibling's own height comes out of
+     THEIR share, reserving real space instead of floating on top of live plate content underneath it
+     (verified in-browser: an earlier absolute-overlay version visually covered the last plate row —
+     reserved flow space is the fix, matching how bottom bulk-action bars behave in Photos/Drive-shaped
+     apps). tray-in plays on every mount (the tray is {#if selectMode}-gated — mount/unmount, not an
+     opacity toggle — so "exists only during selection" is structural, not just visual; unlike
+     .reorder-state above, this is a toolbar of live buttons, not a status announcement, so it doesn't
+     need to stay mounted for AT reasons). */
+  .selection-tray { align-self: center; display: flex; align-items: center; gap: var(--space-3); margin: var(--space-3) 0 0; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-mid); animation: tray-in 180ms ease; }
+  @keyframes tray-in { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .tray-count { font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-canvas-secondary); white-space: nowrap; }
+  /* Bulk delete — quiet at rest, warms to the semantic-error fill on the armed second-click guard (DetailsEditor idiom); same two-step semantics as before, just relocated off the toolbar. */
+  .tray-remove { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-overlay); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: color 160ms ease, background 160ms ease, border-color 160ms ease; white-space: nowrap; }
+  .tray-remove:hover:not(:disabled) { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; }
+  .tray-remove.confirming { background: var(--semantic-error); color: var(--ink-on-accent); border-color: transparent; font-weight: 600; box-shadow: var(--shadow-lift-mid); }
+  .tray-remove:disabled { opacity: 0.4; cursor: default; }
+  .tray-clear { font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; padding: var(--space-2) var(--space-2); background: none; border: none; color: var(--ink-canvas-muted); transition: color 160ms ease; }
+  .tray-clear:hover:not(:disabled) { color: var(--accent-2); }
+  .tray-clear:disabled { opacity: 0.4; cursor: default; }
+  .tray-done { font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--accent-muted); color: var(--ink-canvas-primary); border: 1px solid var(--accent); border-radius: var(--radius-sm); transition: background 160ms ease; }
+  .tray-done:hover { background: var(--accent); color: var(--ink-on-accent); }
 
   /* Selected state — a rationed accent ring on the plate/row; the checkbox corner appears in select-mode. */
   .plate-wrap.selected .plate, .list li.selected button:not(.grip):not(.row-edit) { box-shadow: var(--shadow-lift-low), 0 0 0 2px var(--accent); }
