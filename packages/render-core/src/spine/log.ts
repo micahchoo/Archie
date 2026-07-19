@@ -33,19 +33,31 @@ function versionsOf(log: AnnotationLog, logicalId: LogicalId): AnnotationRecord[
 }
 
 /**
- * The single head of a logicalId — the version no other version points to as parent.
- * Throws if the note is absent, or if there are PLURAL heads (an unresolved concurrent
- * merge, Q-6): editing/deleting requires a resolved single head, so the caller must
- * resolve the merge first. Heads-projection (P0-5) returns the plural set instead.
+ * All parents of a record: the primary `parent` plus any `mergeParents` (Q-7 merge nodes).
+ * THE single definition of "referenced as a parent" — `linearHead` here and
+ * `headsOf`/`ancestors` (merge.ts) all consume it, so every head count agrees: after
+ * `resolveConflict`, the non-primary heads are referenced via `mergeParents` and the merge
+ * node is the ONE head everywhere (the OQ-1 fix — a parent-only set here made resolved
+ * notes permanently uneditable). Lives in log.ts because merge.ts imports log.ts, not
+ * vice versa.
+ */
+export function parentsOf(record: AnnotationRecord): RevId[] {
+  return [record.parent, ...(record.mergeParents ?? [])].filter((p): p is RevId => p !== null);
+}
+
+/**
+ * The single head of a logicalId — the version no other version points to as a parent
+ * (via `parent` OR `mergeParents`). Throws if the note is absent, or if there are PLURAL
+ * heads (an unresolved concurrent merge, Q-6): editing/deleting requires a resolved single
+ * head, so the caller must resolve the merge first. Heads-projection (P0-5) returns the
+ * plural set instead.
  */
 export function linearHead(log: AnnotationLog, logicalId: LogicalId): AnnotationRecord {
   const versions = versionsOf(log, logicalId);
   if (versions.length === 0) {
     throw new Error(`no such note: ${logicalId}`);
   }
-  const referencedAsParent = new Set<RevId>(
-    versions.map((r) => r.parent).filter((p): p is RevId => p !== null),
-  );
+  const referencedAsParent = new Set<RevId>(versions.flatMap(parentsOf));
   const heads = versions.filter((r) => !referencedAsParent.has(r.rev));
   if (heads.length > 1) {
     throw new Error(`plural heads for ${logicalId} — resolve the concurrent merge first (Q-6)`);

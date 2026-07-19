@@ -19,8 +19,8 @@ import type { AnnotationLog, AnnotationRecord } from "../wadm/types.js";
 
 // CHARACTERIZATION suite for ./MERGE-CONTRACT.md (B2 / Archie-697c): one describe per spec
 // clause (C1..C18), test names carry the clause id for grep-able spec<->test traceability.
-// These tests PIN current behavior — including the pinned defects logged as OQ-1..OQ-6 in the
-// spec. A failure here means the merge contract CHANGED; update the spec deliberately, never
+// These tests PIN current behavior — including the pinned defects logged as OQ-2..OQ-6 in the
+// spec (OQ-1 is FIXED; its former bug-pins under C4/C11 now assert the fixed behavior). A failure here means the merge contract CHANGED; update the spec deliberately, never
 // silently. This file extends (and deliberately overlaps) merge.test.ts / heads.test.ts /
 // log.test.ts / resolve.test.ts; it modifies none of them.
 
@@ -168,15 +168,35 @@ describe("C4 — writes require a single head", () => {
     expect(() => linearHead([a, b], v1.logicalId)).toThrow(/cyclic version DAG/);
   });
 
-  it("C4 (OQ-1 pin, BUG): after resolveConflict, linearHead STILL throws plural heads — a resolved note cannot be edited or deleted", () => {
+  it("C4: after resolveConflict, linearHead returns the merge node — a resolved note is a single head again", () => {
     const { aliceLog, bobLog, v1 } = diverge();
     const resolved = resolveConflict(mergeLogs(aliceLog, bobLog), v1.logicalId, { lastEditor: alice, now: 4000 });
-    expect(headsOf(resolved, v1.logicalId)).toHaveLength(1); // headsOf: resolved
-    // linearHead ignores mergeParents (log.ts referenced-set is parent-only), so the non-primary
-    // head still looks unreferenced. Pinned as CURRENT behavior; the spec logs it as OQ-1.
-    expect(() => linearHead(resolved, v1.logicalId)).toThrow(/plural heads/);
-    expect(() => appendEdit(resolved, v1.logicalId, { lastEditor: alice, now: 5000 })).toThrow(/plural heads/);
-    expect(() => appendDelete(resolved, v1.logicalId, { lastEditor: alice, now: 5000 })).toThrow(/plural heads/);
+    const merge = resolved[resolved.length - 1]!;
+    expect(headsOf(resolved, v1.logicalId)).toHaveLength(1);
+    // linearHead counts mergeParents as references (shares parentsOf with headsOf — the OQ-1
+    // fix), so the non-primary head is referenced and the merge node is the single head.
+    expect(linearHead(resolved, v1.logicalId).rev).toBe(merge.rev);
+  });
+
+  it("C4: resolve → appendEdit succeeds — the new rev is a single-parent child of the merge node", () => {
+    const { aliceLog, bobLog, v1 } = diverge();
+    const resolved = resolveConflict(mergeLogs(aliceLog, bobLog), v1.logicalId, { lastEditor: alice, now: 4000 });
+    const merge = resolved[resolved.length - 1]!;
+    const { log: after, record: next } = appendEdit(resolved, v1.logicalId, { body: { type: "TextualBody", value: "post-resolve" }, lastEditor: alice, now: 5000 });
+    expect(next.parent).toBe(merge.rev);
+    expect(next.version).toBe(merge.version + 1);
+    expect(next.mergeParents).toBeUndefined(); // an edit is never a merge node (C2)
+    expect(headsOf(after, v1.logicalId).map((r) => r.rev)).toEqual([next.rev]);
+  });
+
+  it("C4: resolve → appendDelete succeeds — resolve-live-then-delete is a real path (C15)", () => {
+    const { aliceLog, bobLog, v1 } = diverge();
+    const resolved = resolveConflict(mergeLogs(aliceLog, bobLog), v1.logicalId, { lastEditor: alice, now: 4000 });
+    const merge = resolved[resolved.length - 1]!;
+    const { record: tomb } = appendDelete(resolved, v1.logicalId, { lastEditor: bob, now: 5000 });
+    expect(tomb.deleted).toBe(true);
+    expect(tomb.parent).toBe(merge.rev);
+    expect(tomb.version).toBe(merge.version + 1);
   });
 });
 
@@ -329,12 +349,24 @@ describe("C11 — classifyLogical", () => {
     expect(() => classifyLogical([], [], other.logicalId)).toThrow(/not present in either/);
   });
 
-  it("C11 (OQ-1 pin, BUG): a log containing an already-resolved branch throws instead of classifying", () => {
+  it("C11: a log containing an already-resolved branch classifies — the merge node is its head", () => {
     const { aliceLog, bobLog, v1 } = diverge();
     const resolved = resolveConflict(mergeLogs(aliceLog, bobLog), v1.logicalId, { lastEditor: alice, now: 4000 });
-    // The resolved side has ONE head by headsOf (C5), but classifyLogical reads heads via
-    // linearHead, which ignores mergeParents — so the async-zip path breaks post-resolution.
-    expect(() => classifyLogical(resolved, resolved, v1.logicalId)).toThrow(/plural heads/);
+    const merge = resolved[resolved.length - 1]!;
+    // linearHead counts mergeParents (OQ-1 fix), so a resolved side reads as one head and the
+    // async-zip path keeps working after a resolution.
+    expect(classifyLogical(resolved, resolved, v1.logicalId)).toEqual({ kind: "identical", rev: merge.rev });
+  });
+
+  it("C11: post-resolution exchange — a resolved local classifies against incoming instead of throwing", () => {
+    const { aliceLog, bobLog, v1, v2bob } = diverge();
+    const resolved = resolveConflict(mergeLogs(aliceLog, bobLog), v1.logicalId, { lastEditor: alice, now: 4000 });
+    const merge = resolved[resolved.length - 1]!;
+    // A peer that hasn't seen the resolution yet: strictly behind → fast-forward, no card.
+    expect(classifyLogical(resolved, bobLog, v1.logicalId)).toEqual({ kind: "fast-forward", ahead: merge.rev, behind: v2bob.rev });
+    // A peer that kept editing its branch: a genuine conflict against the merge node (C12).
+    const bob2 = appendEdit(bobLog, v1.logicalId, { body: { type: "TextualBody", value: "Bob again" }, lastEditor: bob, now: 3500 });
+    expect(classifyLogical(resolved, bob2.log, v1.logicalId)).toEqual({ kind: "conflict", a: merge.rev, b: bob2.record.rev, base: v2bob.rev });
   });
 });
 

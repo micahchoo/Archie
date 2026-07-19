@@ -9,7 +9,7 @@
 
 import { mintRevId, type RevId, type LogicalId, type ClientId } from "../wadm/brand.js";
 import type { AnnotationLog, AnnotationRecord, Emphasis, GeoAnchor, W3CBody, W3CTarget } from "../wadm/types.js";
-import { linearHead, append } from "./log.js";
+import { linearHead, append, parentsOf } from "./log.js";
 import type { CarryDisposition } from "../model/carry.js";
 
 /** Index a log by `rev` (the collision-free node id) for O(1) parent-walk lookups — built ONCE per
@@ -37,10 +37,8 @@ export function lineage(log: AnnotationLog, rev: RevId): RevId[] {
   return out;
 }
 
-/** All parents of a record: the primary `parent` plus any `mergeParents` (Q-7 merge nodes). */
-function parentsOf(record: AnnotationRecord): RevId[] {
-  return [record.parent, ...(record.mergeParents ?? [])].filter((p): p is RevId => p !== null);
-}
+// parentsOf (parent + mergeParents) lives in log.ts — ONE definition of "referenced as a
+// parent", shared with linearHead so head counts agree (OQ-1 fix).
 
 /** Proper ancestors of `rev` — a multi-parent DAG walk (follows parent + mergeParents). */
 export function ancestors(log: AnnotationLog, rev: RevId): Set<RevId> {
