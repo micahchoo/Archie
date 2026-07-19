@@ -82,33 +82,31 @@ describe("ZipFilesystem.fromZip — decompression cap (strategy 5.1, zip-bomb de
   const enc = (s: string) => new TextEncoder().encode(s);
   const STORED: ZipOptions = { level: 0 }; // no deflate → originalSize === payload length
 
-  it("exposes documented, sane default caps", () => {
-    expect(ZIP_LIMITS.maxTotalBytes).toBe(512 * 1024 * 1024); // 512 MB total uncompressed
-    expect(ZIP_LIMITS.maxEntries).toBe(50_000);
-    expect(ZIP_LIMITS.maxRatio).toBe(100); // per-entry decompressed:compressed
+  it("exposes documented, sane default caps (SCALE-rescaled for a real large library)", () => {
+    expect(ZIP_LIMITS.maxTotalBytes).toBe(4 * 1024 * 1024 * 1024); // 4 GiB total uncompressed
+    expect(ZIP_LIMITS.maxEntries).toBe(500_000);
+    expect(ZIP_LIMITS.maxRatio).toBe(100); // per-entry decompressed:compressed (unchanged — the real bomb guard)
   });
 
+  // Enforcement is driven with an INJECTED tiny `limits` (fromZip's optional 2nd arg — a test seam,
+  // default `ZIP_LIMITS`), NOT a production-cap-sized real archive: building 4 GiB / 500k entries to
+  // trip the raised caps would be absurd. This proves the guard LOGIC; the test above pins the values.
   it("rejects an archive whose total uncompressed size exceeds the cap, with a clear error", () => {
-    // Many entries, EACH within the 100× ratio cap (so the ratio guard is NOT what trips), whose
-    // DECLARED sizes ACCUMULATE past 512MB. This isolates the total-bytes guard from the per-entry
-    // ratio guard. ~26MB declared per entry × ~21 entries > 512MB; each entry is a real 1MB stored
-    // blob declaring 26MB (26× ratio, under 100×), forged via the directory patch.
-    const perEntryCompressed = 1024 * 1024; // 1 MB real stored payload
-    const perEntryDeclared = 26 * 1024 * 1024; // 26× ratio — under the 100× cap
-    const need = Math.ceil((ZIP_LIMITS.maxTotalBytes + 1) / perEntryDeclared); // entries to top 512MB
+    // A few small STORED entries whose declared sizes accumulate past a tiny injected total cap. Each
+    // entry's ratio is 1× (stored, declared == compressed), so the ratio guard is NOT what trips.
     const tree: Zippable = {};
-    const blob = new Uint8Array(perEntryCompressed).fill(65);
-    for (let i = 0; i < need; i++) tree[`big/${i}.bin`] = [blob, STORED];
-    const bomb = patchUncompressedSizes(zipSync(tree), () => perEntryDeclared);
-    expect(() => ZipFilesystem.fromZip(bomb)).toThrow(/too large|exceed|512|uncompress|total/i);
+    for (let i = 0; i < 4; i++) tree[`big/${i}.bin`] = [new Uint8Array(50).fill(65), STORED]; // ~200 declared bytes total
+    const bytes = zipSync(tree);
+    const tinyTotal = { maxTotalBytes: 100, maxEntries: 500_000, maxRatio: 100 }; // 100-byte total cap
+    expect(() => ZipFilesystem.fromZip(bytes, tinyTotal)).toThrow(/too large|exceed|uncompress|total|MB/i);
   });
 
   it("rejects an archive with too many entries, with a clear error", () => {
     const tree: Zippable = {};
-    // 50_001 tiny stored entries — over the 50k cap. Each is a single byte; cheap to build.
-    for (let i = 0; i <= ZIP_LIMITS.maxEntries; i++) tree[`f/${i}.b`] = [enc("x"), STORED];
+    for (let i = 0; i <= 5; i++) tree[`f/${i}.b`] = [enc("x"), STORED]; // 6 tiny entries — over the injected cap of 5
     const bytes = zipSync(tree);
-    expect(() => ZipFilesystem.fromZip(bytes)).toThrow(/too many|entries|50/i);
+    const fewEntries = { maxTotalBytes: 4 * 1024 * 1024 * 1024, maxEntries: 5, maxRatio: 100 };
+    expect(() => ZipFilesystem.fromZip(bytes, fewEntries)).toThrow(/too many|entries/i);
   });
 
   it("rejects an entry whose declared decompression ratio exceeds the cap, with a clear error", () => {
@@ -148,4 +146,35 @@ describe("ZipFilesystem.fromZip — decompression cap (strategy 5.1, zip-bomb de
     }
     return out;
   }
+});
+
+// SCALE requirement #2 — the EAGER assembly path (Tauri/non-Chromium) holds the whole tree in memory
+// AND toZip() doubles it, so a runaway library OOMs the webview. `maxUncompressedBytes` tracks
+// cumulative retained bytes during assembly and aborts EARLY with an actionable error — catching media
+// (generated DZI tiles, remote bakes) a pre-assembly asset-size estimate can't see.
+describe("ZipFilesystem — eager-assembly memory ceiling (maxUncompressedBytes)", () => {
+  const write = async (fs: ZipFilesystem, name: string, n: number): Promise<void> => {
+    const w = await (await (await fs.root()).getFile(name, { create: true })).writable();
+    await w.write(new Uint8Array(n).buffer);
+    await w.close();
+  };
+
+  it("aborts early, with an actionable error, once the tree crosses the ceiling", async () => {
+    const fs = new ZipFilesystem({ maxUncompressedBytes: 1024 }); // 1 KB ceiling
+    await write(fs, "a.bin", 600); // under — fine
+    await expect(write(fs, "b.bin", 600)).rejects.toThrow(/too large|folder|URL|memory/i); // 1200 > 1024
+  });
+
+  it("is unbounded by default (no ceiling → large writes never throw)", async () => {
+    const fs = new ZipFilesystem();
+    await expect(write(fs, "big.bin", 8 * 1024 * 1024)).resolves.toBeUndefined(); // 8 MB, no cap
+    expect(fs.toZip().byteLength).toBeGreaterThan(0);
+  });
+
+  it("counts a delete back off the running total (a rewrite/prune frees headroom)", async () => {
+    const fs = new ZipFilesystem({ maxUncompressedBytes: 1000 });
+    await write(fs, "a.bin", 800);
+    await (await fs.root()).remove("a.bin"); // frees 800
+    await expect(write(fs, "b.bin", 800)).resolves.toBeUndefined(); // fits again
+  });
 });

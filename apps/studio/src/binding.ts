@@ -4,7 +4,7 @@
 // with its own library-building (publishLibrary/loadLibrary/libraryToZip) — this module stays free of
 // App's internals so the capability seam is isolated. Browser-verified (FSA / localStorage / download).
 
-import { parseRecents, serializeRecents, type Binding, type RecentProject, type ZipFilesystem } from "@render/core";
+import { parseRecents, serializeRecents, ZipStreamFilesystem, type Binding, type RecentProject, type ZipFilesystem, type Filesystem } from "@render/core";
 import { isTauri, saveTauriFile } from "./tauri-fs.js";
 
 const RECENTS_KEY = "archie.recentProjects.v1";
@@ -60,11 +60,13 @@ export type ZipSaveResult =
   | { kind: "cancelled" };
 
 /**
- * Save a published library to a `.archie.zip` on disk. On Chromium, STREAM it chunk-by-chunk through
- * a `showSaveFilePicker` file handle (`FileSystemWritableFileStream`) via `fs.streamZip`, so the
- * archive never fully materializes — the A.1 memory fix. Elsewhere, fall back to the eager
- * `fs.toZip()` + anchor download (the honest floor: non-Chromium has no streaming download sink
- * without a service worker). Returns what happened. Aborts the partial file if streaming throws.
+ * EAGER save of a fully-built library zip to disk — the fallback for when write-through streaming is
+ * unavailable: Tauri desktop (native Save dialog → plugin-fs) and non-Chromium browsers (anchor
+ * download; the honest floor — no streaming download sink without a service worker). The Chromium
+ * streaming path does NOT come here: it publishes into a `ZipStreamFilesystem` via
+ * `openStreamingZipSave`, so the tree never materializes. `fs.toZip()` here builds the whole archive
+ * as a 2nd full copy in memory, so callers gate it first with a size estimate (`zipSizeOk`) and the
+ * tree itself carries an early-abort ceiling (`ZipFilesystem` `maxUncompressedBytes`).
  */
 export async function saveZipToDisk(fs: ZipFilesystem, filename: string): Promise<ZipSaveResult> {
   const name = filename.endsWith(".archie.zip") ? filename : `${filename}.archie.zip`;
@@ -75,37 +77,63 @@ export async function saveZipToDisk(fs: ZipFilesystem, filename: string): Promis
     if (!path) return { kind: "cancelled" };
     return { kind: "streamed", name: path.split("/").pop() || name };
   }
-  if (supportsFileStreamSave()) {
-    let handle: FileSystemFileHandle;
-    try {
-      handle = await (window as unknown as SavePicker).showSaveFilePicker({
-        suggestedName: name,
-        types: [{ description: "Archie library", accept: { "application/zip": [".archie.zip"] } }],
-      });
-    } catch {
-      return { kind: "cancelled" }; // user dismissed the picker
-    }
-    const writable = await handle.createWritable();
-    try {
-      await fs.streamZip({
-        // fflate's zip stream always hands back a freshly-allocated (never SharedArrayBuffer-backed)
-        // Uint8Array; FileSystemWritableFileStream.write's type is narrower than Uint8Array's default
-        // generic (which allows ArrayBufferLike, i.e. SharedArrayBuffer too).
-        write: (chunk) => writable.write(chunk as Uint8Array<ArrayBuffer>),
-        close: () => writable.close(),
-      });
-    } catch (e) {
-      // The primary save failure (e) is rethrown below and surfaces via binding-store.svelte.ts's
-      // catch -> saveStatus.error. abort() failing here is a SEPARATE, secondary failure (a stuck
-      // partial file); it must not replace/mask e, but it was previously fully invisible (SILENCE
-      // row, tend Issue 4) — log it so a stuck partial file is at least debuggable.
-      await writable.abort().catch((abortErr) => console.warn("saveZipToDisk: couldn't discard the partial file", abortErr));
-      throw e;
-    }
-    return { kind: "streamed", name: handle.name ?? name };
-  }
   downloadZip(fs.toZip(), name);
   return { kind: "downloaded", name };
+}
+
+/** Streaming save is available where a Chromium `showSaveFilePicker` handle exists AND we're not in
+ *  the Tauri webview (desktop has no picker — it saves eager via `saveTauriFile`). When true, the
+ *  publish flow writes the whole tree straight to disk in bounded memory (SCALE requirement #1);
+ *  when false it falls back to `saveZipToDisk` (eager, size-guarded). */
+export function supportsStreamingZipSave(): boolean {
+  return !isTauri() && supportsFileStreamSave();
+}
+
+/** A save picker opened as a write-through streaming zip target (see `openStreamingZipSave`). */
+export interface StreamingZipTarget {
+  /** Publish the library INTO this — every file streams to disk on close; media never accumulates. */
+  fs: Filesystem;
+  /** The chosen filename (`handle.name`). */
+  name: string;
+  /** Flush queued entries, write the central directory, close the disk handle. Call after publishing. */
+  finish(): Promise<void>;
+  /** Discard the partial file (on a publish failure). Never throws. */
+  abort(): Promise<void>;
+}
+
+/**
+ * Open a `showSaveFilePicker` handle and wrap its writable stream in a `ZipStreamFilesystem`, so a
+ * publish pass can write the whole tree straight to disk without ever holding the media in memory
+ * (SCALE LARGE-MEDIA-MEMORY-CEILING A — the ~10 GB of masters/thumbs/tiles streams to disk and
+ * releases). `null` = the user dismissed the picker. Only call when `supportsStreamingZipSave()`.
+ */
+export async function openStreamingZipSave(filename: string): Promise<StreamingZipTarget | null> {
+  const name = filename.endsWith(".archie.zip") ? filename : `${filename}.archie.zip`;
+  let handle: FileSystemFileHandle;
+  try {
+    handle = await (window as unknown as SavePicker).showSaveFilePicker({
+      suggestedName: name,
+      types: [{ description: "Archie library", accept: { "application/zip": [".archie.zip"] } }],
+    });
+  } catch {
+    return null; // user dismissed the picker
+  }
+  const writable = await handle.createWritable();
+  const fs = new ZipStreamFilesystem({
+    // fflate's zip stream always hands back a freshly-allocated (never SharedArrayBuffer-backed)
+    // Uint8Array; FileSystemWritableFileStream.write's type is narrower than Uint8Array's default
+    // generic (which allows ArrayBufferLike, i.e. SharedArrayBuffer too).
+    write: (chunk) => writable.write(chunk as Uint8Array<ArrayBuffer>),
+    close: () => writable.close(),
+  });
+  return {
+    fs,
+    name: handle.name ?? name,
+    finish: () => fs.finish(),
+    // The primary publish failure surfaces to the caller; abort() failing is a SEPARATE secondary
+    // failure (a stuck partial file) — log rather than mask the primary (tend Issue 4 posture).
+    abort: () => writable.abort().catch((abortErr) => console.warn("openStreamingZipSave: couldn't discard the partial file", abortErr)),
+  };
 }
 
 /** A filesystem-safe `.archie.zip` filename derived from a project/library title. */

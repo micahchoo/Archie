@@ -6,10 +6,10 @@
 // primitive + per-host adapters" now has one home. A `.svelte.ts` rune module (cf.
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
-  MemoryFilesystem, publishLibrary, libraryToZipFs, collectFiles, publishToGitHub, renderMarkdown, readStructureReport, asExhibitId,
-  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog,
+  MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, publishToGitHub, renderMarkdown, readStructureReport, asExhibitId,
+  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
 } from "@render/core";
-import { supportsFileStreamSave, saveZipToDisk } from "./binding.js";
+import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk } from "./binding.js";
 import { pickFolderBinding } from "./folder-backend.js";
 import { sliceToDzi } from "./dzi-slicer.js";
 import { resolveTileSource, type AObject } from "@render/core";
@@ -49,6 +49,13 @@ export interface PublishDeps {
 
 // The .archie.zip / GH upload guard threshold (LARGE-MEDIA-MEMORY-CEILING #1).
 const ZIP_WARN_BYTES = 250 * 1024 * 1024; // ~250 MB
+// Hard early-abort ceiling for the EAGER in-memory assembly (Tauri desktop / non-Chromium). That path
+// holds the whole tree in a Map AND toZip() builds a 2nd full copy → peak ≈2×; a browser tab OOMs on
+// ArrayBuffer allocation around a couple GB. 1 GiB uncompressed (≈2 GiB peak) is the backstop — past
+// it ZipFilesystem throws an actionable "publish to a folder / link by URL" error instead of OOMing
+// (SCALE requirement #2). It catches media the pre-assembly asset-size estimate can't see (generated
+// DZI tiles, remote bakes). The Chromium STREAMING path needs no ceiling — it never accumulates the tree.
+const EAGER_ZIP_CEILING_BYTES = 1024 * 1024 * 1024; // 1 GiB
 
 export function createPublishFlows(deps: PublishDeps) {
   // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
@@ -194,10 +201,46 @@ export function createPublishFlows(deps: PublishDeps) {
     const fs = withOriginals || !cachedSiteFs ? (await projectSite(withOriginals)).fs : cachedSiteFs;
     return collectFiles(await fs.root());
   }
-  // ONE zip builder for the three zip paths (project Save / dialog download / local publish).
-  async function buildZipFs() {
+  // The publish opts shared by every zip sink (streaming + eager): the SAME projection (media tiling,
+  // baked thumbnails, structure/history sidecars, static pages) the folder/GH sinks use.
+  const zipPublishOpts = () => ({ baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS });
+  // Publish the full library into ANY Filesystem sink (a streaming zip target OR an eager ZipFilesystem).
+  // ONE projection for the two zip paths (streaming disk save / eager download); returns the advisories.
+  async function publishInto(fs: Filesystem): Promise<PublishResult> {
     const logs = await deps.loadAllLogs();
-    return libraryToZipFs(deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS });
+    return publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], zipPublishOpts());
+  }
+  // Assemble the whole site into an in-memory ZipFilesystem (the EAGER path — Tauri/non-Chromium).
+  // Ceiling-guarded (EAGER_ZIP_CEILING_BYTES) so a library that balloons past what a webview can hold
+  // aborts early with an actionable error instead of OOMing (SCALE #2).
+  async function buildZipFs(): Promise<{ fs: ZipFilesystem } & PublishResult> {
+    const fs = new ZipFilesystem({ maxUncompressedBytes: EAGER_ZIP_CEILING_BYTES });
+    const result = await publishInto(fs);
+    return { fs, ...result };
+  }
+  // Save the library as a .archie.zip. Chromium streams the whole tree straight to disk in bounded
+  // memory (SCALE #1 — media never accumulates); elsewhere (Tauri / non-Chromium) fall back to the
+  // size-guarded eager build. Returns whether a save happened + the publish advisories.
+  async function saveProjectZip(): Promise<{ saved: boolean } & Partial<PublishResult>> {
+    const name = deps.currentZipName();
+    if (supportsStreamingZipSave()) {
+      const target = await openStreamingZipSave(name); // picker; null = dismissed
+      if (!target) return { saved: false };
+      try {
+        const result = await publishInto(target.fs); // writes straight to disk, media released as it goes
+        await target.finish(); // central directory + close the handle
+        return { saved: true, ...result };
+      } catch (e) {
+        await target.abort(); // discard the partial file (never throws)
+        if ((e as Error)?.name === "AbortError") return { saved: false }; // handle revoked mid-write
+        throw e;
+      }
+    }
+    // Eager fallback (Tauri desktop / non-Chromium): size-guard BEFORE assembly, then build + save.
+    if (!(await zipSizeOk())) return { saved: false };
+    const { fs, brokenLinks, incompleteCanvases } = await buildZipFs();
+    const res = await saveZipToDisk(fs, name);
+    return { saved: res.kind !== "cancelled", brokenLinks, incompleteCanvases };
   }
   // ONE folder writer for the two folder sinks (binding autosave/Save + local publish). Takes the
   // Filesystem seam directly (FSA or Tauri), so the caller owns capability selection (folder-backend).
@@ -211,12 +254,10 @@ export function createPublishFlows(deps: PublishDeps) {
     const logs = await deps.loadAllLogs();
     await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...plan });
   }
-  /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
+  /** Download the library as .archie.zip. False = the user declined/cancelled. Chromium streams to
+   *  disk in bounded memory; else the size-guarded eager path. */
   async function downloadProjectZip(): Promise<boolean> {
-    if (!supportsFileStreamSave() && !(await zipSizeOk())) return false; // size guard (#1), eager path only
-    const { fs } = await buildZipFs();
-    const r = await saveZipToDisk(fs, deps.currentZipName()); // Chromium streams to disk (A.1); else eager download
-    return r.kind !== "cancelled"; // dismissed the picker → stay unsaved
+    return (await saveProjectZip()).saved;
   }
 
   return {
@@ -231,20 +272,14 @@ export function createPublishFlows(deps: PublishDeps) {
      *  GH-Pages on-ramp; also the binding store's folder sink). */
     writeToFolder: writeTree,
     downloadProjectZip,
-    /** The Publish-dialog zip download (A.1 streaming; surfaces brokenLinks via console). Returns
-     *  whether a save actually HAPPENED — done-download must not claim a save the user cancelled. */
+    /** The Publish-dialog zip download (SCALE #1: Chromium streams straight to disk in bounded memory;
+     *  surfaces brokenLinks via console). Returns whether a save actually HAPPENED — done-download must
+     *  not claim a save the user cancelled. */
     async download(): Promise<boolean> {
-      if (!supportsFileStreamSave() && !(await zipSizeOk())) return false; // large-library guard, eager path only
-      const { fs, brokenLinks, incompleteCanvases } = await buildZipFs();
-      if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
-      if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
-      try {
-        await saveZipToDisk(fs, deps.currentZipName());
-        return true;
-      } catch (e) {
-        if ((e as Error)?.name === "AbortError") return false; // picker cancelled — not an error
-        throw e;
-      }
+      const { saved, brokenLinks, incompleteCanvases } = await saveProjectZip();
+      if (brokenLinks && brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
+      if (incompleteCanvases && incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
+      return saved;
     },
     /** GH publish (includeOriginals opt-in from the dialog; onProgress reports upload/commit/Pages). */
     publish: async (target: GitHubTarget, opts?: { includeOriginals?: boolean }, onProgress?: (p: PublishProgress) => void) =>
