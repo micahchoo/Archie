@@ -288,8 +288,8 @@
     </PropsDrawer>
 
     <!-- The create/import dialog (Archie-51cc) — its own scrimmed surface; see openCreate() above
-         for the single-scrim handoff with the two PropsDrawers. Scope is fixed to "new-exhibit" —
-         Archie-56cf will pass an "add-to-exhibit" scope from elsewhere later. -->
+         for the single-scrim handoff with the two PropsDrawers. Scope is fixed to "new-exhibit" here —
+         the "add-to-exhibit" scope (Archie-56cf) is a separate instance, mounted globally by App.svelte. -->
     <CreateExhibitDialog
       open={createOpen}
       prefillFolderFiles={createPrefillFolder}

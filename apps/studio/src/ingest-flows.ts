@@ -105,9 +105,6 @@ export interface IngestContext {
   /** Stage coordinate-free CSV rows for "Set area" placement (Archie-79c0 sub-cycle B). Returns how many
    *  were NEWLY staged after dedup, so importNotesCsv can report all three buckets (placed/pending/skipped). */
   addPendingNotes: (notes: CsvPendingNote[]) => number;
-  setAddingObject: (v: boolean) => void;
-  clearAddForm: () => void;
-  setMapModalOpen: (v: boolean) => void;
   setCollabNote: (s: string | null) => void;
   // Navigation / lifecycle callbacks owned by App.
   canvasIdOf: (objId: string) => string;
@@ -169,8 +166,6 @@ export function createIngestFlows(ctx: IngestContext) {
     await ctx.lib.appendObject(targetSlug, obj);
     if (targetSlug === ctx.currentSlug()) {
       ctx.setCurrentObjectId(obj.id);
-      ctx.clearAddForm();
-      ctx.setAddingObject(false);
     }
   }
   // Add by URL / public path (e.g. /voynich/herbal.jpg, or an audio/video URL → the AV editor).
@@ -192,7 +187,6 @@ export function createIngestFlows(ctx: IngestContext) {
     if (!ex) return;
     const id = nextObjectId(ex);
     await appendObject({ id, source: m.tileSource.template, label: m.label, tileSource: m.tileSource });
-    ctx.setMapModalOpen(false);
     ctx.switchObject(id);
     ctx.toEditor();
   }

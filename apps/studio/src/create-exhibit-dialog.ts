@@ -41,6 +41,29 @@ export function offersMap(scope: CreateSurfaceScope): boolean {
   return scope.kind === "add-to-exhibit";
 }
 
+/** Whether the "From a link" path applies to this scope (Archie-32e8 — restoring the pre-Archie-56cf
+ *  URL-add UI onto ingest-flows.ts's addObject, which survived that cut ready-made but UI-less). Same
+ *  reasoning as offersMap: a remote-URL object is a new OBJECT that needs an EXISTING exhibit to append
+ *  onto — add-to-exhibit scope only. A lone remote object isn't a sensible way to mint a brand-new
+ *  exhibit, so new-exhibit scope never offers it. */
+export function offersLink(scope: CreateSurfaceScope): boolean {
+  return scope.kind === "add-to-exhibit";
+}
+
+/** Light validation for the "From a link" path (Archie-32e8): non-empty, http(s) scheme only. No
+ *  fetch/sniff/dimension-probe preview here — that's what keeps this path cheap (addObject itself does
+ *  the media-type sniff + best-effort image dimension probe once submitted; see ingest-flows.ts). */
+export function linkPathValid(url: string): boolean {
+  const trimmed = url.trim();
+  if (!trimmed) return false;
+  try {
+    const parsed = new URL(trimmed);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 /** File → the {name, relativePath, type} shape the folder-import pure helpers read — the one place
  *  a real DOM File touches this module (a deterministic field read, not folder-walking; the actual
  *  drag-and-drop entry walk lives in folder-drop.ts, which is DOM-only end to end). */
