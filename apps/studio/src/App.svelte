@@ -66,6 +66,7 @@
   import { createReadingState } from "./reading-state.svelte.js";
   import { readingBadge, readingNumber, noteAnnouncement } from "./reading-index.js";
   import { distinctEditors, hasMultipleEditors, editorLabel, attributionChip } from "./collab-attribution.js";
+  import { loadImportFreshness, freshnessBadgeText } from "./import-freshness.js";
   import MergeReview from "./MergeReview.svelte";
   import { roveIndex } from "./roving.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
@@ -156,6 +157,17 @@
       else bnd.markExhibitDirty(d.slug);
     },
   });
+
+  // "+N since your last import" library-card badge (Archie-abf9, decision Archie-d71c part 3c). The
+  // watermark itself is written at import completion (ingest-flows.ts's openZip → recordImportFreshness,
+  // app-local localStorage only — see import-freshness.ts). Reading it here is a plain derived, not a
+  // subscription — recomputes whenever `lib.meta.exhibits` gets a new reference, which a library-replacing
+  // import always produces (ctx.lib.setMeta in replaceProjectFrom), so this stays in sync with the ONE
+  // production writer without a manual bump.
+  const exhibitFreshness = $derived(
+    Object.fromEntries(lib.meta.exhibits.map((e) => [e.slug, freshnessBadgeText(loadImportFreshness(e.slug))])),
+  );
+
   let view = $state<"library" | "overview" | "editor">("library");
 
   // --- Place-addressable navigation (ADR-0024). A *place* — library | overview(slug) | editor(slug,objId)
@@ -1820,6 +1832,7 @@
   </header>
   <LibraryHome
     exhibits={lib.meta.exhibits}
+    freshness={exhibitFreshness}
     onopen={openExhibit}
     onopenobject={(slug, objId) => void openObjectInExhibit(slug, objId)}
     oncreate={newExhibit}

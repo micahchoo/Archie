@@ -26,6 +26,7 @@ import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iii
 import { planCsvImport, type CsvPendingNote } from "./csv-import.js";
 import { planWadmImport } from "./wadm-import.js";
 import { collabBreakdown, collabSummaryText } from "./collab.js";
+import { recordImportFreshness } from "./import-freshness.js";
 import { rectSel } from "./seed-data.js";
 import { enqueueSave } from "./save-queue.svelte.js";
 import type { LibraryStore } from "./library-meta.svelte.js";
@@ -638,6 +639,11 @@ export function createIngestFlows(ctx: IngestContext) {
     await replaceProjectFrom(loaded, srcFs);
     // ⑧ (Archie-59a8): the summary panel — who wrote what in the copy you just opened.
     ctx.setCollabNote(collabSummaryText(file.name, collabBreakdown(loaded.logs, ctx.author())));
+    // Freshness watermark (Archie-abf9, decision Archie-d71c part 3c): a merge/import from a colleague
+    // just landed — snapshot each imported exhibit's others'-note count so the library card can show
+    // "+N since your last import" next time. App-local localStorage only (import-freshness.ts); never
+    // touches the model.
+    for (const [slug, log] of Object.entries(loaded.logs)) recordImportFreshness(slug, log, ctx.author());
     return { loaded };
   }
 

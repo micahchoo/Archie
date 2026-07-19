@@ -33,6 +33,7 @@
 
   let {
     exhibits,
+    freshness = {},
     onopen,
     oncreate,
     oncreatefromfolder,
@@ -66,6 +67,10 @@
     gallerySearch = $bindable(""),
   }: {
     exhibits: ExhibitMeta[];
+    /** "+N since your last import" per exhibit slug (Archie-abf9, decision Archie-d71c part 3c) — an
+     *  app-local watermark read by App (import-freshness.ts), already resolved to display copy or null
+     *  (absent = no import has ever happened for that exhibit, or nothing new since the last one). */
+    freshness?: Record<string, string | null>;
     onopen: (slug: string) => void;
     oncreate: (title: string) => void;
     /** A whole media folder (images, audio, video) becomes a new exhibit (contributor-broadening ① — Archie-e1d6).
@@ -376,6 +381,7 @@
     <li class="card-wrap">
       <button class="card" class:template={isTemplate(ex.slug)} onclick={() => onopen(ex.slug)}>
         {#if isTemplate(ex.slug)}<span class="badge">Example</span>{/if}
+        {#if freshness[ex.slug]}<span class="badge freshness">{freshness[ex.slug]}</span>{/if}
         {#if cover}
           <span class="cover"><GalleryThumb slug={cover.slug} source={cover.source} mediaType={cover.mediaType} alt="" /></span>
         {/if}
@@ -574,6 +580,9 @@
   /* Example (template) marker — a soft warm dashed edge + quiet warning label (transient, not yours-yet). */
   .card.template { box-shadow: var(--shadow-lift-low), inset 0 0 0 1px var(--border-canvas-emphasis); }
   .badge { align-self: flex-start; font-family: var(--font-ui); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--semantic-warning); border: 1px solid var(--semantic-warning); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
+  /* Freshness badge (Archie-abf9) — a calm collaboration signal, not a warning, so it borrows the
+     quiet accent-2 family (Publish's "leading choice" hairline) instead of the Example badge's amber. */
+  .badge.freshness { color: var(--accent-2); border-color: var(--accent-2); }
   /* Example hint — teaches the consequence of the badge (transient; fork to keep). Quiet body voice, demoted from the gallery lede. */
   .ex-hint { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.5; color: var(--ink-canvas-secondary); }
 

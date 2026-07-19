@@ -356,8 +356,8 @@
         <!-- Stay on the chooser until the save actually happens (the OS picker is modal anyway) —
              done-download must never claim a save the user cancelled. -->
         <button class="choice" onclick={async () => { if (await ondownload().catch(() => false)) menuPhase = "done-download"; }}>
-          <span class="c-title">Download a copy — or share a link</span>
-          <span class="c-desc">Keep a copy, share a link, or hand it to a colleague — packed into one <code>.archie.zip</code>. Best for a draft, not a permanent citation.</span>
+          <span class="c-title">Share a working copy</span>
+          <span class="c-desc">A copy of your library a colleague can open, annotate, and send back to you — or keep as your own backup, or share as a link. One <code>.archie.zip</code> file. Good for a work in progress, not a permanent citation.</span>
         </button>
         {#if !deployToPages}
           <!-- Flag off (no deploy infra): the quieter escape hatch — same wizard. -->
@@ -372,12 +372,13 @@
     {:else if menuPhase === "done-download"}
       <header>
         <p class="eyebrow">Publish</p>
-        <h2>Download a copy</h2>
-        <p class="lede">A portable <code>.archie.zip</code> — and, if you host it, a shareable link.</p>
+        <h2>Share a working copy</h2>
+        <p class="lede">A copy of your library, ready to hand off — someone else can open it, add their own notes, and send it back to you.</p>
       </header>
       <div class="result">
         <p class="ok">Downloaded your <code>.archie.zip</code>.</p>
-        <p class="line">Keep it, re-open it here any time, or hand it to a colleague. <strong>Working with someone?</strong> They open your zip in their Studio, add their own notes, and send the file back — when you open their copy here, Archie shows who added what.</p>
+        <p class="line"><strong>Working with someone?</strong> Send them the file — they open it in their own Archie, annotate their pass, and send it back. Open their copy here and Archie shows who added what.</p>
+        <p class="line">Keep it yourself too, as a backup or to re-open here any time.</p>
         <p class="line"><strong>Share it as a link (no install for the reader):</strong> upload the zip anywhere public — your site, a GitHub release, the Internet Archive — then paste its URL:</p>
         <input class="share-url" type="url" placeholder="https://…/my-library.archie.zip" bind:value={zipUrl} aria-label="Public URL of the uploaded .archie.zip" />
         {#if shareLink}
