@@ -334,7 +334,7 @@ export function createBindingStore(deps: BindingDeps) {
     //   passes; `dirty`-only reruns just that exhibit's JSON/HTML (the note-edit hot path). —
     // Re-marking a slug for WRITING cancels any pending EXHIBIT removal of it (a remove-then-recreate in one
     // drain must not both write and delete the exhibit) — the inverse of markExhibitRemoved's dEx.delete.
-    // We do NOT purge dRemovedObj here. NB: object ids are NOT always minted fresh — nextObjectId (ingest-
+    // We do NOT purge dRemovedObj here. NB: object ids are NOT always minted fresh — reserveObjectId (ingest-
     // flows.ts) REUSES a freed trailing id (remove o3 from [o1,o2,o3], re-add → o3 again; a freed MIDDLE id
     // is not reused). So a re-add can name-collide with a pending removal of the SAME id+asset. This is still
     // safe, but for a SUBTLER reason than "ids are fresh": any asset-writing re-add sets `reassets` for the

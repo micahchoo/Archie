@@ -212,12 +212,6 @@ export function createIngestFlows(ctx: IngestContext) {
       img.src = src;
     });
   }
-  function nextObjectId(ex: ExhibitMeta): string {
-    const existing = new Set(ex.objects.map((o) => o.id));
-    let n = ex.objects.length + 1, id = `o${n}`;
-    while (existing.has(id)) id = `o${++n}`;
-    return id;
-  }
   const exhibitBySlug = (slug: string): ExhibitMeta | undefined => ctx.lib.meta.exhibits.find((e) => e.slug === slug);
 
   // Objects committed to library.json per durable persist during a multi-object import. THE scale fix: the
@@ -1048,7 +1042,7 @@ export function createIngestFlows(ctx: IngestContext) {
   }
 
   return {
-    imageDims, nextObjectId, appendObject, addObject, addMapObject, addObjectFromFile, addFiles,
+    imageDims, appendObject, addObject, addMapObject, addObjectFromFile, addFiles,
     newExhibitFromFolder, newExhibitFromManifest, addManifestToExhibit, fetchManifestPlan, fetchCollectionPreview, newExhibitsFromCollection,
     importNotesCsv, importNotesWadm, replaceProjectFrom, openZip,
   };
