@@ -63,6 +63,8 @@
   // createPublishFlows is imported DYNAMICALLY (ensurePub below) so its fflate + dompurify + GitHub-publish
   // deps stay OUT of the startup bundle — publishing is a deliberate action, never needed at boot.
   import { createReadingState } from "./reading-state.svelte.js";
+  import { readingBadge, readingNumber, noteAnnouncement } from "./reading-index.js";
+  import { roveIndex } from "./roving.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   // Persisted editor-chrome view preferences (Archie-c7ef): the filmstrip's collapsed state + the docked
   // note editor's width. Same module the overview Canvas/List + library lens live in.
@@ -952,6 +954,27 @@
     railEl?.querySelector(".obj.on")?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
   });
   const currentObjectIndex = $derived(OBJECTS.findIndex((o) => o.id === currentObjectId));
+
+  // --- Filmstrip rail roving tabindex + aria-current (Archie-f260 §2, docs/research/a11y-interactions.md §2).
+  // The rail is the one nav scheme ([ / ] is its keyboard face, Archie-5e96); this adds APG-grid roving so
+  // exactly ONE tile is in the Tab sequence (the current object), and arrows move focus between tiles
+  // (activation stays Enter/Space/click → switchObject). aria-current marks the open object. Works the same in
+  // collapsed slim-tick mode (same buttons, narrower chrome). The tab stop snaps to the current object whenever
+  // it changes (click / [ ] / narrative jump) so tabbing in lands on where you are; arrows then rove freely. ---
+  let railFocusId = $state<string | null>(null);
+  $effect(() => {
+    railFocusId = OBJECTS.some((o) => o.id === currentObjectId) ? currentObjectId : (OBJECTS[0]?.id ?? null);
+  });
+  function onRailKeyDown(e: KeyboardEvent) {
+    const ids = OBJECTS.map((o) => o.id);
+    const cur = railFocusId ? ids.indexOf(railFocusId) : ids.indexOf(currentObjectId);
+    const next = roveIndex(cur, ids.length, e.key);
+    if (next === null) return; // Enter/Space activate the focused tile natively (onclick → switchObject)
+    e.preventDefault();
+    const id = ids[next]!;
+    railFocusId = id;
+    railEl?.querySelector<HTMLElement>(`[data-obj-id="${CSS.escape(id)}"]`)?.focus();
+  }
   // --- pending notes (coordinate-free imports → "Set area" placement; Archie-79c0 sub-cycle B) ---
   const objectLabelOf = (id: string) => OBJECTS.find((o) => o.id === id)?.label ?? id;
   const newPendingId = () => `p-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
@@ -1022,6 +1045,12 @@
     currentExhibit ? resolveLayoutType(currentExhibit.objects, currentExhibit.sections) : "single",
   );
   const currentReadings = $derived<Reading[]>(currentExhibit?.readings ?? []);
+  // Reading identity is no longer colour-only (W25 / Archie-f260 §3, WCAG 1.4.1): a shared NUMBER — base is
+  // ①, each reading follows in registry order — labels the reading in the readings panel, the notes-list
+  // layer chip, the note editor's picker, the filing cue, AND the keyboard note-selection announcement, so a
+  // reader who can't tell the hues apart still reads which reading a mark belongs to. reading-index.ts derives
+  // it from THIS id order (the same order the panel/legend iterate) — no model/persist change.
+  const readingIds = $derived(currentReadings.map((r) => r.id));
   // (Marginalia cuts D+E reverted 2026-06-11 on user review — "does not look good". The ENGINE
   // survives headless-tested for a future presentation redesign: core layoutMarginalia(+pinId),
   // mount markerScreenRects, Canvas rectIds/onmarkerrects, render-svelte MarginColumn. See
@@ -1154,6 +1183,56 @@
   // Per-NOTE solo: hovering a note in the list lights its mark on the canvas (the rail's hover
   // affordance applied to annotations). null = none.
   let hoverNote = $state<string | null>(null);
+
+  // --- Notes-panel LISTBOX keyboard surface (Archie-f260 §4, docs/research/a11y-interactions.md §4).
+  // The WebGL/PixiJS marks have no per-marker DOM node a screen reader can reach (confirmed: no marker-level
+  // ARIA is possible), so the present-notes list IS the accessible parallel structure: role="listbox",
+  // role="option" per note, roving tabindex, and selection-follows-focus. Arrowing to a note sets `selected`
+  // — the SAME channel a click uses (bind:selected on the Canvas → marker selection + the docked editor), so
+  // one wire gives DOM-level AND canvas-level traversal with no new state. The roving index math is the shared
+  // roveIndex; the spoken position reuses the §3 reading number so legend, chip and announcement agree. ---
+  let notesListEl = $state<HTMLElement | null>(null);
+  let notesRoveId = $state<string | null>(null); // which option holds tabindex 0 (roving)
+  let notesAnnounce = $state(""); // the mounted polite live region's text (toggled, never unmounted)
+  const readingLabelOf = (rd: string | undefined | null): string =>
+    rd ? (currentReadings.find((x) => x.id === rd)?.name ?? rd) : "General notes";
+  // Keep the roving cursor on a real, visible note: follow the open note when there is one, else hold the
+  // current option, else fall back to the first. Runs whenever the visible `notes` set or `editing` changes.
+  $effect(() => {
+    const ids: string[] = notes.map((n) => n.logicalId);
+    if (ids.length === 0) { notesRoveId = null; return; }
+    if (editing && ids.includes(editing)) { notesRoveId = editing; return; }
+    if (notesRoveId && ids.includes(notesRoveId)) return;
+    notesRoveId = ids[0]!;
+  });
+  function focusNoteOption(id: string) {
+    notesListEl?.querySelector<HTMLElement>(`[data-note-id="${CSS.escape(id)}"]`)?.focus();
+  }
+  function onNotesKeyDown(e: KeyboardEvent) {
+    const ids: string[] = notes.map((n) => n.logicalId);
+    // A li[role=option] has NO native activation (unlike a <button>), so Enter/Space must explicitly select
+    // the focused option — otherwise Tab-into-listbox then Enter does nothing.
+    if (e.key === "Enter" || e.key === " ") {
+      if (notesRoveId) { e.preventDefault(); selected = notesRoveId; }
+      return;
+    }
+    const cur = notesRoveId ? ids.indexOf(notesRoveId) : -1;
+    const next = roveIndex(cur, ids.length, e.key);
+    if (next === null) return; // not a nav key — do nothing
+    e.preventDefault();
+    const r = notes[next]!;
+    notesRoveId = r.logicalId;
+    selected = r.logicalId; // selection follows focus → drives the canvas marker + opens the dock (existing wire)
+    notesAnnounce = noteAnnouncement({
+      comment: stripMarkdown(commentOf(r)),
+      index: next,
+      count: ids.length,
+      readingKey: r.reading ?? "base",
+      readingLabel: readingLabelOf(r.reading),
+      readingIds,
+    });
+    void tick().then(() => focusNoteOption(r.logicalId));
+  }
   // Canvas re-applies styles only when the styleOf PROP IDENTITY changes ($effect dep) — a stable
   // function would freeze the comparing/solo regime (browser-harness finding). This derived mints
   // a fresh identity whenever the display state (visibility/solo/hover/readings/log) changes.
@@ -1833,7 +1912,13 @@
         <span class="rail-pos" aria-live="polite">{currentObjectIndex + 1} / {OBJECTS.length}</span>
       {/if}
       {#each OBJECTS as o (o.id)}
-        <button class="obj" class:on={o.id === currentObjectId} onclick={() => switchObject(o.id)} title={o.label}>
+        <button class="obj" class:on={o.id === currentObjectId} data-obj-id={o.id}
+          onclick={() => switchObject(o.id)}
+          onkeydown={onRailKeyDown}
+          onfocus={() => (railFocusId = o.id)}
+          tabindex={o.id === railFocusId ? 0 : -1}
+          aria-current={o.id === currentObjectId ? "true" : undefined}
+          title={o.label}>
           <span class="obj-thumb" style={`background-image:url(${thumbSrc(o)})`}></span>
           <span class="obj-meta">
             <span class="obj-label">{o.label}</span>
@@ -1856,7 +1941,7 @@
       {:else if creating}
         <span class="ss-tag">Drawing a region</span>
         <span class="ss-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"} — it becomes your note’s place{isMapCurrent ? ", anchored to its longitude/latitude" : ""}. Drag pans again once you’ve drawn.</span>
-        <span class="ss-into" title="This note files into the active reading (the pen in the readings panel).">Filing into <span class="ss-rd" style={`border-color:${activeReadingColour}`}>{activeReadingLabel}</span></span>
+        <span class="ss-into" title="This note files into the active reading (the pen in the readings panel).">Filing into <span class="ss-rd" style={`border-color:${activeReadingColour}`}><span class="ss-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {activeReadingLabel}</span></span>
         <button type="button" class="ss-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
       {/if}
       {#if importStatus}
@@ -2001,8 +2086,12 @@
               <div class="readings-rows">
                 {#each [{ id: "base", name: "General notes", colour: "var(--accent)" }, ...currentReadings] as r (r.id)}
                   <div class="reading-row" class:active-reading={rdg.active === r.id}
-                    onmouseenter={() => (soloReading = r.id)} onmouseleave={() => (soloReading = null)} role="group" aria-label={r.name}>
+                    onmouseenter={() => (soloReading = r.id)} onmouseleave={() => (soloReading = null)} role="group" aria-label={`${r.name} — reading ${readingNumber(r.id, readingIds)}`}>
                     <input type="checkbox" class="rd-vis" checked={rdg.isVisible(r.id)} onchange={() => rdg.toggle(r.id)} aria-label={`Show ${r.name} notes`} title={`Show “${r.name}” notes on the image`} />
+                    <!-- Colour-independent identifier (Archie-f260 §3): a small circled number paired with the
+                         swatch, so the reading is legible without perceiving the hue. aria-hidden — the reading
+                         name + the group's "reading N" label already carry identity for AT. -->
+                    <span class="reading-num" aria-hidden="true">{readingBadge(r.id, readingIds)}</span>
                     <span class="reading-dot" style={`background:${r.colour ?? "var(--accent)"}`}></span>
                     <span class="reading-name">{r.name}</span>
                     <span class="reading-count">{r.id === "base" ? objNotes.filter((n) => !n.reading).length : objNotes.filter((n) => n.reading === r.id).length}</span>
@@ -2054,22 +2143,34 @@
           {#if notes.length === 0}
             <p class="empty">{isAvCurrent ? "No notes on this recording yet. Mark a moment, then add a note to pin it." : objNotes.length > 0 ? "This media item has notes, but they’re hidden. Turn on a reading to show them." : "No notes on this media item yet. Pick Box or Outline above, then draw the region."}</p>
           {/if}
-          <ul class="notes-list">
+          <!-- Notes-panel LISTBOX (Archie-f260 §4): the keyboard/AT surface standing in for the WebGL marks.
+               ul=listbox, each note li=option with roving tabindex + aria-selected; arrows rove and select
+               (selection follows focus), driving the canvas through the existing `selected` wire. The button
+               is retired — the option row IS the interactive element (no nested interactive inside an option). -->
+          <ul class="notes-list" role="listbox" aria-label="Notes on this object" bind:this={notesListEl}>
             {#each notes as r (r.rev)}
               <!-- Hovering a note solos its MARK on the canvas (the rail's hover affordance, per-note). -->
-              <li class:sel={editing === r.logicalId} onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}>
-                <button onclick={() => (selected = r.logicalId)}>
-                  <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
-                  <div class="meta">
+              <li role="option" data-note-id={r.logicalId}
+                class="note-opt" class:sel={editing === r.logicalId}
+                aria-selected={editing === r.logicalId}
+                tabindex={r.logicalId === notesRoveId ? 0 : -1}
+                onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}
+                onclick={() => (selected = r.logicalId)}
+                onkeydown={onNotesKeyDown}
+                onfocus={() => (notesRoveId = r.logicalId)}>
+                <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
+                <div class="meta">
                     {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource?.kind === "xyz" ? currentTileSource : undefined)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
                     {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
-                    <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern) -->
-                    {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}>{rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}>General notes</span>{/if}
-                  </div>
-                </button>
+                    <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern).
+                         The circled reading number (Archie-f260 §3) leads the chip so the note's reading is identified without relying on the border colour. -->
+                    {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}><span class="layer-num" aria-hidden="true">{readingBadge(r.reading, readingIds)}</span> {rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}><span class="layer-num" aria-hidden="true">{readingBadge("base", readingIds)}</span> General notes</span>{/if}
+                </div>
               </li>
             {/each}
           </ul>
+          <!-- Mounted polite live region for keyboard note-traversal position announcements (§4). -->
+          <p class="sr-only" role="status" aria-live="polite">{notesAnnounce}</p>
           <!-- All notes (image / audio / video) edit in the docked editor on the right (ADR-0006 / Archie-b671);
                the sidebar is creation + the present-notes list — no inline form. -->
         </div>
@@ -2331,6 +2432,7 @@
   .status-strip .ss-msg { color: var(--ink-canvas-primary); }
   .status-strip .ss-into { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-secondary); }
   .status-strip .ss-rd { font-weight: 500; letter-spacing: 0; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
+  .status-strip .ss-rd .ss-rd-num { font-family: var(--font-mono); color: var(--ink-canvas-secondary); }
   .status-strip .ss-cancel { cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: var(--space-2); transition: box-shadow 160ms ease; }
   .status-strip .ss-cancel:hover { box-shadow: var(--shadow-lift-low); }
   .status-strip .ss-cancel kbd { font-family: var(--font-mono); font-size: 0.62rem; color: var(--ink-canvas-muted); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: 0 var(--space-1); }
@@ -2377,6 +2479,8 @@
   .reading-row.active-reading { background: var(--surface-paper-card); box-shadow: inset 2px 0 0 var(--accent); }
   .reading-row .rd-vis { margin: 0; accent-color: var(--accent-2); cursor: pointer; }
   .reading-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--border-paper); flex: none; }
+  /* Colour-independent reading number (Archie-f260 §3) — a small mono circled digit beside the swatch. */
+  .reading-num { flex: none; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1; color: var(--ink-paper-secondary); }
   .reading-name { flex: 1; min-width: 0; font-size: var(--text-ui-sm); color: var(--ink-paper-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .reading-count { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-paper-muted); }
   .reading-pen { display: inline-flex; align-items: center; cursor: pointer; color: var(--ink-paper-muted); }
@@ -2461,6 +2565,8 @@
     transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease;
   }
   .obj:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
+  /* Keyboard focus ring for the roving rail (Archie-f260 §2) — arrows move focus between tiles; make it visible. */
+  .obj:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
   .obj.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
   /* The IMAGE is the tile's identity (you choose visually, P2-6): thumb leads, caption recedes. */
   .obj-thumb { flex-shrink: 0; width: 72px; height: 54px; border-radius: var(--radius-sm); background-color: var(--surface-canvas); background-size: cover; background-position: center; box-shadow: var(--shadow-inset-fog); }
@@ -2539,9 +2645,13 @@
   /* Long note lists scroll HERE (the spine .cards 50vh idiom, NarrativeEditor) so Detail and Remove
      never sink arbitrarily deep in the single sidebar scroll (usability pass 2026-07-18). */
   .notes-list { max-height: 45vh; overflow-y: auto; }
+  /* Visually-hidden live region (keyboard note-traversal announcements) — present for AT, invisible on screen. */
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-  /* Annotation note card — warm paper, soft rounded, separated by tone + shadow (no hard border) */
-  li button {
+  /* Annotation note card — warm paper, soft rounded, separated by tone + shadow (no hard border). The card
+     IS the listbox option now (Archie-f260 §4): the row itself is the interactive/focusable element, so the
+     card styles live on .note-opt rather than an inner button. */
+  .note-opt {
     display: block; width: 100%; text-align: left; cursor: pointer;
     padding: var(--space-3) var(--space-4); margin-bottom: var(--space-2);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
@@ -2550,15 +2660,19 @@
     box-shadow: var(--shadow-lift-low);
     transition: background 160ms ease, box-shadow 160ms ease;
   }
-  li button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
+  .note-opt:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
+  /* The keyboard surface needs a real focus ring now that the row takes focus (roving tabindex). */
+  .note-opt:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
   /* Selected = a quiet signal: a soft accent left-edge + faint tint, never a loud fill. */
-  li.sel button { border-left-color: var(--accent); background: var(--accent-muted); }
+  .note-opt.sel { border-left-color: var(--accent); background: var(--accent-muted); }
   .comment { font-family: var(--font-body); font-size: var(--text-note); line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
   .meta { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
   .tag { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-2); }
   /* Geo-annotation: the pin's lng/lat readout in the note list (derived from its basemap position). */
   .geo { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.02em; color: var(--ink-paper-secondary); }
   .layer { font-family: var(--font-ui); font-size: 0.65rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); border: 1px solid var(--border-paper); padding: 2px var(--space-2); border-radius: var(--radius-sm); }
+  /* Reading number leading the layer chip (Archie-f260 §3) — mono, slightly brighter than the uppercase name. */
+  .layer .layer-num { font-family: var(--font-mono); letter-spacing: 0; color: var(--ink-paper-primary); }
   .hint { font-family: var(--font-body); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); line-height: 1.6; margin: 0; }
   .csv-import { align-self: flex-start; background: none; border: none; cursor: pointer; padding: 6px 0; font-family: var(--font-ui); font-size: var(--text-ui-md); color: var(--ink-paper-secondary); transition: color 160ms ease; } /* 24px+ hit box */
   .csv-import:hover { color: var(--accent-2); }
