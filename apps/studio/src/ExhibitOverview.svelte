@@ -10,6 +10,8 @@
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import { moveBlock, marqueeHits, START, END, type ClickMods, type PlateRect } from "./overview-selection.js";
+  import { viewPrefs } from "./view-prefs.svelte.js";
+  import { legendSeen, markLegendSeen, hintSeen, markHintSeen } from "./canvas-first-use.js";
 
   type OverviewObject = { id: string; label: string; source: string; mediaType?: "image" | "sound" | "video" };
 
@@ -116,17 +118,26 @@
     narrative: "a guided sequence led by your writing",
   };
 
-  let mode = $state<"canvas" | "list">("canvas"); // 1a spatial canvas ↔ 1b plain list
+  // 1a spatial canvas ↔ 1b plain list — a persisted VIEW PREFERENCE (Archie-a9fc / CONTEXT.md Navigation
+  // § "View preference"), not transient screen state: last choice wins and survives app restarts. Read
+  // through the shared view-prefs store so it's the SAME preference everywhere it's set (this toggle is
+  // the only writer today; LibraryHome's Exhibits/All-images lens is the other reader/writer of that module).
+  const mode = $derived(viewPrefs.overviewMode);
   let viewport = $state<HTMLDivElement | null>(null);
 
-  // --- Toolbar: search / sort / density (Phase 2). VIEW-only local $state — these never touch the
-  // canonical `objects` array (sort is a view, never a reorder — plan :21). `displayObjects` folds
-  // filter→sort ONCE; both render blocks iterate it. ---
+  // First-use-only chrome (Archie-a9fc chrome trim): the pan/zoom legend and the "click to open" hint
+  // each teach a one-time gesture, then hide permanently once demonstrated (a successful drag / a plate
+  // open) — app-global, not per-slug (canvas-first-use.ts). Seeded once at mount from the persisted flag,
+  // same idiom as App.svelte's FIRST_ADD_KEY local $state seed.
+  let showLegend = $state(!legendSeen());
+  let showHint = $state(!hintSeen());
+
+  // --- Toolbar: search / sort (Phase 2). VIEW-only local $state — these never touch the canonical
+  // `objects` array (sort is a view, never a reorder — plan :21). `displayObjects` folds filter→sort
+  // ONCE; both render blocks iterate it. The density "Size" slider was removed (Archie-a9fc chrome trim,
+  // W9+W12 grill): canvas plates and list rows now use ONE fixed size (the former slider midpoint). ---
   let search = $state("");
   let sortMode = $state<"reading" | "name" | "recent">("reading");
-  let density = $state(0.5); // 0 = compact … 1 = comfortable (slider — the Studio editing surface, spike-0003 §3)
-  const plateW = $derived(`${(9 + density * 7).toFixed(2)}rem`); // 9–16rem canvas plate width
-  const rowH = $derived(`${(2.5 + density * 1.6).toFixed(2)}rem`); // 2.5–4.1rem list row height (feeds contain-intrinsic-size)
   // Reorder is meaningless outside canonical order — a drop index in a filtered/sorted view ≠ canonical
   // index. So drag is live ONLY in reading order with no active search; otherwise the grip/legend say why.
   const reorderable = $derived(sortMode === "reading" && search.trim() === "");
@@ -151,6 +162,14 @@
     onvisible(ids);
   });
 
+  // Opening a media item (the plate click / dbl-click gesture the hint teaches) — first successful open
+  // dismisses the hint permanently (canvas-first-use.ts). A single choke point so every open call site
+  // (plain click, dbl-click, canvas + list) shares one dismissal.
+  function openPlate(id: string) {
+    if (showHint) { showHint = false; markHintSeen(); }
+    onopenobject(id);
+  }
+
   // Plate click routing (spike-0003 §1/§2). Select-mode: click TOGGLES (checkbox), shift ranges, dbl-click
   // opens. Off-mode: the primary gesture is UNBROKEN — plain click opens; ctrl/shift-click is the power
   // path that selects without entering select-mode.
@@ -158,7 +177,7 @@
     const mods: ClickMods = { meta: e.metaKey || e.ctrlKey, shift: e.shiftKey };
     if (selectMode) { onselect(id, { meta: !mods.shift, shift: mods.shift }); return; } // plain → toggle, shift → range
     if (mods.meta || mods.shift) { onselect(id, mods); return; }
-    onopenobject(id);
+    openPlate(id);
   }
 
   // Pan/zoom transform of the whole tableau (the canvas gesture). z clamped to a sane range.
@@ -166,11 +185,6 @@
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
   function fit() { tx = 0; ty = 0; z = 1; }
-  function nudgeZoom(factor: number) {
-    if (!viewport) { z = clamp(z * factor, 0.4, 3); return; }
-    const r = viewport.getBoundingClientRect();
-    zoomAt(r.width / 2, r.height / 2, factor); // zoom toward the viewport centre
-  }
   function zoomAt(cx: number, cy: number, factor: number) {
     const nz = clamp(z * factor, 0.4, 3);
     tx = cx - (cx - tx) * (nz / z); // keep the point under (cx,cy) fixed
@@ -254,7 +268,12 @@
     const cur = objects.map((o) => o.id);
     const next = moveBlock(cur, movingIds(), before);
     dragId = null; overId = null;
-    if (!sameOrder(cur, next)) onreorder(next); // skip a no-op drop — no spurious persist + folder mirror
+    if (!sameOrder(cur, next)) {
+      onreorder(next); // skip a no-op drop — no spurious persist + folder mirror
+      // First SUCCESSFUL drag (an actual reorder, not a no-op drop) dismisses the pan/zoom legend
+      // permanently (canvas-first-use.ts) — the user has just demonstrated the gesture.
+      if (showLegend) { showLegend = false; markLegendSeen(); }
+    }
   }
   const commitReorder = (beforeId: string | null) => commit(beforeId ?? END);
   const commitToStart = () => commit(START);
@@ -275,8 +294,8 @@
          an emergent property of content; the intent line under the title still names what visitors get. -->
     <button class="chip rights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for this exhibit">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     <div class="viewtoggle" role="group" aria-label="Overview mode">
-      <button class:on={mode === "canvas"} onclick={() => (mode = "canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>
-      <button class:on={mode === "list"} onclick={() => (mode = "list")} title="Plain list">List</button>
+      <button class:on={mode === "canvas"} onclick={() => viewPrefs.setOverviewMode("canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>
+      <button class:on={mode === "list"} onclick={() => viewPrefs.setOverviewMode("list")} title="Plain list">List</button>
     </div>
   </header>
 
@@ -284,8 +303,9 @@
     <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onremove} />
   </PropsDrawer>
 
-  <!-- Organizing toolbar (Phase 2): find (search titles) · sort (a VIEW, never a reorder) · size (density)
-       · select-mode toggle. When something's selected, the same row carries the bulk actions. -->
+  <!-- Organizing toolbar (Phase 2): find (search titles) · sort (a VIEW, never a reorder) · select-mode
+       toggle. When something's selected, the same row carries the bulk actions. (The density "Size" slider
+       was removed here — Archie-a9fc chrome trim; canvas plates and list rows are now one fixed size.) -->
   {#if objects.length > 0}
     <div class="toolbar">
       <label class="tb-search">
@@ -299,10 +319,6 @@
           <option value="name">Name</option>
           <option value="recent">Recently annotated</option>
         </select>
-      </label>
-      <label class="tb-field tb-density" title="Plate size">
-        <span class="tb-lbl">Size</span>
-        <input type="range" min="0" max="1" step="0.01" bind:value={density} aria-label="Media plate size" />
       </label>
       <button type="button" class="tb-select" class:on={selectMode} onclick={onselectmode} aria-pressed={selectMode}
         title="Select several media items to reorder or remove together">
@@ -361,7 +377,7 @@
       role="application"
       aria-label="Exhibit canvas — drag to pan, scroll to zoom"
     >
-      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z}); --plate-w: ${plateW};`}>
+      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z});`}>
         <!-- Leading drop zone: the ONLY way to express "insert before the first object" (Archie-1933).
              Inert unless a drag is active and the dragged plate isn't already first. -->
         <div class="dropstart" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
@@ -381,7 +397,7 @@
               ondragend={onDragEnd}
               onpointerdown={(e) => e.stopPropagation()}
               onclick={(e) => onPlateClick(e, o.id)}
-              ondblclick={() => onopenobject(o.id)}
+              ondblclick={() => openPlate(o.id)}
               aria-pressed={selectMode ? selection.has(o.id) : undefined}
               title={o.label}>
               {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
@@ -418,30 +434,34 @@
       {/if}
 
       <!-- Pan/zoom affordances: a top legend NAMES the gestures, an edge vignette implies space beyond the
-           frame, and the zoom cluster shows the live % — together signalling "this is a movable canvas". -->
+           frame, and the zoom cluster shows the live % — together signalling "this is a movable canvas".
+           The legend + hint are FIRST-USE-ONLY (Archie-a9fc chrome trim): they teach the gesture once, then
+           hide permanently once the user has demonstrated it (a successful drag / a plate open). -->
       <div class="edges" aria-hidden="true"></div>
-      <div class="canvas-legend" aria-hidden="true">
-        <!-- Drag-legend disambiguation (staging spec §6): once a narrative exists, drag here no longer sets
-             "the order visitors see" — the SECTION order does. Demote drag to the fallback grid order. -->
-        <span class="g lead"><span class="ico">⇅</span> {!reorderable ? "Clear search & sort to reorder" : hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a media item to set the reading order"}</span>
-        <span class="dot">·</span>
-        <span class="g"><span class="ico">✥</span> Drag the canvas to pan</span>
-        <span class="dot">·</span>
-        <span class="g"><span class="ico">⊙</span> Scroll to zoom</span>
-      </div>
+      {#if showLegend}
+        <div class="canvas-legend" aria-hidden="true">
+          <!-- Drag-legend disambiguation (staging spec §6): once a narrative exists, drag here no longer sets
+               "the order visitors see" — the SECTION order does. Demote drag to the fallback grid order. -->
+          <span class="g lead"><span class="ico">⇅</span> {!reorderable ? "Clear search & sort to reorder" : hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a media item to set the reading order"}</span>
+          <span class="dot">·</span>
+          <span class="g"><span class="ico">✥</span> Drag the canvas to pan</span>
+          <span class="dot">·</span>
+          <span class="g"><span class="ico">⊙</span> Scroll to zoom</span>
+        </div>
+      {/if}
       <div class="zoomctl" role="group" aria-label="Zoom">
-        <button onclick={() => nudgeZoom(1 / 1.2)} aria-label="Zoom out">−</button>
-        <span class="pct" aria-live="polite">{Math.round(z * 100)}%</span>
         <button class="fit" onclick={fit} title="Reset to 100%">Fit</button>
-        <button onclick={() => nudgeZoom(1.2)} aria-label="Zoom in">+</button>
+        <span class="pct" aria-live="polite">{Math.round(z * 100)}%</span>
       </div>
-      <p class="hint">Click a media item to open and add notes</p>
+      {#if showHint}
+        <p class="hint">Click a media item to open and add notes</p>
+      {/if}
     </div>
   {:else}
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
     <p class="list-hint">{!reorderable ? "Clear search & sort to reorder" : hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order."}</p>
-    <ul class="list" style={`--row-h: ${rowH};`}>
+    <ul class="list">
       <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
         ondrop={(e) => { e.preventDefault(); commitToStart(); }}
@@ -452,7 +472,7 @@
           ondragover={(e) => onPlateDragOver(e, o.id)}
           ondrop={(e) => { e.preventDefault(); commitReorder(o.id); }}>
           <button type="button" class="grip" class:off={!reorderable} draggable={reorderable} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd} title={reorderable ? "Drag to reorder" : "Clear search & sort to reorder"} aria-label="Reorder {o.label}">⠿</button>
-          <button data-plate-id={o.id} onclick={(e) => onPlateClick(e, o.id)} ondblclick={() => onopenobject(o.id)} aria-pressed={selectMode ? selection.has(o.id) : undefined}>
+          <button data-plate-id={o.id} onclick={(e) => onPlateClick(e, o.id)} ondblclick={() => openPlate(o.id)} aria-pressed={selectMode ? selection.has(o.id) : undefined}>
             {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
             <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
             <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}</span>
@@ -525,7 +545,7 @@
   .canvas-legend .ico { color: var(--accent-2); font-size: 0.95rem; }
   .canvas-legend .dot { color: var(--ink-canvas-muted); }
 
-  .plate { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: var(--plate-w, 13rem); cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); transition: transform 180ms ease, box-shadow 180ms ease; }
+  .plate { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: 12.5rem; cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); transition: transform 180ms ease, box-shadow 180ms ease; }
   .plate:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
   .plate .order { font-family: var(--font-mono); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
   .frame { position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-canvas-overlay); display: flex; align-items: center; justify-content: center; }
@@ -583,10 +603,10 @@
      height after first render so the scrollbar never jumps; the fixed estimate covers never-seen rows.
      Scoped OFF the zero-height drop sentinels (dropstart-row / end) — reserving a row's height for them
      would break the insert-line affordance. */
-  /* The intrinsic-size estimate tracks the density var (Phase 2) so the virtualization scroll estimate
-     stays honest as rows resize — coupling flagged in the plan (density MUST feed contain-intrinsic-size). */
-  .list li:not(.dropstart-row):not(.end) { content-visibility: auto; contain-intrinsic-size: auto var(--row-h, 3.5rem); }
-  .list li:not(.dropstart-row):not(.end) button { min-height: var(--row-h, 3.5rem); box-sizing: border-box; }
+  /* One fixed row height (Archie-a9fc chrome trim retired the density slider that used to feed this via
+     --row-h; 3.3rem is the former slider's midpoint value). */
+  .list li:not(.dropstart-row):not(.end) { content-visibility: auto; contain-intrinsic-size: auto 3.3rem; }
+  .list li:not(.dropstart-row):not(.end) button { min-height: 3.3rem; box-sizing: border-box; }
   .list li.dragging { opacity: 0.4; }
   .list li.over { box-shadow: 0 -3px 0 var(--accent); } /* insert-before line */
   /* Leading "insert before first" drop zone (list): collapsed until a drag is active. */
@@ -620,7 +640,7 @@
   .li-add { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); padding: var(--space-3); cursor: pointer; width: 100%; transition: color 160ms ease, border-color 160ms ease; }
   .li-add:hover { color: var(--ink-canvas-primary); border-color: var(--accent); }
 
-  /* --- Organizing toolbar (Phase 2) — one quiet row under the header: find · sort · size · select. --- */
+  /* --- Organizing toolbar (Phase 2) — one quiet row under the header: find · sort · select. --- */
   .toolbar { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-6); border-bottom: 1px solid var(--border-canvas); flex-wrap: wrap; }
   .tb-search { display: inline-flex; align-items: center; gap: var(--space-2); padding: 4px var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); }
   .tb-search .glass { color: var(--ink-canvas-muted); font-size: 0.9rem; }
@@ -629,7 +649,6 @@
   .tb-field { display: inline-flex; align-items: center; gap: var(--space-2); }
   .tb-lbl { font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
   .tb-field select { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); padding: 4px var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); cursor: pointer; }
-  .tb-density input { accent-color: var(--accent); cursor: pointer; width: 6rem; }
   .tb-select { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 160ms ease, border-color 160ms ease, background 160ms ease; }
   .tb-select:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
   .tb-select.on { background: var(--accent-muted); color: var(--ink-canvas-primary); border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
