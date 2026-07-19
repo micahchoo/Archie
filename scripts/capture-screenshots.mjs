@@ -2,8 +2,11 @@
 //
 // One-shot, best-effort capture of the two running dev apps for the docs layer.
 //   Viewer (Astro, :4321) — file-routed, trivial: one shot per page.
-//   Studio (Svelte SPA, :5173) — NO url routing; views are driven by clicking
-//   through the seeded demo exhibits (Voynich grid, Bidar map, AV recording).
+//   Studio (Svelte SPA, :5173) — hash-routed since ADR-0024 (place-addressable nav), but this sweep
+//   still drives it by CLICKING through the seeded demo exhibits (Voynich grid, Bidar map, AV
+//   recording) — clicks now also update the URL, which doesn't change what's captured. Every exhibit
+//   lands on its Overview first (ADR-0024 #2 removed the single-object skip); the flows below all open
+//   multi-object exhibits, which already went to the overview, so the capture path is unchanged.
 //
 // Captures are desktop only (1440x900) — Archie is not optimized for mobile.
 // Studio capture is best-effort: a missed selector is logged to the manifest as

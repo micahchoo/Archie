@@ -42,6 +42,9 @@
     onbulkdelete,
     bulkConfirming,
     onvisible,
+    tx = $bindable(0),
+    ty = $bindable(0),
+    z = $bindable(1),
   }: {
     title: string;
     layout: LayoutType;
@@ -95,6 +98,13 @@
     /** Report the current VISIBLE (filtered/sorted) object order UP to App, so shift-range and ⌘A operate on
      *  what's on screen — never on filtered-out objects a bulk delete would then remove unseen. */
     onvisible: (orderedIds: string[]) => void;
+    // --- Transient screen state (ADR-0024 #6). The tableau pan/zoom is bindable so App can remember it per
+    // exhibit within the session and restore it on return (a fresh load resets to these defaults). NOT part
+    // of the place. (Canvas/List `mode` is a PERSISTED view preference owned elsewhere — not bindable here.) ---
+    /** The tableau pan/zoom transform (canvas mode). */
+    tx?: number;
+    ty?: number;
+    z?: number;
   } = $props();
 
   let rightsOpen = $state(false);
@@ -161,8 +171,8 @@
     onopenobject(id);
   }
 
-  // Pan/zoom transform of the whole tableau (the canvas gesture). z clamped to a sane range.
-  let tx = $state(0), ty = $state(0), z = $state(1);
+  // Pan/zoom transform of the whole tableau (the canvas gesture). tx/ty/z are now bindable props
+  // (transient screen state, ADR-0024 #6 — see $props above); z is clamped to a sane range below.
   const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
   function fit() { tx = 0; ty = 0; z = 1; }
