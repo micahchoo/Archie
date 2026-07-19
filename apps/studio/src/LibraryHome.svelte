@@ -3,13 +3,17 @@
   // progress: each exhibit is a plate on the dark light table; a dashed tile starts a new one.
   // Authoring counterpart to the Viewer's Gallery (which is the published, visitor-facing wall).
   //
-  // The PROJECT BAR (invention #3, CONTEXT three-configs persistence) sits above the plates and answers
-  // one question at the Library scale: WHERE does this library live? — only-in-this-browser (unbound) vs
-  // a folder it autosaves to (Chromium) vs a .archie.zip file on disk. Capability is hidden; the user sees
-  // only the place. Open is as prominent as New; recents survive sessions (the non-Chromium re-open
-  // mitigation); a lost binding is surfaced, never silent. Safety (is it saved?) is a SEPARATE question
-  // from place — answered by the one shared SafetyState control (CONTEXT.md → Persistence; Archie-0b7b),
-  // the same component the editor header mounts, not a bar-local dot/button.
+  // The library HEADER mounts SafetyState (CONTEXT.md → Persistence; Archie-0b7b "one save vocabulary") —
+  // the single shared save-state control, same slot the editor header mounts, answering "will my work
+  // survive?" (Saved / Saving… / Action needed / Failed). It is the only save UI anywhere in this file.
+  //
+  // The PROJECT BAR (invention #3, CONTEXT three-configs persistence) sits below and answers a SEPARATE,
+  // quieter question at the Library scale: WHERE does this library live? — only-in-this-browser (unbound)
+  // vs a folder it autosaves to (Chromium) vs a .archie.zip file on disk. Capability is hidden; the user
+  // sees only the place. Demoted to one line (Archie-2308): now that SafetyState carries all save state,
+  // the bar states location only — Open/Close/Recents as quiet inline actions, no dots, no Save buttons.
+  // Recents survive sessions (the non-Chromium re-open mitigation) behind a small disclosure, not a
+  // permanent list; a lost binding is still surfaced on its own line, never silent.
   import type { ExhibitMeta } from "./store.js";
   import type { Binding, RecentProject, RightsFields } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
@@ -18,7 +22,9 @@
   import GalleryThumb from "./GalleryThumb.svelte";
   import GalleryWall from "./GalleryWall.svelte";
   import SafetyState from "./SafetyState.svelte";
+  import { untrack } from "svelte";
   import { flattenLibraryImages, coverOf, filterExhibits, filterImages } from "./gallery-data.js";
+  import { bindingLocationLabel, examplesDefaultOpen, partitionExhibits } from "./library-home.js";
   import { saveStatus } from "./save-queue.svelte.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   import { viewPrefs } from "./view-prefs.svelte.js";
@@ -110,13 +116,29 @@
   // SafetyState's unbound "Action needed" input (CONTEXT.md — never for untouched seed/template content).
   const hasRealWork = $derived(hasRealWorkIn(exhibits, isTemplate));
 
-  // Two views, one search (Phase 3.2): visual Exhibit cards ⟷ the all-images wall; the search box filters
-  // the ACTIVE view (exhibit titles / object titles) via the shared matchesTitle primitive. The lens is a
-  // persisted VIEW PREFERENCE (Archie-a9fc / CONTEXT.md Navigation § "View preference") — last choice wins
-  // and survives app restarts, read through the same shared store as ExhibitOverview's Canvas/List toggle.
-  // `gallerySearch` is a bindable prop (transient screen state, ADR-0024 #6 — see $props above), never
-  // persisted. The wall reads the library LIVE (flatten OPFS meta) — never the baked images.json
-  // (unpublished edits would make it stale). "All images" only offered once there's media to browse.
+  // Archie-2308: own exhibits + the New-exhibit cell lead the browsing grid; bundled Examples sit in their
+  // own collapsible shelf below (pure split lives in library-home.ts, same reasoning as gallery-data.ts —
+  // headless-testable, one definition). A typed search (below) renders one flat "Exhibits (n)" group
+  // instead — splitting matches by shelf would fragment a query's results across two headers for no gain.
+  const { own: ownExhibits, examples: exampleExhibits } = $derived(partitionExhibits(exhibits, isTemplate));
+  // Seeded once from the pure predicate (library-home.ts) — expanded while the user owns nothing, so the
+  // playground is what they see first. A later manual toggle is the user's own call from then on, never
+  // silently re-decided by a render some unrelated prop change triggers — `untrack` says that on purpose
+  // (else Svelte's state_referenced_locally check flags the intentional one-time read as a likely bug).
+  let examplesOpen = $state(untrack(() => examplesDefaultOpen(exhibits.filter((e) => !isTemplate(e.slug)).length)));
+
+  // Recents is a small disclosure now (Archie-2308), not a permanent list — collapsed by default.
+  let recentsOpen = $state(false);
+
+  // Unified search (Archie-2308): the box always filters BOTH corpora — filterExhibits/filterImages via
+  // the shared matchesTitle primitive. The lens (below) governs BROWSING only, while the query is empty;
+  // a non-empty query renders BOTH result groups regardless of lens (W7's silent scope switch eliminated —
+  // Archie-2308 resolution), so the lens toggle itself is hidden while a search is live (nothing left for
+  // it to govern). The lens is a persisted VIEW PREFERENCE (Archie-a9fc / CONTEXT.md Navigation § "View
+  // preference") — last choice wins and survives app restarts, read through the same shared store as
+  // ExhibitOverview's Canvas/List toggle. `gallerySearch` is a bindable prop (transient screen state,
+  // ADR-0024 #6 — see $props above), never persisted. The wall reads the library LIVE (flatten OPFS meta)
+  // — never the baked images.json (unpublished edits would make it stale).
   //
   // GUARD (code review, Archie-a9fc follow-up): persistence made "wall" reachable with nothing to show it —
   // on the pre-persistence base, galleryView reset to "exhibits" every mount, so a bound-but-empty library
@@ -132,6 +154,9 @@
   const galleryView = $derived(allImages.length > 0 ? viewPrefs.galleryView : "exhibits");
   const shownExhibits = $derived(filterExhibits(exhibits, gallerySearch));
   const shownImages = $derived(filterImages(allImages, gallerySearch));
+  // Unified search (Archie-2308): a non-empty query switches BOTH the bar (hides the now-moot lens) and
+  // the body (renders both result groups) into "search results" mode, regardless of the persisted lens.
+  const hasQuery = $derived(gallerySearch.trim() !== "");
 
   // The exhibit whose per-card pencil drawer is open (Archie-79be) — transient view state, like rightsOpen.
   // Resolves to its full ExhibitMeta so the shared DetailsEditor can read title/description/rights.
@@ -171,6 +196,18 @@
     <div class="title-row">
       <h1>{libTitle && libTitle.trim() ? libTitle : "Library"}</h1>
       <div class="hdr-actions">
+        <!-- The one save UI (CONTEXT.md → Persistence; Archie-0b7b) — inert text when Saved/Saving, the
+             control itself when Action needed/Failed. Archie-2308: moved here from the project bar, the
+             library HEADER's action row — the same slot the editor header mounts it in. -->
+        <SafetyState
+          saveHealth={saveStatus.health}
+          bindingKind={binding.kind}
+          {bindingDirty}
+          {bindingBusy}
+          {bindingError}
+          {hasRealWork}
+          onflush={onsave}
+        />
         <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
         <HelpMenu {ontutorial} {onshortcuts} />
       </div>
@@ -200,45 +237,31 @@
       {/if}
     </PropsDrawer>
 
-    <!-- Project bar: where this whole library lives. -->
-    <section class="projectbar" class:bound={binding.kind !== "unbound"}>
-      <div class="where">
-        {#if binding.kind === "unbound"}
-          <p class="place">This library lives only in this browser.</p>
-          <p class="hint">Save it to disk to keep it safe — and to open it on another machine.</p>
-        {:else}
-          <p class="place">
-            <span class="kind">{binding.kind === "folder" ? "Folder" : "File"}</span>
-            <span class="name">{binding.name}</span>
-          </p>
-          <p class="hint">
-            {#if binding.kind === "folder"}Saving to this folder automatically as you work.
-            {:else}{bindingDirty ? "Unsaved changes — Save (⌘S) to update the file." : "Saved as a file on your computer."}{/if}
-          </p>
-        {/if}
-        {#if saveStatus.health === "error"}
-          <!-- Worklist 0.1 (loud saves): a failed write is never silent — the queue's last error, verbatim. -->
-          <p class="save-error" role="alert">⚠ {saveStatus.error}</p>
-        {/if}
-      </div>
-      <div class="actions">
-        <!-- The one save UI (CONTEXT.md → Persistence; Archie-0b7b) — inert text when Saved/Saving,
-             the control itself when Action needed/Failed. Same component the editor header mounts. -->
-        <SafetyState
-          saveHealth={saveStatus.health}
-          bindingKind={binding.kind}
-          {bindingDirty}
-          {bindingBusy}
-          {bindingError}
-          {hasRealWork}
-          onflush={onsave}
-        />
-        <button class="ghost" onclick={onopenproject} disabled={bindingBusy}>Open a library…</button>
+    <!-- Project bar (Archie-2308): demoted to ONE quiet line — SafetyState above already carries every
+         save-state word, so this only ever answers "where does this library live". -->
+    <section class="projectbar">
+      <p class="line">
+        Living in {bindingLocationLabel(binding)}
+        <span class="sep">·</span>
+        <button class="link" onclick={onopenproject} disabled={bindingBusy}>Open a library…</button>
         {#if binding.kind !== "unbound"}
-          <button class="ghost subtle" onclick={onclose} disabled={bindingBusy}
+          <span class="sep">·</span>
+          <button class="link" onclick={onclose} disabled={bindingBusy}
             title="Detach from disk — your work stays in this browser">Close</button>
         {/if}
-      </div>
+        {#if recents.length > 0}
+          <span class="sep">·</span>
+          <button class="link" onclick={() => (recentsOpen = !recentsOpen)} aria-expanded={recentsOpen}>
+            Recents {recentsOpen ? "▴" : "▾"}
+          </button>
+        {/if}
+      </p>
+      {#if saveStatus.health === "error"}
+        <!-- Worklist 0.1 (loud saves): a failed write is never silent — the queue's last error, verbatim.
+             SafetyState (header) already flips to "Failed"/"⚠ Retry save"; this is the one place the
+             actual message text still surfaces. -->
+        <p class="save-error" role="alert">⚠ {saveStatus.error}</p>
+      {/if}
     </section>
 
     {#if bindingError}
@@ -252,9 +275,8 @@
       </div>
     {/if}
 
-    {#if recents.length > 0}
+    {#if recentsOpen && recents.length > 0}
       <section class="recents">
-        <p class="r-eyebrow">Recent libraries</p>
         <ul>
           {#each recents as r (r.id)}
             <li>
@@ -270,50 +292,28 @@
     {/if}
   </header>
 
-  <!-- Two-views-one-search bar (Phase 3.2). Shown once the library has any exhibit; "All images" appears
-       once there's media to browse (else the wall would be a dead toggle). -->
-  {#if exhibits.length > 0}
-    <div class="gallery-bar">
-      <div class="views" role="group" aria-label="Library view">
-        <button type="button" class:on={galleryView === "exhibits"} aria-pressed={galleryView === "exhibits"} onclick={() => viewPrefs.setGalleryView("exhibits")}>Exhibits</button>
-        {#if allImages.length > 0}
-          <button type="button" class:on={galleryView === "wall"} aria-pressed={galleryView === "wall"} onclick={() => viewPrefs.setGalleryView("wall")}>All images</button>
+  <!-- Exhibit card + per-card pencil (Archie-79be), shared by every grid below (own shelf, Examples
+       shelf, search results) so the three lists can never quietly drift apart. -->
+  {#snippet exhibitCard(ex: ExhibitMeta)}
+    {@const cover = coverOf(ex)}
+    <li class="card-wrap">
+      <button class="card" class:template={isTemplate(ex.slug)} onclick={() => onopen(ex.slug)}>
+        {#if isTemplate(ex.slug)}<span class="badge">Example</span>{/if}
+        {#if cover}
+          <span class="cover"><GalleryThumb slug={cover.slug} source={cover.source} mediaType={cover.mediaType} alt="" /></span>
         {/if}
-      </div>
-      <label class="g-search">
-        <span class="glass" aria-hidden="true">⌕</span>
-        <input type="search" bind:value={gallerySearch}
-          placeholder={galleryView === "wall" ? "Search media" : "Search exhibits"}
-          aria-label={galleryView === "wall" ? "Search media titles" : "Search exhibit titles"} />
-      </label>
-    </div>
-  {/if}
+        <span class="title">{ex.title}</span>
+        <span class="meta">{ex.objects.length} {ex.objects.length === 1 ? "media item" : "media items"} · /{ex.slug}</span>
+        {#if isTemplate(ex.slug)}<span class="ex-hint">Explore freely — changes aren't kept. Keep a copy to make it yours.</span>{/if}
+      </button>
+      <!-- Per-card pencil (Archie-79be): edit this exhibit's title/description/credit + remove, without
+           opening it. A SIBLING of the card button (no button-in-button); sits over the top-right corner. -->
+      <button class="edit-meta" title="Edit details for {ex.title}" aria-label="Edit details for {ex.title}"
+        onclick={() => (editingSlug = ex.slug)}>✎</button>
+    </li>
+  {/snippet}
 
-  {#if galleryView === "wall"}
-    <GalleryWall images={shownImages} query={gallerySearch} {onopenobject} />
-  {:else}
-  {#if gallerySearch.trim() && shownExhibits.length === 0}
-    <p class="no-match">No exhibits match “{gallerySearch.trim()}”.</p>
-  {/if}
-  <ul class="grid">
-    {#each shownExhibits as ex (ex.slug)}
-      {@const cover = coverOf(ex)}
-      <li class="card-wrap">
-        <button class="card" class:template={isTemplate(ex.slug)} onclick={() => onopen(ex.slug)}>
-          {#if isTemplate(ex.slug)}<span class="badge">Example</span>{/if}
-          {#if cover}
-            <span class="cover"><GalleryThumb slug={cover.slug} source={cover.source} mediaType={cover.mediaType} alt="" /></span>
-          {/if}
-          <span class="title">{ex.title}</span>
-          <span class="meta">{ex.objects.length} {ex.objects.length === 1 ? "media item" : "media items"} · /{ex.slug}</span>
-          {#if isTemplate(ex.slug)}<span class="ex-hint">Explore freely — changes aren't kept. Keep a copy to make it yours.</span>{/if}
-        </button>
-        <!-- Per-card pencil (Archie-79be): edit this exhibit's title/description/credit + remove, without
-             opening it. A SIBLING of the card button (no button-in-button); sits over the top-right corner. -->
-        <button class="edit-meta" title="Edit details for {ex.title}" aria-label="Edit details for {ex.title}"
-          onclick={() => (editingSlug = ex.slug)}>✎</button>
-      </li>
-    {/each}
+  {#snippet newExhibitCell()}
     <li>
       <form class="new" onsubmit={(e) => { e.preventDefault(); create(); }}>
         <span class="plus">+</span>
@@ -335,7 +335,70 @@
         />
       </form>
     </li>
-  </ul>
+  {/snippet}
+
+  <!-- Unified search bar (Archie-2308): always visible once there's any exhibit; the box always filters
+       BOTH corpora. The Exhibits/All-images lens governs BROWSING only — hidden while a query is live,
+       since search already shows both groups regardless of lens (nothing left for it to govern). -->
+  {#if exhibits.length > 0}
+    <div class="gallery-bar">
+      {#if !hasQuery}
+        <div class="views" role="group" aria-label="Library view">
+          <button type="button" class:on={galleryView === "exhibits"} aria-pressed={galleryView === "exhibits"} onclick={() => viewPrefs.setGalleryView("exhibits")}>Exhibits</button>
+          {#if allImages.length > 0}
+            <button type="button" class:on={galleryView === "wall"} aria-pressed={galleryView === "wall"} onclick={() => viewPrefs.setGalleryView("wall")}>All images</button>
+          {/if}
+        </div>
+      {/if}
+      <label class="g-search">
+        <span class="glass" aria-hidden="true">⌕</span>
+        <input type="search" bind:value={gallerySearch}
+          placeholder="Search your library"
+          aria-label="Search exhibits and media" />
+      </label>
+    </div>
+  {/if}
+
+  {#if hasQuery}
+    <!-- Unified search results (Archie-2308): both corpora, always, regardless of lens — the old silent
+         scope switch (search only reaching the active view) is gone. -->
+    <section class="results">
+      <h2 class="group-head">Exhibits ({shownExhibits.length})</h2>
+      {#if shownExhibits.length === 0}
+        <p class="no-match">No exhibits match “{gallerySearch.trim()}”.</p>
+      {:else}
+        <ul class="grid">
+          {#each shownExhibits as ex (ex.slug)}{@render exhibitCard(ex)}{/each}
+        </ul>
+      {/if}
+      <h2 class="group-head">Media ({shownImages.length})</h2>
+      <GalleryWall images={shownImages} query={gallerySearch} {onopenobject} />
+    </section>
+  {:else if galleryView === "wall"}
+    <GalleryWall images={allImages} query="" {onopenobject} />
+  {:else}
+    <!-- Browsing (Archie-2308 item 4): the user's own exhibits + the New-exhibit cell lead the grid. -->
+    <ul class="grid">
+      {#each ownExhibits as ex (ex.slug)}{@render exhibitCard(ex)}{/each}
+      {@render newExhibitCell()}
+    </ul>
+
+    {#if exampleExhibits.length > 0}
+      <!-- Examples shelf (Archie-2308 item 4): a bundled playground, separated from the user's own work.
+           Expanded while the user owns nothing (examplesDefaultOpen); collapses to this header line once
+           they have their own exhibit to look at instead — still expandable any time. -->
+      <section class="examples">
+        <button type="button" class="examples-head" onclick={() => (examplesOpen = !examplesOpen)} aria-expanded={examplesOpen}>
+          Examples ({exampleExhibits.length}) <span class="chevron">{examplesOpen ? "▴" : "▾"}</span>
+        </button>
+        {#if examplesOpen}
+          <p class="examples-contract">Explore how exhibits work — edits here aren't saved unless you keep a copy.</p>
+          <ul class="grid">
+            {#each exampleExhibits as ex (ex.slug)}{@render exhibitCard(ex)}{/each}
+          </ul>
+        {/if}
+      </section>
+    {/if}
   {/if}
 </main>
 
@@ -364,29 +427,20 @@
   h1 { font-family: var(--font-display); font-weight: 300; font-size: 3rem; line-height: 1.1; margin: var(--space-2) 0 var(--space-3); color: var(--ink-canvas-primary); text-shadow: var(--shadow-text-haze); }
   .lede { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.6; color: var(--ink-canvas-secondary); margin: 0; max-width: 42rem; }
 
-  /* Project bar — the "where does this library live" label, on warm paper, separated by tone + soft shadow. */
-  .projectbar {
-    display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); flex-wrap: wrap;
-    margin-top: var(--space-6); padding: var(--space-4) var(--space-5);
-    background: var(--surface-canvas-raised); border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
+  /* Project bar (Archie-2308): demoted to ONE quiet line — SafetyState (header, above) now carries every
+     save-state word, so this line only ever answers "where does this library live", plus Open/Close/
+     Recents as inline text actions. No card chrome, no button-scale prominence. */
+  .projectbar { max-width: 60rem; margin: var(--space-4) auto 0; }
+  .line { margin: 0; font-family: var(--font-body); font-size: 0.85rem; color: var(--ink-canvas-secondary); display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); }
+  .sep { color: var(--ink-canvas-muted); }
+  .link {
+    font-family: var(--font-ui); font-size: 0.8rem; font-weight: 600; letter-spacing: 0.02em;
+    color: var(--ink-canvas-secondary); background: none; border: none; padding: 0; cursor: pointer;
+    transition: color 160ms ease;
   }
-  .projectbar.bound { box-shadow: var(--shadow-lift-low), inset 3px 0 0 var(--accent-muted); } /* a bound library is anchored — a quiet accent edge marks it */
-  .where { min-width: 16rem; }
-  .place { margin: 0; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-canvas-primary); display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
-  .place .kind { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
-  .place .name { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-canvas-primary); }
-  .hint { margin: var(--space-1) 0 0; font-family: var(--font-body); font-size: var(--text-ui-md, 0.75rem); color: var(--ink-canvas-secondary); }
-  .save-error { margin: var(--space-1) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--semantic-error); }
-
-  .actions { display: flex; align-items: center; gap: var(--space-4); }
-  .actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); font-weight: 600; letter-spacing: 0.02em; padding: var(--space-2) var(--space-4); cursor: pointer; border-radius: var(--radius-sm); transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease; }
-  .actions button:disabled { opacity: 0.5; cursor: default; }
-  /* Secondary actions — quiet soft-btn: warm paper, soft border, ink text. No orange. */
-  .ghost { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); }
-  .ghost:hover:not(:disabled) { background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
-  .ghost.subtle { color: var(--ink-canvas-secondary); border-color: var(--border-canvas); }
-  .ghost.subtle:hover:not(:disabled) { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); border-color: var(--border-canvas-emphasis); }
+  .link:hover:not(:disabled) { color: var(--ink-canvas-primary); text-decoration: underline; }
+  .link:disabled { opacity: 0.5; cursor: default; text-decoration: none; }
+  .save-error { margin: var(--space-2) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--semantic-error); }
 
   /* Lost-binding recovery — warm warning (a missing folder is recoverable, not destructive). */
   .binding-error { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-top: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface-canvas-overlay); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low), inset 3px 0 0 var(--semantic-warning); }
@@ -397,9 +451,9 @@
   .err-actions .x { border: none; background: none; font-size: 1rem; color: var(--ink-canvas-muted); padding: 0 var(--space-2); }
   .err-actions .x:hover { background: none; box-shadow: none; color: var(--ink-canvas-primary); }
 
-  /* Recent libraries — the session-surviving re-open list (CONTEXT mitigation: "metadata, not content"). */
-  .recents { margin-top: var(--space-5); }
-  .r-eyebrow { margin: 0 0 var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  /* Recent libraries — a small disclosure now (Archie-2308), not a permanent list (CONTEXT mitigation:
+     "metadata, not content" still applies to what's stored, just not to how much is always shown). */
+  .recents { max-width: 60rem; margin: var(--space-2) auto 0; }
   .recents ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-2); }
   .recents li { display: flex; align-items: stretch; }
   .recent { display: flex; flex-direction: column; gap: 2px; text-align: left; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-sm) 0 0 var(--radius-sm); box-shadow: var(--shadow-lift-low); transition: background 160ms ease, box-shadow 160ms ease; }
@@ -485,4 +539,22 @@
   .cover { display: block; width: 100%; margin-bottom: var(--space-1); }
   /* Filtered-to-nothing note (cards view) — quiet, above the grid (which still offers the new-exhibit tile). */
   .no-match { max-width: 60rem; margin: 0 auto var(--space-4); font-family: var(--font-body); font-size: 1rem; color: var(--ink-canvas-secondary); }
+
+  /* Examples shelf (Archie-2308 item 4) — the bundled playground, visually separated below the user's own
+     work: a plain disclosure header (not a card), expandable any time. */
+  .examples { max-width: 60rem; margin: var(--space-10) auto 0; }
+  .examples-head {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-secondary);
+    background: none; border: none; padding: 0; cursor: pointer; transition: color 160ms ease;
+  }
+  .examples-head:hover { color: var(--ink-canvas-primary); }
+  .chevron { font-size: 0.7rem; }
+  .examples-contract { margin: var(--space-2) 0 var(--space-4); font-family: var(--font-body); font-size: 0.85rem; line-height: 1.5; color: var(--ink-canvas-secondary); }
+
+  /* Unified search results (Archie-2308 item 3) — both corpora, labeled, regardless of the browsing lens. */
+  .results { max-width: 60rem; margin: 0 auto; }
+  .group-head { margin: 0 0 var(--space-4); font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .results .group-head:not(:first-child) { margin-top: var(--space-10); }
 </style>
