@@ -4,9 +4,9 @@
 // a usable `webkitRelativePath` (folder-import.ts's grouping/naming logic reads
 // `webkitRelativePath || name` to know which first-level subfolder a file came from; a plain
 // `FileSystemFileEntry.file()` doesn't set that property the way an `<input webkitdirectory>` pick
-// does, so this walker assigns it by hand). DOM-only — deliberately not unit-tested (no
-// FileSystemEntry implementation in the vitest/happy-dom test env); kept small and reviewed by hand,
-// same treatment as bake.ts's other browser-API-only glue.
+// does, so this walker assigns it by hand). DOM-only, but unit-tested via duck-typed fakes cast
+// through the same DOM types this file casts through (folder-drop.test.ts) — the walker only
+// touches a handful of FileSystemEntry members, so no real browser implementation is needed.
 //
 // Per-entry tolerant (code review S1): a real drop can include an unreadable entry (permissions,
 // a file removed between drag and drop, a directory the OS refuses to enumerate) — one bad entry
