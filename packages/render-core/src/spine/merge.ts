@@ -1,4 +1,5 @@
 // Version-DAG merge (ADR-0003 / Q-3) — three-way merge semantics WITHOUT git.
+// The full merge contract (clauses C1-C18, pinned by merge-contract.test.ts): ./MERGE-CONTRACT.md
 //
 // The merge-base of any two heads is found by walking the parent DAG (by `rev`, the
 // collision-free node id — ADR-0003 Refinement). This is the one interactive/stateful
