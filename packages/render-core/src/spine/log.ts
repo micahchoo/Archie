@@ -9,8 +9,38 @@
 // disambiguation is the serialization layer's job (P0-6), not the log's.
 
 import { mintLogicalId, mintRevId, type LogicalId, type RevId, type ClientId } from "../wadm/brand.js";
-import type { AnnotationLog, AnnotationRecord, Emphasis, GeoAnchor, W3CBody, W3CTarget } from "../wadm/types.js";
+import type { AnnotationLog, AnnotationRecord, Emphasis, GeoAnchor, IsoDateTime, W3CBody, W3CTarget } from "../wadm/types.js";
 import type { CarryDisposition } from "../model/carry.js";
+
+/**
+ * The record shape the DAG machinery actually walks (PROBE Archie-b766, spine-gate Archie-494c
+ * semantic #2: structure records ride the SAME machinery — extend, don't fork). The pure DAG
+ * primitives (`append`, `parentsOf`, `linearHead` here; `headsOf`/`ancestors`/`classifyMerge`/…
+ * in merge.ts; `projectHeads` in heads.ts) are generic over `R extends DagRecord<string>`; the
+ * content-carrying helpers (`appendNew`/`appendEdit`/`appendDelete`/`resolveConflict`) remain
+ * annotation-specific. `Id` is the logical-identity brand: `LogicalId` for annotations, a
+ * composed scoped key for structure records. Inference keeps every existing annotation call
+ * site exactly as strict as before (R = AnnotationRecord, logicalId = LogicalId).
+ */
+export interface DagRecord<Id extends string = LogicalId> {
+  logicalId: Id;
+  /** Per-record-unique DAG node id — `parent` targets this (ADR-0003 Refinement). */
+  rev: RevId;
+  /** The rev this one was edited from; `null` for v1 (the DAG root). */
+  parent: RevId | null;
+  /** Extra parents for a merge-resolution node (Q-7). */
+  mergeParents?: RevId[];
+  /** ISO datetime. In-card tiebreaker ONLY (Q-3). */
+  modifiedAt: IsoDateTime;
+  lastEditor: ClientId;
+  /** Tombstone flag — a deleted version is still appended, never erased. */
+  deleted: boolean;
+}
+
+// Compile-time guard: AnnotationRecord must remain assignable to the DAG shape — if a DAG field
+// changes in wadm/types.ts without updating DagRecord (or vice versa), this line fails the build.
+const _annotationIsDagRecord = (r: AnnotationRecord): DagRecord => r;
+void _annotationIsDagRecord;
 
 function isoOf(modifiedAt: string | undefined, now: number | undefined): string {
   if (modifiedAt !== undefined) return modifiedAt;
@@ -23,12 +53,14 @@ function isoOf(modifiedAt: string | undefined, now: number | undefined): string 
  * lives in the typed helpers below; direct callers (e.g. the future mergeLog) may assemble
  * logs with colliding (logicalId, version) plural-head records.
  */
-export function append(log: AnnotationLog, record: AnnotationRecord): AnnotationLog {
+export function append<R extends DagRecord<string>>(log: readonly R[], record: NoInfer<R>): readonly R[] {
+  // NoInfer: R comes from the LOG alone, so appending a foreign record type (e.g. a structure
+  // record onto an annotation log) is a compile error instead of a silent union widening.
   return Object.freeze([...log, record]);
 }
 
 /** All versions of one logicalId, in log order. */
-function versionsOf(log: AnnotationLog, logicalId: LogicalId): AnnotationRecord[] {
+function versionsOf<R extends DagRecord<string>>(log: readonly R[], logicalId: R["logicalId"]): R[] {
   return log.filter((r) => r.logicalId === logicalId);
 }
 
@@ -41,7 +73,7 @@ function versionsOf(log: AnnotationLog, logicalId: LogicalId): AnnotationRecord[
  * notes permanently uneditable). Lives in log.ts because merge.ts imports log.ts, not
  * vice versa.
  */
-export function parentsOf(record: AnnotationRecord): RevId[] {
+export function parentsOf(record: DagRecord<string>): RevId[] {
   return [record.parent, ...(record.mergeParents ?? [])].filter((p): p is RevId => p !== null);
 }
 
@@ -52,7 +84,9 @@ export function parentsOf(record: AnnotationRecord): RevId[] {
  * head, so the caller must resolve the merge first. Heads-projection (P0-5) returns the
  * plural set instead.
  */
-export function linearHead(log: AnnotationLog, logicalId: LogicalId): AnnotationRecord {
+export function linearHead(log: AnnotationLog, logicalId: LogicalId): AnnotationRecord;
+export function linearHead<R extends DagRecord<string>>(log: readonly R[], logicalId: R["logicalId"]): R;
+export function linearHead<R extends DagRecord<string>>(log: readonly R[], logicalId: R["logicalId"]): R {
   const versions = versionsOf(log, logicalId);
   if (versions.length === 0) {
     throw new Error(`no such note: ${logicalId}`);

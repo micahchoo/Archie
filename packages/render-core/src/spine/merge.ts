@@ -9,20 +9,20 @@
 
 import { mintRevId, type RevId, type LogicalId, type ClientId } from "../wadm/brand.js";
 import type { AnnotationLog, AnnotationRecord, Emphasis, GeoAnchor, W3CBody, W3CTarget } from "../wadm/types.js";
-import { linearHead, append, parentsOf } from "./log.js";
+import { linearHead, append, parentsOf, type DagRecord } from "./log.js";
 import type { CarryDisposition } from "../model/carry.js";
 
 /** Index a log by `rev` (the collision-free node id) for O(1) parent-walk lookups — built ONCE per
  *  traversal so lineage/ancestors stay O(n) instead of O(n²) (was `log.find` per step). First-wins
  *  matches the old `log.find` semantics; revs are unique by construction (ADR-0003) so it's moot. */
-function indexByRev(log: AnnotationLog): Map<RevId, AnnotationRecord> {
-  const m = new Map<RevId, AnnotationRecord>();
+function indexByRev<R extends DagRecord<string>>(log: readonly R[]): Map<RevId, R> {
+  const m = new Map<RevId, R>();
   for (const r of log) if (!m.has(r.rev)) m.set(r.rev, r);
   return m;
 }
 
 /** The chain from `rev` to the root: [rev, parent, grandparent, …]. Self first. Cycle-guarded. */
-export function lineage(log: AnnotationLog, rev: RevId): RevId[] {
+export function lineage(log: readonly DagRecord<string>[], rev: RevId): RevId[] {
   const byRev = indexByRev(log);
   const out: RevId[] = [];
   const seen = new Set<RevId>();
@@ -41,7 +41,7 @@ export function lineage(log: AnnotationLog, rev: RevId): RevId[] {
 // parent", shared with linearHead so head counts agree (OQ-1 fix).
 
 /** Proper ancestors of `rev` — a multi-parent DAG walk (follows parent + mergeParents). */
-export function ancestors(log: AnnotationLog, rev: RevId): Set<RevId> {
+export function ancestors(log: readonly DagRecord<string>[], rev: RevId): Set<RevId> {
   const byRev = indexByRev(log);
   const out = new Set<RevId>();
   const start = byRev.get(rev);
@@ -59,7 +59,7 @@ export function ancestors(log: AnnotationLog, rev: RevId): Set<RevId> {
 /** Every ancestor of `rev` INCLUDING itself, keyed to its shortest BFS distance from `rev` (0 = self).
  *  Multi-parent (follows parent + mergeParents) so a merge node never hides shared history reachable
  *  only through a `mergeParents` edge. */
-function ancestorDepths(byRev: Map<RevId, AnnotationRecord>, rev: RevId): Map<RevId, number> {
+function ancestorDepths(byRev: Map<RevId, DagRecord<string>>, rev: RevId): Map<RevId, number> {
   const depth = new Map<RevId, number>([[rev, 0]]);
   let frontier: RevId[] = [rev];
   let d = 0;
@@ -84,7 +84,7 @@ function ancestorDepths(byRev: Map<RevId, AnnotationRecord>, rev: RevId): Map<Re
 /** The merge-base: the common ancestor nearest BOTH heads (min summed distance), or null if unrelated.
  *  Multi-parent aware — a merge node's `mergeParents` history counts, which `lineage` (primary chain
  *  only) missed (Q-7). For a purely linear pair this still returns the nearest shared rev. */
-export function commonAncestor(log: AnnotationLog, revA: RevId, revB: RevId): RevId | null {
+export function commonAncestor(log: readonly DagRecord<string>[], revA: RevId, revB: RevId): RevId | null {
   const byRev = indexByRev(log);
   const depthA = ancestorDepths(byRev, revA);
   const depthB = ancestorDepths(byRev, revB);
@@ -101,7 +101,9 @@ export function commonAncestor(log: AnnotationLog, revA: RevId, revB: RevId): Re
 }
 
 /** Heads of a logicalId — records no other version references as `parent`. Plural = unresolved. */
-export function headsOf(log: AnnotationLog, logicalId: LogicalId): AnnotationRecord[] {
+export function headsOf(log: AnnotationLog, logicalId: LogicalId): AnnotationRecord[];
+export function headsOf<R extends DagRecord<string>>(log: readonly R[], logicalId: R["logicalId"]): R[];
+export function headsOf<R extends DagRecord<string>>(log: readonly R[], logicalId: R["logicalId"]): R[] {
   const versions = log.filter((r) => r.logicalId === logicalId);
   const referenced = new Set<RevId>();
   for (const r of versions) for (const p of parentsOf(r)) referenced.add(p);
@@ -109,9 +111,9 @@ export function headsOf(log: AnnotationLog, logicalId: LogicalId): AnnotationRec
 }
 
 /** Union two logs, deduping shared history by `rev` (shared ancestors appear once). */
-export function mergeLogs(local: AnnotationLog, incoming: AnnotationLog): AnnotationLog {
+export function mergeLogs<R extends DagRecord<string>>(local: readonly R[], incoming: readonly NoInfer<R>[]): readonly R[] {
   const seen = new Set<RevId>();
-  const out: AnnotationRecord[] = [];
+  const out: R[] = [];
   for (const r of local) {
     seen.add(r.rev);
     out.push(r);
@@ -135,7 +137,7 @@ export type MergeClassification =
  * = one is an ancestor of the other, take the descendant `ahead` (no card); `conflict` =
  * both advanced from a common `base` (manual card). modifiedAt plays NO part here (Q-3).
  */
-export function classifyMerge(log: AnnotationLog, revA: RevId, revB: RevId): MergeClassification {
+export function classifyMerge(log: readonly DagRecord<string>[], revA: RevId, revB: RevId): MergeClassification {
   if (revA === revB) return { kind: "identical", rev: revA };
   const ancA = ancestors(log, revA);
   const ancB = ancestors(log, revB);
@@ -155,7 +157,9 @@ export type LogicalMergeResult =
  * resolve to only-local / only-incoming. Both inputs are assumed individually resolved
  * (single head each); resolve your own conflicts before exchanging zips.
  */
-export function classifyLogical(local: AnnotationLog, incoming: AnnotationLog, logicalId: LogicalId): LogicalMergeResult {
+export function classifyLogical(local: AnnotationLog, incoming: AnnotationLog, logicalId: LogicalId): LogicalMergeResult;
+export function classifyLogical<R extends DagRecord<string>>(local: readonly R[], incoming: readonly NoInfer<R>[], logicalId: R["logicalId"]): LogicalMergeResult;
+export function classifyLogical<R extends DagRecord<string>>(local: readonly R[], incoming: readonly R[], logicalId: R["logicalId"]): LogicalMergeResult {
   const inLocal = local.some((r) => r.logicalId === logicalId);
   const inIncoming = incoming.some((r) => r.logicalId === logicalId);
   if (!inLocal && !inIncoming) throw new Error(`logicalId not present in either log: ${logicalId}`);
@@ -171,7 +175,7 @@ export function classifyLogical(local: AnnotationLog, incoming: AnnotationLog, l
  * use of modifiedAt, and it is a UI suggestion inside a conflict card, NEVER automatic
  * resolution (Q-3). Callers must surface both sides to the user regardless.
  */
-export function conflictTiebreak(a: AnnotationRecord, b: AnnotationRecord): AnnotationRecord {
+export function conflictTiebreak<R extends DagRecord<string>>(a: R, b: NoInfer<R>): R {
   return b.modifiedAt > a.modifiedAt ? b : a;
 }
 
