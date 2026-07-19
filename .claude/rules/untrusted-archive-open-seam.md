@@ -25,8 +25,10 @@ skipped the others.
 - A new "open an untrusted archive" call site imports `openArchieLibrary` (bytes/Blob in hand) or
   `openArchieLibraryFromUrl` (fetch a URL under a cap, then decode) from `@render/core` — it does not
   call `ZipFilesystem.fromZip` or `validateArchieMarker` directly.
-- `SRC_MAX_BYTES` has one definition, in `open.ts`. Don't redeclare the cap constant locally, even as an
-  "identical" literal.
+- `SRC_MAX_BYTES` has one definition, in the layer-zero `packages/render-core/src/limits.ts`
+  (moved there by ticket C2 so `fs/http.ts` can share the cap without importing upward from
+  `publish/`; `open.ts` re-exports it, so consumers keep importing it from this seam / the
+  `@render/core` barrel). Don't redeclare the cap constant locally, even as an "identical" literal.
 - The only sanctioned caller-local exception is `packages/archie-viewer/src/load.ts`'s
   `openSrcAsZipIfBytesAreZip` fallback: it needs raw fetched bytes back **before** committing to decode
   (to sniff via `looksLikeZip`), and needs a fetch failure to swallow to `null` rather than throw (so the

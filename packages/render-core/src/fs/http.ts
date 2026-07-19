@@ -14,8 +14,8 @@
 //     canonical `no such file:` error, which `fsJsonSource.getOptional` (../publish/read.ts)
 //     reads as ABSENT (`null`); a network fault, a non-OK non-404 status, a torn body, or a cap
 //     breach throws `FailedReadError` — FAILED, never silently collapsed into "no data".
-//   • Capped reads — every response is bounded by the canonical `SRC_MAX_BYTES` (imported from
-//     ../publish/open.ts, never redeclared), checked cheaply against a declared `content-length`
+//   • Capped reads — every response is bounded by the canonical `SRC_MAX_BYTES` (the layer-zero
+//     ../limits.ts definition, never redeclared), checked cheaply against a declared `content-length`
 //     BEFORE the body is read and again against the actual byte length after, so a missing or
 //     lying header can't bypass the cap (same double-check as `fetchArchieLibraryBytes`).
 //
@@ -32,11 +32,8 @@
 
 import type { Filesystem, FsDirectory, FsFile, FsWritable } from "./seam.js";
 import { assertSafeName } from "./names.js";
-// Layering note: fs/ reaching up into publish/ is acyclic today (publish/open.ts and
-// publish/read.ts import only fs/seam + fs/zip) but inverted — flagged for the public-API pass
-// (ticket C2): SRC_MAX_BYTES and FailedReadError deserve a home below both layers.
-import { SRC_MAX_BYTES } from "../publish/open.js";
-import { FailedReadError } from "../publish/read.js";
+import { SRC_MAX_BYTES } from "../limits.js";
+import { FailedReadError } from "../errors.js";
 
 /** A mutating operation was attempted on a read-only backend. Named so callers can distinguish
  *  "this store can't be written" from a failed write. */
