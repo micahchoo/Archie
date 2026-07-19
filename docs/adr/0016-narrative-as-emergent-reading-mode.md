@@ -9,6 +9,10 @@ date: 2026-06-19
 - **Supersedes:** CONTEXT §105 ("Layout v1 set = Single + Grid + Narrative", 2026-05-24) — there is no author-facing layout *set* any more; arrangement is fixed and reading-mode is derived.
 - **Reaffirms (untouched):** ADR-0005 / mx-41997c (Section is a self-contained reading beat, **not** a tour of Notes). The narrative spine is still Section-built; nothing here re-opens that fork.
 - **Corrects (stale):** mx-39d405 ("Narrative = Phase-3, not built") — narrative has shipped; that decision no longer describes reality.
+- **Amended by:** ADR-0024 (2026-07-18) — the *single-emergent auto-open* clause
+  only ("1-object exhibit auto-opens its object, back suppressed"): under
+  place-addressable navigation the Overview is always reachable and `#/slug`
+  always means it. Everything else here stands.
 - **Source:** `/grill-with-docs`, 2026-06-19 (user-gated lock). Design: CONTEXT.md §50–52, §170–171. Code anchors: `model/layout.ts:14-23`, `model/model.ts:33-42`, `store.ts:83`, `App.svelte:993`.
 
 ## Context
