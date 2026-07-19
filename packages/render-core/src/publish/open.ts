@@ -14,9 +14,11 @@ import { ZipFilesystem } from "../fs/zip.js";
 import type { Filesystem } from "../fs/seam.js";
 import { validateArchieMarker } from "./marker.js";
 
-/** Default cap on untrusted `.archie.zip` bytes, in hand or fetched (ADR-0009 untrusted-content
- *  boundary). The single canonical constant — no consumer redefines this. */
-export const SRC_MAX_BYTES = 256 * 1024 * 1024; // 256 MB
+// Default cap on untrusted `.archie.zip` bytes, in hand or fetched (ADR-0009 untrusted-content
+// boundary). The ONE definition lives layer-zero in ../limits.ts (fs/http.ts shares it; fs/ must
+// not import from publish/) — re-exported here because this seam is its documented surface.
+import { SRC_MAX_BYTES } from "../limits.js";
+export { SRC_MAX_BYTES };
 
 /** Normalize a thrown open-path error to a user-facing message. `ZipFilesystem.fromZip`'s zip-bomb
  *  caps and `validateArchieMarker`'s ADR-0020 rejects already carry friendly messages, so re-throw an

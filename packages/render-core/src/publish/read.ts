@@ -31,27 +31,11 @@ export interface NoteTransform {
   note(n: W3CAnnotation): Promise<W3CAnnotation>;
 }
 
-/**
- * A read that FAILED — as distinct from a resource that is genuinely ABSENT (Issue 23). `getOptional`'s
- * contract is: **`null` = absent (404 / file-not-found), THROW = failed (5xx / network error / torn JSON)**.
- * A failed optional read must never be silently read as "no data" — `readExhibitTree` catches this to flag
- * a partially-loaded exhibit instead of rendering it as complete. Carries the offending `path` + `cause`.
- */
-export class FailedReadError extends Error {
-  /** The HTTP status when the failure IS a non-OK response (an HTTP-shaped source sets it; a
-   *  transport fault or torn body leaves it unset). Lets a caller preserve "server said no" vs
-   *  "the network broke" without sniffing `cause` messages. */
-  readonly status?: number;
-  constructor(
-    public readonly path: string,
-    public override readonly cause?: unknown,
-    opts?: { status?: number },
-  ) {
-    super(`failed to read ${path}: ${cause instanceof Error ? cause.message : String(cause)}`);
-    this.name = "FailedReadError";
-    if (opts?.status !== undefined) this.status = opts.status;
-  }
-}
+// FailedReadError (absent-vs-failed, Issue 23): the ONE definition lives layer-zero in ../errors.ts
+// (fs/http.ts throws it too; fs/ must not import from publish/) — re-exported here because this
+// reader is its documented surface.
+import { FailedReadError } from "../errors.js";
+export { FailedReadError };
 
 /** Did an fs walk throw because the file/dir is genuinely MISSING (→ absent), vs an actual read error
  *  (→ failed)? Memory/Zip backends throw `Error("no such file/directory")`; FSA/OPFS throw a

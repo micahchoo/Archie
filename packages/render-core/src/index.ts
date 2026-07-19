@@ -1,6 +1,13 @@
 // @render/core — pure-TS rendering core (ADR-0002 / Q-2).
 // The annotation spine (ADR-0003 / Q-3) is the keystone source every projection depends on.
 // Surface is filled across Phase 0 tasks P0-2..P0-9; this file re-exports the public API.
+//
+// EXPORTS MAP IS THE CONTRACT (ticket C2): the package.json `exports` map (`.` here, `./spine`
+// -> spine/index.ts) is the whole public API. Anything not reachable through it — deep imports
+// like `@render/core/src/fs/names.js` — is internal, unsupported, and free to move or vanish
+// without notice. Need something a barrel doesn't export? Add it to a barrel (or a new subpath
+// export), don't deep-import. `sideEffects` in package.json lists the ONLY module with
+// import-time effects (text/sanitize.ts's DOMPurify hook); keep it honest when adding modules.
 
 export const RENDER_CORE = "@render/core" as const;
 
