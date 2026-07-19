@@ -248,7 +248,10 @@
     const next = ids[Math.min(ids.length - 1, Math.max(0, (at === -1 ? 0 : at) + delta))]!;
     roveId = next;
     if (extend) onselect(next, { meta: false, shift: true });
-    plateEl(next)?.focus();
+    // Canvas viewport is overflow:hidden with transform panning — a plain focus() on an
+    // off-screen plate makes the browser scroll the hidden-overflow container, a phantom
+    // offset the tx/ty pan math never sees. List mode's overflow-y:auto scroll is desirable.
+    plateEl(next)?.focus(mode === "canvas" ? { preventScroll: true } : undefined);
   }
   function onGridKeyDown(e: KeyboardEvent) {
     if (!selectMode) return;
@@ -483,8 +486,10 @@
       role="application"
       aria-label="Exhibit canvas — drag to pan, scroll to zoom"
     >
-      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z});`} onkeydown={onGridKeyDown}
-        role={selectMode ? "grid" : undefined} aria-label={selectMode ? "Media items — arrow keys move, Space toggles a selection" : undefined}>
+      <!-- svelte-ignore a11y_no_static_element_interactions -- keydown is pure focus management
+           (roving tabindex); the honest APG Grid triple (grid/row/gridcell) lands with Archie-f260 —
+           a bare grid role without rows/cells announces broken structure to AT. -->
+      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z});`} onkeydown={onGridKeyDown}>
         <!-- Leading drop zone: the ONLY way to express "insert before the first object" (Archie-1933).
              Inert unless a drag is active and the dragged plate isn't already first. -->
         <div class="dropstart" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
@@ -588,8 +593,9 @@
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
     <p class="list-hint">{reorderMessage || (hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order.")}</p>
-    <ul class="list" bind:this={listRoot} onkeydown={onGridKeyDown}
-      role={selectMode ? "grid" : undefined} aria-label={selectMode ? "Media items — arrow keys move, Space toggles a selection" : undefined}>
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -- keydown is pure focus
+         management (roving tabindex); the honest APG Grid triple lands with Archie-f260. -->
+    <ul class="list" bind:this={listRoot} onkeydown={onGridKeyDown}>
       <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
         ondrop={(e) => { e.preventDefault(); commitToStart(); }}
@@ -631,14 +637,19 @@
        it. Two-step inline Remove confirm is unchanged (DetailsEditor idiom — bulkConfirming is App-owned so
        the keyboard Delete/⌫ path and this button share one guard). role="toolbar" — a labelled control
        group, not a status announcement (the live count uses aria-live on its own span). -->
-  {#if selectMode}
+  <!-- selectMode OR a live off-mode selection (⌘A / ctrl-click power path): the tray is the
+       two-step Remove confirm's ONLY UI — without it an off-mode ⌫⌫ would bulk-delete with
+       zero visible confirmation. -->
+  {#if selectMode || selection.size > 0}
     <div class="selection-tray" role="toolbar" aria-label="Selection actions">
       <span class="tray-count" aria-live="polite">{selection.size} selected</span>
       <button type="button" class="tray-remove" class:confirming={bulkConfirming} onclick={onbulkdelete} disabled={selection.size === 0}>
         {bulkConfirming ? `Confirm — remove ${selection.size} ${selection.size === 1 ? "item" : "items"} & their notes` : `Remove ${selection.size}`}
       </button>
       <button type="button" class="tray-clear" onclick={onclear} disabled={selection.size === 0}>Clear</button>
-      <button type="button" class="tray-done" onclick={onselectmode}>Done</button>
+      <!-- Off-mode (⌘A / ctrl-click) the tray shows without selectMode: Done then means
+           "dismiss this selection" (clear), not "toggle select mode ON". -->
+      <button type="button" class="tray-done" onclick={() => (selectMode ? onselectmode() : onclear())}>Done</button>
     </div>
   {/if}
 </main>
