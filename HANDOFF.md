@@ -109,8 +109,12 @@ byte-identical), structure-reconcile array-diff → minimal appends, plural-head
 hidden-note filtering, session.ts section threading + new _workingAnnotationCarry
 sentinel. Final gates: render-core 928/928, studio 413/413, svelte-check 0 err/3 warn,
 build ok, root 0. All six build tickets (f1c6/08af/c16d/a911/6b8e/42f3) landed with
-two-axis reviews clean. Lifecycle gaps (zip-import structure-log merge; structure/ dir
-cleanup on exhibit delete) filed as `Archie-2a9a` (open, unclaimed). Map `Archie-f849`:
+two-axis reviews clean. `Archie-2a9a` MERGED + closed (56a0332; reviews clean both axes; post-merge 928/928 +
+studio 439/439, check 0/3, build ok): zip-import merges structure logs via the one
+mergeLogs contract (plural heads gate in studio), exhibit delete cleans structure/
+flag-independently with a race-safe forget-generation. BOUNDING: import merge is LATENT
+until publish/export emits structure pages — filed `Archie-aef4` (open, unclaimed) as the
+export leg + end-to-end two-author round-trip. Map `Archie-f849`:
 enactment done; remaining fog = graduation-tier items (sync server, Yjs-vs-Automerge,
 writable HTTP backend, identity/presence) — unspecifiable until graduation is bet on.
 
