@@ -43,17 +43,17 @@ describe("readingBadge", () => {
 });
 
 describe("noteAnnouncement", () => {
-  it("names comment, 1-based position, and the numbered reading", () => {
+  it("names comment, 1-based position, and the reading as the plain word 'reading N' (not a circled glyph SRs mangle)", () => {
     expect(
       noteAnnouncement({ comment: "A cipher mark", index: 0, count: 3, readingKey: "r1", readingLabel: "Cipher", readingIds: IDS }),
-    ).toBe("A cipher mark, note 1 of 3, ② Cipher.");
+    ).toBe("A cipher mark, note 1 of 3, reading 2, Cipher.");
   });
-  it("falls back to (untitled) for an empty comment and to the base label", () => {
+  it("falls back to (untitled) for an empty comment and to base's number/label", () => {
     expect(
       noteAnnouncement({ comment: "   ", index: 2, count: 4, readingKey: undefined, readingLabel: "General notes", readingIds: IDS }),
-    ).toBe("(untitled), note 3 of 4, ① General notes.");
+    ).toBe("(untitled), note 3 of 4, reading 1, General notes.");
   });
-  it("omits the badge for an unknown reading but keeps the label", () => {
+  it("drops the 'reading N,' clause for an unknown reading (number 0) but keeps the label", () => {
     expect(
       noteAnnouncement({ comment: "orphan", index: 0, count: 1, readingKey: "gone", readingLabel: "gone", readingIds: IDS }),
     ).toBe("orphan, note 1 of 1, gone.");

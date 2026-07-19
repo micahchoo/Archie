@@ -16,8 +16,8 @@
   import { legendSeen, markLegendSeen, hintSeen, markHintSeen } from "./canvas-first-use.js";
   import { isReorderable, reorderBlockedMessage } from "./reorder-state.js";
   import {
-    liftRow, moveRow, moveRowTo,
-    liftAnnouncement, moveAnnouncement, dropAnnouncement, cancelAnnouncement,
+    liftRow, moveRow, moveRowTo, indexOfMoving,
+    liftAnnouncement, moveAnnouncement, boundaryAnnouncement, dropAnnouncement, cancelAnnouncement,
     type MoveState,
   } from "./overview-move-mode.js";
 
@@ -408,20 +408,28 @@
     announce = dropped;
     void refocusGrip(id);
   }
-  function cancelMove(id: string) {
+  function cancelMove(id: string, refocus = true) {
     if (!moveState) return;
     announce = cancelAnnouncement(objectLabel(id), moveState); // ORIGIN position — canonical order never changed
     moveState = null;
+    if (refocus) void refocusGrip(id); // a blur-driven cancel (focus already leaving) must NOT yank focus back
+  }
+  // Apply a move, announcing the new position — or, when the move hit an end and did nothing, a DISTINCT
+  // "At the top/bottom" so the screen reader still speaks (identical "Moved to position 1" text is silent).
+  function applyMove(id: string, next: MoveState) {
+    const before = indexOfMoving(moveState!);
+    moveState = next;
+    announce = indexOfMoving(next) === before ? boundaryAnnouncement(next) : moveAnnouncement(next);
     void refocusGrip(id);
   }
   function onGripKeyDown(e: KeyboardEvent, id: string) {
     if (moveState && moveState.movingId === id) {
       // Lifted: arrows move the row, Home/End jump it, Enter/Space drops, Escape cancels. stopPropagation so
       // the grid container's select-mode roving handler (onGridKeyDown) never also acts on these keys.
-      if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); e.stopPropagation(); moveState = moveRow(moveState, -1); announce = moveAnnouncement(moveState); void refocusGrip(id); return; }
-      if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); moveState = moveRow(moveState, 1); announce = moveAnnouncement(moveState); void refocusGrip(id); return; }
-      if (e.key === "Home") { e.preventDefault(); e.stopPropagation(); moveState = moveRowTo(moveState, 0); announce = moveAnnouncement(moveState); void refocusGrip(id); return; }
-      if (e.key === "End") { e.preventDefault(); e.stopPropagation(); moveState = moveRowTo(moveState, moveState.order.length - 1); announce = moveAnnouncement(moveState); void refocusGrip(id); return; }
+      if (e.key === "ArrowUp" || e.key === "ArrowLeft") { e.preventDefault(); e.stopPropagation(); applyMove(id, moveRow(moveState, -1)); return; }
+      if (e.key === "ArrowDown" || e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); applyMove(id, moveRow(moveState, 1)); return; }
+      if (e.key === "Home") { e.preventDefault(); e.stopPropagation(); applyMove(id, moveRowTo(moveState, 0)); return; }
+      if (e.key === "End") { e.preventDefault(); e.stopPropagation(); applyMove(id, moveRowTo(moveState, moveState.order.length - 1)); return; }
       if (e.key === " " || e.key === "Enter") { e.preventDefault(); e.stopPropagation(); dropMove(id); return; }
       if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); cancelMove(id); return; }
       return;
@@ -432,10 +440,22 @@
       const s = liftRow(objects.map((o) => o.id), id);
       if (!s) return;
       e.preventDefault(); e.stopPropagation();
+      // Lifting a DIFFERENT grip while one is already lifted must never silently drop the first lift on the
+      // floor: cancel it first (restores its row, announces the cancel), then lift this one.
+      if (moveState && moveState.movingId !== id) cancelMove(moveState.movingId, false);
       moveState = s;
       announce = liftAnnouncement(objectLabel(id), s);
       void refocusGrip(id);
     }
+  }
+  // Focus leaving the grid entirely while a row is lifted (Tab away, click the row pencil, click outside) is an
+  // abandon: cancel move mode with its announcement rather than stranding an uncommitted working order on screen.
+  // relatedTarget still inside the grid (moving between the grip and its neighbours) is NOT a leave.
+  function onGridFocusOut(e: FocusEvent) {
+    if (!moveState) return;
+    const to = e.relatedTarget as Node | null;
+    if (to && listRoot?.contains(to)) return;
+    cancelMove(moveState.movingId, false);
   }
   // Exit move mode if the surface changes underneath it (mode switch to canvas, a search/sort that turns
   // reordering off, or the lifted object disappearing) — a silent discard, never a stranded lifted row.
@@ -694,7 +714,7 @@
     <div class="list" role="grid" aria-label="Media items — reading order"
       aria-multiselectable={selectMode ? true : undefined}
       tabindex="-1"
-      bind:this={listRoot} onkeydown={onGridKeyDown}>
+      bind:this={listRoot} onkeydown={onGridKeyDown} onfocusout={onGridFocusOut}>
       <div class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
         ondrop={(e) => { e.preventDefault(); commitToStart(); }}
@@ -713,7 +733,7 @@
           <span role="gridcell" class="cell-grip">
             <button type="button" class="grip" class:off={!reorderable} class:lifted={moveState?.movingId === o.id}
               data-grip-id={o.id}
-              draggable={reorderable} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd}
+              draggable={reorderable && !moveState} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd}
               onkeydown={(e) => onGripKeyDown(e, o.id)}
               aria-roledescription="Reorder handle"
               aria-pressed={moveState?.movingId === o.id}
@@ -746,8 +766,13 @@
           </span>
         </div>
       {/each}
-      <div class="end" role="presentation" class:over={overId === END} ondragover={(e) => { if (dragId) { e.preventDefault(); overId = END; } }} ondrop={(e) => { e.preventDefault(); commitReorder(null); }} ondragleave={() => { if (overId === END) overId = null; }}>
-        <button class="li-add" onclick={onaddobject}>{#if dragId}<span aria-hidden="true">↧</span> Move to end{:else}<span aria-hidden="true">+</span> Add media{/if}</button>
+      <!-- Trailing "add / move-to-end" affordance — a real grid row (role=row > gridcell) rather than a
+           role=presentation div holding a focusable button as a direct grid child, so the grid's owned
+           structure stays honest (review S3). It doubles as the END drop target for pointer reorder. -->
+      <div class="end" role="row" tabindex="-1" class:over={overId === END} ondragover={(e) => { if (dragId) { e.preventDefault(); overId = END; } }} ondrop={(e) => { e.preventDefault(); commitReorder(null); }} ondragleave={() => { if (overId === END) overId = null; }}>
+        <span role="gridcell" class="cell-main">
+          <button class="li-add" onclick={onaddobject}>{#if dragId}<span aria-hidden="true">↧</span> Move to end{:else}<span aria-hidden="true">+</span> Add media{/if}</button>
+        </span>
       </div>
     </div>
   {/if}

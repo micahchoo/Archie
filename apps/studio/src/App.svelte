@@ -1210,9 +1210,15 @@
   }
   function onNotesKeyDown(e: KeyboardEvent) {
     const ids: string[] = notes.map((n) => n.logicalId);
+    // A li[role=option] has NO native activation (unlike a <button>), so Enter/Space must explicitly select
+    // the focused option — otherwise Tab-into-listbox then Enter does nothing.
+    if (e.key === "Enter" || e.key === " ") {
+      if (notesRoveId) { e.preventDefault(); selected = notesRoveId; }
+      return;
+    }
     const cur = notesRoveId ? ids.indexOf(notesRoveId) : -1;
     const next = roveIndex(cur, ids.length, e.key);
-    if (next === null) return; // not a nav key — leave Enter/Space to activate the focused option natively
+    if (next === null) return; // not a nav key — do nothing
     e.preventDefault();
     const r = notes[next]!;
     notesRoveId = r.logicalId;

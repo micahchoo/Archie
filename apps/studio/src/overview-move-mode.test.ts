@@ -6,6 +6,7 @@ import {
   moveRowTo,
   liftAnnouncement,
   moveAnnouncement,
+  boundaryAnnouncement,
   dropAnnouncement,
   cancelAnnouncement,
   type MoveState,
@@ -78,6 +79,12 @@ describe("announcement grammar", () => {
   it("drop names the label + landing position", () => {
     const s = moveRowTo(liftRow(ORDER, "a")!, ORDER.length - 1);
     expect(dropAnnouncement("Folio 1", s)).toBe("Dropped Folio 1 at position 5 of 5.");
+  });
+  it("boundary announces 'At the top' / 'At the bottom' — distinct text so a no-op move is still heard", () => {
+    const top = moveRow(liftRow(ORDER, "a")!, -1); // still index 0
+    expect(boundaryAnnouncement(top)).toBe("At the top, position 1 of 5.");
+    const bot = moveRow(liftRow(ORDER, "e")!, 1); // still index 4
+    expect(boundaryAnnouncement(bot)).toBe("At the bottom, position 5 of 5.");
   });
   it("cancel reports the ORIGIN position (not the working one) the row returns to", () => {
     let s = liftRow(ORDER, "b")!; // origin index 1 → position 2

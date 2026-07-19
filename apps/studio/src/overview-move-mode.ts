@@ -61,6 +61,14 @@ export function liftAnnouncement(label: string, state: MoveState): string {
 export function moveAnnouncement(state: MoveState): string {
   return `Moved to position ${pos1(state)} of ${state.order.length}.`;
 }
+// A move that hit an end is a no-op on the order — so re-emitting "Moved to position 1 of n" would be the
+// SAME text the arrival already spoke, and a screen reader stays silent on identical live-region text. The
+// "At the top/bottom" wording differs, so the boundary is always heard the first time it's reached.
+export function boundaryAnnouncement(state: MoveState): string {
+  const pos = pos1(state), n = state.order.length;
+  if (pos <= 1) return `At the top, position 1 of ${n}.`;
+  return `At the bottom, position ${n} of ${n}.`;
+}
 export function dropAnnouncement(label: string, state: MoveState): string {
   return `Dropped ${label} at position ${pos1(state)} of ${state.order.length}.`;
 }
