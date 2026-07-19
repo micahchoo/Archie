@@ -158,12 +158,16 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     viewer.viewport.fitBounds(new OpenSeadragon.Rect(fit.x, fit.y, fit.w, fit.h), false);
   };
 
+  // Current zoom / home zoom — the ONE place this ratio is computed, shared by the zoom-band stamp
+  // below and getZoomRatio (Archie-93fd scale cue) so the two never drift apart.
+  const zoomRatio = () => viewer.viewport.getZoom(true) / viewer.viewport.getHomeZoom();
+
   // Worklist 1.1 (scale-aware marks): stamp the coarse zoom band on the container so CSS can
   // weight markers by distance (far = fit-width presence, near = recede while inside a mark).
   // Screen-space channels only (opacity / drop-shadow) — stroke-width is inline-set per shape by
   // the style expression and lives in scaled coordinates, so CSS must not fight it.
   const updateZoomBand = () => {
-    const band = zoomBand(viewer.viewport.getZoom(true) / viewer.viewport.getHomeZoom());
+    const band = zoomBand(zoomRatio());
     if (container.dataset.archieZoom !== band) container.dataset.archieZoom = band;
   };
   viewer.addHandler("zoom", updateZoomBand);
@@ -365,6 +369,9 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     onViewportChange(cb) {
       viewer.addHandler("update-viewport", cb);
       return () => viewer.removeHandler("update-viewport", cb);
+    },
+    getZoomRatio() {
+      return zoomRatio();
     },
     destroy() {
       if (disposed) return;

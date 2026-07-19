@@ -11,3 +11,7 @@ export { createCanvasController, type CanvasController } from "./controller.js";
 export { sanitizeHtml, renderMarkdown, stripMarkdown } from "@render/core";
 // Re-export the marker-style type so adapter consumers (the viewer) needn't depend on @render/mount directly.
 export type { MarkerStyle, FrameOverlay } from "@render/mount";
+// Scale cue (Archie-93fd) — same re-export boundary as above: the viewer formats Canvas's `onzoom`
+// ratio with the SAME function studio imports straight from @render/mount, without adding that
+// package as a direct viewer dependency.
+export { formatZoomRatio } from "@render/mount";

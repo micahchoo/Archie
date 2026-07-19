@@ -23,6 +23,7 @@ function mockSurface() {
     markerScreenRect: vi.fn(() => null),
     markerScreenRects: vi.fn(() => ({})),
     onViewportChange: noop,
+    getZoomRatio: vi.fn(() => 1),
     destroy,
     onSelect: (cb) => {
       emit = cb;

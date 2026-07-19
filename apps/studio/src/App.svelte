@@ -56,7 +56,7 @@
     isWholeObjectFor, wholeObjectFlagOf, selectorOf, selectorBBox,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
-  import type { DrawTool, MarkerStyle, FrameOverlay } from "@render/mount";
+  import { formatZoomRatio, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
   import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, clearExhibitStructure, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus, setWriterGate, setWriterOtherName } from "./save-queue.svelte.js";
@@ -974,6 +974,10 @@
   // shape = "draw the next region, then disarm". Narrative camera framing (framingSectionId) shares the
   // same draw path. The two are mutually exclusive. No persistent Select|Rect|Polygon palette anymore.
   let creating = $state<DrawTool | null>(null);
+  // Scale cue (Archie-93fd): current zoom / home zoom, streamed live from the canvas (Canvas.svelte's
+  // onzoom, itself MountSurface.getZoomRatio — zoom-band.ts's own ratio). Defaults to 1 (home/fit) so
+  // the tool strip reads "1×" before the canvas has mounted, matching the eventual at-rest value.
+  let zoomRatio = $state(1);
   // When set, the NEXT drawn box/outline re-targets THIS note (Scope control's "Draw a region" / "Redraw
   // bounds", ADR-0018) instead of creating a new note. Cleared after the draw. null = ordinary create.
   let retargetingNoteId = $state<string | null>(null);
@@ -2269,12 +2273,20 @@
                fires immediately (no armed draw mode). (Converting an EXISTING note is the Scope control in the
                note form, not here.) -->
           <button type="button" class="ts-tool" onclick={() => createWholeObjectNote()} title={isMapCurrent ? "Note on the whole map (no region)" : "Note on the whole image (no region)"}><span aria-hidden="true">▣</span> Whole {isMapCurrent ? "map" : "image"}</button>
-          <!-- Filing-into indicator: the destination reading (the pen is set in the navigator's Readings panel).
-               Hidden WHILE drawing (creating) — the status strip shows its own "filing into" then, so keeping
-               this would double it (review nit Archie-d48e). -->
-          {#if !creating}
-            <span class="ts-into" title="New notes file into the active reading — set the pen (✎) in the Readings panel.">filing into <span class="ts-rd" style={`border-color:${activeReadingColour}`}><span class="ts-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {activeReadingLabel}</span></span>
-          {/if}
+          <span class="ts-right">
+            <!-- Filing-into indicator: the destination reading (the pen is set in the navigator's Readings
+                 panel). Hidden WHILE drawing (creating) — the status strip shows its own "filing into" then,
+                 so keeping this would double it (review nit Archie-d48e). -->
+            {#if !creating}
+              <span class="ts-into" title="New notes file into the active reading — set the pen (✎) in the Readings panel.">filing into <span class="ts-rd" style={`border-color:${activeReadingColour}`}><span class="ts-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {activeReadingLabel}</span></span>
+            {/if}
+            <!-- Scale cue (Archie-93fd): HOW FAR IN, the locator's missing companion. Quiet chrome ON
+                 the tool strip's own row — never floating over the artefact (Archie-a9fc, same rule this
+                 strip itself follows). aria-live so a screen-reader user can hear the zoom level change
+                 without it stealing focus; formatZoomRatio (the SAME formatter the viewer reader uses)
+                 is the one place "3.2×" gets built, so the two surfaces read the number identically. -->
+            <span class="ts-zoom" aria-live="polite"><span class="ts-zoom-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
+          </span>
         </div>
       {/if}
       <div class="canvas-plate">
@@ -2302,7 +2314,7 @@
                    an editing canvas needs the surrounding context and the shape's resize handles on
                    screen, and a full-bleed fit shoved the marker under the viewport edges. Section
                    camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
-              <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} />
+              <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} onzoom={(r) => (zoomRatio = r)} />
             {:else}
               <div class="no-canvas">Loading…</div>
             {/if}
@@ -2585,9 +2597,17 @@
   .tool-strip .ts-tool.armed { background: var(--accent-2-paper-hover); color: var(--ink-on-accent); border-color: var(--accent-2-paper-hover); box-shadow: var(--shadow-lift-low); }
   .tool-strip .ts-tool.armed:hover { box-shadow: var(--shadow-lift-mid); }
   /* Filing-into echo (read-only) — the destination reading, right-aligned; the pen itself is in the Readings panel. */
-  .tool-strip .ts-into { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-secondary); }
+  /* Right-aligned group (review Archie-93fd): the filing-into echo AND the scale cue share the strip's
+     trailing edge — one auto-margin group instead of two competing ones. */
+  .tool-strip .ts-right { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-3); }
+  .tool-strip .ts-into { display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-secondary); }
   .tool-strip .ts-rd { font-weight: 500; letter-spacing: 0; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-left-width: 3px; border-radius: var(--radius-sm); padding: 1px var(--space-2); }
   .tool-strip .ts-rd .ts-rd-num { font-family: var(--font-mono); color: var(--ink-canvas-secondary); }
+  /* Scale cue (Archie-93fd) — quiet: small mono figure, muted ink (not the strip's ink-primary text),
+     no border/fill/shadow. Deliberately the LEAST visually weighted thing on the strip — it answers a
+     question ("how far in?") nobody has to ask most of the time. */
+  .tool-strip .ts-zoom { font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.02em; color: var(--ink-canvas-muted); white-space: nowrap; }
+  .tool-strip .ts-zoom-label { font-family: var(--font-ui); letter-spacing: 0.14em; text-transform: uppercase; }
 
   /* Navigator accordion row (Archie-d48e) — a collapsed panel header that toggles open: the ▸ caret, the
      panel title, and the count/status. Full-width quiet button; the caret rotates when open. */

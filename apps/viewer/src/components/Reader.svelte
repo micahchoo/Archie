@@ -15,7 +15,7 @@
   import Credit from "./Credit.svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { stripMarkdown } from "@render/core";
-  import { type MarkerStyle } from "@render/svelte";
+  import { type MarkerStyle, formatZoomRatio } from "@render/svelte";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
 
   // Resizable / collapsible reader sidebar (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
@@ -120,6 +120,9 @@
   };
 
   let selected = $state<string | null>(initialSelected);
+  // Scale cue (Archie-93fd): current zoom / home zoom, streamed live from Canvas's onzoom. Defaults
+  // to 1 (home/fit) — the value it settles back to once the canvas mounts and reports its own home.
+  let zoomRatio = $state(1);
 
   // Deep-link sub-region (4.2): the camera target fragment for Canvas's `focus`. The route gives the raw
   // xywh VALUE (no `xywh=` prefix); fitRegion's parser needs the prefixed form, so add it when absent. A
@@ -210,13 +213,21 @@
     <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
          objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
     {#key object.canvasId}
-      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} {styleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected />
+      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} {styleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={(r) => (zoomRatio = r)} />
     {/key}
   </main>
 
   {#if onreading && readings.length > 0}
     <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
   {/if}
+
+  <!-- Scale cue (Archie-93fd): the locator (the OSD navigator this canvas mounts with `locator`)
+       answers WHERE the viewport sits in the image; this answers HOW FAR IN. Top-right — the one
+       corner this reader's canvas overlays don't already use (legend is top-left; the note popup is
+       bottom-left; the locator's own minimap owns bottom-right). Quiet: small, muted, no button
+       chrome — it's a readout, not an action. aria-live so a screen-reader user can hear it change
+       without it stealing focus (mirrors NarrativeReader's identical cue). -->
+  <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
 
   <!-- min/max match the aside's responsive clamp(320px … 560px) so a resize can't escape the designed
        reading-measure (#14) — the floor and ceiling are the same numbers the CSS clamp uses. -->
@@ -294,6 +305,22 @@
      like quiet catalog entries on warm paper (right); a hushed callout echoes the selection. */
   .reader { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
   main { position: relative; flex: 1; min-width: 0; background: var(--surface-canvas); }
+  /* Scale cue (Archie-93fd) — a canvas overlay, same anchoring strategy as .legend (absolute within
+     the reader's positioned container, top-aligned under the fixed top bar). Deliberately the
+     quietest thing on the canvas: no card/shadow/border like .legend or the note popup — just muted
+     mono text, low-contrast, easy to read past. */
+  .scale-cue {
+    position: absolute; z-index: 20; top: var(--topbar-h); right: var(--space-5);
+    padding: var(--space-1) var(--space-2);
+    font-family: var(--font-mono), monospace; font-size: 0.72rem; letter-spacing: 0.02em;
+    color: var(--ink-canvas-muted);
+    background: var(--surface-canvas-raised); border-radius: var(--radius-sm);
+    pointer-events: none; /* a readout, not a control */
+  }
+  .scale-cue .sc-label {
+    font-family: var(--font-ui), sans-serif; font-size: 0.65rem; font-weight: 500;
+    letter-spacing: 0.18em; text-transform: uppercase; margin-right: 2px;
+  }
   /* Worklist 1.3: one-shot arrival reveal — every marker breathes twice, then settles to its quiet
      A2 resting weight. The class drops off after the timer, so the animation can never recur mid-read. */
   main.arrival :global(.a9s-annotationlayer .a9s-annotation) { animation: arrival-breathe 1.6s ease-in-out 2; }
