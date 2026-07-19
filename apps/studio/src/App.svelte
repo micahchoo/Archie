@@ -53,11 +53,11 @@
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
-    tagsOf, emphasisOf, readingMarkerStyle, workingToLibrary, resolveLayoutType,
+    tagsOf, emphasisOf, readingMarkerStyle, withZoomBand, workingToLibrary, resolveLayoutType,
     isWholeObjectFor, wholeObjectFlagOf, selectorOf, selectorBBox,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
-  import { formatZoomRatio, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
+  import { formatZoomRatio, zoomBand, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
   import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, clearExhibitStructure, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus, setWriterGate, setWriterOtherName } from "./save-queue.svelte.js";
@@ -1334,14 +1334,22 @@
     if (!id) return;
     notesListEl?.querySelector<HTMLElement>(`[data-note-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
+  // Scale-aware marks (Archie-a6fb): the coarse zoom band, derived from the live zoomRatio the
+  // canvas streams via onzoom. A `$derived` so it's memoized BY VALUE — while a pan/zoom keeps the
+  // reader in the same band, this stays the same string and doesn't re-mint styleOfLive; it only
+  // re-mints (→ setStyle re-applies) when the band actually crosses far↔mid↔near. The zoom-band CSS
+  // that used to do this against `.a9s-annotation` was inert (WebGL mark layer, no SVG node), so the
+  // weight now rides the style channel via withZoomBand below.
+  const zoomBandNow = $derived(zoomBand(zoomRatio));
   // Canvas re-applies styles only when the styleOf PROP IDENTITY changes ($effect dep) — a stable
   // function would freeze the comparing/solo regime (browser-harness finding). This derived mints
-  // a fresh identity whenever the display state (visibility/solo/hover/readings/log) changes.
+  // a fresh identity whenever the display state (visibility/solo/hover/readings/log/zoom band) changes.
   const styleOfLive = $derived.by(() => {
     void rdg.comparing(currentReadings);
     void soloReading;
     void hoverNote;
     void rev;
+    void zoomBandNow;
     return (id: string) => markerStyleOf(id);
   });
   function markerStyleOf(id: string): MarkerStyle | undefined {
@@ -1351,11 +1359,14 @@
     const colour = (rid ? currentReadings.find((r) => r.id === rid)?.colour : undefined) ?? BASE_MARKER;
     // ONE style source for both apps (render-core readingMarkerStyle) carrying the comparing
     // regime (archie-ux Q-2): 2+ readings visible → outline-only; solo-on-hover restores a fill.
-    return readingMarkerStyle(colour, emphasisOf(a), {
+    const base = readingMarkerStyle(colour, emphasisOf(a), {
       comparing: rdg.comparing(currentReadings),
       soloed: soloReading !== null && (rid ?? "base") === soloReading,
       highlighted: hoverNote === id, // the hovered list note's mark is momentarily the brightest thing
     });
+    // Layer the zoom-band weight ON TOP (post-modulation): far → heavier stroke for presence at
+    // fit-width; near → the outline recedes. Composes with the regime above, one style channel.
+    return withZoomBand(base, zoomBandNow);
   }
 
   // Whole-object frame for the STUDIO canvas (ADR-0018): the first note that frames the WHOLE object —
