@@ -57,7 +57,7 @@
   import type { DrawTool, MarkerStyle, FrameOverlay } from "@render/mount";
   import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, clearExhibitStructure, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
-  import { enqueueSave, saveStatus, setWriterGate } from "./save-queue.svelte.js";
+  import { enqueueSave, saveStatus, setWriterGate, setWriterOtherName } from "./save-queue.svelte.js";
   import { createWriterLock } from "./writer-lock.svelte.js";
   import { zipNameFor } from "./binding.js";
   import { createBindingStore } from "./binding-store.svelte.js";
@@ -316,6 +316,10 @@
   // the Web Lock and may save; a second tab is read-only (the save-queue gate refuses its writes) until it
   // takes over. claimed + wired to the queue gate in onMount.
   const writerLock = createWriterLock(WORKING_STORE_ID);
+  // Archie-198c: name the other tab when we know it (rendered via plain text interpolation below, never
+  // {@html} — the name is untrusted same-origin text). otherName is null when that tab is anonymous or
+  // the name couldn't be learned (e.g. no BroadcastChannel) — falls back to the prior impersonal copy.
+  const otherTabWho = $derived(writerLock.otherName ? `${writerLock.otherName} is editing this library` : "This library is open");
   let zipInputEl = $state<HTMLInputElement | null>(null); // hidden picker for "Open" on non-Chromium
   let csvEl = $state<HTMLInputElement | null>(null); // hidden picker for the notes-CSV import (⑥)
   let wadmEl = $state<HTMLInputElement | null>(null); // hidden picker for the WADM/JSON import (⑦)
@@ -361,6 +365,7 @@
     // tab close; the beforeunload release is for the BroadcastChannel fallback's "bye".
     writerLock.claim();
     setWriterGate(() => writerLock.canWrite);
+    setWriterOtherName(() => writerLock.otherName); // Archie-198c: names the writer in the refusal message
     window.addEventListener("beforeunload", () => writerLock.release());
     // Restore a saved GitHub session (Task 13) — desktop only; web / no stored token resolves null with
     // no network. Non-blocking: the publish machine's live `initialSession` getter picks it up whenever
@@ -1802,10 +1807,11 @@
 {#if writerLock.otherTabActive && !writerLock.canWrite}
   <!-- Issue 22 single-writer: this tab is read-only because another tab holds the writer lock. Editing
        here won't save (the save-queue gate refuses it) until the user takes over. Reuses the amber
-       banner styling (attention, not error). -->
+       banner styling (attention, not error). Archie-198c: names the other tab when known (otherTabWho),
+       falling back to the impersonal phrasing when that tab is anonymous. -->
   <div class="playground-banner" role="status">
     <span class="pg-tag">Read-only</span>
-    <span class="pg-msg">This library is open in another tab that's editing it — changes here won't be kept, to protect that tab's work.</span>
+    <span class="pg-msg">{otherTabWho} in another tab — changes here won't be kept, to protect that tab's work.</span>
     <button class="pg-keep" onclick={() => writerLock.takeOver()}>Take over editing</button>
   </div>
 {/if}
