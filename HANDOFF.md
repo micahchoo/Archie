@@ -174,14 +174,15 @@ build ok, root 0. All six build tickets (f1c6/08af/c16d/a911/6b8e/42f3) landed w
 two-axis reviews clean. `Archie-2a9a` MERGED + closed (56a0332; reviews clean both axes; post-merge 928/928 +
 studio 439/439, check 0/3, build ok): zip-import merges structure logs via the one
 mergeLogs contract (plural heads gate in studio), exhibit delete cleans structure/
-flag-independently with a race-safe forget-generation. BOUNDING resolved: `Archie-aef4` (export leg)
-NOW IN PIPELINE (user named it) — `build/structure-export` @ `cb4cd4e` off `e24c092`
-(worktree `agent-a94c97158927541b8`): PublishOptions.getStructure seam in publishLibrary
-(one hook covers zip+folder), emission by log EXISTENCE not flag, no-log byte-identical
-pinned, archie.json-last preserved, viewer tolerance proven (108+94), two-author
-round-trip test passes (publish→concurrent edit→import→2 heads gated). Gates green
-in-worktree (933/933 rc, 521/521 studio, check 0/0, build ok). Reviewers
-`aef4-review-standards`+`aef4-review-spec` running; on clean → merge → close aef4. Map `Archie-f849`:
+flag-independently with a race-safe forget-generation. `Archie-aef4` MERGED + closed
+(cb4cd4e + d642c1f review fix; reviews clean both axes; post-merge 933/933 rc + 640/640
+studio, check 0/0, build ok): publishLibrary emits structure pages via getStructure (one
+hook, all sinks; existence-driven not flag-driven; archie.json-last preserved). Two-author
+round-trip proven end-to-end — **conflict-safe structure exchange is LIVE, not latent.**
+All-corrupt-at-publish = annotation-parity ship-what-reads but louder (both cases pinned);
+annotation side's total publish-time silence filed as `Archie-a690` (open, unclaimed).
+Collab-readiness map f849: enactment fully done; open children = a690 only; fog =
+graduation-tier items. Map `Archie-f849`:
 enactment done; remaining fog = graduation-tier items (sync server, Yjs-vs-Automerge,
 writable HTTP backend, identity/presence) — unspecifiable until graduation is bet on.
 
