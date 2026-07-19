@@ -93,11 +93,16 @@ sentinels intact, refactor type-only, gates re-verified independently (tsc 0, 86
 **BOTH CHECKPOINTS PASSED (user: pursue; dispatch serial waves, no asking between waves).**
 Build plan charted + committed (`9bdc4cd`): f1c6 generics → 08af SectionRecord → {c16d
 projection, a911 persist, 6b8e attribution} → 42f3 studio flag. Probe ledger landed on main.
-**Wave 1 MERGED** (`7728b08`, f1c6 closed): DagRecord generics + 5 type pins on main;
-review clean both axes; post-merge 852/852, tsc 0, root typecheck 0. **Wave 2 next:**
-`Archie-08af` SectionRecord model (worktree implementer → two-axis review → merge). Then
-wave 3 parallel c16d+a911+6b8e (disjoint territory); wave 4 = 42f3. (User pre-approved
-serial waves, no asking between.)
+**Waves 1+2 MERGED.** Wave 1 `7728b08` (f1c6: DagRecord generics + 5 type pins). Wave 2:
+`build/section-record` merged (fe6d06e impl + 3840a3f review fixes; 08af closed) —
+`spine/structure.ts` SectionRecord family, six carry sentinels, C13/C14 resolve,
+containment+parity tests, tolerant projection. Post-merge 886/886, tsc 0, root 0. Review
+PASS both axes; 3 gaps closed test-only. **Wave 3 dispatching: c16d (single-pass group-by
+projection) + a911 (persist pages) + 6b8e (note attribution) in PARALLEL worktrees** —
+disjoint territory: c16d touches heads.ts+structure.ts projection; a911 new persist files;
+6b8e wadm/types + log/merge sentinels + serialize. Watch: 6b8e (AnnotationRecord field)
+and c16d (structure.ts edit) both near wave-2 files — merge order: c16d first, then a911,
+then 6b8e, re-gating each. Wave 4 = 42f3 after. (Serial waves pre-approved.)
 
 **Ops (verified this session):** worktrees ALWAYS stale (5/5) — Step 0 reset + file-existence
 check in every brief. Review agents must END with SendMessage to main (plain text lost).
