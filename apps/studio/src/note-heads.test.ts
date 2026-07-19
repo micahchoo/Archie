@@ -42,4 +42,25 @@ describe("dedupeHeadsByLogicalId", () => {
   it("is empty-safe", () => {
     expect(dedupeHeadsByLogicalId([])).toEqual([]);
   });
+
+  // Archie-d7ee: App.svelte's noteCountByCanvas tallies allNotes, which carries every live head — so
+  // deduping first is what makes a conflicted note count ONCE, not once-per-head. This pins the
+  // per-canvas count computation (the same shape as the derived map) over a conflicted log.
+  it("per-canvas note count tallies a conflicted note once (dedupe-then-count)", () => {
+    const countByCanvas = (heads: ReadonlyArray<{ logicalId: string; rev: string; canvas: string }>) => {
+      const m = new Map<string, number>();
+      for (const r of dedupeHeadsByLogicalId(heads)) m.set(r.canvas, (m.get(r.canvas) ?? 0) + 1);
+      return m;
+    };
+    const head = (logicalId: string, rev: string, canvas: string) => ({ logicalId, rev, canvas });
+    const heads = [
+      head("a", "r1", "folio-1"),
+      head("b", "r2", "folio-1"), // meera's head of the conflicted note "b"
+      head("b", "r5", "folio-1"), // amir's head of the SAME note — must not inflate the count
+      head("c", "r1", "folio-2"),
+    ];
+    const counts = countByCanvas(heads);
+    expect(counts.get("folio-1")).toBe(2); // notes "a" + "b" — conflicted "b" counted once, not twice
+    expect(counts.get("folio-2")).toBe(1);
+  });
 });

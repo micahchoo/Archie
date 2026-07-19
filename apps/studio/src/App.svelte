@@ -1256,9 +1256,12 @@
   const sel = $derived(notes.find((r) => r.logicalId === editing));
   // Note count per canvas, built ONCE per allNotes change — the overview/library lists call this per
   // object, so the old per-call filter was O(objects × notes) on every `rev` bump. O(1) lookup now.
+  // Deduped by logicalId first (Archie-d7ee): allNotes carries EVERY live head, so an edit-vs-edit
+  // conflict holds 2+ records for one note — counting raw heads would tally that note twice. The count
+  // is per-NOTE (like objNotes / the inspector list), not per-head.
   const noteCountByCanvas = $derived.by(() => {
     const m = new Map<string, number>();
-    for (const r of allNotes) { const c = srcOf(r.target); if (c === undefined) continue; m.set(c, (m.get(c) ?? 0) + 1); }
+    for (const r of dedupeHeadsByLogicalId(allNotes)) { const c = srcOf(r.target); if (c === undefined) continue; m.set(c, (m.get(c) ?? 0) + 1); }
     return m;
   });
   const noteCountOf = (objId: string) => noteCountByCanvas.get(canvasIdOf(objId)) ?? 0;
