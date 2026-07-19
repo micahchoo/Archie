@@ -16,14 +16,16 @@ prototype). Glossary: `CONTEXT.md`. Audit + corrections: `ledgers/UX-AUDIT-studi
 save/safety-state · `f8fc422` nav/place-addressable · `f159b94` canvas/light-table-trims ·
 `b564ac2` tutorial-deck deploy fix. Post-merge: svelte-check 0/11, 342/342 studio tests.
 
-**Merged wave 2 so far:** `2c47bdb` library/home-layout (`Archie-606d` closed; review
-merge-ready, gates 0/11 + 350 tests + build). Main also carries the sibling collab
-session's merges (`016a7bf`, `71784e1` — render-core/spine, no studio overlap).
+**Merged wave 2 so far:** `2c47bdb` library/home-layout (`Archie-606d` closed) ·
+chrome/editor-redesign (`Archie-c7ef` + `Archie-c76d` closed; two-zone sidebar, docked
+note editor, SafetyState everywhere, single ⌘S owner; review fixes `19276c4`). Gates
+post-merge each time: svelte-check 0/11, 350 studio tests, studio+viewer builds. Main
+also carries the sibling collab session's merges (render-core/spine, no studio overlap).
 
 **Agents running (worktrees; ALL worktrees spawn at stale session-start HEAD — brief them
 to `git reset --hard <current main sha>` first):**
-- `chrome-builder` (opus) — `chrome/editor-redesign`: tickets `Archie-c7ef` + `Archie-c76d`
-  (two-zone sidebar, minimizable rail, docked note editor, status strip, SafetyState mounts).
+- `create-implementer` (sonnet) — `create/import-dialog`: ticket `Archie-51cc` (Variant A
+  scrimmed New-exhibit dialog, three expanding paths, paste-validated IIIF, page-drop).
 
 **Process per branch (user directive, updated 2026-07-19): AUTO-MERGE WHEN GREEN** —
 code-review agent on completion → fix loop if needed → once review-clean, merge to main
@@ -38,6 +40,48 @@ e2e `d80f` (needs Playwright gate).
 
 Wireframes + collab wiring diagrams: tldraw board `archie-studio-wireframes`
 (http://localhost:3002/?board=archie-studio-wireframes).
+
+---
+
+## COLLAB-READINESS SESSION (2026-07-18/19) — map complete; structure-DAG probe IN FLIGHT
+
+Map **`Archie-f849`** "Archie full-stack/real-time graduation readiness (static-first)": **8/8
+closed** + bug `Archie-cfc1` fixed. North star (user-set): Archie graduates to full-stack
+real-time IN THIS REPO, monorepo-native (Archie+ sibling-repo concept RETIRED). Invariant:
+every step ships standalone static value. All work via worktree agent → two-axis review → merge.
+
+**Delivered (committed through `2c47bdb`+):** `ledgers/AUDIT-stable-ids.md` (ids audit) ·
+`ledgers/PROBE-collab-crdt-mapping.md` (**Model B decided**: Yjs transports the rev-log,
+DAG merge unchanged; Model A/field-mapping REJECTED — silent LWW loss) · D1 multi-tab live
+sync 12/12 verified (`prototypes/multi-tab-live-sync/`, throwaway, uncommitted) ·
+`fs/http.ts` read-only fourth backend · C2 API hygiene (sideEffects array, root barrel
+121.99KB→0.57KB; `limits.ts`/`errors.ts` layer-zero; exports-map-as-contract) ·
+`spine/MERGE-CONTRACT.md` 18 clauses + 50 pinned tests · OQ-1 fix (`parentsOf` shared in
+log.ts; linearHead⟺headsOf structurally agree; resolved notes editable; suite **847/847**).
+
+**Spine gate `Archie-494c` DECIDED (six fixed decisions):** structure fully collaborative ·
+same DAG machinery · order = child-carried fractional key (content field, id tiebreak) ·
+identity = composed branded `{exhibitId}/{localId}` (IRIs preserved; cross-exhibit move =
+copy+tombstone) · referential TOLERANCE (write-time enforcement unsound under merge;
+per-type read degrades + advisory MergeReview items) · deletes hide-by-ancestry (one
+tombstone, atomic un-delete; explicit bulk-delete verb; write-cascade retired).
+
+**IN FLIGHT — agent `probe-structure-revlog`** (worktree `agent-a4620b9ff7368be6e`, branch
+`probe/structure-revlog`, ticket `Archie-b766`): sections as rev-logged structure records.
+Riskiest A1 = primitives generalize with ZERO annotation change (847 untouched tests stay
+green). Kill (fixed): lossless seed round-trip working→publish→open; >16ms/edit-projection
+flagged. Writes `ledgers/PROBE-structure-revlog.md`. Briefed to reset to `2c47bdb`.
+
+**User-ordered pipeline on landing:** two-axis review → (pursue) build plan as tickets →
+implementer agents → two-axis review per landing → merge. **User checkpoints:** probe
+pursue/park verdict; build-plan shape before implementer dispatch.
+
+**Ops (verified this session):** worktrees ALWAYS stale (5/5) — Step 0 reset + file-existence
+check in every brief. Review agents must END with SendMessage to main (plain text lost).
+Concurrent sessions share this checkout: merges may no-op "Already up to date" (verify via
+gates+log, don't re-merge); `sd create` can triple-fire (dedupe, keep earliest). OQ-2..6
+recorded unfixed in MERGE-CONTRACT.md. Cross-map: collab identity SoT = `Archie-d71c`;
+MergeReview `90f1` inherits cfc1's close-reason notes.
 
 ---
 
