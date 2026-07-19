@@ -2104,11 +2104,13 @@
           </details>
         {/if}
 
-          <!-- Detail (this item) — the object's description + credit/licence (rights grill Q6). Always visible
-               in the object zone now (was a separate accordion panel). -->
+          <!-- Details (this item) — the object's description + credit/licence (rights grill Q6). Always
+               visible in the object zone now (was a separate accordion panel). Label unified to "Details"
+               (decision Archie-3e0a, ticket Archie-ebf4) — same word the library/exhibit chips and the
+               card/plate/row pencils use for this same surface. -->
           {#if current}
             <div class="panel-title-row">
-              <h3 class="panel-title">Detail</h3>
+              <h3 class="panel-title">Details</h3>
               {#if current.summary || current.rights || current.requiredStatement}<span class="panel-note" title="Description or credit set for this item">Set</span>{/if}
             </div>
             <DetailsEditor

@@ -88,6 +88,24 @@ input::placeholder, textarea::placeholder { color: var(--ink-canvas-muted); }
 .pixel-card { background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
 .pixel-bracket::before, .pixel-bracket::after { display: none; } /* no corner brackets in Soft Static */
 
+/* One "Details" affordance, everywhere it appears as a bare glyph (decision Archie-3e0a, ticket
+   Archie-ebf4): the ✎ pencil that opens DetailsEditor for a card/plate/row is ALWAYS this look —
+   a library card's pencil must be indistinguishable from an overview plate's or a list row's.
+   Position (absolute-over-corner vs inline-trailing) and idle-visibility (fade-in-on-hover vs
+   always-shown) stay local to each surface's layout; only the glyph's own visual identity lives
+   here. See LibraryHome .edit-meta, ExhibitOverview .plate-edit/.row-edit. */
+.details-pencil {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 1.85rem; height: 1.85rem; padding: 0; cursor: pointer; line-height: 1;
+  font-family: var(--font-ui); font-size: 0.95rem;
+  color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised);
+  border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lift-low);
+  transition: opacity 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+.details-pencil:hover { color: var(--accent); border-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
+.details-pencil:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
 @media (prefers-reduced-motion: reduce) {
   .soft-btn, .pixel-btn { transition: none; }
 }
