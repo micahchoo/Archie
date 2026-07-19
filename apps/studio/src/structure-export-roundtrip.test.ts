@@ -213,4 +213,43 @@ describe("publish with a torn structure store — parity with the annotation shi
       warn.mockRestore();
     }
   });
+
+  // Archie-a690 remaining scope: the console warns above are pre-publish-time, invisible to a curator.
+  // These pin that the SAME findings ride into the flows' `corruptLogs` state (what the Publish dialog
+  // renders as its advisory) — BEFORE the artifact ships — for both log families, with the all-corrupt
+  // vs partial distinction preserved.
+  it("structure PARTIAL-corrupt → a 'sections' advisory finding (allCorrupt:false, readable subset ships)", async () => {
+    const dir = await tornStore(["s2"]);
+    h.openStructRO = async () => dir;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const flows = createPublishFlows(publishDeps());
+      await flows.projectSiteFs();
+      expect(flows.corruptLogs).toEqual([{ slug: "voynich", family: "sections", corruptCount: 1, allCorrupt: false }]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("structure ALL-corrupt → the advisory marks it allCorrupt:true (reads as never-authored)", async () => {
+    const dir = await tornStore(["s1", "s2"]);
+    h.openStructRO = async () => dir;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const flows = createPublishFlows(publishDeps());
+      await flows.projectSiteFs();
+      expect(flows.corruptLogs).toEqual([{ slug: "voynich", family: "sections", corruptCount: 2, allCorrupt: true }]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("annotation findings (from the loadAllLogs pass) ride into the SAME advisory list", async () => {
+    // No structure store here (openStructRO stays null) — the advisory carries the annotation side alone,
+    // proving both families feed one list via deps.annotationCorruption.
+    const annFinding = { slug: "herbal", family: "annotations" as const, corruptCount: 2, allCorrupt: true };
+    const flows = createPublishFlows({ ...publishDeps(), annotationCorruption: () => [annFinding] });
+    await flows.projectSiteFs();
+    expect(flows.corruptLogs).toEqual([annFinding]);
+  });
 });
