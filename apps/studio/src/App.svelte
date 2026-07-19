@@ -1296,17 +1296,16 @@
   // affordance applied to annotations). null = none.
   let hoverNote = $state<string | null>(null);
 
-  // --- Marginalia rail (Archie-dff3, direction C) — the surviving marginalia engine, re-presented as
-  // a near-invisible density rail beside the canvas (NOT the reverted floating card column). Canvas
-  // streams each visible note's on-screen region rect via `onmarkerrects`; the rail clusters near
-  // notes into counted chips and draws a heat band where they pile up. It's a spatial index that
-  // DRIVES `selected`/`hoverNote` — the same channels the inspector list and canvas marks use — so it
-  // never becomes a second edit surface. Image/Map objects only (regions have a screen rect; AV notes
-  // are temporal). `markerRects` is the latest batched frame; the rail re-solves off it.
-  //
-  // User-verdict strip (Archie-dff3): the chips' text previews duplicated the inspector, so the rail
-  // now carries WHERE + HOW MUCH only — each note's reading colour (mirroring markerStyleOf's base
-  // fallback), never a text lead. ---
+  // --- Marginalia rail (Archie-dff3, direction B — collapsed tick rail) — the surviving marginalia
+  // engine, re-presented as a near-invisible tick rail beside the canvas (NOT the reverted floating
+  // card column, and superseding an intermediate direction-C density-cluster build per user verdict).
+  // Canvas streams each visible note's on-screen region rect via `onmarkerrects`; the rail places one
+  // tick per note (no clustering, no chip chrome, no heat band — ticks at every density). It's a
+  // spatial index that DRIVES `selected`/`hoverNote` — the same channels the inspector list and canvas
+  // marks use — so it never becomes a second edit surface. Image/Map objects only (regions have a
+  // screen rect; AV notes are temporal). `markerRects` is the latest batched frame; the rail re-solves
+  // off it. Each tick's colour is the note's reading colour (mirroring markerStyleOf's base
+  // fallback) — WHERE + HOW MUCH only, never a text lead (user-verdict strip, Archie-dff3). ---
   let markerRects = $state<Record<string, { left: number; top: number; right: number; bottom: number } | null>>({});
   const marginaliaItems = $derived(
     notes.map((r) => ({
