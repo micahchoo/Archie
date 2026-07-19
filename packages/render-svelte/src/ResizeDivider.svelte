@@ -18,6 +18,7 @@
     max = 720,
     step = 24,
     label = "panel",
+    collapsible = true,
     oncommit,
   }: {
     /** User width OVERRIDE in px; null ⇒ the CSS clamp() default. Bindable. */
@@ -32,6 +33,10 @@
     step?: number;
     /** Human name of the panel, for the divider + collapse-button aria/title. */
     label?: string;
+    /** Whether the divider offers a collapse toggle. Default true. Set false for a panel that must always
+     *  stay visible (Archie-b671: the docked note editor is resizable but NOT minimizable — only the rail
+     *  is). When false the collapse chevron is not rendered, so the divider is a pure resize handle. */
+    collapsible?: boolean;
     /** Fired on pointer-up / reset / collapse so the host can persist {width, collapsed}. */
     oncommit?: (state: { width: number | null; collapsed: boolean }) => void;
   } = $props();
@@ -117,15 +122,17 @@
   onkeydown={key}
 >
   <span class="grip" aria-hidden="true"></span>
-  <button
-    type="button"
-    class="collapse"
-    aria-pressed={collapsed}
-    aria-label={collapsed ? `Show ${label}` : `Hide ${label}`}
-    title={collapsed ? `Show ${label}` : `Hide ${label} — image-first`}
-    onpointerdown={(e) => e.stopPropagation()}
-    onclick={toggleCollapse}
-  >{chevron}</button>
+  {#if collapsible}
+    <button
+      type="button"
+      class="collapse"
+      aria-pressed={collapsed}
+      aria-label={collapsed ? `Show ${label}` : `Hide ${label}`}
+      title={collapsed ? `Show ${label}` : `Hide ${label} — image-first`}
+      onpointerdown={(e) => e.stopPropagation()}
+      onclick={toggleCollapse}
+    >{chevron}</button>
+  {/if}
 </div>
 
 <style>

@@ -2097,7 +2097,7 @@
          note in the sidebar list OR a marker on the canvas populates it; Esc deselects (the editor's Esc
          ladder); its width is a persisted view preference, resizable via the ResizeDivider (280 min, ~320
          default). Replaces BOTH the floating popover and the pinned inspector. -->
-    <ResizeDivider side="right" label="note editor" min={280} max={560} bind:width={dockWidth} oncommit={(s) => viewPrefs.setDockWidth(s.width)} />
+    <ResizeDivider side="right" label="note editor" min={280} max={560} collapsible={false} bind:width={dockWidth} oncommit={(s) => viewPrefs.setDockWidth(s.width)} />
     <aside class="dock" style:--studio-dock-w={dockWidth != null ? `${dockWidth}px` : null} aria-label="Note editor">
       {#if sel && !drawArmed}
         {@render noteForm()}
@@ -2340,6 +2340,8 @@
   .rail-region.collapsed .obj { max-width: none; padding: var(--space-1); }
   .rail-region.collapsed .obj-thumb { width: 16px; height: 26px; }
   .rail-region.collapsed .obj-meta { display: none; }
+  /* Slim strip: the sticky "n / N" counter shrinks to match the ticks, so it doesn't loom oversized. */
+  .rail-region.collapsed .rail-pos { font-size: 0.55rem; padding: 0 var(--space-1); }
   /* Object tab — a thumbnail + label so you choose visually (P2-6), not by name alone. */
   .obj {
     display: flex; align-items: center; gap: var(--space-2); cursor: pointer; text-align: left; max-width: 13rem;
