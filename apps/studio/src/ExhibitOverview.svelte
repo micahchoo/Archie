@@ -25,6 +25,7 @@
     lastAnnotatedOf,
     thumbFor,
     onopenobject,
+    onopenbeat,
     oneditobject,
     onaddobject,
     onback,
@@ -62,6 +63,11 @@
     /** Resolve an object's thumbnail URL ("" if none — AV/extensionless → placeholder plate). */
     thumbFor: (obj: OverviewObject) => string;
     onopenobject: (objId: string) => void;
+    /** Beat deep link (Archie-696d): activate a spine row → editor at that beat's object, Narrative panel
+     *  scrolled to the section with a transient highlight (App: navigate + focusSectionId). Distinct from
+     *  onopenobject (a plain plate click) because it also carries WHICH section to focus. Only called for
+     *  a row whose beat object still exists — see the ns-beat-gone branch below (requirement 5). */
+    onopenbeat: (sectionId: string) => void;
     /** Per-plate/per-row pencil CRUD (Archie-79be): open the App-owned object details drawer (title /
      *  description / credit / remove) WITHOUT descending into the object editor. */
     oneditobject: (objId: string) => void;
@@ -371,12 +377,30 @@
         <p class="ns-eyebrow">Exhibit narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}</p>
         <ol class="ns-spine">
           {#each sections as s, i (s.id)}
+            {@const beatObjectExists = objects.some((o) => o.id === s.objectId)}
             <li>
-              <button class="ns-beat" onclick={() => onopenobject(s.objectId)} title="Open the media item for this section">
-                <span class="ns-n">{i + 1}</span>
-                <span class="ns-title">{s.title || `Section ${i + 1}`}</span>
-                <span class="ns-with">{objectLabel(s.objectId)}</span>
-              </button>
+              {#if beatObjectExists}
+                <!-- Beat deep link (Archie-696d): real button semantics → keyboard-activable (Enter/Space),
+                     real focus ring. Jumps to the editor at this beat's object with the Narrative panel
+                     scrolled + highlighted on this section — NOT just "open the media item" anymore. -->
+                <button class="ns-beat" onclick={() => onopenbeat(s.id)} title="Open this section in the editor">
+                  <span class="ns-n">{i + 1}</span>
+                  <span class="ns-title">{s.title || `Section ${i + 1}`}</span>
+                  <span class="ns-with">{objectLabel(s.objectId)}</span>
+                </button>
+              {:else}
+                <!-- Requirement 5 (degrade gracefully): the beat's media item was removed but its section
+                     wasn't pruned (deleteObjectNotesAndMeta drops the object, not orphaned sections). No
+                     sensible editor target exists for it, so the row goes inert rather than link to a
+                     nonexistent object — never a button/link, so it's out of the tab order too. -->
+                <!-- aria-disabled dropped (code review NIT 2): a role-less div doesn't map it to anything
+                     for AT — the visible "Media item removed" text already carries the meaning. -->
+                <div class="ns-beat ns-beat-gone" title="This section's media item was removed">
+                  <span class="ns-n">{i + 1}</span>
+                  <span class="ns-title">{s.title || `Section ${i + 1}`}</span>
+                  <span class="ns-with">Media item removed</span>
+                </div>
+              {/if}
             </li>
           {/each}
         </ol>
@@ -533,6 +557,11 @@
   .ns-beat .ns-n { font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--accent-2); min-width: 1.25rem; }
   .ns-beat .ns-title { flex: 1; font-family: var(--font-display); font-size: 1.05rem; font-weight: 400; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .ns-beat .ns-with { font-family: var(--font-mono); font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-canvas-muted); white-space: nowrap; }
+  /* A row whose beat object was removed (requirement 5): inert, not a link — dimmed + no pointer/hover
+     affordance, so it reads as "can't act on this" rather than a broken/silent click. */
+  .ns-beat-gone { cursor: default; opacity: 0.5; }
+  .ns-beat-gone:hover { background: transparent; }
+  .ns-beat-gone .ns-with { font-style: italic; }
 
   header { display: flex; align-items: center; gap: var(--space-4); padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-canvas); }
   .back { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 160ms ease, border-color 160ms ease; }
