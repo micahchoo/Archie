@@ -108,7 +108,14 @@
   let rightsOpen = $state(false);
   const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
   // SafetyState's unbound "Action needed" input (CONTEXT.md — never for untouched seed/template content).
-  const hasRealWork = $derived(hasRealWorkIn(exhibits, isTemplate));
+  // Archie-c76d (d): library-level meta edits (title/summary/credit) count as real work too, so binding an
+  // unbound library that has only a title set is still surfaced as Action needed.
+  const hasRealWork = $derived(hasRealWorkIn(exhibits, isTemplate, {
+    ...(libTitle !== undefined ? { title: libTitle } : {}),
+    ...(librarySummary !== undefined ? { summary: librarySummary } : {}),
+    ...(rights.rights !== undefined ? { rights: rights.rights } : {}),
+    ...(rights.requiredStatement !== undefined ? { requiredStatement: rights.requiredStatement } : {}),
+  }));
 
   // Two views, one search (Phase 3.2): visual Exhibit cards ⟷ the all-images wall; the search box filters
   // the ACTIVE view (exhibit titles / object titles) via the shared matchesTitle primitive. The lens is a
