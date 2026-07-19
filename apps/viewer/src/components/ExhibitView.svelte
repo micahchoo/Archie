@@ -97,7 +97,11 @@
       data = d;
       layout = l;
       filmstripCollapsed = l.type === "narrative"; // authored narrative read leads → strip starts collapsed
-      selectedObjectId = l.type === "grid" ? null : (l.objects[0]?.id ?? null);
+      // Narrative owns its own object model (indexObjectId / the spine's internal activeIndex) — seeding
+      // selectedObjectId here (as grid/single do) would make an AV objects[0] hijack the top-level
+      // `isAV && activeData` branch before the narrative branch is ever reached (MF-2: dead-end trap,
+      // no onback/siblings wired for that branch). Narrative gets null, same as grid.
+      selectedObjectId = l.type === "grid" || l.type === "narrative" ? null : (l.objects[0]?.id ?? null);
       // Object-cite arrival (#/<slug>/o/<id>, ADR-0018): land on the whole Object, not the overview/spine.
       // A narrative layout ignores selectedObjectId (it renders the spine), so open the object FROM the
       // index instead (indexObjectId → its own Reader); grid/single consume selectedObjectId.
@@ -151,7 +155,10 @@
     const arrival = resolveNoteArrival(targetNote, layout.objects, data);
     if (arrival) {
       if (arrival.reading) activeReading = arrival.reading; // a jump into a reading opens that reading
-      selectedObjectId = arrival.objectId; // land on the object (not the grid overview)
+      // A narrative ignores selectedObjectId (it navigates via its own internal section index, driven by
+      // `initialSelected` below) — setting it here for a note that lives on an AV object would hijack the
+      // top-level `isAV && activeData` branch (MF-2: same dead-end trap as the objects[0] seeding above).
+      if (layout.type !== "narrative") selectedObjectId = arrival.objectId; // land on the object (not the grid overview)
       arrivedNote = targetNote; // → Reader/NarrativeReader initialSelected → fitBounds
       linkMissing = false;
       chromeVisible = true;
@@ -384,10 +391,14 @@
       <span>Some notes couldn’t load — showing what’s available.</span>
     </div>
   {/if}
-  {#if isAV && activeData}
+  {#if isAV && activeData && layout.type !== "narrative"}
     <!-- Key on the object so the player REMOUNTS when stepping between AV siblings (R4) — MediaPlayer's
          media/error state is plain $state with no per-object reset, so without this a failed recording's
-         error (or a stale playhead) would persist onto a healthy sibling. Mirrors the Reader's canvas key. -->
+         error (or a stale playhead) would persist onto a healthy sibling. Mirrors the Reader's canvas key.
+         `layout.type !== "narrative"` guard (MF-2): this branch has no onback/siblings wired (a narrative's
+         AV is either the spine's own embedded player or the index-AV player, both of which DO carry an
+         escape) — without the guard, selectedObjectId resolving to an AV object (objects[0], or a note
+         deep-link) would hijack the whole exhibit into this bare player with no way back. -->
     {#key activeData.id}
       <MediaPlayer
         object={activeData}
@@ -456,6 +467,7 @@
         activeReading={activeReading}
         onreading={(id) => (activeReading = id)}
         styleFor={readingStyleOf}
+        frameFor={(objectId) => { const o = data?.objects.find((x) => x.id === objectId); return frameFor(objectId, o?.width, o?.height); }}
         initialSelected={arrivedNote}
         initialSection={arrivedSection}
         notesHidden={notesHidden}

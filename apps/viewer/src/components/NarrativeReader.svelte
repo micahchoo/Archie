@@ -13,9 +13,9 @@
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import ProseCites from "./ProseCites.svelte";
-  import { type MarkerStyle } from "@render/svelte";
+  import { type MarkerStyle, type FrameOverlay } from "@render/svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
-  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
+  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
   import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
   import { positionLabel } from "../exhibit-nav.js";
 
@@ -41,6 +41,7 @@
     activeReading = null,
     onreading,
     styleFor,
+    frameFor,
     initialSelected = null,
     initialSection = null,
     notesHidden = false,
@@ -64,6 +65,12 @@
     onreading?: (id: string | null) => void;
     /** Per-object marker styler (objectId → (annId → style)); colours markers by Reading. */
     styleFor?: (objectId: string) => (id: string) => MarkerStyle | undefined;
+    /** 7e1f coverage border — the whole-object mark to frame the ACTIVE object's canvas with (mirrors
+     *  Reader.svelte's `frame` prop; a callback here since the active object changes internally as the
+     *  spine steps, not from ExhibitView). null return = no frame for that object. Absent = never framed —
+     *  a whole-object (selectorless, ADR-0018) note would otherwise have no marker AND no list entry in
+     *  the narrative (its sidebar is the section spine, not a note list), making it unreachable. */
+    frameFor?: (objectId: string) => { markId: string; colour: string } | null;
     initialSelected?: string | null; // deep-link arrival: land on the section whose object owns this note
     /** Section-cite arrival (#/<slug>/s/<id>, ADR-0021 / 4.6): the resolved (in-range) section index to
      *  land the spine on. Takes precedence over a note's owning-section when both are present (an explicit
@@ -129,6 +136,14 @@
     return overlay(base, readingAnnotationsByObject[activeObject.id]?.[activeReading]);
   });
   const activeStyleOf = $derived(activeObject ? styleFor?.(activeObject.id) : undefined);
+  // 7e1f coverage border (parity with Reader.svelte): the whole-object mark for the ACTIVE object, if any.
+  // Without this a selectorless (ADR-0018) whole-object note has no marker (read-overlay skips it — no
+  // geometry to draw) AND no sidebar entry (the aside here is the section spine, not a note list) — so it
+  // was unreachable in the narrative. The frame's corners activate the same `selected` path a marker does.
+  const activeFrame = $derived(activeObject && frameFor ? frameFor(activeObject.id) : null);
+  const canvasFrame = $derived<FrameOverlay | null>(
+    activeFrame && !notesHidden ? { colour: activeFrame.colour, onActivate: () => (selected = activeFrame.markId) } : null,
+  );
   const multiObject = $derived(new Set(sections.map((s) => s.objectId)).size > 1);
   // Per-layer note count on the ACTIVE object for the legend (id=null → base / General notes). Re-mints
   // when the active section's object changes, so the legend's counts track the canvas you're reading.
@@ -140,6 +155,18 @@
   });
 
   function activate(i: number) { activeIndex = i; selected = null; }
+
+  // Aside pane toggle: the spine (the authored read) or the ACTIVE object's note list. The narrative's
+  // aside was sections-only, so an object's notes were reachable solely via canvas markers — fine for a
+  // sighted mouse reader who spots the pins, a wall for anyone scanning "what's written on this item?".
+  // Notes mode reuses the Reader sidebar's card idiom; a card selects the same `selected` path a marker
+  // click does. Per-session component state (like the filmstrip), defaults to the leading read.
+  let asidePane = $state<"sections" | "notes">("sections");
+  // A note's Reading colour (from the registry) — accents its list card's edge (ADR-0007; mirrors Reader).
+  const readingColourOf = (it: W3CAnnotation): string | undefined => {
+    const rid = readingIdOf(it);
+    return rid !== undefined ? readings.find((r) => r.id === rid)?.colour : undefined;
+  };
 
   // Footer stepper (the note-pop's multi-object nav, in narrative form): step the SECTION — which switches
   // the active object whenever the spine crosses to one. Unlike activate(), this CARRIES the reading: it
@@ -159,11 +186,12 @@
   // was missing this entirely — a clicked marker selected but showed nothing, so notes never surfaced.
   const current = $derived(activeNotes.find((it) => it.id === selected));
   // Hide-all: the canvas shows only the selected note's mark (or nothing) — declutter the basemap while a
-  // marker pick still surfaces its single pin. The spine + popup keep the full active-notes set.
+  // marker pick still surfaces its single pin. The spine + popup keep the full active-notes set. The framed
+  // note's own rect is dropped too (mirrors Reader.svelte's canvasAnnotations) — its coverage border IS its
+  // mark, so drawing the underlying shape as well would double it.
   const canvasNotes = $derived.by(() => {
-    if (!notesHidden) return activeNotes;
-    const sel = activeNotes.find((a) => a.id === selected);
-    return sel ? [sel] : [];
+    if (notesHidden) { const sel = activeNotes.find((a) => a.id === selected); return sel ? [sel] : []; }
+    return activeFrame ? activeNotes.filter((a) => a.id !== activeFrame.markId) : activeNotes;
   });
   const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
   // Geo readout (Q7): a Map note shows its centre lng/lat in the opened popup.
@@ -201,6 +229,7 @@
             canvasId={canvasIdOf(activeObject.id)}
             annotations={canvasNotes}
             styleOf={activeStyleOf}
+            frame={canvasFrame}
             focus={activeSection?.start ?? null}
             bind:selected
           />
@@ -233,8 +262,17 @@
     <p class="eyebrow">Narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}
       {#if sections.length > 1}<span class="spine-pos">· {positionLabel(activeIndex, sections.length, "Section")}</span>{/if}</p>
     <h1>{title}</h1>
-    <p class="hint">Read down the page, or jump to any section. The image follows along, zooming to what each section is about{multiObject ? ", and switching between items as you go" : ""}.</p>
+    <p class="hint">{asidePane === "sections"
+      ? `Read down the page, or jump to any section. The image follows along, zooming to what each section is about${multiObject ? ", and switching between items as you go" : ""}.`
+      : "Notes written on the item you’re reading. Select one to open it — its marker lights up on the image."}</p>
     <p class="credit-row"><Credit {rights} tone="paper" /></p>
+    <!-- Pane toggle: the authored read (sections) ⇄ the active object's notes. Without it, an item's
+         notes were reachable only by spotting canvas markers — no listable surface in the narrative. -->
+    <div class="pane-toggle" role="group" aria-label="Show sections or notes">
+      <button type="button" class:active={asidePane === "sections"} aria-pressed={asidePane === "sections"} onclick={() => (asidePane = "sections")}>Sections</button>
+      <button type="button" class:active={asidePane === "notes"} aria-pressed={asidePane === "notes"} onclick={() => (asidePane = "notes")}>Notes · {activeNotes.length}</button>
+    </div>
+    {#if asidePane === "sections"}
     <ol class="sections">
       {#each sections as s, i (s.id)}
         <li>
@@ -245,6 +283,26 @@
         </li>
       {/each}
     </ol>
+    {:else}
+    <!-- The active object's note list — the Reader sidebar's card idiom (reading-colour edge, 3-line
+         preview clamp, per-card tag chips as finder facets). A card drives the SAME `selected` path a
+         marker click does, so the shared NotePopup floats identically. Re-mints as the spine crosses
+         objects (activeNotes tracks the active section's object). -->
+    {#if multiObject && activeObject}<h2 class="eyebrow notes-obj">On “{activeObject.label}”</h2>{/if}
+    {#if activeNotes.length === 0}
+      <p class="empty">No notes on this item yet.</p>
+    {/if}
+    <ul class="notes-list">
+      {#each activeNotes as it (it.id)}
+        <li>
+          <button class:active={it.id === selected} style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)}>
+            <span class="card-preview">{stripMarkdown(commentOf(it))}</span>
+          </button>
+          {#if tagsOf(it).length}<span class="card-tags">{#each tagsOf(it) as t}<button type="button" class="tag tag-btn" onclick={() => onopenfinder?.(t)}>#{t}</button>{/each}</span>{/if}
+        </li>
+      {/each}
+    </ul>
+    {/if}
   </aside>
 
   {#if current}
@@ -304,6 +362,20 @@
   aside h1 { font-family: var(--font-display); font-weight: 300; font-size: 2rem; line-height: 1.2; margin: var(--space-2) 0 var(--space-3); color: var(--ink-paper-primary); text-shadow: var(--shadow-text-haze); }
   .hint { font-family: var(--font-body); font-size: 0.8rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0 0 var(--space-5); }
 
+  /* Pane toggle (sections ⇄ notes) — a quiet segmented pair in the spine's mono eyebrow voice; the
+     active pane gets the muted-accent fill (the same "you are here" mark the active section card uses),
+     never a loud orange. */
+  .pane-toggle { display: flex; gap: var(--space-2); margin: 0 0 var(--space-4); }
+  .pane-toggle button {
+    flex: none; cursor: pointer; padding: var(--space-2) var(--space-3);
+    background: none; border: none; border-radius: var(--radius-sm);
+    font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-muted);
+    transition: background 160ms ease, color 160ms ease;
+  }
+  .pane-toggle button:hover { color: var(--ink-paper-primary); }
+  .pane-toggle button.active { background: var(--accent-muted); color: var(--ink-paper-primary); }
+
   .sections { list-style: none; margin: 0; padding: 0; counter-reset: none; }
   .sections li { margin-bottom: var(--space-3); }
   .sections button {
@@ -351,6 +423,29 @@
   .to-index:hover { color: var(--accent-2); }
   .to-index .grid-mark { font-size: 0.95rem; line-height: 1; color: var(--ink-canvas-muted); transition: color 160ms ease; }
   .to-index:hover .grid-mark { color: var(--accent-2); }
+
+  /* Notes pane — the Reader sidebar's note-card idiom, ported verbatim so the two note lists read as
+     one component (warm paper card, 3px Reading-colour edge, 3-line scan clamp, per-card tag chips). */
+  .notes-obj { margin: 0 0 var(--space-3); }
+  .notes-list { list-style: none; margin: 0; padding: 0; }
+  .notes-list li > button {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3);
+    background: var(--surface-paper-card); color: var(--ink-paper-primary);
+    border: none; border-left: 3px solid transparent;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
+    font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.45;
+    transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .notes-list li > button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
+  .notes-list li > button.active { background: var(--accent-muted); box-shadow: var(--shadow-lift-mid); }
+  .card-preview { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
+  .tag { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); padding: 2px var(--space-3); border-radius: var(--radius-sm); }
+  .tag-btn { border: none; cursor: pointer; transition: color 160ms ease, background 160ms ease; }
+  .tag-btn:hover { color: var(--ink-paper-primary); background: var(--accent-muted); }
+  .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); background: var(--surface-paper-hover); border-radius: var(--radius-md); }
 
   /* The standalone note card's styles now live in the shared NotePopup.svelte component. */
 </style>
