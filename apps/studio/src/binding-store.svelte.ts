@@ -29,8 +29,10 @@ export interface BindingDeps {
   writeToFolder: (fs: Filesystem, plan?: FolderWritePlan) => Promise<void>;
   /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
   downloadProjectZip: () => Promise<boolean>;
-  /** Replace the OPFS project from a loaded library (the shared open-zip/open-folder body). */
-  replaceProjectFrom: (loaded: LoadedLibrary) => Promise<void>;
+  /** Replace the OPFS project from a loaded library (the shared open-zip/open-folder body).
+   *  `srcFs` is the SOURCE tree it was loaded from — the flag-ON structure-log merge (Archie-2a9a)
+   *  re-reads `{slug}/structure/history/` pages from it (they are not part of LoadedLibrary). */
+  replaceProjectFrom: (loaded: LoadedLibrary, srcFs?: Filesystem) => Promise<void>;
   /** The zip-binding display name to establish on a fresh non-Chromium Save As. */
   zipName: () => string;
 }
@@ -277,7 +279,7 @@ export function createBindingStore(deps: BindingDeps) {
         catch { window.alert("That folder isn't an Archie library."); return; }
         if (loaded.library.exhibits.length === 0) { window.alert("That folder has no exhibits."); return; }
         if (!window.confirm("Open this folder as your library? Your current library will be replaced.")) return;
-        await deps.replaceProjectFrom(loaded);
+        await deps.replaceProjectFrom(loaded, fb.fs);
         folderFs = fb.fs;
         folderResynced = false; resetDirt(); // new library + folder — resync before incremental mirrors
         lastMirrorToken = null; s.externalChange = false; // fresh folder — reset the generation baseline
@@ -299,7 +301,7 @@ export function createBindingStore(deps: BindingDeps) {
         try { loaded = await loadLibrary(reb.fs); }
         catch { s.error = `"${r.name}" is no longer an Archie library.`; return; }
         if (!window.confirm(`Open "${r.name}"? Your current library will be replaced.`)) return;
-        await deps.replaceProjectFrom(loaded);
+        await deps.replaceProjectFrom(loaded, reb.fs);
         folderFs = reb.fs;
         folderResynced = false; resetDirt(); // new library + folder — resync before incremental mirrors
         lastMirrorToken = null; s.externalChange = false; // fresh folder — reset the generation baseline

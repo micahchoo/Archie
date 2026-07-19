@@ -317,6 +317,29 @@ export async function clearExhibitAnnotations(slug: string): Promise<void> {
 }
 
 /**
+ * Remove an exhibit's structure/ dir (the section rev-log's home — openExhibitStructureDir) on
+ * exhibit delete, the structure sibling of clearExhibitAnnotations above (Archie-2a9a, deliverable
+ * 2). Deliberately FLAG-INDEPENDENT: the dir may exist from a previous archie.structureRevlog
+ * session even when the flag is now off, and exhibit ids are deterministic (`ex-${slug}`), so a
+ * lingering log would be inherited wholesale by the next exhibit created under the same slug.
+ * No-op if nothing is stored (absent dir / no OPFS).
+ */
+export async function clearExhibitStructure(slug: string): Promise<void> {
+  const storage = (navigator as Navigator & { storage?: OpfsRoot }).storage;
+  if (!storage?.getDirectory) return;
+  try {
+    const root = await storage.getDirectory();
+    const project = await root.getDirectoryHandle(PROJECT, { create: false });
+    if (slug === SAMPLE_SLUG) { await project.removeEntry("structure", { recursive: true }); return; }
+    const exhibits = await project.getDirectoryHandle("exhibits", { create: false });
+    const ex = await exhibits.getDirectoryHandle(slug, { create: false });
+    await ex.removeEntry("structure", { recursive: true });
+  } catch {
+    // nothing stored for this exhibit — fine
+  }
+}
+
+/**
  * Does an exhibit's OPFS annotations dir hold anything? Templates never save (the isTemplate gate
  * in save()), so stored annotations mean a USER worked here — the boot reconcile must not clear
  * them when a bundled-default slug is reclaimed (a sunset slug can spend time as a user exhibit).
