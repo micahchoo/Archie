@@ -12,6 +12,7 @@
 // platform-glue split that apps/studio/src/binding.ts documents.
 
 import type { Filesystem, FsDirectory, FsFile, FsWritable } from "./seam.js";
+import { assertSafeName } from "./names.js";
 
 /** One directory entry as reported by the platform. Mirrors plugin-fs `DirEntry`. */
 export interface TauriDirEntry {
@@ -41,18 +42,10 @@ function join(dir: string, name: string): string {
   return dir.endsWith("/") ? dir + name : `${dir}/${name}`;
 }
 
-/**
- * Reject a child name that could escape its parent directory before it is joined onto a real
- * filesystem path. The browser FSA/OPFS backends get this for free (getFileHandle/getDirectoryHandle
- * reject names containing "/"); plugin-fs path-joins raw, so an untrusted segment (e.g. an exhibit
- * slug carried in a `.archie.zip`) could otherwise `..`-traverse out of the library root. Mirrors
- * the FSA rule set: empty, ".", "..", or any name bearing a separator / NUL is invalid.
- */
-function assertSafeName(name: string): void {
-  if (name === "" || name === "." || name === ".." || /[/\\]/.test(name) || name.includes("\0")) {
-    throw new Error(`unsafe path segment: ${JSON.stringify(name)}`);
-  }
-}
+// Name containment (`assertSafeName`) is shared with the HTTP backend — plugin-fs path-joins raw,
+// so an untrusted segment (e.g. an exhibit slug carried in a `.archie.zip`) could otherwise
+// `..`-traverse out of the library root. Every TauriDir method that joins a caller-supplied name
+// onto a real path calls it first — see fs/names.ts.
 
 // Monotonic suffix for atomic-write temp files. Unique-per-process is sufficient: writes to any one
 // path are serialized by the app's save-queue, and a temp exists only between writeFile and rename.
