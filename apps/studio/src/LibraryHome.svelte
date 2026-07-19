@@ -194,8 +194,16 @@
     libraryDragOver = false;
     const items = e.dataTransfer?.items;
     if (!items || items.length === 0) return;
-    const files = await readDroppedFolderFiles(Array.from(items));
-    if (files.length > 0) openCreate(files);
+    // The walker is itself per-entry tolerant (folder-drop.ts); this catch is the belt-and-braces
+    // half (code review S1) — a rejection here must surface a plain-language message, not an
+    // unhandled promise rejection and a silently dead drop.
+    try {
+      const files = await readDroppedFolderFiles(Array.from(items));
+      if (files.length > 0) openCreate(files);
+    } catch (err) {
+      console.error("Folder drop failed", err);
+      window.alert("Couldn't read that folder.");
+    }
   }
 
   // A human "x ago" for a recent project's last-opened stamp.

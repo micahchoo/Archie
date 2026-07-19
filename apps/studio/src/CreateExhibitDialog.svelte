@@ -14,9 +14,8 @@
   // stepped back-then-close ladder — CONTEXT.md's dismissal contract names one action per surface,
   // and no other scrimmed surface in this app implements a multi-step Esc; the in-surface `‹ Back`
   // link is the return-to-chooser affordance instead, exactly as prototyped). No close-confirmation
-  // guard (autosave makes dismissal lossless); a mid-flight IIIF check simply gets its result
-  // discarded (iiifToken bump) rather than being explicitly cancelled — nothing it does is visible
-  // once discarded, so there is nothing to actually stop for a clean-cancel outcome.
+  // guard (autosave makes dismissal lossless); a mid-flight IIIF check cancels cleanly on close or
+  // supersede — iiifToken discards its result AND iiifAbort stops the actual network request.
   //
   // Single-scrim invariant: this component does NOT close other surfaces itself (it doesn't know
   // about them) — LibraryHome.svelte's opener closes any open PropsDrawer before setting `open`.
@@ -74,6 +73,10 @@
   let iiifPreview = $state<{ title: string; canvases: number } | null>(null);
   let iiifToken = 0;
   let iiifTimer: ReturnType<typeof setTimeout> | undefined;
+  // The in-flight preview fetch, so close/supersede can actually stop the network request (NIT,
+  // code review) rather than just discarding its result once it eventually resolves (iiifToken
+  // alone already guarantees the DISCARD half of "cancels cleanly").
+  let iiifAbort: AbortController | undefined;
 
   function resetAll() {
     activePath = null;
@@ -88,6 +91,8 @@
     iiifPreview = null;
     iiifToken++;
     clearTimeout(iiifTimer);
+    iiifAbort?.abort();
+    iiifAbort = undefined;
   }
 
   function applyFolderFiles(files: File[]) {
@@ -123,6 +128,7 @@
   function close() {
     clearTimeout(iiifTimer);
     iiifToken++; // discards any in-flight IIIF check's result — the "cancels cleanly" contract
+    iiifAbort?.abort(); // and actually stops the network request, not just its result
     onclose();
     restoreFocusEl?.focus?.();
     restoreFocusEl = null;
@@ -195,6 +201,7 @@
   function onIiifInput(v: string) {
     iiifUrl = v;
     clearTimeout(iiifTimer);
+    iiifAbort?.abort(); // a newer keystroke supersedes any check already in flight
     const trimmed = v.trim();
     if (!trimmed) {
       iiifStatus = "idle";
@@ -217,7 +224,9 @@
     iiifTimer = setTimeout(() => void runIiifCheck(trimmed, myToken), 500);
   }
   async function runIiifCheck(url: string, myToken: number) {
-    const result = await previewManifest(url);
+    const controller = new AbortController();
+    iiifAbort = controller;
+    const result = await previewManifest(url, controller.signal);
     if (myToken !== iiifToken) return; // a newer keystroke (or a close) superseded this check
     if (result.status === "valid") {
       iiifStatus = "valid";
@@ -242,8 +251,16 @@
     dropActive = false;
     const items = e.dataTransfer?.items;
     if (!items || items.length === 0) return;
-    const files = await readDroppedFolderFiles(Array.from(items));
-    if (files.length > 0) applyFolderFiles(files);
+    // The walker is itself per-entry tolerant (folder-drop.ts); this catch is the belt-and-braces
+    // half (code review S1) — a rejection here must surface a plain-language message, not an
+    // unhandled promise rejection and a silently dead drop.
+    try {
+      const files = await readDroppedFolderFiles(Array.from(items));
+      if (files.length > 0) applyFolderFiles(files);
+    } catch (err) {
+      console.error("Folder drop failed", err);
+      window.alert("Couldn't read that folder.");
+    }
   }
 </script>
 
@@ -310,7 +327,11 @@
             <!-- Progressive disclosure (Archie-8482): only shown once the folder actually holds
                  media subfolders — a flat folder never sees a choice with nothing to choose between. -->
             <fieldset class="grouping-choice">
-              <legend class="f-label">This folder has {folderGroups} subfolders with media</legend>
+              <!-- Lead with the outcome, not a subfolder count (code review S2): folderGroups is
+                   planFolderImportGroups().length, which also counts a loose-top-level-files group
+                   as one — "N subfolders" over-counts whenever loose media sits alongside a real
+                   subfolder. "N exhibits" is unambiguous either way. -->
+              <legend class="f-label">This will create {folderGroups} exhibits</legend>
               <label class="grouping-option">
                 <input type="radio" name="grouping" checked={grouping === "per-subfolder"} onchange={() => (grouping = "per-subfolder")} />
                 One exhibit per subfolder ({folderGroups})

@@ -77,14 +77,18 @@ const NOT_A_MANIFEST_MESSAGE = "That URL didn't return a IIIF manifest.";
 
 /** Fetch + plan a IIIF manifest for the dialog's live preview. Never throws — every failure mode
  *  (unreachable host, non-OK response, oversized body, unparseable JSON, a manifest shape
- *  `manifestToExhibit` rejects) resolves to a tagged `{status:"invalid", message}` the caller can
- *  render directly. Reuses `manifestToExhibit`/`ManifestImportError` for the manifest-shape
- *  decision — this module adds no new parsing rules, only the fetch + a plain-language mapping. */
-export async function previewManifest(url: string): Promise<ManifestPreview> {
+ *  `manifestToExhibit` rejects, or `signal` aborting) resolves to a tagged
+ *  `{status:"invalid", message}` the caller can render directly (an aborted call's result is
+ *  discarded by the caller's own token check, so its message is never actually shown). Reuses
+ *  `manifestToExhibit`/`ManifestImportError` for the manifest-shape decision — this module adds no
+ *  new parsing rules, only the fetch + a plain-language mapping. `signal` (optional) lets the
+ *  caller actually stop the network request on close/supersede instead of merely discarding its
+ *  result once it eventually resolves. */
+export async function previewManifest(url: string, signal?: AbortSignal): Promise<ManifestPreview> {
   const trimmed = url.trim();
   let json: unknown;
   try {
-    const resp = await fetch(trimmed);
+    const resp = await fetch(trimmed, signal ? { signal } : undefined);
     if (!resp.ok) return { status: "invalid", message: UNREACHABLE_MESSAGE };
     // Cap enforced twice, mirroring ingest-flows.ts's newExhibitFromManifest: cheaply against a
     // declared content-length before reading the body, then against the actual received size.
