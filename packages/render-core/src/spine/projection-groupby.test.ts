@@ -324,6 +324,8 @@ describe("group-by projection perf (probe A3 harness: 100 sections × 20 revs, 2
     const max = Math.max(...times);
     // eslint-disable-next-line no-console
     console.log(`[c16d perf] projectSections group-by, synthetic 100×20 (2000 records): avg ${avg.toFixed(3)}ms, max ${max.toFixed(3)}ms over 50 projections (naive probe baseline: 8-12ms avg / 15.3ms max; bar 16ms)`);
-    expect(avg).toBeLessThan(16); // generous CI-safe threshold; measured number logged above
+    // 4ms defends the optimization itself (naive was 8-12ms; group-by measures ~0.3-1ms),
+    // not just the 16ms interactivity bar — a regression to naive-level cost fails here.
+    expect(avg).toBeLessThan(4);
   });
 });
