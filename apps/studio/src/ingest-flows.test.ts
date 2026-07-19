@@ -17,6 +17,19 @@ vi.mock("./store.js", async (importOriginal) => ({
   saveThumbFile: vi.fn(async () => {}),
 }));
 
+// The image path decodes via bake.ts (createImageBitmap), absent in the test env — mock it so an image
+// file's processing is deterministic AND so a marked "corrupt" file can REJECT the way a real undecodable
+// image does (bakeDisplayMaster/downscaleIfNeeded throw), which the defect-1 skip-and-tally test needs.
+// No existing test exercises the image path (they all use audio), so this mock is inert for them.
+vi.mock("./bake.js", () => ({
+  bakeDisplayMaster: vi.fn(async () => ({ blob: new Blob([new Uint8Array([0])]), width: 10, height: 10 })),
+  downscaleIfNeeded: vi.fn(async (file: File) => {
+    if (file.name.includes("corrupt")) throw new Error("createImageBitmap: undecodable image");
+    return { blob: file, width: 10, height: 10 };
+  }),
+  bakeThumbnail: vi.fn(async () => null),
+}));
+
 /** A minimal in-memory IngestContext. `currentSlug` is a mutable ref so a test can simulate the user
  *  navigating to a different exhibit mid-import — exactly the case the mid-flow-interruption fix guards. */
 function makeCtx(overrides: Partial<IngestContext> = {}) {
@@ -578,6 +591,62 @@ describe("import batches library.json persists (scale-fix)", () => {
 
     expect(exhibits[0]!.objects.length).toBe(60);
     expect(appendObjectsSpy.mock.calls.map((c) => (c[1] as unknown[]).length)).toEqual([25, 25, 10]);
+  });
+});
+
+// ── Code-review defects: dropped chunk + cross-flow id collision ──────────────────────────────────
+describe("addFiles — one file rejects mid-batch (code-review defect 1)", () => {
+  it("skips the undecodable file, keeps + flushes the successes, and reports the tally", async () => {
+    const { ctx, exhibits, notes, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-a", slug: "a", title: "A", objects: [] } as unknown as ExhibitMeta);
+    switchTo("a");
+    const appendObjectsSpy = vi.spyOn(ctx.lib, "appendObjects");
+    // 5 images in ONE chunk; the middle one rejects in downscaleIfNeeded (the bake mock throws on "corrupt").
+    const img = (name: string) => new File([new Uint8Array([0])], name, { type: "image/png" });
+    const files = [img("f0.png"), img("f1.png"), img("corrupt.png"), img("f3.png"), img("f4.png")];
+
+    await flows.addFiles(files);
+
+    const objs = exhibits.find((e) => e.slug === "a")!.objects;
+    expect(objs.length).toBe(4); // the 4 decodable files survived — NOT lost when the corrupt one threw
+    expect(new Set(objs.map((o) => o.id)).size).toBe(4); // unique ids
+    expect(appendObjectsSpy).toHaveBeenCalledTimes(1); // the survivors were flushed in the one end-of-drop persist
+    expect(notes.at(-1)).toMatch(/Added 4 files/); // success count surfaced
+    expect(notes.at(-1)).toMatch(/1 couldn't be added/); // and the skip tally, like the folder path
+  });
+});
+
+describe("id reservation — manual add during an import batch (code-review defect 2)", () => {
+  it("a manual addObject while a batch's flush is in flight never collides on object id", async () => {
+    const { ctx, exhibits, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-a", slug: "a", title: "A", objects: [] } as unknown as ExhibitMeta);
+    switchTo("a");
+    // Suspend the batch's FIRST appendObjects flush on a gate: while it's parked, the 25 minted ids are
+    // reserved-but-not-yet-in-meta. Fire a manual addObject in that window — it must mint a DIFFERENT id
+    // (consulting the reservation registry, not just live meta).
+    let releaseGate!: () => void;
+    const gate = new Promise<void>((r) => { releaseGate = r; });
+    let flushReached!: () => void;
+    const reached = new Promise<void>((r) => { flushReached = r; });
+    const origAppendObjects = ctx.lib.appendObjects.bind(ctx.lib);
+    let first = true;
+    ctx.lib.appendObjects = async (slug: string, objs: any[]) => {
+      if (first) { first = false; flushReached(); await gate; }
+      return origAppendObjects(slug, objs);
+    };
+    const files = Array.from({ length: 25 }, (_, i) => new File([new Uint8Array([0])], `f${i}.mp3`, { type: "audio/mpeg" }));
+
+    const importP = flows.addFiles(files); // 25 files → one chunk → flush parks on the gate
+    await reached; // batch is now suspended mid-flush, 25 ids reserved
+    await flows.addObject("https://x/manual.mp3", "Manual"); // manual add in the reservation window
+    releaseGate();
+    await importP;
+
+    const ids = exhibits.find((e) => e.slug === "a")!.objects.map((o) => o.id);
+    expect(ids.length).toBe(26); // 25 batched + 1 manual
+    expect(new Set(ids).size).toBe(26); // NO duplicate id across the two flows
   });
 });
 
