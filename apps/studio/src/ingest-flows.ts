@@ -38,8 +38,8 @@ const ASSET_THUMB_PREFIX = "/assets-thumb/"; // working ref for a baked thumbnai
 
 // A remote IIIF manifest is JSON, not media — even a huge institutional collection's manifest runs a
 // few MB. 32 MB is generous headroom; above it something is wrong (or hostile) rather than merely big.
-// Distinct from @render/core's SRC_MAX_BYTES (256 MB), which caps a DIFFERENT trust boundary (untrusted
-// .archie.zip bytes) — this one guards an arbitrary-JSON fetch that had NO cap at all (tend Issue 7,
+// Distinct from @render/core's SRC_MAX_BYTES (the untrusted-.archie.zip byte cap), which caps a DIFFERENT
+// trust boundary — this one guards an arbitrary-JSON fetch that had NO cap at all (tend Issue 7,
 // ledgers/NEGSPACE.md row 5). Exported (Archie-51cc) so create-exhibit-dialog.ts's validation-preview
 // fetch enforces the SAME cap as the real import below — one definition, not a second copy that could drift.
 export const IIIF_MANIFEST_MAX_BYTES = 32 * 1024 * 1024;
@@ -219,6 +219,91 @@ export function createIngestFlows(ctx: IngestContext) {
     return id;
   }
   const exhibitBySlug = (slug: string): ExhibitMeta | undefined => ctx.lib.meta.exhibits.find((e) => e.slug === slug);
+
+  // Objects committed to library.json per durable persist during a multi-object import. THE scale fix: the
+  // old loops did one lib.appendObject → one whole-library.json rewrite PER object (O(N²) cumulative bytes;
+  // 100 exhibits × 100 objects = ~10,000 rewrites). A batch folds a run into ONE rewrite. Chunked (not a
+  // single end-of-import persist) DELIBERATELY: a single flush is O(N) bytes but a crash mid-import loses the
+  // WHOLE import; chunking bounds crash-loss to <25 objects (roughly the per-object durability granularity
+  // the old code paid O(N²) for) while cutting rewrites 25×. A typical IIIF manifest (≤25 canvases) is thus
+  // exactly ONE persist — the collection path's "1 per manifest" target — and only a pathologically large
+  // single manifest takes several.
+  const IMPORT_PERSIST_CHUNK = 25;
+
+  // Object-id reservation registry (code-review defect 2), factory-scoped: slug → ids MINTED but NOT YET in
+  // the reactive meta. A batch mints ids before its chunk flush (the meta isn't mutated until then), and the
+  // single-item add affordances (addObject / addMapObject / paste-a-file) stay live during an import — App is
+  // not ours to gate. Without this registry a manual add mid-batch would mint an id off live meta that a batch
+  // has reserved-but-not-flushed; appendObjectIn does a bare push (no dedup), so two objects would share one
+  // id (removeObjectIn/patchObjectIn then hit BOTH, annotations key ambiguously). So EVERY id mint below is
+  // unique across live meta ∪ this registry. A reservation is freed the moment its object lands in meta (or is
+  // abandoned) — a reserved-but-failed id must not leak forever (a leaked id only skips a number, but we free
+  // it anyway: safe over clever).
+  const reservedIds = new Map<string, Set<string>>();
+  const reservedFor = (slug: string): Set<string> => {
+    let set = reservedIds.get(slug);
+    if (!set) { set = new Set(); reservedIds.set(slug, set); }
+    return set;
+  };
+  const releaseId = (slug: string, id: string): void => {
+    const set = reservedIds.get(slug);
+    if (!set) return;
+    set.delete(id);
+    if (set.size === 0) reservedIds.delete(slug); // keep the map from accreting empty sets over a session
+  };
+  /** Mint the next free object id for `slug` — unique across the exhibit's live objects AND every id an
+   *  in-flight batch (or another single add) has reserved — and reserve it. Callers MUST release it (via
+   *  releaseId) once the object lands in meta or the add is abandoned. Same "start high, never fill gaps"
+   *  shape as the old nextObjectId (ids stay ~monotonic; uniqueness, not gaplessness, is the contract). */
+  const reserveObjectId = (slug: string): string => {
+    const ex = exhibitBySlug(slug);
+    const taken = reservedFor(slug);
+    const live = new Set(ex ? ex.objects.map((o) => o.id) : []);
+    let n = live.size + taken.size + 1, id = `o${n}`;
+    while (live.has(id) || taken.has(id)) id = `o${++n}`;
+    taken.add(id);
+    return id;
+  };
+
+  /** A durable-append batch for ONE pinned exhibit: collect built objects and commit them to library.json in
+   *  ONE persist per chunk instead of one-per-object. Media byte-writes (per file, separate save-queue keys)
+   *  and view seeding (seedMaster) still happen per object — only the library.json append coalesces. The view
+   *  is steered to the freshly-landed tail only AFTER its chunk is durable (mirrors the per-object
+   *  appendObject's "persist THEN setCurrentObjectId" ordering), so `current` never points at an object not
+   *  yet in the reactive meta. `reserveId` mints against live meta ∪ the reservation registry (the meta isn't
+   *  mutated until a flush, so nextObjectId would repeat AND a concurrent single add could collide — defect 2);
+   *  a landed chunk frees its reservations, and `dispose` frees any reserved-but-never-added tail (a file that
+   *  bailed after reserving an id, or a mid-batch throw) so the registry never leaks. */
+  function beginBatch(slug: string) {
+    let pending: ObjectMeta[] = [];
+    const reserved = new Set<string>(); // ids this batch minted and not yet landed in meta
+    let lastId: string | null = null;
+    const persistChunk = async (): Promise<void> => {
+      if (pending.length === 0) return;
+      const chunk = pending;
+      pending = [];
+      await ctx.lib.appendObjects(slug, chunk);
+      for (const o of chunk) { reserved.delete(o.id); releaseId(slug, o.id); } // now in meta — free the reservation
+      if (lastId && slug === ctx.currentSlug()) ctx.setCurrentObjectId(lastId);
+    };
+    return {
+      reserveId(): string {
+        const id = reserveObjectId(slug);
+        reserved.add(id);
+        return id;
+      },
+      add(obj: ObjectMeta, blobUrl?: string): void {
+        if (blobUrl) ctx.seedMaster(slug, obj.id, blobUrl); // blob ready before `current` ever flips to it
+        pending.push(obj);
+        lastId = obj.id;
+      },
+      flushIfFull(): Promise<void> { return pending.length >= IMPORT_PERSIST_CHUNK ? persistChunk() : Promise.resolve(); },
+      flush(): Promise<void> { return persistChunk(); },
+      /** Free any still-reserved ids (reserved but never flushed into meta — a bailed file or a throw). Idempotent. */
+      dispose(): void { for (const id of reserved) releaseId(slug, id); reserved.clear(); },
+    };
+  }
+  type AppendBatch = ReturnType<typeof beginBatch>;
   const exhibit = (): ExhibitMeta | undefined => exhibitBySlug(ctx.currentSlug());
 
   // Append an object to `targetSlug` (defaults to whatever's current) + persist; for imported files,
@@ -246,20 +331,30 @@ export function createIngestFlows(ctx: IngestContext) {
     if (!src) return;
     const ex = exhibit();
     if (!ex) return;
-    const id = nextObjectId(ex);
-    const mt = mediaTypeFromSource(src); // .mp3/.mp4/… → sound/video; else image (OSD)
-    const dims = mt === "image" ? await imageDims(src) : null; // dimension-probe only makes sense for images
-    await appendObject({ id, source: src, label: label.trim() || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(mt !== "image" ? { mediaType: mt } : {}) });
+    // Reserve the id across live meta ∪ the registry (defect 2): this path awaits imageDims before it appends,
+    // so a batch import running concurrently must not mint the same id. Freed once the object lands (finally).
+    const id = reserveObjectId(ex.slug);
+    try {
+      const mt = mediaTypeFromSource(src); // .mp3/.mp4/… → sound/video; else image (OSD)
+      const dims = mt === "image" ? await imageDims(src) : null; // dimension-probe only makes sense for images
+      await appendObject({ id, source: src, label: label.trim() || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(mt !== "image" ? { mediaType: mt } : {}) });
+    } finally {
+      releaseId(ex.slug, id);
+    }
   }
   // Add-map modal (Phase 3 / Q3 — invented UX, human-gated): a Map is an Object whose source is its tile
   // template and which carries the tileSource descriptor (medium = Map). The modal supplies template + bounds.
   async function addMapObject(m: { label: string; tileSource: XyzTileSource }) {
     const ex = exhibit();
     if (!ex) return;
-    const id = nextObjectId(ex);
-    await appendObject({ id, source: m.tileSource.template, label: m.label, tileSource: m.tileSource });
-    ctx.switchObject(id);
-    ctx.toEditor();
+    const id = reserveObjectId(ex.slug); // unique across live meta ∪ registry (defect 2); freed in finally
+    try {
+      await appendObject({ id, source: m.tileSource.template, label: m.label, tileSource: m.tileSource });
+      ctx.switchObject(id);
+      ctx.toEditor();
+    } finally {
+      releaseId(ex.slug, id);
+    }
   }
   // Add a LOCAL image file: store bytes in OPFS (persists), source "/assets/{name}". For phone photos
   // with EXIF orientation (≠1), BAKE an upright display master (CONTEXT §89.1) — the original is
@@ -270,90 +365,103 @@ export function createIngestFlows(ctx: IngestContext) {
   // `targetSlug` (defaults to current) is the pinned exhibit a multi-file loop is importing into — see
   // appendObject's comment; every OPFS path below must use it too, or bytes would save under the right
   // slug while metadata drifted (or vice versa) once the user switches exhibits mid-import.
-  async function addObjectFromFile(file: File, targetSlug: string = ctx.currentSlug()): Promise<{ added: boolean; note?: string }> {
+  // `batch` (ingest-batch scale-fix): when a multi-file caller passes one, the built object is QUEUED onto it
+  // (committed to library.json in ONE persist per chunk) instead of appended-and-persisted per file; ids are
+  // minted from the batch's running reservation (the meta isn't mutated until a flush). Absent (single-file
+  // callers) → the pre-batch immediate appendObject per file. Media byte-writes are per file either way.
+  async function addObjectFromFile(file: File, targetSlug: string = ctx.currentSlug(), batch?: AppendBatch): Promise<{ added: boolean; note?: string }> {
     if (!ctx.storeReady()) return { added: false }; // OPFS unavailable — caller surfaces this once
     const ex = exhibitBySlug(targetSlug);
     if (!ex) return { added: false };
     const slug = targetSlug;
-    const id = nextObjectId(ex);
-    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-
-    // AV INGEST (§152 gate lifted 2026-05-26, user): store an audio/video file as an OPFS asset — no EXIF/dims.
-    // It renders in AvEditor (WaveSurfer waveform for audio · <video> for video). Local blob → no CORS on decode.
-    if (file.type.startsWith("audio/") || file.type.startsWith("video/")) {
-      const mediaType: "sound" | "video" = file.type.startsWith("video/") ? "video" : "sound";
-      const avName = `${id}-${safe}`;
-      // Bytes THROUGH the queue, then the object (reference-after-bytes): a failed write is now visible
-      // in saveStatus AND aborts the add, so library.json never references bytes that didn't land.
-      if (!(await persistAsset(slug, () => saveAssetFile(slug, avName, file)))) return { added: false, note: STORAGE_FAIL_NOTE };
-      await appendObject({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file), targetSlug);
-      return file.size > LARGE_MEDIA_BYTES
-        ? { added: true, note: `“${file.name}” is large (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.` }
-        : { added: true };
-    }
-    if (!file.type.startsWith("image/")) {
-      return { added: false, note: `Archie can’t read “${file.name}”. Add an image, audio, or video file.` };
-    }
-
-    const orientation = readExifOrientation(await file.arrayBuffer());
-    let master: Blob = file;
-    let masterMime = file.type || "image/jpeg"; // the stored master's encoding (drives the thumbnail's)
-    let name = `${id}-${safe}`;
-    let dims: { w: number; h: number } | null = null;
-    let provenance: ObjectProvenance | undefined;
-
-    if (!isOrientationNoop(orientation)) {
-      // EXIF path: upright PNG master, capped to the §80 display size; the untouched original is
-      // preserved for citation (the master differs by rotation — provenance records the transform).
-      const baked = await bakeDisplayMaster(file, { maxDim: MAX_MASTER_DIM }); // upright PNG; capped
-      master = baked.blob;
-      masterMime = "image/png"; // bakeDisplayMaster's default output is PNG
-      dims = { w: baked.width, h: baked.height };
-      name = `${id}-${safe.replace(/\.[^.]+$/, "")}.png`;
-      const originalName = `${id}-${safe}`;
-      // Through the queue: a failed original write aborts the add (no provenance ref to absent bytes).
-      if (!(await persistAsset(slug, () => saveOriginalFile(slug, originalName, file)))) return { added: false, note: STORAGE_FAIL_NOTE };
-      provenance = { exifOrientation: orientation, transform: orientationTransform(orientation), originalName };
-    } else {
-      // No rotation needed. If the image exceeds the §80 cap, downscale to a display master PRESERVING
-      // the source format (LARGE-MEDIA-MEMORY-CEILING #4) — a big JPEG stays JPEG. Under the cap → keep
-      // the raw file untouched. Decode ONCE to read dims; downscale only if over the cap (POLISH P6).
-      const prepared = await downscaleIfNeeded(file, MAX_MASTER_DIM, file.type || "image/jpeg");
-      master = prepared.blob;
-      dims = { w: prepared.width, h: prepared.height };
-    }
-
-    const blobUrl = URL.createObjectURL(master);
-    if (!dims) dims = await imageDims(blobUrl); // orientation-1 path: probe the (upright) master
-    // Master bytes THROUGH the queue, before appendObject (reference-after-bytes): a failed write is
-    // visible in saveStatus AND aborts the add — library.json never references an asset that didn't land.
-    if (!(await persistAsset(slug, () => saveAssetFile(slug, name, master)))) return { added: false, note: STORAGE_FAIL_NOTE };
-    // Bake a small grid/overview thumbnail from the master (null when the master is already within
-    // THUMB_DIM). A thumbnail is a PURE optimization — its failure must NEVER block an import (the grid
-    // falls back to the master via thumbnailUrl). Same name, sibling assets-thumb/ dir.
-    let thumbnail: string | undefined;
-    let plateBlob: Blob = master; // the rail/overview plate: the baked thumb when we get one, else the master
+    // Non-batch (single-file) path reserves its id in the registry too (defect 2) — a batch import running
+    // concurrently must not mint the same id during the byte-writes below. Freed in `finally` on EVERY exit
+    // (added or bailed); the batch path owns its own reservation (freed on flush / dispose), so skip it here.
+    const id = batch ? batch.reserveId() : reserveObjectId(slug);
     try {
-      const thumb = await bakeThumbnail(master, THUMB_DIM, masterMime);
-      // Through the queue for VISIBILITY, but NON-blocking: a thumbnail is a pure optimization, so a
-      // failed thumb write is recorded in saveStatus yet never aborts the import — the object is added
-      // without a `thumbnail` ref (the grid falls back to the master), so there is no dangling reference.
-      if (thumb && (await persistAsset(slug, () => saveThumbFile(slug, name, thumb)))) {
-        thumbnail = `${ASSET_THUMB_PREFIX}${name}`;
-        plateBlob = thumb;
+      // Queue onto the batch (durable at the next chunk flush) or append-and-persist now — same object either way.
+      const place = (obj: ObjectMeta, blobUrl?: string): Promise<void> =>
+        batch ? (batch.add(obj, blobUrl), Promise.resolve()) : appendObject(obj, blobUrl, targetSlug);
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+      // AV INGEST (§152 gate lifted 2026-05-26, user): store an audio/video file as an OPFS asset — no EXIF/dims.
+      // It renders in AvEditor (WaveSurfer waveform for audio · <video> for video). Local blob → no CORS on decode.
+      if (file.type.startsWith("audio/") || file.type.startsWith("video/")) {
+        const mediaType: "sound" | "video" = file.type.startsWith("video/") ? "video" : "sound";
+        const avName = `${id}-${safe}`;
+        // Bytes THROUGH the queue, then the object (reference-after-bytes): a failed write is now visible
+        // in saveStatus AND aborts the add, so library.json never references bytes that didn't land.
+        if (!(await persistAsset(slug, () => saveAssetFile(slug, avName, file)))) return { added: false, note: STORAGE_FAIL_NOTE };
+        await place({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file));
+        return file.size > LARGE_MEDIA_BYTES
+          ? { added: true, note: `“${file.name}” is large (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.` }
+          : { added: true };
       }
-    } catch (e) {
-      console.warn(`[ingest] thumbnail bake skipped for ${name}`, e);
+      if (!file.type.startsWith("image/")) {
+        return { added: false, note: `Archie can’t read “${file.name}”. Add an image, audio, or video file.` };
+      }
+
+      const orientation = readExifOrientation(await file.arrayBuffer());
+      let master: Blob = file;
+      let masterMime = file.type || "image/jpeg"; // the stored master's encoding (drives the thumbnail's)
+      let name = `${id}-${safe}`;
+      let dims: { w: number; h: number } | null = null;
+      let provenance: ObjectProvenance | undefined;
+
+      if (!isOrientationNoop(orientation)) {
+        // EXIF path: upright PNG master, capped to the §80 display size; the untouched original is
+        // preserved for citation (the master differs by rotation — provenance records the transform).
+        const baked = await bakeDisplayMaster(file, { maxDim: MAX_MASTER_DIM }); // upright PNG; capped
+        master = baked.blob;
+        masterMime = "image/png"; // bakeDisplayMaster's default output is PNG
+        dims = { w: baked.width, h: baked.height };
+        name = `${id}-${safe.replace(/\.[^.]+$/, "")}.png`;
+        const originalName = `${id}-${safe}`;
+        // Through the queue: a failed original write aborts the add (no provenance ref to absent bytes).
+        if (!(await persistAsset(slug, () => saveOriginalFile(slug, originalName, file)))) return { added: false, note: STORAGE_FAIL_NOTE };
+        provenance = { exifOrientation: orientation, transform: orientationTransform(orientation), originalName };
+      } else {
+        // No rotation needed. If the image exceeds the §80 cap, downscale to a display master PRESERVING
+        // the source format (LARGE-MEDIA-MEMORY-CEILING #4) — a big JPEG stays JPEG. Under the cap → keep
+        // the raw file untouched. Decode ONCE to read dims; downscale only if over the cap (POLISH P6).
+        const prepared = await downscaleIfNeeded(file, MAX_MASTER_DIM, file.type || "image/jpeg");
+        master = prepared.blob;
+        dims = { w: prepared.width, h: prepared.height };
+      }
+
+      const blobUrl = URL.createObjectURL(master);
+      if (!dims) dims = await imageDims(blobUrl); // orientation-1 path: probe the (upright) master
+      // Master bytes THROUGH the queue, before appendObject (reference-after-bytes): a failed write is
+      // visible in saveStatus AND aborts the add — library.json never references an asset that didn't land.
+      if (!(await persistAsset(slug, () => saveAssetFile(slug, name, master)))) return { added: false, note: STORAGE_FAIL_NOTE };
+      // Bake a small grid/overview thumbnail from the master (null when the master is already within
+      // THUMB_DIM). A thumbnail is a PURE optimization — its failure must NEVER block an import (the grid
+      // falls back to the master via thumbnailUrl). Same name, sibling assets-thumb/ dir.
+      let thumbnail: string | undefined;
+      let plateBlob: Blob = master; // the rail/overview plate: the baked thumb when we get one, else the master
+      try {
+        const thumb = await bakeThumbnail(master, THUMB_DIM, masterMime);
+        // Through the queue for VISIBILITY, but NON-blocking: a thumbnail is a pure optimization, so a
+        // failed thumb write is recorded in saveStatus yet never aborts the import — the object is added
+        // without a `thumbnail` ref (the grid falls back to the master), so there is no dangling reference.
+        if (thumb && (await persistAsset(slug, () => saveThumbFile(slug, name, thumb)))) {
+          thumbnail = `${ASSET_THUMB_PREFIX}${name}`;
+          plateBlob = thumb;
+        }
+      } catch (e) {
+        console.warn(`[ingest] thumbnail bake skipped for ${name}`, e);
+      }
+      // Register the plate under a SEPARATE blob URL from the master slot: the slot is revoked on the next
+      // object switch, but the grid plate must survive until the exhibit is left (masters-on-demand, 1.2).
+      ctx.setPlate(id, URL.createObjectURL(plateBlob));
+      await place(
+        { id, source: `${ASSET_PREFIX}${name}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(thumbnail ? { thumbnail } : {}), ...(provenance ? { provenance } : {}) },
+        blobUrl,
+      );
+      return { added: true };
+    } finally {
+      if (!batch) releaseId(slug, id); // single-item path frees its own reservation; the batch frees its own
     }
-    // Register the plate under a SEPARATE blob URL from the master slot: the slot is revoked on the next
-    // object switch, but the grid plate must survive until the exhibit is left (masters-on-demand, 1.2).
-    ctx.setPlate(id, URL.createObjectURL(plateBlob));
-    await appendObject(
-      { id, source: `${ASSET_PREFIX}${name}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(thumbnail ? { thumbnail } : {}), ...(provenance ? { provenance } : {}) },
-      blobUrl,
-      targetSlug,
-    );
-    return { added: true };
   }
   // Accepts a FileList (drag-drop / file-input) OR a File[] (the create dialog's folder path in
   // add-to-exhibit scope, Archie-56cf — folder files add straight INTO the current exhibit, no
@@ -386,16 +494,31 @@ export function createIngestFlows(ctx: IngestContext) {
     // same mid-flow-interruption exposure as the folder/manifest loops below — without this, switching
     // exhibits partway through a drop would silently redirect the remaining files.
     const targetSlug = opened.slug;
-    let added = 0;
+    // Batch the library.json appends (scale-fix): one persist per IMPORT_PERSIST_CHUNK files, not per file.
+    // Per-file asset byte-writes (inside addObjectFromFile) and the per-file progress status are unchanged.
+    const batch = beginBatch(targetSlug);
+    let added = 0, failed = 0;
     const notes: string[] = [];
     try {
       for (let i = 0; i < list.length; i++) {
         ctx.setImportStatus({ name: list[i]!.name, index: i + 1, total: list.length });
-        const r = await addObjectFromFile(list[i]!, targetSlug);
-        if (r.added) added++;
-        if (r.note) notes.push(r.note);
+        // Skip-and-tally (code-review defect 1): addObjectFromFile can THROW — bakeDisplayMaster /
+        // downscaleIfNeeded reject on a corrupt/undecodable image (createImageBitmap), realistic in a big
+        // drop. An escaping throw would skip the trailing flush and LOSE the successfully-processed files
+        // still in batch.pending (their asset bytes already written → orphaned). Swallow, tally, keep going —
+        // exactly what the sibling newExhibitFromFolder loop does; the flush below still commits the survivors.
+        try {
+          const r = await addObjectFromFile(list[i]!, targetSlug, batch);
+          if (r.added) added++; else failed++;
+          if (r.note) notes.push(r.note);
+        } catch {
+          failed++;
+        }
+        await batch.flushIfFull();
       }
+      await batch.flush(); // durable-before-return: the batch's tail is committed before we compose the summary
     } finally {
+      batch.dispose(); // free any reserved-but-never-landed ids (a bailed file); idempotent after a clean flush
       ctx.setImportStatus(null);
     }
     // Confirm the add AND name where it landed (reuses the importNote idiom that already confirms cites).
@@ -404,6 +527,7 @@ export function createIngestFlows(ctx: IngestContext) {
     const parts: string[] = [];
     if (added > 0) parts.push(`Added ${added} file${added === 1 ? "" : "s"} to “${where}”.`);
     parts.push(...notes);
+    if (failed > 0) parts.push(`${failed} couldn't be added.`); // surface the skip tally, like the folder path
     if (parts.length > 0) ctx.setImportNote(parts.join(" "));
   }
 
@@ -455,19 +579,28 @@ export function createIngestFlows(ctx: IngestContext) {
           ctx.alert("Made the exhibit, but this browser can't store files — open a normal window to add them.");
           return;
         }
-        for (let i = 0; i < g.files.length; i++) {
-          const p = g.files[i]!;
-          ctx.setImportStatus({ name: p.name, index: i + 1, total: g.files.length });
-          // Re-wrap typeless files (.tiff, .avif on some platforms) with the inferred MIME the
-          // plan admitted them under — addObjectFromFile branches on File.type.
-          const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
-          try {
-            const r = await addObjectFromFile(file, targetSlug);
-            if (r.added) imported++; else failed++;
-            if (r.note) ctx.setImportNote(r.note); // large-AV nudge; the end-of-import summary overrides it if any
-          } catch {
-            failed++; // skip-and-tally: one corrupt scan must not abort the rest of the folder
+        // One batch per group (scale-fix): this group's files commit to library.json in ONE persist per
+        // chunk, not per file. Per-file asset writes + per-file progress are unchanged.
+        const batch = beginBatch(targetSlug);
+        try {
+          for (let i = 0; i < g.files.length; i++) {
+            const p = g.files[i]!;
+            ctx.setImportStatus({ name: p.name, index: i + 1, total: g.files.length });
+            // Re-wrap typeless files (.tiff, .avif on some platforms) with the inferred MIME the
+            // plan admitted them under — addObjectFromFile branches on File.type.
+            const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
+            try {
+              const r = await addObjectFromFile(file, targetSlug, batch);
+              if (r.added) imported++; else failed++;
+              if (r.note) ctx.setImportNote(r.note); // large-AV nudge; the end-of-import summary overrides it if any
+            } catch {
+              failed++; // skip-and-tally: one corrupt scan must not abort the rest of the folder
+            }
+            await batch.flushIfFull();
           }
+          await batch.flush(); // commit this group's tail before minting the next group's exhibit
+        } finally {
+          batch.dispose(); // free any reserved-but-never-landed ids for this group's slug
         }
       }
     } finally {
@@ -518,15 +651,21 @@ export function createIngestFlows(ctx: IngestContext) {
   // per-object loop awaits per object, and nothing blocks the user from navigating elsewhere mid-import —
   // without pinning, a later object would silently land on whatever exhibit is now current.
   async function importManifestObjects(plan: ManifestPlan, targetSlug: string) {
+    // Batch the appends (scale-fix): the manifest's canvases commit to library.json in ONE persist per chunk
+    // (a typical manifest = one persist), not one full-library.json rewrite per canvas. Progress still ticks
+    // per object. A flush throwing (storage broken) PROPAGATES — the collection drain catches it as fatal.
+    const batch = beginBatch(targetSlug);
     try {
       for (let i = 0; i < plan.objects.length; i++) {
         const o = plan.objects[i]!;
         ctx.setImportStatus({ name: o.label, index: i + 1, total: plan.objects.length });
-        const ex = exhibitBySlug(targetSlug);
-        if (!ex) break;
-        await appendObject({ id: nextObjectId(ex), ...o }, undefined, targetSlug);
+        if (!exhibitBySlug(targetSlug)) break; // exhibit vanished (deleted mid-import) — stop; a flush is a no-op on it
+        batch.add({ id: batch.reserveId(), ...o });
+        await batch.flushIfFull();
       }
+      await batch.flush();
     } finally {
+      batch.dispose(); // free any reserved-but-never-landed ids (e.g. a flush threw mid-import)
       ctx.setImportStatus(null);
     }
   }
@@ -564,7 +703,17 @@ export function createIngestFlows(ctx: IngestContext) {
   async function newExhibitFromManifest(url: string, title?: string) {
     const plan = await fetchManifestPlan(url);
     if (!plan) return;
-    await createExhibitFromPlan(plan, title && title.trim() !== "" ? title.trim() : plan.title);
+    // Failure containment (scale-fix): createExhibitFromPlan mints the exhibit (ctx.newExhibit) then appends
+    // its objects. A save failure is already non-throwing (it surfaces in saveStatus via the save queue), but
+    // exhibit creation can reject — catch it so the single-manifest path never leaks an unhandled rejection,
+    // and surface it through the same ctx.alert channel the fetch/parse failures use. The exhibit may be
+    // left partially populated (its committed prefix persisted durably); the alert tells the user to check.
+    try {
+      await createExhibitFromPlan(plan, title && title.trim() !== "" ? title.trim() : plan.title);
+    } catch (e) {
+      console.error("IIIF manifest import failed", e);
+      ctx.alert("Couldn't finish importing that manifest to this device — some of it may not have been added. Check the save indicator.");
+    }
   }
   // IIIF manifest URL → append into the CURRENT exhibit (Archie-56cf — the create dialog's IIIF path in
   // add-to-exhibit scope). Same fetch/cap/parse + append as newExhibitFromManifest; the ONLY difference is

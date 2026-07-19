@@ -17,6 +17,19 @@ vi.mock("./store.js", async (importOriginal) => ({
   saveThumbFile: vi.fn(async () => {}),
 }));
 
+// The image path decodes via bake.ts (createImageBitmap), absent in the test env — mock it so an image
+// file's processing is deterministic AND so a marked "corrupt" file can REJECT the way a real undecodable
+// image does (bakeDisplayMaster/downscaleIfNeeded throw), which the defect-1 skip-and-tally test needs.
+// No existing test exercises the image path (they all use audio), so this mock is inert for them.
+vi.mock("./bake.js", () => ({
+  bakeDisplayMaster: vi.fn(async () => ({ blob: new Blob([new Uint8Array([0])]), width: 10, height: 10 })),
+  downscaleIfNeeded: vi.fn(async (file: File) => {
+    if (file.name.includes("corrupt")) throw new Error("createImageBitmap: undecodable image");
+    return { blob: file, width: 10, height: 10 };
+  }),
+  bakeThumbnail: vi.fn(async () => null),
+}));
+
 /** A minimal in-memory IngestContext. `currentSlug` is a mutable ref so a test can simulate the user
  *  navigating to a different exhibit mid-import — exactly the case the mid-flow-interruption fix guards. */
 function makeCtx(overrides: Partial<IngestContext> = {}) {
@@ -32,6 +45,12 @@ function makeCtx(overrides: Partial<IngestContext> = {}) {
       appendObject: async (slug: string, obj: any) => {
         const ex = exhibits.find((e) => e.slug === slug);
         if (ex) (ex.objects as any[]).push(obj);
+      },
+      // Bulk append (scale-fix): the import loops now commit a run of objects in ONE call (one library.json
+      // persist) instead of one appendObject per object — mirror that here so persist-count spies are real.
+      appendObjects: async (slug: string, objs: any[]) => {
+        const ex = exhibits.find((e) => e.slug === slug);
+        if (ex) (ex.objects as any[]).push(...objs);
       },
       setMeta: () => {},
       persist: async () => {},
@@ -87,8 +106,9 @@ describe("newExhibitFromManifest — mid-flow exhibit switch (NEGSPACE row 3)", 
     // Pre-existing exhibit the user will "switch to" mid-import.
     exhibits.push({ id: "ex-other", slug: "other", title: "Other", objects: [] } as unknown as ExhibitMeta);
 
-    // Stub global fetch to return a 2-canvas P3 manifest; after the FIRST object is appended, flip
-    // ctx.currentSlug() to "other" — simulating the user clicking into a different exhibit mid-loop.
+    // Stub global fetch to return a 2-canvas P3 manifest; as the batch lands, flip ctx.currentSlug() to
+    // "other" — simulating the user clicking into a different exhibit mid-import. The import targets the
+    // PINNED slug (passed to appendObjects), so the switch must not redirect any object.
     const manifest = {
       type: "Manifest",
       label: { none: ["Imported"] },
@@ -104,12 +124,12 @@ describe("newExhibitFromManifest — mid-flow exhibit switch (NEGSPACE row 3)", 
       arrayBuffer: async () => body.buffer,
     })));
 
-    const origAppendObject = ctx.lib.appendObject.bind(ctx.lib);
+    const origAppendObjects = ctx.lib.appendObjects.bind(ctx.lib);
     let calls = 0;
-    ctx.lib.appendObject = async (slug: string, obj: any) => {
+    ctx.lib.appendObjects = async (slug: string, objs: any[]) => {
       calls++;
-      if (calls === 1) switchTo("other"); // user navigates away right after the first object lands
-      return origAppendObject(slug, obj);
+      if (calls === 1) switchTo("other"); // user navigates away as the batch lands
+      return origAppendObjects(slug, objs);
     };
 
     await flows.newExhibitFromManifest("https://x/manifest.json");
@@ -130,12 +150,12 @@ describe("newExhibitFromFolder — mid-flow exhibit switch (NEGSPACE row 4)", ()
     const makeFile = (name: string) => Object.assign(new File([new Uint8Array([0])], name, { type: "audio/mpeg" }), { webkitRelativePath: `roll/${name}` });
     const files = [makeFile("a.mp3"), makeFile("b.mp3")];
 
-    const origAppendObject = ctx.lib.appendObject.bind(ctx.lib);
+    const origAppendObjects = ctx.lib.appendObjects.bind(ctx.lib);
     let calls = 0;
-    ctx.lib.appendObject = async (slug: string, obj: any) => {
+    ctx.lib.appendObjects = async (slug: string, objs: any[]) => {
       calls++;
-      if (calls === 1) switchTo("other"); // user navigates away after the first file lands
-      return origAppendObject(slug, obj);
+      if (calls === 1) switchTo("other"); // user navigates away as the group's batch lands
+      return origAppendObjects(slug, objs);
     };
 
     await flows.newExhibitFromFolder(files);
@@ -362,11 +382,13 @@ describe("newExhibitsFromCollection — commit failure is fatal but non-throwing
   it("stops the batch, keeps the committed prefix, records the poisoned slot, and never retries it", async () => {
     const { ctx, exhibits } = makeCtx();
     const flows = createIngestFlows(ctx);
-    // Make the SECOND exhibit's object-append reject (a storage-side failure); m1 commits fine.
-    const origAppend = ctx.lib.appendObject.bind(ctx.lib);
-    ctx.lib.appendObject = async (slug: string, obj: any) => {
+    // Make the SECOND exhibit's object-append reject (a storage-side failure); m1 commits fine. The batch
+    // commits via appendObjects now, and a flush throw propagates out of importManifestObjects → the drain
+    // catches it as fatal (a real save failure surfaces in saveStatus, never throws; this exercises the path).
+    const origAppend = ctx.lib.appendObjects.bind(ctx.lib);
+    ctx.lib.appendObjects = async (slug: string, objs: any[]) => {
       if (slug === "m2") throw new Error("storage exploded");
-      return origAppend(slug, obj);
+      return origAppend(slug, objs);
     };
     // Count newExhibitInLibrary calls to PROVE the poisoned slot is committed at most once (never retried).
     // The batch creates exhibits without navigating (Archie-cbf6), so it's this path, not newExhibit.
@@ -511,5 +533,137 @@ describe("fetchCollectionPreview (PLAN §5)", () => {
     const preview = await flows.fetchCollectionPreview("https://x/root.json", controller.signal);
     expect(preview.kind).toBe("aborted"); // NOT { kind: "collection" } carrying a fetch-failed skip
     expect(alerts).toEqual([]);
+  });
+});
+
+// ── Import batching: library.json persist count (scale-fix) ──────────────────────────────────────
+// The blocker: every imported object drove one whole-library.json rewrite (O(N²) cumulative bytes). The
+// import loops now commit a run of objects in ONE appendObjects call per IMPORT_PERSIST_CHUNK (25); each
+// appendObjects call = ONE library.json persist. These pin the count so the amplification can't creep back.
+describe("import batches library.json persists (scale-fix)", () => {
+  it("a 100-canvas manifest commits in ceil(100/25)=4 persists — not one per object — with unique ids", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const appendObjectsSpy = vi.spyOn(ctx.lib, "appendObjects");
+    const appendObjectSpy = vi.spyOn(ctx.lib, "appendObject");
+    const items = Array.from({ length: 100 }, (_, i) =>
+      ({ type: "Canvas", items: [{ items: [{ body: { id: `https://x/${i}.jpg`, type: "Image" } }] }] }));
+    const body = new TextEncoder().encode(JSON.stringify({ type: "Manifest", label: { none: ["Big"] }, items }));
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, headers: new Headers(), arrayBuffer: async () => body.buffer })));
+
+    await flows.newExhibitFromManifest("https://x/big.json");
+
+    const objs = exhibits[0]!.objects;
+    expect(objs.length).toBe(100); // every canvas imported
+    expect(new Set(objs.map((o) => o.id)).size).toBe(100); // reserveId mints unique ids across the batch (no o1×100)
+    expect(appendObjectsSpy).toHaveBeenCalledTimes(4); // 25 + 25 + 25 + 25 — batched, not 100 full-library rewrites
+    expect(appendObjectSpy).not.toHaveBeenCalled(); // the per-object write-amplifying path is gone
+  });
+
+  it("a 100-file drop commits in 4 persists, one per 25 files", async () => {
+    const { ctx, exhibits, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-a", slug: "a", title: "A", objects: [] } as unknown as ExhibitMeta);
+    switchTo("a"); // addFiles imports into the open exhibit
+    const appendObjectsSpy = vi.spyOn(ctx.lib, "appendObjects");
+    const appendObjectSpy = vi.spyOn(ctx.lib, "appendObject");
+    const files = Array.from({ length: 100 }, (_, i) => new File([new Uint8Array([0])], `f${i}.mp3`, { type: "audio/mpeg" }));
+
+    await flows.addFiles(files);
+
+    const objs = exhibits.find((e) => e.slug === "a")!.objects;
+    expect(objs.length).toBe(100); // every file added
+    expect(new Set(objs.map((o) => o.id)).size).toBe(100); // unique ids across the batch
+    expect(appendObjectsSpy).toHaveBeenCalledTimes(4); // batched at 25 — not 100 library.json rewrites
+    expect(appendObjectSpy).not.toHaveBeenCalled();
+  });
+
+  it("a 60-canvas manifest chunks at 25 (25 + 25 + 10) — the crash-durability window is bounded, not the whole import", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const appendObjectsSpy = vi.spyOn(ctx.lib, "appendObjects");
+    const items = Array.from({ length: 60 }, (_, i) =>
+      ({ type: "Canvas", items: [{ items: [{ body: { id: `https://x/${i}.jpg`, type: "Image" } }] }] }));
+    const body = new TextEncoder().encode(JSON.stringify({ type: "Manifest", label: { none: ["Mid"] }, items }));
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, headers: new Headers(), arrayBuffer: async () => body.buffer })));
+
+    await flows.newExhibitFromManifest("https://x/mid.json");
+
+    expect(exhibits[0]!.objects.length).toBe(60);
+    expect(appendObjectsSpy.mock.calls.map((c) => (c[1] as unknown[]).length)).toEqual([25, 25, 10]);
+  });
+});
+
+// ── Code-review defects: dropped chunk + cross-flow id collision ──────────────────────────────────
+describe("addFiles — one file rejects mid-batch (code-review defect 1)", () => {
+  it("skips the undecodable file, keeps + flushes the successes, and reports the tally", async () => {
+    const { ctx, exhibits, notes, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-a", slug: "a", title: "A", objects: [] } as unknown as ExhibitMeta);
+    switchTo("a");
+    const appendObjectsSpy = vi.spyOn(ctx.lib, "appendObjects");
+    // 5 images in ONE chunk; the middle one rejects in downscaleIfNeeded (the bake mock throws on "corrupt").
+    const img = (name: string) => new File([new Uint8Array([0])], name, { type: "image/png" });
+    const files = [img("f0.png"), img("f1.png"), img("corrupt.png"), img("f3.png"), img("f4.png")];
+
+    await flows.addFiles(files);
+
+    const objs = exhibits.find((e) => e.slug === "a")!.objects;
+    expect(objs.length).toBe(4); // the 4 decodable files survived — NOT lost when the corrupt one threw
+    expect(new Set(objs.map((o) => o.id)).size).toBe(4); // unique ids
+    expect(appendObjectsSpy).toHaveBeenCalledTimes(1); // the survivors were flushed in the one end-of-drop persist
+    expect(notes.at(-1)).toMatch(/Added 4 files/); // success count surfaced
+    expect(notes.at(-1)).toMatch(/1 couldn't be added/); // and the skip tally, like the folder path
+  });
+});
+
+describe("id reservation — manual add during an import batch (code-review defect 2)", () => {
+  it("a manual addObject while a batch's flush is in flight never collides on object id", async () => {
+    const { ctx, exhibits, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-a", slug: "a", title: "A", objects: [] } as unknown as ExhibitMeta);
+    switchTo("a");
+    // Suspend the batch's FIRST appendObjects flush on a gate: while it's parked, the 25 minted ids are
+    // reserved-but-not-yet-in-meta. Fire a manual addObject in that window — it must mint a DIFFERENT id
+    // (consulting the reservation registry, not just live meta).
+    let releaseGate!: () => void;
+    const gate = new Promise<void>((r) => { releaseGate = r; });
+    let flushReached!: () => void;
+    const reached = new Promise<void>((r) => { flushReached = r; });
+    const origAppendObjects = ctx.lib.appendObjects.bind(ctx.lib);
+    let first = true;
+    ctx.lib.appendObjects = async (slug: string, objs: any[]) => {
+      if (first) { first = false; flushReached(); await gate; }
+      return origAppendObjects(slug, objs);
+    };
+    const files = Array.from({ length: 25 }, (_, i) => new File([new Uint8Array([0])], `f${i}.mp3`, { type: "audio/mpeg" }));
+
+    const importP = flows.addFiles(files); // 25 files → one chunk → flush parks on the gate
+    await reached; // batch is now suspended mid-flush, 25 ids reserved
+    await flows.addObject("https://x/manual.mp3", "Manual"); // manual add in the reservation window
+    releaseGate();
+    await importP;
+
+    const ids = exhibits.find((e) => e.slug === "a")!.objects.map((o) => o.id);
+    expect(ids.length).toBe(26); // 25 batched + 1 manual
+    expect(new Set(ids).size).toBe(26); // NO duplicate id across the two flows
+  });
+});
+
+// ── Failure containment: newExhibitFromManifest never leaks an unhandled rejection (scale-fix) ─────
+describe("newExhibitFromManifest — failure containment", () => {
+  it("catches an exhibit-create/append throw, surfaces it via ctx.alert, and does not reject", async () => {
+    const { ctx, alerts } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    // Make exhibit creation reject (the realistic throw source — a save failure is non-throwing/saveStatus).
+    ctx.newExhibit = async () => { throw new Error("boom"); };
+    const body = new TextEncoder().encode(JSON.stringify({
+      type: "Manifest", label: { none: ["X"] },
+      items: [{ type: "Canvas", items: [{ items: [{ body: { id: "https://x/1.jpg", type: "Image" } }] }] }],
+    }));
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, headers: new Headers(), arrayBuffer: async () => body.buffer })));
+
+    await expect(flows.newExhibitFromManifest("https://x/m.json")).resolves.toBeUndefined(); // no unhandled rejection
+    expect(alerts.at(-1)).toMatch(/Couldn't finish importing/); // surfaced through the existing alert channel
   });
 });

@@ -75,6 +75,26 @@ describe("library-meta store (rune wrapper)", () => {
     expect(saveLibraryMeta).toHaveBeenCalledTimes(1);
   });
 
+  it("bulk appendObjects appends N objects in ONE persist + fires ONE exhibit-assets dirt (the ingest-batch scale-fix)", async () => {
+    const onDirty = vi.fn();
+    const lib = createLibraryStore(initial(), { onDirty });
+    const objs = Array.from({ length: 5 }, (_, i) => ({ id: `o${i + 1}`, source: `s${i + 1}`, label: `${i + 1}` }));
+    await lib.appendObjects("a", objs);
+    expect(lib.meta.exhibits[0]!.objects.map((o) => o.id)).toEqual(["o1", "o2", "o3", "o4", "o5"]); // order preserved
+    expect(saveLibraryMeta).toHaveBeenCalledTimes(1); // ONE write for the whole batch, not one per object
+    expect(onDirty.mock.calls.map((c) => c[0])).toEqual([{ kind: "exhibit-assets", slug: "a" }]); // ONE dirt, keyed by slug
+  });
+
+  it("appendObjects on an empty batch is a no-op — no persist, no dirt (identity preserved)", async () => {
+    const onDirty = vi.fn();
+    const lib = createLibraryStore(initial(), { onDirty });
+    const before = lib.meta;
+    await lib.appendObjects("a", []);
+    expect(lib.meta).toBe(before); // same reference — no spurious re-render
+    expect(saveLibraryMeta).not.toHaveBeenCalled();
+    expect(onDirty).not.toHaveBeenCalled();
+  });
+
   it("bulk removeObjects drops N objects in ONE persist (Phase 2 — no per-object write amplification)", async () => {
     const lib = createLibraryStore(
       { title: "L", exhibits: [{ id: "e1", slug: "a", title: "A", objects: [{ id: "o1", source: "s1", label: "1" }, { id: "o2", source: "s2", label: "2" }, { id: "o3", source: "s3", label: "3" }] }] },
