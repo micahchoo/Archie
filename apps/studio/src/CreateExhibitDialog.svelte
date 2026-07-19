@@ -26,6 +26,7 @@
     type CreateSurfaceScope, type IiifStatus,
     surfaceTitle, createActionLabel, offersStartEmpty, offersMap,
     pickedFromFiles, emptyPathValid, folderPathValid, iiifPathValid, looksLikeUrl, previewManifest,
+    folderTitleFieldApplies, iiifTitleFieldApplies, prefillTitle,
   } from "./create-exhibit-dialog.js";
   import { summarizeFolderFiles, folderGroupCount, flattenedRelativePaths, type FolderSummary } from "./folder-import.js";
   import { readDroppedFolderFiles } from "./folder-drop.js";
@@ -55,8 +56,14 @@
      *  trait). Read once per open transition; LibraryHome clears it after handing off. */
     prefillFolderFiles?: File[] | null;
     oncreate: (title: string) => void;
-    oncreatefromfolder: (files: File[]) => void;
-    oncreatefrommanifest: (url: string) => void;
+    /** Archie-46bf: the folder path's title arg is the editable field's value — present (non-blank)
+     *  only in the single-exhibit branch of new-exhibit scope (see folderTitleFieldApplies); undefined
+     *  everywhere else, so callers fall back to the folder-derived name unchanged. */
+    oncreatefromfolder: (files: File[], title?: string) => void;
+    /** Archie-46bf: same title arg as oncreatefromfolder, from the IIIF path's editable field —
+     *  present only in new-exhibit scope (see iiifTitleFieldApplies); undefined in add-to-exhibit
+     *  scope, where callers fall back to the manifest's own label. */
+    oncreatefrommanifest: (url: string, title?: string) => void;
     /** The Map path's submit (Archie-56cf — absorbed from the retired AddMapModal). Only fires in
      *  add-to-exhibit scope (offersMap); wired to ingest-flows' addMapObject. */
     onaddmap?: (m: { label: string; tileSource: XyzTileSource }) => void;
@@ -77,6 +84,9 @@
   let grouping = $state<"per-subfolder" | "flatten">("per-subfolder");
   let dropActive = $state(false);
   let dirEl = $state<HTMLInputElement | null>(null);
+  // Archie-46bf: whether the folder path's editable title field applies right now — new-exhibit scope,
+  // and not the "several exhibits" grouping choice (see folderTitleFieldApplies' docstring).
+  const folderTitleApplies = $derived(folderTitleFieldApplies(scope, folderGroups, grouping));
 
   // "From a IIIF link" path.
   let iiifUrl = $state("");
@@ -89,6 +99,8 @@
   // code review) rather than just discarding its result once it eventually resolves (iiifToken
   // alone already guarantees the DISCARD half of "cancels cleanly").
   let iiifAbort: AbortController | undefined;
+  // Archie-46bf: whether the IIIF path's editable title field applies right now — new-exhibit scope only.
+  const iiifTitleApplies = $derived(iiifTitleFieldApplies(scope));
 
   // ── "Map" path (Archie-56cf) — absorbed from the retired AddMapModal.svelte. Pick a CURATED basemap
   // (terms permit static-site embedding, attribution baked in), set the bounded extent on a pan/zoom
@@ -265,6 +277,9 @@
     folderSummary = summarizeFolderFiles(picked);
     folderGroups = folderGroupCount(picked);
     grouping = "per-subfolder";
+    // Archie-46bf: prefill from the folder's name — user edit wins (prefillTitle only overwrites an
+    // EMPTY title), so re-picking a folder after typing a custom title doesn't clobber it.
+    title = prefillTitle(title, folderSummary.name);
   }
 
   async function focusFirst() {
@@ -324,15 +339,15 @@
   }
 
   function submitFolder() {
-    if (!folderFiles || !folderPathValid(folderSummary)) return;
+    if (!folderFiles || !folderPathValid(folderSummary, folderTitleApplies, title)) return;
     const files = grouping === "flatten" && folderGroups > 1 ? applyFlatten(folderFiles) : folderFiles;
-    oncreatefromfolder(files);
+    oncreatefromfolder(files, folderTitleApplies ? title.trim() : undefined);
     close();
   }
 
   function submitIiif() {
-    if (!iiifPathValid(iiifStatus)) return;
-    oncreatefrommanifest(iiifUrl.trim());
+    if (!iiifPathValid(iiifStatus, iiifTitleApplies, title)) return;
+    oncreatefrommanifest(iiifUrl.trim(), iiifTitleApplies ? title.trim() : undefined);
     close();
   }
 
@@ -369,6 +384,8 @@
     if (result.status === "valid") {
       iiifStatus = "valid";
       iiifPreview = { title: result.title, canvases: result.canvases };
+      // Archie-46bf: prefill from the manifest's label — user edit wins (see applyFolderFiles).
+      title = prefillTitle(title, result.title);
     } else {
       iiifStatus = "invalid";
       iiifMessage = result.message;
@@ -467,26 +484,38 @@
           </div>
           {#if folderSummary.total === 0}
             <p class="empty-folder-note">No images, audio, or video found in that folder.</p>
-          {:else if folderGroups > 1 && scope.kind === "new-exhibit"}
-            <!-- Progressive disclosure (Archie-8482): only shown once the folder actually holds
-                 media subfolders — a flat folder never sees a choice with nothing to choose between.
-                 New-exhibit scope only: per-subfolder split makes SEVERAL exhibits, which is
-                 meaningless when adding INTO one exhibit (Archie-56cf) — there, every file lands here. -->
-            <fieldset class="grouping-choice">
-              <!-- Lead with the outcome, not a subfolder count (code review S2): folderGroups is
-                   planFolderImportGroups().length, which also counts a loose-top-level-files group
-                   as one — "N subfolders" over-counts whenever loose media sits alongside a real
-                   subfolder. "N exhibits" is unambiguous either way. -->
-              <legend class="f-label">This will create {folderGroups} exhibits</legend>
-              <label class="grouping-option">
-                <input type="radio" name="grouping" checked={grouping === "per-subfolder"} onchange={() => (grouping = "per-subfolder")} />
-                One exhibit per subfolder ({folderGroups})
-              </label>
-              <label class="grouping-option">
-                <input type="radio" name="grouping" checked={grouping === "flatten"} onchange={() => (grouping = "flatten")} />
-                One exhibit from everything
-              </label>
-            </fieldset>
+          {:else}
+            {#if folderGroups > 1 && scope.kind === "new-exhibit"}
+              <!-- Progressive disclosure (Archie-8482): only shown once the folder actually holds
+                   media subfolders — a flat folder never sees a choice with nothing to choose between.
+                   New-exhibit scope only: per-subfolder split makes SEVERAL exhibits, which is
+                   meaningless when adding INTO one exhibit (Archie-56cf) — there, every file lands here. -->
+              <fieldset class="grouping-choice">
+                <!-- Lead with the outcome, not a subfolder count (code review S2): folderGroups is
+                     planFolderImportGroups().length, which also counts a loose-top-level-files group
+                     as one — "N subfolders" over-counts whenever loose media sits alongside a real
+                     subfolder. "N exhibits" is unambiguous either way. -->
+                <legend class="f-label">This will create {folderGroups} exhibits</legend>
+                <label class="grouping-option">
+                  <input type="radio" name="grouping" checked={grouping === "per-subfolder"} onchange={() => (grouping = "per-subfolder")} />
+                  One exhibit per subfolder ({folderGroups})
+                </label>
+                <label class="grouping-option">
+                  <input type="radio" name="grouping" checked={grouping === "flatten"} onchange={() => (grouping = "flatten")} />
+                  One exhibit from everything
+                </label>
+              </fieldset>
+            {/if}
+            {#if folderTitleApplies}
+              <!-- Archie-46bf: restores the approved prototype's editable title (prototypes/create-surface/app.js
+                   pathFolderHtml) — hidden only in the "one exhibit per subfolder" branch just above, where a
+                   single title is semantically inapplicable (folderTitleFieldApplies). -->
+              <div class="field">
+                <label class="f-label" for="titleFolder">Exhibit title</label>
+                <input id="titleFolder" type="text" bind:value={title} placeholder="e.g. Herbal quires" autocomplete="off" />
+                <span class="f-hint">We used the folder's name — change it if you like.</span>
+              </div>
+            {/if}
           {/if}
         {:else}
           <div
@@ -509,7 +538,7 @@
         <input bind:this={dirEl} type="file" webkitdirectory style="display:none" aria-label="Choose a folder of media" onchange={onDirChange} />
         <div class="path-actions">
           <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
-          <button type="button" class="btn btn-primary" disabled={!folderPathValid(folderSummary)} onclick={submitFolder}>{createActionLabel(scope)}</button>
+          <button type="button" class="btn btn-primary" disabled={!folderPathValid(folderSummary, folderTitleApplies, title)} onclick={submitFolder}>{createActionLabel(scope)}</button>
         </div>
       {:else if activePath === "iiif"}
         <div class="field" class:has-success={iiifStatus === "valid"} class:has-error={iiifStatus === "invalid"}>
@@ -538,9 +567,18 @@
             <div class="iiif-status invalid" role="alert">{iiifMessage}</div>
           {/if}
         </div>
+        {#if iiifTitleApplies && iiifStatus === "valid"}
+          <!-- Archie-46bf: restores the approved prototype's editable title (prototypes/create-surface/app.js
+               pathIiifHtml), prefilled from the validated manifest's label once a check succeeds. -->
+          <div class="field">
+            <label class="f-label" for="titleIiif">Exhibit title</label>
+            <input id="titleIiif" type="text" bind:value={title} placeholder="e.g. Herbal quires" autocomplete="off" />
+            <span class="f-hint">We used the manifest's label — change it if you like.</span>
+          </div>
+        {/if}
         <div class="path-actions">
           <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
-          <button type="button" class="btn btn-primary" disabled={!iiifPathValid(iiifStatus)} onclick={submitIiif}>{createActionLabel(scope)}</button>
+          <button type="button" class="btn btn-primary" disabled={!iiifPathValid(iiifStatus, iiifTitleApplies, title)} onclick={submitIiif}>{createActionLabel(scope)}</button>
         </div>
       {:else}
         <!-- Map path (Archie-56cf, absorbed from AddMapModal). Basemap + name + bounded extent. The

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   surfaceTitle, createActionLabel, offersStartEmpty, offersMap, pickedFromFiles,
   emptyPathValid, folderPathValid, iiifPathValid, looksLikeUrl, previewManifest,
+  folderTitleFieldApplies, iiifTitleFieldApplies, prefillTitle,
 } from "./create-exhibit-dialog.js";
 
 describe("CreateSurfaceScope copy (Archie-beb6's prop-level parameter)", () => {
@@ -50,6 +51,58 @@ describe("path validity — gates the primary button per path (mirrors the proto
     expect(iiifPathValid("checking")).toBe(false);
     expect(iiifPathValid("invalid")).toBe(false);
     expect(iiifPathValid("valid")).toBe(true);
+  });
+  it("folder/IIIF paths additionally gate on a non-blank title when the title field applies (Archie-46bf)", () => {
+    // titleApplies defaults to false — the pre-Archie-46bf callers (and any future caller that never
+    // shows the field) keep gating on the summary/status alone.
+    expect(folderPathValid({ total: 1 })).toBe(true);
+    expect(folderPathValid({ total: 1 }, true, "")).toBe(false);
+    expect(folderPathValid({ total: 1 }, true, "   ")).toBe(false);
+    expect(folderPathValid({ total: 1 }, true, "Herbal quires")).toBe(true);
+    expect(folderPathValid({ total: 1 }, false, "")).toBe(true); // field hidden -> no title gate
+
+    expect(iiifPathValid("valid")).toBe(true);
+    expect(iiifPathValid("valid", true, "")).toBe(false);
+    expect(iiifPathValid("valid", true, "Voynich MS")).toBe(true);
+    expect(iiifPathValid("valid", false, "")).toBe(true); // field hidden -> no title gate
+  });
+});
+
+describe("folderTitleFieldApplies — where the folder path's editable title shows (Archie-46bf)", () => {
+  const newExhibit = { kind: "new-exhibit" as const };
+  const addToExhibit = { kind: "add-to-exhibit" as const, slug: "herbal-quires", title: "Herbal quires" };
+
+  it("shows for a flat folder (one group) in new-exhibit scope", () => {
+    expect(folderTitleFieldApplies(newExhibit, 1, "per-subfolder")).toBe(true);
+  });
+  it("hides for the 'one exhibit per subfolder' choice — several exhibits, no single title applies", () => {
+    expect(folderTitleFieldApplies(newExhibit, 3, "per-subfolder")).toBe(false);
+  });
+  it("shows for the 'one exhibit from everything' (flatten) choice — collapses back to one exhibit", () => {
+    expect(folderTitleFieldApplies(newExhibit, 3, "flatten")).toBe(true);
+  });
+  it("never shows in add-to-exhibit scope — it appends into an exhibit that already has a title", () => {
+    expect(folderTitleFieldApplies(addToExhibit, 1, "per-subfolder")).toBe(false);
+    expect(folderTitleFieldApplies(addToExhibit, 3, "flatten")).toBe(false);
+  });
+});
+
+describe("iiifTitleFieldApplies — where the IIIF path's editable title shows (Archie-46bf)", () => {
+  it("shows only in new-exhibit scope", () => {
+    expect(iiifTitleFieldApplies({ kind: "new-exhibit" })).toBe(true);
+    expect(iiifTitleFieldApplies({ kind: "add-to-exhibit", slug: "herbal-quires", title: "Herbal quires" })).toBe(false);
+  });
+});
+
+describe("prefillTitle — prefill/override precedence (Archie-46bf, mirrors the prototype's `if (!state.title.trim())` guard)", () => {
+  it("installs the derived name when the title is empty", () => {
+    expect(prefillTitle("", "Herbal quires scans")).toBe("Herbal quires scans");
+  });
+  it("installs the derived name when the title is whitespace-only", () => {
+    expect(prefillTitle("   ", "Herbal quires scans")).toBe("Herbal quires scans");
+  });
+  it("leaves a user-edited title untouched — user edit wins over a later derive (e.g. re-picking a folder)", () => {
+    expect(prefillTitle("My custom title", "Herbal quires scans")).toBe("My custom title");
   });
 });
 

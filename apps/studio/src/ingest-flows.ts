@@ -345,7 +345,11 @@ export function createIngestFlows(ctx: IngestContext) {
   // Folder → exhibit in one gesture (contributor-broadening ① sub-cycle A, Archie-e1d6): the folder
   // names the exhibit; its media files become objects in reading order. Each file goes through the
   // SAME ingest as a hand-picked one (addObjectFromFile: EXIF bake, OPFS, AV branch) — no second path.
-  async function newExhibitFromFolder(files: File[]) {
+  // `title` (Archie-46bf, restoring the create dialog's editable-title path) is the dialog's optional
+  // override — it only ever arrives non-blank when the folder produced exactly ONE group (the dialog's
+  // title field is hidden in the "per-subfolder" multi-group branch), so it's applied only then; a
+  // multi-group import always names each exhibit from its own subfolder, override or not.
+  async function newExhibitFromFolder(files: File[], title?: string) {
     // EXIF pre-pass (⑫): capture date per image so photo folders sort by SHOT time; only the
     // first 128 KB is read (APP1 sits at the front), only for image-MIME files. Chunked at 8 (review r9).
     const picked: { name: string; relativePath: string; type: string; capturedAt: number | null; file: File }[] = [];
@@ -370,10 +374,11 @@ export function createIngestFlows(ctx: IngestContext) {
       ctx.alert(QUOTA_REFUSED_NOTE);
       return;
     }
+    const titleOverride = groups.length === 1 && title && title.trim() !== "" ? title.trim() : undefined;
     let failed = 0, imported = 0;
     try {
       for (const g of groups) {
-        await ctx.newExhibit(g.name);
+        await ctx.newExhibit(titleOverride ?? g.name);
         // Pin THIS group's exhibit slug right after creating it (tend Issue 7, ledgers/NEGSPACE.md):
         // the per-file loop below has awaits the user can act during, and a multi-folder import
         // navigates through several exhibits in turn — without pinning, switching exhibits mid-group
@@ -463,10 +468,13 @@ export function createIngestFlows(ctx: IngestContext) {
   // IIIF manifest URL → NEW exhibit (contributor-broadening ②, Archie-bc01): one paste bootstraps from any
   // institutional IIIF collection. Objects reference the REMOTE images (service base preferred), so
   // nothing is downloaded: the manifest's dims ride along and no OPFS bytes are written.
-  async function newExhibitFromManifest(url: string) {
+  // `title` (Archie-46bf) is the dialog's optional override of the manifest's own label — used only
+  // when non-blank, so a caller that never offers the title field (or leaves it untouched) sees the
+  // exact same derived-name behavior as before.
+  async function newExhibitFromManifest(url: string, title?: string) {
     const plan = await fetchManifestPlan(url);
     if (!plan) return;
-    await ctx.newExhibit(plan.title);
+    await ctx.newExhibit(title && title.trim() !== "" ? title.trim() : plan.title);
     await importManifestObjects(plan, ctx.currentSlug());
   }
   // IIIF manifest URL → append into the CURRENT exhibit (Archie-56cf — the create dialog's IIIF path in

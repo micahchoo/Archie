@@ -843,8 +843,9 @@
   // import, and the destructive open-zip/open-folder replace) live in ingest-flows.ts now (the DOMINO
   // cut). `flows` is constructed below — after the $state + the lifecycle callbacks it closes over.
   // `newExhibitFromFolder` lands at the LIBRARY scale (several new exhibits) — App finishes the nav.
-  async function newExhibitFromFolder(files: File[]) {
-    const r = await flows.newExhibitFromFolder(files);
+  // `title` (Archie-46bf) is the create dialog's optional editable-title override, forwarded as-is.
+  async function newExhibitFromFolder(files: File[], title?: string) {
+    const r = await flows.newExhibitFromFolder(files, title);
     if (r && r.groups > 1) await backToLibrary(); // multi-folder import → where they're all visible
   }
   // Open a .archie.zip then bind to it (the zip is now this Library's canonical file) — App keeps the
@@ -1686,8 +1687,8 @@
     onopen={openExhibit}
     onopenobject={(slug, objId) => void openObjectInExhibit(slug, objId)}
     oncreate={newExhibit}
-    oncreatefromfolder={(files) => { newExhibitFromFolder(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add that folder."); }); }}
-    oncreatefrommanifest={(url) => { flows.newExhibitFromManifest(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
+    oncreatefromfolder={(files, title) => { newExhibitFromFolder(files, title).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add that folder."); }); }}
+    oncreatefrommanifest={(url, title) => { flows.newExhibitFromManifest(url, title).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
     {isTemplate}
     binding={bnd.binding}
     bindingDirty={bnd.dirty}

@@ -66,10 +66,12 @@
     exhibits: ExhibitMeta[];
     onopen: (slug: string) => void;
     oncreate: (title: string) => void;
-    /** A whole media folder (images, audio, video) becomes a new exhibit (contributor-broadening ① — Archie-e1d6). */
-    oncreatefromfolder: (files: File[]) => void;
-    /** A pasted IIIF manifest URL becomes a new exhibit (contributor-broadening ② — Archie-bc01). */
-    oncreatefrommanifest: (url: string) => void;
+    /** A whole media folder (images, audio, video) becomes a new exhibit (contributor-broadening ① — Archie-e1d6).
+     *  `title` (Archie-46bf) is the create dialog's optional editable-title override, passed through unchanged. */
+    oncreatefromfolder: (files: File[], title?: string) => void;
+    /** A pasted IIIF manifest URL becomes a new exhibit (contributor-broadening ② — Archie-bc01).
+     *  `title` (Archie-46bf) is the create dialog's optional editable-title override, passed through unchanged. */
+    oncreatefrommanifest: (url: string, title?: string) => void;
     /** Is this exhibit a bundled example (a template — playground, not saved)? Marks it in the grid. */
     isTemplate: (slug: string) => boolean;
     /** Where this library's canonical bytes live (unbound / folder / file). */
