@@ -405,8 +405,12 @@
     // half (code review S1) — a rejection here must surface a plain-language message, not an
     // unhandled promise rejection and a silently dead drop.
     try {
-      const files = await readDroppedFolderFiles(Array.from(items));
+      const { files, skipped } = await readDroppedFolderFiles(Array.from(items));
       if (files.length > 0) openCreate(files);
+      // Archie-bf5b: fold the walker's skip-and-tally count into the same "N couldn't be added"
+      // shape ingest-flows.ts's own per-file summaries use, so an unreadable entry mid-drop reads
+      // the same as any other batch-import path instead of just quietly shrinking the import.
+      if (skipped > 0) window.alert(`${skipped} item${skipped === 1 ? "" : "s"} couldn't be added.`);
     } catch (err) {
       console.error("Folder drop failed", err);
       window.alert("Couldn't read that folder.");

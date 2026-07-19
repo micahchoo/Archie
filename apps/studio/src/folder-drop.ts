@@ -12,9 +12,22 @@
 // a file removed between drag and drop, a directory the OS refuses to enumerate) — one bad entry
 // must skip-and-continue, never reject the whole walk and leave the caller with an unhandled
 // rejection and a silently dead drop (same skip-and-tally posture as ingest-flows.ts's per-file loops).
-export async function readDroppedFolderFiles(items: readonly DataTransferItem[]): Promise<File[]> {
+//
+// Skip-and-tally (Archie-bf5b): the three catch sites below each drop an unreadable entry AND
+// increment `skipped` — one count per failure *event* (an unreadable file, a directory whose
+// remaining batch couldn't be read, or a top-level entry that threw), not per underlying file,
+// since an unreadable directory batch doesn't reveal how many files it would have yielded. Callers
+// fold `skipped` into their own "N couldn't be added" surfacing so a drag-drop failure reads the
+// same as any other batch-import path in Studio.
+export interface DroppedFolderResult {
+  files: File[];
+  skipped: number;
+}
+
+export async function readDroppedFolderFiles(items: readonly DataTransferItem[]): Promise<DroppedFolderResult> {
   const entries = items.map((it) => it.webkitGetAsEntry?.()).filter((e): e is FileSystemEntry => !!e);
   const out: File[] = [];
+  let skipped = 0;
 
   async function walk(entry: FileSystemEntry, prefix: string): Promise<void> {
     if (entry.isFile) {
@@ -23,6 +36,7 @@ export async function readDroppedFolderFiles(items: readonly DataTransferItem[])
         file = await new Promise<File>((resolve, reject) => (entry as FileSystemFileEntry).file(resolve, reject));
       } catch (e) {
         console.warn(`[folder-drop] skipped unreadable file "${prefix}${entry.name}"`, e);
+        skipped++;
         return;
       }
       // webkitRelativePath is a plain own property on a File instance (not a prototype-locked
@@ -40,6 +54,7 @@ export async function readDroppedFolderFiles(items: readonly DataTransferItem[])
         } catch (e) {
           // This directory's remaining entries are unreadable — stop just this branch, keep the rest.
           console.warn(`[folder-drop] stopped reading "${prefix}${entry.name}" early`, e);
+          skipped++;
           break;
         }
         if (batch.length === 0) break;
@@ -55,7 +70,8 @@ export async function readDroppedFolderFiles(items: readonly DataTransferItem[])
       // Defensive: walk's own promises are already caught above, but a top-level entry must not
       // abort the rest of the drop no matter what throws.
       console.warn(`[folder-drop] skipped unreadable entry "${e.name}"`, err);
+      skipped++;
     }
   }
-  return out;
+  return { files: out, skipped };
 }
