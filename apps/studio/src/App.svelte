@@ -1,14 +1,3 @@
-<script module lang="ts">
-  // Session-only transient screen state (ADR-0024 #6): how a PLACE looks beyond its address — the
-  // overview's canvas pan-zoom. Module-level so it survives a component remount WITHIN the session (leave
-  // an exhibit, come back, find it framed as you left it) but resets on a fresh load (the URL alone is
-  // honored then). Best-effort — a plain Map keyed by exhibit slug. (The Canvas/List mode is a persisted
-  // view preference owned elsewhere, NOT a transient — excluded here.) Library transient (search text) is
-  // one place, so it rides App-instance state instead (see gallerySearch).
-  type OverviewScreen = { tx: number; ty: number; z: number };
-  const overviewScreens = new Map<string, OverviewScreen>();
-</script>
-
 <script lang="ts">
   // Studio editor (Phase-2 UI, browser-verified later). Real annotate loop over the headless-
   // tested @render/core AnnotationSession: draw on the canvas → create note → edit body/tags/
@@ -196,10 +185,13 @@
   const savedLastPlace: Place = (() => { try { return parsePlace(localStorage.getItem(LAST_PLACE_KEY) ?? ""); } catch { return LIBRARY; } })();
 
   // --- Transient screen state mirrors (ADR-0024 #6). Bound into the child screens; App remembers them
-  // across the child's remount within the session. Overview pan-zoom is per-slug (overviewScreens map); the
-  // library search is one place, so App-instance state is its session memory (resets on reload). (The two
-  // toggles — overview Canvas/List, library Exhibits/All-images — are PERSISTED prefs owned elsewhere.) ---
-  let ovTx = $state(0), ovTy = $state(0), ovZ = $state(1);
+  // across the child's remount within the session. The overview's GRID scroll offset is per-slug (an
+  // App-instance Map keyed by exhibit slug — replaces the retired canvas's per-slug pan-zoom); the library
+  // search is one place, so App-instance state is its session memory (resets on reload). (The overview's
+  // Grid/List mode + grid density are PERSISTED prefs owned in view-prefs, not transients.) ---
+  const overviewScrollTops = new Map<string, number>();
+  let ovScrollInitial = $state(0); // the offset handed DOWN to restore on enter (set only by restoreOverviewScroll)
+  let ovScrollSlug = ""; // the exhibit the CURRENT overview grid belongs to — the map key for its scroll writes
   let gallerySearch = $state("");
   // Lazy deep-zoom canvas (OpenSeadragon + Annotorious — the largest dep). Loaded the moment the user
   // enters an exhibit (overview or editor), so it's warm by the time an object opens, while staying OUT
@@ -430,10 +422,11 @@
       syncUrl(); // push the settled landing place (no-op if a caller/history replay is still suspending)
     }
   }
-  // Enter the overview scale for `slug`, restoring the transient look (mode + pan-zoom) remembered for it
-  // within this session (ADR-0024 #6). The single funnel for "show overview" so restore never gets skipped.
+  // Enter the overview scale for `slug`, restoring the grid scroll offset remembered for it within this
+  // session (ADR-0024 #6). The single funnel for "show overview" so restore never gets skipped. (Grid/List
+  // mode + density are persisted view preferences read live by the child; scroll is the transient here.)
   function enterOverview(slug: string) {
-    restoreOverviewScreen(slug);
+    restoreOverviewScroll(slug);
     view = "overview";
   }
   async function backToLibrary() {
@@ -653,20 +646,34 @@
     if (!isTauri()) return;
     try { localStorage.setItem(LAST_PLACE_KEY, url); } catch { /* best-effort — private mode just won't restore */ }
   }
-  // Best-effort session memory for the overview's transient look (ADR-0024 #6): snapshot the tableau
-  // pan-zoom under the current slug whenever it changes while the overview is showing.
-  function restoreOverviewScreen(slug: string) {
-    const s = overviewScreens.get(slug);
-    ovTx = s?.tx ?? 0; ovTy = s?.ty ?? 0; ovZ = s?.z ?? 1;
+  // Best-effort session memory for the overview's transient look (ADR-0024 #6): restore/remember the GRID
+  // scroll offset per slug (replaces the retired canvas's tx/ty/z restore — the grid persists no pan/zoom).
+  // Restore hands the saved offset DOWN on enter; the child reports UP via two channels (see the decoupling
+  // rationale on ExhibitOverview's scrollTop/onscrolled/onscrollflush props — a scroll position can't be
+  // two-way bound). BOTH writes key on `ovScrollSlug` — the exhibit captured at enter time — never
+  // `currentSlug`: a URL/back-forward jump can move currentSlug to another place before the outgoing grid's
+  // write lands, and the flush in particular fires from unmount cleanup after currentSlug has moved.
+  function restoreOverviewScroll(slug: string) {
+    ovScrollSlug = slug;
+    ovScrollInitial = overviewScrollTops.get(slug) ?? 0;
   }
-  $effect(() => {
-    // Skip while a transition is in flight (navSyncSuspendCount > 0): during openExhibit, currentSlug
-    // moves to the NEW slug synchronously while view is still "overview" and ovTx/ovTy/ovZ still hold the
-    // OUTGOING exhibit's pan-zoom — an unguarded write would stamp A's transform under B's slug (N1). Once
-    // settled, restoreOverviewScreen has loaded the right values and the count is 0, so this snapshots B.
-    if (view !== "overview" || navSyncSuspendCount > 0) return;
-    overviewScreens.set(currentSlug, { tx: ovTx, ty: ovTy, z: ovZ });
-  });
+  // LIVE report (native scroll event). Suspend-guarded: during an A→B overview switch (grid stays mounted,
+  // no unmount) the browser can fire a stray scroll for A's leftover offset after ovScrollSlug has flipped
+  // to B — the guard drops it; the post-transition reports + B's restore are the truth.
+  function rememberOverviewScroll(top: number) {
+    if (navSyncSuspendCount > 0 || !ovScrollSlug) return;
+    overviewScrollTops.set(ovScrollSlug, top);
+  }
+  // UNMOUNT flush (synchronous, from the grid's $effect cleanup). Deliberately UNGUARDED: it fires while
+  // leaving overview (→ editor/library), which happens inside applyPlace's suspended window — a suspend
+  // guard here would drop the very write that fixes the lost-final-offset race (the reason the native scroll
+  // report alone is insufficient: setting scrollTop / coalesced wheel events don't dispatch 'scroll'
+  // synchronously). It's safe unguarded because leaving overview never re-enters (never re-keys
+  // ovScrollSlug), so this always targets the grid's own exhibit.
+  function flushOverviewScroll(top: number) {
+    if (!ovScrollSlug) return;
+    overviewScrollTops.set(ovScrollSlug, top);
+  }
 
   // URL → STATE. Apply a place to the view, degrading an unresolvable one to its nearest surviving ancestor
   // (ADR-0024 #4) and naming what was missing. Suspends the sync effect for the whole transition, then does
@@ -1960,9 +1967,9 @@
       onbulkdelete={requestBulkDelete}
       {bulkConfirming}
       onvisible={(ids) => (visibleIds = ids)}
-      bind:tx={ovTx}
-      bind:ty={ovTy}
-      bind:z={ovZ}
+      scrollTop={ovScrollInitial}
+      onscrolled={rememberOverviewScroll}
+      onscrollflush={flushOverviewScroll}
       onstartnarrative={() => openObject(OBJECTS[0]?.id ?? currentObjectId)}
       rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}

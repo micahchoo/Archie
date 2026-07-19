@@ -1,19 +1,21 @@
 <script lang="ts">
-  // Exhibit overview-as-canvas (CONTEXT invention #1, the marquee gate). The exhibit's OTHER scale:
-  // its Objects laid out as plates on the dark light-table, in reading order — a space you PAN (drag) and
-  // ZOOM (wheel / ± controls), the SAME zoom metaphor as descending into an Object's deep-zoom surface
-  // (1a). Click a plate → open that Object. The comprehension gate: does this read as a CANVAS, not a list
-  // pretending to be one? The 1b fallback (an explicit List view) ships alongside so the contrast is in hand.
-  // Browser-verified (pointer/wheel transforms). Narrative SECTION authoring lives in the editor sidebar
-  // (NarrativeEditor), not here — this overview is the zoomed-OUT viewing/arranging scale only.
+  // Exhibit overview — the exhibit's OTHER scale: its Objects laid out as plates in reading order, arranged
+  // and browsed. Two modes: a plain scrollable GRID (default) and an explicit LIST, toggled in the header.
+  // Click a plate → open that Object. The spatial-canvas mode (a pan/zoom viewport over a CSS-transformed
+  // tableau) was RETIRED (SCALE-GALLERY): it persisted NO spatial data — no x/y in the model, tx/ty/z were
+  // in-memory session state — and eagerly rendered every plate under one transform, deterring use above
+  // ~100 objects. The grid keeps every durable thing the canvas set (reading order via drag-reorder, shared
+  // with list) and adds real virtualization (content-visibility per plate) + a scrollbar instead of pan.
+  // Narrative SECTION authoring lives in the editor sidebar (NarrativeEditor), not here — this overview is
+  // the zoomed-OUT viewing/arranging scale only.
   import type { Snippet } from "svelte";
   import { tick } from "svelte";
   import type { LayoutType, RightsFields, Section } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import { moveBlock, marqueeHits, START, END, type ClickMods, type PlateRect } from "./overview-selection.js";
-  import { viewPrefs } from "./view-prefs.svelte.js";
-  import { legendSeen, markLegendSeen, hintSeen, markHintSeen } from "./canvas-first-use.js";
+  import { viewPrefs, overviewDensityMetrics } from "./view-prefs.svelte.js";
+  import { hintSeen, markHintSeen } from "./canvas-first-use.js";
   import { isReorderable, reorderBlockedMessage } from "./reorder-state.js";
   import {
     liftRow, moveRow, moveRowTo, indexOfMoving,
@@ -54,9 +56,9 @@
     bulkConfirming,
     onvisible,
     safety,
-    tx = $bindable(0),
-    ty = $bindable(0),
-    z = $bindable(1),
+    scrollTop = 0,
+    onscrolled,
+    onscrollflush,
   }: {
     title: string;
     layout: LayoutType;
@@ -118,13 +120,22 @@
     /** The shared SafetyState indicator (Archie-c76d) — App owns the save/binding wiring and passes it as a
      *  snippet so it mounts in this header's one save slot, identical to the editor + library headers. */
     safety?: Snippet;
-    // --- Transient screen state (ADR-0024 #6). The tableau pan/zoom is bindable so App can remember it per
-    // exhibit within the session and restore it on return (a fresh load resets to these defaults). NOT part
-    // of the place. (Canvas/List `mode` is a PERSISTED view preference owned elsewhere — not bindable here.) ---
-    /** The tableau pan/zoom transform (canvas mode). */
-    tx?: number;
-    ty?: number;
-    z?: number;
+    // --- Transient screen state (ADR-0024 #6). The GRID's scroll offset is "how the place looks" beyond its
+    // address; App remembers it per exhibit within the session and restores it on return (a fresh load
+    // resets to 0). This replaces the retired canvas's tx/ty/z pan restore: the grid persists no pan/zoom,
+    // but scroll-to-object-200 → open → back must not land at the top. Deliberately NOT a two-way bind — a
+    // scroll position bound both ways feedback-loops (restoring writes the DOM, which fires a scroll event,
+    // which writes back the possibly-clamped value). Instead `scrollTop` is a ONE-WAY restore target that
+    // changes only when App enters an exhibit, and `onscrolled` reports the live offset UP. (Grid/List mode
+    // + density are PERSISTED view preferences owned in view-prefs — not transients.) ---
+    /** The grid's vertical scroll offset to restore on enter (grid mode). */
+    scrollTop?: number;
+    /** Report the live grid scroll offset (native scroll event) so App can remember it per slug. */
+    onscrolled?: (top: number) => void;
+    /** Flush the final grid scroll offset synchronously on unmount — the correctness backstop for the live
+     *  report, which can be lost when scrollTop is set programmatically / wheel events are coalesced (no
+     *  synchronous 'scroll' before teardown). App writes this UNGUARDED (it fires inside a suspended nav). */
+    onscrollflush?: (top: number) => void;
   } = $props();
 
   let rightsOpen = $state(false);
@@ -146,23 +157,27 @@
     narrative: "a guided sequence led by your writing",
   };
 
-  // 1a spatial canvas ↔ 1b plain list — a persisted VIEW PREFERENCE (Archie-a9fc / CONTEXT.md Navigation
-  // § "View preference"), not transient screen state: last choice wins and survives app restarts. Read
-  // through the shared view-prefs store so it's the SAME preference everywhere it's set (this toggle is
-  // the only writer today; LibraryHome's Exhibits/All-images lens is the other reader/writer of that module).
+  // Grid ↔ List — a persisted VIEW PREFERENCE (CONTEXT.md Navigation § "View preference"), not transient
+  // screen state: last choice wins and survives app restarts. Read through the shared view-prefs store so
+  // it's the SAME preference everywhere it's set (this toggle is the only writer today; LibraryHome's
+  // Exhibits/All-images lens is the other reader/writer of that module). A legacy "canvas" value migrates
+  // to "grid" inside view-prefs' loader, so `mode` is only ever "grid" | "list" here.
   const mode = $derived(viewPrefs.overviewMode);
-  let viewport = $state<HTMLDivElement | null>(null);
-  let listRoot = $state<HTMLElement | null>(null); // list-mode's <ul> — the roving-focus query root there
+  let gridScroll = $state<HTMLDivElement | null>(null); // grid-mode scroll container — roving-focus + marquee root
+  let listRoot = $state<HTMLElement | null>(null); // list-mode's grid — the roving-focus query root there
 
-  // First-use-only chrome (Archie-a9fc chrome trim): the pan/zoom legend teaches its gesture ONCE per
-  // MODE (canvas-first-use.ts LegendMode — Archie-adae review: a reorder demonstrated in list mode used
-  // to dismiss the canvas legend unseen), then hides permanently; the "click to open" hint is identical
-  // in both modes so it stays a single flag. Seeded once at mount from the persisted flag, same idiom as
-  // App.svelte's FIRST_ADD_KEY local $state seed. (The legend's REORDERABILITY-STATE job — "search/sort
-  // is blocking drag" — is now a separate, always-on indicator below; it is not first-use chrome.)
-  // Always seeded from the CANVAS flag — the legend element only ever renders inside the canvas block
-  // below, regardless of which mode is active when this component happens to mount.
-  let showLegend = $state(!legendSeen("canvas"));
+  // Grid density (SCALE-GALLERY) — a persisted 2-step preference (Comfortable / Compact), read through the
+  // shared view-prefs store. The metrics drive the plate min-width AND the content-visibility intrinsic-size
+  // estimate together (overviewDensityMetrics returns both, so virtualization can't jank). Applied to GRID
+  // mode only; list keeps its one fixed row height (Archie-a9fc: the overview settled on fixed sizes when
+  // the old density slider was removed — this discrete toggle is the grid's lighter replacement).
+  const density = $derived(viewPrefs.overviewDensity);
+  const densityMetrics = $derived(overviewDensityMetrics(density));
+
+  // First-use-only "click to open" hint (canvas-first-use.ts): teaches the open gesture once, then hides
+  // permanently after the first plate open. Seeded once at mount from the persisted flag, same idiom as
+  // App.svelte's FIRST_ADD_KEY local $state seed. (The pan/zoom legend it used to sit beside was retired
+  // with the spatial canvas; drag-to-reorder guidance is a standing hint line, not first-use chrome.)
   let showHint = $state(!hintSeen());
 
   // --- Toolbar: search / sort (Phase 2). VIEW-only local $state — these never touch the canonical
@@ -229,7 +244,7 @@
   // Space needs NO new code: a plate is a real <button>, so native Space/Enter activation already
   // fires onPlateClick, whose selectMode branch above already treats a plain click as a toggle
   // (`meta: !mods.shift`) — roving tabindex just makes sure that activation lands on the FOCUSED
-  // plate. The listener lives on the grid container (.tableau / .list), a sibling of the toolbar's
+  // plate. The listener lives on the grid container (.grid / .list), a sibling of the toolbar's
   // search field, not an ancestor of it — so it structurally never sees keys typed there; no
   // typingInField() guard needed. ---
   let roveId = $state<string | null>(null);
@@ -239,7 +254,7 @@
     roveId = displayObjects[0]?.id ?? null; // just entered select-mode, or the roved plate got filtered out
   });
   function plateEl(id: string): HTMLElement | null {
-    const root = mode === "canvas" ? viewport : listRoot;
+    const root = mode === "grid" ? gridScroll : listRoot;
     return root?.querySelector<HTMLElement>(`[data-plate-id="${CSS.escape(id)}"]`) ?? null;
   }
   // Arrow moves the roving focus by one step in DISPLAY order (the same visible/filtered sequence
@@ -254,10 +269,10 @@
     const next = ids[Math.min(ids.length - 1, Math.max(0, (at === -1 ? 0 : at) + delta))]!;
     roveId = next;
     if (extend) onselect(next, { meta: false, shift: true });
-    // Canvas viewport is overflow:hidden with transform panning — a plain focus() on an
-    // off-screen plate makes the browser scroll the hidden-overflow container, a phantom
-    // offset the tx/ty pan math never sees. List mode's overflow-y:auto scroll is desirable.
-    plateEl(next)?.focus(mode === "canvas" ? { preventScroll: true } : undefined);
+    // Both modes now scroll natively (grid: overflow-y:auto, list: overflow-y:auto), so a plain focus()
+    // scrolling an off-screen plate into view is exactly what we want — no preventScroll special-case
+    // (that existed only for the retired canvas's hidden-overflow transform panning).
+    plateEl(next)?.focus();
   }
   function onGridKeyDown(e: KeyboardEvent) {
     if (!selectMode) return;
@@ -274,69 +289,95 @@
     if (selectMode) roveId = id;
   }
 
-  // Pan/zoom transform of the whole tableau (the canvas gesture). tx/ty/z are now bindable props
-  // (transient screen state, ADR-0024 #6 — see $props above); z is clamped to a sane range below.
-  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
-
-  function fit() { tx = 0; ty = 0; z = 1; }
-  function zoomAt(cx: number, cy: number, factor: number) {
-    const nz = clamp(z * factor, 0.4, 3);
-    tx = cx - (cx - tx) * (nz / z); // keep the point under (cx,cy) fixed
-    ty = cy - (cy - ty) * (nz / z);
-    z = nz;
-  }
-  function onWheel(e: WheelEvent) {
-    if (mode !== "canvas" || !viewport) return;
-    e.preventDefault();
-    const r = viewport.getBoundingClientRect();
-    zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
-  }
-
-  // Background drag from the tableau: PANS in normal mode, draws a MARQUEE in select-mode (§2 — the toggle
-  // disambiguates, so the "drag to pan" identity is intact until the user opts into selecting). Plates
-  // handle their own clicks/drags; this fires only on the empty canvas.
-  let dragging = false, lastX = 0, lastY = 0;
+  // Background drag on the grid draws a MARQUEE in select-mode (§2). Pan is gone — the grid scrolls
+  // natively — so a background drag has exactly one job now, and only in select-mode (the toggle
+  // disambiguates; off-mode the background is inert). Plates handle their own clicks/drags; this fires only
+  // on the empty grid background. The rubber-band endpoints are stored in CLIENT coords (getBoundingClientRect
+  // space), so marqueeHits — pure, geometry-agnostic — needs no change from the retired canvas: only the
+  // overlay's positioning math (which used to subtract the fixed viewport rect) becomes scroll-aware below.
   let marquee = $state<{ x0: number; y0: number; x1: number; y1: number } | null>(null); // client coords
   function onBgPointerDown(e: PointerEvent) {
-    if (mode !== "canvas") return;
-    if (selectMode) { marquee = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY }; (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); return; }
-    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    if (mode !== "grid" || !selectMode) return;
+    marquee = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function onBgPointerMove(e: PointerEvent) {
-    if (marquee) { marquee = { ...marquee, x1: e.clientX, y1: e.clientY }; return; }
-    if (!dragging) return;
-    tx += e.clientX - lastX; ty += e.clientY - lastY;
-    lastX = e.clientX; lastY = e.clientY;
+    if (!marquee) return;
+    marquee = { ...marquee, x1: e.clientX, y1: e.clientY };
   }
   function onBgPointerUp(e: PointerEvent) {
-    if (marquee) { commitMarquee(); (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId); return; }
-    dragging = false;
+    if (!marquee) return;
+    commitMarquee();
     (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
   }
-  // Hit-test the rubber-band against live plate rects (the pure geometry is marqueeHits; the DOM read
-  // stays here). A near-zero drag (a bare background click in select-mode) clears the selection instead.
+  // Hit-test the rubber-band against live plate rects (the pure geometry is marqueeHits; the DOM read stays
+  // here). Both the band endpoints and each plate rect are client-space, so scroll position is already baked
+  // into the getBoundingClientRect reads — a plate scrolled half out of view hit-tests against its real
+  // on-screen box. A near-zero drag (a bare background click in select-mode) clears the selection instead.
   function commitMarquee() {
     const m = marquee; marquee = null;
-    if (!m || !viewport) return;
+    if (!m || !gridScroll) return;
     if (Math.abs(m.x1 - m.x0) < 4 && Math.abs(m.y1 - m.y0) < 4) { onclear(); return; }
-    const rects: PlateRect[] = [...viewport.querySelectorAll<HTMLElement>("[data-plate-id]")].map((el) => {
+    const rects: PlateRect[] = [...gridScroll.querySelectorAll<HTMLElement>("[data-plate-id]")].map((el) => {
       const r = el.getBoundingClientRect();
       return { id: el.dataset.plateId!, left: r.left, top: r.top, right: r.right, bottom: r.bottom };
     });
     onmarquee(marqueeHits(rects, m));
   }
-  // The marquee rectangle in viewport-local coords (for the overlay); null when not dragging one.
+  // The marquee rectangle in the grid's CONTENT coords (for the overlay). The overlay is an absolute child
+  // of the scroll container, so it scrolls WITH the plates — its position must be measured from the content
+  // origin, i.e. (client coord − container top-left) + current scroll offset. Contrast the retired canvas,
+  // whose viewport never scrolled (it panned via transform), so a plain client−rect sufficed there.
   const marqueeRect = $derived.by(() => {
-    if (!marquee || !viewport) return null;
-    const vr = viewport.getBoundingClientRect();
-    return { left: Math.min(marquee.x0, marquee.x1) - vr.left, top: Math.min(marquee.y0, marquee.y1) - vr.top, width: Math.abs(marquee.x1 - marquee.x0), height: Math.abs(marquee.y1 - marquee.y0) };
+    if (!marquee || !gridScroll) return null;
+    const cr = gridScroll.getBoundingClientRect();
+    return {
+      left: Math.min(marquee.x0, marquee.x1) - cr.left + gridScroll.scrollLeft,
+      top: Math.min(marquee.y0, marquee.y1) - cr.top + gridScroll.scrollTop,
+      width: Math.abs(marquee.x1 - marquee.x0),
+      height: Math.abs(marquee.y1 - marquee.y0),
+    };
+  });
+
+  // Grid scroll offset (transient screen state, ADR-0024 #6). Decoupled into one-way channels so a scroll
+  // position — which produces a DOM event when written — can't feedback-loop the way a two-way bind would.
+  // `lastScrollTop` shadows the live offset (updated by BOTH user scroll and the programmatic restore) so
+  // the unmount backstop has a value to flush WITHOUT re-reading the DOM at teardown — the browser has
+  // already zeroed a scroll container's scrollTop by the time the cleanup runs (proven: a teardown-time
+  // el.scrollTop read returns 0 and would clobber the good live value).
+  let lastScrollTop = 0;
+  //  • report: onscroll → onscrolled(top) reports the live offset UP; App writes it into its per-slug map.
+  function onGridScroll() { if (gridScroll) { lastScrollTop = gridScroll.scrollTop; onscrolled?.(lastScrollTop); } }
+  //  • restore: the effect applies the `scrollTop` restore target DOWN into the DOM. It tracks ONLY
+  //    `scrollTop` (which App changes solely on enter), never a user scroll — so applying never fights an
+  //    active scroll and a user scroll never re-triggers a restore. The rAF defers the write until after
+  //    layout settles: a freshly-mounted grid whose plates haven't laid out yet would clamp the target to 0.
+  //    contain-intrinsic-size keeps scrollHeight stable so the offset sticks; lastScrollTop then mirrors the
+  //    applied value so an immediate leave-without-scrolling still flushes the restored offset, not 0.
+  $effect(() => {
+    const top = scrollTop; // re-applies ONLY when App hands us a new restore target (an exhibit enter)
+    if (mode !== "grid" || !gridScroll) return; // list owns its own scroll; nothing to restore into
+    const el = gridScroll;
+    requestAnimationFrame(() => {
+      if (el.isConnected && Math.abs(el.scrollTop - top) > 1) el.scrollTop = top;
+      lastScrollTop = el.isConnected ? el.scrollTop : top;
+    });
+  });
+  //  • backstop: the report path can miss a FINAL offset — setting scrollTop programmatically doesn't
+  //    dispatch 'scroll' at all, and real wheel/trackpad scrolling coalesces, so the last event before a
+  //    fast scroll-then-open can be dropped (or its live write suspend-guarded during the nav). This cleanup
+  //    runs synchronously on unmount (and on a mode switch) and flushes lastScrollTop — the last OBSERVED
+  //    offset, NOT a teardown-time DOM read (which is already 0). App writes it UNGUARDED (it fires inside
+  //    the suspended nav) — see flushOverviewScroll.
+  $effect(() => {
+    if (mode !== "grid" || !gridScroll) return;
+    return () => onscrollflush?.(lastScrollTop);
   });
 
   // Drag-to-reorder reading order — the overview's REASON TO EXIST (the published Grid display order /
-  // Narrative sequence, settable nowhere else; the object rail only navigates). Native HTML5 DnD so it's
-  // independent of the pan/zoom CSS transform and works identically in canvas + list modes. Emits the new
-  // id order; App reorders the canonical objects[] array. Future: section grouping reuses this primitive.
+  // Narrative sequence, settable nowhere else; the object rail only navigates). Native HTML5 DnD, working
+  // identically in grid + list modes. Emits the new id order; App reorders the canonical objects[] array.
+  // Future: section grouping reuses this primitive.
   // START/END sentinels + moveBlock live in overview-selection.ts now (ONE definition, shared with the
   // pure tests). A drag moves the WHOLE selection when the grabbed plate is selected, else just that plate
   // (a 1-element block) — moveBlock preserves canonical relative order and subsumes the old first-position
@@ -364,13 +405,6 @@
     dragId = null; overId = null;
     if (!sameOrder(cur, next)) {
       onreorder(next); // skip a no-op drop — no spurious persist + folder mirror
-      // First SUCCESSFUL drag (an actual reorder, not a no-op drop) dismisses the pan/zoom legend
-      // permanently for the mode it happened IN (canvas-first-use.ts LegendMode, Archie-adae review) —
-      // a reorder demonstrated via the list row grip no longer marks the CANVAS legend seen, since the
-      // user never saw it. `mode` is read live here (not the mount-time seed), so it reflects whichever
-      // UI's drag handlers actually fired this commit.
-      markLegendSeen(mode);
-      if (mode === "canvas" && showLegend) showLegend = false;
     }
   }
   const commitReorder = (beforeId: string | null) => commit(beforeId ?? END);
@@ -403,7 +437,7 @@
     const dropped = dropAnnouncement(objectLabel(id), moveState);
     const next = moveState.order;
     const cur = objects.map((o) => o.id);
-    if (!sameOrder(cur, next)) { onreorder(next); markLegendSeen(mode); } // same commit path as a drag drop
+    if (!sameOrder(cur, next)) { onreorder(next); } // same commit path as a drag drop
     moveState = null;
     announce = dropped;
     void refocusGrip(id);
@@ -468,8 +502,8 @@
 
 <main class="overview">
   <!-- One mounted polite live region for keyboard move-mode position announcements (docs §1). Stays in the
-       DOM always (text-toggled, never {#if}-mounted) so AT reliably announces each change — the same lesson
-       the .reorder-state indicator below already follows. Visually hidden; screen-reader only. -->
+       DOM always (text-toggled, never {#if}-mounted) so AT reliably announces each change (some AT only
+       announce a CHANGE to existing content, not a region that appears already-populated). Visually hidden. -->
   <p class="sr-only" role="status" aria-live="polite">{announce}</p>
   <!-- Exhibit-scale header: where you are + the exhibit's reading-intent + the canvas/list switch. -->
   <header>
@@ -495,7 +529,7 @@
       aria-label={`Details — ${title && title.trim() ? title : "Exhibit"}`}
       >✎ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
     <div class="viewtoggle" role="group" aria-label="Overview mode">
-      <button class:on={mode === "canvas"} onclick={() => viewPrefs.setOverviewMode("canvas")} title="Spatial canvas (pan + zoom)">Canvas</button>
+      <button class:on={mode === "grid"} onclick={() => viewPrefs.setOverviewMode("grid")} title="Scrollable grid">Grid</button>
       <button class:on={mode === "list"} onclick={() => viewPrefs.setOverviewMode("list")} title="Plain list">List</button>
     </div>
   </header>
@@ -504,9 +538,10 @@
     <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onremove} />
   </PropsDrawer>
 
-  <!-- Organizing toolbar (Phase 2): find (search titles) · sort (a VIEW, never a reorder) · select-mode
-       toggle. When something's selected, the same row carries the bulk actions. (The density "Size" slider
-       was removed here — Archie-a9fc chrome trim; canvas plates and list rows are now one fixed size.) -->
+  <!-- Organizing toolbar (Phase 2): find (search titles) · sort (a VIEW, never a reorder) · density (grid
+       mode only) · select-mode toggle. When something's selected, a distinct tray carries the bulk actions.
+       The density toggle is the 2-step Comfortable/Compact control (SCALE-GALLERY, mirroring the viewer
+       gallery wall) that replaced Archie-a9fc's removed "Size" slider — a discrete choice, not a slider. -->
   {#if objects.length > 0}
     <div class="toolbar">
       <label class="tb-search">
@@ -521,6 +556,15 @@
           <option value="recent">Recently annotated</option>
         </select>
       </label>
+      {#if mode === "grid"}
+        <!-- Density (grid only): a per-device preference driving the plate min-width AND the virtualization
+             intrinsic-size in lockstep (view-prefs overviewDensityMetrics). List mode keeps one fixed row
+             height, so it hides this control (same as the viewer wall showing density only in wall view). -->
+        <div class="tb-density" role="group" aria-label="Grid density">
+          <button type="button" class:on={density === "comfortable"} aria-pressed={density === "comfortable"} onclick={() => viewPrefs.setOverviewDensity("comfortable")}>Comfortable</button>
+          <button type="button" class:on={density === "compact"} aria-pressed={density === "compact"} onclick={() => viewPrefs.setOverviewDensity("compact")}>Compact</button>
+        </div>
+      {/if}
       <!-- Select toggle only — the row itself NEVER morphs (decision Archie-315e / audit W10: the old
            inline "N selected · Remove N · Clear" used to grow here beside Size/Sort). Entering select-mode
            now slides in a DISTINCT bottom tray (.selection-tray below) that carries the bulk actions;
@@ -579,25 +623,33 @@
     {/if}
   {/if}
 
-  {#if mode === "canvas"}
-    <div
-      class="viewport"
-      bind:this={viewport}
-      onwheel={onWheel}
+  {#if mode === "grid"}
+    <!-- Reorderability guidance (mirrors .list-hint): the accurate reason drag is blocked (search/sort), or
+         the drag instruction. Always-relevant, so it's a standing line, not first-use chrome — the retired
+         canvas's dismissible pan/zoom legend + separate reorder-state box collapse into this one line. -->
+    <p class="grid-hint">{reorderMessage || (hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a media item to set the reading order.")}</p>
+    <!-- Scrollable, virtualized grid (SCALE-GALLERY): a normal overflow-y scroll region, NOT a pan/zoom
+         viewport. The container carries only the marquee pointer handlers (select-mode background
+         rubber-band) + the scroll-position report; the roving-tabindex keydown lives on the plate BUTTONS
+         (real interactive elements), so the APG Grid role stays scoped to the LIST (docs §1).
+         role="group" (NOT application): docs/research/a11y-interactions.md condemns role="application" here
+         — it would suppress the screen-reader browse mode over the whole plate grid (the primary content
+         surface) at all times. A group is an honest labelled container of the plate buttons. The marquee
+         has a keyboard equivalent (Shift+Arrow range-select on the plates), so its pointer-only handlers are
+         the ignore-able case the codebase treats as such, not a restructure — the targeted svelte-ignore
+         below is scoped to exactly this element. -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div class="grid-scroll" bind:this={gridScroll}
+      role="group" aria-label="Media items — reading order"
+      onscroll={onGridScroll}
       onpointerdown={onBgPointerDown}
       onpointermove={onBgPointerMove}
       onpointerup={onBgPointerUp}
-      onpointercancel={onBgPointerUp}
-      role="application"
-      aria-label="Exhibit canvas — drag to pan, scroll to zoom"
-    >
-      <!-- Canvas stays mouse/touch-primary (Archie-a9fc); the roving-tabindex keydown lives on the plate
-           BUTTONS themselves (real interactive elements — no static-element handler), not this container, so
-           the honest structure holds without forcing a grid role onto the spatial canvas (docs §1 scopes the
-           APG Grid triple to the LIST). -->
-      <div class="tableau" style={`transform: translate(${tx}px, ${ty}px) scale(${z});`}>
+      onpointercancel={onBgPointerUp}>
+      <div class="grid" style:--plate-w={densityMetrics.minCol} style:--plate-intrinsic={densityMetrics.intrinsic}>
         <!-- Leading drop zone: the ONLY way to express "insert before the first object" (Archie-1933).
-             Inert unless a drag is active and the dragged plate isn't already first. -->
+             Inert unless a drag is active and the dragged plate isn't already first. Deliberately OUTSIDE
+             the content-visibility scope (a reserved-height sentinel would break the insert-line). -->
         <div class="dropstart" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
           ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
           ondrop={(e) => { e.preventDefault(); commitToStart(); }}
@@ -632,12 +684,12 @@
               </span>
             </button>
             <!-- Per-plate pencil (Archie-79be): edit this media item's details without opening it. A SIBLING
-                 of the plate button (no button-in-button); stops pointerdown/click so it neither pans the
-                 canvas nor opens the object. The ONE "Details" affordance (Archie-3e0a / Archie-ebf4): tight
+                 of the plate button (no button-in-button); stops pointerdown/click so it neither starts a
+                 marquee nor opens the object. The ONE "Details" affordance (Archie-3e0a / Archie-ebf4): tight
                  space, so pencil-alone, visible tooltip always "Details" — .details-pencil (atmosphere.css)
                  is the shared look every card/plate/row pencil uses — but aria-label carries the per-item
-                 scope (label-in-name: starts with "Details", then the item) so a canvas full of plates
-                 stays distinguishable to screen-reader users. -->
+                 scope (label-in-name: starts with "Details", then the item) so a grid full of plates stays
+                 distinguishable to screen-reader users. -->
             <button class="plate-edit details-pencil" title="Details" aria-label={`Details — ${o.label}`}
               onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); oneditobject(o.id); }}>✎</button>
           </div>
@@ -652,57 +704,20 @@
         </button>
       </div>
 
-      <!-- Marquee rubber-band (select-mode background drag). Viewport-local coords; pointer-events off so it
-           never eats the drag it visualizes. -->
+      <!-- Marquee rubber-band (select-mode background drag). Content-space coords (scrolls with the plates);
+           pointer-events off so it never eats the drag it visualizes. -->
       {#if marqueeRect}
         <div class="marquee" aria-hidden="true" style={`left:${marqueeRect.left}px; top:${marqueeRect.top}px; width:${marqueeRect.width}px; height:${marqueeRect.height}px;`}></div>
       {/if}
-
-      <!-- Pan/zoom affordances: a top legend NAMES the gestures, an edge vignette implies space beyond the
-           frame, and the zoom cluster shows the live % — together signalling "this is a movable canvas".
-           The legend + hint are FIRST-USE-ONLY (Archie-a9fc chrome trim): they teach the gesture once, then
-           hide permanently once the user has demonstrated it (a successful drag / a plate open). -->
-      <div class="edges" aria-hidden="true"></div>
-      {#if showLegend}
-        <div class="canvas-legend" aria-hidden="true">
-          <!-- Drag-legend disambiguation (staging spec §6): once a narrative exists, drag here no longer sets
-               "the order visitors see" — the SECTION order does. Demote drag to the fallback grid order.
-               Omitted entirely when !reorderable — teaching a gesture that's currently disabled would be
-               wrong; the persistent .reorder-state indicator below covers that case instead (Archie-adae:
-               the legend teaches ONCE, reorderability is a standing state, the two are no longer one span). -->
-          {#if reorderable}
-            <span class="g lead"><span class="ico">⇅</span> {hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a media item to set the reading order"}</span>
-            <span class="dot">·</span>
-          {/if}
-          <span class="g"><span class="ico">✥</span> Drag the canvas to pan</span>
-          <span class="dot">·</span>
-          <span class="g"><span class="ico">⊙</span> Scroll to zoom</span>
-        </div>
-      {/if}
-      <!-- Reorderability STATE (Archie-adae review — split from the retired-after-first-use teaching
-           legend above): always-relevant, so it's not a dismissible tip — it simply tracks whether search
-           or sort is currently blocking drag-to-reorder, appearing/disappearing with that condition. Lives
-           near the toolbar's search/sort controls (top-left) rather than under the pan/zoom legend
-           (top-centre), so it never collides with — or gets mistaken for — the first-use chrome (the
-           .reorder-state max-width clamp below keeps it clear of the centred legend at narrow widths too).
-           role "status" (not aria-hidden, unlike the legend) so screen readers hear it the moment
-           reordering is actually disabled, not just see a color change. The element itself stays MOUNTED
-           always — only its text toggles empty ↔ message — rather than {#if}-mounting/unmounting it: some
-           assistive tech only announces a live region for a change to EXISTING content, not one that
-           appears with content already in it (review NIT). reorderMessage is "" while reorderable, so it
-           renders nothing visible; class:visible drives the opacity so an empty status never paints a box. -->
-      <p class="reorder-state" class:visible={!!reorderMessage} role="status">{reorderMessage}</p>
-      <div class="zoomctl" role="group" aria-label="Zoom">
-        <button class="fit" onclick={fit} title="Reset to 100%">Fit</button>
-        <span class="pct" aria-live="polite">{Math.round(z * 100)}%</span>
-      </div>
-      {#if showHint}
-        <p class="hint">Click a media item to open and add notes</p>
-      {/if}
     </div>
+    <!-- First-use "click to open" hint (canvas-first-use.ts): teaches the open gesture once, then hides
+         permanently after the first plate open. A sibling under the scroll region so it stays visible. -->
+    {#if showHint}
+      <p class="hint">Click a media item to open and add notes</p>
+    {/if}
   {:else}
-    <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
-         drag-to-reorder — a vertical list is the most legible place to set sequence. -->
+    <!-- List mode: the same media in a single vertical column — the most legible place to set sequence, and
+         the home of the keyboard move-mode grip. Same drag-to-reorder as the grid. -->
     <p class="list-hint">{reorderMessage || (hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order.")}</p>
     <!-- The honest APG Grid triple (docs/research/a11y-interactions.md §1): rows-with-interactive-children
          are a Grid, not a Listbox — this container is role="grid", each media row is role="row", and its
@@ -779,8 +794,8 @@
 
   <!-- Selection tray (decision Archie-315e, closes audit W10). The toolbar above NEVER morphs — this is a
        DISTINCT surface that slides in only while select-mode is active ("appears-when-real": the element
-       itself is mount/unmount via {#if}, not just opacity-toggled — unlike .reorder-state above, a toolbar
-       doesn't need that live-region nuance). Entering select-mode (the toolbar toggle, OR starting a
+       itself is mount/unmount via {#if}, not just opacity-toggled — unlike the always-mounted #move-live
+       region above, a toolbar doesn't need that live-region nuance). Entering select-mode (the toolbar toggle, OR starting a
        marquee — background-drag-to-marquee only fires once already in select-mode, so it lands here too)
        shows the tray; Done (same onselectmode as the toolbar toggle) or the app's Esc ladder
        (App.svelte onGlobalKey "Phase 2 rungs": clears the selection first, THEN exits select-mode) leaves
@@ -854,35 +869,28 @@
   .viewtoggle button { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer; padding: 6px var(--space-3); background: transparent; color: var(--ink-canvas-muted); border: none; transition: color 160ms ease, background 160ms ease; } /* 6px v-pad -> 25px hit box (Fitts) */
   .viewtoggle button.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: inset 0 -2px 0 var(--accent); }
 
-  /* The canvas: a clipped viewport holding the pan/zoomed tableau. grab cursor signals "this is a space". */
-  .viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; cursor: grab; touch-action: none; background: var(--focal-bloom); }
-  .viewport:active { cursor: grabbing; }
-  /* Plates centred in the viewport (few objects sit in the middle, not jammed top-left); pan/zoom transforms the whole. */
-  .tableau { display: flex; flex-wrap: wrap; gap: var(--space-6); justify-content: center; align-content: center; min-width: 100%; min-height: 100%; box-sizing: border-box; padding: var(--space-10); transform-origin: 0 0; }
+  /* Density toggle (grid only) — the 2-step Comfortable/Compact segmented control, matching the .viewtoggle
+     look so the toolbar reads as one family. */
+  .tb-density { display: inline-flex; border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); overflow: hidden; }
+  .tb-density button { font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.12em; cursor: pointer; padding: 6px var(--space-3); background: transparent; color: var(--ink-canvas-muted); border: none; transition: color 160ms ease, background 160ms ease; }
+  .tb-density button.on { background: var(--accent-muted); color: var(--ink-canvas-primary); box-shadow: inset 0 -2px 0 var(--accent); }
 
-  /* Edge vignette — the frame reads as a window onto a larger surface, not a bounded page; soft warm haze. */
-  .edges { position: absolute; inset: 0; pointer-events: none; background: var(--vignette); }
-  /* Gesture legend — names the two non-obvious gestures, quietly, top-centre. */
-  .canvas-legend { position: absolute; top: var(--space-4); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-4); font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); pointer-events: none; }
-  .canvas-legend .g { display: inline-flex; align-items: center; gap: var(--space-1); }
-  .canvas-legend .ico { color: var(--accent-2); font-size: 0.95rem; }
-  .canvas-legend .dot { color: var(--ink-canvas-muted); }
-  /* Reorderability state (Archie-adae) — a standing status label, deliberately quieter/flatter than the
-     dismissible-looking .canvas-legend bubble (a plain border, no shadow-lift, muted ink not secondary):
-     it never goes away on its own, so it shouldn't read as a tip you can dismiss. Top-left, opposite the
-     top-centre legend and the bottom-right zoom cluster, so the two never collide when both show at once
-     (a first-time user who searches before ever dragging). The element STAYS MOUNTED even when empty
-     (review NIT: an {#if}-toggled role="status" isn't reliably announced by all AT, since some only
-     announce a CHANGE to existing content, not new content arriving already-populated) — .visible is an
-     opacity toggle, not a mount toggle, so it never paints a visible empty box either. max-width clamps
-     against the VIEWPORT's own width (not a fixed rem), shrinking below ~950-1000px canvas width so this
-     top-left label can't grow wide enough to run into the horizontally-centred legend (review NIT).
-     clamp()'s 8rem floor keeps max-width from going negative/zero on a very narrow viewport (calc(50% -
-     12rem) alone would). */
-  .reorder-state { position: absolute; top: var(--space-4); left: var(--space-6); margin: 0; max-width: clamp(8rem, calc(50% - 12rem), 18rem); padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.1em; line-height: 1.4; color: var(--ink-canvas-muted); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); pointer-events: none; opacity: 0; transition: opacity 140ms ease; }
-  .reorder-state.visible { opacity: 1; }
+  /* Grid mode: a plain scrollable region (NOT a pan/zoom viewport) holding plates that flow, wrap, and
+     scroll vertically. content-visibility per plate (below) virtualizes off-screen plates so large exhibits
+     stay cheap — the retired canvas rendered every plate eagerly under one CSS transform. */
+  /* overflow-anchor: none — the plates are content-visibility:auto, so their real heights only finalize as
+     they paint; the browser's scroll anchoring would otherwise nudge scrollTop by the estimate error right
+     after a restore (measured ~15px), fighting the exact offset we just set. Turning it off keeps the
+     restored (and user's) scrollTop stable as off-screen plates settle. */
+  .grid-scroll { position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; padding: var(--space-6); background: var(--focal-bloom); }
+  /* Flex-wrap of fixed-width plates; --plate-w (density) sets the width, so a Compact column packs more per
+     row. flex-start (not centre) reads as a browsable grid, not a small centred cluster. */
+  .grid { display: flex; flex-wrap: wrap; gap: var(--space-6); align-content: flex-start; }
+  /* Reorder guidance — a quiet standing line above the grid (mirrors .list-hint); the accurate blocked
+     reason (search/sort) or the drag instruction. Replaces the retired canvas legend + reorder-state box. */
+  .grid-hint { max-width: 100%; margin: var(--space-4) var(--space-6) 0; padding: 0; font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
 
-  .plate { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: 12.5rem; cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); transition: transform 180ms ease, box-shadow 180ms ease; }
+  .plate { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: var(--plate-w, 12.5rem); cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); transition: transform 180ms ease, box-shadow 180ms ease; }
   .plate:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
   .plate .order { font-family: var(--font-mono); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
   .frame { position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-canvas-overlay); display: flex; align-items: center; justify-content: center; }
@@ -897,12 +905,17 @@
   .add-frame { background: transparent; border: 1px dashed var(--border-canvas-emphasis); }
   .plate[draggable="true"] { cursor: grab; }
   .plate[draggable="true"]:active { cursor: grabbing; }
-  /* Drag-to-reorder feedback (canvas): dragged plate dims; drop target shows a quiet signal insert-before bar. */
+  /* Drag-to-reorder feedback (grid): dragged plate dims; drop target shows a quiet signal insert-before bar. */
   .plate-wrap.dragging { opacity: 0.4; } /* dim the whole wrapper (plate + pencil) while it's the drag source */
   .plate.over { box-shadow: var(--shadow-lift-low), -4px 0 0 var(--accent); }
   /* Per-plate pencil (Archie-79be): a quiet glyph over the plate's top-right corner. The wrapper is both the
-     flex/drag child AND the positioning context. Faint at rest (still visible on touch), bright on hover/focus. */
-  .plate-wrap { position: relative; }
+     flex/drag child AND the positioning context. Faint at rest (still visible on touch), bright on hover/focus.
+     PERF (SCALE-GALLERY): content-visibility skips layout/paint/decode of off-screen plates in a large grid —
+     the same treatment the list rows and GalleryWall's `.wall > li` use. Explicit width (from --plate-w) keeps
+     wrapping stable while skipped; contain-intrinsic-size reserves the plate height (--plate-intrinsic) so the
+     scrollbar never jumps. Both come from the density metrics IN LOCKSTEP (view-prefs), so a narrower Compact
+     column always pairs with a shorter estimate. */
+  .plate-wrap { position: relative; width: var(--plate-w, 12.5rem); content-visibility: auto; contain-intrinsic-size: auto var(--plate-intrinsic, 15.5rem); }
   /* Position + idle-visibility only — the pencil's own look is the shared .details-pencil
      (atmosphere.css), so it's identical to the LibraryHome card pencil and the list-row pencil below. */
   .plate-edit {
@@ -912,21 +925,17 @@
   .plate-wrap:hover .plate-edit, .plate-wrap:focus-within .plate-edit { opacity: 1; }
   .plate-edit:focus-visible { opacity: 1; }
   .plate.add.over { border-color: var(--accent); border-style: solid; color: var(--accent); }
-  .canvas-legend .lead { color: var(--ink-canvas-secondary); }
-  /* Leading "insert before first" drop zone (canvas): a thin column that only takes space while armed;
-     shows the same accent insert bar as a plate's .over state. */
+  /* Leading "insert before first" drop zone (grid): a thin column that only takes space while armed; shows
+     the same accent insert bar as a plate's .over state. Not virtualized (no content-visibility) — a
+     reserved-height sentinel would break the insert-line. */
   .dropstart { width: 0; align-self: stretch; border-radius: var(--radius-sm); transition: width 120ms ease; }
   .dropstart.armed { width: 1.5rem; border: 1px dashed var(--border-canvas-emphasis); }
   .dropstart.over { border-color: var(--accent); border-style: solid; box-shadow: 4px 0 0 var(--accent); }
 
-  .zoomctl { position: absolute; bottom: var(--space-5); right: var(--space-5); display: flex; gap: 1px; background: var(--border-canvas); border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low); overflow: hidden; }
-  .zoomctl button { font-family: var(--font-display); font-weight: 400; font-size: 1.1rem; cursor: pointer; min-width: 2.25rem; padding: var(--space-2) var(--space-2); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: none; transition: color 160ms ease, background 160ms ease; }
-  .zoomctl .fit { font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 0.14em; font-size: var(--text-ui-sm); }
-  .zoomctl button:hover { color: var(--ink-canvas-primary); background: var(--surface-canvas-overlay); }
-  .zoomctl .pct { display: inline-flex; align-items: center; justify-content: center; min-width: 3rem; font-family: var(--font-mono); font-size: var(--text-ui-xs); color: var(--ink-canvas-secondary); background: var(--surface-canvas-raised); }
-  .hint { position: absolute; bottom: var(--space-5); left: var(--space-6); margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); pointer-events: none; }
+  /* First-use "click to open" hint — a quiet line under the grid (in normal flow, always visible). */
+  .hint { margin: var(--space-3) var(--space-6) var(--space-5); font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); pointer-events: none; }
 
-  /* 1b list fallback. */
+  /* List mode. */
   .list-hint { max-width: 48rem; margin: var(--space-6) auto 0; padding: 0 var(--space-6); font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
   .list { list-style: none; margin: 0; padding: var(--space-4) var(--space-6) var(--space-6); overflow-y: auto; flex: 1; max-width: 48rem; }
   .list > div { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
@@ -1001,15 +1010,15 @@
 
   /* Selection tray (Archie-315e / audit W10) — a DISTINCT bottom-centre surface, deliberately NOT part of
      the toolbar's flex flow (the toolbar never morphs — see the .toolbar rule above, unchanged by this
-     ticket). A REAL flex child of .overview (last, after the {#if mode}canvas/list{/if} block) — NOT a
-     position:absolute overlay: .viewport/.list are flex:1, so this sibling's own height comes out of
+     ticket). A REAL flex child of .overview (last, after the {#if mode}grid/list{/if} block) — NOT a
+     position:absolute overlay: .grid-scroll/.list are flex:1, so this sibling's own height comes out of
      THEIR share, reserving real space instead of floating on top of live plate content underneath it
      (verified in-browser: an earlier absolute-overlay version visually covered the last plate row —
      reserved flow space is the fix, matching how bottom bulk-action bars behave in Photos/Drive-shaped
      apps). tray-in plays on every mount (the tray is {#if selectMode}-gated — mount/unmount, not an
-     opacity toggle — so "exists only during selection" is structural, not just visual; unlike
-     .reorder-state above, this is a toolbar of live buttons, not a status announcement, so it doesn't
-     need to stay mounted for AT reasons). */
+     opacity toggle — so "exists only during selection" is structural, not just visual; unlike the
+     always-mounted #move-live region above, this is a toolbar of live buttons, not a status announcement,
+     so it doesn't need to stay mounted for AT reasons). */
   .selection-tray { align-self: center; display: flex; align-items: center; gap: var(--space-3); margin: var(--space-3) 0 0; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-mid); animation: tray-in 180ms ease; }
   @keyframes tray-in { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
   .tray-count { font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-canvas-secondary); white-space: nowrap; }
