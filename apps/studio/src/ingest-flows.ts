@@ -290,7 +290,10 @@ export function createIngestFlows(ctx: IngestContext) {
     );
     return { added: true };
   }
-  async function addFiles(files: FileList | null) {
+  // Accepts a FileList (drag-drop / file-input) OR a File[] (the create dialog's folder path in
+  // add-to-exhibit scope, Archie-56cf — folder files add straight INTO the current exhibit, no
+  // per-subfolder split, which is a new-exhibit concept). Array.from normalizes both.
+  async function addFiles(files: FileList | File[] | null) {
     if (!files) return;
     const list = Array.from(files);
     if (list.length === 0) return;
@@ -410,41 +413,41 @@ export function createIngestFlows(ctx: IngestContext) {
     }
     return { groups: groups.length };
   }
-  // IIIF manifest URL → exhibit (contributor-broadening ②, Archie-bc01): one paste bootstraps from any
-  // institutional IIIF collection. Objects reference the REMOTE images (service base preferred), so
-  // nothing is downloaded: the manifest's dims ride along and no OPFS bytes are written.
-  async function newExhibitFromManifest(url: string) {
+  // Fetch + cap + parse a IIIF manifest into a plan — the SHARED head of both manifest flows (new
+  // exhibit vs. add into the current one, Archie-56cf). ONE definition of the fetch/cap/parse so the
+  // into-exhibit path can't drift from the new-exhibit path (same drift the untrusted-archive seam
+  // guards against). Returns null AFTER surfacing the failure via ctx.alert — the callers just bail.
+  // Cap enforced twice (mirrors @render/core's fetchArchieLibraryBytes, a DIFFERENT trust boundary —
+  // see IIIF_MANIFEST_MAX_BYTES): first cheaply against a declared content-length before reading the
+  // body, then against the actual received size — a missing/lying header can't bypass it.
+  async function fetchManifestPlan(url: string): Promise<ManifestPlan | null> {
     const trimmed = url.trim();
-    if (!trimmed) return;
+    if (!trimmed) return null;
     let json: unknown;
     try {
       const resp = await fetch(trimmed);
-      if (!resp.ok) { console.error("IIIF fetch failed", resp.status, trimmed); ctx.alert("Couldn't open that link. Check the address and try again."); return; }
-      // Cap enforced twice (mirrors @render/core's fetchArchieLibraryBytes, a DIFFERENT trust boundary
-      // — see IIIF_MANIFEST_MAX_BYTES): first cheaply against a declared content-length before reading
-      // the body, then against the actual received size — a missing/lying header can't bypass it.
+      if (!resp.ok) { console.error("IIIF fetch failed", resp.status, trimmed); ctx.alert("Couldn't open that link. Check the address and try again."); return null; }
       const declared = Number(resp.headers.get("content-length"));
-      if (Number.isFinite(declared) && declared > IIIF_MANIFEST_MAX_BYTES) { ctx.alert("That IIIF link is too large to open here."); return; }
+      if (Number.isFinite(declared) && declared > IIIF_MANIFEST_MAX_BYTES) { ctx.alert("That IIIF link is too large to open here."); return null; }
       const buf = await resp.arrayBuffer();
-      if (buf.byteLength > IIIF_MANIFEST_MAX_BYTES) { ctx.alert("That IIIF link is too large to open here."); return; }
+      if (buf.byteLength > IIIF_MANIFEST_MAX_BYTES) { ctx.alert("That IIIF link is too large to open here."); return null; }
       json = JSON.parse(new TextDecoder().decode(buf));
     } catch {
       ctx.alert("Couldn't open that link. Check the address is correct and reachable.");
-      return;
+      return null;
     }
-    let plan: ManifestPlan;
     try {
-      plan = manifestToExhibit(json, trimmed);
+      return manifestToExhibit(json, trimmed);
     } catch (e) {
       console.error("IIIF manifest parse failed", e);
       ctx.alert(e instanceof ManifestImportError ? e.message : "Couldn't read that IIIF link — it doesn't look like a valid manifest.");
-      return;
+      return null;
     }
-    await ctx.newExhibit(plan.title);
-    // Pin the target slug right after creating it (tend Issue 7, ledgers/NEGSPACE.md): the per-object
-    // loop below awaits per object, and nothing blocks the user from navigating elsewhere mid-import —
-    // without pinning, a later object would silently land on whatever exhibit is now current.
-    const targetSlug = ctx.currentSlug();
+  }
+  // Append a plan's objects onto `targetSlug`. Pinned slug (tend Issue 7, ledgers/NEGSPACE.md): the
+  // per-object loop awaits per object, and nothing blocks the user from navigating elsewhere mid-import —
+  // without pinning, a later object would silently land on whatever exhibit is now current.
+  async function importManifestObjects(plan: ManifestPlan, targetSlug: string) {
     try {
       for (let i = 0; i < plan.objects.length; i++) {
         const o = plan.objects[i]!;
@@ -456,6 +459,25 @@ export function createIngestFlows(ctx: IngestContext) {
     } finally {
       ctx.setImportStatus(null);
     }
+  }
+  // IIIF manifest URL → NEW exhibit (contributor-broadening ②, Archie-bc01): one paste bootstraps from any
+  // institutional IIIF collection. Objects reference the REMOTE images (service base preferred), so
+  // nothing is downloaded: the manifest's dims ride along and no OPFS bytes are written.
+  async function newExhibitFromManifest(url: string) {
+    const plan = await fetchManifestPlan(url);
+    if (!plan) return;
+    await ctx.newExhibit(plan.title);
+    await importManifestObjects(plan, ctx.currentSlug());
+  }
+  // IIIF manifest URL → append into the CURRENT exhibit (Archie-56cf — the create dialog's IIIF path in
+  // add-to-exhibit scope). Same fetch/cap/parse + append as newExhibitFromManifest; the ONLY difference is
+  // it lands the manifest's pages on the open exhibit instead of minting a fresh one.
+  async function addManifestToExhibit(url: string) {
+    const targetSlug = ctx.currentSlug();
+    if (!exhibitBySlug(targetSlug)) return;
+    const plan = await fetchManifestPlan(url);
+    if (!plan) return;
+    await importManifestObjects(plan, targetSlug);
   }
   // CSV → notes bulk import (contributor-broadening ⑥ sub-cycle A, Archie-79c0): authors who live in
   // Excel/Sheets annotate THERE (object,x,y,w,h,comment[,tags][,reading]) and bulk-load through the
@@ -619,7 +641,7 @@ export function createIngestFlows(ctx: IngestContext) {
 
   return {
     imageDims, nextObjectId, appendObject, addObject, addMapObject, addObjectFromFile, addFiles,
-    newExhibitFromFolder, newExhibitFromManifest, importNotesCsv, importNotesWadm,
+    newExhibitFromFolder, newExhibitFromManifest, addManifestToExhibit, importNotesCsv, importNotesWadm,
     replaceProjectFrom, openZip,
   };
 }

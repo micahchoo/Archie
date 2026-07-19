@@ -21,9 +21,10 @@
   // the moment this dialog mounts, so opening it structurally closes the drawer. That is the ONE mechanism:
   // LibraryHome's openers no longer hand-close the other surface (removed as redundant, Archie-5968).
   import { tick } from "svelte";
+  import { lngLatToPixel, pixelToLngLat, type XyzTileSource } from "@render/core";
   import {
     type CreateSurfaceScope, type IiifStatus,
-    surfaceTitle, createActionLabel, offersStartEmpty,
+    surfaceTitle, createActionLabel, offersStartEmpty, offersMap,
     pickedFromFiles, emptyPathValid, folderPathValid, iiifPathValid, looksLikeUrl, previewManifest,
   } from "./create-exhibit-dialog.js";
   import { summarizeFolderFiles, folderGroupCount, flattenedRelativePaths, type FolderSummary } from "./folder-import.js";
@@ -41,10 +42,13 @@
     oncreate,
     oncreatefromfolder,
     oncreatefrommanifest,
+    onaddmap,
     onclose,
   }: {
     open: boolean;
-    /** Archie-beb6's scope parameter — only "new-exhibit" is wired/shipped by this ticket. */
+    /** Archie-beb6's scope parameter. "new-exhibit" (LibraryHome) mints a new exhibit; "add-to-exhibit"
+     *  (Archie-56cf: overview Add-media plate + editor "+ Add media") adds into an existing one and
+     *  reveals the Map path. */
     scope?: CreateSurfaceScope;
     /** Page-level folder drop (LibraryHome's drop target) hands the picked files straight in — the
      *  dialog opens already on the folder path with this folder summarized (Variant B's grafted
@@ -53,10 +57,13 @@
     oncreate: (title: string) => void;
     oncreatefromfolder: (files: File[]) => void;
     oncreatefrommanifest: (url: string) => void;
+    /** The Map path's submit (Archie-56cf — absorbed from the retired AddMapModal). Only fires in
+     *  add-to-exhibit scope (offersMap); wired to ingest-flows' addMapObject. */
+    onaddmap?: (m: { label: string; tileSource: XyzTileSource }) => void;
     onclose: () => void;
   } = $props();
 
-  type PathKind = "empty" | "folder" | "iiif";
+  type PathKind = "empty" | "folder" | "iiif" | "map";
   let activePath = $state<PathKind | null>(null);
   let dialogEl = $state<HTMLElement | null>(null);
 
@@ -83,6 +90,147 @@
   // alone already guarantees the DISCARD half of "cancels cleanly").
   let iiifAbort: AbortController | undefined;
 
+  // ── "Map" path (Archie-56cf) — absorbed from the retired AddMapModal.svelte. Pick a CURATED basemap
+  // (terms permit static-site embedding, attribution baked in), set the bounded extent on a pan/zoom
+  // world locator, name it → emits a tileSource descriptor + label to onaddmap (= ingest-flows'
+  // addMapObject, the exact flow AddMapModal's submit used). The locator is a pointer-only VISUAL
+  // enhancement over the real numeric W/S/E/N inputs + region presets; a11y lives on those (the svg is
+  // aria-hidden decoration, its drag dispatched from the role="application" container — no per-svg/rect
+  // handlers, so the 3 warnings the old locator carried die with the file rather than being re-absorbed).
+  const PROVIDERS = [
+    { id: "osm", name: "OpenStreetMap", template: "https://tile.openstreetmap.org/{z}/{x}/{y}.png", attribution: "© OpenStreetMap contributors", maxZoom: 19 },
+    { id: "carto-light", name: "Carto — Light (Positron)", template: "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png", attribution: "© OpenStreetMap contributors, © CARTO", maxZoom: 19 },
+    { id: "carto-dark", name: "Carto — Dark (Dark Matter)", template: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png", attribution: "© OpenStreetMap contributors, © CARTO", maxZoom: 19 },
+  ];
+  const REGIONS: Array<{ name: string; bounds: [number, number, number, number] }> = [
+    { name: "Whole world", bounds: [-180, -85, 180, 85] },
+    { name: "Europe", bounds: [-11, 35, 32, 60] },
+    { name: "Greater London", bounds: [-0.51, 51.28, 0.33, 51.69] },
+    { name: "Contiguous US", bounds: [-125, 24, -66, 50] },
+  ];
+  const MAP_DEFAULTS = { west: -0.51, south: 51.28, east: 0.33, north: 51.69, maxZoom: 14, locZoom: 8, locCenter: { lng: -0.09, lat: 51.485 } };
+
+  let providerId = $state(PROVIDERS[0]!.id);
+  let mapLabel = $state("");
+  let west = $state(MAP_DEFAULTS.west), south = $state(MAP_DEFAULTS.south), east = $state(MAP_DEFAULTS.east), north = $state(MAP_DEFAULTS.north);
+  let maxZoom = $state(MAP_DEFAULTS.maxZoom);
+  let useCustom = $state(false);
+  let customTemplate = $state("");
+  let customAttribution = $state("");
+
+  const provider = $derived(PROVIDERS.find((p) => p.id === providerId) ?? PROVIDERS[0]!);
+  const templateOk = $derived(!useCustom || (/\{z\}/.test(customTemplate) && /\{x\}/.test(customTemplate) && /\{y\}/.test(customTemplate)));
+  const mapValid = $derived(east > west && north > south && maxZoom >= 1 && maxZoom <= 22 && templateOk);
+
+  // Locator (mini slippy map): pixel↔lng/lat at a chosen zoom; pan + zoom for precise clamping.
+  const S = 320; // locator viewport (px)
+  const clampN = (v: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, v));
+  const ext = (z: number): { tileSize: number; maxZoom: number } => ({ tileSize: 256, maxZoom: z });
+  const llToWorld = (lng: number, lat: number, z: number) => lngLatToPixel({ lng, lat }, ext(z));
+  const worldToLL = (x: number, y: number, z: number) => pixelToLngLat({ x, y }, ext(z));
+
+  let locZoom = $state(MAP_DEFAULTS.locZoom);
+  let locCenter = $state<{ lng: number; lat: number }>({ ...MAP_DEFAULTS.locCenter });
+
+  const origin = $derived.by(() => { const c = llToWorld(locCenter.lng, locCenter.lat, locZoom); return { x: c.x - S / 2, y: c.y - S / 2, z: locZoom }; });
+  const screenToLL = (sx: number, sy: number) => worldToLL(origin.x + sx, origin.y + sy, origin.z);
+  const llToScreen = (lng: number, lat: number) => { const w = llToWorld(lng, lat, origin.z); return { x: w.x - origin.x, y: w.y - origin.y }; };
+  const tiles = $derived.by(() => {
+    const z = origin.z, n = 2 ** z;
+    const t = useCustom ? customTemplate : provider.template;
+    const out: Array<{ key: string; url: string; left: number; top: number }> = [];
+    for (let tx = Math.floor(origin.x / 256); tx <= Math.floor((origin.x + S) / 256); tx++) {
+      for (let ty = Math.floor(origin.y / 256); ty <= Math.floor((origin.y + S) / 256); ty++) {
+        if (tx < 0 || ty < 0 || tx >= n || ty >= n) continue;
+        const url = t.replace("{z}", String(z)).replace("{x}", String(tx)).replace("{y}", String(ty));
+        if (/\{[zxy]\}/.test(url)) continue; // unfilled (invalid custom template) → skip
+        out.push({ key: `${z}/${tx}/${ty}`, url, left: tx * 256 - origin.x, top: ty * 256 - origin.y });
+      }
+    }
+    return out;
+  });
+  const boxPx = $derived.by(() => { const nw = llToScreen(west, north); const se = llToScreen(east, south); return { x: nw.x, y: nw.y, w: se.x - nw.x, h: se.y - nw.y }; });
+
+  type DragMode = "move" | "pan" | "nw" | "ne" | "sw" | "se";
+  const HANDLES: Array<{ m: DragMode; fx: (b: { x: number; y: number; w: number; h: number }) => number; fy: (b: { x: number; y: number; w: number; h: number }) => number }> = [
+    { m: "nw", fx: (b) => b.x, fy: (b) => b.y },
+    { m: "ne", fx: (b) => b.x + b.w, fy: (b) => b.y },
+    { m: "sw", fx: (b) => b.x, fy: (b) => b.y + b.h },
+    { m: "se", fx: (b) => b.x + b.w, fy: (b) => b.y + b.h },
+  ];
+  let locatorEl = $state<HTMLDivElement | null>(null);
+  let drag = $state<{ mode: DragMode; ox: number; oy: number } | null>(null);
+  function ptr(e: MouseEvent): { x: number; y: number } { const r = locatorEl!.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  function order(): void { if (west > east) [west, east] = [east, west]; if (south > north) [south, north] = [north, south]; }
+  function dragDown(mode: DragMode, e: PointerEvent): void { if (!locatorEl) return; e.preventDefault(); locatorEl.setPointerCapture(e.pointerId); const p = ptr(e); drag = { mode, ox: p.x, oy: p.y }; }
+  // The ONE pointerdown for the whole locator: hit-test which drag mode the press starts (handle / box
+  // move / pan), so the svg + rects stay handler-free decoration (their a11y warnings die). Mirrors the
+  // old per-element dispatch exactly — container coords == the inset:0 svg's coords.
+  function locatorDown(e: PointerEvent): void {
+    if (!locatorEl || (e.target as HTMLElement).closest(".zoom-ctrls")) return; // let the zoom buttons act
+    const p = ptr(e), b = boxPx;
+    for (const h of HANDLES) {
+      if (Math.abs(p.x - h.fx(b)) <= 6 && Math.abs(p.y - h.fy(b)) <= 6) { dragDown(h.m, e); return; }
+    }
+    const inBox = p.x >= Math.min(b.x, b.x + b.w) && p.x <= Math.max(b.x, b.x + b.w) && p.y >= Math.min(b.y, b.y + b.h) && p.y <= Math.max(b.y, b.y + b.h);
+    dragDown(inBox ? "move" : "pan", e);
+  }
+  function dragMove(e: PointerEvent): void {
+    if (!drag || !locatorEl) return;
+    const p = ptr(e);
+    if (drag.mode === "pan") {
+      const c = llToWorld(locCenter.lng, locCenter.lat, origin.z);
+      locCenter = worldToLL(c.x - (p.x - drag.ox), c.y - (p.y - drag.oy), origin.z);
+      drag.ox = p.x; drag.oy = p.y;
+    } else if (drag.mode === "move") {
+      const nw = llToScreen(west, north), se = llToScreen(east, south);
+      const dx = p.x - drag.ox, dy = p.y - drag.oy;
+      const a = screenToLL(nw.x + dx, nw.y + dy), bb = screenToLL(se.x + dx, se.y + dy);
+      west = a.lng; north = a.lat; east = bb.lng; south = bb.lat;
+      drag.ox = p.x; drag.oy = p.y;
+    } else {
+      const ll = screenToLL(p.x, p.y);
+      if (drag.mode.includes("w")) west = ll.lng;
+      if (drag.mode.includes("e")) east = ll.lng;
+      if (drag.mode.includes("n")) north = ll.lat;
+      if (drag.mode.includes("s")) south = ll.lat;
+      order();
+    }
+  }
+  function dragUp(): void { drag = null; }
+  // Zoom keeping the geographic point under (mx,my) fixed on screen — "zoom at mouse", not at centre.
+  function zoomAt(mx: number, my: number, d: number): void {
+    const nz = clampN(locZoom + d, 0, Math.min(provider.maxZoom, 18));
+    if (nz === locZoom) return;
+    const g = screenToLL(mx, my);
+    const gw = llToWorld(g.lng, g.lat, nz);
+    locZoom = nz;
+    locCenter = worldToLL(gw.x - mx + S / 2, gw.y - my + S / 2, nz);
+  }
+  const zoomBy = (d: number): void => zoomAt(S / 2, S / 2, d); // the ± buttons zoom at centre
+  function onWheel(e: WheelEvent): void { e.preventDefault(); const p = ptr(e); zoomAt(p.x, p.y, e.deltaY < 0 ? 1 : -1); }
+  function selectCurrent(): void { const nw = screenToLL(0, 0), se = screenToLL(S, S); west = nw.lng; north = nw.lat; east = se.lng; south = se.lat; }
+  function fitToBox(): void {
+    locCenter = { lng: (west + east) / 2, lat: (south + north) / 2 };
+    for (let z = 18; z >= 0; z--) {
+      const w = llToWorld(east, south, z).x - llToWorld(west, north, z).x;
+      const h = llToWorld(west, south, z).y - llToWorld(east, north, z).y;
+      if (w <= S * 0.85 && h <= S * 0.85) { locZoom = z; return; }
+    }
+    locZoom = 0;
+  }
+  function applyRegion(b: [number, number, number, number]) { [west, south, east, north] = b; fitToBox(); }
+
+  function submitMap() {
+    if (!mapValid) return;
+    const base = { kind: "xyz" as const, tileSize: 256, minZoom: 0, maxZoom, bounds: [west, south, east, north] as [number, number, number, number] };
+    const tileSource: XyzTileSource = useCustom
+      ? { ...base, template: customTemplate.trim(), ...(customAttribution.trim() ? { attribution: customAttribution.trim() } : {}) }
+      : { ...base, template: provider.template, attribution: provider.attribution };
+    onaddmap?.({ label: mapLabel.trim() || `${provider.name} map`, tileSource });
+    close();
+  }
+
   function resetAll() {
     activePath = null;
     title = "";
@@ -98,6 +246,17 @@
     clearTimeout(iiifTimer);
     iiifAbort?.abort();
     iiifAbort = undefined;
+    // Map path
+    providerId = PROVIDERS[0]!.id;
+    mapLabel = "";
+    west = MAP_DEFAULTS.west; south = MAP_DEFAULTS.south; east = MAP_DEFAULTS.east; north = MAP_DEFAULTS.north;
+    maxZoom = MAP_DEFAULTS.maxZoom;
+    useCustom = false;
+    customTemplate = "";
+    customAttribution = "";
+    locZoom = MAP_DEFAULTS.locZoom;
+    locCenter = { ...MAP_DEFAULTS.locCenter };
+    drag = null;
   }
 
   function applyFolderFiles(files: File[]) {
@@ -272,10 +431,17 @@
           <span class="p-title">From a IIIF link</span>
           <span class="p-desc">Paste a IIIF link (from a library or museum site) and Archie fetches its pages for you.</span>
         </button>
+        {#if offersMap(scope)}
+          <button type="button" class="path-card" onclick={() => selectPath("map")}>
+            <span class="glyph" aria-hidden="true">◎</span>
+            <span class="p-title">A map</span>
+            <span class="p-desc">Add a world map as a place to annotate — pick a basemap and the area visitors see.</span>
+          </button>
+        {/if}
       </div>
     {:else}
       <div class="chooser-head">
-        <h2>{activePath === "empty" ? "Start empty" : activePath === "folder" ? "From a media folder" : "From a IIIF link"}</h2>
+        <h2>{activePath === "empty" ? "Start empty" : activePath === "folder" ? "From a media folder" : activePath === "iiif" ? "From a IIIF link" : "Add a map"}</h2>
         <button type="button" class="close-x" onclick={close} aria-label="Close">×</button>
       </div>
       <button type="button" class="back-link" onclick={backToMenu}>‹ Back</button>
@@ -301,9 +467,11 @@
           </div>
           {#if folderSummary.total === 0}
             <p class="empty-folder-note">No images, audio, or video found in that folder.</p>
-          {:else if folderGroups > 1}
+          {:else if folderGroups > 1 && scope.kind === "new-exhibit"}
             <!-- Progressive disclosure (Archie-8482): only shown once the folder actually holds
-                 media subfolders — a flat folder never sees a choice with nothing to choose between. -->
+                 media subfolders — a flat folder never sees a choice with nothing to choose between.
+                 New-exhibit scope only: per-subfolder split makes SEVERAL exhibits, which is
+                 meaningless when adding INTO one exhibit (Archie-56cf) — there, every file lands here. -->
             <fieldset class="grouping-choice">
               <!-- Lead with the outcome, not a subfolder count (code review S2): folderGroups is
                    planFolderImportGroups().length, which also counts a loose-top-level-files group
@@ -343,7 +511,7 @@
           <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
           <button type="button" class="btn btn-primary" disabled={!folderPathValid(folderSummary)} onclick={submitFolder}>{createActionLabel(scope)}</button>
         </div>
-      {:else}
+      {:else if activePath === "iiif"}
         <div class="field" class:has-success={iiifStatus === "valid"} class:has-error={iiifStatus === "invalid"}>
           <label class="f-label" for="iiifUrl">IIIF link</label>
           <input
@@ -373,6 +541,62 @@
         <div class="path-actions">
           <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
           <button type="button" class="btn btn-primary" disabled={!iiifPathValid(iiifStatus)} onclick={submitIiif}>{createActionLabel(scope)}</button>
+        </div>
+      {:else}
+        <!-- Map path (Archie-56cf, absorbed from AddMapModal). Basemap + name + bounded extent. The
+             pan/zoom locator is a pointer-only VISUAL over the real numeric edges below — keyboard users
+             set the area via the presets + W/S/E/N inputs, so the locator's svg is aria-hidden decoration. -->
+        <div class="field map-basemap">
+          <label class="f-label" for="mapBasemap">Basemap</label>
+          <select id="mapBasemap" bind:value={providerId} disabled={useCustom}>
+            {#each PROVIDERS as p}<option value={p.id}>{p.name}</option>{/each}
+          </select>
+          <span class="f-hint">{useCustom ? (customAttribution || "Add attribution below — most providers require it.") : provider.attribution}</span>
+        </div>
+        <div class="field">
+          <label class="f-label" for="mapName">Name</label>
+          <input id="mapName" type="text" bind:value={mapLabel} placeholder={`${provider.name} map`} autocomplete="off" />
+        </div>
+        <fieldset class="extent">
+          <legend class="f-label">Area shown to visitors</legend>
+          <div class="presets">
+            {#each REGIONS as r}<button type="button" onclick={() => applyRegion(r.bounds)}>{r.name}</button>{/each}
+            <button type="button" class="preset-action" onclick={selectCurrent} title="Set the area to exactly what the map below shows right now">⊡ Use view</button>
+            <button type="button" onclick={fitToBox} title="Recentre the map below so the whole area fits in view">Fit ⤢</button>
+          </div>
+          <div class="locator" bind:this={locatorEl} role="application"
+            aria-label="Region locator — drag to set the visible area, or type exact edges below"
+            style="width:{S}px;height:{S}px" onpointerdown={locatorDown} onpointermove={dragMove} onpointerup={dragUp} onpointercancel={dragUp} onwheel={onWheel}>
+            <div class="tiles" aria-hidden="true">{#each tiles as t (t.key)}<img src={t.url} alt="" draggable="false" style="left:{t.left}px;top:{t.top}px" />{/each}</div>
+            <svg width={S} height={S} class:dragging={drag !== null} aria-hidden="true">
+              <rect class="sel" x={boxPx.x} y={boxPx.y} width={Math.max(0, boxPx.w)} height={Math.max(0, boxPx.h)} />
+              {#each HANDLES as h}
+                <rect class="handle" x={h.fx(boxPx) - 5} y={h.fy(boxPx) - 5} width="10" height="10" />
+              {/each}
+            </svg>
+            <div class="zoom-ctrls">
+              <button type="button" onclick={() => zoomBy(1)} aria-label="Zoom in">+</button>
+              <button type="button" onclick={() => zoomBy(-1)} aria-label="Zoom out">−</button>
+            </div>
+            <span class="loc-z">z{locZoom}</span>
+          </div>
+          <div class="bounds">
+            <label>W<input type="number" step="any" bind:value={west} /></label>
+            <label>S<input type="number" step="any" bind:value={south} /></label>
+            <label>E<input type="number" step="any" bind:value={east} /></label>
+            <label>N<input type="number" step="any" bind:value={north} /></label>
+            <label>Max&nbsp;zoom<input type="number" min="1" max="22" bind:value={maxZoom} /></label>
+          </div>
+          <p class="map-hint">Drag the box to resize · drag the map to move · scroll to zoom · or type exact edges above.</p>
+        </fieldset>
+        <details class="map-advanced" bind:open={useCustom}>
+          <summary>Advanced: custom tile URL</summary>
+          <input bind:value={customTemplate} placeholder={"https://…/{z}/{x}/{y}.png"} />
+          <input bind:value={customAttribution} placeholder="Attribution (e.g. © Provider)" />
+        </details>
+        <div class="path-actions">
+          <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
+          <button type="button" class="btn btn-primary" disabled={!mapValid} onclick={submitMap}>{createActionLabel(scope)}</button>
         </div>
       {/if}
     {/if}
@@ -759,5 +983,173 @@
   }
   .btn-ghost:hover {
     background: var(--surface-canvas-overlay);
+  }
+
+  /* ── Map path (Archie-56cf, absorbed from AddMapModal) — restyled onto the dialog's canvas palette. */
+  .map-basemap select {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-canvas-raised);
+    color: var(--ink-canvas-primary);
+    border: 1px solid var(--border-canvas);
+    border-radius: var(--radius-sm);
+  }
+  .map-basemap select:disabled {
+    opacity: 0.5;
+  }
+  .extent {
+    border: 1px solid var(--border-canvas);
+    border-radius: var(--radius-md);
+    padding: var(--space-3) var(--space-4) var(--space-4);
+    margin: 0 0 var(--space-4);
+  }
+  .extent legend {
+    padding: 0 var(--space-1);
+  }
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+  }
+  .presets button {
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    padding: 3px var(--space-3);
+    border: 1px solid var(--border-canvas-emphasis);
+    border-radius: 999px;
+    background: var(--surface-canvas-raised);
+    color: var(--ink-canvas-primary);
+    cursor: pointer;
+  }
+  .presets button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .presets .preset-action {
+    margin-left: auto;
+  }
+  .locator {
+    position: relative;
+    margin: var(--space-2) auto;
+    border: 1px solid var(--border-canvas-emphasis);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    touch-action: none;
+    background: #aadaff;
+    cursor: grab;
+  }
+  .locator .tiles {
+    position: absolute;
+    inset: 0;
+  }
+  .locator .tiles img {
+    position: absolute;
+    width: 256px;
+    height: 256px;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  .locator svg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none; /* decoration only — the container owns the drag (a11y: real inputs below) */
+  }
+  .locator svg.dragging {
+    cursor: grabbing;
+  }
+  .locator .sel {
+    fill: var(--accent);
+    fill-opacity: 0.2;
+    stroke: var(--accent);
+    stroke-width: 1.5;
+  }
+  .locator .handle {
+    fill: var(--surface-canvas-raised);
+    stroke: var(--accent);
+    stroke-width: 1.5;
+  }
+  .zoom-ctrls {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .zoom-ctrls button {
+    width: 24px;
+    height: 24px;
+    font-size: 1rem;
+    line-height: 1;
+    border: 1px solid var(--border-canvas-emphasis);
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: #2a2722;
+  }
+  .loc-z {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    font: 0.7rem var(--font-mono);
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .bounds {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .bounds label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    color: var(--ink-canvas-secondary);
+  }
+  .bounds input {
+    width: 5.5rem;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    padding: var(--space-1) var(--space-2);
+    background: var(--surface-canvas-raised);
+    color: var(--ink-canvas-primary);
+    border: 1px solid var(--border-canvas);
+    border-radius: var(--radius-sm);
+  }
+  .map-hint {
+    margin: var(--space-2) 0 0;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    color: var(--ink-canvas-secondary);
+  }
+  .map-advanced {
+    margin-bottom: var(--space-4);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+  }
+  .map-advanced summary {
+    cursor: pointer;
+    color: var(--ink-canvas-secondary);
+  }
+  .map-advanced input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: var(--space-2);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-canvas-raised);
+    color: var(--ink-canvas-primary);
+    border: 1px solid var(--border-canvas);
+    border-radius: var(--radius-sm);
   }
 </style>

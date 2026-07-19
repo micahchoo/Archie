@@ -13,10 +13,11 @@ import { manifestToExhibit, ManifestImportError } from "./iiif-import.js";
 import { IIIF_MANIFEST_MAX_BYTES } from "./ingest-flows.js";
 import type { PickedFile } from "./folder-import.js";
 
-/** The dialog's scope (Archie-beb6): today only "new-exhibit" is wired end to end — oncreate /
- *  oncreatefromfolder / oncreatefrommanifest all mint a NEW exhibit. "add-to-exhibit" is accepted
- *  as a prop-level parameter now so Archie-56cf can reuse this surface without reshaping it later,
- *  but nothing in this ticket constructs or wires that variant. */
+/** The dialog's scope (Archie-beb6, both variants now wired). "new-exhibit" (LibraryHome) mints a NEW
+ *  exhibit via oncreate / oncreatefromfolder / oncreatefrommanifest. "add-to-exhibit" (Archie-56cf: the
+ *  overview Add-media plate + the editor object-zone "+ Add media" button) adds INTO an existing exhibit:
+ *  files/folder + IIIF append to `slug`, and the Map path (absorbed from the retired AddMapModal) adds a
+ *  map object — so those same three callbacks are wired to the into-exhibit ingest flows instead. */
 export type CreateSurfaceScope = { kind: "new-exhibit" } | { kind: "add-to-exhibit"; slug: string; title: string };
 
 export function surfaceTitle(scope: CreateSurfaceScope): string {
@@ -28,9 +29,16 @@ export function createActionLabel(scope: CreateSurfaceScope): string {
 }
 
 /** Whether the "Start empty" path applies to this scope — there's nothing to start empty when
- *  adding into an exhibit that already exists (unwired today; see CreateSurfaceScope above). */
+ *  adding into an exhibit that already exists (add-to-exhibit hides it). */
 export function offersStartEmpty(scope: CreateSurfaceScope): boolean {
   return scope.kind === "new-exhibit";
+}
+
+/** Whether the "Map" path applies to this scope (Archie-56cf). A Map is a new OBJECT in an EXISTING
+ *  exhibit (its add flow, addMapObject, needs a current exhibit to append onto) — so it shows only in
+ *  add-to-exhibit scope, never when minting a brand-new exhibit that has nowhere to hang it yet. */
+export function offersMap(scope: CreateSurfaceScope): boolean {
+  return scope.kind === "add-to-exhibit";
 }
 
 /** File → the {name, relativePath, type} shape the folder-import pure helpers read — the one place
