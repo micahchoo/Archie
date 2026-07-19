@@ -32,9 +32,12 @@ export function othersLiveNoteCount(log: AnnotationLog, you: ClientId): number {
 
 /** Pure: given the previously stored baseline (undefined = no prior import recorded for this exhibit)
  *  and the freshly-imported log's current others'-note count, compute the watermark to store next and
- *  the delta this import's badge should show. */
+ *  the delta this import's badge should show. A FIRST import establishes the baseline silently
+ *  (delta 0): "+N since your last import" presupposes a prior import, so there is nothing truthful
+ *  to claim yet. */
 export function computeImportFreshness(previousBaseline: number | undefined, currentOthersCount: number): ImportFreshness {
-  return { baseline: currentOthersCount, delta: Math.max(0, currentOthersCount - (previousBaseline ?? 0)) };
+  if (previousBaseline === undefined) return { baseline: currentOthersCount, delta: 0 };
+  return { baseline: currentOthersCount, delta: Math.max(0, currentOthersCount - previousBaseline) };
 }
 
 /** The badge-render predicate + copy. Null when there is no watermark for this exhibit (no import has

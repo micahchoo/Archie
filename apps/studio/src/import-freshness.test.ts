@@ -38,8 +38,8 @@ describe("othersLiveNoteCount — others' live notes in one exhibit's log", () =
 });
 
 describe("computeImportFreshness — pure watermark math", () => {
-  it("first import (no prior baseline): delta equals the current others-count", () => {
-    expect(computeImportFreshness(undefined, 3)).toEqual({ baseline: 3, delta: 3 });
+  it("first import (no prior baseline): establishes the baseline silently — delta 0, no badge", () => {
+    expect(computeImportFreshness(undefined, 3)).toEqual({ baseline: 3, delta: 0 });
   });
   it("a later import with MORE others' notes: delta is the increase", () => {
     expect(computeImportFreshness(3, 7)).toEqual({ baseline: 7, delta: 4 });
@@ -81,17 +81,17 @@ describe("loadImportFreshness / saveImportFreshness — the localStorage waterma
 });
 
 describe("recordImportFreshness — the one production seam (read-compute-write)", () => {
-  it("first import: stores the full others-count as both baseline and delta", () => {
+  it("first import: stores the full others-count as baseline with delta 0 (no badge yet)", () => {
     const priya = new AnnotationSession(asClientId("priya"));
     note(priya, 1); note(priya, 2); note(priya, 3);
     const result = recordImportFreshness("voynich", priya.entries, asClientId("me"));
-    expect(result).toEqual({ baseline: 3, delta: 3 });
-    expect(loadImportFreshness("voynich")).toEqual({ baseline: 3, delta: 3 });
+    expect(result).toEqual({ baseline: 3, delta: 0 });
+    expect(loadImportFreshness("voynich")).toEqual({ baseline: 3, delta: 0 });
   });
   it("a second import layering more others' notes: delta is only the NEW ones since the stored baseline", () => {
     const priya = new AnnotationSession(asClientId("priya"));
     note(priya, 1); note(priya, 2);
-    recordImportFreshness("voynich", priya.entries, asClientId("me")); // baseline=2, delta=2
+    recordImportFreshness("voynich", priya.entries, asClientId("me")); // baseline=2, delta=0 (first)
 
     const priya2 = new AnnotationSession(asClientId("priya"), priya.entries);
     note(priya2, 3); note(priya2, 4); note(priya2, 5);
