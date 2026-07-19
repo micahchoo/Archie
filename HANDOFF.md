@@ -3,10 +3,19 @@
 ## IN FLIGHT — IIIF Collection ingest (2026-07-19, wayfinder map `Archie-b290`) — RESUMED ~16:50
 
 Feature: pasting a IIIF Collection URL unpacks into N exhibits (ADR-0025). Session runs
-implementer+reviewer subagent waves (spend-limit outage 09:41–16:48 killed one review
-mid-flight; since re-dispatched). Currently running: rev-multiselect-2 (re-review of
-Archie-d366) and imp-glue (Archie-656a). All work is UNCOMMITTED on `main` in the shared
-checkout. Authority chain:
+implementer+reviewer subagent waves (spend-limit outage 09:41–16:48; recovered). As of
+~17:40: **7/10 tickets CLOSED** (ADR 06a3 · reducer 0dfe · pure layer cc77 · multi-select
+d366 · ingest glue 656a · bulk rights d2cc · picker a9e2 — each implemented, reviewed,
+fix rounds landed, orchestrator-verified; latest gates 603/603 vitest, typecheck 0,
+svelte-check 0/0). RUNNING: imp-progress on Archie-cbf6 (wire dormant picker props in
+App/LibraryHome, in-dialog progress+cancel, 4 summary shapes each w/ Undo import →
+removeExhibits, fold-ins: visible skip-detail, manifest-arm payload kills double fetch,
+library-refresh check). THEN: Archie-ddaa bulk delete (unblocks on cbf6) → Archie-9422
+verify (round-trip e2e + 500-exhibit smoke) closes the map. Notable new seams: CollectionPreview
+contract in ingest-flows.ts; ExhibitMetaPatch clear-typing (type-test excluded from
+svelte-check, see tsconfig comment); .claude/rules/studio-ts-typecheck-gate.md (NEW —
+pnpm typecheck for .ts edits). All work UNCOMMITTED on `main` in the shared checkout.
+Authority chain:
 `ledgers/PLAN-collection-import.md` (spec, 9 locked decisions) ·
 `docs/adr/0025-collection-unpacks-into-exhibits.md` · `CONTEXT.md` §Ingest (new terms) ·
 seeds map `Archie-b290` (`sd list --label map:collection-import`).
@@ -50,7 +59,7 @@ durability, 500+ LibraryHome perf, bulk-edit growth.
 **Updated:** 2026-07-19 late (Studio UX overhaul session, post-compaction 2). **Branch:** `main`
 (pushed through `585d23b`). Map **Studio UX overhaul** `Archie-21b1` (seeds).
 
-## UX OVERHAUL — 22 tickets MERGED+PUSHED; ONE left in flight (abf9)
+## UX OVERHAUL — COMPLETE: all 23 implementation tickets MERGED+PUSHED (through f520e42)
 
 Decision phase done (14/14). ALL implementation waves merged: library home 2c47bdb ·
 chrome/editor-redesign (c7ef+c76d) · create dialog 564f975 (51cc) · beats d226a4f (696d) ·
@@ -68,15 +77,19 @@ synced-count/dup-ids, writer-lock name Archie-198c) · **save-verbs 2318 merged*
 Suite: 0 errors / 0 WARNINGS (612 files), 603 unit + 5 e2e, tsc clean, build clean.
 Pushed through dc18eca.
 
-**IN FLIGHT (LAST TICKET):** `abf9-implementer` (sonnet, own worktree, branch
-`share/round-trip`, base 34e2f23) building the round-trip package: Share-a-working-copy
-reframe inside Publish + app-local per-exhibit "+N since your last import" freshness badge
-(localStorage watermark — NEVER model fields; told to zoom Archie-d71c for semantics and
-report what it chose). On report: review (dispatch or direct) → stash-around merge (App/
-LibraryHome/ingest-flows carry concurrent IIIF-session WIP) → gates → close abf9 → map →
-push. THE MAP CLOSES when abf9 lands — then check remaining open map:studio-ux-overhaul
-tickets (7e5b is dep-blocked on 697c, 198c is small+open; both are follow-ups, decide with
-user whether map closes over them or 198c gets done first).
+**FINAL MERGE:** round-trip package abf9 landed 71cdb07 (share/round-trip 2ab487d+580a4a7):
+'Share a working copy' reframe in Publish + import-freshness.ts app-local watermark badge
+('+N since your last import'; review caught first-import-must-be-silent, fixed 580a4a7;
+counting delegates to collabBreakdown; dormant until an incremental-import caller — wired
+through the same recordImportFreshness seam by 7e5b). Final suite: check 0/0 (614 files),
+vitest 617/617, tsc clean, build clean, e2e 5/5. Duplicate save-verbs tickets 9c01/bb5d
+(sd create triple-fire) closed as dupes of 2318.
+
+**REMAINING OPEN on the map (follow-ups only, USER DECISION whether map closes over them):**
+`Archie-7e5b` wiring rider (dep-blocked on collab-readiness 697c; carries S3 gate-bypasses,
+S4 identity-lag, synced-count toast, dup-ids-to-Annotorious, noteConflicts memoization) ·
+`Archie-198c` writer-lock display-name (small, unblocked). Human action item: re-shoot 5
+tutorial screenshots (flagged in-file in docs/learn/).
 
 **USER RATIFICATIONS (all recorded in map):** From-a-link restored; collab collision call =
 this map's single-scrim/MediaPicker-deletion stands (concurrent session's NotePicker WIP
