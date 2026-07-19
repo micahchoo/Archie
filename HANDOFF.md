@@ -85,11 +85,16 @@ through the same recordImportFreshness seam by 7e5b). Final suite: check 0/0 (61
 vitest 617/617, tsc clean, build clean, e2e 5/5. Duplicate save-verbs tickets 9c01/bb5d
 (sd create triple-fire) closed as dupes of 2318.
 
-**REMAINING OPEN on the map (follow-ups only, USER DECISION whether map closes over them):**
-`Archie-7e5b` wiring rider (dep-blocked on collab-readiness 697c; carries S3 gate-bypasses,
-S4 identity-lag, synced-count toast, dup-ids-to-Annotorious, noteConflicts memoization) ·
-`Archie-198c` writer-lock display-name (small, unblocked). Human action item: re-shoot 5
-tutorial screenshots (flagged in-file in docs/learn/).
+**Writer-lock display-name 198c MERGED** (user said "do it"; collab/writer-lock-name
+ba10fd2+573b5d1): held/beat/takeover carry name, Web Locks path gets a name-only presence
+channel (never drives coordination); banners say "{Name} is editing…" w/ impersonal
+fallback. Post-merge: check 0/0 (614), vitest 636/636, tsc clean, build clean, e2e 5/5.
+Pushed 9419417. **REMAINING OPEN on the map:** ONLY `Archie-7e5b` wiring rider
+(dep-blocked on collab-readiness 697c; carries S3 gate-bypasses, S4 identity-lag,
+synced-count toast, dup-ids-to-Annotorious, noteConflicts memoization) — nothing actionable
+until 697c wires zip-merge. Human action item: re-shoot 5 tutorial screenshots (flagged
+in-file in docs/learn/). User UX note: Your-name field discoverability (it's inside
+Library details ✎ drawer; user didn't find it unaided — candidate future ticket).
 
 **USER RATIFICATIONS (all recorded in map):** From-a-link restored; collab collision call =
 this map's single-scrim/MediaPicker-deletion stands (concurrent session's NotePicker WIP
@@ -169,9 +174,14 @@ build ok, root 0. All six build tickets (f1c6/08af/c16d/a911/6b8e/42f3) landed w
 two-axis reviews clean. `Archie-2a9a` MERGED + closed (56a0332; reviews clean both axes; post-merge 928/928 +
 studio 439/439, check 0/3, build ok): zip-import merges structure logs via the one
 mergeLogs contract (plural heads gate in studio), exhibit delete cleans structure/
-flag-independently with a race-safe forget-generation. BOUNDING: import merge is LATENT
-until publish/export emits structure pages — filed `Archie-aef4` (open, unclaimed) as the
-export leg + end-to-end two-author round-trip. Map `Archie-f849`:
+flag-independently with a race-safe forget-generation. BOUNDING resolved: `Archie-aef4` (export leg)
+NOW IN PIPELINE (user named it) — `build/structure-export` @ `cb4cd4e` off `e24c092`
+(worktree `agent-a94c97158927541b8`): PublishOptions.getStructure seam in publishLibrary
+(one hook covers zip+folder), emission by log EXISTENCE not flag, no-log byte-identical
+pinned, archie.json-last preserved, viewer tolerance proven (108+94), two-author
+round-trip test passes (publish→concurrent edit→import→2 heads gated). Gates green
+in-worktree (933/933 rc, 521/521 studio, check 0/0, build ok). Reviewers
+`aef4-review-standards`+`aef4-review-spec` running; on clean → merge → close aef4. Map `Archie-f849`:
 enactment done; remaining fog = graduation-tier items (sync server, Yjs-vs-Automerge,
 writable HTTP backend, identity/presence) — unspecifiable until graduation is bet on.
 
