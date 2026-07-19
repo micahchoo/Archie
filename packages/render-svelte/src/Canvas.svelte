@@ -123,6 +123,8 @@
       dotsRaf = 0;
       if (!surface || !dots) return;
       dotBand = zoomBand(surface.getZoomRatio());
+      // Off-band the {#each} is gone entirely — skip the O(annotations) rect pass too (review nit).
+      if (!dotsVisibleForBand(dotBand)) return;
       dotRects = surface.markerScreenRects(dots.map((d) => d.id));
     });
   }
@@ -247,7 +249,7 @@
     border: 1px solid rgba(0, 0, 0, 0.55);
     box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
     cursor: pointer;
-    z-index: 40;
+    z-index: 35; /* above canvas overlays (25/30), below the studio modal scrim band (40) — review nit */
     opacity: 0.9;
     transition: transform 120ms ease, opacity 120ms ease;
   }
