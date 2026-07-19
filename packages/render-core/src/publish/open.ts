@@ -9,6 +9,18 @@
 // Deliberately stops at a validated `Filesystem`: each caller's downstream domain shaping (the
 // viewer's `LoadedLibrary`, published.ts's module-global cache, studio's `loadLibrary` reassembly)
 // stays with the caller — this module doesn't know or care what any of them do with the fs.
+//
+// ADR-0026 object-id migration is NOT wired here, deliberately (Archie-8439 trigger 2 lives at the
+// studio ADOPTION boundary, `apps/studio/src/ingest-flows.ts` `replaceProjectFrom`, instead). Two
+// reasons: (1) LAYOUT — this seam returns a zip in the PUBLISHED-tree layout (root `archie.json` /
+// `collection.json` / `exhibits.json`, per-exhibit dirs at the root by slug), whereas the migration
+// engine (`migrate/object-ids.ts`) operates on the WORKING-store layout (`{project}/library.json`,
+// `{project}/exhibits/{slug}/…`); it can't read a published tree in place. (2) AUDIENCE — the Viewer
+// (`apps/viewer`, `packages/archie-viewer`) opens through this same seam and must stay migration-free
+// (a published tree is self-consistent; the reader never translates). Migrating at the studio adoption
+// boundary — where the archive's logs are copied INTO the working-store-shaped resident OPFS store —
+// keeps the invariant "nothing downstream of the seam ever sees a legacy id in a live store" without
+// adding a second decode path here and without touching the Viewer.
 
 import { ZipFilesystem } from "../fs/zip.js";
 import type { Filesystem } from "../fs/seam.js";

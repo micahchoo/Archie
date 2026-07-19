@@ -12,7 +12,12 @@
 // names so import sites stay stable; this module remains the WRITER of the layout.
 import {
   FsaFilesystem,
+  migrateLibraryObjectIds,
+  ID_SCHEME_MARKER_FILE,
+  PRE_MIGRATION_DIR,
+  type Filesystem,
   type FsDirectory,
+  type MigrateIdsResult,
   type WorkingObjectProvenance as ObjectProvenance,
   type WorkingObjectMeta as ObjectMeta,
   type WorkingExhibitMeta as ExhibitMeta,
@@ -27,12 +32,71 @@ const SAMPLE_SLUG = "sample";
  *  share. Used as the cross-tab single-writer lock name (ISSUES.md Issue 22 / ledgers/TABS.md). */
 export const WORKING_STORE_ID = PROJECT;
 
-async function openProjectDir(): Promise<FsDirectory | null> {
+/** The OPFS root as a Filesystem, or null where OPFS is unavailable (non-browser/headless). The
+ *  object-id migration engine needs the ROOT fs (it opens `{WORKING_PROJECT}` itself), not the
+ *  project dir — WORKING_PROJECT and this module's PROJECT are the same fixed name. */
+async function openRootFs(): Promise<Filesystem | null> {
   const storage = (navigator as Navigator & { storage?: { getDirectory?: () => Promise<FileSystemDirectoryHandle> } }).storage;
   if (!storage?.getDirectory) return null;
-  const opfsRoot = await storage.getDirectory();
-  const root = await new FsaFilesystem(opfsRoot).root();
-  return root.getDirectory(PROJECT, { create: true });
+  return new FsaFilesystem(await storage.getDirectory());
+}
+
+async function openProjectDir(): Promise<FsDirectory | null> {
+  const fs = await openRootFs();
+  if (!fs) return null;
+  return (await fs.root()).getDirectory(PROJECT, { create: true });
+}
+
+/**
+ * ADR-0026 object-id migration at the resident-store boundary (Archie-8439 — trigger 1 studio-open,
+ * reused by trigger 2 archive-adoption). Runs the render-core engine over the OPFS working store: a
+ * legacy (scheme-1) store is rewritten IN PLACE to the composed global scheme behind its
+ * snapshot-then-marker protocol; a store already on the current scheme is a no-op pass-through.
+ *
+ * Returns the engine's report, or null iff there is no OPFS at all (nothing to migrate). The engine
+ * NEVER throws for a corrupt page (it skips-and-reports); a thrown error here is a genuine fs failure
+ * and is left to PROPAGATE — a half-migrated store must not boot a session, and a torn run leaves the
+ * marker absent (reads as legacy) so the next boot re-runs it idempotently.
+ *
+ * `fs` defaults to the OPFS root; it is injectable ONLY so the studio-open trigger can be tested over a
+ * MemoryFilesystem (there is no OPFS in the headless test env). Production always uses the default.
+ */
+export async function migrateResidentStoreIds(fs?: Filesystem): Promise<MigrateIdsResult | null> {
+  const rootFs = fs ?? (await openRootFs());
+  if (!rootFs) return null;
+  const result = await migrateLibraryObjectIds(rootFs);
+  if (result.migrated) {
+    const r = result.rewrites;
+    console.info(
+      `[migrate] object-ids scheme ${result.fromScheme}→${result.toScheme}: ` +
+        `${r.libraryObjects} objects, ${r.annotationTargets} targets, ${r.bodyLinks} links, ` +
+        `${r.librarySectionObjectIds + r.sectionObjectIds} sections, ${r.pendingNotes} pending` +
+        `${result.snapshotCreated ? " (pre-migration/ snapshot written)" : ""}.`,
+    );
+  }
+  if (result.corrupt.length > 0) {
+    console.warn(`[migrate] object-ids: ${result.corrupt.length} unreadable page(s) skipped + left intact:`, result.corrupt);
+  }
+  return result;
+}
+
+/**
+ * Clear the resident store's id-scheme marker AND its pre-migration snapshot — the destructive
+ * "open zip / replace project" adoption boundary (Archie-8439 trigger 2). A full replace overwrites
+ * the project with an INCOMING library whose object ids may be legacy, but leaves the OUTGOING
+ * library's `id-scheme.json` marker and `pre-migration/` snapshot behind. Left in place, the stale
+ * scheme-2 marker would make the migration engine pass-through the freshly-written legacy content
+ * (the exact scheme-coexistence this ticket forbids), and the snapshot would preserve the DISCARDED
+ * library instead of the adopted one. Removing both makes the store read as legacy again, so the
+ * migrateResidentStoreIds that follows re-snapshots + rewrites the incoming library cleanly. The
+ * discarded library's snapshot is moot — a destructive replace throws that library away entirely.
+ * Best-effort: absent entries are fine (a fresh / never-migrated store has neither).
+ */
+export async function resetIdSchemeState(): Promise<void> {
+  const project = await openProjectDir();
+  if (!project) return;
+  await project.remove(ID_SCHEME_MARKER_FILE).catch(() => {});
+  await project.remove(PRE_MIGRATION_DIR).catch(() => {});
 }
 
 /**
