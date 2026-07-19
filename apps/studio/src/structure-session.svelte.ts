@@ -60,6 +60,11 @@ export function createStructureSession(deps: StructureSessionDeps) {
   // refused for them — a full writeStructure would rewrite the index without the unreadable pages,
   // orphaning them for good (corrupt ≠ empty, rule #2 / the annotation session's Issue 19 posture).
   const corrupt = new Set<string>();
+  // Per-slug forget generation (Archie-2a9a). ensureLoaded's job captures the generation at start
+  // and abandons its commit if forget() bumped it mid-flight — otherwise deleting an exhibit while
+  // its log is still loading would resurrect the stale log in memory AND schedulePersist would
+  // recreate the structure/ dir the delete just removed on disk.
+  const gens = new Map<string, number>();
   // Per-slug projection memo, keyed by log identity (every reconcile REPLACES the log array).
   const projMemo = new Map<string, { log: SectionLog; ws: WorkingStructure }>();
 
@@ -71,6 +76,24 @@ export function createStructureSession(deps: StructureSessionDeps) {
     const ws = workingStructure(log, EMPTY_LOCALS);
     projMemo.set(slug, { log, ws });
     return ws;
+  }
+
+  /**
+   * Drop everything this session holds for `slug` (Archie-2a9a): the in-memory log, the dir
+   * handle, the loaded/corrupt marks, and the projection memo. Called on exhibit delete so a
+   * recreated same-slug exhibit (ids are deterministic `ex-${slug}`) loads/seeds CLEAN instead
+   * of inheriting the deleted exhibit's cached log; an in-flight ensureLoaded for the slug is
+   * abandoned via the generation bump (it must not resurrect the log — or, via schedulePersist,
+   * the on-disk dir the delete removed). Deliberately flag-independent cache hygiene: with the
+   * flag off nothing was ever cached, so it is a no-op.
+   */
+  function forget(slug: string): void {
+    gens.set(slug, (gens.get(slug) ?? 0) + 1);
+    delete s.logs[slug];
+    dirs.delete(slug);
+    loaded.delete(slug);
+    corrupt.delete(slug);
+    projMemo.delete(slug);
   }
 
   function schedulePersist(slug: string): void {
@@ -93,19 +116,23 @@ export function createStructureSession(deps: StructureSessionDeps) {
       if (!enabled() || loaded.has(slug)) return;
       const inflight = loading.get(slug);
       if (inflight) return inflight;
+      const gen = gens.get(slug) ?? 0; // captured at start; forget() bumps it (see `gens`)
       const job = (async () => {
         let log: SectionLog = [];
         let dir: FsDirectory | null = null;
+        let torn = 0;
         if (!deps.isTemplate(slug)) {
           dir = await deps.openStructDir(slug);
           if (dir) {
             const report = await readStructureReport(dir, asExhibitId(exhibitId));
             log = report.log;
-            if (report.corrupt.length > 0) {
-              corrupt.add(slug);
-              console.warn(`[structure] ${slug}: structure store is torn (${report.corrupt.length} unreadable page(s)) — keeping what survived; structure writes are paused for this exhibit.`);
-            }
+            torn = report.corrupt.length;
           }
+        }
+        if ((gens.get(slug) ?? 0) !== gen) return; // forgotten (exhibit deleted / project replaced) mid-load — abandon before ANY state lands
+        if (torn > 0) {
+          corrupt.add(slug);
+          console.warn(`[structure] ${slug}: structure store is torn (${torn} unreadable page(s)) — keeping what survived; structure writes are paused for this exhibit.`);
         }
         if (log.length === 0 && seed.length > 0 && !corrupt.has(slug)) {
           log = reconcileSections(log, asExhibitId(exhibitId), seed, { lastEditor: deps.author() }).log;
@@ -164,6 +191,24 @@ export function createStructureSession(deps: StructureSessionDeps) {
     /** Is this slug's structure store torn (writes paused)? Read by tests + future surfacing. */
     isCorrupt(slug: string): boolean {
       return corrupt.has(slug);
+    },
+
+    /**
+     * Drop everything this session holds for `slug` (Archie-2a9a): the in-memory log, the dir
+     * handle, the loaded/corrupt marks, and the projection memo. Called on exhibit delete so a
+     * recreated same-slug exhibit (ids are deterministic `ex-${slug}`) loads/seeds CLEAN instead
+     * of inheriting the deleted exhibit's cached log; an in-flight ensureLoaded for the slug is
+     * abandoned via the generation bump (it must not resurrect the log — or, via schedulePersist,
+     * the on-disk dir the delete removed). Deliberately flag-independent cache hygiene: with the
+     * flag off nothing was ever cached, so it is a no-op.
+     */
+    forget,
+
+    /** Forget every slug — the project-replace teardown (open zip/folder swaps the whole library,
+     *  so every cached log is from the OUTGOING project; the merged/imported logs are on disk). */
+    reset(): void {
+      const slugs = new Set([...Object.keys(s.logs), ...loaded, ...loading.keys(), ...dirs.keys(), ...corrupt]);
+      for (const slug of slugs) forget(slug);
     },
   };
 }

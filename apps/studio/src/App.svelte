@@ -49,7 +49,7 @@
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import type { DrawTool, MarkerStyle, FrameOverlay } from "@render/mount";
-  import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
+  import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, readAssetUrl, readThumbUrl, clearExhibitAnnotations, clearExhibitStructure, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus, setWriterGate } from "./save-queue.svelte.js";
   import { createWriterLock } from "./writer-lock.svelte.js";
@@ -440,6 +440,13 @@
     // outgoing-flush can't re-create the log we're about to clear (Archie-79be — newly easy to hit now that
     // the library grid can delete the loaded exhibit; the pre-existing overview-remove path is fixed too).
     if (isLoaded) sess.forgetCurrent();
+    // Archie-2a9a: drop the structure session's cached log FIRST (bumps the forget generation, so an
+    // in-flight load or queued persist can't recreate what the delete removes), then the on-disk dir.
+    // Both are FLAG-INDEPENDENT: the dir may exist from a previous archie.structureRevlog session
+    // even with the flag off now, and a recreated same-slug exhibit (deterministic `ex-${slug}` id)
+    // would inherit the stale log wholesale.
+    structure.forget(slug);
+    await clearExhibitStructure(slug); // wipe its section rev-log on disk (sibling of the annotations clear)
     await clearExhibitAnnotations(slug); // wipe its annotation log on disk (do NOT re-save it via backToLibrary)
     await lib.removeExhibit(slug);
     if (isLoaded) assets.revokeAll();
@@ -1554,9 +1561,10 @@
     openExhibit,
     bump,
     cancelPendingSave: () => sess.cancelPendingSave(),
-    finishReplace: () => { currentSlug = lib.meta.exhibits[0]!.slug; view = "library"; pendingNotes = []; void enqueueSave("pending-notes", "Pending notes", () => savePendingNotes({})); }, // destructive replace wipes the old project's pending sidecar
+    finishReplace: () => { structure.reset(); currentSlug = lib.meta.exhibits[0]!.slug; view = "library"; pendingNotes = []; void enqueueSave("pending-notes", "Pending notes", () => savePendingNotes({})); }, // destructive replace wipes the old project's pending sidecar + the structure session's cached logs (the merged/imported logs are on disk — Archie-2a9a)
     confirmReplace: (msg) => window.confirm(msg),
     alert: (msg) => window.alert(msg),
+    structureRevlog: STRUCTURE_REVLOG, // the boot-cached flag read (feature-flags.ts contract) — gates the import-side structure merge (Archie-2a9a)
   });
 
   // The publish flows (worklist 0.3 cut 2): every Library→world path — the unified Publish menu's
@@ -1624,7 +1632,7 @@
     flushExhibit: () => save(),
     writeToFolder: async (fs) => (await ensurePub()).writeToFolder(fs),
     downloadProjectZip: async () => (await ensurePub()).downloadProjectZip(),
-    replaceProjectFrom: (loaded) => flows.replaceProjectFrom(loaded),
+    replaceProjectFrom: (loaded, srcFs) => flows.replaceProjectFrom(loaded, srcFs),
     zipName: () => zipNameFor(lib.meta.title || PROJECT_TITLE),
   });
   /** The capability-routed Open (folder on Chromium, else the zip file picker). */

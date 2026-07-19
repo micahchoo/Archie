@@ -10,14 +10,17 @@ import {
   AnnotationSession, loadLibrary, openArchieLibrary, libraryToWorking,
   mediaTypeFromSource, readExifOrientation, isOrientationNoop, orientationTransform, MAX_MASTER_DIM,
   readExifCaptureDate,
+  type Filesystem, type FsDirectory,
   type Library, type ClientId, type XyzTileSource, type W3CTextualBody,
   type WorkingObjectMeta as ObjectMeta,
 } from "@render/core";
 import { bakeDisplayMaster, downscaleIfNeeded, bakeThumbnail } from "./bake.js";
 import {
-  openExhibitAnnotationsDir, saveAssetFile, saveOriginalFile, saveThumbFile, clearExhibitAnnotations,
+  openExhibitAnnotationsDir, openExhibitStructureDir, saveAssetFile, saveOriginalFile, saveThumbFile, clearExhibitAnnotations,
   ASSET_PREFIX, type ExhibitMeta, type ObjectProvenance,
 } from "./store.js";
+import { mergeImportedStructure } from "./structure-import.js";
+import { structureRevlogEnabled } from "./feature-flags.js";
 import { inferredMime, planFolderImportGroups } from "./folder-import.js";
 import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
 import { planCsvImport, type CsvPendingNote } from "./csv-import.js";
@@ -123,9 +126,15 @@ export interface IngestContext {
   /** Confirmation gate for the destructive open (window.confirm wrapper). */
   confirmReplace: (msg: string) => boolean;
   alert: (msg: string) => void;
+  /** The archie.structureRevlog flag, read ONCE at boot by the App (feature-flags.ts contract) and
+   *  passed down — injectable for tests. Absent = read the flag directly at flows creation. */
+  structureRevlog?: boolean;
 }
 
 export function createIngestFlows(ctx: IngestContext) {
+  // Boot-cached flag read (feature-flags.ts contract: callers read once, never mid-session). The
+  // App passes its own boot-cached STRUCTURE_REVLOG const; the fallback covers direct construction.
+  const STRUCTURE_REVLOG = ctx.structureRevlog ?? structureRevlogEnabled();
   // Best-effort natural dimensions (IIIF wants them); resolves null if the URL can't be loaded.
   function imageDims(src: string): Promise<{ w: number; h: number } | null> {
     return new Promise((resolve) => {
@@ -534,7 +543,11 @@ export function createIngestFlows(ctx: IngestContext) {
   }
   // Replace the current OPFS project with a loaded library (the shared body of "Open zip" + "Open folder"):
   // clear outgoing annotation dirs (no orphans under reused slugs), write each imported log, swap the meta.
-  async function replaceProjectFrom(loaded: Awaited<ReturnType<typeof loadLibrary>>) {
+  // `srcFs` (Archie-2a9a) is the SOURCE filesystem the library was loaded from (zip or folder) — the
+  // structure rev-log's history pages are not part of `loadLibrary`'s return shape, so the flag-ON
+  // structure merge below re-reads them from the source tree. Absent (or flag OFF) the structure
+  // stores are never touched — byte-identical to the pre-2a9a replace.
+  async function replaceProjectFrom(loaded: Awaited<ReturnType<typeof loadLibrary>>, srcFs?: Filesystem) {
     // Archie-788e: cancel a pending debounced save — the user confirmed replacement, and a timer
     // firing mid-replace would write the OUTGOING session into the incoming project's dirs.
     ctx.cancelPendingSave();
@@ -543,6 +556,31 @@ export function createIngestFlows(ctx: IngestContext) {
     for (const e of loaded.library.exhibits) {
       const dir = await openExhibitAnnotationsDir(e.slug);
       if (dir) await new AnnotationSession(author, loaded.logs[e.slug] ?? []).save(dir, { baseUrl: ctx.baseUrl });
+    }
+    // Flag-ON structure-log merge (Archie-2a9a): an incoming exhibit that carries structure/history/
+    // pages MERGES them into the local exhibit's log — the same mergeLogs contract annotations use —
+    // so exchanged copies keep section history and concurrent section edits surface as plural heads
+    // (gated by 42f3's conflicted set, resolved by d71c/90f1 territory, never auto-resolved here).
+    // Absent incoming pages → nothing is written and the next open seeds from the array as today.
+    if (STRUCTURE_REVLOG && srcFs) {
+      const srcRoot = await srcFs.root();
+      for (const e of loaded.library.exhibits) {
+        let exDir: FsDirectory;
+        try {
+          exDir = await srcRoot.getDirectory(e.slug);
+        } catch {
+          continue; // no per-exhibit dir in the source tree — nothing to merge
+        }
+        // e.id is the id this exhibit will carry post-replace (libraryToWorking keeps it), i.e. the
+        // id structure-session's ensureLoaded will read the merged log back under.
+        const res = await mergeImportedStructure(exDir, e.id, () => openExhibitStructureDir(e.slug));
+        if (res.corruptIncoming.length > 0) {
+          console.warn(`[structure] ${e.slug}: ${res.corruptIncoming.length} incoming structure page(s) couldn't be read and were skipped`, res.corruptIncoming);
+        }
+        if (res.action === "local-torn") {
+          console.warn(`[structure] ${e.slug}: local structure store is torn — refusing to merge imported section history over it (nothing was overwritten).`);
+        }
+      }
     }
     // core's libraryToWorking is the faithful inverse of workingToLibrary (Q-3: one mapper pair, no
     // drift) — it replaces the ~8-field hand-spread this did inline AND carries `tileSource` (the inline
@@ -557,6 +595,7 @@ export function createIngestFlows(ctx: IngestContext) {
   // Destructive ⇒ confirm-gated. Returns the loaded library on success (App finishes binding + nav).
   async function openZip(file: File): Promise<{ loaded: Awaited<ReturnType<typeof loadLibrary>> } | null> {
     let loaded: Awaited<ReturnType<typeof loadLibrary>>;
+    let srcFs: Filesystem;
     try {
       // openArchieLibrary (@render/core) is the canonical untrusted-zip open seam (ISSUES.md Issue 5):
       // ZipFilesystem.fromZip's zip-bomb caps (ZIP_LIMITS) AND validateArchieMarker's ADR-0020 reject
@@ -564,14 +603,15 @@ export function createIngestFlows(ctx: IngestContext) {
       // Before this migration, this call skipped validateArchieMarker entirely — a wrong-schema zip fell
       // through to loadLibrary's generic parse failure instead of the specific "different version of
       // Archie" message the other two open paths (load.ts, published.ts) already surfaced.
-      loaded = await loadLibrary(await openArchieLibrary(file));
+      srcFs = await openArchieLibrary(file);
+      loaded = await loadLibrary(srcFs);
     } catch (e) {
       ctx.alert(e instanceof Error ? e.message : "Couldn't open that file — choose a published .archie.zip file.");
       return null;
     }
     if (loaded.library.exhibits.length === 0) { ctx.alert("That file has no exhibits to open."); return null; }
     if (!ctx.confirmReplace("Open this library? Your current library will be replaced.")) return null;
-    await replaceProjectFrom(loaded);
+    await replaceProjectFrom(loaded, srcFs);
     // ⑧ (Archie-59a8): the summary panel — who wrote what in the copy you just opened.
     ctx.setCollabNote(collabSummaryText(file.name, collabBreakdown(loaded.logs, ctx.author())));
     return { loaded };
