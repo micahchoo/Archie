@@ -38,18 +38,18 @@ const BEINECKE_RIGHTS = "http://creativecommons.org/publicdomain/mark/1.0/"; // 
 const BEINECKE_STATEMENT = { label: "Source", value: "Beinecke Rare Book & Manuscript Library, Yale University — MS 408 (public domain)" } as const;
 const folio = (o: AObject): AObject => ({ ...o, rights: BEINECKE_RIGHTS, requiredStatement: { ...BEINECKE_STATEMENT } });
 export const voynichObjects: AObject[] = [
-  folio({ id: asObjectId("o1"), source: iiif("1006076"), label: "f1r — Herbal (opening page)", width: 2972, height: 3766 }),
-  folio({ id: asObjectId("o2"), source: iiif("1006109"), label: "f18v — Herbal (the sonified folio)", width: 2846, height: 3781 }),
-  folio({ id: asObjectId("o3"), source: iiif("1006123"), label: "f25v — Herbal", width: 2863, height: 3769 }),
-  folio({ id: asObjectId("o4"), source: iiif("1006139"), label: "f33v — Herbal", width: 2871, height: 3769 }),
-  folio({ id: asObjectId("o5"), source: iiif("1006194"), label: "f67r — Astronomical (foldout)", width: 4972, height: 3738 }),
-  folio({ id: asObjectId("o6"), source: iiif("1006196"), label: "f68r — Astronomical (foldout star-chart)", width: 7993, height: 3828 }),
-  folio({ id: asObjectId("o7"), source: iiif("1006208"), label: "f75r — Balneological", width: 2852, height: 3759 }),
-  folio({ id: asObjectId("o8"), source: iiif("1006214"), label: "f78r — Balneological", width: 2793, height: 3761 }),
-  folio({ id: asObjectId("o9"), source: iiif("1006231"), label: "f85v–86r — Cosmological (the Rosettes foldout)", width: 7925, height: 7268 }),
-  folio({ id: asObjectId("o10"), source: iiif("1006246"), label: "f99r — Pharmaceutical", width: 2702, height: 3765 }),
-  folio({ id: asObjectId("o11"), source: iiif("1006277"), label: "f116v — Recipes (the final page)", width: 2686, height: 3697 }),
-  { id: asObjectId("o12"), source: AV_SOURCE, label: "Kryptogramm — “04-f18v” (sonified folio 18v)", mediaType: "sound", format: "audio/mpeg", duration: 296,
+  folio({ id: asObjectId("ex-voynich.o1"), source: iiif("1006076"), label: "f1r — Herbal (opening page)", width: 2972, height: 3766 }),
+  folio({ id: asObjectId("ex-voynich.o2"), source: iiif("1006109"), label: "f18v — Herbal (the sonified folio)", width: 2846, height: 3781 }),
+  folio({ id: asObjectId("ex-voynich.o3"), source: iiif("1006123"), label: "f25v — Herbal", width: 2863, height: 3769 }),
+  folio({ id: asObjectId("ex-voynich.o4"), source: iiif("1006139"), label: "f33v — Herbal", width: 2871, height: 3769 }),
+  folio({ id: asObjectId("ex-voynich.o5"), source: iiif("1006194"), label: "f67r — Astronomical (foldout)", width: 4972, height: 3738 }),
+  folio({ id: asObjectId("ex-voynich.o6"), source: iiif("1006196"), label: "f68r — Astronomical (foldout star-chart)", width: 7993, height: 3828 }),
+  folio({ id: asObjectId("ex-voynich.o7"), source: iiif("1006208"), label: "f75r — Balneological", width: 2852, height: 3759 }),
+  folio({ id: asObjectId("ex-voynich.o8"), source: iiif("1006214"), label: "f78r — Balneological", width: 2793, height: 3761 }),
+  folio({ id: asObjectId("ex-voynich.o9"), source: iiif("1006231"), label: "f85v–86r — Cosmological (the Rosettes foldout)", width: 7925, height: 7268 }),
+  folio({ id: asObjectId("ex-voynich.o10"), source: iiif("1006246"), label: "f99r — Pharmaceutical", width: 2702, height: 3765 }),
+  folio({ id: asObjectId("ex-voynich.o11"), source: iiif("1006277"), label: "f116v — Recipes (the final page)", width: 2686, height: 3697 }),
+  { id: asObjectId("ex-voynich.o12"), source: AV_SOURCE, label: "Kryptogramm — “04-f18v” (sonified folio 18v)", mediaType: "sound", format: "audio/mpeg", duration: 296,
     rights: "http://creativecommons.org/licenses/by-nc-sa/3.0/",
     requiredStatement: { label: "Sound", value: "Kryptogramm — Elias Schwerdtfeger, CC BY-NC-SA 3.0" } },
 ];
@@ -65,27 +65,27 @@ export const voynichObjects: AObject[] = [
 export interface VoynichNote { objectId: string; region: [number, number, number, number]; comment: string }
 export const voynichNotes: VoynichNote[] = [
   // o1 f1r (2972×3766) Herbal — the opening page. // xywh APPROX — human visual-tune
-  { objectId: "o1", region: [260, 240, 2400, 3300], comment: "The opening page: a single herbal plant rising the height of the leaf, with the manuscript's first lines of script flowing around it. A faded, erased inscription sits in the top margin — the earliest trace of an owner's hand." },
+  { objectId: "ex-voynich.o1", region: [260, 240, 2400, 3300], comment: "The opening page: a single herbal plant rising the height of the leaf, with the manuscript's first lines of script flowing around it. A faded, erased inscription sits in the top margin — the earliest trace of an owner's hand." },
   // o2 f18v (2846×3781) Herbal — the sonified folio. // xywh APPROX — human visual-tune
-  { objectId: "o2", region: [240, 260, 2360, 3260], comment: "A herbal folio in the same plant-to-a-page grammar — one drawing, a block of text set beside it. This is the page sounded aloud in the recording that accompanies the manuscript." },
+  { objectId: "ex-voynich.o2", region: [240, 260, 2360, 3260], comment: "A herbal folio in the same plant-to-a-page grammar — one drawing, a block of text set beside it. This is the page sounded aloud in the recording that accompanies the manuscript." },
   // o3 f25v (2863×3769) Herbal. // xywh APPROX — human visual-tune
-  { objectId: "o3", region: [240, 260, 2380, 3260], comment: "A vivid herbal plant in strong colour, among the most often reproduced of the botanical pages. The paint sits over an earlier outline, laid on more crudely than the drawing beneath it." },
+  { objectId: "ex-voynich.o3", region: [240, 260, 2380, 3260], comment: "A vivid herbal plant in strong colour, among the most often reproduced of the botanical pages. The paint sits over an earlier outline, laid on more crudely than the drawing beneath it." },
   // o4 f33v (2871×3769) Herbal. // xywh APPROX — human visual-tune
-  { objectId: "o4", region: [240, 260, 2380, 3260], comment: "A striking, near-fantastical herbal drawing — a plant that does not match any growing thing with certainty. Its layered paint and ink reward close looking." },
+  { objectId: "ex-voynich.o4", region: [240, 260, 2380, 3260], comment: "A striking, near-fantastical herbal drawing — a plant that does not match any growing thing with certainty. Its layered paint and ink reward close looking." },
   // o5 f67r (4972×3738) Astronomical foldout. // xywh APPROX — human visual-tune
-  { objectId: "o5", region: [300, 240, 4300, 3250], comment: "An astronomical foldout: circular diagrams of Sun, Moon, and stars, wider than a standard leaf. Rings of small labelled words surround the central wheel." },
+  { objectId: "ex-voynich.o5", region: [300, 240, 4300, 3250], comment: "An astronomical foldout: circular diagrams of Sun, Moon, and stars, wider than a standard leaf. Rings of small labelled words surround the central wheel." },
   // o6 f68r (7993×3828) Astronomical foldout star-chart. // xywh APPROX — human visual-tune
-  { objectId: "o6", region: [400, 240, 7100, 3350], comment: "A wide foldout star-chart: a dense cluster of stars, each tied to a small written label, spread across an unusually broad leaf." },
+  { objectId: "ex-voynich.o6", region: [400, 240, 7100, 3350], comment: "A wide foldout star-chart: a dense cluster of stars, each tied to a small written label, spread across an unusually broad leaf." },
   // o7 f75r (2852×3759) Balneological. // xywh APPROX — human visual-tune
-  { objectId: "o7", region: [240, 300, 2360, 3200], comment: "A balneological page: small bathing figures moving through green networks of pipes, pools, and basins, with text running continuously between them." },
+  { objectId: "ex-voynich.o7", region: [240, 300, 2360, 3200], comment: "A balneological page: small bathing figures moving through green networks of pipes, pools, and basins, with text running continuously between them." },
   // o8 f78r (2793×3761) Balneological. // xywh APPROX — human visual-tune
-  { objectId: "o8", region: [240, 300, 2300, 3200], comment: "The most reproduced of the bathing pages: nude figures connected by branching green tubes that carry liquid between basins — the signature imagery of this section." },
+  { objectId: "ex-voynich.o8", region: [240, 300, 2300, 3200], comment: "The most reproduced of the bathing pages: nude figures connected by branching green tubes that carry liquid between basins — the signature imagery of this section." },
   // o9 f85v–86r Rosettes (7925×7268) Cosmological foldout. // xywh APPROX — human visual-tune
-  { objectId: "o9", region: [600, 600, 6700, 6100], comment: "The Rosettes — nine medallions joined by causeways and castle-like forms, the largest spread in the manuscript. A six-panel foldout that opens far beyond a single leaf." },
+  { objectId: "ex-voynich.o9", region: [600, 600, 6700, 6100], comment: "The Rosettes — nine medallions joined by causeways and castle-like forms, the largest spread in the manuscript. A six-panel foldout that opens far beyond a single leaf." },
   // o10 f99r (2702×3765) Pharmaceutical. // xywh APPROX — human visual-tune
-  { objectId: "o10", region: [220, 300, 2260, 3200], comment: "A pharmaceutical page: rows of labelled containers set beside isolated roots and leaves — several of them tidier copies of plants from the opening herbal." },
+  { objectId: "ex-voynich.o10", region: [220, 300, 2260, 3200], comment: "A pharmaceutical page: rows of labelled containers set beside isolated roots and leaves — several of them tidier copies of plants from the opening herbal." },
   // o11 f116v (2686×3697) Recipes — final page. // xywh APPROX — human visual-tune
-  { objectId: "o11", region: [200, 240, 2280, 3200], comment: "The manuscript's final page: short starred paragraphs and, set apart from the unknown script, a few lines in ordinary Latin written by a later hand." },
+  { objectId: "ex-voynich.o11", region: [200, 240, 2280, 3200], comment: "The manuscript's final page: short starred paragraphs and, set apart from the unknown script, a few lines in ordinary Latin written by a later hand." },
 ];
 
 // Whole-object (Object-level) Notes — a Note whose target is the OBJECT itself (a bare canvas IRI,
@@ -94,11 +94,11 @@ export const voynichNotes: VoynichNote[] = [
 // these LAST (after the reading/AV notes) so the existing notes' deterministic logical ids are unchanged.
 export interface VoynichWholeNote { objectId: string; comment: string }
 export const voynichWholeObjectNotes: VoynichWholeNote[] = [
-  { objectId: "o1", comment: "**The opening leaf, as a whole object.** Quire structure, the ruling of the page, and the erased ownership inscription in the top margin all belong to *folio 1r entire* — not to any single drawn region. This note is attached to the whole object (no box), so the Viewer frames the folio rather than pinning a spot on it." },
-  { objectId: "o9", comment: "**The Rosettes foldout, as a whole object.** The nine medallions, their joining causeways, and the six-panel fold structure are properties of the spread *entire* (f85v–86r) — the largest object in the manuscript. Attached to the whole object (no box), so the Viewer frames the foldout rather than pinning one rosette." },
+  { objectId: "ex-voynich.o1", comment: "**The opening leaf, as a whole object.** Quire structure, the ruling of the page, and the erased ownership inscription in the top margin all belong to *folio 1r entire* — not to any single drawn region. This note is attached to the whole object (no box), so the Viewer frames the folio rather than pinning a spot on it." },
+  { objectId: "ex-voynich.o9", comment: "**The Rosettes foldout, as a whole object.** The nine medallions, their joining causeways, and the six-panel fold structure are properties of the spread *entire* (f85v–86r) — the largest object in the manuscript. Attached to the whole object (no box), so the Viewer frames the foldout rather than pinning one rosette." },
   // o12 is the SOUND object — a whole-object Note on a recording (no time range): the AV analogue, rendered
   // as the whole-track band above the transcript (ADR-0018), not a timeline mark.
-  { objectId: "o12", comment: "This note is about the whole recording, not any moment in it: the Kryptogramm sonification reads folio 18v end to end. Whether you hear enciphered speech, a grille's rhythm, or an unknown real language is the manuscript's whole condition — so the claim attaches to the track entire." },
+  { objectId: "ex-voynich.o12", comment: "This note is about the whole recording, not any moment in it: the Kryptogramm sonification reads folio 18v end to end. Whether you hear enciphered speech, a grille's rhythm, or an unknown real language is the manuscript's whole condition — so the claim attaches to the track entire." },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
@@ -142,59 +142,59 @@ const O10 = "320,820,360,150";
 const R8 = "200,160,2300,420";
 export const voynichReadingNotes: VoynichReadingNote[] = [
   // R1 — f1r (o1, 2972×3766): opening incipit, first text paragraph upper-right beside the plant.
-  { objectId: "o1", xywh: R1, comment: "Under the cipher reading, this is the manuscript's enciphered incipit — the opening lines a cryptographer would attack first, since openings often carry a title or invocation whose plaintext is guessable. The professional codebreakers (Currier, the Friedmans, Tiltman) all began here and none recovered it.", reading: "cipher", tags: ["botanical", "currier-hand-A", "marginalia", "provenance"] },
-  { objectId: "o1", xywh: R1, comment: "Under the grille reading, this paragraph is the first output of a Cardan grille passed over prefix/stem/suffix tables — front-loaded, fluent-looking, and meaningless; its “opening” feel is an artefact of being generated first, not of any title.", reading: "hoax" },
-  { objectId: "o1", xywh: R1, comment: "Under the abjad reading, these are the genuine first words of a natural-language preface in an invented alphabet; word-entropy here matches Latin/English (Landini), and the line behaves as a real text's opening would.", reading: "abjad" },
+  { objectId: "ex-voynich.o1", xywh: R1, comment: "Under the cipher reading, this is the manuscript's enciphered incipit — the opening lines a cryptographer would attack first, since openings often carry a title or invocation whose plaintext is guessable. The professional codebreakers (Currier, the Friedmans, Tiltman) all began here and none recovered it.", reading: "cipher", tags: ["botanical", "currier-hand-A", "marginalia", "provenance"] },
+  { objectId: "ex-voynich.o1", xywh: R1, comment: "Under the grille reading, this paragraph is the first output of a Cardan grille passed over prefix/stem/suffix tables — front-loaded, fluent-looking, and meaningless; its “opening” feel is an artefact of being generated first, not of any title.", reading: "hoax" },
+  { objectId: "ex-voynich.o1", xywh: R1, comment: "Under the abjad reading, these are the genuine first words of a natural-language preface in an invented alphabet; word-entropy here matches Latin/English (Landini), and the line behaves as a real text's opening would.", reading: "abjad" },
 
   // R2 — f18v (o2, 2846×3781): herbal text block beside the plant; the AV-anchored folio.
-  { objectId: "o2", xywh: R2, comment: "Under the cipher reading, this block is enciphered description of the plant beside it — a herbal entry locked under a substitution or steganographic scheme.", reading: "cipher", tags: ["botanical", "currier-hand-A"] },
-  { objectId: "o2", xywh: R2, comment: "Under the grille reading, the block is filler with no relation to the drawing; the apparent “caption” adjacency is the same page-layout habit the forger imitated, not meaning.", reading: "hoax" },
-  { objectId: "o2", xywh: R2, comment: "Under the abjad reading, it is a plaintext herbal note whose statistics are “mostly compatible with natural languages and incompatible with random texts” (Amancio et al. 2013); Bax's method would attack the plant-name label first.", reading: "abjad" },
+  { objectId: "ex-voynich.o2", xywh: R2, comment: "Under the cipher reading, this block is enciphered description of the plant beside it — a herbal entry locked under a substitution or steganographic scheme.", reading: "cipher", tags: ["botanical", "currier-hand-A"] },
+  { objectId: "ex-voynich.o2", xywh: R2, comment: "Under the grille reading, the block is filler with no relation to the drawing; the apparent “caption” adjacency is the same page-layout habit the forger imitated, not meaning.", reading: "hoax" },
+  { objectId: "ex-voynich.o2", xywh: R2, comment: "Under the abjad reading, it is a plaintext herbal note whose statistics are “mostly compatible with natural languages and incompatible with random texts” (Amancio et al. 2013); Bax's method would attack the plant-name label first.", reading: "abjad" },
 
   // R3 — f25v (o3, 2863×3769): full-page herbal plant + its text (whole-page region).
-  { objectId: "o3", xywh: R3, comment: "Under the cipher reading, drawing and text are a matched entry — the picture keys the cipher, the way a known herbal's illustration would hint at the enciphered plant-name.", reading: "cipher", tags: ["botanical", "currier-hand-A"] },
-  { objectId: "o3", xywh: R3, comment: "Under the grille reading, the vivid later colour over an earlier outline is decoration added to sell the artefact; the text was generated independently of the plant, which is why no plant here is identifiable.", reading: "hoax" },
-  { objectId: "o3", xywh: R3, comment: "Under the abjad reading, this is a real (possibly stylised or composite) plant with a genuine descriptive paragraph; unidentifiability reflects an unfamiliar regional flora, not absence of content.", reading: "abjad" },
+  { objectId: "ex-voynich.o3", xywh: R3, comment: "Under the cipher reading, drawing and text are a matched entry — the picture keys the cipher, the way a known herbal's illustration would hint at the enciphered plant-name.", reading: "cipher", tags: ["botanical", "currier-hand-A"] },
+  { objectId: "ex-voynich.o3", xywh: R3, comment: "Under the grille reading, the vivid later colour over an earlier outline is decoration added to sell the artefact; the text was generated independently of the plant, which is why no plant here is identifiable.", reading: "hoax" },
+  { objectId: "ex-voynich.o3", xywh: R3, comment: "Under the abjad reading, this is a real (possibly stylised or composite) plant with a genuine descriptive paragraph; unidentifiability reflects an unfamiliar regional flora, not absence of content.", reading: "abjad" },
 
   // R4 — f33v (o4, 2871×3769): the near-fantastical herbal drawing + caption line.
-  { objectId: "o4", xywh: R4, comment: "Under the cipher reading, the “imaginary” plant is a deliberate cover image — the cipher's content need not match the picture, so an invented plant hides rather than reveals.", reading: "cipher", tags: ["botanical", "currier-hand-A"] },
-  { objectId: "o4", xywh: R4, comment: "Under the grille reading, the fantastical plant is exactly what a forger with no botanical source produces; image and text are both invented, independently.", reading: "hoax" },
-  { objectId: "o4", xywh: R4, comment: "Under the abjad reading, the drawing is a schematic of a real plant and the caption names it; Bax's program reads such labels by matching glyph-clusters to known plant names.", reading: "abjad" },
+  { objectId: "ex-voynich.o4", xywh: R4, comment: "Under the cipher reading, the “imaginary” plant is a deliberate cover image — the cipher's content need not match the picture, so an invented plant hides rather than reveals.", reading: "cipher", tags: ["botanical", "currier-hand-A"] },
+  { objectId: "ex-voynich.o4", xywh: R4, comment: "Under the grille reading, the fantastical plant is exactly what a forger with no botanical source produces; image and text are both invented, independently.", reading: "hoax" },
+  { objectId: "ex-voynich.o4", xywh: R4, comment: "Under the abjad reading, the drawing is a schematic of a real plant and the caption names it; Bax's program reads such labels by matching glyph-clusters to known plant names.", reading: "abjad" },
 
   // R5 — f67r (o5, 4972×3738, foldout): a single star-label in the outer ring of the astronomical diagram.
-  { objectId: "o5", xywh: R5, comment: "Under the cipher reading, this one-word label is an enciphered star or month name — a short, high-value crib, which is why cryptanalysts targeted the labelled diagrams.", reading: "cipher", tags: ["astronomical-symbol", "foldout", "label-word"] },
-  { objectId: "o5", xywh: R5, comment: "Under the grille reading, the label is a short grille-drawn token with no referent; its placement on a star is mimicry of real astronomical diagrams, not naming.", reading: "hoax" },
-  { objectId: "o5", xywh: R5, comment: "Under the abjad reading, the label is a real word — plausibly a star or zodiac-figure name — written abjad-style; Bax's 2014 decoding proposed exactly such proper-name readings of Voynichese labels.", reading: "abjad" },
+  { objectId: "ex-voynich.o5", xywh: R5, comment: "Under the cipher reading, this one-word label is an enciphered star or month name — a short, high-value crib, which is why cryptanalysts targeted the labelled diagrams.", reading: "cipher", tags: ["astronomical-symbol", "foldout", "label-word"] },
+  { objectId: "ex-voynich.o5", xywh: R5, comment: "Under the grille reading, the label is a short grille-drawn token with no referent; its placement on a star is mimicry of real astronomical diagrams, not naming.", reading: "hoax" },
+  { objectId: "ex-voynich.o5", xywh: R5, comment: "Under the abjad reading, the label is a real word — plausibly a star or zodiac-figure name — written abjad-style; Bax's 2014 decoding proposed exactly such proper-name readings of Voynichese labels.", reading: "abjad" },
 
   // o6 — f68r (7993×3828, foldout star-chart): next-region, the star-cluster.
-  { objectId: "o6", xywh: O6, comment: "Under the cipher reading, the cluster of small star-labels is a field of enciphered short tokens — exactly the high-value single-word cribs the codebreakers hunted across the labelled diagrams.", reading: "cipher", tags: ["astronomical-symbol", "foldout"] },
-  { objectId: "o6", xywh: O6, comment: "Under the grille reading, the scattered labels are grille-drawn tokens sprinkled to mimic a real star-chart; their density sells the diagram without any of them naming a star.", reading: "hoax" },
-  { objectId: "o6", xywh: O6, comment: "Under the abjad reading, each label is a genuine star or constellation name in the invented alphabet, distributed across the cluster as a real celestial chart would name its points.", reading: "abjad" },
+  { objectId: "ex-voynich.o6", xywh: O6, comment: "Under the cipher reading, the cluster of small star-labels is a field of enciphered short tokens — exactly the high-value single-word cribs the codebreakers hunted across the labelled diagrams.", reading: "cipher", tags: ["astronomical-symbol", "foldout"] },
+  { objectId: "ex-voynich.o6", xywh: O6, comment: "Under the grille reading, the scattered labels are grille-drawn tokens sprinkled to mimic a real star-chart; their density sells the diagram without any of them naming a star.", reading: "hoax" },
+  { objectId: "ex-voynich.o6", xywh: O6, comment: "Under the abjad reading, each label is a genuine star or constellation name in the invented alphabet, distributed across the cluster as a real celestial chart would name its points.", reading: "abjad" },
 
   // o7 — f75r (2852×3759, balneological): next-region, the pool-and-tube cluster.
-  { objectId: "o7", xywh: O7, comment: "Under the cipher reading, the text threading the pools and tubes is enciphered — and on the balneological pages, in Currier's “Language B,” it may run under a different cipher system than the herbal.", reading: "cipher", tags: ["nymphs", "currier-hand-B"] },
-  { objectId: "o7", xywh: O7, comment: "Under the grille reading, the writing among the pipes is meaningless filler; the statistical shift Currier found here is just a second grille table, not a second language.", reading: "hoax" },
-  { objectId: "o7", xywh: O7, comment: "Under the abjad reading, the text is real language in a genuinely distinct dialect or register (Currier “Language A” vs “B” = two real linguistic states), consistent with natural variation across a long manuscript.", reading: "abjad" },
+  { objectId: "ex-voynich.o7", xywh: O7, comment: "Under the cipher reading, the text threading the pools and tubes is enciphered — and on the balneological pages, in Currier's “Language B,” it may run under a different cipher system than the herbal.", reading: "cipher", tags: ["nymphs", "currier-hand-B"] },
+  { objectId: "ex-voynich.o7", xywh: O7, comment: "Under the grille reading, the writing among the pipes is meaningless filler; the statistical shift Currier found here is just a second grille table, not a second language.", reading: "hoax" },
+  { objectId: "ex-voynich.o7", xywh: O7, comment: "Under the abjad reading, the text is real language in a genuinely distinct dialect or register (Currier “Language A” vs “B” = two real linguistic states), consistent with natural variation across a long manuscript.", reading: "abjad" },
 
   // R6 — f78r (o8, 2793×3761, balneological): a label beside one nymph in the tube-network.
-  { objectId: "o8", xywh: R6, comment: "Under the cipher reading, the nymph-label is enciphered — a name or term for the figure or the fluid in the pipes — and the balneological pages, in Currier's “Language B,” may use a different cipher system than the herbal.", reading: "cipher", tags: ["nymphs", "currier-hand-B", "label-word"] },
-  { objectId: "o8", xywh: R6, comment: "Under the grille reading, the label is meaningless filler; the statistical difference Currier found between this section and the herbal is just a second grille table, not a second language.", reading: "hoax" },
-  { objectId: "o8", xywh: R6, comment: "Under the abjad reading, the label is a real word in a genuinely distinct dialect or register (Currier “Language A” vs “B” = two real linguistic states), consistent with natural-language variation across a long manuscript.", reading: "abjad" },
+  { objectId: "ex-voynich.o8", xywh: R6, comment: "Under the cipher reading, the nymph-label is enciphered — a name or term for the figure or the fluid in the pipes — and the balneological pages, in Currier's “Language B,” may use a different cipher system than the herbal.", reading: "cipher", tags: ["nymphs", "currier-hand-B", "label-word"] },
+  { objectId: "ex-voynich.o8", xywh: R6, comment: "Under the grille reading, the label is meaningless filler; the statistical difference Currier found between this section and the herbal is just a second grille table, not a second language.", reading: "hoax" },
+  { objectId: "ex-voynich.o8", xywh: R6, comment: "Under the abjad reading, the label is a real word in a genuinely distinct dialect or register (Currier “Language A” vs “B” = two real linguistic states), consistent with natural-language variation across a long manuscript.", reading: "abjad" },
 
   // R7 — f85v–86r Rosettes (o9, 7925×7268, foldout): label inside the central medallion. Cross-link source (§H).
-  { objectId: "o9", xywh: R7, comment: "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [See the Rosettes alone, deep-zoomed.](archie:voynich-rosettes/) (§H cross-link, 03 §5: repointed from the sunset bidar exhibit to the SINGLE Rosettes study — `archie:` in-body ref grammar from link.ts, rewritten to the published voynich-rosettes URL on the heads projection; resolves to the exhibit root.)", reading: "cipher", tags: ["astronomical-symbol", "foldout", "label-word"] },
-  { objectId: "o9", xywh: R7, comment: "Under the grille reading, the label is decorative gibberish; the causeways and castles are an impressive visual forgery, and the text laid over them carries no place-names because it carries nothing.", reading: "hoax" },
-  { objectId: "o9", xywh: R7, comment: "Under the abjad reading, the label names a real place or region; the abjad hypothesis is what motivates reading the Rosettes as an actual (if stylised) geographic or cosmographic diagram.", reading: "abjad" },
+  { objectId: "ex-voynich.o9", xywh: R7, comment: "Under the cipher reading, the central rosette's label is the key to the whole foldout — a place-name or cosmological term whose decryption would unlock the map's geography. [See the Rosettes alone, deep-zoomed.](archie:voynich-rosettes/) (§H cross-link, 03 §5: repointed from the sunset bidar exhibit to the SINGLE Rosettes study — `archie:` in-body ref grammar from link.ts, rewritten to the published voynich-rosettes URL on the heads projection; resolves to the exhibit root.)", reading: "cipher", tags: ["astronomical-symbol", "foldout", "label-word"] },
+  { objectId: "ex-voynich.o9", xywh: R7, comment: "Under the grille reading, the label is decorative gibberish; the causeways and castles are an impressive visual forgery, and the text laid over them carries no place-names because it carries nothing.", reading: "hoax" },
+  { objectId: "ex-voynich.o9", xywh: R7, comment: "Under the abjad reading, the label names a real place or region; the abjad hypothesis is what motivates reading the Rosettes as an actual (if stylised) geographic or cosmographic diagram.", reading: "abjad" },
 
   // o10 — f99r (2702×3765, pharmaceutical): next-region, the apothecary-jar label.
-  { objectId: "o10", xywh: O10, comment: "Under the cipher reading, the word beside the jar is an enciphered label — the name of a simple or preparation — the kind of short, contextful token cryptanalysts hoped would crack the system.", reading: "cipher", tags: ["apothecary", "label-word"] },
-  { objectId: "o10", xywh: O10, comment: "Under the grille reading, the jar-label is a grille-drawn token placed to imitate an apothecary's inventory; the tidy rows sell a working reference that names nothing.", reading: "hoax" },
-  { objectId: "o10", xywh: O10, comment: "Under the abjad reading, the label is a real word naming the container's contents in the invented alphabet — exactly the proper-name labels Bax's method reads first.", reading: "abjad" },
+  { objectId: "ex-voynich.o10", xywh: O10, comment: "Under the cipher reading, the word beside the jar is an enciphered label — the name of a simple or preparation — the kind of short, contextful token cryptanalysts hoped would crack the system.", reading: "cipher", tags: ["apothecary", "label-word"] },
+  { objectId: "ex-voynich.o10", xywh: O10, comment: "Under the grille reading, the jar-label is a grille-drawn token placed to imitate an apothecary's inventory; the tidy rows sell a working reference that names nothing.", reading: "hoax" },
+  { objectId: "ex-voynich.o10", xywh: O10, comment: "Under the abjad reading, the label is a real word naming the container's contents in the invented alphabet — exactly the proper-name labels Bax's method reads first.", reading: "abjad" },
 
   // R8 — f116v (o11, 2686×3697, final page): the later Latin-script marginalia (a different hand, NOT Voynichese).
-  { objectId: "o11", xywh: R8, comment: "Under the cipher reading, this Latin line is a later owner's attempted key or crib — someone who believed the book was enciphered and jotted a decryption hint.", reading: "cipher", tags: ["marginalia", "provenance"] },
-  { objectId: "o11", xywh: R8, comment: "Under the grille reading, the Latin is a later reader's failed gloss: proof that even early owners could extract no meaning, so they annotated around the void.", reading: "hoax" },
-  { objectId: "o11", xywh: R8, comment: "Under the abjad reading, the Latin hand is a later scribe glossing the abjad text — treating it as a real language worth translating, which presupposes it has content.", reading: "abjad" },
+  { objectId: "ex-voynich.o11", xywh: R8, comment: "Under the cipher reading, this Latin line is a later owner's attempted key or crib — someone who believed the book was enciphered and jotted a decryption hint.", reading: "cipher", tags: ["marginalia", "provenance"] },
+  { objectId: "ex-voynich.o11", xywh: R8, comment: "Under the grille reading, the Latin is a later reader's failed gloss: proof that even early owners could extract no meaning, so they annotated around the void.", reading: "hoax" },
+  { objectId: "ex-voynich.o11", xywh: R8, comment: "Under the abjad reading, the Latin hand is a later scribe glossing the abjad text — treating it as a real language worth translating, which presupposes it has content.", reading: "abjad" },
 ];
 
 // A reading-bearing AV note on the o12 sound canvas. `t` is the `t=start,end` FragmentSelector range
@@ -218,10 +218,10 @@ export interface VoynichSection { id: string; title: string; objectId: string; s
 
 // §G — the 6-beat narrative spine (03 §3). Curator voice (names what the visitor sees — no dev jargon).
 export const voynichSections: VoynichSection[] = [
-  { id: "s1", title: "Herbal", objectId: "o1", start: "xywh=pixel:200,200,2600,3400", prose: "The book opens as a herbal: a plant to a page, text flowing around the drawing. None of these plants can be named with certainty — some look observed, some invented — and the writing has never been read. Step back, first, to the leaf entire:\n\n[Folio 1r, as a whole object.](archie:voynich/#/o/o1)" },
-  { id: "s2", title: "Astronomical", objectId: "o5", start: "xywh=pixel:400,300,4000,3100", prose: "The pages widen into fold-out wheels of Sun, Moon, and stars, each star tied to a small labelled word. Conventional zodiac figures appear, but the labels around them stay closed to us." },
-  { id: "s3", title: "Balneological", objectId: "o8", start: "xywh=pixel:200,400,2400,3000", prose: "Small bathing figures move through green networks of pipes and basins. The script shifts character here — measurably a different system than the herbal — as if a second voice took up the pen." },
-  { id: "s4", title: "Cosmological", objectId: "o9", start: "xywh=pixel:2600,2400,2800,2600", prose: "The largest spread in the book unfolds into nine medallions joined by causeways, with castle-like and map-like forms. Whether it charts real places or imagined ones is part of what the page refuses to settle. The same foldout, alone and deep-zoomed, is its own study:\n\n[The Rosettes foldout, in the full grid.](archie:voynich/#/o/o9)" },
-  { id: "s5", title: "Pharmaceutical", objectId: "o10", start: "xywh=pixel:200,400,2300,3000", prose: "Rows of labelled containers sit beside isolated roots and leaves — many of them tidier copies of plants from the opening herbal, as if assembled into a working reference." },
-  { id: "s6", title: "Recipes", objectId: "o11", start: "xywh=pixel:200,160,2300,420", prose: "The book closes on short starred paragraphs and, on its very last page, a few lines in ordinary Latin script — a later hand reaching in from outside the manuscript's silence." },
+  { id: "s1", title: "Herbal", objectId: "ex-voynich.o1", start: "xywh=pixel:200,200,2600,3400", prose: "The book opens as a herbal: a plant to a page, text flowing around the drawing. None of these plants can be named with certainty — some look observed, some invented — and the writing has never been read. Step back, first, to the leaf entire:\n\n[Folio 1r, as a whole object.](archie:voynich/#/o/ex-voynich.o1)" },
+  { id: "s2", title: "Astronomical", objectId: "ex-voynich.o5", start: "xywh=pixel:400,300,4000,3100", prose: "The pages widen into fold-out wheels of Sun, Moon, and stars, each star tied to a small labelled word. Conventional zodiac figures appear, but the labels around them stay closed to us." },
+  { id: "s3", title: "Balneological", objectId: "ex-voynich.o8", start: "xywh=pixel:200,400,2400,3000", prose: "Small bathing figures move through green networks of pipes and basins. The script shifts character here — measurably a different system than the herbal — as if a second voice took up the pen." },
+  { id: "s4", title: "Cosmological", objectId: "ex-voynich.o9", start: "xywh=pixel:2600,2400,2800,2600", prose: "The largest spread in the book unfolds into nine medallions joined by causeways, with castle-like and map-like forms. Whether it charts real places or imagined ones is part of what the page refuses to settle. The same foldout, alone and deep-zoomed, is its own study:\n\n[The Rosettes foldout, in the full grid.](archie:voynich/#/o/ex-voynich.o9)" },
+  { id: "s5", title: "Pharmaceutical", objectId: "ex-voynich.o10", start: "xywh=pixel:200,400,2300,3000", prose: "Rows of labelled containers sit beside isolated roots and leaves — many of them tidier copies of plants from the opening herbal, as if assembled into a working reference." },
+  { id: "s6", title: "Recipes", objectId: "ex-voynich.o11", start: "xywh=pixel:200,160,2300,420", prose: "The book closes on short starred paragraphs and, on its very last page, a few lines in ordinary Latin script — a later hand reaching in from outside the manuscript's silence." },
 ];

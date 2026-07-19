@@ -334,16 +334,18 @@ export function createBindingStore(deps: BindingDeps) {
     //   passes; `dirty`-only reruns just that exhibit's JSON/HTML (the note-edit hot path). —
     // Re-marking a slug for WRITING cancels any pending EXHIBIT removal of it (a remove-then-recreate in one
     // drain must not both write and delete the exhibit) — the inverse of markExhibitRemoved's dEx.delete.
-    // We do NOT purge dRemovedObj here. NB: object ids are NOT always minted fresh — nextObjectId (ingest-
-    // flows.ts) REUSES a freed trailing id (remove o3 from [o1,o2,o3], re-add → o3 again; a freed MIDDLE id
-    // is not reused). So a re-add can name-collide with a pending removal of the SAME id+asset. This is still
-    // safe, but for a SUBTLER reason than "ids are fresh": any asset-writing re-add sets `reassets` for the
+    // We do NOT purge dRemovedObj here. Object ids are now minted FRESH — mintObjectId (object-id.ts)
+    // hands every add a library-global ULID, so a re-add can NEVER reuse a removed object's id (the old
+    // nextObjectId len+1 probe DID reuse a freed trailing id — remove o3 from [o1,o2,o3], re-add → o3
+    // again — the id-reuse bug Archie-9ea8 closed). With fresh ids a re-add cannot name-collide with a
+    // pending removal of the same id at all. Even in the OLD reuse regime this was safe, for a subtler
+    // reason worth keeping as the load-bearing invariant: any asset-writing re-add sets `reassets` for the
     // exhibit (markAssetsDirty), so in a single drain site.ts PRUNES the file then RE-COPIES it in the same
     // asset pass — the tree ends consistent; across drains each drain is self-consistent (ISSUES.md Issue 25
     // row (e), ledgers/MIRROR.md: two concurrently-live objects can never share an asset name, so the
-    // prune-vs-skip-asset-pass dangling manifest is not-reachable). The load-bearing invariant is therefore
-    // "an asset-writing re-add always marks reassets", NOT "ids are fresh" — if that ever stops holding,
-    // purge dRemovedObj by matching (slug, assetName) against live objects here.
+    // prune-vs-skip-asset-pass dangling manifest is not-reachable). The invariant is therefore "an
+    // asset-writing re-add always marks reassets" — if that ever stops holding, purge dRemovedObj by
+    // matching (slug, assetName) against live objects here.
     /** A note edit / exhibit-metadata edit — rewrite that exhibit's JSON/HTML only (no byte passes). */
     markExhibitDirty(slug: string) { dEx.add(slug); dRemovedEx = dRemovedEx.filter((x) => x !== slug); },
     /** An object added / an asset changed — also rerun that exhibit's asset-copy + tiling byte passes. */

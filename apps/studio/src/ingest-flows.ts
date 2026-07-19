@@ -7,7 +7,7 @@
 // an explicit IngestContext — store handles, reactive getters, and state setters — so nothing closes
 // over App's module scope. App constructs the context once and spreads the returned flows.
 import {
-  AnnotationSession, loadLibrary, openArchieLibrary, libraryToWorking,
+  AnnotationSession, loadLibrary, openArchieLibrary, libraryToWorking, mintObjectId,
   mediaTypeFromSource, readExifOrientation, isOrientationNoop, orientationTransform, MAX_MASTER_DIM,
   readExifCaptureDate,
   type Filesystem, type FsDirectory,
@@ -212,12 +212,6 @@ export function createIngestFlows(ctx: IngestContext) {
       img.src = src;
     });
   }
-  function nextObjectId(ex: ExhibitMeta): string {
-    const existing = new Set(ex.objects.map((o) => o.id));
-    let n = ex.objects.length + 1, id = `o${n}`;
-    while (existing.has(id)) id = `o${++n}`;
-    return id;
-  }
   const exhibitBySlug = (slug: string): ExhibitMeta | undefined => ctx.lib.meta.exhibits.find((e) => e.slug === slug);
   const exhibit = (): ExhibitMeta | undefined => exhibitBySlug(ctx.currentSlug());
 
@@ -246,7 +240,7 @@ export function createIngestFlows(ctx: IngestContext) {
     if (!src) return;
     const ex = exhibit();
     if (!ex) return;
-    const id = nextObjectId(ex);
+    const id = mintObjectId();
     const mt = mediaTypeFromSource(src); // .mp3/.mp4/… → sound/video; else image (OSD)
     const dims = mt === "image" ? await imageDims(src) : null; // dimension-probe only makes sense for images
     await appendObject({ id, source: src, label: label.trim() || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(mt !== "image" ? { mediaType: mt } : {}) });
@@ -256,7 +250,7 @@ export function createIngestFlows(ctx: IngestContext) {
   async function addMapObject(m: { label: string; tileSource: XyzTileSource }) {
     const ex = exhibit();
     if (!ex) return;
-    const id = nextObjectId(ex);
+    const id = mintObjectId();
     await appendObject({ id, source: m.tileSource.template, label: m.label, tileSource: m.tileSource });
     ctx.switchObject(id);
     ctx.toEditor();
@@ -275,7 +269,7 @@ export function createIngestFlows(ctx: IngestContext) {
     const ex = exhibitBySlug(targetSlug);
     if (!ex) return { added: false };
     const slug = targetSlug;
-    const id = nextObjectId(ex);
+    const id = mintObjectId();
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
 
     // AV INGEST (§152 gate lifted 2026-05-26, user): store an audio/video file as an OPFS asset — no EXIF/dims.
@@ -524,7 +518,7 @@ export function createIngestFlows(ctx: IngestContext) {
         ctx.setImportStatus({ name: o.label, index: i + 1, total: plan.objects.length });
         const ex = exhibitBySlug(targetSlug);
         if (!ex) break;
-        await appendObject({ id: nextObjectId(ex), ...o }, undefined, targetSlug);
+        await appendObject({ id: mintObjectId(), ...o }, undefined, targetSlug);
       }
     } finally {
       ctx.setImportStatus(null);
@@ -899,7 +893,7 @@ export function createIngestFlows(ctx: IngestContext) {
   }
 
   return {
-    imageDims, nextObjectId, appendObject, addObject, addMapObject, addObjectFromFile, addFiles,
+    imageDims, appendObject, addObject, addMapObject, addObjectFromFile, addFiles,
     newExhibitFromFolder, newExhibitFromManifest, addManifestToExhibit, fetchManifestPlan, fetchCollectionPreview, newExhibitsFromCollection,
     importNotesCsv, importNotesWadm, replaceProjectFrom, openZip,
   };

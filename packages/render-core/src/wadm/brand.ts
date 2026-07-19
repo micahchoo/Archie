@@ -59,12 +59,23 @@ function encodeRandom(len: number, rng: () => number): string {
 }
 
 /**
+ * Mint a fresh raw ULID string (time prefix + random suffix) — the shared core of
+ * every branded mint (LogicalId / RevId / ObjectId). `now` (ms) and `rng` are
+ * injectable for deterministic tests; defaults use wall-clock + Math.random. The time
+ * prefix is big-endian, so larger timestamps sort lexicographically later (ADR-0003 spine).
+ * Callers brand the result to their own id type — see mintLogicalId / mintRevId / mintObjectId.
+ */
+export function mintUlid(now: number = Date.now(), rng: () => number = Math.random): string {
+  return encodeTime(now, TIME_LEN) + encodeRandom(RAND_LEN, rng);
+}
+
+/**
  * Mint a fresh ULID logical id. `now` (ms) and `rng` are injectable for
  * deterministic tests; defaults use wall-clock + Math.random. The time prefix is
  * big-endian, so larger timestamps sort lexicographically later (ADR-0003 spine).
  */
 export function mintLogicalId(now: number = Date.now(), rng: () => number = Math.random): LogicalId {
-  return (encodeTime(now, TIME_LEN) + encodeRandom(RAND_LEN, rng)) as LogicalId;
+  return mintUlid(now, rng) as LogicalId;
 }
 
 /**
@@ -73,7 +84,7 @@ export function mintLogicalId(now: number = Date.now(), rng: () => number = Math
  * collision-free even when two concurrent edits share a `{logicalId}/v{n}` citation id.
  */
 export function mintRevId(now: number = Date.now(), rng: () => number = Math.random): RevId {
-  return (encodeTime(now, TIME_LEN) + encodeRandom(RAND_LEN, rng)) as RevId;
+  return mintUlid(now, rng) as RevId;
 }
 
 /** Brand an existing ULID string as a RevId. Throws on malformed input. */
