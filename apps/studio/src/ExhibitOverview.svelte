@@ -56,6 +56,8 @@
     bulkConfirming,
     onvisible,
     safety,
+    scrollTop = 0,
+    onscrolled,
   }: {
     title: string;
     layout: LayoutType;
@@ -117,6 +119,18 @@
     /** The shared SafetyState indicator (Archie-c76d) — App owns the save/binding wiring and passes it as a
      *  snippet so it mounts in this header's one save slot, identical to the editor + library headers. */
     safety?: Snippet;
+    // --- Transient screen state (ADR-0024 #6). The GRID's scroll offset is "how the place looks" beyond its
+    // address; App remembers it per exhibit within the session and restores it on return (a fresh load
+    // resets to 0). This replaces the retired canvas's tx/ty/z pan restore: the grid persists no pan/zoom,
+    // but scroll-to-object-200 → open → back must not land at the top. Deliberately NOT a two-way bind — a
+    // scroll position bound both ways feedback-loops (restoring writes the DOM, which fires a scroll event,
+    // which writes back the possibly-clamped value). Instead `scrollTop` is a ONE-WAY restore target that
+    // changes only when App enters an exhibit, and `onscrolled` reports the live offset UP. (Grid/List mode
+    // + density are PERSISTED view preferences owned in view-prefs — not transients.) ---
+    /** The grid's vertical scroll offset to restore on enter (grid mode). */
+    scrollTop?: number;
+    /** Report the live grid scroll offset so App can remember it per slug. */
+    onscrolled?: (top: number) => void;
   } = $props();
 
   let rightsOpen = $state(false);
@@ -318,6 +332,23 @@
       width: Math.abs(marquee.x1 - marquee.x0),
       height: Math.abs(marquee.y1 - marquee.y0),
     };
+  });
+
+  // Grid scroll offset (transient screen state, ADR-0024 #6). Decoupled into two one-way channels so a
+  // scroll position — which produces a DOM event when written — can't feedback-loop the way a two-way bind
+  // would:
+  //  • report: onscroll → onscrolled(top) reports the live offset UP; App writes it into its per-slug map.
+  //  • restore: the effect applies the `scrollTop` restore target DOWN into the DOM. It tracks ONLY
+  //    `scrollTop` (which App changes solely on enter), never a user scroll — so applying never fights an
+  //    active scroll and a user scroll never re-triggers a restore. The rAF defers the write until after
+  //    layout settles: a freshly-mounted grid whose plates haven't laid out yet would clamp the target to 0
+  //    (the bug this fixes). contain-intrinsic-size then keeps scrollHeight stable so the offset sticks.
+  function onGridScroll() { if (gridScroll) onscrolled?.(gridScroll.scrollTop); }
+  $effect(() => {
+    const top = scrollTop; // re-applies ONLY when App hands us a new restore target (an exhibit enter)
+    if (mode !== "grid" || !gridScroll) return; // list owns its own scroll; nothing to restore into
+    const el = gridScroll;
+    requestAnimationFrame(() => { if (el.isConnected && Math.abs(el.scrollTop - top) > 1) el.scrollTop = top; });
   });
 
   // Drag-to-reorder reading order — the overview's REASON TO EXIST (the published Grid display order /
@@ -576,12 +607,18 @@
     <p class="grid-hint">{reorderMessage || (hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a media item to set the reading order.")}</p>
     <!-- Scrollable, virtualized grid (SCALE-GALLERY): a normal overflow-y scroll region, NOT a pan/zoom
          viewport. The container carries only the marquee pointer handlers (select-mode background
-         rubber-band); the roving-tabindex keydown lives on the plate BUTTONS (real interactive elements),
-         so the APG Grid role stays scoped to the LIST (docs §1). role="application" (parity with the retired
-         canvas, which used the same for its pointer handlers) is the honest interactive-surface role that
-         also keeps the marquee handlers clear of svelte-a11y's no_static_element_interactions. -->
+         rubber-band) + the scroll-position report; the roving-tabindex keydown lives on the plate BUTTONS
+         (real interactive elements), so the APG Grid role stays scoped to the LIST (docs §1).
+         role="group" (NOT application): docs/research/a11y-interactions.md condemns role="application" here
+         — it would suppress the screen-reader browse mode over the whole plate grid (the primary content
+         surface) at all times. A group is an honest labelled container of the plate buttons. The marquee
+         has a keyboard equivalent (Shift+Arrow range-select on the plates), so its pointer-only handlers are
+         the ignore-able case the codebase treats as such, not a restructure — the targeted svelte-ignore
+         below is scoped to exactly this element. -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div class="grid-scroll" bind:this={gridScroll}
-      role="application" aria-label="Exhibit grid"
+      role="group" aria-label="Media items — reading order"
+      onscroll={onGridScroll}
       onpointerdown={onBgPointerDown}
       onpointermove={onBgPointerMove}
       onpointerup={onBgPointerUp}

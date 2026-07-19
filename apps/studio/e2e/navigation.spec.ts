@@ -217,4 +217,46 @@ test.describe("Studio place navigation (Archie-d80f)", () => {
     expect(errs.pageErrors, errs.pageErrors.join(" | ")).toEqual([]);
     expect(errs.consoleErrors, errs.consoleErrors.join(" | ")).toEqual([]);
   });
+
+  // The overview GRID's scroll offset is per-slug transient screen state (ADR-0024 #6) — replaces the
+  // retired canvas's tx/ty/z restore. Browser scroll can only be exercised end-to-end (jsdom/vitest can't),
+  // so this lives here. Uses the 12-object "The Whole Manuscript" (slug `voynich`) so the grid overflows;
+  // "The Rosettes" (the other scenarios' fixture) is single-object and never scrolls.
+  test("6. grid scroll offset restores per-exhibit across an object open → back (ADR-0024 #6)", async ({ page }) => {
+    const errs = trackErrors(page);
+    // A short, narrow viewport forces the 12 plates to overflow the scroll region (min a few rows).
+    await page.setViewportSize({ width: 800, height: 640 });
+    await boot(page);
+
+    // Enter the multi-object overview IN-APP (hash change, no reload — a reload would wipe the session-only
+    // per-slug Map this feature relies on). Grid is the default mode on a fresh context.
+    await page.evaluate(() => { location.hash = "#/voynich"; });
+    const grid = page.getByRole("group", { name: "Media items — reading order" });
+    await expect(grid).toBeVisible();
+
+    // Precondition: the grid actually overflows, else the assertion below would pass trivially at 0.
+    const overflow = await grid.evaluate((el) => el.scrollHeight - el.clientHeight);
+    expect(overflow, "grid must overflow for the scroll-restore assertion to mean anything").toBeGreaterThan(40);
+
+    // Scroll down; the container's onscroll reports the offset up into App's per-slug memory.
+    await grid.evaluate((el) => { el.scrollTop = 180; });
+    const saved = await grid.evaluate((el) => el.scrollTop);
+    expect(saved, "scroll did not take").toBeGreaterThan(0);
+
+    // Open an object (in-app hash change so the Map survives), confirm the editor, then history-back.
+    await page.evaluate(() => { location.hash = "#/voynich/o/o5"; });
+    await expect(page.getByRole("navigation", { name: "Exhibit objects" })).toBeVisible();
+    await page.goBack();
+    await expect(grid).toBeVisible();
+
+    // Back on the overview, the grid is restored to where we left it (within a few px for the restore
+    // effect's 1px guard + sub-pixel rounding) — NOT reset to the top.
+    await expect
+      .poll(async () => grid.evaluate((el) => el.scrollTop), { timeout: 2000 })
+      .toBeGreaterThan(saved - 5);
+    const restored = await grid.evaluate((el) => el.scrollTop);
+    expect(Math.abs(restored - saved), `restored ${restored} vs saved ${saved}`).toBeLessThanOrEqual(5);
+
+    expect(errs.pageErrors, errs.pageErrors.join(" | ")).toEqual([]);
+  });
 });

@@ -184,10 +184,12 @@
   const savedLastPlace: Place = (() => { try { return parsePlace(localStorage.getItem(LAST_PLACE_KEY) ?? ""); } catch { return LIBRARY; } })();
 
   // --- Transient screen state mirrors (ADR-0024 #6). Bound into the child screens; App remembers them
-  // across the child's remount within the session. The library search is one place, so App-instance state
-  // is its session memory (resets on reload). (The overview's Grid/List mode + grid density are PERSISTED
-  // prefs owned in view-prefs; the retired canvas's pan-zoom transient was removed with the canvas — the
-  // grid persists no spatial state, so there's nothing per-slug to remember here anymore.) ---
+  // across the child's remount within the session. The overview's GRID scroll offset is per-slug (an
+  // App-instance Map keyed by exhibit slug — replaces the retired canvas's per-slug pan-zoom); the library
+  // search is one place, so App-instance state is its session memory (resets on reload). (The overview's
+  // Grid/List mode + grid density are PERSISTED prefs owned in view-prefs, not transients.) ---
+  const overviewScrollTops = new Map<string, number>();
+  let ovScrollInitial = $state(0); // the offset handed DOWN to restore on enter (set only by restoreOverviewScroll)
   let gallerySearch = $state("");
   // Lazy deep-zoom canvas (OpenSeadragon + Annotorious — the largest dep). Loaded the moment the user
   // enters an exhibit (overview or editor), so it's warm by the time an object opens, while staying OUT
@@ -418,10 +420,11 @@
       syncUrl(); // push the settled landing place (no-op if a caller/history replay is still suspending)
     }
   }
-  // Enter the overview scale. The single funnel for "show overview". (The mode is a persisted view
-  // preference read live by the child; the retired canvas's per-slug pan-zoom restore is gone — the grid
-  // keeps no transient spatial state.)
-  function enterOverview(_slug: string) {
+  // Enter the overview scale for `slug`, restoring the grid scroll offset remembered for it within this
+  // session (ADR-0024 #6). The single funnel for "show overview" so restore never gets skipped. (Grid/List
+  // mode + density are persisted view preferences read live by the child; scroll is the transient here.)
+  function enterOverview(slug: string) {
+    restoreOverviewScroll(slug);
     view = "overview";
   }
   async function backToLibrary() {
@@ -641,6 +644,21 @@
     if (!isTauri()) return;
     try { localStorage.setItem(LAST_PLACE_KEY, url); } catch { /* best-effort — private mode just won't restore */ }
   }
+  // Best-effort session memory for the overview's transient look (ADR-0024 #6): restore/remember the GRID
+  // scroll offset per slug (replaces the retired canvas's tx/ty/z restore — the grid persists no pan/zoom).
+  // Restore is a one-way hand-DOWN set on enter; remember is a report-driven write UP (see the decoupling
+  // rationale on ExhibitOverview's scrollTop/onscrolled props — a scroll position can't be two-way bound).
+  function restoreOverviewScroll(slug: string) {
+    ovScrollInitial = overviewScrollTops.get(slug) ?? 0;
+  }
+  function rememberOverviewScroll(top: number) {
+    // Skip while a transition is in flight (navSyncSuspendCount > 0): currentSlug can move to a NEW slug
+    // before the outgoing grid's last scroll report lands, which would stamp A's offset under B (the same
+    // N1 the removed pan-zoom effect guarded).
+    if (view !== "overview" || navSyncSuspendCount > 0) return;
+    overviewScrollTops.set(currentSlug, top);
+  }
+
   // URL → STATE. Apply a place to the view, degrading an unresolvable one to its nearest surviving ancestor
   // (ADR-0024 #4) and naming what was missing. Suspends the sync effect for the whole transition, then does
   // its OWN history bookkeeping: push a fresh entry, replace the bar in place (boot + a degrade correction),
@@ -1903,6 +1921,8 @@
       onbulkdelete={requestBulkDelete}
       {bulkConfirming}
       onvisible={(ids) => (visibleIds = ids)}
+      scrollTop={ovScrollInitial}
+      onscrolled={rememberOverviewScroll}
       onstartnarrative={() => openObject(OBJECTS[0]?.id ?? currentObjectId)}
       rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}
