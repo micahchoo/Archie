@@ -847,6 +847,11 @@ export function createIngestFlows(ctx: IngestContext) {
     let imported = 0, dup = 0;
     for (const n of plan.notes) {
       const [x, y, w, h] = n.region;
+      // ADR-0026 note (review of f344114): a user-supplied `objectId` here is target-AUTHORING, not a
+      // migration input — the note is being attached to whatever object the id names. A pasted LEGACY
+      // `o<n>` in a migrated library therefore DANGLES (points at nothing), it does not resurrect an
+      // object — the same read-time tolerance every `archie:` ref has. This is a pre-existing contract;
+      // flagged for a future id-validation/normalization pass, no behavior change here.
       const target = rectSel(ctx.canvasIdOf(n.objectId), x, y, w, h);
       const k = keyFor(target, n.comment);
       if (existing.has(k)) { dup++; continue; }
@@ -890,6 +895,10 @@ export function createIngestFlows(ctx: IngestContext) {
     const existing = new Set(session.entries.map((e) => keyFor(e.target, e.body ?? [])));
     let imported = 0, dup = 0;
     for (const n of plan.notes) {
+      // ADR-0026 note (review of f344114): as in importNotesCsv, `n.objectId` is target-AUTHORING —
+      // planWadmImport already gates it against the exhibit's live object ids, and a pasted legacy id
+      // that no longer matches simply dangles (no resurrection). Pre-existing contract; a future
+      // id-validation pass may normalize/reject, but this migration wiring changes nothing here.
       const target = { type: "SpecificResource" as const, source: ctx.canvasIdOf(n.objectId), selector: n.selector };
       const k = keyFor(target, n.body);
       if (existing.has(k)) { dup++; continue; }
@@ -914,6 +923,17 @@ export function createIngestFlows(ctx: IngestContext) {
     // Archie-788e: cancel a pending debounced save — the user confirmed replacement, and a timer
     // firing mid-replace would write the OUTGOING session into the incoming project's dirs.
     ctx.cancelPendingSave();
+    // ADR-0026 trigger 2 (adoption), STEP 1 — clear the OUTGOING library's id-scheme marker + pre-migration
+    // snapshot BEFORE any incoming byte lands. This ordering is a crash-window fix (review of f344114): the
+    // marker is the migration engine's commit point, so it must be absent for the whole window in which the
+    // store holds incoming content of an UNKNOWN scheme. If we cleared it last, a hard crash after incoming
+    // LEGACY content had landed but before the clear would leave legacy ids under the stale scheme-2 marker —
+    // next boot's readIdScheme sees 2, the engine passes through, and the legacy ids never migrate (the
+    // forbidden coexistence, NOT self-healing). Clearing first means a crash ANYWHERE in the replace leaves a
+    // MARKERLESS store, which trigger 1 re-migrates idempotently on the next boot. Deleting the outgoing
+    // snapshot early is safe: the replace is destructive + confirm-gated, so that library is being discarded
+    // wholesale, and a markerless composed-content store just re-marks as a no-op rewrite with a fresh snapshot.
+    await resetIdSchemeState();
     const author = ctx.author();
     for (const e of ctx.lib.meta.exhibits) await clearExhibitAnnotations(e.slug);
     for (const e of loaded.library.exhibits) {
@@ -957,17 +977,16 @@ export function createIngestFlows(ctx: IngestContext) {
     // object lacks exifOrientation+transform) — same as the inline version, which never reconstructed it.
     ctx.lib.setMeta(libraryToWorking(loaded.library));
     await ctx.lib.persist();
-    // ADR-0026 trigger 2 (untrusted-archive ADOPTION boundary): the incoming library now sits in the
-    // resident OPFS store, but with WHATEVER id scheme it was published under — legacy ids if it predates
-    // the migration. The open seam itself (open.ts) does NOT migrate: it hands back a ZipFilesystem in the
-    // published-tree LAYOUT (root `archie.json`/`collection.json`/`exhibits.json`, per-exhibit dirs at
-    // root), which the working-store-shaped engine can't read — migration runs HERE, where the data has
-    // landed in the working-store layout the engine understands (see the note in open.ts). resetIdSchemeState
-    // clears the OUTGOING library's stale scheme-2 marker + snapshot so the freshly-written content reads as
-    // legacy and gets migrated + snapshotted fresh; the engine is idempotent, so an already-composed archive
-    // is a no-op rewrite. Reload the migrated meta so the in-memory library matches disk (else the next save
-    // would write legacy ids back over the composed store).
-    await resetIdSchemeState();
+    // ADR-0026 trigger 2 (adoption), STEP 2 — the incoming library now sits in the resident OPFS store
+    // under NO marker (STEP 1 cleared it), with WHATEVER id scheme it was published under (legacy if it
+    // predates the migration). The open seam itself (open.ts) does NOT migrate: it hands back a
+    // ZipFilesystem in the published-tree LAYOUT (root `archie.json`/`collection.json`/`exhibits.json`,
+    // per-exhibit dirs at root), which the working-store-shaped engine can't read — migration runs HERE,
+    // where the data has landed in the working-store layout the engine understands (see the note in
+    // open.ts). A markerless store reads as legacy, so the engine migrates + snapshots it fresh; it is
+    // idempotent, so an already-composed archive is a no-op rewrite that just (re)writes the scheme-2
+    // marker. Reload the migrated meta so the in-memory library matches disk (else the next save would
+    // write legacy ids back over the composed store).
     const migration = await migrateResidentStoreIds();
     if (migration?.migrated) {
       const reloaded = await loadLibraryMeta();

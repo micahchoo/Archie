@@ -12,7 +12,8 @@ const PROJECT = "archie-demo-project";
 const dec = (b: ArrayBuffer): string => new TextDecoder().decode(b);
 
 // The resident OPFS store stand-in — a fresh MemoryFilesystem per test, shared by the store mock + ctx.lib.
-const h = vi.hoisted(() => ({ resident: null as unknown as Filesystem }));
+// `order` records the sequence of marker-reset vs incoming-write ops to pin the crash-window ordering.
+const h = vi.hoisted(() => ({ resident: null as unknown as Filesystem, order: [] as string[] }));
 
 async function projDir(): Promise<FsDirectory> {
   return (await h.resident.root()).getDirectory(PROJECT, { create: true });
@@ -26,11 +27,14 @@ vi.mock("./store.js", async (importOriginal) => {
   const proj = async () => (await h.resident.root()).getDirectory(PROJECT, { create: true });
   return {
     ...orig,
-    openExhibitAnnotationsDir: async (slug: string) =>
-      (await (await (await proj()).getDirectory("exhibits", { create: true })).getDirectory(slug, { create: true })).getDirectory("annotations", { create: true }),
+    openExhibitAnnotationsDir: async (slug: string) => {
+      h.order.push(`write:${slug}`); // an INCOMING write — must land AFTER the marker reset
+      return (await (await (await proj()).getDirectory("exhibits", { create: true })).getDirectory(slug, { create: true })).getDirectory("annotations", { create: true });
+    },
     clearExhibitAnnotations: async () => {},
     migrateResidentStoreIds: async () => orig.migrateResidentStoreIds(h.resident),
     resetIdSchemeState: async () => {
+      h.order.push("reset");
       const d = await proj();
       await d.remove("id-scheme.json").catch(() => {});
       await d.remove("pre-migration").catch(() => {});
@@ -77,7 +81,7 @@ const legacyLoaded = () =>
     logs: { "ex-voynich": [] },
   }) as never;
 
-beforeEach(() => { h.resident = new MemoryFilesystem(); });
+beforeEach(() => { h.resident = new MemoryFilesystem(); h.order = []; });
 
 describe("replaceProjectFrom — object-id adoption (ADR-0026 trigger 2)", () => {
   it("adopting a legacy library migrates the resident store — zero legacy ids on disk AND in memory", async () => {
@@ -91,6 +95,16 @@ describe("replaceProjectFrom — object-id adoption (ADR-0026 trigger 2)", () =>
     expect(disk.exhibits[0].objects[0].id).toBe("ex-voynich.o1");
     // …and the in-memory meta reloaded to match (so the next persist won't clobber it with a legacy id).
     expect(meta().exhibits[0].objects[0].id).toBe("ex-voynich.o1");
+  });
+
+  it("crash-window ordering: the outgoing marker is cleared BEFORE any incoming write lands", async () => {
+    // Review of f344114: resetIdSchemeState must run first so that a crash anywhere mid-replace leaves a
+    // MARKERLESS store (re-migrated on next boot), never legacy content under a stale scheme-2 marker.
+    const { ctx } = makeCtx({ structureRevlog: false });
+    await createIngestFlows(ctx).replaceProjectFrom(legacyLoaded());
+
+    expect(h.order[0]).toBe("reset"); // the reset is the very first store op
+    expect(h.order.indexOf("reset")).toBeLessThan(h.order.findIndex((o) => o.startsWith("write:")));
   });
 
   it("adopting an already-composed library is a marker-writing no-op (idempotent, ids unchanged)", async () => {
