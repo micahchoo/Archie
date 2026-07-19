@@ -52,6 +52,10 @@ export const CURRENT_ID_SCHEME = 2;
 export const ID_SCHEME_MARKER_FILE = "id-scheme.json";
 /** The verbatim pre-migration snapshot directory (kept until the user deletes it). */
 export const PRE_MIGRATION_DIR = "pre-migration";
+/** The snapshot's COMPLETION sentinel, written LAST inside `pre-migration/` — the copy's commit point.
+ *  Directory existence alone is not proof of a complete multi-file copy (a crash mid-copy leaves a
+ *  partial snapshot); the sentinel is. Present ⇒ a trustworthy snapshot to keep; absent ⇒ recopy. */
+export const SNAPSHOT_SENTINEL_FILE = "snapshot-complete.json";
 
 // The legacy "sample" exhibit keeps its annotations/structure at the PROJECT ROOT
 // (`{project}/annotations`, `{project}/structure`) instead of `exhibits/{slug}/…` — a fixed layout fact
@@ -85,8 +89,12 @@ export interface CorruptMigrationFile {
  *  pass-through / already-composed re-run. */
 export interface RewriteCounts {
   libraryObjects: number;
+  /** Section `objectId`s rewritten in library.json (the DEFAULT structure home — rev-log flag OFF). */
+  librarySectionObjectIds: number;
   annotationTargets: number;
+  /** `archie:` object refs remapped in note bodies AND section prose (both cross-link mapped). */
   bodyLinks: number;
+  /** Section `objectId`s rewritten in the flag-ON structure history log pages. */
   sectionObjectIds: number;
   pendingNotes: number;
 }
@@ -103,7 +111,7 @@ export interface MigrateIdsResult {
   corrupt: CorruptMigrationFile[];
 }
 
-const zeroCounts = (): RewriteCounts => ({ libraryObjects: 0, annotationTargets: 0, bodyLinks: 0, sectionObjectIds: 0, pendingNotes: 0 });
+const zeroCounts = (): RewriteCounts => ({ libraryObjects: 0, librarySectionObjectIds: 0, annotationTargets: 0, bodyLinks: 0, sectionObjectIds: 0, pendingNotes: 0 });
 
 async function writeJson(dir: FsDirectory, name: string, data: unknown): Promise<void> {
   const file = await dir.getFile(name, { create: true });
@@ -176,26 +184,9 @@ export async function migrateLibraryObjectIds(fs: Filesystem, opts: MigrateIdsOp
   const counts = zeroCounts();
   const corrupt: CorruptMigrationFile[] = [];
 
-  // --- SNAPSHOT FIRST (kept if already present — first snapshot wins) --------------------------------
-  const snapshotCreated = await ensureSnapshot(projectDir);
-
-  // --- 1. object metas (library.json) ---------------------------------------------------------------
-  let libraryChanged = false;
-  for (const ex of exhibits) {
-    if (!ex || typeof ex.id !== "string" || !Array.isArray(ex.objects)) continue;
-    for (const obj of ex.objects) {
-      if (obj && typeof obj.id === "string" && isLegacyObjectId(obj.id)) {
-        obj.id = composeLegacyObjectId(ex.id, obj.id);
-        counts.libraryObjects++;
-        libraryChanged = true;
-      }
-    }
-  }
-  if (libraryChanged) await writeJson(projectDir, LIBRARY_FILE, libraryRaw);
-
-  // The cross-link mapper for class 3: an in-body `archie:` object ref names its TARGET exhibit by SLUG,
-  // so its objectId is composed under THAT exhibit's id (not the body's owning exhibit). A dangling slug
-  // (target exhibit absent from library.json) is left unresolved — we cannot compose without its id.
+  // The cross-link mapper (class 3): an in-body / in-prose `archie:` object ref names its TARGET exhibit
+  // by SLUG, so its objectId is composed under THAT exhibit's id (not the enclosing exhibit's). A dangling
+  // slug (target exhibit absent from library.json) is left unresolved — we cannot compose without its id.
   const mapCrossLink = (t: LinkTarget): LinkTarget => {
     if (t.objectId === undefined || !isLegacyObjectId(t.objectId)) return t;
     const exhibitId = exhibitIdBySlug.get(t.exhibitSlug);
@@ -204,13 +195,52 @@ export async function migrateLibraryObjectIds(fs: Filesystem, opts: MigrateIdsOp
     return { ...t, objectId: composeLegacyObjectId(exhibitId, t.objectId) };
   };
 
+  // --- SNAPSHOT FIRST (kept if already present — first snapshot wins) --------------------------------
+  const snapshotCreated = await ensureSnapshot(projectDir);
+
+  // --- 1. object metas + sections-in-library.json (the DEFAULT structure home — the structure rev-log
+  //        is flag-OFF by default, so sections live ONLY here unless the flag is on). Each section carries
+  //        an `objectId` and `prose` (markdown that can embed `archie:` object refs); `start` (a media
+  //        fragment) is left alone. -------------------------------------------------------------------
+  let libraryChanged = false;
+  for (const ex of exhibits) {
+    if (!ex || typeof ex.id !== "string") continue;
+    if (Array.isArray(ex.objects)) {
+      for (const obj of ex.objects) {
+        if (obj && typeof obj.id === "string" && isLegacyObjectId(obj.id)) {
+          obj.id = composeLegacyObjectId(ex.id, obj.id);
+          counts.libraryObjects++;
+          libraryChanged = true;
+        }
+      }
+    }
+    if (Array.isArray(ex.sections)) {
+      for (const sec of ex.sections) {
+        if (!isObject(sec)) continue;
+        if (typeof sec.objectId === "string" && isLegacyObjectId(sec.objectId)) {
+          sec.objectId = composeLegacyObjectId(ex.id, sec.objectId);
+          counts.librarySectionObjectIds++;
+          libraryChanged = true;
+        }
+        if (typeof sec.prose === "string") {
+          const next = remapArchieRefs(sec.prose, mapCrossLink); // increments counts.bodyLinks on a hit
+          if (next !== sec.prose) {
+            sec.prose = next;
+            libraryChanged = true;
+          }
+        }
+      }
+    }
+  }
+  if (libraryChanged) await writeJson(projectDir, LIBRARY_FILE, libraryRaw);
+
   // --- 2 + 3 (annotations) & 4 (structure), per exhibit ---------------------------------------------
   for (const [slug, exhibitId] of exhibitIdBySlug) {
     const mapObjId = (id: string): string => (isLegacyObjectId(id) ? composeLegacyObjectId(exhibitId, id) : id);
     const annDir = await exhibitSubdir(projectDir, slug, "annotations");
     if (annDir) await rewriteAnnotationsDir(annDir, `exhibits/${slug}/annotations`, mapObjId, mapCrossLink, counts, corrupt);
     const structDir = await exhibitSubdir(projectDir, slug, "structure");
-    if (structDir) await rewriteStructureDir(structDir, `exhibits/${slug}/structure`, exhibitId, counts, corrupt);
+    if (structDir) await rewriteStructureDir(structDir, `exhibits/${slug}/structure`, exhibitId, mapCrossLink, counts, corrupt);
   }
 
   // --- 5. pending-notes sidecar ---------------------------------------------------------------------
@@ -225,7 +255,7 @@ export async function migrateLibraryObjectIds(fs: Filesystem, opts: MigrateIdsOp
 // --- raw JSON shapes (structural — we touch only id fields, preserving every other byte incl. the DAG) --
 
 interface LibraryShape {
-  exhibits?: Array<{ id?: unknown; slug?: unknown; objects?: Array<{ id?: unknown }> } & Record<string, unknown>>;
+  exhibits?: Array<{ id?: unknown; slug?: unknown; objects?: Array<{ id?: unknown }>; sections?: unknown[] } & Record<string, unknown>>;
 }
 
 /** The sole id-bearing field carried on a {@link LinkTarget} at the class-3 boundary. Rule-3 sentinel: a
@@ -386,11 +416,13 @@ function rewriteBody(rec: Record<string, unknown>, mapCrossLink: (t: LinkTarget)
   return counts.bodyLinks !== before;
 }
 
-/** Rewrite an exhibit's structure history: `items[].objectId` on every page. `index.json` is left alone. */
+/** Rewrite an exhibit's structure history (flag-ON path): `items[].objectId` AND `items[].prose` archie:
+ *  refs on every page. `index.json` is left alone. */
 async function rewriteStructureDir(
   structDir: FsDirectory,
   path: string,
   exhibitId: string,
+  mapCrossLink: (t: LinkTarget) => LinkTarget,
   counts: RewriteCounts,
   corrupt: CorruptMigrationFile[],
 ): Promise<void> {
@@ -400,7 +432,7 @@ async function rewriteStructureDir(
   } catch {
     return;
   }
-  const transform = (data: unknown): boolean => transformStructurePage(data, exhibitId, counts);
+  const transform = (data: unknown): boolean => transformStructurePage(data, exhibitId, mapCrossLink, counts);
   for await (const e of histDir.entries()) {
     if (e.kind === "file" && e.name.endsWith(".json") && e.name !== INDEX_FILE) {
       await rewriteJsonFile(histDir, e.name, `${path}/${HISTORY_DIR}/${e.name}`, transform, corrupt);
@@ -408,15 +440,21 @@ async function rewriteStructureDir(
   }
 }
 
-function transformStructurePage(data: unknown, exhibitId: string, counts: RewriteCounts): boolean {
+function transformStructurePage(data: unknown, exhibitId: string, mapCrossLink: (t: LinkTarget) => LinkTarget, counts: RewriteCounts): boolean {
   if (!isObject(data) || !Array.isArray((data as { items?: unknown }).items)) return false;
   let changed = false;
   for (const item of (data as { items: unknown[] }).items) {
-    if (isObject(item) && typeof (item as { objectId?: unknown }).objectId === "string") {
-      const rec = item as { objectId: string };
-      if (isLegacyObjectId(rec.objectId)) {
-        rec.objectId = composeLegacyObjectId(exhibitId, rec.objectId);
-        counts.sectionObjectIds++;
+    if (!isObject(item)) continue;
+    const rec = item as Record<string, unknown>;
+    if (typeof rec.objectId === "string" && isLegacyObjectId(rec.objectId)) {
+      rec.objectId = composeLegacyObjectId(exhibitId, rec.objectId);
+      counts.sectionObjectIds++;
+      changed = true;
+    }
+    if (typeof rec.prose === "string") {
+      const next = remapArchieRefs(rec.prose, mapCrossLink); // increments counts.bodyLinks on a hit
+      if (next !== rec.prose) {
+        rec.prose = next;
         changed = true;
       }
     }
@@ -425,7 +463,9 @@ function transformStructurePage(data: unknown, exhibitId: string, counts: Rewrit
 }
 
 /** Rewrite `pending-notes.json` — `{ slug: [{ objectId }] }`. Each slug's notes compose under that slug's
- *  exhibit id; a note under an unknown slug is left unresolved (no exhibit id to compose with). */
+ *  exhibit id; a note under an unknown slug is left unresolved (no exhibit id to compose with). `objectId`
+ *  is the ONLY id-bearing field on a PendingNote (id/comment/tags/reading carry no object id); a pending
+ *  note has no region yet, so there is no canvas-IRI target here to rewrite. */
 async function rewritePendingNotes(
   projectDir: FsDirectory,
   exhibitIdBySlug: Map<string, string>,
@@ -456,17 +496,25 @@ async function rewritePendingNotes(
 
 // --- snapshot (verbatim copy of the id-bearing tree; assets excluded, never re-taken) -----------------
 
-/** Copy the id-bearing tree into `pre-migration/` BEFORE any rewrite. Returns false (and copies nothing)
- *  if `pre-migration/` already exists — the first snapshot is kept, never clobbered by a re-run. */
+/**
+ * Copy the id-bearing tree into `pre-migration/` BEFORE any rewrite, under its OWN marker-last discipline.
+ * Returns false (copies nothing) iff a COMPLETE snapshot already exists (dir + `snapshot-complete.json`) —
+ * the first complete snapshot is kept, never clobbered by a re-run. A dir present WITHOUT the sentinel is a
+ * TORN prior copy (a crash mid-copy): it is re-copied (overwriting the partial — the live tree is still
+ * un-migrated at snapshot time, so recopying the current bytes is correct), and the sentinel is written
+ * LAST as the copy's commit point. Directory existence alone is never the commit point of a multi-file copy.
+ */
 async function ensureSnapshot(projectDir: FsDirectory): Promise<boolean> {
   try {
-    await projectDir.getDirectory(PRE_MIGRATION_DIR);
-    return false; // already present (a prior attempt) — keep it
+    const existing = await projectDir.getDirectory(PRE_MIGRATION_DIR);
+    await existing.getFile(SNAPSHOT_SENTINEL_FILE); // throws if the sentinel is absent (torn/partial)
+    return false; // complete snapshot present — keep it
   } catch {
-    // not present — take it
+    // absent, or present-but-partial (no sentinel) — (re)take it below
   }
   const snapDir = await projectDir.getDirectory(PRE_MIGRATION_DIR, { create: true });
-  await copyTree(projectDir, snapDir);
+  await copyTree(projectDir, snapDir); // overwrites any partial copy; the full file set is a superset of a partial one
+  await writeJson(snapDir, SNAPSHOT_SENTINEL_FILE, { complete: true }); // COMMIT POINT — written LAST
   return true;
 }
 

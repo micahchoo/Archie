@@ -6,6 +6,7 @@ import {
   LEGACY_ID_SCHEME,
   ID_SCHEME_MARKER_FILE,
   PRE_MIGRATION_DIR,
+  SNAPSHOT_SENTINEL_FILE,
 } from "./object-ids.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { writeAnnotations, readAnnotations } from "../spine/persist.js";
@@ -43,11 +44,19 @@ async function buildLegacyStore(fs: Filesystem, project = "proj"): Promise<{ sam
   const root = await fs.root();
   const proj = await root.getDirectory(project, { create: true });
 
-  // 1. object metas (library.json)
+  // 1. object metas + 6. sections-in-library.json (the DEFAULT structure home — rev-log flag OFF).
+  //    Each voynich section carries a legacy objectId AND prose with a cross-exhibit archie: object ref.
   await writeJson(proj, "library.json", {
     exhibits: [
       { id: "ex-sample", slug: "sample", title: "Sample", objects: [{ id: "o1", source: "s1", label: "A" }, { id: "o2", source: "s2", label: "B" }] },
-      { id: "ex-voynich", slug: "voynich", title: "Voynich", objects: [{ id: "o1", source: "v1", label: "Folio" }] },
+      {
+        id: "ex-voynich", slug: "voynich", title: "Voynich",
+        objects: [{ id: "o1", source: "v1", label: "Folio" }],
+        sections: [
+          { id: "s1", title: "Intro", objectId: "o1", start: "xywh=0,0,10,10", prose: "see [the sample](archie:sample/#/o/o2)" },
+          { id: "s2", title: "More", objectId: "o1" },
+        ],
+      },
     ],
   });
 
@@ -149,8 +158,9 @@ describe("migrateLibraryObjectIds — exhaustiveness across all five id classes"
 
     // every class saw at least one rewrite
     expect(result.rewrites.libraryObjects).toBe(3); // ex-sample.o1, ex-sample.o2, ex-voynich.o1
+    expect(result.rewrites.librarySectionObjectIds).toBe(2); // voynich s1 + s2, both objectId o1 (DEFAULT structure home)
     expect(result.rewrites.annotationTargets).toBeGreaterThanOrEqual(3); // heads + history pages, both exhibits
-    expect(result.rewrites.bodyLinks).toBeGreaterThanOrEqual(1); // the cross-exhibit archie: link (heads + history)
+    expect(result.rewrites.bodyLinks).toBeGreaterThanOrEqual(2); // cross-exhibit archie: link in note bodies AND section prose
     expect(result.rewrites.sectionObjectIds).toBeGreaterThanOrEqual(2);
     expect(result.rewrites.pendingNotes).toBe(2);
 
@@ -167,9 +177,18 @@ describe("migrateLibraryObjectIds — exhaustiveness across all five id classes"
     const proj = await (await fs.root()).getDirectory("proj");
 
     // library.json: local o1 in different exhibits → distinct composed ids
-    const lib = JSON.parse(dec(await (await proj.getFile("library.json")).readable())) as { exhibits: { id: string; objects: { id: string }[] }[] };
+    const lib = JSON.parse(dec(await (await proj.getFile("library.json")).readable())) as {
+      exhibits: { id: string; objects: { id: string }[]; sections?: { objectId: string; start?: string; prose?: string }[] }[];
+    };
     expect(lib.exhibits[0]!.objects.map((o) => o.id)).toEqual(["ex-sample.o1", "ex-sample.o2"]);
     expect(lib.exhibits[1]!.objects.map((o) => o.id)).toEqual(["ex-voynich.o1"]);
+
+    // sections-in-library.json (DEFAULT structure home): objectId composed under the OWNING exhibit,
+    // prose archie: ref recomposed under its TARGET exhibit, `start` (media fragment) untouched.
+    const secs = lib.exhibits[1]!.sections!;
+    expect(secs.map((s) => s.objectId)).toEqual(["ex-voynich.o1", "ex-voynich.o1"]);
+    expect(secs[0]!.start).toBe("xywh=0,0,10,10"); // media fragment left alone
+    expect(secs[0]!.prose).toBe("see [the sample](archie:sample/#/o/ex-sample.o2)");
 
     // cross-exhibit archie: link recomposed under the TARGET exhibit (sample), not the body's (voynich)
     const voyHist = await (await (await (await proj.getDirectory("exhibits")).getDirectory("voynich")).getDirectory("annotations")).getDirectory("history");
@@ -215,12 +234,37 @@ describe("migrateLibraryObjectIds — torn-state, idempotency, pass-through", ()
     const second = await migrateLibraryObjectIds(fs, { project: "proj" });
     expect(second.migrated).toBe(true);
     expect(second.snapshotCreated).toBe(false); // first snapshot kept
-    expect(second.rewrites).toEqual({ libraryObjects: 0, annotationTargets: 0, bodyLinks: 0, sectionObjectIds: 0, pendingNotes: 0 });
+    expect(second.rewrites).toEqual({ libraryObjects: 0, librarySectionObjectIds: 0, annotationTargets: 0, bodyLinks: 0, sectionObjectIds: 0, pendingNotes: 0 });
     expect(await readIdScheme(fs, { project: "proj" })).toBe(CURRENT_ID_SCHEME);
 
     // snapshot bytes unchanged (still the original legacy state)
     expect(await collectStrings(await proj.getDirectory(PRE_MIGRATION_DIR), false)).toEqual(snapBefore);
     // still zero legacy refs in the live tree
+    expect(extractedIds(await collectStrings(proj)).filter(isLegacyObjectId)).toEqual([]);
+  });
+
+  it("a torn snapshot (pre-migration/ present but no completion sentinel) is recopied, then completed", async () => {
+    const fs = new MemoryFilesystem();
+    await buildLegacyStore(fs);
+    const proj = await (await fs.root()).getDirectory("proj");
+
+    // Simulate a crash MID-COPY: a partial pre-migration/ with a WRONG/partial library.json and NO sentinel.
+    const partial = await proj.getDirectory(PRE_MIGRATION_DIR, { create: true });
+    await writeJson(partial, "library.json", { exhibits: [{ id: "PARTIAL", slug: "x", objects: [] }] });
+    await expect(partial.getFile(SNAPSHOT_SENTINEL_FILE)).rejects.toBeDefined(); // no sentinel
+
+    const result = await migrateLibraryObjectIds(fs, { project: "proj" });
+    expect(result.migrated).toBe(true);
+    expect(result.snapshotCreated).toBe(true); // recopied over the partial (dir existence is NOT the commit point)
+
+    // the snapshot now carries the REAL original legacy library (recopied), plus the completion sentinel
+    const snap = await proj.getDirectory(PRE_MIGRATION_DIR);
+    const snapLib = JSON.parse(dec(await (await snap.getFile("library.json")).readable())) as { exhibits: { id: string; objects: { id: string }[] }[] };
+    expect(snapLib.exhibits.map((e) => e.id)).toEqual(["ex-sample", "ex-voynich"]); // partial overwritten
+    expect(snapLib.exhibits[0]!.objects.map((o) => o.id)).toEqual(["o1", "o2"]); // original legacy ids preserved
+    expect(await (await snap.getFile(SNAPSHOT_SENTINEL_FILE)).readable()).toBeDefined();
+    // and the live tree completed the migration
+    expect(await readIdScheme(fs, { project: "proj" })).toBe(CURRENT_ID_SCHEME);
     expect(extractedIds(await collectStrings(proj)).filter(isLegacyObjectId)).toEqual([]);
   });
 
@@ -233,7 +277,7 @@ describe("migrateLibraryObjectIds — torn-state, idempotency, pass-through", ()
     const result = await migrateLibraryObjectIds(fs, { project: "proj" });
     expect(result.migrated).toBe(false);
     expect(result.snapshotCreated).toBe(false);
-    expect(result.rewrites).toEqual({ libraryObjects: 0, annotationTargets: 0, bodyLinks: 0, sectionObjectIds: 0, pendingNotes: 0 });
+    expect(result.rewrites).toEqual({ libraryObjects: 0, librarySectionObjectIds: 0, annotationTargets: 0, bodyLinks: 0, sectionObjectIds: 0, pendingNotes: 0 });
 
     // no snapshot dir, and the (legacy) content is untouched
     await expect(proj.getDirectory(PRE_MIGRATION_DIR)).rejects.toBeDefined();

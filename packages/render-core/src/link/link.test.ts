@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildLinkIndex, resolveLink, resolveViewerLink, citedExhibitSlug, validateLink, encodeLinkRef, parseLinkRef, rewriteArchieLinks, type LinkTarget } from "./link.js";
+import { buildLinkIndex, resolveLink, resolveViewerLink, citedExhibitSlug, validateLink, encodeLinkRef, parseLinkRef, rewriteArchieLinks, remapArchieRefs, type LinkTarget } from "./link.js";
 import { appendNew } from "../spine/log.js";
 import { asClientId } from "../wadm/brand.js";
 import type { AnnotationLog } from "../wadm/types.js";
@@ -140,6 +140,31 @@ describe("rewriteArchieLinks — heads-page projection: resolve valid refs, degr
     const { md: out, broken } = rewriteArchieLinks(`[one](${a}) then [two](${b})`, opts);
     expect(out).toBe(`[one](https://u.gh.io/lib/main/#/a/${n2.logicalId}) then [two](https://u.gh.io/lib/intro/)`);
     expect(broken).toEqual([]);
+  });
+});
+
+describe("remapArchieRefs — structural, non-destructive in-body ref rewrite (Archie-8c10)", () => {
+  it("remaps only the object ref the mapper changes, keeping the archie: scheme (NOT a display URL)", () => {
+    const md = `see [x](archie:sample/#/o/o2) and [y](archie:sample/#/o/o5)`;
+    const out = remapArchieRefs(md, (t) => (t.objectId === "o2" ? { ...t, objectId: "ex-sample.o2" } : t));
+    expect(out).toBe(`see [x](archie:sample/#/o/ex-sample.o2) and [y](archie:sample/#/o/o5)`);
+  });
+
+  it("leaves a ref the mapper returns unchanged byte-identical (no round-trip churn)", () => {
+    const md = `a note cite [n](archie:main/#/a/L1) and a bare [e](archie:intro/)`;
+    expect(remapArchieRefs(md, (t) => t)).toBe(md);
+  });
+
+  it("leaves a MALFORMED archie: link untouched — a migration must never eat it", () => {
+    // The link token IS matched by the grammar, but parseLinkRef rejects the slug (S5 hardening) → null.
+    const md = `broken [b](archie:foo"bar/#/o/o2) here`;
+    expect(parseLinkRef('archie:foo"bar/#/o/o2')).toBeNull();
+    expect(remapArchieRefs(md, (t) => ({ ...t, objectId: "SHOULD-NOT-APPLY" }))).toBe(md);
+  });
+
+  it("degrades safely on empty / non-string input", () => {
+    expect(remapArchieRefs("", (t) => t)).toBe("");
+    expect(remapArchieRefs(undefined as unknown as string, (t) => t)).toBe("");
   });
 });
 
