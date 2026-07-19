@@ -47,7 +47,9 @@ note throws (`log.ts:170-172`; resurrection is undefined in v1).
 
 ### C3 — A delete is a tombstone version, never a removal
 `appendDelete` (`log.ts:229-245`) appends `deleted: true`, `version: head.version + 1`,
-`parent: head.rev`, keeping ONLY `target` (for citation/dereference) — the six content fields are
+`parent: head.rev`, keeping ONLY `target` (for citation/dereference) — the seven content fields
+(incl. `section` attribution since Archie-6b8e; dropping it is what makes bulk-deleted notes
+non-revivable by a section un-delete) are
 deliberate named drops in `_deleteCarry` (`log.ts:210-226`). Deleting an already-tombstoned note
 throws (`log.ts:231-233`).
 
@@ -149,7 +151,7 @@ sentinel (`merge.ts:198-214`) — `satisfies Record<keyof AnnotationRecord, Carr
 (`../model/carry.ts:18`), per `.claude/rules/render-core-data-integrity.md` #3. Dispositions: every
 field is `"carry"` (identity/DAG fields re-minted or computed; content fields resolved-or-defaulted
 as above); the sentinels with named `{drop}`s are the edit (`mergeParents`, `log.ts:150`) and the
-tombstone (the six content fields, `log.ts:220-225`).
+tombstone (the seven content fields — incl. `section` since Archie-6b8e, `log.ts:220-226`).
 
 ### C15 — Tombstones and branches: delete-vs-edit is a real (part-hidden) conflict
 A concurrent edit and delete of the same note are sibling heads: `headsOf` reports both (C5) while

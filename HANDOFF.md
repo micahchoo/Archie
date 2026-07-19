@@ -97,14 +97,17 @@ projection, a911 persist, 6b8e attribution} → 42f3 studio flag. Probe ledger l
 `build/section-record` merged (fe6d06e impl + 3840a3f review fixes; 08af closed) —
 `spine/structure.ts` SectionRecord family, six carry sentinels, C13/C14 resolve,
 containment+parity tests, tolerant projection. Post-merge 886/886, tsc 0, root 0. Review
-PASS both axes; 3 gaps closed test-only. **Wave 3: c16d MERGED + closed** (d12e794 + 07d53a6 threshold fix; review clean both axes;
-post-merge 892/892, tsc 0, root 0). **a911 BUILT** (`build/structure-persist` @ `3549126`,
-901/901 in-worktree; reviewers `a911-review-standards`+`a911-review-spec` running — NOTE
-a911 branch based on 25e00c1, will need re-gate after c16d merge on merge). **6b8e still
-building** (`build-note-attribution` — AnnotationRecord attribution field + visibility.ts).
-Merge order: a911 next when reviews clean, then 6b8e, re-gating each. Wave 4 = 42f3 after.
-(Spend limit killed all 3 mid-wave once; user said continue; resumed OK. If spend-limit
-deaths recur, stop and surface.)
+PASS both axes; 3 gaps closed test-only. **Wave 3 COMPLETE — c16d + a911 + 6b8e all MERGED + closed** (6b8e merge `22809e6`;
+final gates 925/925, tsc 0, root 0, studio check 0 errors). Reviews clean both axes on
+all three. MERGE-CONTRACT/CARRY six→seven content-fields prose fixed. session.ts
+`section` threading folded into 42f3's ticket (spec-review follow-up: NewNote/NoteEdit/
+resolve choice/workingAnnotations re-emit; record layer already carries losslessly).
+**Wave 4 (final): `Archie-42f3` studio wiring behind archie.structureRevlog flag —
+implementer dispatching off `22809e6`.** CAUTION: concurrent UX session actively merging
+studio work in shared checkout (their `5e7899b` modality merge mid-conflict on App.svelte
+at time of writing) — expect studio-file merge reconciliation at 42f3 landing; my
+tracker/doc commit briefly blocked by their unmerged App.svelte, retry then. (Spend limit
+killed wave-3 agents once; resumed OK; if deaths recur, stop and surface.)
 
 **Ops (verified this session):** worktrees ALWAYS stale (5/5) — Step 0 reset + file-existence
 check in every brief. Review agents must END with SendMessage to main (plain text lost).
