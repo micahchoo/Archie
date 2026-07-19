@@ -25,19 +25,25 @@ import {
   writeStructure,
   asLibraryId,
   asObjectId,
+  collectFiles,
+  type FsDirectory,
   type Library,
   type SectionLog,
 } from "@render/core";
 import { createIngestFlows, type IngestContext } from "./ingest-flows.js";
+import { createPublishFlows, type PublishDeps } from "./publish-flows.svelte.js";
 
 const h = vi.hoisted(() => ({
   openStruct: null as null | ((slug: string) => Promise<unknown>),
+  /** Non-creating publish-side probe (openExhibitStructureDirIfExists) — null = no persisted log. */
+  openStructRO: null as null | ((slug: string) => Promise<unknown>),
 }));
 vi.mock("./store.js", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./store.js")>()),
   openExhibitAnnotationsDir: async () => null, // annotation persistence not under test (no OPFS)
   clearExhibitAnnotations: async () => {},
   openExhibitStructureDir: async (slug: string) => (h.openStruct ? h.openStruct(slug) : null),
+  openExhibitStructureDirIfExists: async (slug: string) => (h.openStructRO ? h.openStructRO(slug) : null),
 }));
 
 const alice = asClientId("alice");
@@ -77,6 +83,7 @@ function makeCtx(over: Partial<IngestContext> = {}): IngestContext {
 
 beforeEach(() => {
   h.openStruct = null;
+  h.openStructRO = null;
 });
 
 describe("two-author round trip: publish → .archie.zip → import merge (Archie-aef4 end to end)", () => {
@@ -129,5 +136,81 @@ describe("two-author round trip: publish → .archie.zip → import merge (Archi
     const landed = await readStructureReport(dir!, exId);
     expect(new Set(landed.log.map((r) => r.rev))).toEqual(new Set(authorA.map((r) => r.rev)));
     expect(headsOf(landed.log, k1).length).toBe(1); // linear history — nothing conflicted to gate
+  });
+});
+
+// Torn structure store at publish time (Archie-aef4 review finding). Posture = PARITY with the
+// annotation publish path (loadAllLogs → AnnotationSession.load → readAnnotationsReport →
+// `.entries` ships the readable subset, `loadCorruption` never consulted at publish): publish
+// exports what READS. Partial-corrupt → the readable pages ship, with a warn. ALL-corrupt → the
+// export carries NO structure at all (the published artifact reads as "never authored" — the
+// rule-2 collapse, accepted for consistency, made loud), with a distinct NOT-exported warn.
+// The local store is never touched by publishing (getStructure is read-only + non-creating).
+describe("publish with a torn structure store — parity with the annotation ship-what-reads posture", () => {
+  function publishDeps(): PublishDeps {
+    return {
+      baseUrl: "https://u.gh.io/lib/",
+      flushExhibit: async () => {},
+      loadAllLogs: async () => ({}),
+      buildFullLibrary: () => libraryA,
+      exhibits: () => [],
+      canFolder: () => false,
+      currentZipName: () => "lib.archie.zip",
+    };
+  }
+  /** A two-section persisted store, with the given pages then clobbered to garbage in place. */
+  async function tornStore(corruptIds: string[]): Promise<FsDirectory> {
+    const k2 = sectionKey(exId, "s2");
+    let log = appendNewSection([], { key: k1, order: "i", objectId: "o1", title: "Intro", lastEditor: alice, now: 1 }).log;
+    log = appendNewSection(log, { key: k2, order: "m", objectId: "o1", title: "Map", lastEditor: alice, now: 2 }).log;
+    const dir = await (await new MemoryFilesystem().root()).getDirectory("structure", { create: true });
+    await writeStructure(dir, log);
+    const hist = await dir.getDirectory("history");
+    for (const id of corruptIds) {
+      const w = await (await hist.getFile(`${id}.json`)).writable();
+      await w.write("not json{");
+      await w.close();
+    }
+    return dir;
+  }
+  const structureWarns = (spy: ReturnType<typeof vi.spyOn>) =>
+    spy.mock.calls.map((c) => String(c[0])).filter((m) => m.includes("structure") || m.includes("section history"));
+
+  it("PARTIAL-corrupt: the readable pages ship, the torn page is skipped, and the publish warns", async () => {
+    const dir = await tornStore(["s2"]);
+    h.openStructRO = async () => dir;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const out = new MemoryFilesystem();
+      await createPublishFlows(publishDeps()).writeToFolder(out);
+      const files = await collectFiles(await out.root());
+      expect(Object.keys(files)).toContain("voynich/structure/history/s1.json"); // readable history ships
+      expect(Object.keys(files)).not.toContain("voynich/structure/history/s2.json"); // torn page skipped
+      const index = JSON.parse((files["voynich/structure/history/index.json"] as { text: string }).text) as Record<string, string>;
+      expect(Object.keys(index)).toEqual(["s1"]); // the EXPORT's index only names what it carries
+      const warns = structureWarns(warn);
+      expect(warns.length).toBe(1);
+      expect(warns[0]).toContain("1 unreadable structure history page(s)");
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it("ALL-corrupt: nothing ships (reads as never-authored — the accepted parity collapse) and the warn says NOT exported", async () => {
+    const dir = await tornStore(["s1", "s2"]);
+    h.openStructRO = async () => dir;
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const out = new MemoryFilesystem();
+      await createPublishFlows(publishDeps()).writeToFolder(out);
+      const files = await collectFiles(await out.root());
+      expect(Object.keys(files).some((p) => p.includes("structure"))).toBe(false); // no structure/ at all
+      const warns = structureWarns(warn);
+      expect(warns.length).toBe(1);
+      expect(warns[0]).toContain("NOT exported"); // distinct from the partial-corrupt advisory
+      expect(warns[0]).toContain('"voynich"'); // exhibit named
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

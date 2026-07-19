@@ -67,14 +67,28 @@ export function createPublishFlows(deps: PublishDeps) {
   // the pages the zip/folder import merge (mergeImportedStructure) reads on the other side.
   // Driven by log EXISTENCE, deliberately NOT by the archie.structureRevlog flag (see
   // PublishOptions.getStructure): the dir probe is non-creating, so an exhibit without a log
-  // contributes nothing and no structure/ dir ever appears as a publish side effect. A torn
-  // local store publishes its READABLE history and warns (per-page tolerance, rule #2 — parity
-  // with the brokenLinks advisory posture), never silently collapses to "no history".
+  // contributes nothing and no structure/ dir ever appears as a publish side effect.
+  //
+  // Torn-store posture — a KNOWN rule-2 tension, shared with the annotation publish path
+  // (loadAllLogs → AnnotationSession.load → readAnnotationsReport → `.entries`, which ships the
+  // readable subset and never consults `loadCorruption` at publish): publish exports what READS.
+  // A partially-corrupt store therefore exports its readable pages; an ALL-corrupt store exports
+  // NOTHING, and the published artifact is indistinguishable from "never authored" — a receiving
+  // import will seed-from-array (the corruption→absence collapse rule #2 exists to prevent).
+  // Parity decision (Archie-aef4 review): match the annotation posture rather than invent a
+  // structure-only refusal; the distinct warns below make each collapse visible instead of
+  // silent. Surfacing/repairing a torn store at publish time (for BOTH log families) is future
+  // work — the session layer already refuses incremental saves over torn stores (Issue 19), so
+  // the source of truth is protected; only the exported copy under-represents it.
   const getStructure = async (exhibitId: string, slug: string): Promise<SectionLog> => {
     const dir = await openExhibitStructureDirIfExists(slug);
     if (!dir) return [];
     const { log, corrupt } = await readStructureReport(dir, asExhibitId(exhibitId));
-    if (corrupt.length > 0) console.warn(`Publish: exhibit "${slug}" has ${corrupt.length} unreadable structure history page(s); publishing the readable history`, corrupt);
+    if (corrupt.length > 0 && log.length === 0) {
+      console.warn(`Publish: exhibit "${slug}" section history was NOT exported — all ${corrupt.length} of its history page(s) are unreadable, so the published library will look as if it never had section history. The local store is untouched; repair it before sharing.`, corrupt);
+    } else if (corrupt.length > 0) {
+      console.warn(`Publish: exhibit "${slug}" has ${corrupt.length} unreadable structure history page(s); publishing the readable history`, corrupt);
+    }
     return log;
   };
   // Baked grid/overview thumbnails ride along every publish sink (folder / zip / GH / memory) so the
