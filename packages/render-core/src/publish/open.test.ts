@@ -120,7 +120,7 @@ describe("open seam — fetchArchieLibraryBytes (capped fetch, no decode/validat
     const bytes = new Uint8Array(10);
     const fakeFetch = vi.fn(async () => new Response(new Blob([bytes as BlobPart]), { status: 200 })) as unknown as typeof fetch;
     await expect(fetchArchieLibraryBytes("https://host/small.zip", { fetch: fakeFetch })).resolves.toHaveLength(10);
-    expect(SRC_MAX_BYTES).toBe(256 * 1024 * 1024);
+    expect(SRC_MAX_BYTES).toBe(1024 * 1024 * 1024); // 1 GiB (SCALE-rescaled from 256 MB)
   });
 });
 

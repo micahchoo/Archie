@@ -102,6 +102,9 @@ export * from "./iiif/rights.js";
 export * from "./fs/seam.js";
 export * from "./fs/memory.js";
 export * from "./fs/zip.js";
+// zip-stream (ZipStreamFilesystem — WRITE-THROUGH streaming .archie.zip sink; SCALE bounded-memory
+// export). Publish INTO it, then finish(); media bytes stream to disk and release, never a tree Map.
+export * from "./fs/zip-stream.js";
 export * from "./fs/fsa.js";
 // tauri (TauriFilesystem, desktop folder backend). Pure over a path-based TauriFsBridge; the real
 // @tauri-apps/plugin-fs binding lives in apps/studio/src/tauri-fs.ts (headless-core / app-glue split).

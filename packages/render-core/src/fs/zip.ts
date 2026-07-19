@@ -3,7 +3,7 @@
 // (fflate). On non-Chromium the zip IS the canonical file: explicit Save = download the zip,
 // Open = pick it (the "Word-doc 2003" model). Directories are implicit (zip path prefixes).
 
-import { zipSync, unzipSync, strToU8, Zip, ZipPassThrough } from "fflate";
+import { zipSync, unzipSync, strToU8 } from "fflate";
 import type { Filesystem, FsDirectory, FsFile, FsWritable } from "./seam.js";
 
 /**
@@ -14,23 +14,39 @@ import type { Filesystem, FsDirectory, FsFile, FsWritable } from "./seam.js";
  * byte cap at the network layer; these caps close the matching gap on the drop path, where the
  * bytes never traverse the network.
  *
- * Defaults (deliberately generous — a real .archie.zip is media-heavy but bounded):
- *  - `maxTotalBytes` 512 MB — total DECLARED uncompressed bytes across all entries. 2× the 256MB
- *    network cap, because a legitimately large library opened from local disk has no download cost.
- *  - `maxEntries` 50 000 — a published library is folios + sidecars; 50k is far above any real tree
- *    yet cheap to exceed with a malicious "lots of tiny files" inode/handle-exhaustion archive.
- *  - `maxRatio` 100 — per-entry decompressed:compressed. Deflate tops out near ~1032:1 on pathological
- *    input; 100:1 admits all real text/JSON/media while rejecting the classic single-entry bomb.
+ * Defaults (rescaled by SCALE zip round-trip — the old 512 MB / 50k refused a legitimately large
+ * library that Studio's OWN export produced, so Archie's viewer/ingest couldn't reopen it):
+ *  - `maxTotalBytes` 4 GiB — total DECLARED uncompressed bytes across all entries. A 100-exhibit ×
+ *    100-object library with masters + baked thumbnails + publish-time DZI tiles runs to several GB;
+ *    512 MB was well under a real media library. The open side decodes the whole archive into an
+ *    in-memory Map, so this is ALSO the practical ceiling of what a browser tab can reopen — a
+ *    library beyond a few GB is a HOSTED published tree, not a zip round-trip. Paired with `maxRatio`
+ *    (per-entry) it still refuses a single-entry declared-huge bomb.
+ *  - `maxEntries` 500 000 — a large library is ~70k structural files (folios + sidecars + per-reading
+ *    annotation pages); publish-time DZI tiling of large masters adds pyramids (~1.4k tiles per
+ *    >4096px image), so a media-heavy export reaches the 10^5–10^6 range. 500k admits that with
+ *    headroom while a "millions of empty inodes" handle-exhaustion archive (10M+) is still refused.
+ *    OUT OF SCOPE by design: a library whose tiling ALONE exceeds ~500k entries (thousands of huge
+ *    masters) is not a zip round-trip candidate — host it as a published tree (folder / GitHub Pages);
+ *    the cap message says so.
+ *  - `maxRatio` 100 — per-entry decompressed:compressed (UNCHANGED — this is the real bomb defense).
+ *    Deflate tops out near ~1032:1 on pathological input; 100:1 admits all real text/JSON/media while
+ *    rejecting the classic single-entry bomb.
  *
  * Enforced from the CENTRAL DIRECTORY (via fflate's `filter`) BEFORE any entry is decompressed —
  * the declared `originalSize` / compressed `size` are read from directory headers, so a bomb is
  * rejected without paying to inflate it.
  */
-export const ZIP_LIMITS = {
-  maxTotalBytes: 512 * 1024 * 1024,
-  maxEntries: 50_000,
+export interface ZipLimits {
+  readonly maxTotalBytes: number;
+  readonly maxEntries: number;
+  readonly maxRatio: number;
+}
+export const ZIP_LIMITS: ZipLimits = {
+  maxTotalBytes: 4 * 1024 * 1024 * 1024,
+  maxEntries: 500_000,
   maxRatio: 100,
-} as const;
+};
 
 /** A chunk sink for streaming serialization (A.1). Mirrors the slice of FileSystemWritableFileStream
  *  we need; `write` may be async (the browser sink awaits disk) and is drained serially. */
@@ -39,8 +55,37 @@ export interface ZipSink {
   close(): void | Promise<void>;
 }
 
+/**
+ * The eager in-memory tree behind a `ZipFilesystem`. Optionally bounded by `maxBytes`: the eager
+ * publish/assembly path (`toZip()` builds a 2nd full copy, so peak ≈ 2× the tree) holds the WHOLE
+ * published tree — media included — in this Map, which OOMs a webview at scale. When a ceiling is
+ * set, `set()` tracks cumulative retained bytes and throws an ACTIONABLE error the moment assembly
+ * crosses it (early-abort per SCALE requirement #2), catching generated media — DZI tiles, remote
+ * bakes — that a pre-assembly asset-size ESTIMATE can't see. `fromZip` constructs an UNBOUNDED store
+ * (decode is already gated by `ZIP_LIMITS`), so loading never trips this.
+ */
 class ZipStore {
   readonly files = new Map<string, Uint8Array>();
+  private total = 0;
+  constructor(private readonly maxBytes?: number) {}
+  set(path: string, bytes: Uint8Array): void {
+    if (this.maxBytes !== undefined) {
+      this.total += bytes.byteLength - (this.files.get(path)?.byteLength ?? 0);
+      if (this.total > this.maxBytes) {
+        const mb = Math.round(this.total / (1024 * 1024));
+        throw new Error(
+          `This library is too large to build a .archie.zip in memory here (~${mb} MB and counting). ` +
+            `Publish to a folder instead (Chromium “Save to disk” streams straight to disk), or link ` +
+            `large media by URL so the library references it rather than copying it in.`,
+        );
+      }
+    }
+    this.files.set(path, bytes);
+  }
+  delete(path: string): void {
+    if (this.maxBytes !== undefined) this.total -= this.files.get(path)?.byteLength ?? 0;
+    this.files.delete(path);
+  }
 }
 
 function join(prefix: string, name: string): string {
@@ -67,7 +112,7 @@ class ZipFile implements FsFile {
         else buf = new Uint8Array(await data.arrayBuffer());
       },
       close: async () => {
-        this.store.files.set(this.path, buf);
+        this.store.set(this.path, buf);
       },
     };
   }
@@ -94,14 +139,14 @@ class ZipDir implements FsDirectory {
     const p = join(this.prefix, name);
     if (!this.store.files.has(p)) {
       if (opts?.create !== true) throw new Error(`no such file: ${name}`);
-      this.store.files.set(p, new Uint8Array(0));
+      this.store.set(p, new Uint8Array(0));
     }
     return new ZipFile(this.store, p, name);
   }
   async remove(name: string): Promise<void> {
     const p = join(this.prefix, name);
-    this.store.files.delete(p);
-    for (const k of [...this.store.files.keys()]) if (k.startsWith(`${p}/`)) this.store.files.delete(k);
+    this.store.delete(p);
+    for (const k of [...this.store.files.keys()]) if (k.startsWith(`${p}/`)) this.store.delete(k);
   }
   async *entries(): AsyncIterable<{ name: string; kind: "file" | "directory" }> {
     const pre = this.prefix === "" ? "" : `${this.prefix}/`;
@@ -127,7 +172,16 @@ class ZipDir implements FsDirectory {
 }
 
 export class ZipFilesystem implements Filesystem {
-  private readonly store = new ZipStore();
+  private readonly store: ZipStore;
+  /**
+   * @param opts.maxUncompressedBytes Early-abort ceiling for the EAGER assembly path (the whole tree
+   *   is held in memory, and `toZip()` doubles it). Omit (the default, and what `fromZip` uses) for
+   *   an unbounded store. The streaming export path uses `ZipStreamFilesystem` instead — it never
+   *   accumulates the tree, so it needs no such ceiling.
+   */
+  constructor(opts?: { maxUncompressedBytes?: number }) {
+    this.store = new ZipStore(opts?.maxUncompressedBytes);
+  }
   async root(): Promise<FsDirectory> {
     return new ZipDir(this.store, "");
   }
@@ -139,47 +193,18 @@ export class ZipFilesystem implements Filesystem {
   }
 
   /**
-   * Stream the tree to `sink` chunk-by-chunk (A.1 — LARGE-MEDIA-MEMORY-CEILING #3). Unlike `toZip()`
-   * (zipSync builds the WHOLE archive as a 2nd full copy in memory), the archive never fully
-   * materializes here — on a Chromium `FileSystemWritableFileStream` the chunks go straight to disk,
-   * dropping peak from ≈2× to ≈1×. SCOPE: this removes the zip-output copy only; the in-memory file
-   * Map still holds the published tree until A.3 (OPFS→sink stream). Files are STORED, not deflated
-   * (`ZipPassThrough`): published media is already compressed, and store is synchronous + ordered so
-   * the output is deterministic — a JSON-heavy library will produce a slightly larger zip than
-   * `toZip()`'s deflate, the accepted v1.1 tradeoff. Backpressure: chunks are drained SERIALLY (each
-   * `sink.write` awaited before the next file is added) so a slow disk sink can't queue the whole
-   * archive back into RAM — which would defeat the purpose. Throws if fflate reports an error.
-   */
-  async streamZip(sink: ZipSink): Promise<void> {
-    const queue: Uint8Array[] = [];
-    let streamErr: Error | undefined;
-    const zip = new Zip((err, chunk) => {
-      if (err) streamErr = err;
-      else if (chunk.length) queue.push(chunk);
-    });
-    const drain = async (): Promise<void> => {
-      while (queue.length) await sink.write(queue.shift()!);
-    };
-    for (const [path, bytes] of this.store.files) {
-      if (streamErr) throw streamErr;
-      const file = new ZipPassThrough(path);
-      zip.add(file);
-      file.push(bytes, true); // one chunk per file; per-file multi-chunk streaming is A.3 scope
-      await drain();
-    }
-    zip.end(); // emits the central directory (the zip footer)
-    if (streamErr) throw streamErr;
-    await drain();
-    await sink.close();
-  }
-  /**
    * Load a ZipFilesystem from `.archie.zip` bytes (the Open / file-drop flow). Capped against zip
    * bombs (strategy 5.1 — see {@link ZIP_LIMITS}): rejects, with a clear error, an archive that
    * declares too many total uncompressed bytes, too many entries, or any single entry whose
    * decompression ratio is implausibly high. The checks run from the central directory (fflate's
    * `filter`, invoked per entry BEFORE decompression), so a bomb is refused without inflating it.
+   *
+   * `limits` defaults to the canonical `ZIP_LIMITS` — the untrusted-open seam (`open.ts`) always
+   * calls `fromZip(raw)` with the default. It is injectable ONLY so tests can drive the enforcement
+   * cheaply (a tiny ceiling) instead of building a production-cap-sized real archive; production
+   * never passes it.
    */
-  static fromZip(bytes: Uint8Array): ZipFilesystem {
+  static fromZip(bytes: Uint8Array, limits: ZipLimits = ZIP_LIMITS): ZipFilesystem {
     const fs = new ZipFilesystem();
     let entries = 0;
     let totalBytes = 0;
@@ -188,32 +213,32 @@ export class ZipFilesystem implements Filesystem {
     const unzipped = unzipSync(bytes, {
       filter: (file) => {
         entries++;
-        if (entries > ZIP_LIMITS.maxEntries) {
+        if (entries > limits.maxEntries) {
           throw new Error(
-            `archie.zip rejected: too many entries (> ${ZIP_LIMITS.maxEntries.toLocaleString()}) — possible zip bomb`,
+            `archie.zip rejected: too many entries (> ${limits.maxEntries.toLocaleString()}) — possible zip bomb`,
           );
         }
         const declared = file.originalSize; // uncompressed size from the directory header
         const compressed = file.size;
         // Per-entry ratio: a small compressed blob declaring a huge uncompressed size is the classic
         // single-file bomb. Guard only when there's something to compare against (compressed > 0).
-        if (compressed > 0 && declared / compressed > ZIP_LIMITS.maxRatio) {
+        if (compressed > 0 && declared / compressed > limits.maxRatio) {
           throw new Error(
             `archie.zip rejected: entry "${file.name}" has an implausible compression ratio ` +
-              `(${Math.round(declared / compressed)}× > ${ZIP_LIMITS.maxRatio}×) — possible zip bomb`,
+              `(${Math.round(declared / compressed)}× > ${limits.maxRatio}×) — possible zip bomb`,
           );
         }
         totalBytes += declared;
-        if (totalBytes > ZIP_LIMITS.maxTotalBytes) {
+        if (totalBytes > limits.maxTotalBytes) {
           throw new Error(
             `archie.zip rejected: total uncompressed size exceeds the ` +
-              `${(ZIP_LIMITS.maxTotalBytes / (1024 * 1024)).toFixed(0)} MB cap — possible zip bomb`,
+              `${(limits.maxTotalBytes / (1024 * 1024)).toFixed(0)} MB cap — possible zip bomb`,
           );
         }
         return true;
       },
     });
-    for (const [k, v] of Object.entries(unzipped)) fs.store.files.set(k, v);
+    for (const [k, v] of Object.entries(unzipped)) fs.store.set(k, v);
     return fs;
   }
 }
