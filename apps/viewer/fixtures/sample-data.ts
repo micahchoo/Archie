@@ -150,10 +150,10 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
   }
   // §E — AV-1…4 reading-bearing notes on the o12 sound canvas, appended AFTER the §D reading notes.
   // Only the GRID + NARRATIVE exhibits carry o12; t= ranges are PROVISIONAL.
-  if (opts.includeAv && keep("o12")) {
+  if (opts.includeAv && keep("ex-voynich.o12")) {
     for (const a of voynichAvNotes) {
       ({ log } = appendNew(log, {
-        target: { type: "SpecificResource", source: canvasIdFor(slug, "o12"), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `t=${a.t}` } },
+        target: { type: "SpecificResource", source: canvasIdFor(slug, "ex-voynich.o12"), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `t=${a.t}` } },
         body: addBody(a.comment, a.tags), motivation: "commenting", lastEditor: author, now: ++now, rng, ...(a.reading ? { reading: a.reading } : {}),
       }));
     }
@@ -171,7 +171,7 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
 }
 
 // One log per slug from the SHARED note data (the wiring contract: notes target canvasIdFor(slug, …)).
-const rosettesLog = buildVoynichLog("voynich-rosettes", { objectIds: new Set(["o9"]), includeAv: false }); // only o9's R7 notes
+const rosettesLog = buildVoynichLog("voynich-rosettes", { objectIds: new Set(["ex-voynich.o9"]), includeAv: false }); // only o9's R7 notes
 const voynichLog = buildVoynichLog("voynich", { includeAv: true }); // all folios + o12 (grid main)
 const readingLog = buildVoynichLog("voynich-reading", { includeAv: true }); // all + AV (narrative)
 
@@ -194,7 +194,7 @@ const voynichObjs: AObject[] = voynichObjects.map((o) => ({
   ...(o.requiredStatement ? { requiredStatement: o.requiredStatement } : {}),
 }));
 // The SINGLE exhibit's object set: only o9 (the Rosettes foldout), carrying its own Beinecke credit.
-const rosettesObjs: AObject[] = voynichObjs.filter((o) => o.id === "o9");
+const rosettesObjs: AObject[] = voynichObjs.filter((o) => o.id === "ex-voynich.o9");
 
 // §G — the 6-beat narrative spine (03 §3) now lives in the shared ./voynich.ts (imported above as
 // voynichSections). A Section is a self-contained reading beat (ADR-0005): its own camera target

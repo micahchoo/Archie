@@ -10,7 +10,7 @@ import { test, expect, type Page } from "@playwright/test";
 // Fixture the walk leans on (verified in apps/studio/src/seed-data.ts): the bundled example exhibit
 // "The Rosettes", slug `voynich-rosettes`, is a SINGLE-object exhibit whose one object is `o9`.
 const SLUG = "voynich-rosettes";
-const OBJ = "o9";
+const OBJ = "ex-voynich.o9";
 const HASH_LIBRARY = "#/";
 const HASH_OVERVIEW = `#/${SLUG}`;
 const HASH_EDITOR = `#/${SLUG}/o/${OBJ}`;

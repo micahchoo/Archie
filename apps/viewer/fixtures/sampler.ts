@@ -41,7 +41,7 @@ const AUDIO_RIGHTS = "http://creativecommons.org/licenses/by-nc-sa/3.0/";
 // (the AV MediaPlayer reader shows transcript prose only, never tiles), opening NoteLightbox on click.
 export const samplerObjects: AObject[] = [
   {
-    id: asObjectId("sv1"),
+    id: asObjectId("ex-sampler.sv1"),
     source: VIDEO_SOURCE,
     label: "Big Buck Bunny (10s clip) — annotate a frame",
     mediaType: "video",
@@ -53,7 +53,7 @@ export const samplerObjects: AObject[] = [
     requiredStatement: { label: "Video", value: "“Big Buck Bunny” © Blender Foundation, CC BY 3.0" },
   },
   {
-    id: asObjectId("sa1"),
+    id: asObjectId("ex-sampler.sa1"),
     source: AUDIO_SOURCE,
     label: "Kryptogramm recording — listen with a transcript",
     mediaType: "sound",
@@ -63,7 +63,7 @@ export const samplerObjects: AObject[] = [
     requiredStatement: { label: "Audio", value: "Kryptogramm — Elias Schwerdtfeger, CC BY-NC-SA 3.0" },
   },
   {
-    id: asObjectId("si1"),
+    id: asObjectId("ex-sampler.si1"),
     source: IMAGE_SOURCE,
     label: "A page with a note that carries a picture",
     mediaType: "image",
@@ -83,16 +83,16 @@ export interface SamplerTimeNote {
   comment: string;
 }
 export const samplerVideoNotes: SamplerTimeNote[] = [
-  { objectId: "sv1", t: "0,3", comment: "The title card fades in — the moment to frame for a cover still." },
-  { objectId: "sv1", t: "4,8", comment: "The first character appears; a frame box here would isolate the subject." },
+  { objectId: "ex-sampler.sv1", t: "0,3", comment: "The title card fades in — the moment to frame for a cover still." },
+  { objectId: "ex-sampler.sv1", t: "4,8", comment: "The first character appears; a frame box here would isolate the subject." },
 ];
 
 // Transcript notes on the AUDIO object — the time-ranged spans that make the Viewer render the
 // MediaPlayer's transcript track (one row per span).
 export const samplerAudioNotes: SamplerTimeNote[] = [
-  { objectId: "sa1", t: "0,30", comment: "The recording opens: the page is read aloud, letter by letter." },
-  { objectId: "sa1", t: "45,80", comment: "A repeated cadence surfaces — a rhythm under the spoken marks." },
-  { objectId: "sa1", t: "120,160", comment: "Here the sounds cluster like labels, as if naming the drawings." },
+  { objectId: "ex-sampler.sa1", t: "0,30", comment: "The recording opens: the page is read aloud, letter by letter." },
+  { objectId: "ex-sampler.sa1", t: "45,80", comment: "A repeated cadence surfaces — a rhythm under the spoken marks." },
+  { objectId: "ex-sampler.sa1", t: "120,160", comment: "Here the sounds cluster like labels, as if naming the drawings." },
 ];
 
 // A WHOLE-OBJECT note that CARRIES MEDIA: the markdown image embed makes render-core's splitNoteMedia
@@ -104,7 +104,7 @@ export interface SamplerMediaNote {
 }
 export const samplerMediaNotes: SamplerMediaNote[] = [
   {
-    objectId: "si1",
+    objectId: "ex-sampler.si1",
     comment:
       "This note carries its own picture — a detail held beside the page. " +
       `Click the thumbnail to see it full-screen. ![f1r — a related folio](${NOTE_IMAGE})`,

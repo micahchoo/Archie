@@ -62,7 +62,7 @@ export const DEFAULT_EXHIBITS: ExhibitMeta[] = [
   // The leading surface is DERIVED from content (ADR-0016): `layout` is no longer written — resolveLayout
   // re-derives it (sections ⇒ narrative; >1 object ⇒ grid; one ⇒ single). The shape below IS the intent.
   // SINGLE — only o9 (the Rosettes foldout); no sections, one object → single.
-  { id: "ex-voynich-rosettes", slug: "voynich-rosettes", title: "The Rosettes", seedVersion: 1, readings: voynichReadings, objects: voynichObjMeta.filter((o) => o.id === "o9") },
+  { id: "ex-voynich-rosettes", slug: "voynich-rosettes", title: "The Rosettes", seedVersion: 1, readings: voynichReadings, objects: voynichObjMeta.filter((o) => o.id === "ex-voynich.o9") },
   // GRID — all 11 folios + the sounded page; NO sections, >1 object → grid (the main voynich slug).
   { id: "ex-voynich", slug: "voynich", title: "The Whole Manuscript", seedVersion: 2, readings: voynichReadings, objects: voynichObjMeta },
   // NARRATIVE — all + the sounded page, the 6-beat spine; sections present → narrative.
@@ -106,14 +106,14 @@ function seededVoynich(author: ClientId, slug: string, opts: { objectIds?: Set<s
     ];
     s.createNote({ target: rectSel(canvasIdFor(BASE, slug, n.objectId), x, y, w, h), body, ...(n.reading ? { reading: n.reading } : {}) });
   }
-  if (opts.includeAv && keep("o12")) {
+  if (opts.includeAv && keep("ex-voynich.o12")) {
     for (const a of voynichAvNotes) {
       const [start, end] = a.t.split(",").map(Number) as [number, number];
       const body: W3CBody[] = [
         { type: "TextualBody", value: a.comment, purpose: "commenting" },
         ...(a.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" })),
       ];
-      s.createNote({ target: timeSel(canvasIdFor(BASE, slug, "o12"), start, end), body, ...(a.reading ? { reading: a.reading } : {}) });
+      s.createNote({ target: timeSel(canvasIdFor(BASE, slug, "ex-voynich.o12"), start, end), body, ...(a.reading ? { reading: a.reading } : {}) });
     }
   }
   // Whole-object (Object-level) Notes — a BARE canvas IRI target string, no selector (ADR-0018). Seeded
@@ -176,7 +176,7 @@ function seededSampler(author: ClientId): AnnotationSession {
 /** The per-slug seed factory: returns a thunk that builds the seed session for a default slug, or null
  *  for a user-created exhibit (no seed). The `author` is threaded so seeded notes stamp the live identity. */
 export const seededFor = (author: ClientId, slug: string): (() => AnnotationSession) | null =>
-  slug === "voynich-rosettes" ? () => seededVoynich(author, "voynich-rosettes", { objectIds: new Set(["o9"]), includeAv: false })
+  slug === "voynich-rosettes" ? () => seededVoynich(author, "voynich-rosettes", { objectIds: new Set(["ex-voynich.o9"]), includeAv: false })
   : slug === "voynich" ? () => seededVoynich(author, "voynich", { includeAv: true })
   : slug === "voynich-reading" ? () => seededVoynich(author, "voynich-reading", { includeAv: true })
   : slug === "language-atlas" ? () => seededAtlas(author)

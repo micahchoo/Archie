@@ -24,7 +24,7 @@ export const geoTitle = "World map (geo-annotation prototype)";
 export const geoSummary = "Drop pins on a live map — each one stays on its place as you zoom and pan, anchored to a longitude and latitude. An early look at annotating maps in Archie.";
 
 /** The one Map object (the basemap canvas). Rights are spread by each consumer (mirrors atlasObjects). */
-export const geoObjects: AObject[] = [{ id: asObjectId("m1"), source: GEO_TEMPLATE, label: "World basemap", tileSource: geoBasemap }];
+export const geoObjects: AObject[] = [{ id: asObjectId("ex-geo.m1"), source: GEO_TEMPLATE, label: "World basemap", tileSource: geoBasemap }];
 
 /** A RENDERABLE gallery cover — the shallowest single world tile (z=minZoom, 0, 0); one fetch, a real image
  *  (the bare `{z}/{x}/{y}` template is not itself an image). thumbnailUrl owns the xyz→tile-URL derivation. */
@@ -50,7 +50,7 @@ export const geoNotes = cities.map((c) => {
   const nw = pixelToLngLat({ x, y }, geoBasemap);
   const se = pixelToLngLat({ x: x + GEO_PIN_PX, y: y + GEO_PIN_PX }, geoBasemap);
   return {
-    objectId: "m1",
+    objectId: "ex-geo.m1",
     comment: c.name,
     x, y, w: GEO_PIN_PX, h: GEO_PIN_PX,
     geo: { type: "bbox" as const, west: nw.lng, south: se.lat, east: se.lng, north: nw.lat },
