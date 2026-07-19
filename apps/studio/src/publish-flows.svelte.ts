@@ -6,14 +6,14 @@
 // primitive + per-host adapters" now has one home. A `.svelte.ts` rune module (cf.
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
-  MemoryFilesystem, publishLibrary, libraryToZipFs, collectFiles, publishToGitHub, renderMarkdown,
-  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type GitHubTarget, type PublishProgress, type IncrementalScope,
+  MemoryFilesystem, publishLibrary, libraryToZipFs, collectFiles, publishToGitHub, renderMarkdown, readStructureReport, asExhibitId,
+  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog,
 } from "@render/core";
 import { supportsFileStreamSave, saveZipToDisk } from "./binding.js";
 import { pickFolderBinding } from "./folder-backend.js";
 import { sliceToDzi } from "./dzi-slicer.js";
 import { resolveTileSource, type AObject } from "@render/core";
-import { readAssetBlob, readOriginalBytes, readThumbBytes, assetSize, isAsset, ASSET_PREFIX, type ExhibitMeta } from "./store.js";
+import { readAssetBlob, readOriginalBytes, readThumbBytes, assetSize, isAsset, ASSET_PREFIX, openExhibitStructureDirIfExists, type ExhibitMeta } from "./store.js";
 // ADR-0014 (static archival pages): note bodies render through the SAME sanitize pipeline the
 // live Viewer uses (P-1 Q3 no-drift invariant) — renderMarkdown is canonical in @render/core now
 // (sanitize moved into core; @render/svelte only re-exports for back-compat).
@@ -62,6 +62,21 @@ export function createPublishFlows(deps: PublishDeps) {
   let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish
 
   const getAsset = (slug: string, name: string) => readAssetBlob(slug, name);
+  // Structure rev-log lookup for every publish sink (Archie-aef4): read the exhibit's persisted
+  // section history off OPFS so the published/exported tree carries {slug}/structure/history/ —
+  // the pages the zip/folder import merge (mergeImportedStructure) reads on the other side.
+  // Driven by log EXISTENCE, deliberately NOT by the archie.structureRevlog flag (see
+  // PublishOptions.getStructure): the dir probe is non-creating, so an exhibit without a log
+  // contributes nothing and no structure/ dir ever appears as a publish side effect. A torn
+  // local store publishes its READABLE history and warns (per-page tolerance, rule #2 — parity
+  // with the brokenLinks advisory posture), never silently collapses to "no history".
+  const getStructure = async (exhibitId: string, slug: string): Promise<SectionLog> => {
+    const dir = await openExhibitStructureDirIfExists(slug);
+    if (!dir) return [];
+    const { log, corrupt } = await readStructureReport(dir, asExhibitId(exhibitId));
+    if (corrupt.length > 0) console.warn(`Publish: exhibit "${slug}" has ${corrupt.length} unreadable structure history page(s); publishing the readable history`, corrupt);
+    return log;
+  };
   // Baked grid/overview thumbnails ride along every publish sink (folder / zip / GH / memory) so the
   // published viewer's overview loads small plates, not full masters. Absent → publishLibrary drops the ref.
   const getThumbnail = (slug: string, name: string) => readThumbBytes(slug, name);
@@ -154,7 +169,7 @@ export function createPublishFlows(deps: PublishDeps) {
   async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }> {
     const logs = await deps.loadAllLogs();
     const fs = new MemoryFilesystem();
-    const { brokenLinks, incompleteCanvases } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks, incompleteCanvases } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
     return { fs, brokenLinks, incompleteCanvases };
@@ -168,7 +183,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE zip builder for the three zip paths (project Save / dialog download / local publish).
   async function buildZipFs() {
     const logs = await deps.loadAllLogs();
-    return libraryToZipFs(deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS });
+    return libraryToZipFs(deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS });
   }
   // ONE folder writer for the two folder sinks (binding autosave/Save + local publish). Takes the
   // Filesystem seam directly (FSA or Tauri), so the caller owns capability selection (folder-backend).
@@ -180,7 +195,7 @@ export function createPublishFlows(deps: PublishDeps) {
   // was the cost we cut.
   async function writeTree(fs: Filesystem, plan: FolderWritePlan = {}) {
     const logs = await deps.loadAllLogs();
-    await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, ...STATIC_PAGE_OPTS, ...plan });
+    await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...plan });
   }
   /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
   async function downloadProjectZip(): Promise<boolean> {
