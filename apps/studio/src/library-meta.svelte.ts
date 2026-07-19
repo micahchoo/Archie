@@ -82,6 +82,25 @@ export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?
 
     // Awaitable — for the sites that `await persistLibrary()` before navigating.
     async appendObject(slug: string, obj: ObjectMeta) { s.meta = appendObjectIn(s.meta, slug, obj); opts.onDirty?.({ kind: "exhibit-assets", slug }); await persist(); },
+    /** Bulk append (ingest-batch scale-fix) — append N objects to ONE exhibit in ONE meta mutation + ONE
+     *  awaited persist, never the N sequential full-library.json rewrites appendObject drove (the O(N²)
+     *  ingest blocker: every imported object serialized the whole library). Folds through appendObjectIn —
+     *  the SAME reducer the singular appendObject uses — so object order + identity match a run of
+     *  appendObject calls exactly. Emits ONE `exhibit-assets` dirt (object-added → rerun the exhibit's byte
+     *  passes), keyed by slug like patchExhibits/removeExhibits: App scopes incremental publish by slug, so
+     *  a per-object emit would only buy an internal loop. Empty batch → no mutation, no persist, no dirt
+     *  (cf. removeObjects). Awaitable — the import flows await it before returning/navigating (durable-
+     *  before-navigate). No signalLibraryChanged: like the singular appendObject, adding objects to an
+     *  existing exhibit is not a library-STRUCTURE change (exhibit add/remove) — a live Viewer refreshes on
+     *  those, not on an object append. */
+    async appendObjects(slug: string, objects: readonly ObjectMeta[]) {
+      if (objects.length === 0) return; // no-op — preserve identity (no spurious persist/re-render)
+      let next = s.meta;
+      for (const obj of objects) next = appendObjectIn(next, slug, obj);
+      s.meta = next;
+      opts.onDirty?.({ kind: "exhibit-assets", slug });
+      await persist();
+    },
     async addExhibit(ex: ExhibitMeta) { s.meta = addExhibitIn(s.meta, ex); opts.onDirty?.({ kind: "exhibit-assets", slug: ex.slug }); await persist(); signalLibraryChanged(); },
 
     // Destructive removes (Archie-3f4c) — meta-only; the caller tombstones/clears annotations separately

@@ -33,6 +33,11 @@ function makeCtx(overrides: Partial<IngestContext> = {}) {
         const ex = exhibits.find((e) => e.slug === slug);
         if (ex) (ex.objects as any[]).push(obj);
       },
+      // Bulk append (ingest-batch scale-fix): addFiles/import loops commit a run of objects in one call now.
+      appendObjects: async (slug: string, objs: any[]) => {
+        const ex = exhibits.find((e) => e.slug === slug);
+        if (ex) (ex.objects as any[]).push(...objs);
+      },
       setMeta: () => {},
       persist: async () => {},
     } as any,

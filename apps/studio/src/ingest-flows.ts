@@ -219,6 +219,53 @@ export function createIngestFlows(ctx: IngestContext) {
     return id;
   }
   const exhibitBySlug = (slug: string): ExhibitMeta | undefined => ctx.lib.meta.exhibits.find((e) => e.slug === slug);
+
+  // Objects committed to library.json per durable persist during a multi-object import. THE scale fix: the
+  // old loops did one lib.appendObject → one whole-library.json rewrite PER object (O(N²) cumulative bytes;
+  // 100 exhibits × 100 objects = ~10,000 rewrites). A batch folds a run into ONE rewrite. Chunked (not a
+  // single end-of-import persist) DELIBERATELY: a single flush is O(N) bytes but a crash mid-import loses the
+  // WHOLE import; chunking bounds crash-loss to <25 objects (roughly the per-object durability granularity
+  // the old code paid O(N²) for) while cutting rewrites 25×. A typical IIIF manifest (≤25 canvases) is thus
+  // exactly ONE persist — the collection path's "1 per manifest" target — and only a pathologically large
+  // single manifest takes several.
+  const IMPORT_PERSIST_CHUNK = 25;
+
+  /** A durable-append batch for ONE pinned exhibit: collect built objects and commit them to library.json in
+   *  ONE persist per chunk instead of one-per-object. Media byte-writes (per file, separate save-queue keys)
+   *  and view seeding (seedMaster) still happen per object — only the library.json append coalesces. The view
+   *  is steered to the freshly-landed tail only AFTER its chunk is durable (mirrors the per-object
+   *  appendObject's "persist THEN setCurrentObjectId" ordering), so `current` never points at an object not
+   *  yet in the reactive meta. `reserveId` mints ids against a running set (the meta is not mutated until a
+   *  flush, so nextObjectId would repeat). */
+  function beginBatch(slug: string) {
+    const ex0 = exhibitBySlug(slug);
+    const used = new Set(ex0 ? ex0.objects.map((o) => o.id) : []);
+    let pending: ObjectMeta[] = [];
+    let lastId: string | null = null;
+    const persistChunk = async (): Promise<void> => {
+      if (pending.length === 0) return;
+      const chunk = pending;
+      pending = [];
+      await ctx.lib.appendObjects(slug, chunk);
+      if (lastId && slug === ctx.currentSlug()) ctx.setCurrentObjectId(lastId);
+    };
+    return {
+      reserveId(): string {
+        let n = used.size + 1, id = `o${n}`;
+        while (used.has(id)) id = `o${++n}`;
+        used.add(id);
+        return id;
+      },
+      add(obj: ObjectMeta, blobUrl?: string): void {
+        if (blobUrl) ctx.seedMaster(slug, obj.id, blobUrl); // blob ready before `current` ever flips to it
+        pending.push(obj);
+        lastId = obj.id;
+      },
+      flushIfFull(): Promise<void> { return pending.length >= IMPORT_PERSIST_CHUNK ? persistChunk() : Promise.resolve(); },
+      flush(): Promise<void> { return persistChunk(); },
+    };
+  }
+  type AppendBatch = ReturnType<typeof beginBatch>;
   const exhibit = (): ExhibitMeta | undefined => exhibitBySlug(ctx.currentSlug());
 
   // Append an object to `targetSlug` (defaults to whatever's current) + persist; for imported files,
@@ -270,12 +317,19 @@ export function createIngestFlows(ctx: IngestContext) {
   // `targetSlug` (defaults to current) is the pinned exhibit a multi-file loop is importing into — see
   // appendObject's comment; every OPFS path below must use it too, or bytes would save under the right
   // slug while metadata drifted (or vice versa) once the user switches exhibits mid-import.
-  async function addObjectFromFile(file: File, targetSlug: string = ctx.currentSlug()): Promise<{ added: boolean; note?: string }> {
+  // `batch` (ingest-batch scale-fix): when a multi-file caller passes one, the built object is QUEUED onto it
+  // (committed to library.json in ONE persist per chunk) instead of appended-and-persisted per file; ids are
+  // minted from the batch's running reservation (the meta isn't mutated until a flush). Absent (single-file
+  // callers) → the pre-batch immediate appendObject per file. Media byte-writes are per file either way.
+  async function addObjectFromFile(file: File, targetSlug: string = ctx.currentSlug(), batch?: AppendBatch): Promise<{ added: boolean; note?: string }> {
     if (!ctx.storeReady()) return { added: false }; // OPFS unavailable — caller surfaces this once
     const ex = exhibitBySlug(targetSlug);
     if (!ex) return { added: false };
     const slug = targetSlug;
-    const id = nextObjectId(ex);
+    const id = batch ? batch.reserveId() : nextObjectId(ex);
+    // Queue onto the batch (durable at the next chunk flush) or append-and-persist now — same object either way.
+    const place = (obj: ObjectMeta, blobUrl?: string): Promise<void> =>
+      batch ? (batch.add(obj, blobUrl), Promise.resolve()) : appendObject(obj, blobUrl, targetSlug);
     const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
 
     // AV INGEST (§152 gate lifted 2026-05-26, user): store an audio/video file as an OPFS asset — no EXIF/dims.
@@ -286,7 +340,7 @@ export function createIngestFlows(ctx: IngestContext) {
       // Bytes THROUGH the queue, then the object (reference-after-bytes): a failed write is now visible
       // in saveStatus AND aborts the add, so library.json never references bytes that didn't land.
       if (!(await persistAsset(slug, () => saveAssetFile(slug, avName, file)))) return { added: false, note: STORAGE_FAIL_NOTE };
-      await appendObject({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file), targetSlug);
+      await place({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file));
       return file.size > LARGE_MEDIA_BYTES
         ? { added: true, note: `“${file.name}” is large (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.` }
         : { added: true };
@@ -348,10 +402,9 @@ export function createIngestFlows(ctx: IngestContext) {
     // Register the plate under a SEPARATE blob URL from the master slot: the slot is revoked on the next
     // object switch, but the grid plate must survive until the exhibit is left (masters-on-demand, 1.2).
     ctx.setPlate(id, URL.createObjectURL(plateBlob));
-    await appendObject(
+    await place(
       { id, source: `${ASSET_PREFIX}${name}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(thumbnail ? { thumbnail } : {}), ...(provenance ? { provenance } : {}) },
       blobUrl,
-      targetSlug,
     );
     return { added: true };
   }
@@ -386,15 +439,20 @@ export function createIngestFlows(ctx: IngestContext) {
     // same mid-flow-interruption exposure as the folder/manifest loops below — without this, switching
     // exhibits partway through a drop would silently redirect the remaining files.
     const targetSlug = opened.slug;
+    // Batch the library.json appends (scale-fix): one persist per IMPORT_PERSIST_CHUNK files, not per file.
+    // Per-file asset byte-writes (inside addObjectFromFile) and the per-file progress status are unchanged.
+    const batch = beginBatch(targetSlug);
     let added = 0;
     const notes: string[] = [];
     try {
       for (let i = 0; i < list.length; i++) {
         ctx.setImportStatus({ name: list[i]!.name, index: i + 1, total: list.length });
-        const r = await addObjectFromFile(list[i]!, targetSlug);
+        const r = await addObjectFromFile(list[i]!, targetSlug, batch);
         if (r.added) added++;
         if (r.note) notes.push(r.note);
+        await batch.flushIfFull();
       }
+      await batch.flush(); // durable-before-return: the batch's tail is committed before we compose the summary
     } finally {
       ctx.setImportStatus(null);
     }
@@ -455,6 +513,9 @@ export function createIngestFlows(ctx: IngestContext) {
           ctx.alert("Made the exhibit, but this browser can't store files — open a normal window to add them.");
           return;
         }
+        // One batch per group (scale-fix): this group's files commit to library.json in ONE persist per
+        // chunk, not per file. Per-file asset writes + per-file progress are unchanged.
+        const batch = beginBatch(targetSlug);
         for (let i = 0; i < g.files.length; i++) {
           const p = g.files[i]!;
           ctx.setImportStatus({ name: p.name, index: i + 1, total: g.files.length });
@@ -462,13 +523,15 @@ export function createIngestFlows(ctx: IngestContext) {
           // plan admitted them under — addObjectFromFile branches on File.type.
           const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
           try {
-            const r = await addObjectFromFile(file, targetSlug);
+            const r = await addObjectFromFile(file, targetSlug, batch);
             if (r.added) imported++; else failed++;
             if (r.note) ctx.setImportNote(r.note); // large-AV nudge; the end-of-import summary overrides it if any
           } catch {
             failed++; // skip-and-tally: one corrupt scan must not abort the rest of the folder
           }
+          await batch.flushIfFull();
         }
+        await batch.flush(); // commit this group's tail before minting the next group's exhibit
       }
     } finally {
       ctx.setImportStatus(null);
@@ -518,14 +581,19 @@ export function createIngestFlows(ctx: IngestContext) {
   // per-object loop awaits per object, and nothing blocks the user from navigating elsewhere mid-import —
   // without pinning, a later object would silently land on whatever exhibit is now current.
   async function importManifestObjects(plan: ManifestPlan, targetSlug: string) {
+    // Batch the appends (scale-fix): the manifest's canvases commit to library.json in ONE persist per chunk
+    // (a typical manifest = one persist), not one full-library.json rewrite per canvas. Progress still ticks
+    // per object. A flush throwing (storage broken) PROPAGATES — the collection drain catches it as fatal.
+    const batch = beginBatch(targetSlug);
     try {
       for (let i = 0; i < plan.objects.length; i++) {
         const o = plan.objects[i]!;
         ctx.setImportStatus({ name: o.label, index: i + 1, total: plan.objects.length });
-        const ex = exhibitBySlug(targetSlug);
-        if (!ex) break;
-        await appendObject({ id: nextObjectId(ex), ...o }, undefined, targetSlug);
+        if (!exhibitBySlug(targetSlug)) break; // exhibit vanished (deleted mid-import) — stop; a flush is a no-op on it
+        batch.add({ id: batch.reserveId(), ...o });
+        await batch.flushIfFull();
       }
+      await batch.flush();
     } finally {
       ctx.setImportStatus(null);
     }
@@ -564,7 +632,17 @@ export function createIngestFlows(ctx: IngestContext) {
   async function newExhibitFromManifest(url: string, title?: string) {
     const plan = await fetchManifestPlan(url);
     if (!plan) return;
-    await createExhibitFromPlan(plan, title && title.trim() !== "" ? title.trim() : plan.title);
+    // Failure containment (scale-fix): createExhibitFromPlan mints the exhibit (ctx.newExhibit) then appends
+    // its objects. A save failure is already non-throwing (it surfaces in saveStatus via the save queue), but
+    // exhibit creation can reject — catch it so the single-manifest path never leaks an unhandled rejection,
+    // and surface it through the same ctx.alert channel the fetch/parse failures use. The exhibit may be
+    // left partially populated (its committed prefix persisted durably); the alert tells the user to check.
+    try {
+      await createExhibitFromPlan(plan, title && title.trim() !== "" ? title.trim() : plan.title);
+    } catch (e) {
+      console.error("IIIF manifest import failed", e);
+      ctx.alert("Couldn't finish importing that manifest to this device — some of it may not have been added. Check the save indicator.");
+    }
   }
   // IIIF manifest URL → append into the CURRENT exhibit (Archie-56cf — the create dialog's IIIF path in
   // add-to-exhibit scope). Same fetch/cap/parse + append as newExhibitFromManifest; the ONLY difference is
