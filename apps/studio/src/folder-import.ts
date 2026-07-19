@@ -101,3 +101,49 @@ export function planFolderImportGroups<T extends PickedFile>(files: T[]): Folder
     files: order(fs),
   }));
 }
+
+/** Aggregate media counts across an ENTIRE picked folder, ignoring subfolder grouping — the create
+ *  dialog's (Archie-8482/Archie-51cc) folder-path summary card, shown before the user has made any
+ *  subfolder-grouping choice. */
+export interface FolderSummary {
+  name: string;
+  total: number;
+  images: number;
+  audio: number;
+  video: number;
+}
+export function summarizeFolderFiles<T extends PickedFile>(files: T[]): FolderSummary {
+  const media = files.filter((f) => !isHiddenPath(f.relativePath) && isImportableMedia(f));
+  const counts = { images: 0, audio: 0, video: 0 };
+  for (const f of media) {
+    const m = inferredMime(f);
+    if (m.startsWith("image/")) counts.images++;
+    else if (m.startsWith("audio/")) counts.audio++;
+    else if (m.startsWith("video/")) counts.video++;
+  }
+  return { name: folderNameFrom(files), total: media.length, ...counts };
+}
+
+/** How many exhibits `planFolderImportGroups` would create from this folder today — 1 for a folder
+ *  with only loose top-level media (or no first-level subfolders that hold any), >1 once any
+ *  first-level subfolder holds media. Drives the create dialog's progressive-disclosure grouping
+ *  choice (Archie-8482): only offer "one exhibit from everything" vs "one per subfolder" when this
+ *  is >1 — a flat folder never shows a choice with nothing to choose between. */
+export function folderGroupCount<T extends PickedFile>(files: T[]): number {
+  return planFolderImportGroups(files).length;
+}
+
+/** relativePaths that collapse every file into ONE exhibit ("one exhibit from everything",
+ *  Archie-8482's progressive-disclosure choice) — positionally matches `files`. Strips any
+ *  subfolder segment so a downstream `planFolderImportGroups` call groups everything under one
+ *  loose/root key, same as if the folder had no subfolders at all. Pure: `File.webkitRelativePath`
+ *  is a live browser property this DOM-free module can't set directly — callers apply the returned
+ *  paths to real File objects (see ingest-flows.test.ts's `Object.assign(file,
+ *  { webkitRelativePath })` fixture pattern for the same technique, reused by CreateExhibitDialog). */
+export function flattenedRelativePaths<T extends PickedFile>(files: T[]): string[] {
+  const root = folderNameFrom(files);
+  return files.map((f) => {
+    const base = f.relativePath.includes("/") ? f.relativePath.split("/").pop()! : f.relativePath;
+    return `${root}/${base}`;
+  });
+}

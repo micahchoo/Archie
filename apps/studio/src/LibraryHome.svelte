@@ -18,6 +18,7 @@
   import type { Binding, RecentProject, RightsFields } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
+  import CreateExhibitDialog from "./CreateExhibitDialog.svelte";
   import HelpMenu from "./HelpMenu.svelte";
   import GalleryThumb from "./GalleryThumb.svelte";
   import GalleryWall from "./GalleryWall.svelte";
@@ -28,6 +29,7 @@
   import { saveStatus } from "./save-queue.svelte.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   import { viewPrefs } from "./view-prefs.svelte.js";
+  import { readDroppedFolderFiles } from "./folder-drop.js";
 
   let {
     exhibits,
@@ -174,18 +176,42 @@
     ...(e.requiredStatement ? { requiredStatement: e.requiredStatement } : {}),
   });
 
-  let newTitle = $state("");
-  function create() {
-    const t = newTitle.trim();
-    if (!t) return;
-    oncreate(t);
-    newTitle = "";
+  // The create/import dialog (Archie-51cc, decided by Archie-8482/Archie-beb6) — replaces the old
+  // New-exhibit cell's cramped title-field/hidden-folder-input/window.prompt trio with ONE scrimmed
+  // surface. `createPrefillFolder` carries a page-level folder drop's files straight into the
+  // dialog's folder path (Variant B's grafted trait); openCreate() clears it for a plain button-open.
+  let createOpen = $state(false);
+  let createPrefillFolder = $state<File[] | null>(null);
+  // Single-scrim invariant (CONTEXT.md → Surfaces): opening the create dialog replaces any open
+  // PropsDrawer rather than stacking a second scrim.
+  function openCreate(prefill: File[] | null = null) {
+    rightsOpen = false;
+    editingSlug = null;
+    createPrefillFolder = prefill;
+    createOpen = true;
   }
 
-  // The hidden directory input behind "… or add a media folder". $state because the wall/exhibits
-  // {#if} toggle remounts it, reassigning this ref across mount cycles (compiler non_reactive_update
-  // otherwise; matches ExhibitOverview's viewport precedent).
-  let dirEl = $state<HTMLInputElement | null>(null);
+  // Page-level folder drop (Archie-8482 "B's best trait grafted"): dropping a folder anywhere on
+  // the Library scale opens the create dialog pre-populated on the folder path, skipping the
+  // in-dialog dropzone step. Lives here (not App.svelte) — this is a Library-scale affordance, not
+  // an editor one.
+  let libraryDragOver = $state(false);
+  async function onLibraryDrop(e: DragEvent) {
+    e.preventDefault();
+    libraryDragOver = false;
+    const items = e.dataTransfer?.items;
+    if (!items || items.length === 0) return;
+    // The walker is itself per-entry tolerant (folder-drop.ts); this catch is the belt-and-braces
+    // half (code review S1) — a rejection here must surface a plain-language message, not an
+    // unhandled promise rejection and a silently dead drop.
+    try {
+      const files = await readDroppedFolderFiles(Array.from(items));
+      if (files.length > 0) openCreate(files);
+    } catch (err) {
+      console.error("Folder drop failed", err);
+      window.alert("Couldn't read that folder.");
+    }
+  }
 
   // A human "x ago" for a recent project's last-opened stamp.
   function ago(ms: number): string {
@@ -197,7 +223,13 @@
   }
 </script>
 
-<main class="library">
+<main
+  class="library"
+  class:drag-over={libraryDragOver}
+  ondragover={(e) => { e.preventDefault(); libraryDragOver = true; }}
+  ondragleave={(e) => { if (e.target === e.currentTarget) libraryDragOver = false; }}
+  ondrop={onLibraryDrop}
+>
   <header>
     <p class="eyebrow">Library · {exhibits.length} {exhibits.length === 1 ? "exhibit" : "exhibits"}</p>
     <div class="title-row">
@@ -215,7 +247,7 @@
           {hasRealWork}
           onflush={onsave}
         />
-        <button class="librights" class:set={hasRights} onclick={() => (rightsOpen = true)} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
+        <button class="librights" class:set={hasRights} onclick={() => { createOpen = false; rightsOpen = true; }} title="Title, description, credit & license for the whole library">ⓘ Details{#if hasRights}<span class="dot">●</span>{/if}</button>
         <HelpMenu {ontutorial} {onshortcuts} />
       </div>
     </div>
@@ -243,6 +275,18 @@
         />
       {/if}
     </PropsDrawer>
+
+    <!-- The create/import dialog (Archie-51cc) — its own scrimmed surface; see openCreate() above
+         for the single-scrim handoff with the two PropsDrawers. Scope is fixed to "new-exhibit" —
+         Archie-56cf will pass an "add-to-exhibit" scope from elsewhere later. -->
+    <CreateExhibitDialog
+      open={createOpen}
+      prefillFolderFiles={createPrefillFolder}
+      {oncreate}
+      {oncreatefromfolder}
+      {oncreatefrommanifest}
+      onclose={() => { createOpen = false; createPrefillFolder = null; }}
+    />
 
     <!-- Project bar (Archie-2308): demoted to ONE quiet line — SafetyState above already carries every
          save-state word, so this only ever answers "where does this library live". -->
@@ -316,31 +360,18 @@
       <!-- Per-card pencil (Archie-79be): edit this exhibit's title/description/credit + remove, without
            opening it. A SIBLING of the card button (no button-in-button); sits over the top-right corner. -->
       <button class="edit-meta" title="Edit details for {ex.title}" aria-label="Edit details for {ex.title}"
-        onclick={() => (editingSlug = ex.slug)}>✎</button>
+        onclick={() => { createOpen = false; editingSlug = ex.slug; }}>✎</button>
     </li>
   {/snippet}
 
   {#snippet newExhibitCell()}
     <li>
-      <form class="new" onsubmit={(e) => { e.preventDefault(); create(); }}>
+      <!-- ONE entry point (Archie-51cc/Archie-8482) — the old title-field/hidden-folder-input/
+           window.prompt trio now lives entirely in CreateExhibitDialog, mounted once below. -->
+      <button type="button" class="new" onclick={() => openCreate()}>
         <span class="plus">+</span>
-        <input bind:value={newTitle} placeholder="New exhibit title…" aria-label="New exhibit title" />
-        <button type="submit" disabled={newTitle.trim() === ""}>Create</button>
-        <!-- Folder → exhibit in one gesture: the folder names the exhibit, its media (images, audio,
-             video) become the objects (reading order). webkitdirectory over showDirectoryPicker: cross-browser + testable. -->
-        <button type="button" class="alt-create" onclick={() => dirEl?.click()}>… or add a media folder</button>
-        <!-- One paste bootstraps from any institutional IIIF collection (50k+ manifests in the wild).
-             prompt() matches the app's alert/confirm chrome convention — a quiet escape, not a form. -->
-        <button type="button" class="alt-create" onclick={() => { const u = window.prompt("Paste a IIIF manifest link"); if (u) oncreatefrommanifest(u); }}>… or paste a IIIF link</button>
-        <input
-          bind:this={dirEl}
-          type="file"
-          webkitdirectory
-          style="display:none"
-          aria-label="Add a folder of media as a new exhibit"
-          onchange={(e) => { const el = e.currentTarget as HTMLInputElement; if (el.files?.length) oncreatefromfolder(Array.from(el.files)); el.value = ""; }}
-        />
-      </form>
+        <span class="label">New exhibit</span>
+      </button>
     </li>
   {/snippet}
 
@@ -507,30 +538,23 @@
   /* Example hint — teaches the consequence of the badge (transient; fork to keep). Quiet body voice, demoted from the gallery lede. */
   .ex-hint { font-family: var(--font-body); font-size: 0.78rem; line-height: 1.5; color: var(--ink-canvas-secondary); }
 
-  /* New-exhibit tile — a soft dashed plate awaiting a work (separated by tone, not a hard rectangle). */
+  /* New-exhibit tile (Archie-51cc) — ONE button that opens the create dialog; a soft dashed plate,
+     same footprint as an exhibit card. Page-level folder drop (onLibraryDrop) highlights the whole
+     .library surface (below), not just this tile — a drop anywhere on the Library scale works. */
   .new {
-    display: flex; flex-direction: column; gap: var(--space-3); align-items: flex-start; min-height: 7.5rem; box-sizing: border-box;
-    padding: var(--space-5);
+    display: flex; flex-direction: column; gap: var(--space-2); align-items: flex-start; justify-content: center;
+    width: 100%; min-height: 7.5rem; box-sizing: border-box;
+    padding: var(--space-5); text-align: left; cursor: pointer;
     background: none; border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md);
+    transition: border-color 160ms ease, background 160ms ease;
   }
+  .new:hover, .new:focus-visible { border-color: var(--border-canvas-emphasis); background: var(--surface-canvas-overlay); }
   .plus { font-family: var(--font-display); font-weight: 300; font-size: 1.6rem; line-height: 1; color: var(--ink-canvas-muted); }
-  .new input {
-    width: 100%; box-sizing: border-box; font-family: var(--font-body); font-size: 1rem; padding: var(--space-2) var(--space-3);
-    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
-    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
-    transition: border-color 160ms ease, box-shadow 160ms ease;
-  }
-  .new input:focus { outline: none; border-color: var(--border-canvas-emphasis); box-shadow: var(--shadow-inset-fog); }
-  /* Create — quiet soft-btn: warm paper, soft border, ink text. Signal-orange is rationed to Save (the focal action). */
-  .new button {
-    font-family: var(--font-ui); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.02em; padding: var(--space-2) var(--space-4); cursor: pointer;
-    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm);
-    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
-  }
-  .new button:hover:not(:disabled) { background: var(--surface-canvas-overlay); box-shadow: var(--shadow-lift-low); }
-  .new button:disabled { background: none; color: var(--ink-canvas-muted); border-color: var(--border-canvas); box-shadow: none; cursor: default; }
-  .new .alt-create { font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.14em; background: none; border: none; box-shadow: none; padding: 6px 0; font-weight: 400; color: var(--ink-canvas-secondary); } /* 6px v-pad -> 24px+ hit box (Fitts) */
-  .new .alt-create:hover { background: none; box-shadow: none; color: var(--accent-2); }
+  .new .label { font-family: var(--font-body); font-size: 1rem; color: var(--ink-canvas-secondary); }
+
+  /* Page-level folder drop (Archie-8482 "B's best trait grafted"): a folder dragged anywhere over
+     the Library opens the create dialog pre-populated — this is the whole-surface affordance for it. */
+  .library.drag-over { box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-muted); }
 
   /* --- Two-views-one-search bar (Phase 3.2): a quiet row between the header and the grid/wall. --- */
   .gallery-bar { max-width: 60rem; margin: 0 auto var(--space-5); display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; }
