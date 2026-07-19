@@ -262,7 +262,7 @@
       {/if}
     </div>
     <div class="zone right">
-      <button class="open-another" onclick={openAnother}>Open another library</button>
+      <button class="text-link open-another" onclick={openAnother}>Open another library</button>
     </div>
   </div>
 {/if}
@@ -383,20 +383,28 @@
     border-radius: var(--radius-sm);
     background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low);
   }
-    .open-another {
-    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); cursor: pointer;
+  /* Chrome + resting underline from .text-link. It kept the uppercase/0.14em eyebrow recipe — the same
+     one the INERT "GALLERY · N EXHIBITS" label uses — painted in --ink-canvas-secondary, so the only
+     action in this corner of the bar read as a caption. The tracking stays; the link ink is what tells
+     you it does something. */
+  .open-another {
+    font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs);
     text-transform: uppercase; letter-spacing: 0.14em;
-    background: none; border: none; padding: var(--space-2) 0; color: var(--ink-canvas-secondary); /* 24px+ hit box (Fitts) — transparent, no visual shift */
+    padding: var(--space-2) 0; /* 24px+ hit box (Fitts) */
   }
-  .open-another:hover { color: var(--accent-2); }
 
   /* Over the gallery wall (light) the bar's canvas inks fail contrast (axe: 2.1) — swap the quiet
      chrome to paper inks; the bar floats over BOTH surface families, so ink follows the backdrop. */
+  /* The LINKS keep link ink here (the paper-tuned amber), or this rule would out-specify .text-link and
+     silently undo the affordance on the gallery wall. Only the inert .bar-title takes the quiet ink. */
   .topbar.on-paper .crumbs a,
   .topbar.on-paper .crumbs .crumb-link,
+  .topbar.on-paper .open-another { color: var(--accent-2-paper); }
+  .topbar.on-paper .crumbs a:hover,
+  .topbar.on-paper .crumbs .crumb-link:hover,
+  .topbar.on-paper .open-another:hover { color: var(--accent-2-paper-hover); }
   .topbar.on-paper .bar-title { color: var(--ink-paper-secondary); }
   .topbar.on-paper .crumbs .sep { color: var(--ink-paper-muted); }
-  .topbar.on-paper .open-another { color: var(--ink-paper-secondary); }
 
   .state {
     display: flex; align-items: center; justify-content: center; gap: 10px; height: 100vh;
