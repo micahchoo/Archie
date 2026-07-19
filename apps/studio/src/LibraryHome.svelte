@@ -6,8 +6,10 @@
   // The PROJECT BAR (invention #3, CONTEXT three-configs persistence) sits above the plates and answers
   // one question at the Library scale: WHERE does this library live? — only-in-this-browser (unbound) vs
   // a folder it autosaves to (Chromium) vs a .archie.zip file on disk. Capability is hidden; the user sees
-  // only the place. Save is habit-forming (prominent + ⌘S + an unsaved dot); Open is as prominent as New;
-  // recents survive sessions (the non-Chromium re-open mitigation); a lost binding is surfaced, never silent.
+  // only the place. Open is as prominent as New; recents survive sessions (the non-Chromium re-open
+  // mitigation); a lost binding is surfaced, never silent. Safety (is it saved?) is a SEPARATE question
+  // from place — answered by the one shared SafetyState control (CONTEXT.md → Persistence; Archie-0b7b),
+  // the same component the editor header mounts, not a bar-local dot/button.
   import type { ExhibitMeta } from "./store.js";
   import type { Binding, RecentProject, RightsFields } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
@@ -15,8 +17,10 @@
   import HelpMenu from "./HelpMenu.svelte";
   import GalleryThumb from "./GalleryThumb.svelte";
   import GalleryWall from "./GalleryWall.svelte";
+  import SafetyState from "./SafetyState.svelte";
   import { flattenLibraryImages, coverOf, filterExhibits, filterImages } from "./gallery-data.js";
   import { saveStatus } from "./save-queue.svelte.js";
+  import { hasRealWorkIn } from "./safety-state.svelte.js";
 
   let {
     exhibits,
@@ -96,6 +100,8 @@
 
   let rightsOpen = $state(false);
   const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
+  // SafetyState's unbound "Action needed" input (CONTEXT.md — never for untouched seed/template content).
+  const hasRealWork = $derived(hasRealWorkIn(exhibits, isTemplate));
 
   // Two views, one search (Phase 3.2): visual Exhibit cards ⟷ the all-images wall; the search box filters
   // the ACTIVE view (exhibit titles / object titles) via the shared matchesTitle primitive. View-only local
@@ -184,7 +190,6 @@
           <p class="place">
             <span class="kind">{binding.kind === "folder" ? "Folder" : "File"}</span>
             <span class="name">{binding.name}</span>
-            {#if bindingDirty}<span class="dot" title="Unsaved changes">● unsaved</span>{/if}
           </p>
           <p class="hint">
             {#if binding.kind === "folder"}Saving to this folder automatically as you work.
@@ -197,9 +202,17 @@
         {/if}
       </div>
       <div class="actions">
-        <button class="primary" onclick={onsave} disabled={bindingBusy}>
-          {binding.kind === "unbound" ? "Save to disk" : "Save"}
-        </button>
+        <!-- The one save UI (CONTEXT.md → Persistence; Archie-0b7b) — inert text when Saved/Saving,
+             the control itself when Action needed/Failed. Same component the editor header mounts. -->
+        <SafetyState
+          saveHealth={saveStatus.health}
+          bindingKind={binding.kind}
+          {bindingDirty}
+          {bindingBusy}
+          {bindingError}
+          {hasRealWork}
+          onflush={onsave}
+        />
         <button class="ghost" onclick={onopenproject} disabled={bindingBusy}>Open a library…</button>
         {#if binding.kind !== "unbound"}
           <button class="ghost subtle" onclick={onclose} disabled={bindingBusy}
@@ -343,16 +356,12 @@
   .place { margin: 0; font-family: var(--font-body); font-size: 0.95rem; color: var(--ink-canvas-primary); display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
   .place .kind { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); padding: 1px var(--space-2); }
   .place .name { font-family: var(--font-mono); font-size: 0.85rem; color: var(--ink-canvas-primary); }
-  .place .dot { font-family: var(--font-ui); font-size: 0.7rem; color: var(--semantic-warning); }
   .hint { margin: var(--space-1) 0 0; font-family: var(--font-body); font-size: var(--text-ui-md, 0.75rem); color: var(--ink-canvas-secondary); }
   .save-error { margin: var(--space-1) 0 0; font-family: var(--font-ui); font-size: var(--text-ui-md, 0.75rem); color: var(--semantic-error); }
 
-  .actions { display: flex; align-items: center; gap: var(--space-3); }
+  .actions { display: flex; align-items: center; gap: var(--space-4); }
   .actions button { font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.8125rem); font-weight: 600; letter-spacing: 0.02em; padding: var(--space-2) var(--space-4); cursor: pointer; border-radius: var(--radius-sm); transition: background 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease; }
   .actions button:disabled { opacity: 0.5; cursor: default; }
-  /* Primary CTA — the ONE rationed signal: signal-orange fill, soft rounded, warm glow. Save is the focal action. */
-  .primary { background: var(--accent); color: var(--ink-on-accent); border: 1px solid transparent; box-shadow: var(--shadow-signal-glow); }
-  .primary:hover:not(:disabled) { background: var(--accent-hover); box-shadow: var(--shadow-signal-glow), var(--shadow-lift-low); }
   /* Secondary actions — quiet soft-btn: warm paper, soft border, ink text. No orange. */
   .ghost { background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border: 1px solid var(--border-canvas-emphasis); }
   .ghost:hover:not(:disabled) { background: var(--surface-canvas-overlay); color: var(--ink-canvas-primary); box-shadow: var(--shadow-lift-low); }
