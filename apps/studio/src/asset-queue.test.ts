@@ -54,6 +54,7 @@ function makeCtx(overrides: Partial<IngestContext> = {}) {
     switchObject: () => {},
     toEditor: () => {},
     newExhibit: async () => {},
+    newExhibitInLibrary: async () => "exhibit",
     openExhibit: async (slug: string) => { currentSlug = slug; },
     bump: () => {},
     cancelPendingSave: () => {},

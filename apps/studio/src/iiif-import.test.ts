@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { labelToString, manifestToExhibit, ManifestImportError } from "./iiif-import.js";
+import { classifyIiifDocument, labelToString, manifestToExhibit, ManifestImportError } from "./iiif-import.js";
 
 const P3 = {
   "@context": "https://iiif.io/api/presentation/3/context.json",
@@ -103,15 +103,37 @@ describe("manifestToExhibit — Presentation 2 (legacy)", () => {
 });
 
 describe("manifestToExhibit — refusals carry user-facing messages", () => {
+  // Pin the VERBATIM user-facing text: add-to-exhibit scope keys off "Paste the URL of a single
+  // manifest instead", so a reword here must break a test, not slip through.
   it("refuses collections with a pointer to paste a member manifest", () => {
     expect(() => manifestToExhibit({ type: "Collection", items: [] }, "u")).toThrow(ManifestImportError);
-    expect(() => manifestToExhibit({ type: "Collection", items: [] }, "u")).toThrow(/Collection/);
+    expect(() => manifestToExhibit({ type: "Collection", items: [] }, "u")).toThrow(
+      "This is a IIIF Collection (a list of manifests). Paste the URL of a single manifest instead.",
+    );
   });
   it("refuses non-manifest JSON", () => {
     expect(() => manifestToExhibit({ hello: 1 }, "u")).toThrow(ManifestImportError);
-    expect(() => manifestToExhibit(null, "u")).toThrow(ManifestImportError);
+    expect(() => manifestToExhibit({ hello: 1 }, "u")).toThrow("That URL didn't return a IIIF manifest.");
+    expect(() => manifestToExhibit(null, "u")).toThrow("That URL didn't return a IIIF manifest.");
   });
   it("refuses a manifest with nothing readable", () => {
     expect(() => manifestToExhibit({ type: "Manifest", items: [{ type: "Canvas", items: [] }] }, "u")).toThrow(/no images or media/);
+  });
+});
+
+describe("classifyIiifDocument — the shared type sniff", () => {
+  it("classifies P3 and P2 manifests", () => {
+    expect(classifyIiifDocument(P3)).toBe("manifest");
+    expect(classifyIiifDocument(P2)).toBe("manifest");
+    expect(classifyIiifDocument({ "@type": "sc:Manifest" })).toBe("manifest");
+  });
+  it("classifies P3 and P2 collections", () => {
+    expect(classifyIiifDocument({ type: "Collection", items: [] })).toBe("collection");
+    expect(classifyIiifDocument({ "@type": "sc:Collection" })).toBe("collection");
+  });
+  it("folds non-objects and unread shapes into 'unknown'", () => {
+    expect(classifyIiifDocument(null)).toBe("unknown");
+    expect(classifyIiifDocument("nope")).toBe("unknown");
+    expect(classifyIiifDocument({ hello: 1 })).toBe("unknown");
   });
 });

@@ -19,6 +19,11 @@
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import CreateExhibitDialog from "./CreateExhibitDialog.svelte";
+  import BulkRightsDialog from "./BulkRightsDialog.svelte";
+  import type { RightsFieldsPatch } from "./bulk-rights.js";
+  import type { CollectionPreview, CollectionImportOutcome } from "./ingest-flows.js";
+  import type { DiscoveredManifest } from "./collection-import.js";
+  import type { ManifestPlan } from "./iiif-import.js";
   import HelpMenu from "./HelpMenu.svelte";
   import GalleryThumb from "./GalleryThumb.svelte";
   import GalleryWall from "./GalleryWall.svelte";
@@ -26,6 +31,8 @@
   import { untrack } from "svelte";
   import { flattenLibraryImages, coverOf, filterExhibits, filterImages } from "./gallery-data.js";
   import { bindingLocationLabel, examplesDefaultOpen, partitionExhibits } from "./library-home.js";
+  import { applyClick, selectAll, selectableSlugs, allSelected, reconcileSelection, type ClickMods } from "./library-selection.js";
+  import { modality } from "./modality.svelte";
   import { saveStatus } from "./save-queue.svelte.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
   import { viewPrefs } from "./view-prefs.svelte.js";
@@ -38,6 +45,10 @@
     oncreate,
     oncreatefromfolder,
     oncreatefrommanifest,
+    previewcollection,
+    hydratemanifest,
+    oncreatefromcollection,
+    onundoimport,
     isTemplate,
     binding,
     bindingDirty,
@@ -59,6 +70,7 @@
     onsummary,
     onpatchexhibit,
     onremoveexhibit,
+    onbulkrights,
     ontutorial,
     onshortcuts,
     onopenobject,
@@ -79,6 +91,19 @@
     /** A pasted IIIF manifest URL becomes a new exhibit (contributor-broadening ② — Archie-bc01).
      *  `title` (Archie-46bf) is the create dialog's optional editable-title override, passed through unchanged. */
     oncreatefrommanifest: (url: string, title?: string) => void;
+    /** Collection import (Archie-a9e2 / Archie-cbf6, PLAN §5–8) — threaded straight to the new-exhibit dialog.
+     *  `previewcollection` = ingest-flows' fetchCollectionPreview (the ONE fetch head); `hydratemanifest` =
+     *  its fetchManifestPlan (background label hydration); `oncreatefromcollection` runs the batch (App →
+     *  newExhibitsFromCollection) and resolves the outcome the dialog turns into progress + summary;
+     *  `onundoimport` removes the batch's created slugs in one act (App → lib.removeExhibits). */
+    previewcollection: (url: string, signal?: AbortSignal) => Promise<CollectionPreview>;
+    hydratemanifest: (url: string, opts: { signal?: AbortSignal; onError?: (msg: string) => void }) => Promise<ManifestPlan | null>;
+    oncreatefromcollection: (
+      selected: DiscoveredManifest[],
+      planCache: Map<string, ManifestPlan>,
+      hooks: { signal: AbortSignal; onProgress: (done: number, total: number) => void },
+    ) => Promise<CollectionImportOutcome>;
+    onundoimport: (slugs: string[]) => void;
     /** Is this exhibit a bundled example (a template — playground, not saved)? Marks it in the grid. */
     isTemplate: (slug: string) => boolean;
     /** Where this library's canonical bytes live (unbound / folder / file). */
@@ -109,6 +134,9 @@
     /** Per-card pencil CRUD (Archie-79be): patch any exhibit's metadata, or remove it, without opening it. */
     onpatchexhibit: (slug: string, fields: Partial<ExhibitMeta>) => void;
     onremoveexhibit: (slug: string) => void;
+    /** Bulk rights edit (Phase 2, §9): apply ONE license/credit patch to the selected exhibits at once.
+     *  Only the gated fields are in the patch (see bulk-rights.ts) — App threads it to lib.patchExhibits. */
+    onbulkrights: (slugs: string[], patch: RightsFieldsPatch) => void;
     /** Help menu actions (threaded from App): open the onboarding tutorial / the shortcuts cheat-sheet. */
     ontutorial: () => void;
     onshortcuts: () => void;
@@ -189,6 +217,108 @@
     ...(e.requiredStatement ? { requiredStatement: e.requiredStatement } : {}),
   });
 
+  // --- Exhibit multi-select (SCALE-GALLERY Phase 2, ledgers/PLAN-collection-import.md §9). Transient
+  // SCREEN STATE (CONTEXT.md → Navigation): never part of a place, never persisted, discarded when this
+  // component unmounts (opening an exhibit / a fresh load resets it) — unlike gallerySearch, which App
+  // remembers across the remount. Selection lives HERE (not App): unlike ExhibitOverview's App-owned
+  // selection, the library surface owns no bulk-action path yet; delete/rights-edit arrive as later
+  // tickets (Archie-ddaa / Archie-d2cc, which this blocks) that will thread callbacks — or lift state —
+  // then. The GRAMMAR is the shared reducer (library-selection.ts → overview-selection.ts): NO second
+  // idiom. ---
+  let selection = $state<Set<string>>(new Set());
+  let selAnchor = $state<string | null>(null);
+  let selectMode = $state(false);
+
+  // The exhibits the current view actually renders, in display order: the filtered results when a query is
+  // live, else the browsing grid (own shelf THEN Examples shelf — the on-screen order). `selectableSlugs`
+  // drops templates from it, so a shift-range / Select-all ranges over exactly the selectable set that's on
+  // screen — "search Documents → Select all" selects only the filtered, non-template exhibits (§9's
+  // flatten-mitigation workflow), by construction, not by a downstream filter.
+  const shownInView = $derived(hasQuery ? [...shownExhibits] : [...ownExhibits, ...exampleExhibits]);
+  const selectable = $derived(selectableSlugs(shownInView, isTemplate));
+  // Exhibit selection only applies where exhibit cards are on screen — the All-images wall (no query) shows
+  // media, not exhibits, so Select is hidden there.
+  const exhibitsShown = $derived(hasQuery || galleryView !== "wall");
+  // ONE source of truth (review FIX 3): when an exhibit disappears (per-card pencil remove) under a live
+  // selection, prune it out of the selection STATE itself — not just a derived view — so the count, the
+  // card `selected` marks, the Esc rung, and the coming bulk tickets all read the same `selection`. Guarded
+  // by selectionChanged so it only writes when something was actually dropped (no self-triggering loop).
+  $effect(() => {
+    if (selection.size === 0) return;
+    const r = reconcileSelection({ selection, anchor: selAnchor }, exhibits.map((e) => e.slug));
+    if (r.selectionChanged) { selection = r.state.selection; selAnchor = r.state.anchor; }
+  });
+  const selectedCount = $derived(selection.size);
+  const allInViewSelected = $derived(allSelected(selection, selectable));
+
+  // Bulk rights edit (Phase 2, §9 / Archie-d2cc): a scrimmed dialog scoped to the selection. `rightsOf`
+  // (above) projects each selected exhibit to its RightsFields so the dialog can show the current spread
+  // (all-agree / mixed / none) and the apply never blanks an untouched field. Transient screen state, like
+  // the selection itself. Selection PERSISTS after an apply (the user may run more bulk actions).
+  let bulkRightsOpen = $state(false);
+  const selectedRights = $derived(exhibits.filter((e) => selection.has(e.slug)).map(rightsOf));
+  function applyBulkRights(patch: RightsFieldsPatch) {
+    onbulkrights([...selection], patch);
+  }
+
+  function applyCardSelect(slug: string, mods: ClickMods) {
+    const r = applyClick({ selection, anchor: selAnchor }, slug, mods, selectable);
+    selection = r.selection;
+    selAnchor = r.anchor;
+  }
+  // Card-click routing, mirroring ExhibitOverview.onPlateClick's grammar: select-mode → plain click TOGGLES
+  // (meta: !shift so it accumulates like a checkbox), shift ranges; off-mode → the primary gesture is
+  // UNBROKEN (plain click opens the exhibit), and ⌘/ctrl- or shift-click is the power path that selects
+  // without first flipping the mode. Templates (Examples) are NOT selectable — an unsaved playground has
+  // nothing a bulk delete/rights-edit could act on — so a click on one only ever opens it (off-mode), and
+  // is inert in select-mode; it never toggles.
+  function onCardClick(ex: ExhibitMeta, e: MouseEvent) {
+    const mods: ClickMods = { meta: e.metaKey || e.ctrlKey, shift: e.shiftKey };
+    if (isTemplate(ex.slug)) {
+      if (!selectMode && !mods.meta && !mods.shift) onopen(ex.slug);
+      return;
+    }
+    if (selectMode) { e.preventDefault(); applyCardSelect(ex.slug, { meta: !mods.shift, shift: mods.shift }); return; }
+    if (mods.meta || mods.shift) { e.preventDefault(); applyCardSelect(ex.slug, mods); return; }
+    onopen(ex.slug);
+  }
+  function clearLibrarySelection() { selection = new Set(); selAnchor = null; }
+  function selectAllInView() {
+    const r = selectAll(selectable);
+    selection = r.selection;
+    selAnchor = r.anchor;
+  }
+  function toggleSelectMode() { selectMode = !selectMode; if (!selectMode) clearLibrarySelection(); }
+
+  const isTypingTarget = (t: EventTarget | null): boolean => {
+    const el = t as HTMLElement | null;
+    if (!el) return false;
+    const tag = el.tagName;
+    return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+  };
+  // Keyboard: Esc clears the selection first, then leaves select-mode (CONTEXT.md dismissal contract — Esc
+  // clears an active selection before anything else), and ⌘/Ctrl-A selects all selectable-in-view (the same
+  // search-respecting Select-all the bar button runs). Bail when ANY scrim/floater is up (review FIX 2):
+  // App's scrim gate only preventDefaults Esc, so `e.defaultPrevented` wouldn't stop ⌘A leaking behind an
+  // App-owned scrim (shortcuts sheet / tutorial / publish) reachable at library scale — checking the shared
+  // `modality` store covers every scrim, App-owned or local, for every key. App's overview ⌘A / Esc rungs
+  // are view-gated OFF at the library scale, so there is no double-handling of the keys we do act on.
+  function onSelectionKey(e: KeyboardEvent) {
+    if (e.defaultPrevented || modality.hasScrim || modality.hasFloater) return;
+    if (e.key === "Escape") {
+      if (selection.size > 0) { e.preventDefault(); clearLibrarySelection(); return; }
+      if (selectMode) { e.preventDefault(); selectMode = false; }
+      return;
+    }
+    // ⌘A gated on exhibitsShown (review FIX 1): on the All-images wall there are no exhibit cards, so
+    // arming select-mode over an invisible set would be a phantom selection.
+    if ((e.metaKey || e.ctrlKey) && (e.key === "a" || e.key === "A") && !isTypingTarget(e.target) && exhibitsShown && selectable.length > 0) {
+      e.preventDefault();
+      if (!selectMode) selectMode = true;
+      selectAllInView();
+    }
+  }
+
   // The create/import dialog (Archie-51cc, decided by Archie-8482/Archie-beb6) — replaces the old
   // New-exhibit cell's cramped title-field/hidden-folder-input/window.prompt trio with ONE scrimmed
   // surface. `createPrefillFolder` carries a page-level folder drop's files straight into the
@@ -236,6 +366,10 @@
     return `${Math.round(h / 24)} days ago`;
   }
 </script>
+
+<!-- Selection keyboard (Esc clears then exits select-mode; ⌘/Ctrl-A selects all in view). Defers to App's
+     onGlobalKey scrim/floater ladder via e.defaultPrevented — see onSelectionKey. -->
+<svelte:window onkeydown={onSelectionKey} />
 
 <main
   class="library"
@@ -316,6 +450,10 @@
       {oncreate}
       {oncreatefromfolder}
       {oncreatefrommanifest}
+      {previewcollection}
+      {hydratemanifest}
+      {oncreatefromcollection}
+      {onundoimport}
       onclose={() => { createOpen = false; createPrefillFolder = null; }}
     />
 
@@ -378,8 +516,15 @@
        shelf, search results) so the three lists can never quietly drift apart. -->
   {#snippet exhibitCard(ex: ExhibitMeta)}
     {@const cover = coverOf(ex)}
-    <li class="card-wrap">
-      <button class="card" class:template={isTemplate(ex.slug)} onclick={() => onopen(ex.slug)}>
+    {@const canSelect = !isTemplate(ex.slug)}
+    {@const selected = selection.has(ex.slug)}
+    <li class="card-wrap" class:selected>
+      <!-- In select-mode a selectable card is a TOGGLE (aria-pressed reflects it); a template is inert
+           there and off-mode it opens the exhibit (onCardClick routes both). -->
+      <button class="card" class:template={isTemplate(ex.slug)} class:selected class:sel-on={selectMode && canSelect}
+        aria-pressed={selectMode && canSelect ? selected : undefined}
+        onclick={(e) => onCardClick(ex, e)}>
+        {#if selectMode && canSelect}<span class="checkbox" class:checked={selected} aria-hidden="true"></span>{/if}
         {#if isTemplate(ex.slug)}<span class="badge">Example</span>{/if}
         {#if freshness[ex.slug]}<span class="badge freshness">{freshness[ex.slug]}</span>{/if}
         {#if cover}
@@ -430,8 +575,48 @@
           placeholder="Search your library"
           aria-label="Search exhibits and media" />
       </label>
+      <!-- Multi-select entry (Phase 2, §9). Only where exhibit cards are on screen (hidden on the
+           All-images wall) and there's something selectable. Toggles select-mode; a live selection also
+           surfaces the bar below via the power path (⌘/ctrl-click) without this. -->
+      {#if exhibitsShown && selectable.length > 0}
+        <button type="button" class="select-toggle" class:on={selectMode} aria-pressed={selectMode}
+          onclick={toggleSelectMode}>{selectMode ? "Done" : "Select"}</button>
+      {/if}
     </div>
   {/if}
+
+  <!-- Selection summary bar (Phase 2, §9): the count + Select-all-in-view + Clear. Visible whenever
+       select-mode is on OR a selection exists (the ⌘A / ctrl-click power path) — but ONLY where exhibit
+       cards are on screen (review FIX 1: never over the All-images wall). Select-all respects the active
+       search — `selectable` is the on-screen, non-template set — so "search Documents → Select all" acts on
+       only the filtered exhibits. NO bulk-action buttons yet (delete/rights are Archie-ddaa / Archie-d2cc);
+       the .sel-actions slot is already here so they drop in without reshaping the bar. -->
+  {#if exhibitsShown && (selectMode || selectedCount > 0)}
+    <div class="selection-bar" role="toolbar" aria-label="Exhibit selection">
+      <span class="sel-count" aria-live="polite">{selectedCount} selected</span>
+      <button type="button" class="sel-btn" onclick={selectAllInView} disabled={allInViewSelected}>
+        Select all ({selectable.length})
+      </button>
+      <button type="button" class="sel-btn" onclick={clearLibrarySelection} disabled={selectedCount === 0}>Clear</button>
+      <span class="sel-actions">
+        <!-- Bulk rights edit (Phase 2, §9 / Archie-d2cc): the ONE bulk-edit action — license + credit only
+             (title/description stay per-exhibit). Enabled once anything is selected; opens the scrimmed
+             BulkRightsDialog scoped to those exhibits. "Rights" mirrors the header's rights vocabulary. -->
+        <button type="button" class="sel-btn primary" onclick={() => (bulkRightsOpen = true)} disabled={selectedCount === 0}>
+          Rights…
+        </button>
+      </span>
+    </div>
+  {/if}
+
+  <!-- Bulk rights dialog (Phase 2, §9). Scoped to the current selection; selection persists after apply
+       (the modality helper closes/returns focus; onbulkrights → App → lib.patchExhibits does the one write). -->
+  <BulkRightsDialog
+    open={bulkRightsOpen}
+    selected={selectedRights}
+    onapply={applyBulkRights}
+    onclose={() => (bulkRightsOpen = false)}
+  />
 
   {#if hasQuery}
     <!-- Unified search results (Archie-2308): both corpora, always, regardless of lens — the old silent
@@ -613,6 +798,42 @@
   .g-search .glass { color: var(--ink-canvas-muted); font-size: 0.9rem; }
   .g-search input { background: none; border: none; outline: none; color: var(--ink-canvas-primary); font-family: var(--font-ui); font-size: var(--text-ui-sm); width: 12rem; }
   .g-search input::placeholder { color: var(--ink-canvas-muted); }
+
+  /* --- Exhibit multi-select (Phase 2, §9) — quiet chrome that borrows the overview's idiom. --- */
+  /* Select entry: same tracked-mono signal-chrome as the .views toggle; .on when select-mode is armed. */
+  .select-toggle {
+    font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer;
+    padding: 6px var(--space-4); background: transparent; color: var(--ink-canvas-muted);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm);
+    transition: color 160ms ease, background 160ms ease, border-color 160ms ease;
+  }
+  .select-toggle:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
+  .select-toggle.on { background: var(--accent-muted); color: var(--ink-canvas-primary); border-color: var(--accent); }
+
+  /* Selection summary bar: the count + Select-all/Clear + a reserved actions slot (bulk delete/rights land
+     there next — Archie-ddaa / Archie-d2cc). Mirrors ExhibitOverview's .selection-tray look. */
+  .selection-bar { max-width: 60rem; margin: 0 auto var(--space-5); display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  .sel-count { font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; letter-spacing: 0.02em; color: var(--ink-canvas-primary); }
+  .sel-btn {
+    font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.02em; cursor: pointer;
+    padding: var(--space-1) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
+    border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
+  }
+  .sel-btn:hover:not(:disabled) { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); background: var(--surface-canvas-overlay); }
+  .sel-btn:disabled { opacity: 0.5; cursor: default; }
+  /* The bulk-action button in the trailing .sel-actions slot reads as the primary act on the selection. */
+  .sel-btn.primary { color: var(--ink-on-accent); background: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .sel-btn.primary:hover:not(:disabled) { color: var(--ink-on-accent); background: var(--accent-hover); border-color: var(--accent-hover); }
+  /* Reserved slot for bulk actions (Archie-ddaa / Archie-d2cc) — pushes future buttons to the trailing edge. */
+  .sel-actions { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-2); }
+
+  /* Selected card: the same 2px accent ring ExhibitOverview draws on a selected plate. */
+  .card.selected { box-shadow: var(--shadow-lift-low), 0 0 0 2px var(--accent); }
+  .card.selected:hover { box-shadow: var(--shadow-lift-mid), 0 0 0 2px var(--accent); }
+  /* Select-mode checkbox (top-left) — identical to ExhibitOverview's .checkbox. */
+  .checkbox { position: absolute; top: var(--space-2); left: var(--space-2); z-index: 1; width: 1.15rem; height: 1.15rem; border-radius: var(--radius-sm); border: 2px solid var(--border-canvas-emphasis); background: var(--surface-canvas-raised); }
+  .checkbox.checked { background: var(--accent); border-color: var(--accent); }
+  .checkbox.checked::after { content: "✓"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: var(--ink-on-accent); }
 
   /* Card cover thumbnail (Phase 3.2) — a full-width plate above the title; the card becomes a real visual card. */
   .cover { display: block; width: 100%; margin-bottom: var(--space-1); }

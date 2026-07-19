@@ -84,4 +84,36 @@ describe("library-meta store (rune wrapper)", () => {
     expect(lib.meta.exhibits[0]!.objects.map((o) => o.id)).toEqual(["o2"]);
     expect(saveLibraryMeta).toHaveBeenCalledTimes(1); // ONE write for the whole bulk delete
   });
+
+  it("bulk removeExhibits drops N exhibits in ONE persist + fires exhibit-removed per removed slug", async () => {
+    const onDirty = vi.fn();
+    const lib = createLibraryStore(
+      { title: "L", exhibits: [{ id: "e1", slug: "a", title: "A", objects: [] }, { id: "e2", slug: "b", title: "B", objects: [] }, { id: "e3", slug: "c", title: "C", objects: [] }] },
+      { onDirty },
+    );
+    await lib.removeExhibits(["a", "c", "nope"]); // "nope" is not present — must NOT emit a bogus prune
+    expect(lib.meta.exhibits.map((e) => e.slug)).toEqual(["b"]);
+    expect(saveLibraryMeta).toHaveBeenCalledTimes(1); // ONE write for the whole bulk delete, not per-slug
+    expect(onDirty.mock.calls.map((c) => c[0])).toEqual([
+      { kind: "exhibit-removed", slug: "a" },
+      { kind: "exhibit-removed", slug: "c" },
+    ]); // per removed slug only (bnd.markExhibitRemoved is per-slug); absent "nope" queues nothing
+  });
+
+  it("bulk patchExhibits applies ONE rights patch to N exhibits in ONE persist + fires exhibit dirt per present slug", async () => {
+    const onDirty = vi.fn();
+    const lib = createLibraryStore(
+      { title: "L", exhibits: [{ id: "e1", slug: "a", title: "A", objects: [] }, { id: "e2", slug: "b", title: "B", objects: [] }, { id: "e3", slug: "c", title: "C", objects: [] }] },
+      { onDirty },
+    );
+    await lib.patchExhibits(["a", "c", "nope"], { rights: "http://cc/by" }); // "nope" is not present
+    expect(lib.meta.exhibits.find((e) => e.slug === "a")!.rights).toBe("http://cc/by");
+    expect(lib.meta.exhibits.find((e) => e.slug === "c")!.rights).toBe("http://cc/by");
+    expect(lib.meta.exhibits.find((e) => e.slug === "b")!.rights).toBeUndefined(); // unselected untouched
+    expect(saveLibraryMeta).toHaveBeenCalledTimes(1); // ONE write for the whole bulk edit, not per-slug
+    expect(onDirty.mock.calls.map((c) => c[0])).toEqual([
+      { kind: "exhibit", slug: "a" },
+      { kind: "exhibit", slug: "c" },
+    ]); // same per-slug `exhibit` dirt as singular patchExhibit (bnd.markExhibitDirty); absent "nope" none
+  });
 });

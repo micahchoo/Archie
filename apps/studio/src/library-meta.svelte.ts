@@ -7,7 +7,7 @@
 // live across modules. `persist` is injected with `onAfterPersist` (the App's `touchBinding`) so the
 // binding seam stays on the App side for the next cut — the store owns persistence, not binding state.
 import { saveLibraryMeta, type LibraryMeta, type ExhibitMeta, type ObjectMeta } from "./store";
-import { patchLibraryIn, patchExhibitIn, patchObjectIn, appendObjectIn, addExhibitIn, removeExhibitIn, removeObjectIn, removeObjectsIn } from "./library-meta-reducers";
+import { patchLibraryIn, patchExhibitIn, patchExhibitsIn, patchObjectIn, appendObjectIn, addExhibitIn, removeExhibitIn, removeExhibitsIn, removeObjectIn, removeObjectsIn, type ExhibitMetaPatch } from "./library-meta-reducers";
 import { enqueueSave } from "./save-queue.svelte";
 import { LIVE_CHANNEL } from "@render/core";
 
@@ -60,6 +60,24 @@ export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?
     // instant); the library.json write coalesces across a burst of keystrokes.
     patchLibrary(fields: Partial<LibraryMeta>) { s.meta = patchLibraryIn(s.meta, fields); opts.onDirty?.({ kind: "library" }); schedulePersist(); },
     patchExhibit(slug: string, fields: Partial<ExhibitMeta>) { s.meta = patchExhibitIn(s.meta, slug, fields); opts.onDirty?.({ kind: "exhibit", slug }); schedulePersist(); },
+    /** Bulk rights edit (collection-import Phase 2, plan §9 / Archie-d2cc) — apply ONE rights patch (license
+     *  + credit) to N exhibits in ONE meta mutation + ONE persist + per-slug onDirty, never N sequential
+     *  writes. onDirty fires the SAME `{ kind: "exhibit", slug }` dirt the singular patchExhibit emits — its
+     *  consumer (App.svelte onDirty → bnd.markExhibitDirty, the `else` rung) is per-slug, so a plural dirty
+     *  kind would buy only an internal loop. Only slugs actually PRESENT emit dirt (a patch is a no-op on an
+     *  absent slug — its `{slug}/` mirror mustn't be flagged). Metadata-only, so NO signalLibraryChanged: a
+     *  live Viewer refreshes on STRUCTURE change (add/remove), not on a rights edit — cf. patchExhibit /
+     *  patchLibrary, which likewise don't signal. Persists IMMEDIATELY (not debounced like patchExhibit —
+     *  a bulk action is a discrete commit, not a keystroke burst) via the shared save queue; `async` for
+     *  callers that want to await, but App fires it unawaited (`void lib.patchExhibits(...)`) and the dialog
+     *  closes synchronously — the write's success/failure surfaces through saveStatus / SafetyState like
+     *  every other save, so the UI never blocks on the disk. */
+    async patchExhibits(slugs: string[], fields: ExhibitMetaPatch) {
+      const present = new Set(s.meta.exhibits.map((e) => e.slug));
+      s.meta = patchExhibitsIn(s.meta, slugs, fields);
+      for (const slug of slugs) if (present.has(slug)) opts.onDirty?.({ kind: "exhibit", slug });
+      await persist();
+    },
     patchObject(slug: string, objId: string, fields: Partial<ObjectMeta>) { s.meta = patchObjectIn(s.meta, slug, objId, fields); opts.onDirty?.({ kind: "exhibit", slug }); schedulePersist(); },
 
     // Awaitable — for the sites that `await persistLibrary()` before navigating.
@@ -69,6 +87,20 @@ export function createLibraryStore(initial: LibraryMeta, opts: { onAfterPersist?
     // Destructive removes (Archie-3f4c) — meta-only; the caller tombstones/clears annotations separately
     // (object → session.deleteNote per note; exhibit → clearExhibitAnnotations) before navigating away.
     async removeExhibit(slug: string) { s.meta = removeExhibitIn(s.meta, slug); opts.onDirty?.({ kind: "exhibit-removed", slug }); await persist(); signalLibraryChanged(); },
+    /** Bulk delete (collection-import bulk-delete / undo-import) — drop N exhibits in ONE meta mutation +
+     *  ONE persist + ONE signalLibraryChanged, never N sequential writes for a 520-exhibit undo. onDirty
+     *  fires the SAME per-slug `exhibit-removed` dirt the singular removeExhibit emits: its only consumer
+     *  (App.svelte onDirty → bnd.markExhibitRemoved, which pushes each slug onto dRemovedEx to prune that
+     *  exhibit's `{slug}/` directory) is inherently per-slug, so a plural dirty kind would buy nothing but
+     *  an internal consumer loop. Only for slugs that were actually present (removal is idempotent) so an
+     *  unknown slug can't queue a prune of a directory that never existed. */
+    async removeExhibits(slugs: string[]) {
+      const present = new Set(s.meta.exhibits.map((e) => e.slug));
+      s.meta = removeExhibitsIn(s.meta, slugs);
+      for (const slug of slugs) if (present.has(slug)) opts.onDirty?.({ kind: "exhibit-removed", slug });
+      await persist();
+      signalLibraryChanged();
+    },
     async removeObject(slug: string, objId: string) { s.meta = removeObjectIn(s.meta, slug, objId); await persist(); },
     /** Bulk delete (Phase 2) — drop N objects from one exhibit in ONE meta mutation + ONE persist. Like
      *  removeObject, the caller reports each removal's asset for orphan cleanup (App.bulkRemove →

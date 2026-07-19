@@ -4,6 +4,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { createIngestFlows, type IngestContext } from "./ingest-flows.js";
 import type { ExhibitMeta } from "./store.js";
+import type { ManifestPlan } from "./iiif-import.js";
+import type { DiscoveredManifest } from "./collection-import.js";
 
 // OPFS isn't available in the jsdom/happy-dom test env; the AV branch of addObjectFromFile is the
 // simplest deterministic path through it (no EXIF/downscale/thumbnail image decoding either), so
@@ -33,6 +35,10 @@ function makeCtx(overrides: Partial<IngestContext> = {}) {
       },
       setMeta: () => {},
       persist: async () => {},
+      patchExhibit: (slug: string, fields: any) => {
+        const ex = exhibits.find((e) => e.slug === slug);
+        if (ex) Object.assign(ex, fields);
+      },
     } as any,
     author: () => "alice" as any,
     currentSlug: () => currentSlug,
@@ -55,6 +61,13 @@ function makeCtx(overrides: Partial<IngestContext> = {}) {
       const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "exhibit";
       exhibits.push({ id: `ex-${slug}`, slug, title, objects: [] } as unknown as ExhibitMeta);
       currentSlug = slug; // mirrors App.svelte's newExhibit -> openExhibit side effect
+    },
+    // Non-navigating create (Archie-cbf6): pushes the exhibit + returns its slug WITHOUT moving currentSlug —
+    // mirrors App's createExhibitInLibrary. The collection batch uses this so it never opens each exhibit.
+    newExhibitInLibrary: async (title: string) => {
+      const slug = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-") || "exhibit";
+      exhibits.push({ id: `ex-${slug}`, slug, title, objects: [] } as unknown as ExhibitMeta);
+      return slug;
     },
     openExhibit: async (slug: string) => { currentSlug = slug; },
     bump: () => {},
@@ -245,5 +258,258 @@ describe("no-byte-cap fixes (NEGSPACE rows 5-7)", () => {
     await flows.importNotesWadm(file);
     expect(text).not.toHaveBeenCalled();
     expect(notes.at(-1)).toMatch(/too large/);
+  });
+});
+
+// ── Collection ingest (Archie-656a, PLAN §5–6) ──────────────────────────────────────────────────
+const ref = (id: string, trail: string[], label?: string): DiscoveredManifest =>
+  ({ id, trail, ...(label ? { label } : {}) });
+
+// A minimal one-canvas P3 manifest whose label is `label` — createExhibitFromPlan slugs the exhibit from it.
+const manifestJson = (label: string) => ({
+  type: "Manifest",
+  label: { none: [label] },
+  items: [{ type: "Canvas", items: [{ items: [{ body: { id: `https://x/${label}.jpg`, type: "Image" } }] }] }],
+});
+
+/** Stub global fetch for a pool of manifest URLs. `delay` staggers completion (to force out-of-order
+ *  arrival); `status >= 400` makes that URL fail (→ skip). Honors the AbortSignal passed by fetchJsonCapped
+ *  — a delayed fetch rejects with an AbortError the instant the signal fires, so the abort-mid-fetch path
+ *  is actually exercised. Returns the spy so a test can count calls. */
+function stubManifestPool(cfg: Record<string, { label?: string; delay?: number; status?: number }>) {
+  const spy = vi.fn(async (url: string, init?: { signal?: AbortSignal }) => {
+    const c = cfg[url];
+    if (!c) throw new Error(`unexpected fetch: ${url}`);
+    const signal = init?.signal;
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    if (c.delay) {
+      await new Promise<void>((resolve, reject) => {
+        const t = setTimeout(resolve, c.delay);
+        signal?.addEventListener("abort", () => { clearTimeout(t); reject(new DOMException("Aborted", "AbortError")); });
+      });
+    }
+    const bytes = new TextEncoder().encode(JSON.stringify(manifestJson(c.label ?? "X")));
+    return { ok: !c.status || c.status < 400, status: c.status ?? 200, headers: new Headers(), arrayBuffer: async () => bytes.buffer };
+  });
+  vi.stubGlobal("fetch", spy);
+  return spy;
+}
+
+/** Stub global fetch to return one document for ANY URL (the collection preview's root fetch). */
+function stubSingleFetch(json: unknown, opts: { contentLength?: number } = {}) {
+  const bytes = new TextEncoder().encode(JSON.stringify(json));
+  const spy = vi.fn(async () => ({
+    ok: true,
+    status: 200,
+    headers: new Headers(opts.contentLength ? { "content-length": String(opts.contentLength) } : {}),
+    arrayBuffer: async () => bytes.buffer,
+  }));
+  vi.stubGlobal("fetch", spy);
+  return spy;
+}
+
+describe("newExhibitsFromCollection — reorder buffer (PLAN §6)", () => {
+  it("commits exhibits in selected order even when fetches complete out of order", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const selected = [ref("https://x/m1", ["Root"]), ref("https://x/m2", ["Root"]), ref("https://x/m3", ["Root"])];
+    // Adversarial: m3 resolves FIRST, m1 LAST — a naive commit-as-they-arrive would reorder the library.
+    stubManifestPool({ "https://x/m1": { label: "M1", delay: 40 }, "https://x/m2": { label: "M2", delay: 25 }, "https://x/m3": { label: "M3", delay: 10 } });
+    const res = await flows.newExhibitsFromCollection(selected, {});
+    expect(exhibits.map((e) => e.title)).toEqual(["M1", "M2", "M3"]);
+    expect(res.createdSlugs).toEqual(["m1", "m2", "m3"]); // commit order === selected order
+    expect(res.skipped).toEqual([]);
+    expect(res.cancelled).toBe(false);
+  });
+});
+
+describe("newExhibitsFromCollection — skip-and-continue (PLAN §6)", () => {
+  it("skips a failed manifest, records it, and keeps the surviving exhibits in order", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const selected = [ref("https://x/m1", ["Root"]), ref("https://x/m2", ["Root"], "Second"), ref("https://x/m3", ["Root"])];
+    stubManifestPool({ "https://x/m1": { label: "M1", delay: 10 }, "https://x/m2": { status: 404, delay: 5 }, "https://x/m3": { label: "M3", delay: 8 } });
+    const res = await flows.newExhibitsFromCollection(selected, {});
+    expect(exhibits.map((e) => e.title)).toEqual(["M1", "M3"]); // the middle failure did not abort the batch
+    expect(res.createdSlugs).toEqual(["m1", "m3"]);
+    expect(res.skipped).toHaveLength(1);
+    expect(res.skipped[0]!.id).toBe("https://x/m2");
+    expect(res.skipped[0]!.label).toBe("Second"); // ref label carried onto the skip record
+    expect(res.skipped[0]!.reason).toMatch(/Couldn't open/);
+  });
+});
+
+describe("newExhibitsFromCollection — cancellation (PLAN §6)", () => {
+  it("stops after abort, keeps the committed prefix, and reports cancelled", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const controller = new AbortController();
+    const selected = [ref("https://x/m1", ["Root"]), ref("https://x/m2", ["Root"]), ref("https://x/m3", ["Root"])];
+    stubManifestPool({ "https://x/m1": { label: "M1", delay: 5 }, "https://x/m2": { label: "M2", delay: 5 }, "https://x/m3": { label: "M3", delay: 5 } });
+    const res = await flows.newExhibitsFromCollection(selected, {
+      signal: controller.signal,
+      onProgress: (done) => { if (done === 1) controller.abort(); }, // cancel right after the first commit
+    });
+    expect(res.createdSlugs).toEqual(["m1"]); // the committed prefix survives
+    expect(res.cancelled).toBe(true);
+    expect(res.fatal).toBeNull(); // a user cancel is not a storage failure
+    expect(res.skipped).toEqual([]); // un-committed slots are abandoned, NOT recorded as skips
+    expect(exhibits.map((e) => e.title)).toEqual(["M1"]); // nothing further committed
+  });
+});
+
+describe("newExhibitsFromCollection — commit failure is fatal but non-throwing (Archie-656a review)", () => {
+  it("stops the batch, keeps the committed prefix, records the poisoned slot, and never retries it", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    // Make the SECOND exhibit's object-append reject (a storage-side failure); m1 commits fine.
+    const origAppend = ctx.lib.appendObject.bind(ctx.lib);
+    ctx.lib.appendObject = async (slug: string, obj: any) => {
+      if (slug === "m2") throw new Error("storage exploded");
+      return origAppend(slug, obj);
+    };
+    // Count newExhibitInLibrary calls to PROVE the poisoned slot is committed at most once (never retried).
+    // The batch creates exhibits without navigating (Archie-cbf6), so it's this path, not newExhibit.
+    const origNewExhibit = ctx.newExhibitInLibrary;
+    let newExhibitCalls = 0;
+    ctx.newExhibitInLibrary = async (t: string) => { newExhibitCalls++; return origNewExhibit(t); };
+    const selected = [ref("https://x/m1", ["Root"]), ref("https://x/m2", ["Root"], "Second"), ref("https://x/m3", ["Root"])];
+    stubManifestPool({ "https://x/m1": { label: "M1", delay: 15 }, "https://x/m2": { label: "M2", delay: 10 }, "https://x/m3": { label: "M3", delay: 5 } });
+    const res = await flows.newExhibitsFromCollection(selected, {}); // resolves — must NOT throw
+    // createdSlugs = healthy m1 PLUS the half-minted m2 (orphan sweep): m2's exhibit was created before its
+    // append rejected, so its slug rides createdSlugs for the undo batch to remove.
+    expect(res.createdSlugs).toEqual(["m1", "m2"]);
+    expect(exhibits.map((e) => e.title)).toEqual(["M1", "M2"]); // the half-minted M2 exists in the library (the orphan)
+    expect(res.fatal).toMatch(/storage exploded/); // the storage error surfaced as fatal
+    expect(res.cancelled).toBe(false); // storage failure ≠ user cancel
+    expect(res.skipped.map((s) => s.id)).toEqual(["https://x/m2"]); // m2 ALSO recorded as a skip (didn't fully import); m3 never reached
+    expect(res.skipped[0]!.label).toBe("Second");
+    expect(res.skipped[0]!.reason).toMatch(/Couldn't save/);
+    expect(newExhibitCalls).toBe(2); // m1 + the single m2 attempt; no retry of m2, m3 never launched
+  });
+});
+
+describe("newExhibitsFromCollection — all slots skipped", () => {
+  it("returns an empty committed prefix with every manifest recorded as a skip", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    stubManifestPool({ "https://x/m1": { status: 500, delay: 5 }, "https://x/m2": { status: 500, delay: 5 } });
+    const res = await flows.newExhibitsFromCollection([ref("https://x/m1", ["R"]), ref("https://x/m2", ["R"])], {});
+    expect(res.createdSlugs).toEqual([]);
+    expect(res.skipped.map((s) => s.id)).toEqual(["https://x/m1", "https://x/m2"]);
+    expect(res.cancelled).toBe(false);
+    expect(res.fatal).toBeNull();
+    expect(exhibits).toEqual([]); // nothing minted
+  });
+});
+
+describe("newExhibitsFromCollection — plan cache (PLAN §5)", () => {
+  it("uses a cached plan without refetching that manifest", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const spy = stubManifestPool({ "https://x/m2": { label: "M2", delay: 5 } }); // ONLY m2 is fetchable
+    const planCache = new Map<string, ManifestPlan>([
+      ["https://x/m1", { title: "Cached M1", objects: [{ source: "https://x/c.jpg", label: "C" }] }],
+    ]);
+    const selected = [ref("https://x/m1", ["Root"]), ref("https://x/m2", ["Root"])];
+    const res = await flows.newExhibitsFromCollection(selected, { planCache });
+    expect(exhibits.map((e) => e.title)).toEqual(["Cached M1", "M2"]);
+    expect(res.createdSlugs).toEqual(["cached-m1", "m2"]);
+    expect(spy.mock.calls.map((c) => c[0])).toEqual(["https://x/m2"]); // m1 never hit the network
+  });
+});
+
+describe("newExhibitsFromCollection — provenance stamping (PLAN §8)", () => {
+  it("stamps the collection trail into each exhibit's summary", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    stubManifestPool({ "https://x/m1": { label: "M1", delay: 5 } });
+    await flows.newExhibitsFromCollection([ref("https://x/m1", ["Yale", "Voynich"])], {});
+    expect((exhibits[0] as any).summary).toBe("From: Yale › Voynich");
+  });
+});
+
+describe("fetchCollectionPreview (PLAN §5)", () => {
+  it("classifies a manifest URL to the single-manifest signal AND carries its parsed plan — one fetch, no double-fetch (D2)", async () => {
+    const { ctx } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const spy = stubSingleFetch(manifestJson("Solo"));
+    const preview = await flows.fetchCollectionPreview("https://x/manifest.json");
+    expect(preview.kind).toBe("manifest");
+    if (preview.kind !== "manifest") return;
+    // The root doc was already fetched + parsed here, so the plan rides along — the dialog renders title +
+    // count from it instead of re-fetching the same URL via previewManifest (was the pre-cbf6 double fetch).
+    expect(preview.plan.title).toBe("Solo");
+    expect(preview.plan.objects).toHaveLength(1);
+    expect(spy).toHaveBeenCalledTimes(1); // exactly ONE network hit for the whole manifest preview
+  });
+
+  it("maps a manifest-shaped doc that can't be planned to an error (not a payload-less manifest signal) — D2 edge", async () => {
+    const { ctx } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    // classifyIiifDocument sees a Manifest, but it has no canvases → manifestToExhibit throws; D2 must map
+    // that to an error the dialog renders, never a `manifest` result carrying an unusable/undefined plan.
+    stubSingleFetch({ type: "Manifest", label: { none: ["Empty"] }, items: [] });
+    const preview = await flows.fetchCollectionPreview("https://x/empty.json");
+    expect(preview.kind).toBe("error");
+  });
+
+  it("returns over-manifest-cap status and the exact count for a too-large collection", async () => {
+    const { ctx } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    // 1001 manifest members > the default cap of 1000 → the traversal refuses with the true count.
+    const items = Array.from({ length: 1001 }, (_, i) => ({ id: `https://x/m${i}`, type: "Manifest" }));
+    stubSingleFetch({ type: "Collection", label: { none: ["Big"] }, items });
+    const preview = await flows.fetchCollectionPreview("https://x/collection.json");
+    expect(preview.kind).toBe("collection");
+    if (preview.kind !== "collection") return;
+    expect(preview.rootTitle).toBe("Big");
+    expect(preview.result.status).toBe("over-manifest-cap");
+    expect(preview.result.manifestCount).toBe(1001);
+  });
+
+  it("returns the traversal for an in-cap collection", async () => {
+    const { ctx } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const items = [{ id: "https://x/m1", type: "Manifest" }, { id: "https://x/m2", type: "Manifest" }];
+    stubSingleFetch({ type: "Collection", label: { none: ["Two" ] }, items });
+    const preview = await flows.fetchCollectionPreview("https://x/collection.json");
+    expect(preview.kind).toBe("collection");
+    if (preview.kind !== "collection") return;
+    expect(preview.result.status).toBe("ok");
+    expect(preview.result.manifests.map((m) => m.id)).toEqual(["https://x/m1", "https://x/m2"]);
+  });
+
+  it("aborts SILENTLY when the signal fires during the root fetch — no alert, discardable outcome", async () => {
+    const { ctx, alerts } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const controller = new AbortController();
+    stubManifestPool({ "https://x/c.json": { label: "C", delay: 10000 } }); // hangs until aborted
+    const p = flows.fetchCollectionPreview("https://x/c.json", controller.signal);
+    controller.abort(); // a newer keystroke supersedes this preview
+    const preview = await p;
+    expect(preview.kind).toBe("aborted");
+    expect(alerts).toEqual([]); // NOT one "couldn't open" modal per abandoned keystroke
+  });
+
+  it("aborts mid-traversal WITHOUT surfacing a phantom-skip collection result", async () => {
+    const { ctx, alerts } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const controller = new AbortController();
+    const root = { type: "Collection", label: { none: ["Root"] }, items: [{ id: "https://x/sub", type: "Collection" }] };
+    const jsonResp = (json: unknown) => {
+      const bytes = new TextEncoder().encode(JSON.stringify(json));
+      return { ok: true, status: 200, headers: new Headers(), arrayBuffer: async () => bytes.buffer };
+    };
+    // Root resolves fine; the sub-collection fetch fires the abort DURING traversal, then throws — the
+    // traversal folds that into a fetch-failed skip, but the aborted preview must discard the whole result.
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url === "https://x/root.json") return jsonResp(root);
+      if (url === "https://x/sub") { controller.abort(); throw new DOMException("Aborted", "AbortError"); }
+      throw new Error(`unexpected fetch: ${url}`);
+    }));
+    const preview = await flows.fetchCollectionPreview("https://x/root.json", controller.signal);
+    expect(preview.kind).toBe("aborted"); // NOT { kind: "collection" } carrying a fetch-failed skip
+    expect(alerts).toEqual([]);
   });
 });

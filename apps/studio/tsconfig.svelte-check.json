@@ -3,5 +3,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "exactOptionalPropertyTypes": false
-  }
+  },
+  "//exclude": "`*.type-test.ts` files pin exactOptionalPropertyTypes-DEPENDENT behavior with `@ts-expect-error` (e.g. ExhibitMetaPatch rejecting a required-field clear — Archie-d2cc). With EOPT relaxed here those errors don't occur, so the directives would read as 'unused'. They belong to the `tsc` gate (tsconfig.json, EOPT ON), which still compiles them.",
+  "exclude": ["src/**/*.type-test.ts"]
 }

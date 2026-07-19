@@ -61,11 +61,17 @@ export function coverOf(exhibit: ExhibitMeta): Cover | null {
   return { slug: exhibit.slug, objectId: first.id, source: first.source, ...(first.mediaType ? { mediaType: first.mediaType } : {}) };
 }
 
-/** Filter exhibits by title for the cards view (case-insensitive, diacritic-folded — matchesTitle). Empty
- *  query returns the input array unchanged (identity — no needless re-render). */
+/** Filter exhibits by title OR description for the cards view (case-insensitive, diacritic-folded — the
+ *  same matchesTitle primitive, applied to both fields, so there's ONE matcher not two idioms). Matching
+ *  the description is load-bearing: PLAN §8 stamps each imported exhibit's provenance trail ("From: {root}
+ *  › {sub-collection}") into its `summary`, and the "search Documents → select all" flatten-mitigation
+ *  workflow (§9) only works if that trail is reachable from this box. A missing description (`summary`
+ *  undefined) folds to "" → never matches, never throws. Empty / whitespace query returns the input array
+ *  unchanged (identity — no needless re-render). */
 export function filterExhibits(exhibits: ReadonlyArray<ExhibitMeta>, query: string): ReadonlyArray<ExhibitMeta> {
   const q = query.trim();
-  return q ? exhibits.filter((e) => matchesTitle(e.title, q)) : exhibits;
+  if (!q) return exhibits;
+  return exhibits.filter((e) => matchesTitle(e.title, q) || matchesTitle(e.summary ?? "", q));
 }
 
 /** Filter wall tiles by object title (same primitive as the cards + the overview toolbar — ONE definition). */

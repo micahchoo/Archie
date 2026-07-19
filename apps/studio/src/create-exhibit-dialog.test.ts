@@ -3,7 +3,13 @@ import {
   surfaceTitle, createActionLabel, offersStartEmpty, offersMap, offersLink, pickedFromFiles,
   emptyPathValid, folderPathValid, iiifPathValid, looksLikeUrl, previewManifest,
   folderTitleFieldApplies, iiifTitleFieldApplies, prefillTitle, linkPathValid,
+  routeCollectionPreview, buildPickerRows, checkedCount, selectedRefs, setAllChecked,
+  hydrateRowLabels, overCapRefusal, skipNote, skipDetail, type PickerRow,
+  summarizeImport, IMPORT_FAILURE_LIST_CAP,
 } from "./create-exhibit-dialog.js";
+import type { CollectionPreview, CollectionImportOutcome } from "./ingest-flows.js";
+import type { DiscoveredManifest, TraverseResult, TraverseSkip } from "./collection-import.js";
+import type { ManifestPlan } from "./iiif-import.js";
 
 describe("CreateSurfaceScope copy (Archie-beb6's prop-level parameter)", () => {
   it("titles + labels the new-exhibit scope (the only one wired/shipped by Archie-51cc)", () => {
@@ -210,3 +216,259 @@ describe("previewManifest — the IIIF validation preview (Archie-51cc)", () => 
     expect(result).toEqual({ status: "invalid", message: "That IIIF link is too large to check here." });
   });
 });
+
+// ── Collection preview + picker (Archie-a9e2, PLAN §3–5).
+
+function dm(id: string, opts: { label?: string; trail?: string[] } = {}): DiscoveredManifest {
+  const ref: DiscoveredManifest = { id, trail: opts.trail ?? ["Root"] };
+  if (opts.label !== undefined) ref.label = opts.label;
+  return ref;
+}
+function traverse(manifests: DiscoveredManifest[], opts: { skips?: TraverseSkip[]; status?: "ok" | "over-manifest-cap"; manifestCount?: number } = {}): TraverseResult {
+  return {
+    status: opts.status ?? "ok",
+    manifests,
+    skips: opts.skips ?? [],
+    docsAttempted: 1,
+    manifestCount: opts.manifestCount ?? manifests.length,
+  };
+}
+function plan(title: string): ManifestPlan {
+  return { title, objects: [] };
+}
+
+describe("routeCollectionPreview — the dialog's routing of ingest-flows' discriminated preview (PLAN §5)", () => {
+  it("discards an aborted preview silently — a superseded keystroke maps to a no-op route, no state", () => {
+    expect(routeCollectionPreview({ kind: "aborted" })).toEqual({ kind: "aborted" });
+  });
+  it("carries the parsed plan on the single-manifest route so the dialog needn't re-fetch (D2)", () => {
+    const p = plan("Solo manifest");
+    expect(routeCollectionPreview({ kind: "manifest", plan: p })).toEqual({ kind: "manifest", plan: p });
+  });
+  it("passes an error message straight through to the existing invalid display", () => {
+    const preview: CollectionPreview = { kind: "error", message: "Couldn't open that link." };
+    expect(routeCollectionPreview(preview)).toEqual({ kind: "error", message: "Couldn't open that link." });
+  });
+  it("turns an over-manifest-cap collection into a refusal naming the count — no picker", () => {
+    const preview: CollectionPreview = { kind: "collection", rootTitle: "Big", result: traverse([], { status: "over-manifest-cap", manifestCount: 1500 }) };
+    const route = routeCollectionPreview(preview);
+    expect(route.kind).toBe("over-cap");
+    if (route.kind === "over-cap") expect(route.message).toContain("1500");
+  });
+  it("builds a picker route (rows + skips) from an ok collection", () => {
+    const skips: TraverseSkip[] = [{ reason: "duplicate", id: "https://x/dup", kind: "manifest", trail: ["Root"] }];
+    const preview: CollectionPreview = {
+      kind: "collection", rootTitle: "Herbals",
+      result: traverse([dm("https://x/a", { label: "A", trail: ["Herbals"] }), dm("https://x/b", { trail: ["Herbals", "Sub"] })], { skips }),
+    };
+    const route = routeCollectionPreview(preview);
+    expect(route.kind).toBe("collection");
+    if (route.kind === "collection") {
+      expect(route.rootTitle).toBe("Herbals");
+      expect(route.rows.map((r) => r.label)).toEqual(["A", "b"]); // b has no label → URL-segment fallback
+      expect(route.skips).toBe(skips);
+    }
+  });
+});
+
+describe("buildPickerRows — row model: label fallback + parent-collection context (PLAN §3)", () => {
+  it("uses the inline collection label when present, and marks it as not needing hydration", () => {
+    const [row] = buildPickerRows([dm("https://x/iiif/manifests/abc", { label: "Folio 1r", trail: ["Root"] })]);
+    expect(row).toMatchObject({ label: "Folio 1r", needsHydration: false, checked: true });
+  });
+  it("falls back to the URL's last segment (collection-import's ONE urlSegment) when the label is absent, flagging hydration", () => {
+    const [row] = buildPickerRows([dm("https://x/iiif/manifests/abc123", { trail: ["Root"] })]);
+    expect(row).toMatchObject({ label: "abc123", needsHydration: true });
+  });
+  it("shows the trail minus the root as ' › '-joined context, and omits it when the manifest sits directly under the root", () => {
+    const rows = buildPickerRows([
+      dm("https://x/a", { trail: ["Root"] }),
+      dm("https://x/b", { trail: ["Root", "Herbals"] }),
+      dm("https://x/c", { trail: ["Root", "Herbals", "Quire 3"] }),
+    ]);
+    expect(rows.map((r) => r.context)).toEqual(["", "Herbals", "Herbals › Quire 3"]);
+  });
+  it("checks every row by default", () => {
+    const rows = buildPickerRows([dm("https://x/a"), dm("https://x/b")]);
+    expect(rows.every((r) => r.checked)).toBe(true);
+  });
+});
+
+describe("selection — select all / none / count, and the confirm payload's order (PLAN §3)", () => {
+  it("counts checked rows live", () => {
+    const rows = buildPickerRows([dm("https://x/a"), dm("https://x/b"), dm("https://x/c")]);
+    expect(checkedCount(rows)).toBe(3);
+    rows[1]!.checked = false;
+    expect(checkedCount(rows)).toBe(2);
+  });
+  it("select all / none flip every row", () => {
+    const rows = buildPickerRows([dm("https://x/a"), dm("https://x/b")]);
+    setAllChecked(rows, false);
+    expect(checkedCount(rows)).toBe(0);
+    setAllChecked(rows, true);
+    expect(checkedCount(rows)).toBe(2);
+  });
+  it("emits the checked refs in COLLECTION ORDER, never check order", () => {
+    const rows = buildPickerRows([dm("https://x/a"), dm("https://x/b"), dm("https://x/c")]);
+    rows[1]!.checked = false; // uncheck the middle
+    // Toggling c off then on last does not reorder — selectedRefs is row order.
+    rows[2]!.checked = false;
+    rows[2]!.checked = true;
+    expect(selectedRefs(rows).map((r) => r.id)).toEqual(["https://x/a", "https://x/c"]);
+  });
+});
+
+describe("overCapRefusal + skip note copy (PLAN §2/§5)", () => {
+  it("names the true manifest count and points at a smaller sub-collection", () => {
+    const msg = overCapRefusal(1500);
+    expect(msg).toContain("1500");
+    expect(msg.toLowerCase()).toContain("sub-collection");
+  });
+  it("skipNote is null when nothing was skipped, else a pluralized headline", () => {
+    expect(skipNote([])).toBeNull();
+    expect(skipNote([{ reason: "duplicate", id: "a", kind: "manifest", trail: [] }])).toBe("1 item skipped");
+    expect(skipNote([
+      { reason: "duplicate", id: "a", kind: "manifest", trail: [] },
+      { reason: "depth-cap", id: "b", kind: "collection", trail: [] },
+    ])).toBe("2 items skipped");
+  });
+  it("skipDetail groups counts by reason in plain language", () => {
+    const detail = skipDetail([
+      { reason: "duplicate", id: "a", kind: "manifest", trail: [] },
+      { reason: "duplicate", id: "b", kind: "manifest", trail: [] },
+      { reason: "fetch-failed", id: "c", kind: "collection", trail: [] },
+    ]);
+    expect(detail).toContain("2 already listed elsewhere");
+    expect(detail).toContain("1 couldn't be read");
+  });
+});
+
+describe("hydrateRowLabels — background label pool (PLAN §5): cap, cache, silent-fallback, abort", () => {
+  it("replaces fallback labels in place and populates the plan cache, keyed by ref.id", async () => {
+    const rows = buildPickerRows([dm("https://x/a"), dm("https://x/b", { label: "B" })]);
+    const cache = new Map<string, ManifestPlan>();
+    const fetchPlan = vi.fn(async (url: string) => plan(`Title for ${url}`));
+    const summary = await hydrateRowLabels(rows, cache, fetchPlan);
+    expect(fetchPlan).toHaveBeenCalledTimes(1); // only the label-less row a
+    expect(rows[0]).toMatchObject({ label: "Title for https://x/a", needsHydration: false });
+    expect(rows[1]!.label).toBe("B"); // already labelled — untouched
+    expect(cache.get("https://x/a")?.title).toBe("Title for https://x/a");
+    expect(summary).toMatchObject({ hydrated: 1, failed: 0, cappedOut: 0 });
+  });
+  it("enforces the fetch cap — rows beyond it keep their fallback and are counted", async () => {
+    const rows = buildPickerRows([dm("https://x/a"), dm("https://x/b"), dm("https://x/c")]);
+    const fetchPlan = vi.fn(async (url: string) => plan(`T ${url}`));
+    const summary = await hydrateRowLabels(rows, new Map(), fetchPlan, { cap: 2 });
+    expect(fetchPlan).toHaveBeenCalledTimes(2);
+    expect(summary.cappedOut).toBe(1);
+    expect(rows[2]!.label).toBe("c"); // fallback stands
+  });
+  it("keeps the fallback silently on a failed fetch — no throw, and the pool passes a non-alerting onError", async () => {
+    const rows = buildPickerRows([dm("https://x/a")]);
+    let sawOnError = false;
+    const fetchPlan = vi.fn(async (_url: string, opts: { onError?: (m: string) => void }) => {
+      // fetchManifestPlan calls onError then returns null on failure; the pool must supply one so no alert fires.
+      expect(typeof opts.onError).toBe("function");
+      opts.onError?.("boom");
+      sawOnError = true;
+      return null;
+    });
+    const summary = await hydrateRowLabels(rows, new Map(), fetchPlan);
+    expect(sawOnError).toBe(true);
+    expect(rows[0]!.label).toBe("a"); // unchanged
+    expect(summary).toMatchObject({ hydrated: 0, failed: 1 });
+  });
+  it("stops pending fetches once the signal aborts — committed rows stand, later rows are never fetched", async () => {
+    const rows = buildPickerRows([dm("https://x/a"), dm("https://x/b"), dm("https://x/c")]);
+    const controller = new AbortController();
+    const calls: string[] = [];
+    const fetchPlan = vi.fn(async (url: string) => {
+      calls.push(url);
+      if (calls.length === 2) controller.abort(); // abort DURING the 2nd fetch
+      return plan(`T ${url}`);
+    });
+    await hydrateRowLabels(rows, new Map(), fetchPlan, { signal: controller.signal, concurrency: 1 });
+    expect(calls).toEqual(["https://x/a", "https://x/b"]); // c never fetched
+    expect(rows[0]!.label).toBe("T https://x/a"); // 1st committed before abort
+    expect(rows[1]!.label).toBe("b"); // 2nd aborted post-await → not applied
+    expect(rows[2]!.label).toBe("c"); // untouched fallback
+  });
+});
+
+describe("skipDetail — the branch the picker uses to show a disclosure vs. nothing (Archie-cbf6 D1)", () => {
+  it("is empty when the traversal skipped nothing (so the picker shows no disclosure)", () => {
+    expect(skipDetail([])).toBe("");
+  });
+  it("names each reason with a count when there ARE skips (the visible disclosure body)", () => {
+    const detail = skipDetail([
+      { reason: "duplicate", id: "a", kind: "manifest", trail: [] },
+      { reason: "duplicate", id: "b", kind: "manifest", trail: [] },
+      { reason: "fetch-failed", id: "c", kind: "manifest", trail: [] },
+    ]);
+    expect(detail).toBe("2 already listed elsewhere, 1 couldn't be read");
+  });
+});
+
+describe("summarizeImport — the finished-batch summary surface (Archie-cbf6, PLAN §6/§8)", () => {
+  const outcome = (o: Partial<CollectionImportOutcome> = {}): CollectionImportOutcome =>
+    ({ createdSlugs: [], skipped: [], cancelled: false, fatal: null, ...o });
+
+  it("full success names the count and shows no failures", () => {
+    const s = summarizeImport(outcome({ createdSlugs: ["a", "b", "c"] }), 3);
+    expect(s.tone).toBe("success");
+    expect(s.headline).toBe("Created 3 exhibits.");
+    expect(s.failures).toEqual([]);
+    expect(s.overflow).toBe(0);
+    expect(s.createdCount).toBe(3);
+  });
+
+  it("singular exhibit reads without the plural 's'", () => {
+    expect(summarizeImport(outcome({ createdSlugs: ["a"] }), 1).headline).toBe("Created 1 exhibit.");
+  });
+
+  it("partial names the created count, the failed count, and one line per failure (label else URL)", () => {
+    const s = summarizeImport(outcome({
+      createdSlugs: ["a"],
+      skipped: [
+        { id: "https://x/m2", label: "Folio 2r", reason: "Couldn't open that link." },
+        { id: "https://x/m3", reason: "not a manifest" }, // no label → URL is the name
+      ],
+    }), 3);
+    expect(s.tone).toBe("partial");
+    expect(s.headline).toBe("Created 1 exhibit. 2 couldn't be imported:");
+    expect(s.failures).toEqual(["Folio 2r — Couldn't open that link.", "https://x/m3 — not a manifest"]);
+    expect(s.overflow).toBe(0);
+  });
+
+  it("truncates the failure list past the cap and reports the overflow count (…and N more)", () => {
+    const skipped = Array.from({ length: 14 }, (_, i) => ({ id: `https://x/m${i}`, reason: "boom" }));
+    const s = summarizeImport(outcome({ createdSlugs: ["a"], skipped }), 15);
+    expect(s.failures).toHaveLength(IMPORT_FAILURE_LIST_CAP); // exactly 10 named
+    expect(s.overflow).toBe(4); // 14 - 10 elided into "…and 4 more"
+    expect(s.headline).toContain("14 couldn't be imported");
+  });
+
+  it("cancelled reads 'Imported X of N before cancelling' and keeps the committed prefix", () => {
+    const s = summarizeImport(outcome({ createdSlugs: ["a", "b"], cancelled: true }), 10);
+    expect(s.tone).toBe("cancelled");
+    expect(s.headline).toBe("Imported 2 of 10 exhibits before cancelling.");
+    expect(s.createdCount).toBe(2);
+  });
+
+  it("fatal wins over other tones, names what was kept, and still lists the failure", () => {
+    const s = summarizeImport(outcome({
+      createdSlugs: ["a", "b"], // 'b' is the half-minted orphan the sweep recorded
+      skipped: [{ id: "https://x/b", label: "Half one", reason: "Couldn't save this exhibit to this device — import stopped." }],
+      cancelled: true, // even if an abort raced the storage failure, fatal takes precedence
+      fatal: "storage exploded",
+    }), 5);
+    expect(s.tone).toBe("fatal");
+    expect(s.headline).toBe("Couldn't save to this device, so the import stopped. Kept the 2 exhibits that imported first.");
+    expect(s.failures).toEqual(["Half one — Couldn't save this exhibit to this device — import stopped."]);
+    expect(s.createdCount).toBe(2); // Undo removes both, including the orphan
+  });
+});
+
+// Type-only guard: PickerRow shape stays what the component binds to (checked is a plain boolean).
+const _pickerRowShape: PickerRow = { ref: dm("https://x/a"), label: "a", context: "", needsHydration: true, checked: true };
+void _pickerRowShape;

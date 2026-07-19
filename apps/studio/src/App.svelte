@@ -883,7 +883,11 @@
     keeping = false;
   }
   // Create a new exhibit (no objects yet — add them in the editor), persist, and open it.
-  async function newExhibit(title: string) {
+  // Create an exhibit in the library and return its slug — WITHOUT navigating into it. The shared core of
+  // newExhibit (which then opens it) and the collection-import batch (which must NOT open each of N exhibits:
+  // opening 520 editors would thrash sess.open/thumb resolution AND unmount the create dialog that hosts the
+  // import's progress/summary, since LibraryHome only renders at `view === "library"`). Archie-cbf6.
+  async function createExhibitInLibrary(title: string): Promise<string> {
     const base = title.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "exhibit";
     // "sample" is RESERVED (Issue 19e): openExhibitAnnotationsDir special-cases that slug to the LEGACY
     // top-level {project}/annotations/ dir (the pre-multi-exhibit SAMPLE_SLUG path), so a user exhibit
@@ -893,7 +897,10 @@
     // No `layout` written (ADR-0016): the leading surface is DERIVED from content by resolveLayout
     // (sections → narrative, >1 object → grid, else single). The field is deprecated; Studio never writes it.
     await lib.addExhibit({ id: `ex-${slug}`, slug, title: title.trim() || "Untitled exhibit", objects: [] });
-    await openExhibit(slug);
+    return slug;
+  }
+  async function newExhibit(title: string) {
+    await openExhibit(await createExhibitInLibrary(title));
   }
   // The ingest flows (file/URL/AV/map object-add, folder/manifest exhibit-create, CSV/WADM bulk-note
   // import, and the destructive open-zip/open-folder replace) live in ingest-flows.ts now (the DOMINO
@@ -1716,6 +1723,7 @@
     switchObject,
     toEditor: () => { view = "editor"; },
     newExhibit,
+    newExhibitInLibrary: createExhibitInLibrary, // Archie-cbf6: non-navigating create for the collection batch
     openExhibit,
     bump,
     cancelPendingSave: () => sess.cancelPendingSave(),
@@ -1844,6 +1852,15 @@
     oncreate={newExhibit}
     oncreatefromfolder={(files, title) => { newExhibitFromFolder(files, title).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add that folder."); }); }}
     oncreatefrommanifest={(url, title) => { flows.newExhibitFromManifest(url, title).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
+    previewcollection={flows.fetchCollectionPreview}
+    hydratemanifest={flows.fetchManifestPlan}
+    oncreatefromcollection={(selected, planCache, hooks) =>
+      // The batch creates exhibits WITHOUT navigating (newExhibitInLibrary), so the view stays at the
+      // Library — LibraryHome (and this dialog hosting the progress/summary) stays mounted, and the new
+      // exhibits appear behind the scrim reactively (lib.addExhibit). No backToLibrary needed. Returns the
+      // outcome to the dialog, which owns the progress/summary/undo UI (Archie-cbf6).
+      flows.newExhibitsFromCollection(selected, { signal: hooks.signal, onProgress: hooks.onProgress, planCache })}
+    onundoimport={(slugs) => void lib.removeExhibits(slugs)}
     {isTemplate}
     binding={bnd.binding}
     bindingDirty={bnd.dirty}
@@ -1865,6 +1882,7 @@
     onsummary={setLibrarySummary}
     onpatchexhibit={patchExhibitMeta}
     onremoveexhibit={(slug) => void removeExhibitById(slug)}
+    onbulkrights={(slugs, patch) => void lib.patchExhibits(slugs, patch)}
     ontutorial={() => (tutorialOpen = true)}
     onshortcuts={() => (helpOpen = true)}
     identity={identity ?? ""}

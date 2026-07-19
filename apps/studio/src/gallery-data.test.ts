@@ -57,6 +57,33 @@ describe("filterExhibits / filterImages — via matchesTitle (case + diacritic f
   });
 });
 
+describe("filterExhibits — matches DESCRIPTION as well as title (provenance trails searchable, §8)", () => {
+  // A dedicated fixture (not `lib()`) so adding descriptions can't perturb the title/flatten tests above.
+  // Mirrors an imported library: each exhibit's summary carries the "From: {root} › {sub}" trail §8 stamps.
+  const trailed = (): ExhibitMeta[] => [
+    { id: "e1", slug: "kells", title: "Book of Kells", summary: "From: BHC Archive › Manuscripts", objects: [] },
+    { id: "e2", slug: "charter", title: "Founding Charter", summary: "From: BHC Archive › Documents", objects: [] },
+    { id: "e3", slug: "bare", title: "Untrailed Item", objects: [] }, // no summary field at all
+  ];
+  it("finds an exhibit by a term only in its description (the trail, not the title)", () => {
+    expect(filterExhibits(trailed(), "Documents").map((e) => e.slug)).toEqual(["charter"]);
+  });
+  it("still finds an exhibit by title", () => {
+    expect(filterExhibits(trailed(), "kells").map((e) => e.slug)).toEqual(["kells"]);
+  });
+  it("matches title OR description with the SAME fold (case/diacritic-insensitive substring)", () => {
+    // "archive" appears in both trails → both trailed exhibits; case-folded from "ARCHIVE".
+    expect(filterExhibits(trailed(), "ARCHIVE").map((e) => e.slug)).toEqual(["kells", "charter"]);
+  });
+  it("an exhibit with no description is safe (never throws; simply can't match on description)", () => {
+    expect(filterExhibits(trailed(), "Untrailed").map((e) => e.slug)).toEqual(["bare"]); // title match still works
+    expect(filterExhibits(trailed(), "Documents").some((e) => e.slug === "bare")).toBe(false);
+  });
+  it("a query matching neither title nor description excludes the exhibit", () => {
+    expect(filterExhibits(trailed(), "no-such-term").map((e) => e.slug)).toEqual([]);
+  });
+});
+
 describe("commitMintedThumb — destroy-during-mint never leaks the blob", () => {
   it("a tile destroyed while its mint was in flight REVOKES the late URL and installs nothing", () => {
     const revoked: string[] = [];

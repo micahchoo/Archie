@@ -62,3 +62,14 @@
   dead-end.
 - **Modals and drawers are not places** — they never enter navigation history;
   back never dismisses them. (How they dismiss is the modality rules' domain.)
+
+## Ingest
+
+- **Collection unpacking** — a pasted IIIF Collection is *unpacked* into
+  Exhibits (one per member Manifest, in collection order, nested collections
+  flattened); a Collection is never a thing inside Archie. The Library remains
+  the only grouping, and it stays flat. Sub-collection names survive only as
+  searchable provenance on each unpacked exhibit, never as structure.
+- **Import batch** — the set of exhibits one unpacking created, remembered just
+  long enough to be undone as one act. Undo of a batch is removal, not rollback:
+  a cancelled or partial import keeps what was committed.

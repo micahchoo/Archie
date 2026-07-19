@@ -22,7 +22,8 @@ import {
 import { mergeImportedStructure } from "./structure-import.js";
 import { structureRevlogEnabled } from "./feature-flags.js";
 import { inferredMime, planFolderImportGroups } from "./folder-import.js";
-import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iiif-import.js";
+import { manifestToExhibit, ManifestImportError, classifyIiifDocument, labelToString, type ManifestPlan } from "./iiif-import.js";
+import { traverseCollection, urlSegment, type DiscoveredManifest, type TraverseResult } from "./collection-import.js";
 import { planCsvImport, type CsvPendingNote } from "./csv-import.js";
 import { planWadmImport } from "./wadm-import.js";
 import { collabBreakdown, collabSummaryText } from "./collab.js";
@@ -48,6 +49,70 @@ export const IIIF_MANIFEST_MAX_BYTES = 32 * 1024 * 1024;
 // nothing to stop it (tend Issue 7, ledgers/NEGSPACE.md rows 6-8). These are hand-authored annotation
 // files; legitimate ones are KBs to low MBs even for thousands of notes.
 export const LOCAL_TEXT_IMPORT_MAX_BYTES = 64 * 1024 * 1024;
+
+// The fetch + double-cap + parse CORE, shared by the single-manifest head (fetchManifestPlan), the
+// collection preview (fetchCollectionPreview), and the traversal's per-sub-collection fetch (Archie-656a,
+// PLAN §5). ONE definition of the IIIF_MANIFEST_MAX_BYTES discipline (declared content-length THEN actual
+// byteLength, mirroring @render/core's fetchArchieLibraryBytes) so a manifest fetch, a collection doc, and
+// a background hydration fetch can never drift on the cap — the same "one fetch head" contract the
+// untrusted-archive-open seam enforces. Throws a TYPED error the caller maps to voice: fetchManifestPlan
+// re-derives its exact pre-656a alert copy, and traverseCollection turns a throw into a counted
+// `fetch-failed` skip carrying the message. Honors an AbortSignal so a paste-time preview is abortable.
+class IiifHttpError extends Error { constructor(readonly status: number) { super(`HTTP ${status}`); } }
+class IiifTooLargeError extends Error {}
+async function fetchJsonCapped(url: string, signal?: AbortSignal): Promise<unknown> {
+  const resp = await fetch(url, signal ? { signal } : {});
+  if (!resp.ok) throw new IiifHttpError(resp.status);
+  const declared = Number(resp.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > IIIF_MANIFEST_MAX_BYTES) throw new IiifTooLargeError("That IIIF link is too large to open here.");
+  const buf = await resp.arrayBuffer();
+  if (buf.byteLength > IIIF_MANIFEST_MAX_BYTES) throw new IiifTooLargeError("That IIIF link is too large to open here.");
+  return JSON.parse(new TextDecoder().decode(buf));
+}
+// Map a fetchJsonCapped throw to fetchManifestPlan's EXACT pre-656a alert copy (byte-identical voice + the
+// same console line): an HTTP status vs. an over-cap vs. a network/parse throw each keep their message.
+function manifestFetchFailureMessage(e: unknown, url: string): string {
+  if (e instanceof IiifHttpError) { console.error("IIIF fetch failed", e.status, url); return "Couldn't open that link. Check the address and try again."; }
+  if (e instanceof IiifTooLargeError) return "That IIIF link is too large to open here.";
+  return "Couldn't open that link. Check the address is correct and reachable.";
+}
+// Is this thrown value an abort (fetch's AbortError)? Detected by the DOM's `AbortError` name so a
+// debounce-abort of the paste-time preview is handled as a silent discard, never a "couldn't open" alert.
+function isAbortError(e: unknown): boolean {
+  return e instanceof Error && e.name === "AbortError";
+}
+
+/** Paste-time preview head for the create dialog (Archie-656a, consumed by the dialog ticket Archie-a9e2).
+ *  A discriminated result the dialog routes on:
+ *   - `manifest`   → route to the existing single-manifest path (no traversal). Carries the already-parsed
+ *                    `plan` (Archie-cbf6 / D2): the root doc was fetched AND classified here, so parsing it
+ *                    into a plan lets the dialog show title + canvas count WITHOUT a second fetch of the same
+ *                    URL (the pre-cbf6 shape carried no payload, forcing the dialog to re-fetch via
+ *                    previewManifest);
+ *   - `collection` → the traversal (its `status` distinguishes ok from over-manifest-cap, with the exact
+ *                    `manifestCount` for a refuse-with-count) plus the root title for the picker header;
+ *   - `error`      → a message the dialog renders;
+ *   - `aborted`    → the caller cancelled this preview (a newer keystroke superseded it). CONTRACT: the
+ *                    dialog DISCARDS this outcome silently — no alert fired, and NO partial/phantom
+ *                    TraverseResult is surfaced (an abort mid-traversal is never returned as `collection`
+ *                    with fetch-failed skips). It exists so a debounced preview can be abandoned per
+ *                    keystroke without a modal or a misleading result. */
+export type CollectionPreview =
+  | { kind: "manifest"; plan: ManifestPlan }
+  | { kind: "collection"; rootTitle: string; result: TraverseResult }
+  | { kind: "error"; message: string }
+  | { kind: "aborted" };
+
+/** The result of a collection import batch (Archie-cbf6, PLAN §6/§8) — the created slugs in commit order
+ *  (the "Import batch" the dialog's summary + Undo read), the manifest-side skips, whether a user cancel
+ *  stopped it early, and a fatal storage message when a commit threw. Returned by newExhibitsFromCollection
+ *  (which NEVER throws) and awaited by the dialog to render its summary state. */
+export type CollectionImportOutcome = {
+  createdSlugs: string[];
+  skipped: { id: string; label?: string; reason: string }[];
+  cancelled: boolean;
+  fatal: string | null;
+};
 
 // Binary-asset persistence routes through the save-queue (ISSUES.md Issue 26 / ledgers/ASSETQ.md): the
 // queue header promises "NO failure is silent," but the OPFS asset writers (store.ts saveAssetFile /
@@ -112,6 +177,11 @@ export interface IngestContext {
   switchObject: (id: string) => void;
   toEditor: () => void;
   newExhibit: (title: string) => Promise<void>;
+  /** Create an exhibit in the library and return its slug WITHOUT navigating into it (Archie-cbf6). The
+   *  collection batch uses this instead of `newExhibit`: opening each of N imported exhibits would thrash the
+   *  session/thumb machinery AND unmount the create dialog that hosts the import's progress/summary (it only
+   *  renders at the Library view). `newExhibit` = this + openExhibit, so the single-manifest path is unchanged. */
+  newExhibitInLibrary: (title: string) => Promise<string>;
   openExhibit: (slug: string) => Promise<void>;
   /** rev++ / dirty / scheduleSave — fired after a bulk note import. */
   bump: () => void;
@@ -420,27 +490,27 @@ export function createIngestFlows(ctx: IngestContext) {
   // Cap enforced twice (mirrors @render/core's fetchArchieLibraryBytes, a DIFFERENT trust boundary —
   // see IIIF_MANIFEST_MAX_BYTES): first cheaply against a declared content-length before reading the
   // body, then against the actual received size — a missing/lying header can't bypass it.
-  async function fetchManifestPlan(url: string): Promise<ManifestPlan | null> {
+  // `opts.signal` (Archie-656a) makes the fetch abortable for the collection preview/import; absent = the
+  // pre-656a always-on behavior. `opts.onError` redirects the failure message away from ctx.alert for the
+  // BATCH caller (newExhibitsFromCollection), which composes ONE summary from N skip reasons per PLAN §6
+  // instead of firing N modal alerts — it defaults to ctx.alert, so the single-manifest callers are
+  // byte-identical (same messages, same console line, same null returns) to before.
+  async function fetchManifestPlan(url: string, opts: { signal?: AbortSignal; onError?: (msg: string) => void } = {}): Promise<ManifestPlan | null> {
     const trimmed = url.trim();
     if (!trimmed) return null;
+    const onError = opts.onError ?? ctx.alert;
     let json: unknown;
     try {
-      const resp = await fetch(trimmed);
-      if (!resp.ok) { console.error("IIIF fetch failed", resp.status, trimmed); ctx.alert("Couldn't open that link. Check the address and try again."); return null; }
-      const declared = Number(resp.headers.get("content-length"));
-      if (Number.isFinite(declared) && declared > IIIF_MANIFEST_MAX_BYTES) { ctx.alert("That IIIF link is too large to open here."); return null; }
-      const buf = await resp.arrayBuffer();
-      if (buf.byteLength > IIIF_MANIFEST_MAX_BYTES) { ctx.alert("That IIIF link is too large to open here."); return null; }
-      json = JSON.parse(new TextDecoder().decode(buf));
-    } catch {
-      ctx.alert("Couldn't open that link. Check the address is correct and reachable.");
+      json = await fetchJsonCapped(trimmed, opts.signal);
+    } catch (e) {
+      onError(manifestFetchFailureMessage(e, trimmed));
       return null;
     }
     try {
       return manifestToExhibit(json, trimmed);
     } catch (e) {
       console.error("IIIF manifest parse failed", e);
-      ctx.alert(e instanceof ManifestImportError ? e.message : "Couldn't read that IIIF link — it doesn't look like a valid manifest.");
+      onError(e instanceof ManifestImportError ? e.message : "Couldn't read that IIIF link — it doesn't look like a valid manifest.");
       return null;
     }
   }
@@ -466,11 +536,35 @@ export function createIngestFlows(ctx: IngestContext) {
   // `title` (Archie-46bf) is the dialog's optional override of the manifest's own label — used only
   // when non-blank, so a caller that never offers the title field (or leaves it untouched) sees the
   // exact same derived-name behavior as before.
+  // The plan→exhibit TAIL shared by the single-manifest flow and the collection batch (Archie-656a): mint
+  // the exhibit, optionally stamp a provenance description onto its `summary`, then append the plan's
+  // objects. Returns the created slug (the collection batch records it for undo). Both opts are passed only
+  // by the collection path — newExhibitFromManifest omits them, so its behavior is byte-identical to the
+  // old inline `newExhibit + importManifestObjects` pair. patchExhibit's write coalesces into the append's
+  // persist below (a valid plan always has ≥1 object, so the summary is always flushed durably).
+  // `onCreated` fires the INSTANT the exhibit is minted (before the append that can throw), so the batch
+  // can sweep a half-minted exhibit for undo even when a later storage write rejects — see the drain catch.
+  // `navigate` (Archie-cbf6): the single-manifest flow lands the user IN the new exhibit (newExhibit →
+  // openExhibit); the collection batch passes `false` so it does NOT open each of N exhibits (opening 520
+  // editors would thrash session/thumb loading AND unmount the dialog hosting the import's progress/summary,
+  // which only renders at the Library view). newExhibitInLibrary creates + returns the slug without nav.
+  async function createExhibitFromPlan(plan: ManifestPlan, title: string, opts: { summary?: string; onCreated?: (slug: string) => void; navigate?: boolean } = {}): Promise<string> {
+    let slug: string;
+    if (opts.navigate ?? true) {
+      await ctx.newExhibit(title);
+      slug = ctx.currentSlug();
+    } else {
+      slug = await ctx.newExhibitInLibrary(title);
+    }
+    opts.onCreated?.(slug);
+    if (opts.summary) ctx.lib.patchExhibit(slug, { summary: opts.summary });
+    await importManifestObjects(plan, slug);
+    return slug;
+  }
   async function newExhibitFromManifest(url: string, title?: string) {
     const plan = await fetchManifestPlan(url);
     if (!plan) return;
-    await ctx.newExhibit(title && title.trim() !== "" ? title.trim() : plan.title);
-    await importManifestObjects(plan, ctx.currentSlug());
+    await createExhibitFromPlan(plan, title && title.trim() !== "" ? title.trim() : plan.title);
   }
   // IIIF manifest URL → append into the CURRENT exhibit (Archie-56cf — the create dialog's IIIF path in
   // add-to-exhibit scope). Same fetch/cap/parse + append as newExhibitFromManifest; the ONLY difference is
@@ -481,6 +575,163 @@ export function createIngestFlows(ctx: IngestContext) {
     const plan = await fetchManifestPlan(url);
     if (!plan) return;
     await importManifestObjects(plan, targetSlug);
+  }
+  // Paste-time collection preview (PLAN §5, Archie-656a). Fetch + double-cap + parse the ROOT document
+  // under the SAME IIIF_MANIFEST_MAX_BYTES discipline as a manifest, classify it, then:
+  //  • manifest   → signal the dialog to route to the existing single-manifest path (no traversal);
+  //  • collection → traverse it (each sub-collection doc fetched under the same cap, honoring `signal`),
+  //                 returning the TraverseResult (its `status` carries over-manifest-cap + the exact
+  //                 `manifestCount` for the dialog's refuse-with-count) and the root title for the picker;
+  //  • neither    → an error the dialog renders.
+  // A network failure alerts in fetchManifestPlan's voice — the ONE place this preview drives chrome; per
+  // the design note it otherwise returns DATA and lets the dialog own the UI.
+  async function fetchCollectionPreview(url: string, signal?: AbortSignal): Promise<CollectionPreview> {
+    const trimmed = url.trim();
+    if (!trimmed) return { kind: "error", message: "Paste a IIIF manifest or collection URL." };
+    let rootJson: unknown;
+    try {
+      rootJson = await fetchJsonCapped(trimmed, signal);
+    } catch (e) {
+      // A debounce-abort must be SILENT and discardable — never a modal (the dialog fires one preview per
+      // keystroke). Check the signal too, in case the environment's abort surfaces as a non-AbortError.
+      if (signal?.aborted || isAbortError(e)) return { kind: "aborted" };
+      const message = manifestFetchFailureMessage(e, trimmed);
+      ctx.alert(message); // network-failure voice — matches fetchManifestPlan's single-manifest path
+      return { kind: "error", message };
+    }
+    const kind = classifyIiifDocument(rootJson);
+    if (kind === "manifest") {
+      // D2 (Archie-cbf6): the root doc is already fetched AND classified here, so parse it into a plan and
+      // carry it — the dialog's single-manifest fall-through then renders title + canvas count WITHOUT a
+      // second fetch of the same URL (the pre-cbf6 payload-less `manifest` result forced a re-fetch via
+      // previewManifest). manifestToExhibit can still reject a manifest-shaped doc it can't plan (no
+      // canvases, unreadable bodies) — map that to the same plain-language error voice as a bad paste.
+      try {
+        return { kind: "manifest", plan: manifestToExhibit(rootJson, trimmed) };
+      } catch (e) {
+        console.error("IIIF manifest parse failed", e);
+        return { kind: "error", message: e instanceof ManifestImportError ? e.message : "Couldn't read that IIIF link — it doesn't look like a valid manifest." };
+      }
+    }
+    if (kind !== "collection") return { kind: "error", message: "That URL didn't return a IIIF manifest." };
+    const rootTitle = labelToString((rootJson as Record<string, unknown>)["label"], urlSegment(trimmed));
+    // Traverse with an abort-aware fetcher: once the signal fires, throw an AbortError instead of feeding
+    // fetches, so traverseCollection stops charging its budget on doomed sub-collection loads. traverse
+    // still folds that throw into a fetch-failed skip (its contract), so we DISCARD the whole result on
+    // abort below — a cancelled traversal must NEVER surface as a `collection` full of phantom skips.
+    const result = await traverseCollection(rootJson, trimmed, (u) => {
+      if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+      return fetchJsonCapped(u, signal);
+    });
+    if (signal?.aborted) return { kind: "aborted" };
+    return { kind: "collection", rootTitle, result };
+  }
+  // IIIF Collection URL → N new exhibits (PLAN §5–6, Archie-656a). Imports the CHECKED subset the dialog
+  // collected. A worker pool of 4 fetches manifests concurrently; a REORDER BUFFER commits exhibits in
+  // `selected` order however out-of-order the fetches land, so the same collection always yields the same
+  // library order. Skip-and-continue per manifest (render-core "corrupt ≠ empty" per-item tolerance): a
+  // failed/null plan skips its slot with a reason and the batch proceeds — no retry (PLAN §6). `planCache`
+  // is the dialog's hydration cache keyed by manifest URL, so a plan already fetched at preview time is NOT
+  // refetched. Provenance (§8): each exhibit's `summary` is stamped "From: {trail}" (the plan carries no
+  // description of its own). Returns the created slugs IN COMMIT ORDER (the Import batch the next ticket
+  // wires to Undo), the manifest-side skips, `cancelled` (true when a user abort stopped it early), and
+  // `fatal` (a storage-error message when a commit threw). Three distinct stop conditions the dialog reads:
+  // a user abort (`cancelled`) and a storage failure (`fatal`) both stop launching and commit nothing
+  // further while KEEPING the committed prefix; per-manifest failures go in `skipped` and the batch
+  // continues. The function NEVER throws — even a mid-commit storage rejection returns the summary.
+  async function newExhibitsFromCollection(
+    selected: DiscoveredManifest[],
+    opts: { signal?: AbortSignal; onProgress?: (done: number, total: number) => void; planCache?: Map<string, ManifestPlan> } = {},
+  ): Promise<CollectionImportOutcome> {
+    const { signal, onProgress, planCache } = opts;
+    const total = selected.length;
+    const createdSlugs: string[] = [];
+    const skipped: { id: string; label?: string; reason: string }[] = [];
+    // One slot per selected manifest: its resolved plan (null = skip, with the reason) once `settled`.
+    const slots: { plan: ManifestPlan | null; reason: string; settled: boolean }[] =
+      selected.map(() => ({ plan: null, reason: "", settled: false }));
+    let nextCommit = 0; // lowest slot not yet committed/skipped — the reorder buffer's read cursor
+    let cancelled = false;
+    // A commit (storage-side) failure message, once one occurs. FATAL by design: a commit throw means the
+    // OPFS write path is broken (appendObject/persist rejected), which won't heal within this batch — so we
+    // stop launching and stop committing rather than grind through hundreds more doomed writes. Distinct
+    // from `cancelled` (user abort) and from per-manifest `skipped` (manifest-side): the dialog shows a
+    // storage-problem message, but STILL gets `createdSlugs` (the undo record for what did commit).
+    let fatal: string | null = null;
+    let committing = false; // serializes the async commit drain (commits are awaited and must land in order)
+
+    // Commit every in-order settled slot we can, in `selected` order. Reentrancy-guarded: a fetch settling
+    // during an in-flight commit re-enters here, finds the guard up, and returns — the running drain picks
+    // its slot up on the next loop turn (settled flags are monotonic and re-read every iteration, and the
+    // guard can only be up while some worker awaits this drain, so no settled slot is ever left undrained).
+    const drainCommits = async (): Promise<void> => {
+      if (committing) return;
+      committing = true;
+      try {
+        while (nextCommit < total && slots[nextCommit]!.settled) {
+          if (signal?.aborted) { cancelled = true; break; } // check BEFORE each commit (PLAN §6 cancel)
+          if (fatal) break; // a prior commit hit a storage failure — stop the batch (see `fatal` above)
+          const i = nextCommit;
+          const ref = selected[i]!;
+          const { plan, reason } = slots[i]!;
+          if (plan) {
+            let mintedSlug: string | null = null; // set by onCreated the instant newExhibit succeeds
+            try {
+              const slug = await createExhibitFromPlan(plan, plan.title, { summary: "From: " + ref.trail.join(" › "), onCreated: (s) => { mintedSlug = s; }, navigate: false });
+              createdSlugs.push(slug);
+            } catch (e) {
+              // The commit threw — a STORAGE-side failure, not a manifest-side one. ctx.newExhibit may have
+              // ALREADY minted the exhibit before the append rejected, so this slot must NEVER be retried:
+              // advance past it and mark the batch fatal so no further slot commits. The function still
+              // RETURNS its summary — a poisoned store never makes this reject.
+              // ORPHAN SWEEP: if the exhibit WAS minted (mintedSlug set), record its slug in createdSlugs so
+              // the undo batch removes the half-imported exhibit; if newExhibit itself threw, mintedSlug is
+              // null → nothing to sweep. createdSlugs and skipped OVERLAP by design for a fatal slot —
+              // createdSlugs = "slugs undo should remove", skipped = "manifests that didn't fully import";
+              // a slot that minted an exhibit then failed its append is BOTH.
+              if (mintedSlug) createdSlugs.push(mintedSlug);
+              fatal = e instanceof Error ? e.message : String(e);
+              skipped.push({ id: ref.id, ...(ref.label !== undefined ? { label: ref.label } : {}), reason: "Couldn't save this exhibit to this device — import stopped." });
+              nextCommit++; // step past the poisoned slot BEFORE bailing so no re-entrant drain retries it
+              onProgress?.(nextCommit, total);
+              break;
+            }
+          } else {
+            skipped.push({ id: ref.id, ...(ref.label !== undefined ? { label: ref.label } : {}), reason });
+          }
+          nextCommit++;
+          onProgress?.(nextCommit, total);
+        }
+      } finally {
+        committing = false;
+      }
+    };
+
+    let cursor = 0; // shared next-to-fetch index across the pool
+    const worker = async (): Promise<void> => {
+      while (true) {
+        if (signal?.aborted) { cancelled = true; return; } // check BETWEEN jobs (PLAN §6 cancel)
+        if (fatal) return; // a commit hit a fatal storage failure — stop launching new fetches
+        const i = cursor++;
+        if (i >= total) return;
+        const ref = selected[i]!;
+        const cached = planCache?.get(ref.id);
+        if (cached) {
+          slots[i] = { plan: cached, reason: "", settled: true };
+        } else {
+          let reason = "";
+          // Conditional-spread `signal` (not `{ signal }`) to satisfy exactOptionalPropertyTypes — an
+          // explicitly-undefined optional property is a type error under the .ts gate (tsc --noEmit).
+          const plan = await fetchManifestPlan(ref.id, { onError: (m) => { reason = m; }, ...(signal ? { signal } : {}) });
+          slots[i] = { plan, reason: plan ? "" : (reason || "Couldn't import this manifest."), settled: true };
+        }
+        await drainCommits();
+      }
+    };
+
+    await Promise.all(Array.from({ length: Math.min(4, total) }, () => worker()));
+    await drainCommits(); // flush any tail the reentrancy guard deferred (a no-op if the pool already drained)
+    return { createdSlugs, skipped, cancelled, fatal };
   }
   // CSV → notes bulk import (contributor-broadening ⑥ sub-cycle A, Archie-79c0): authors who live in
   // Excel/Sheets annotate THERE (object,x,y,w,h,comment[,tags][,reading]) and bulk-load through the
@@ -649,8 +900,8 @@ export function createIngestFlows(ctx: IngestContext) {
 
   return {
     imageDims, nextObjectId, appendObject, addObject, addMapObject, addObjectFromFile, addFiles,
-    newExhibitFromFolder, newExhibitFromManifest, addManifestToExhibit, importNotesCsv, importNotesWadm,
-    replaceProjectFrom, openZip,
+    newExhibitFromFolder, newExhibitFromManifest, addManifestToExhibit, fetchManifestPlan, fetchCollectionPreview, newExhibitsFromCollection,
+    importNotesCsv, importNotesWadm, replaceProjectFrom, openZip,
   };
 }
 export type IngestFlows = ReturnType<typeof createIngestFlows>;

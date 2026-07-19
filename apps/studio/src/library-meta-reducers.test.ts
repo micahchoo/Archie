@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { patchLibraryIn, patchExhibitIn, patchObjectIn, appendObjectIn, addExhibitIn, removeExhibitIn, removeObjectIn, removeObjectsIn } from "./library-meta-reducers.js";
+import { patchLibraryIn, patchExhibitIn, patchExhibitsIn, patchObjectIn, appendObjectIn, addExhibitIn, removeExhibitIn, removeExhibitsIn, removeObjectIn, removeObjectsIn } from "./library-meta-reducers.js";
 import type { LibraryMeta } from "./store.js";
 
 // The pure reducers behind the library-meta store — App.svelte's ~14 hand-rolled
@@ -107,5 +107,88 @@ describe("library-meta reducers", () => {
     const next = removeObjectsIn(bulkMeta(), "a", ["o2", "x1", "nope"]);
     expect(next.exhibits.find((e) => e.slug === "a")!.objects.map((o) => o.id)).toEqual(["o1", "o3", "o4"]);
     expect(next.exhibits.find((e) => e.slug === "b")!.objects.map((o) => o.id)).toEqual(["x1"]); // x1 lives in b, untouched
+  });
+
+  // A 3-exhibit fixture for the bulk-exhibit path (order-preservation needs a middle to survive).
+  const triMeta = (): LibraryMeta => ({
+    title: "Lib",
+    exhibits: [
+      { id: "e1", slug: "a", title: "A", objects: [] },
+      { id: "e2", slug: "b", title: "B", objects: [] },
+      { id: "e3", slug: "c", title: "C", objects: [] },
+    ],
+  });
+
+  it("removeExhibitsIn drops the whole set in one pass, survivors keep order + identity", () => {
+    const m = triMeta();
+    const next = removeExhibitsIn(m, new Set(["a", "c"])); // remove both ends, keep the middle
+    expect(next.exhibits.map((e) => e.slug)).toEqual(["b"]);
+    expect(next.exhibits[0]).toBe(m.exhibits[1]); // surviving exhibit ref preserved
+    expect(m.exhibits).toHaveLength(3); // input untouched
+  });
+
+  it("removeExhibitsIn accepts an array and preserves survivor order", () => {
+    const next = removeExhibitsIn(triMeta(), ["b"]);
+    expect(next.exhibits.map((e) => e.slug)).toEqual(["a", "c"]);
+  });
+
+  it("removeExhibitsIn removing every slug leaves a truly-empty library (no reseed)", () => {
+    expect(removeExhibitsIn(triMeta(), ["a", "b", "c"]).exhibits).toEqual([]);
+  });
+
+  it("removeExhibitsIn with an empty list returns the SAME meta ref (no spurious re-render/persist)", () => {
+    const m = triMeta();
+    expect(removeExhibitsIn(m, [])).toBe(m);
+    expect(removeExhibitsIn(m, new Set())).toBe(m);
+  });
+
+  it("removeExhibitsIn ignores slugs not present (idempotent removal)", () => {
+    const next = removeExhibitsIn(triMeta(), ["a", "nope"]);
+    expect(next.exhibits.map((e) => e.slug)).toEqual(["b", "c"]);
+  });
+
+  // patchExhibitsIn — the bulk rights-edit sibling of patchExhibitIn (Archie-d2cc).
+  it("patchExhibitsIn applies ONE patch to the whole set; unmatched exhibits keep identity", () => {
+    const m = triMeta();
+    const next = patchExhibitsIn(m, new Set(["a", "c"]), { rights: "http://cc/by" });
+    expect(next.exhibits.find((e) => e.slug === "a")!.rights).toBe("http://cc/by");
+    expect(next.exhibits.find((e) => e.slug === "c")!.rights).toBe("http://cc/by");
+    expect(next.exhibits.find((e) => e.slug === "b")!.rights).toBeUndefined(); // untouched
+    expect(next.exhibits[1]).toBe(m.exhibits[1]); // unmatched ref preserved
+    expect(m.exhibits[0]!.rights).toBeUndefined(); // input untouched
+  });
+
+  it("patchExhibitsIn accepts an array of slugs and ignores unknown ones", () => {
+    const next = patchExhibitsIn(triMeta(), ["a", "nope"], { requiredStatement: { label: "Attribution", value: "Held by X" } });
+    expect(next.exhibits.find((e) => e.slug === "a")!.requiredStatement).toEqual({ label: "Attribution", value: "Held by X" });
+    expect(next.exhibits.find((e) => e.slug === "b")!.requiredStatement).toBeUndefined();
+  });
+
+  it("patchExhibitsIn with a present-but-undefined key clears the field on matched exhibits (a bulk clear)", () => {
+    const m: LibraryMeta = { title: "L", exhibits: [{ id: "e1", slug: "a", title: "A", rights: "http://cc/by", objects: [] }] };
+    const next = patchExhibitsIn(m, ["a"], { rights: undefined });
+    // Clear DROPS the key (matches RightsEditor's `delete` + exactOptionalPropertyTypes) — never an
+    // `undefined`-valued key. Set fields elsewhere in the same patch still apply.
+    expect("rights" in next.exhibits[0]!).toBe(false);
+    expect(next.exhibits[0]!.rights).toBeUndefined();
+  });
+
+  // The type-level guard that a REQUIRED field cannot be cleared lives in `library-meta-reducers.type-test.ts`
+  // — it depends on exactOptionalPropertyTypes, which the `tsc` gate has ON but svelte-check has OFF, so the
+  // `@ts-expect-error` pins can only be evaluated by `tsc` (that file is excluded from svelte-check).
+
+  it("patchExhibitsIn clears one field while setting another in the same patch", () => {
+    const m: LibraryMeta = { title: "L", exhibits: [{ id: "e1", slug: "a", title: "A", rights: "http://cc/by", requiredStatement: { label: "Attribution", value: "old" }, objects: [] }] };
+    const next = patchExhibitsIn(m, ["a"], { rights: undefined, requiredStatement: { label: "Attribution", value: "new" } });
+    expect("rights" in next.exhibits[0]!).toBe(false); // cleared
+    expect(next.exhibits[0]!.requiredStatement).toEqual({ label: "Attribution", value: "new" }); // set
+    expect(next.exhibits[0]!.title).toBe("A"); // untouched field kept
+  });
+
+  it("patchExhibitsIn returns the SAME meta ref on an empty slug set OR an empty patch (no spurious write)", () => {
+    const m = triMeta();
+    expect(patchExhibitsIn(m, [], { rights: "x" })).toBe(m);
+    expect(patchExhibitsIn(m, new Set(), { rights: "x" })).toBe(m);
+    expect(patchExhibitsIn(m, ["a"], {})).toBe(m);
   });
 });

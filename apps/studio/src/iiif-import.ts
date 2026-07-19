@@ -36,9 +36,25 @@ export function labelToString(label: unknown, fallback: string): string {
   return fallback;
 }
 
-type Json = Record<string, unknown>;
-const asArray = (v: unknown): Json[] => (Array.isArray(v) ? (v as Json[]) : v ? [v as Json] : []);
-const idOf = (o: Json | undefined): string => String(o?.["id"] ?? o?.["@id"] ?? "");
+export type Json = Record<string, unknown>;
+// Exported so collection-import.ts (Archie-cc77) reuses the ONE id/array reader instead of
+// re-deriving P3-vs-P2 shape handling — a second copy would drift the way the open-seam copies did.
+export const asArray = (v: unknown): Json[] => (Array.isArray(v) ? (v as Json[]) : v ? [v as Json] : []);
+export const idOf = (o: Json | undefined): string => String(o?.["id"] ?? o?.["@id"] ?? "");
+
+/** Sniff a fetched IIIF document by its type field (P3 `type` / P2 `@type`) and shape. Shared by
+ *  manifestToExhibit (one-manifest contract) and collection traversal (Archie-cc77, PLAN §7).
+ *  "unknown" folds BOTH non-objects and object shapes we don't read — manifestToExhibit maps it to
+ *  the same "didn't return a IIIF manifest" refusal it has always thrown, so behavior is unchanged. */
+export function classifyIiifDocument(json: unknown): "manifest" | "collection" | "unknown" {
+  if (!json || typeof json !== "object") return "unknown";
+  const m = json as Json;
+  const type = String(m["type"] ?? m["@type"] ?? "");
+  if (/Collection/i.test(type)) return "collection";
+  const isP3 = /Manifest$/i.test(type) && Array.isArray(m["items"]);
+  const isP2 = /Manifest$/i.test(type) || Array.isArray((asArray(m["sequences"])[0] ?? {})["canvases"]);
+  return isP3 || isP2 ? "manifest" : "unknown";
+}
 
 /** Is this `service` entry a IIIF Image API service? Bodies on real institutional manifests also
  *  carry auth/search services — preferring one of those would import a silently-broken source. */
@@ -83,18 +99,16 @@ export class ManifestImportError extends Error {}
 /** Plan an exhibit from a fetched IIIF manifest (Presentation 3 or 2). Throws ManifestImportError
  *  with a user-facing message for collections and shapes we don't read. */
 export function manifestToExhibit(json: unknown, url: string): ManifestPlan {
-  if (!json || typeof json !== "object") throw new ManifestImportError("That URL didn't return a IIIF manifest.");
-  const m = json as Json;
-  const type = String(m["type"] ?? m["@type"] ?? "");
-
-  if (/Collection/i.test(type)) {
+  const kind = classifyIiifDocument(json);
+  if (kind === "collection") {
     throw new ManifestImportError(
       "This is a IIIF Collection (a list of manifests). Paste the URL of a single manifest instead.",
     );
   }
+  if (kind !== "manifest") throw new ManifestImportError("That URL didn't return a IIIF manifest.");
+  const m = json as Json;
+  const type = String(m["type"] ?? m["@type"] ?? "");
   const isP3 = /Manifest$/i.test(type) && Array.isArray(m["items"]);
-  const isP2 = /Manifest$/i.test(type) || Array.isArray((asArray(m["sequences"])[0] ?? {})["canvases"]);
-  if (!isP3 && !isP2) throw new ManifestImportError("That URL didn't return a IIIF manifest.");
 
   const canvases: Json[] = isP3 ? asArray(m["items"]) : asArray(asArray(m["sequences"])[0]?.["canvases"]);
   const objects: PlannedObject[] = [];

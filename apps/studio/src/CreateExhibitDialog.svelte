@@ -23,11 +23,17 @@
   import { tick } from "svelte";
   import { lngLatToPixel, pixelToLngLat, type XyzTileSource } from "@render/core";
   import {
-    type CreateSurfaceScope, type IiifStatus,
+    type CreateSurfaceScope, type IiifStatus, type ManifestPreview, type PickerRow,
     surfaceTitle, createActionLabel, offersStartEmpty, offersMap, offersLink,
     pickedFromFiles, emptyPathValid, folderPathValid, iiifPathValid, looksLikeUrl, previewManifest,
     folderTitleFieldApplies, iiifTitleFieldApplies, prefillTitle, linkPathValid,
+    routeCollectionPreview, checkedCount, selectedRefs, setAllChecked,
+    hydrateRowLabels, skipNote, skipDetail,
+    summarizeImport, type ImportSummary,
   } from "./create-exhibit-dialog.js";
+  import type { CollectionPreview, CollectionImportOutcome } from "./ingest-flows.js";
+  import type { DiscoveredManifest, TraverseSkip } from "./collection-import.js";
+  import type { ManifestPlan } from "./iiif-import.js";
   import { summarizeFolderFiles, folderGroupCount, flattenedRelativePaths, type FolderSummary } from "./folder-import.js";
   import { readDroppedFolderFiles } from "./folder-drop.js";
   // Scrimmed surface via the shared helper (Archie-5968): the hand-rolled Esc handler, Tab-trap, and
@@ -43,6 +49,10 @@
     oncreate,
     oncreatefromfolder,
     oncreatefrommanifest,
+    previewcollection,
+    hydratemanifest,
+    oncreatefromcollection,
+    onundoimport,
     onaddmap,
     onaddlink,
     onclose,
@@ -65,6 +75,29 @@
      *  present only in new-exhibit scope (see iiifTitleFieldApplies); undefined in add-to-exhibit
      *  scope, where callers fall back to the manifest's own label. */
     oncreatefrommanifest: (url: string, title?: string) => void;
+    /** Archie-a9e2 collection ingest (PLAN §3–5), all three OPTIONAL so the dialog degrades to today's
+     *  single-manifest behaviour when a caller (or a not-yet-wired scope) omits them. Collection mode is
+     *  active ONLY in new-exhibit scope AND when both previewcollection + oncreatefromcollection are
+     *  present — App wiring is ticket Archie-cbf6's job. `previewcollection` is ingest-flows'
+     *  fetchCollectionPreview (the ONE fetch head); `hydratemanifest` is its fetchManifestPlan, used by the
+     *  background label-hydration pool (absent → rows keep URL-segment fallbacks, no hydration). */
+    previewcollection?: (url: string, signal?: AbortSignal) => Promise<CollectionPreview>;
+    hydratemanifest?: (url: string, opts: { signal?: AbortSignal; onError?: (msg: string) => void }) => Promise<ManifestPlan | null>;
+    /** Run the import for the CHECKED refs in COLLECTION ORDER (Archie-cbf6). Gets the hydration `planCache`
+     *  (keyed by ref.id) so it never re-fetches a plan pulled at preview time, plus `hooks` — a `signal` the
+     *  dialog's Cancel/Esc aborts, and an `onProgress(done,total)` the dialog renders live. Resolves to the
+     *  batch outcome (created slugs + skips + cancelled/fatal) the dialog turns into its summary + Undo. The
+     *  batch itself runs in the flow layer (App → newExhibitsFromCollection); the dialog owns only the
+     *  progress/summary UI. The picker's Create button is disabled when this prop is absent. */
+    oncreatefromcollection?: (
+      selected: DiscoveredManifest[],
+      planCache: Map<string, ManifestPlan>,
+      hooks: { signal: AbortSignal; onProgress: (done: number, total: number) => void },
+    ) => Promise<CollectionImportOutcome>;
+    /** Undo the just-finished import batch (Archie-cbf6, PLAN §8): remove exactly the created slugs in ONE
+     *  act (App → lib.removeExhibits). Fired from the summary state's "Undo import" button, which shows only
+     *  when the batch committed ≥1 exhibit. Optional — wired alongside oncreatefromcollection. */
+    onundoimport?: (slugs: string[]) => void;
     /** The Map path's submit (Archie-56cf — absorbed from the retired AddMapModal). Only fires in
      *  add-to-exhibit scope (offersMap); wired to ingest-flows' addMapObject. */
     onaddmap?: (m: { label: string; tileSource: XyzTileSource }) => void;
@@ -107,6 +140,48 @@
   let iiifAbort: AbortController | undefined;
   // Archie-46bf: whether the IIIF path's editable title field applies right now — new-exhibit scope only.
   const iiifTitleApplies = $derived(iiifTitleFieldApplies(scope));
+
+  // ── Collection ingest (Archie-a9e2, PLAN §3–5) — the IIIF path's second face in new-exhibit scope. A
+  // pasted URL that resolves to a IIIF Collection shows a checkbox picker instead of the single-manifest
+  // preview. `iiifCollection` non-null IS "the picker is showing"; over-cap/error reuse the existing
+  // invalid-message state (no picker). planCache accumulates background-hydrated plans, handed to the
+  // confirm so import never re-fetches. All of it lives under the shared iiifToken/iiifAbort cancel
+  // machinery below (a superseding keystroke / close aborts the preview AND the hydration pool).
+  let iiifCollection = $state<{ rootTitle: string; rows: PickerRow[]; skips: TraverseSkip[] } | null>(null);
+  let hydrationCappedOut = $state(0);
+  let planCache = new Map<string, ManifestPlan>();
+  // Collection mode is offered ONLY in new-exhibit scope with both wiring props present (App: Archie-cbf6).
+  // Absent → the IIIF path stays exactly the single-manifest preview it is today (add-to-exhibit always).
+  const collectionModeAvailable = $derived(scope.kind === "new-exhibit" && !!previewcollection && !!oncreatefromcollection);
+  const checkedRowCount = $derived(iiifCollection ? checkedCount(iiifCollection.rows) : 0);
+  const skipDetailText = $derived(iiifCollection ? skipDetail(iiifCollection.skips) : "");
+  // The quiet, never-modal note (PLAN §2): traversal skips plus any labels the hydration cap left on a URL
+  // fallback (PLAN §5). Null when there's nothing to say.
+  const collectionNote = $derived.by(() => {
+    if (!iiifCollection) return null;
+    const parts: string[] = [];
+    const s = skipNote(iiifCollection.skips);
+    if (s) parts.push(s);
+    if (hydrationCappedOut > 0) parts.push(`${hydrationCappedOut} label${hydrationCappedOut === 1 ? "" : "s"} not loaded`);
+    return parts.length > 0 ? parts.join(" · ") : null;
+  });
+
+  // ── Import execution (Archie-cbf6, PLAN §6/§8). Once the picker's Create fires, the dialog leaves the
+  // picker and drives the batch through three phases IN PLACE (no new surface — the dialog is already an
+  // open, focus-trapped, action-capable scrimmed surface, so progress + summary live here rather than in a
+  // toast the app has no action-capable idiom for; see the summary-vs-toast note on submitCollection):
+  //   • "running" — "Importing 34 of 520…" + Cancel, live via onProgress. Esc/scrim/× route to Cancel, NOT
+  //                 close (requestDismiss), so dismissing never silently orphans a running batch.
+  //   • "done"    — the summary (summarizeImport) + "Undo import" (when ≥1 committed) + Done.
+  // The batch runs in the flow layer (oncreatefromcollection → App → newExhibitsFromCollection); this state
+  // is purely the UI. `importTotal` is captured at submit because the outcome doesn't carry it (a cancel
+  // abandons un-fetched slots without recording them, so "X of N" needs N from here).
+  type ImportPhase =
+    | { kind: "idle" }
+    | { kind: "running"; done: number; total: number }
+    | { kind: "done"; summary: ImportSummary; createdSlugs: string[] };
+  let importPhase = $state<ImportPhase>({ kind: "idle" });
+  let importAbort: AbortController | undefined;
 
   // "From a link" path (Archie-32e8 — restores the pre-Archie-56cf URL-add UI onto ingest-flows.ts's
   // addObject). No fetch/sniff preview here (that's what keeps this path cheap) — addObject itself does
@@ -295,10 +370,18 @@
     iiifStatus = "idle";
     iiifMessage = "";
     iiifPreview = null;
+    iiifCollection = null;
+    hydrationCappedOut = 0;
+    planCache = new Map();
     iiifToken++;
     clearTimeout(iiifTimer);
     iiifAbort?.abort();
     iiifAbort = undefined;
+    // Import phase (Archie-cbf6) — abort any batch left running from a previous open (belt-and-braces; a
+    // running batch is normally cancelled via requestDismiss before close), then clear to idle.
+    importAbort?.abort();
+    importAbort = undefined;
+    importPhase = { kind: "idle" };
     // Link path
     linkUrl = "";
     linkLabel = "";
@@ -347,8 +430,8 @@
     }
   });
 
-  // Esc/scrim-click both route here through the shared helper (onClose: close): the WHOLE dialog closes
-  // in one action (the `‹ Back` link is the return-to-chooser affordance, not an Esc rung). No close
+  // Esc/scrim-click both route here through the shared helper (onClose: requestDismiss): the WHOLE dialog
+  // closes in one action (the `‹ Back` link is the return-to-chooser affordance, not an Esc rung). No close
   // confirmation — autosave makes it lossless. A mid-flight IIIF check cancels cleanly (discard + abort);
   // focus-return to the opener is the helper's job now.
   function close() {
@@ -356,6 +439,14 @@
     iiifToken++; // discards any in-flight IIIF check's result — the "cancels cleanly" contract
     iiifAbort?.abort(); // and actually stops the network request, not just its result
     onclose();
+  }
+  // The dismissal fork (Archie-cbf6, §Surfaces dismissal contract). Esc / scrim-click / × all route here.
+  // While a batch is RUNNING, dismissing must NOT close-and-orphan it — it aborts the batch instead (same
+  // as the Cancel button); the batch then resolves cancelled and the summary shows, from which a second
+  // dismiss closes normally. In every other phase (picker, or the finished summary), dismiss closes.
+  function requestDismiss() {
+    if (importPhase.kind === "running") { cancelImport(); return; }
+    close();
   }
 
   function selectPath(p: PathKind) {
@@ -404,7 +495,11 @@
   function onIiifInput(v: string) {
     iiifUrl = v;
     clearTimeout(iiifTimer);
-    iiifAbort?.abort(); // a newer keystroke supersedes any check already in flight
+    iiifAbort?.abort(); // a newer keystroke supersedes any check already in flight (preview AND hydration)
+    // Any keystroke invalidates a shown picker and its hydration cache — a new URL is a fresh preview.
+    iiifCollection = null;
+    hydrationCappedOut = 0;
+    planCache = new Map();
     const trimmed = v.trim();
     if (!trimmed) {
       iiifStatus = "idle";
@@ -426,11 +521,10 @@
     const myToken = ++iiifToken;
     iiifTimer = setTimeout(() => void runIiifCheck(trimmed, myToken), 500);
   }
-  async function runIiifCheck(url: string, myToken: number) {
-    const controller = new AbortController();
-    iiifAbort = controller;
-    const result = await previewManifest(url, controller.signal);
-    if (myToken !== iiifToken) return; // a newer keystroke (or a close) superseded this check
+  // Apply a single-manifest previewManifest result to the manifest-preview state (the pre-Archie-a9e2
+  // behaviour) — reused by both the legacy path and the collection route's `manifest` fall-through.
+  function applyManifestResult(result: ManifestPreview) {
+    iiifCollection = null;
     if (result.status === "valid") {
       iiifStatus = "valid";
       iiifPreview = { title: result.title, canvases: result.canvases };
@@ -441,6 +535,88 @@
       iiifMessage = result.message;
       iiifPreview = null;
     }
+  }
+  async function runIiifCheck(url: string, myToken: number) {
+    const controller = new AbortController();
+    iiifAbort = controller;
+    // New-exhibit scope with collection wiring: route through the ONE fetch head (fetchCollectionPreview,
+    // Archie-656a). A `manifest` result now CARRIES the parsed plan (Archie-cbf6 / D2), so its title+count
+    // render straight from that plan — no second fetch of the same URL via previewManifest.
+    if (collectionModeAvailable && previewcollection) {
+      const preview = await previewcollection(url, controller.signal);
+      if (myToken !== iiifToken) return; // a newer keystroke (or a close) superseded this check
+      const route = routeCollectionPreview(preview);
+      if (route.kind === "aborted") return; // discard silently — no state change (PLAN §5)
+      if (route.kind === "error" || route.kind === "over-cap") {
+        applyManifestResult({ status: "invalid", message: route.message });
+        return;
+      }
+      if (route.kind === "manifest") {
+        // D2: consume the carried plan instead of re-fetching (was: fall through to previewManifest, a
+        // duplicate fetch of a URL fetchCollectionPreview already fetched AND parsed).
+        applyManifestResult({ status: "valid", title: route.plan.title, canvases: route.plan.objects.length });
+        return;
+      }
+      if (route.kind === "collection") {
+        iiifStatus = "idle";
+        iiifMessage = "";
+        iiifPreview = null;
+        iiifCollection = { rootTitle: route.rootTitle, rows: route.rows, skips: route.skips };
+        hydrationCappedOut = 0;
+        // Background label hydration (PLAN §5) — fire-and-forget, abort-aware (shares controller.signal),
+        // alerts suppressed inside the pool. Mutate the PROXIED rows (via iiifCollection.rows) so in-place
+        // label updates stay reactive.
+        if (hydratemanifest && iiifCollection) {
+          const rows = iiifCollection.rows;
+          void hydrateRowLabels(rows, planCache, hydratemanifest, { signal: controller.signal }).then((s) => {
+            if (myToken === iiifToken) hydrationCappedOut = s.cappedOut;
+          });
+        }
+        return;
+      }
+    }
+    // Single-manifest preview for add-to-exhibit scope (and any new-exhibit paste without collection
+    // wiring): the ONLY path that still fetches via previewManifest. previewManifest itself is untouched
+    // (Archie-cbf6 D2) — the collection-mode manifest branch above consumes the carried plan instead.
+    const result = await previewManifest(url, controller.signal);
+    if (myToken !== iiifToken) return; // a newer keystroke (or a close) superseded this check
+    applyManifestResult(result);
+  }
+  // Collection picker confirm → run the import (Archie-cbf6). Leave the picker for the "running" phase,
+  // drive progress live via onProgress, then land on the summary. The dialog stays OPEN across the batch;
+  // the summary state (not a toast) carries the outcome + Undo, because the app has no action-capable toast
+  // idiom (ctx.alert is a blocking window.alert that can't hold an "Undo" button) and the dialog is already
+  // the natural, focus-trapped, action-capable home for it — no new floating chrome invented (§Surfaces).
+  async function submitCollection() {
+    if (!iiifCollection || !oncreatefromcollection) return;
+    const selected = selectedRefs(iiifCollection.rows);
+    if (selected.length === 0) return;
+    const total = selected.length;
+    importAbort = new AbortController();
+    importPhase = { kind: "running", done: 0, total };
+    const outcome: CollectionImportOutcome = await oncreatefromcollection(selected, planCache, {
+      signal: importAbort.signal,
+      onProgress: (done, t) => { if (importPhase.kind === "running") importPhase = { kind: "running", done, total: t }; },
+    });
+    importPhase = { kind: "done", summary: summarizeImport(outcome, total), createdSlugs: outcome.createdSlugs };
+  }
+  // Cancel a running import — abort the batch's signal (it checks between jobs/commits, keeps the committed
+  // prefix, and resolves cancelled). submitCollection's await then flips to the summary. Also the target of
+  // Esc/scrim/× while running (requestDismiss), so dismissing a running batch cancels rather than orphans it.
+  function cancelImport() {
+    importAbort?.abort();
+  }
+  // "Undo import" (PLAN §8): remove exactly the batch's created slugs in ONE act (App → lib.removeExhibits),
+  // then close. No confirm — this reverses the user's own just-finished action on freshly-minted exhibits
+  // they're looking at (matches undo semantics; the two-step confirm guards deleting PRE-EXISTING work, not
+  // undoing a fresh import). Shown only when the batch committed ≥1 exhibit.
+  function undoImport() {
+    if (importPhase.kind !== "done") return;
+    onundoimport?.(importPhase.createdSlugs);
+    close();
+  }
+  function selectAllRows(checked: boolean) {
+    if (iiifCollection) setAllChecked(iiifCollection.rows, checked);
   }
 
   function pickFolder() {
@@ -474,8 +650,42 @@
        handler since a click inside it never bubbles to a non-ancestor sibling. -->
   <div class="scrim" role="presentation" onclick={() => modality.dismiss()}></div>
   <div class="dialog" bind:this={dialogEl} role="dialog" aria-modal="true" aria-label={surfaceTitle(scope)} tabindex="-1"
-    use:scrimmed={{ onClose: close }} onkeydown={trapFocus}>
-    {#if activePath === null}
+    use:scrimmed={{ onClose: requestDismiss }} onkeydown={trapFocus}>
+    {#if importPhase.kind === "running"}
+      <!-- Import in flight (Archie-cbf6, PLAN §6). The dialog is committed to the batch: no path chooser,
+           just live progress + Cancel. Esc/scrim/× route to Cancel (requestDismiss), never a silent close. -->
+      <div class="chooser-head">
+        <h2>Importing…</h2>
+      </div>
+      <div class="import-progress" role="status">
+        <span class="ip-spinner" aria-hidden="true"></span>
+        <span class="ip-count">Importing {importPhase.done} of {importPhase.total}…</span>
+      </div>
+      <div class="path-actions">
+        <button type="button" class="btn btn-ghost" onclick={cancelImport}>Cancel</button>
+      </div>
+    {:else if importPhase.kind === "done"}
+      <!-- Import summary (Archie-cbf6, PLAN §6/§8): outcome copy + per-failure lines (truncated past 10) +
+           "Undo import" (removes exactly the created slugs) when the batch committed anything. -->
+      {@const s = importPhase.summary}
+      <div class="chooser-head">
+        <h2>{s.tone === "success" ? "Import complete" : s.tone === "cancelled" ? "Import cancelled" : s.tone === "fatal" ? "Import stopped" : "Import finished"}</h2>
+        <button type="button" class="close-x" onclick={close} aria-label="Close">×</button>
+      </div>
+      <p class="import-summary" class:is-error={s.tone === "fatal"}>{s.headline}</p>
+      {#if s.failures.length > 0}
+        <ul class="import-failures">
+          {#each s.failures as line}<li>{line}</li>{/each}
+          {#if s.overflow > 0}<li class="if-more">…and {s.overflow} more</li>{/if}
+        </ul>
+      {/if}
+      <div class="path-actions">
+        {#if s.createdCount > 0 && onundoimport}
+          <button type="button" class="btn btn-ghost" onclick={undoImport}>Undo import</button>
+        {/if}
+        <button type="button" class="btn btn-primary" onclick={close}>Done</button>
+      </div>
+    {:else if activePath === null}
       <div class="chooser-head">
         <h2>{surfaceTitle(scope)}</h2>
         <button type="button" class="close-x" onclick={close} aria-label="Close">×</button>
@@ -624,19 +834,65 @@
             <div class="iiif-status invalid" role="alert">{iiifMessage}</div>
           {/if}
         </div>
-        {#if iiifTitleApplies && iiifStatus === "valid"}
-          <!-- Archie-46bf: restores the approved prototype's editable title (prototypes/create-surface/app.js
-               pathIiifHtml), prefilled from the validated manifest's label once a check succeeds. -->
-          <div class="field">
-            <label class="f-label" for="titleIiif">Exhibit title</label>
-            <input id="titleIiif" type="text" bind:value={title} placeholder="e.g. Herbal quires" autocomplete="off" />
-            <span class="f-hint">We used the manifest's label — change it if you like.</span>
+        {#if iiifCollection}
+          <!-- Collection picker (Archie-a9e2, PLAN §3): the pasted URL is a IIIF Collection — pick which of
+               its manifests become exhibits. No editable title field here (PLAN §4 — each exhibit takes its
+               own manifest label). The Create button emits the checked refs upward; the actual import is
+               Archie-cbf6 wires the actual import (progress/summary/undo). -->
+          <div class="collection-head">
+            <span class="ch-title">{iiifCollection.rootTitle}</span>
+            <span class="ch-count">{checkedRowCount} exhibit{checkedRowCount === 1 ? "" : "s"} will be created</span>
+          </div>
+          {#if collectionNote}
+            {#if skipDetailText}
+              <!-- Skip-reason detail is a keyboard/SR-reachable disclosure, not a hover-only title
+                   (Archie-cbf6 D1 / rev-picker): the per-reason breakdown must be readable without a mouse. -->
+              <details class="collection-note">
+                <summary>{collectionNote}</summary>
+                <p class="cn-detail">{skipDetailText}</p>
+              </details>
+            {:else}
+              <p class="collection-note">{collectionNote}</p>
+            {/if}
+          {/if}
+          <div class="picker-controls">
+            <span class="pc-count">{checkedRowCount} of {iiifCollection.rows.length} selected</span>
+            <button type="button" class="pc-link" onclick={() => selectAllRows(true)}>Select all</button>
+            <span class="pc-sep" aria-hidden="true">·</span>
+            <button type="button" class="pc-link" onclick={() => selectAllRows(false)}>Select none</button>
+          </div>
+          <ul class="picker-list" aria-label="Manifests to import as exhibits">
+            {#each iiifCollection.rows as row (row.ref.id)}
+              <li>
+                <label class="picker-row">
+                  <input type="checkbox" bind:checked={row.checked} />
+                  <span class="pr-text">
+                    <span class="pr-label">{row.label}</span>
+                    {#if row.context}<span class="pr-context">{row.context}</span>{/if}
+                  </span>
+                </label>
+              </li>
+            {/each}
+          </ul>
+          <div class="path-actions">
+            <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
+            <button type="button" class="btn btn-primary" disabled={checkedRowCount === 0 || !oncreatefromcollection} onclick={submitCollection}>Create {checkedRowCount} exhibit{checkedRowCount === 1 ? "" : "s"}</button>
+          </div>
+        {:else}
+          {#if iiifTitleApplies && iiifStatus === "valid"}
+            <!-- Archie-46bf: restores the approved prototype's editable title (prototypes/create-surface/app.js
+                 pathIiifHtml), prefilled from the validated manifest's label once a check succeeds. -->
+            <div class="field">
+              <label class="f-label" for="titleIiif">Exhibit title</label>
+              <input id="titleIiif" type="text" bind:value={title} placeholder="e.g. Herbal quires" autocomplete="off" />
+              <span class="f-hint">We used the manifest's label — change it if you like.</span>
+            </div>
+          {/if}
+          <div class="path-actions">
+            <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
+            <button type="button" class="btn btn-primary" disabled={!iiifPathValid(iiifStatus, iiifTitleApplies, title)} onclick={submitIiif}>{createActionLabel(scope)}</button>
           </div>
         {/if}
-        <div class="path-actions">
-          <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
-          <button type="button" class="btn btn-primary" disabled={!iiifPathValid(iiifStatus, iiifTitleApplies, title)} onclick={submitIiif}>{createActionLabel(scope)}</button>
-        </div>
       {:else if activePath === "link"}
         <!-- "From a link" (Archie-32e8, restoring the pre-Archie-56cf URL-add UI onto ingest-flows.ts's
              addObject) — a URL field + an optional label, no preview: addObject itself sniffs media type
@@ -1057,6 +1313,165 @@
     font-family: var(--font-mono);
     font-size: 0.75rem;
     color: var(--ink-canvas-secondary);
+  }
+
+  /* ── Collection picker (Archie-a9e2) — the IIIF path's second face. */
+  .collection-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+  }
+  .collection-head .ch-title {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--ink-canvas-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .collection-head .ch-count {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-canvas-secondary);
+  }
+  .collection-note {
+    margin: 0 0 var(--space-2);
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    color: var(--ink-canvas-secondary);
+  }
+  /* Skip-detail disclosure (Archie-cbf6 D1): the summary is the quiet note, the detail expands on click/Enter. */
+  details.collection-note > summary {
+    cursor: pointer;
+    list-style-position: inside;
+  }
+  details.collection-note .cn-detail {
+    margin: var(--space-1) 0 0 var(--space-3);
+    color: var(--ink-canvas-muted);
+  }
+  .picker-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+  }
+  .picker-controls .pc-count {
+    color: var(--ink-canvas-muted);
+    margin-right: auto;
+  }
+  .picker-controls .pc-link {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--accent-2);
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    padding: 0;
+  }
+  .picker-controls .pc-link:hover {
+    text-decoration: underline;
+  }
+  .picker-controls .pc-sep {
+    color: var(--ink-canvas-muted);
+  }
+  .picker-list {
+    list-style: none;
+    margin: 0 0 var(--space-4);
+    padding: var(--space-1);
+    max-height: 18rem;
+    overflow-y: auto;
+    border: 1px solid var(--border-canvas);
+    border-radius: var(--radius-md);
+    background: var(--surface-canvas-overlay);
+  }
+  .picker-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+  }
+  .picker-row:hover {
+    background: var(--surface-canvas-raised);
+  }
+  .picker-row input[type="checkbox"] {
+    margin-top: 2px;
+    flex: none;
+  }
+  .picker-row .pr-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+  .picker-row .pr-label {
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    color: var(--ink-canvas-primary);
+    word-break: break-word;
+  }
+  .picker-row .pr-context {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--ink-canvas-muted);
+  }
+
+  /* ── Import progress + summary (Archie-cbf6). */
+  .import-progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-4);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--ink-canvas-primary);
+  }
+  .ip-spinner {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    border-radius: 50%;
+    border: 2px solid var(--border-canvas-emphasis);
+    border-top-color: var(--accent);
+    animation: spin 0.7s linear infinite;
+  }
+  .import-summary {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--ink-canvas-primary);
+  }
+  .import-summary.is-error {
+    color: var(--semantic-error);
+  }
+  .import-failures {
+    list-style: none;
+    margin: 0 0 var(--space-4);
+    padding: var(--space-2) var(--space-3);
+    max-height: 16rem;
+    overflow-y: auto;
+    border: 1px solid var(--border-canvas);
+    border-radius: var(--radius-md);
+    background: var(--surface-canvas-overlay);
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    color: var(--ink-canvas-secondary);
+  }
+  .import-failures li {
+    padding: 2px 0;
+    word-break: break-word;
+  }
+  .import-failures .if-more {
+    color: var(--ink-canvas-muted);
+    font-style: italic;
   }
 
   .path-actions {

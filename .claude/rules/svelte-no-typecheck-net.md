@@ -18,8 +18,10 @@ by `astro check`.
 - After editing any `.svelte` file, run the app's check locally (`svelte-check` for studio,
   `astro check` for viewer) — don't rely on `tsc`/`vite build`, which still can't see `.svelte`
   scripts.
-- Treat check errors on changed lines as blocking; studio's 11 standing a11y WARNINGS are known
-  noise — don't add to them.
+- Treat check errors on changed lines as blocking. The studio baseline is **0 errors / 0
+  warnings** (as of 2026-07-19: the once-standing 11 a11y warnings were cleared by the a11y
+  interaction-pattern merges `9d33b29`/`32ed159` (Archie-f260) and the glyph-label merges
+  `c063f36`/`ca1eda8`) — keep it at zero; a new warning is a regression, not noise.
 - The old manual discipline (grep every renamed identifier's definition AND call sites, both
   sides of cross-component prop renames) remains the fastest mid-edit pre-check, but the gate is
   what guarantees it.
