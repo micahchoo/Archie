@@ -15,6 +15,79 @@ async function expectFailure(op: () => unknown | Promise<unknown>): Promise<void
   expect(failed).toBe(true);
 }
 
+/** Seed content for the read-only conformance suite: "/"-joined tree-relative path → body. */
+export type SeedFiles = Record<string, string | Uint8Array>;
+
+/** Seed a WRITABLE backend with a fixture tree — lets the full-featured backends run the same
+ *  read subset a read-only backend runs, proving the subset is the shared contract's read half
+ *  rather than something HTTP-shaped. */
+export async function seedWritableFs(fs: Filesystem, files: SeedFiles): Promise<Filesystem> {
+  for (const [path, body] of Object.entries(files)) {
+    const parts = path.split("/");
+    let dir = await fs.root();
+    for (const p of parts.slice(0, -1)) dir = await dir.getDirectory(p, { create: true });
+    const w = await (await dir.getFile(parts[parts.length - 1]!, { create: true })).writable();
+    await w.write(typeof body === "string" ? body : body.slice().buffer);
+    await w.close();
+  }
+  return fs;
+}
+
+async function readAt(fs: Filesystem, path: string): Promise<ArrayBuffer> {
+  const parts = path.split("/");
+  let dir = await fs.root();
+  for (const p of parts.slice(0, -1)) dir = await dir.getDirectory(p);
+  return (await dir.getFile(parts[parts.length - 1]!)).readable();
+}
+
+/**
+ * Register the READ-ONLY applicable subset of the conformance suite for a backend factory that
+ * opens over pre-existing content (`HttpFilesystem` can't be seeded by writes — a published tree
+ * already exists on the host). Mirrors the read half of `runConformance` case-for-case; the
+ * write half doesn't apply to a read-only backend (mutations throw — pinned in the backend's own
+ * targeted tests, e.g. http.test.ts).
+ *
+ * One deliberate loosening: "missing" is asserted on the whole getDirectory→getFile→readable
+ * chain, not on `getFile` alone — a lazy-existence backend (HTTP has no cheap probe) surfaces
+ * absence at read time, an eager one at handle time; either way absence is OBSERVABLE, never an
+ * empty read.
+ */
+export function runReadConformance(
+  name: string,
+  makeFs: (files: SeedFiles) => Filesystem | Promise<Filesystem>,
+): void {
+  describe(`Filesystem read conformance: ${name}`, () => {
+    it("reads a string-seeded file to a readable ArrayBuffer", async () => {
+      const fs = await makeFs({ "a.txt": "hello world" });
+      expect(new TextDecoder().decode(await readAt(fs, "a.txt"))).toBe("hello world");
+    });
+
+    it("reads seeded bytes byte-for-byte", async () => {
+      const fs = await makeFs({ "b.bin": new Uint8Array([1, 2, 3, 250]) });
+      expect(Array.from(new Uint8Array(await readAt(fs, "b.bin")))).toEqual([1, 2, 3, 250]);
+    });
+
+    it("getFile() returns a File mirroring name and size", async () => {
+      const fs = await makeFs({ "named.txt": "data" });
+      const f = await (await (await fs.root()).getFile("named.txt")).getFile();
+      expect(f).toBeInstanceOf(File);
+      expect(f.name).toBe("named.txt");
+      expect(f.size).toBe(4);
+    });
+
+    it("reads a file nested under directories", async () => {
+      const fs = await makeFs({ "x/y/z.json": '{"ok":true}' });
+      expect(new TextDecoder().decode(await readAt(fs, "x/y/z.json"))).toBe('{"ok":true}');
+    });
+
+    it("a missing file is observably absent (the read chain fails; it never reads as empty)", async () => {
+      const fs = await makeFs({ "present.txt": "here" });
+      await expectFailure(() => readAt(fs, "missing.txt"));
+      await expectFailure(() => readAt(fs, "no-dir/missing.txt"));
+    });
+  });
+}
+
 /** Register the conformance describe-block for a backend factory. */
 export function runConformance(name: string, makeFs: () => Filesystem): void {
   describe(`Filesystem conformance: ${name}`, () => {

@@ -29,6 +29,10 @@ import {
   looksLikeZip,
   SRC_MAX_BYTES,
   FailedReadError,
+  // The tree path's byte source: the READ-ONLY HTTP backend (ticket C1, the fourth backend) behind
+  // the shared fs-walking JsonSource — replaces this file's hand-rolled fetch/classify loop.
+  HttpFilesystem,
+  fsJsonSource,
   type JsonSource,
   type Filesystem,
   type ExhibitsJson,
@@ -151,46 +155,40 @@ async function openSrcAsZipIfBytesAreZip(
 }
 
 /** An HTTP `JsonSource` over a published-tree base — GETs tree-relative paths (`exhibits.json`,
- *  `${slug}/manifest.json`) under `base`. Donor: apps/viewer published.ts httpSource, but self-contained
- *  + instance-scoped (the `fetchImpl` + `base` are captured here, NO module global). `base` is normalized
- *  to a trailing slash so `${base}${path}` joins cleanly. */
+ *  `${slug}/manifest.json`) under `base`. Now composed over `@render/core`'s read-only
+ *  `HttpFilesystem` (the fourth backend) + the shared `fsJsonSource`, instead of a hand-rolled
+ *  fetch loop — which buys name containment on every path segment (a hostile slug can't escape
+ *  `base`) and the canonical `SRC_MAX_BYTES` response cap for free. Instance-scoped as before
+ *  (`fetchImpl` + `base` captured here, NO module global; base-slash normalization lives in the
+ *  backend).
+ *
+ *  Error contract (preserved from the hand-rolled version):
+ *   • `get`: any HTTP status (404/5xx), or a torn-200 body → console diagnosis + the friendly
+ *     open error; a NETWORK fault (offline/DNS/CORS — `fetch` itself failing) propagates raw,
+ *     exactly as before (only `res.ok`/`res.json()` were ever wrapped). One narrowing: a fault
+ *     mid-BODY now also propagates raw (it previously fell into `json()`'s friendly wrap) —
+ *     both are transport faults, now handled uniformly.
+ *   • `getOptional`: Issue 23 absent-vs-failed verbatim — 404 → null (genuinely absent, e.g. a
+ *     base-only exhibit's readings.json); a 5xx/403, a fetch throw, or a torn-200 body →
+ *     `FailedReadError` (a failed read is NOT "no data"); readExhibitTree catches it to flag a
+ *     partial exhibit instead of silently rendering it as complete. The classification now lives
+ *     in `HttpFilesystem`/`fsJsonSource` rather than here. */
 function httpJsonSource(base: string, fetchImpl: typeof fetch): JsonSource {
-  const root = base.endsWith("/") ? base : `${base}/`;
-  const get = async <T>(path: string): Promise<T> => {
-    const res = await fetchImpl(`${root}${path}`);
-    if (!res.ok) {
-      console.error(`archie-viewer: failed to fetch ${path} — HTTP ${res.status}`);
-      throw new Error("Couldn't open the library. The link may be broken or the file unavailable.");
-    }
-    try {
-      return (await res.json()) as T;
-    } catch (e) {
-      // A 200 with an unparsable body (an HTML error / SPA-fallback page) is a corrupt deployment, not a
-      // network miss — name it rather than surface a bare "Unexpected token <".
-      console.error(`archie-viewer: ${path} returned 200 but wasn't valid JSON —`, e);
-      throw new Error("Couldn't open the library. The link may be broken or the file unavailable.");
-    }
-  };
+  const src = fsJsonSource(new HttpFilesystem(base, { fetch: fetchImpl }));
   return {
-    get,
-    getOptional: async <T>(path: string): Promise<T | null> => {
-      // Issue 23 absent-vs-failed: 404 → null (genuinely absent — a base-only exhibit); a 5xx/403, a fetch
-      // throw, or a torn-200 body → throw `FailedReadError` (a failed read is NOT "no data"). readExhibitTree
-      // catches this to flag a partial exhibit instead of silently rendering it as complete.
-      let res: Response;
+    get: async <T>(path: string): Promise<T> => {
       try {
-        res = await fetchImpl(`${root}${path}`);
+        return await src.get<T>(path);
       } catch (e) {
-        throw new FailedReadError(path, e);
-      }
-      if (res.status === 404) return null;
-      if (!res.ok) throw new FailedReadError(path, new Error(`HTTP ${res.status}`));
-      try {
-        return (await res.json()) as T;
-      } catch (e) {
-        throw new FailedReadError(path, e);
+        // A FailedReadError WITHOUT a status is a transport fault (fetch/body throw) — raw, as before.
+        if (e instanceof FailedReadError && e.status === undefined) throw e.cause ?? e;
+        // 404 (`no such file`), a non-OK status, or a torn-200 body (an HTML error / SPA-fallback
+        // page = corrupt deployment) — name it rather than surface a bare "Unexpected token <".
+        console.error(`archie-viewer: failed to read ${path} —`, e);
+        throw new Error("Couldn't open the library. The link may be broken or the file unavailable.");
       }
     },
+    getOptional: (path) => src.getOptional(path),
   };
 }
 

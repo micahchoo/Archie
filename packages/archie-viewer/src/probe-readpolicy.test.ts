@@ -3,15 +3,13 @@ import { describe, it, expect, vi } from "vitest";
 import { openLibraryFromTree } from "./load.js";
 
 type Handler = (path: string) => { status: number; body?: unknown };
+// Real Response objects (not a { ok, status, json } partial): the tree path now reads through
+// @render/core's HttpFilesystem, which consumes headers + arrayBuffer() rather than json().
 function fetchImpl(handler: Handler): typeof fetch {
   return (async (u: string) => {
     const path = u.replace(/^.*\/tree\//, "");
     const r = handler(path);
-    return {
-      ok: r.status >= 200 && r.status < 300,
-      status: r.status,
-      json: async () => { if (r.body === undefined) throw new SyntaxError("bad"); return r.body; },
-    } as unknown as Response;
+    return new Response(r.body === undefined ? "absent" : JSON.stringify(r.body), { status: r.status });
   }) as unknown as typeof fetch;
 }
 
