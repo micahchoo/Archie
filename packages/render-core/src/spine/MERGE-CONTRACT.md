@@ -145,7 +145,7 @@ sentinel (`merge.ts:200-216`) — `satisfies Record<keyof AnnotationRecord, Carr
 (`../model/carry.ts:18`), per `.claude/rules/render-core-data-integrity.md` #3. Dispositions: every
 field is `"carry"` (identity/DAG fields re-minted or computed; content fields resolved-or-defaulted
 as above); the sentinels with named `{drop}`s are the edit (`mergeParents`, `log.ts:138`) and the
-tombstone (the six content fields, `log.ts:203-213`).
+tombstone (the six content fields, `log.ts:208-213`).
 
 ### C15 — Tombstones and branches: delete-vs-edit is a real (part-hidden) conflict
 A concurrent edit and delete of the same note are sibling heads: `headsOf` reports both (C5) while
