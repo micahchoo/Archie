@@ -59,6 +59,25 @@
   // the right card's prose (the spine→note bridge — a Section references a Note via a prose link, never a
   // structural ref; ADR-0005 / CONTEXT §48).
   let proseEls = $state<Record<string, HTMLTextAreaElement | null>>({});
+  // Per-section card refs (Archie-696d): when activeSectionId lands on THIS card — whether from the overview
+  // spine deep link (App.openBeat) or the in-editor "Go to" control (onnavigate) — scroll it into view and
+  // move focus there, so a screen reader announces the section it landed on (tabindex="-1" — a one-shot
+  // focus target, not normally in the tab order). `pulseId` layers a TRANSIENT highlight on top of the
+  // already-persistent `.active` border: a fading outline ring, never persisted/restored on refresh (ADR-0024
+  // #1/#6 — this is screen state, not a place). Paired with the outline geometry (not just color) per the
+  // spec's "must not rely on color alone".
+  let cardEls = $state<Record<string, HTMLLIElement | null>>({});
+  let pulseId = $state<string | null>(null);
+  $effect(() => {
+    const id = activeSectionId;
+    if (!id) return;
+    const el = cardEls[id];
+    el?.scrollIntoView({ block: "center", behavior: "smooth" });
+    el?.focus();
+    pulseId = id;
+    const t = setTimeout(() => { pulseId = null; }, 1200);
+    return () => clearTimeout(t);
+  });
   function citeInto(i: number, id: string) {
     const el = proseEls[id];
     if (!el) return;
@@ -144,7 +163,12 @@
       {@const here = s.objectId === currentObjectId}
       {@const cam = cameraLabel(s)}
       {@const goLabel = here ? "Center the canvas on this section's framed view" : `Go to ${objectLabel(s.objectId)} and show this section's framed view`}
-      <li class="card" class:here class:active={activeSectionId === s.id} class:framing={framingId === s.id}>
+      <!-- tabindex="-1" + bind:this: a one-shot focus TARGET for the deep-link jump (Archie-696d) — not
+           normally tabbable, but reachable via .focus() so a screen reader announces "Section N: title"
+           on arrival. aria-label carries that name since the <li> has no other accessible name. -->
+      <li class="card" class:here class:active={activeSectionId === s.id} class:framing={framingId === s.id}
+        class:pulse={pulseId === s.id} bind:this={cardEls[s.id]} tabindex="-1"
+        aria-label={`Section ${i + 1}${s.title ? `: ${s.title}` : ""}`}>
         <div class="ord">
           <span class="n">{i + 1}</span>
           <!-- Reorder arrows are HIDDEN (not shown-disabled) until ≥2 beats — a single beat has no order to set
@@ -230,6 +254,14 @@
      also light via .here (orange). Source-ordered after .here so it wins the left-rule colour when both apply. */
   .card.active { opacity: 1; border-left-color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
   .card.framing { opacity: 1; border-left-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
+  /* A one-shot arrival pulse (Archie-696d): an expanding-then-fading outline RING on top of the persistent
+     .active left-rule — geometry (offset growing, width shrinking), not just color, per the "not color
+     alone" requirement. Never persisted; cleared 1.2s after landing (see NarrativeEditor's pulseId effect). */
+  .card.pulse { animation: section-pulse 1.2s ease-out; }
+  @keyframes section-pulse {
+    0% { outline: 3px solid var(--accent-2); outline-offset: 1px; }
+    100% { outline: 3px solid transparent; outline-offset: 8px; }
+  }
 
   .ord { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
   .ord .n { font-family: var(--font-display-2); font-weight: 700; font-size: 1.05rem; color: var(--accent-2); }

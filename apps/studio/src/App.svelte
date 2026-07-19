@@ -483,6 +483,22 @@
     switchObject(s.objectId); // rail-jump to the section's object (no-op when already there; clears focusSectionId)
     focusSectionId = sectionId; // set AFTER switchObject → drives the canvas focus fragment + the lit "active" card
   }
+  // --- Spine deep link (Archie-696d, decision Archie-da38): each read-only overview spine row is a beat
+  // link — "editor at the beat's object with the Narrative panel scrolled to that section". ADR-0024 #1
+  // ("selected notes/panels/scroll are never in the URL") rules out a new URL rung for the section, so the
+  // PLACE pushed is the ordinary editor place (unchanged grammar; browser back lands on the overview place
+  // that's already in history — no special-casing needed). WHICH section to focus is transient screen state,
+  // carried through the same focusSectionId channel the in-editor "Go to" card control already drives
+  // (navigateToSection, above) — NarrativeEditor turns a focusSectionId change into scroll + a one-shot
+  // highlight pulse. ExhibitOverview only renders a row as a link when the beat's object still exists
+  // (degraded rows never call this), so the guard below is belt-and-suspenders against a stale click.
+  function openBeat(sectionId: string) {
+    const s = (currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
+    if (!s || !OBJECTS.some((o) => o.id === s.objectId)) return;
+    editingObjectId = null;
+    view = "editor";
+    navigateToSection(sectionId);
+  }
   // Which object of the exhibit the editor is showing. Switching resets transient view state. Declared here
   // (not with the other object state below) because canvasFocus reads it — svelte-check flags the TDZ (Issue 12).
   let currentObjectId = $state("o1");
@@ -1652,6 +1668,7 @@
       thumbFor={(o) => (o.mediaType && o.mediaType !== "image") ? "" : thumbSrc(o)}
       sections={currentExhibit.sections ?? []}
       onopenobject={openObject}
+      onopenbeat={openBeat}
       oneditobject={(objId) => (editingObjectId = objId)}
       onaddobject={() => { editingObjectId = null; view = "editor"; addingObject = true; }}
       onback={backToLibrary}
