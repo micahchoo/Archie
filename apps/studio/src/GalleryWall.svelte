@@ -20,7 +20,8 @@
   <p class="wall-empty">{query.trim() ? "No media matches your search." : "No media in this library yet."}</p>
 {:else}
   <ul class="wall">
-    <!-- Key by slug+id: object ids repeat across exhibits (every exhibit's first object is "o1"). -->
+    <!-- Key by slug+id: legacy composed ids repeat their ordinal tail across exhibits, and pre-migration
+         libraries still carry exhibit-local "o<n>" ids that collide outright (Archie-9ea8). -->
     {#each images as im (im.exhibitSlug + "/" + im.objectId)}
       <li>
         <button class="tile" onclick={() => onopenobject(im.exhibitSlug, im.objectId)}

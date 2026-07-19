@@ -14,6 +14,9 @@ export const RENDER_CORE = "@render/core" as const;
 // WADM branded ids + structural types — the data-model vocabulary (ADR-0003 / Q-3).
 export * from "./wadm/index.js";
 
+// Object identity — the ONE place object-id shapes are minted / composed / detected (Archie-9ea8).
+export * from "./object-id.js";
+
 // The annotation spine: append-only log (source) + projections (merge / heads / serialize).
 export * from "./spine/index.js";
 

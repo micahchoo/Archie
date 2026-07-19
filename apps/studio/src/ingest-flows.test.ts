@@ -555,7 +555,7 @@ describe("import batches library.json persists (scale-fix)", () => {
 
     const objs = exhibits[0]!.objects;
     expect(objs.length).toBe(100); // every canvas imported
-    expect(new Set(objs.map((o) => o.id)).size).toBe(100); // reserveId mints unique ids across the batch (no o1×100)
+    expect(new Set(objs.map((o) => o.id)).size).toBe(100); // mintObjectId mints a distinct ULID per object across the batch
     expect(appendObjectsSpy).toHaveBeenCalledTimes(4); // 25 + 25 + 25 + 25 — batched, not 100 full-library rewrites
     expect(appendObjectSpy).not.toHaveBeenCalled(); // the per-object write-amplifying path is gone
   });
@@ -594,7 +594,7 @@ describe("import batches library.json persists (scale-fix)", () => {
   });
 });
 
-// ── Code-review defects: dropped chunk + cross-flow id collision ──────────────────────────────────
+// ── Code-review defect 1 (dropped chunk) + concurrent-flow id distinctness ─────────────────────────
 describe("addFiles — one file rejects mid-batch (code-review defect 1)", () => {
   it("skips the undecodable file, keeps + flushes the successes, and reports the tally", async () => {
     const { ctx, exhibits, notes, switchTo } = makeCtx();
@@ -617,15 +617,17 @@ describe("addFiles — one file rejects mid-batch (code-review defect 1)", () =>
   });
 });
 
-describe("id reservation — manual add during an import batch (code-review defect 2)", () => {
+describe("concurrent flows — manual add during an import batch mints a distinct id (Archie-9ea8)", () => {
   it("a manual addObject while a batch's flush is in flight never collides on object id", async () => {
     const { ctx, exhibits, switchTo } = makeCtx();
     const flows = createIngestFlows(ctx);
     exhibits.push({ id: "ex-a", slug: "a", title: "A", objects: [] } as unknown as ExhibitMeta);
     switchTo("a");
-    // Suspend the batch's FIRST appendObjects flush on a gate: while it's parked, the 25 minted ids are
-    // reserved-but-not-yet-in-meta. Fire a manual addObject in that window — it must mint a DIFFERENT id
-    // (consulting the reservation registry, not just live meta).
+    // Suspend the batch's FIRST appendObjects flush on a gate: while it's parked, its 25 objects are minted
+    // but NOT yet in meta. Fire a manual addObject in that window — it must land a DIFFERENT id. This was the
+    // cross-flow collision (old code-review defect 2, when ids were ordinal `o${n}` read off delayed meta and
+    // needed a reservation registry); ULIDs (mintObjectId) make distinctness structural, so this now just
+    // pins that the two concurrent flows still never share an id.
     let releaseGate!: () => void;
     const gate = new Promise<void>((r) => { releaseGate = r; });
     let flushReached!: () => void;
@@ -639,8 +641,8 @@ describe("id reservation — manual add during an import batch (code-review defe
     const files = Array.from({ length: 25 }, (_, i) => new File([new Uint8Array([0])], `f${i}.mp3`, { type: "audio/mpeg" }));
 
     const importP = flows.addFiles(files); // 25 files → one chunk → flush parks on the gate
-    await reached; // batch is now suspended mid-flush, 25 ids reserved
-    await flows.addObject("https://x/manual.mp3", "Manual"); // manual add in the reservation window
+    await reached; // batch is now suspended mid-flush: 25 objects minted, not yet in meta
+    await flows.addObject("https://x/manual.mp3", "Manual"); // manual add in the mid-flush window
     releaseGate();
     await importP;
 

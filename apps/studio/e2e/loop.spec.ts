@@ -39,7 +39,7 @@ import { join } from "node:path";
 // slug `voynich-rosettes`, is a SINGLE-object template exhibit whose one object is `o9`. "Keep a copy"
 // forks it to the deterministic slug `voynich-rosettes-copy` (App.svelte:869), carrying object ids.
 const TEMPLATE_SLUG = "voynich-rosettes";
-const OBJ = "o9";
+const OBJ = "ex-voynich.o9";
 const COPY_SLUG = "voynich-rosettes-copy";
 const IDENTITY_KEY = "archie.displayName.v1"; // App.svelte:102 — pre-seed to skip the identity prompt.
 
