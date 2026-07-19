@@ -15,8 +15,8 @@
   import Credit from "./Credit.svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { stripMarkdown } from "@render/core";
-  import { type MarkerStyle, formatZoomRatio } from "@render/svelte";
-  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, arrivalPulseIntensity, withArrivalPulse, type MarkerStyleSpec, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
+  import { type MarkerStyle, formatZoomRatio, zoomBand } from "@render/svelte";
+  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, arrivalPulseIntensity, withArrivalPulse, withZoomBand, type MarkerStyleSpec, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
 
   // Resizable / collapsible reader sidebar (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
   // responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom. Drag math
@@ -172,17 +172,27 @@
     if (armArrival) { armArrival = false; pulseMarks(); }
   }
 
-  // Wrap the reading styleOf (from ExhibitView) with the transient arrival emphasis — one style
-  // channel, layered: at rest (intensity 0) it returns the base styleOf UNCHANGED so the identity is
-  // stable between arrivals; during a pulse each frame mints a fresh identity carrying the decaying
-  // emphasis. Composes with the reading-colour / comparing style rather than clobbering it.
+  // Scale-aware weight (Archie-c1d9 inherited decision): the coarse zoom band, memoized BY VALUE so it
+  // only re-mints the styleOf identity when the band actually crosses far↔mid↔near (not every zoom
+  // frame) — same shape as studio's zoomBandNow.
+  const band = $derived(zoomBand(zoomRatio));
+  // Wrap the reading styleOf (from ExhibitView) with the scale-aware weight AND the transient arrival
+  // emphasis — one style channel, layered: withZoomBand is the RESTING modulation (far → heavier stroke
+  // for presence at fit-width, near → recede), withArrivalPulse the transient on top. Order matters: the
+  // pulse lerps fillOpacity toward 0.3 for the reveal, and running it LAST keeps the existing comparing
+  // transient exactly as it was (withZoomBand leaves an outline-only mark's fill at 0). At rest (intensity
+  // 0, mid band) it returns the base styleOf UNCHANGED so the identity stays stable between arrivals.
   const pulsedStyleOf = $derived.by<((id: string) => MarkerStyle | undefined) | undefined>(() => {
     const base = styleOf;
     const k = pulseIntensity;
-    if (k <= 0 || !base) return base;
+    const b = band;
+    if (!base) return base;
+    if (k <= 0 && b === "mid") return base; // no modulation active — keep the stable identity
     return (id: string) => {
       const s = base(id);
-      return s ? withArrivalPulse(s as MarkerStyleSpec, k) : s;
+      if (!s) return s;
+      const scaled = withZoomBand(s as MarkerStyleSpec, b);
+      return k > 0 ? withArrivalPulse(scaled, k) : scaled;
     };
   });
 

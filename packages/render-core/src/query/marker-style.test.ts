@@ -164,3 +164,33 @@ describe("withArrivalPulse", () => {
     expect(s.fillOpacity).toBeLessThanOrEqual(1);
   });
 });
+
+// The viewer's styleOf composition order (Archie-c1d9): withArrivalPulse(withZoomBand(base, band), k).
+// withZoomBand is the resting scale modulation; the arrival pulse rides LAST. Pinned here because the
+// composition itself lives in Reader.svelte (untestable) and the ticket flags the fillOpacity-on-
+// comparing transient as a thing not to make worse.
+describe("viewer compose order — withArrivalPulse(withZoomBand(base, band), k)", () => {
+  const compose = (band: "far" | "mid" | "near", k: number, state = {}) =>
+    withArrivalPulse(withZoomBand(readingMarkerStyle("#a33", "normal", state), band), k);
+
+  it("at rest (k=0), the comparing outline stays fill-zero at every band — no transient", () => {
+    for (const band of ["far", "mid", "near"] as const) {
+      expect(compose(band, 0, { comparing: true }).fillOpacity).toBe(0);
+    }
+  });
+
+  it("during the pulse (k>0), the comparing mark's fill lifts toward 0.3 — the EXISTING transient, unchanged by the band wrap", () => {
+    // withZoomBand leaves an outline mark's fill at 0; withArrivalPulse then lerps it toward max(0,0.3).
+    // The transient is identical whether or not withZoomBand ran first (it doesn't touch a zero fill at
+    // far, and halves a zero to zero at near) — so wiring the band in did not worsen it.
+    expect(compose("far", 1, { comparing: true }).fillOpacity).toBeCloseTo(0.3, 5);
+    expect(compose("near", 1, { comparing: true }).fillOpacity).toBeCloseTo(0.3, 5);
+    expect(compose("mid", 1, { comparing: true }).fillOpacity).toBeCloseTo(0.3, 5);
+  });
+
+  it("far band still thickens the stroke under the resting pulse (presence at fit-width survives composition)", () => {
+    const restingFar = withZoomBand(readingMarkerStyle("#a33", "normal"), "far");
+    expect(compose("far", 0).strokeWidth).toBe(restingFar.strokeWidth); // k=0 → pulse is a no-op over the band weight
+    expect(restingFar.strokeWidth).toBeGreaterThan(2);
+  });
+});

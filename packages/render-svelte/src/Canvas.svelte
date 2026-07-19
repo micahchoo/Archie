@@ -4,8 +4,8 @@
   // component only wires the surface to $state, drawing props, and lifecycle callbacks.
   // NOT in the tsc/test gate (real OSD render = browser verification).
   import { onMount, onDestroy } from "svelte";
-  import { createMount, type FitOptions, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
-  import { commentOfAnnotation, stripMarkdown, type W3CAnnotation, type TileSourceDescriptor } from "@render/core";
+  import { createMount, zoomBand, dotsVisibleForBand, rectCenter, type ZoomBand, type ScreenRect, type FitOptions, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
+  import { type W3CAnnotation, type TileSourceDescriptor } from "@render/core";
   import { createCanvasController, type CanvasController } from "./controller.js";
 
   let {
@@ -29,6 +29,7 @@
     styleOf,
     frame,
     onzoom,
+    dots,
   }: {
     /** Reader UX: clicking a marker on the canvas zooms to it (controller option). */
     zoomOnSelect?: boolean;
@@ -70,6 +71,12 @@
      *  artefact" vs. the viewer's canvas-corner overlays are contradictory idioms; see App.svelte /
      *  Reader.svelte for where each surface actually renders the cue). */
     onzoom?: (ratio: number) => void;
+    /** LOD reading aid (Archie-c1d9): a location dot per note. At the FAR band a small dot is drawn at
+     *  each marker's on-screen centre (a region outline is near-invisible at fit-width); the dots hide in
+     *  mid/near where the real marks carry the signal. The SAME set is plotted inside the OSD navigator
+     *  (locator) as note-position dots. `colour` = the note's Reading hue; `label` = its accessible name
+     *  (the note's prose snippet). Undefined/empty = no dot layer. Clicking a dot selects (bind:selected). */
+    dots?: { id: string; colour: string; label: string }[];
   } = $props();
 
   // Emit the selected marker's current screen rect (OSD re-anchors natively, so this just re-reads).
@@ -93,35 +100,37 @@
     if (surface && onzoom) onzoom(surface.getZoomRatio());
   }
 
-  // a11y marker labels (Q-5): Annotorious renders each region as an SVG `.a9s-annotation[data-id=<id>]`,
-  // owned deep in @render/mount — there's no per-marker label hook, so we post-pass the rendered DOM and
-  // stamp accessible names. Markers are role="img" with an aria-label (the note's prose snippet) but
-  // tabindex="-1": OUT of the tab order. The INDEX (note cards / section beats) is the keyboard surface —
-  // tabbing to off-screen markers would be a maze. Re-run after each setAnnotations (Annotorious re-renders
-  // async, so we wait one rAF). Best-effort: if the DOM/data-id contract ever changes, labels just don't
-  // apply — the index keyboard path is unaffected.
-  let labelRaf = 0;
-  function labelMarkers() {
-    if (!el || labelRaf) return;
-    labelRaf = requestAnimationFrame(() => {
-      labelRaf = 0;
-      const byId = new Map<string, string>();
-      let unlabelled = 0;
-      for (const a of annotations) {
-        if (!a.id) continue;
-        const snippet = stripMarkdown(commentOfAnnotation(a)).trim();
-        // number media-only/empty notes so a screen-reader user can tell two unlabelled marks apart (review)
-        byId.set(a.id, snippet ? snippet.slice(0, 120) : `Region ${++unlabelled}`);
-      }
-      for (const node of el.querySelectorAll<SVGElement>(".a9s-annotation[data-id]")) {
-        const id = node.getAttribute("data-id");
-        const label = id ? byId.get(id) : undefined;
-        if (!label) continue;
-        node.setAttribute("role", "img");
-        node.setAttribute("aria-label", label);
-        node.setAttribute("tabindex", "-1"); // index-driven nav (Q-5): markers stay out of the tab order
-      }
+  // LOD far-band dots (Archie-c1d9) — at the FAR band a region outline is a near-invisible few-pixel
+  // box, so we paint a small dot per note at its marker's on-screen centre as a LOCATION signal; the
+  // dots hide in mid/near where the real WebGL marks carry it. Positions ride the SAME rAF-throttled
+  // markerScreenRects stream the marginalia column uses (so a pan emits at most one batched read per
+  // frame), and the band is re-read off getZoomRatio each frame. `dotBand`/`dotRects` are $state so the
+  // template re-renders; `dotsVisibleForBand` owns the band gate, `rectCenter` the placement.
+  //
+  // These dots ARE the marker-level a11y contract now (Archie-3e12): each is a real, positioned,
+  // clickable <button> carrying the note's aria-label (its prose snippet) but tabindex="-1" — OUT of
+  // the tab order. The former labelMarkers() post-pass stamped ARIA onto `.a9s-annotation[data-id]`
+  // SVG nodes that Annotorious 3 never renders (marks go to a WebGL canvas — probe 2026-07-19), so it
+  // matched zero elements and did nothing; deleted. The INDEX (note cards / section beats) remains the
+  // PRIMARY keyboard surface — dots are a mouse hit-target + a screen-reader label at fit-width, not a
+  // tab maze through off-screen marks.
+  let dotBand = $state<ZoomBand>("far");
+  let dotRects = $state<Record<string, ScreenRect | null>>({});
+  let dotsRaf = 0;
+  function emitDots() {
+    if (!surface || !dots || dots.length === 0 || dotsRaf) return;
+    dotsRaf = requestAnimationFrame(() => {
+      dotsRaf = 0;
+      if (!surface || !dots) return;
+      dotBand = zoomBand(surface.getZoomRatio());
+      dotRects = surface.markerScreenRects(dots.map((d) => d.id));
     });
+  }
+  // Navigator note-dots (Archie-c1d9): plotted inside the OSD navigator by the mount (setNavigatorDots),
+  // which owns that DOM. Only the id+colour cross the seam; the mount resolves each note's image-space
+  // position and maps it into navigator px. No-op when the locator is off.
+  function syncNavDots() {
+    if (surface) surface.setNavigatorDots(dots && locator ? dots.map((d) => ({ id: d.id, colour: d.colour })) : []);
   }
 
   let el: HTMLDivElement;
@@ -135,7 +144,6 @@
     try {
       surface = await createMount(el, { source, ...(tileSource ? { tileSource } : {}), ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}), ...(locator ? { locator } : {}) });
       surface.setAnnotations(annotations);
-      labelMarkers();
       if (styleOf) surface.setStyle(styleOf);
       if (frame !== undefined) surface.setFrame(frame);
       if (oncreate) surface.onCreate(oncreate);
@@ -157,10 +165,12 @@
       // narrative card → another object, and the viewer's cross-object section) never frames its region.
       if (focus) surface.fitRegion(focus);
       // Follow the selected marker as the viewport moves (OSD-native re-anchor — donor pattern, no dep).
-      offViewport = surface.onViewportChange(() => { emitRect(); emitRects(); emitZoom(); });
+      offViewport = surface.onViewportChange(() => { emitRect(); emitRects(); emitZoom(); emitDots(); });
       emitRect();
       emitRects();
       emitZoom();
+      syncNavDots();
+      emitDots();
       status = "ready";
     } catch (e) {
       status = "error";
@@ -171,8 +181,12 @@
   // Read the reactive props FIRST, before any `surface?.`/`if (surface)` guard — otherwise the
   // optional-chain short-circuits on the (async) initially-undefined surface and the effect never
   // subscribes to the prop, so it never re-runs when the prop changes (Svelte 5 dep-tracking gotcha).
-  $effect(() => { const a = annotations; if (surface) { surface.setAnnotations(a); emitRect(); labelMarkers(); } });
+  $effect(() => { const a = annotations; if (surface) { surface.setAnnotations(a); emitRect(); } });
   $effect(() => { void rectIds; void annotations; if (surface) emitRects(); });
+  // Far-band dots ride the marker rect stream; re-solve when the dot set or annotations change.
+  $effect(() => { void dots; void annotations; if (surface) emitDots(); });
+  // Navigator note-dots: re-sync when the dot set (or locator) changes — the mount reconciles the DOM.
+  $effect(() => { void dots; void locator; if (surface) syncNavDots(); });
   $effect(() => { const sf = styleOf; if (surface) surface.setStyle(sf); });
   // Coverage border (7e1f) — read `frame` first (dep-tracking gotcha); undefined = leave as-is, null clears.
   $effect(() => { const fr = frame; if (surface && fr !== undefined) surface.setFrame(fr); });
@@ -182,11 +196,31 @@
   // A Section's camera target (not an annotation) → fit the region. Read `focus` first (dep-tracking gotcha).
   $effect(() => { const f = focus; if (f && surface) surface.fitRegion(f); });
 
-  onDestroy(() => { if (rectsRaf) cancelAnimationFrame(rectsRaf); if (labelRaf) cancelAnimationFrame(labelRaf); offViewport?.(); controller?.destroy(); });
+  onDestroy(() => { if (rectsRaf) cancelAnimationFrame(rectsRaf); if (dotsRaf) cancelAnimationFrame(dotsRaf); offViewport?.(); controller?.destroy(); });
 </script>
 
 <div class="archie-canvas-wrap">
   <div bind:this={el} class="archie-canvas"></div>
+  <!-- LOD far-band dots (Archie-c1d9): a location dot per note at fit-width, hidden in mid/near.
+       Each dot is position:fixed at the marker's viewport-space centre (the same coord space the
+       editing popover anchors in — markerScreenRects), so there is NO covering layer to intercept
+       pointer events between dots. Real, clickable, aria-labelled buttons — the marker-level a11y home. -->
+  {#if dots && dots.length > 0 && status === "ready" && dotsVisibleForBand(dotBand)}
+    {#each dots as d (d.id)}
+      {@const r = dotRects[d.id]}
+      {#if r}
+        {@const c = rectCenter(r)}
+        <button
+          type="button"
+          class="marker-dot"
+          style={`left:${c.x}px;top:${c.y}px;--dot-colour:${d.colour}`}
+          aria-label={d.label}
+          tabindex="-1"
+          onclick={() => (selected = d.id)}
+        ></button>
+      {/if}
+    {/each}
+  {/if}
   {#if status !== "ready"}
     <div class="overlay" class:error={status === "error"}>
       {#if status === "loading"}
@@ -201,6 +235,25 @@
 <style>
   .archie-canvas-wrap { position: relative; width: 100%; height: 100%; }
   .archie-canvas { width: 100%; height: 100%; }
+  /* LOD far-band dot (Archie-c1d9): a small, quiet location mark — filled with the note's Reading hue,
+     a hairline ring for contrast on any tile, centred on its marker. Fixed-positioned (viewport coords
+     from markerScreenRects); only the dot itself is a pointer target (no covering layer). No label. */
+  .marker-dot {
+    position: fixed;
+    width: 9px; height: 9px; padding: 0;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: var(--dot-colour, #3a8c5d);
+    border: 1px solid rgba(0, 0, 0, 0.55);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+    cursor: pointer;
+    z-index: 40;
+    opacity: 0.9;
+    transition: transform 120ms ease, opacity 120ms ease;
+  }
+  .marker-dot:hover { opacity: 1; transform: translate(-50%, -50%) scale(1.25); }
+  .marker-dot:focus-visible { outline: 2px solid var(--accent, #d98a2b); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { .marker-dot { transition: none; } }
   /* NOTE (Archie-a6fb): the mark drop-shadow + zoom-band weighting CSS that used to live here
      targeted `.a9s-annotation`, which Annotorious 3 never renders (marks go to a WebGL canvas, no
      per-shape SVG node — probe 2026-07-19). It matched zero elements for a month; deleted. The

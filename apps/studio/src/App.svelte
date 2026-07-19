@@ -1315,6 +1315,19 @@
   );
   const marginaliaRectIds = $derived(notes.map((r) => r.logicalId));
 
+  // LOD dots (Archie-c1d9) — the note set the canvas plots as far-band location dots AND as navigator
+  // note-dots. Same id/colour as the marginalia rail (logicalId = the annotation id the canvas keys on;
+  // colour = the note's Reading hue, base fallback), plus an accessible label (the note's prose snippet)
+  // for the far-band dot's aria-label — the marker-level a11y contract now lives on these real dots
+  // (Archie-3e12), the inspector notes list stays the PRIMARY keyboard surface.
+  const dotItems = $derived(
+    notes.map((r) => ({
+      id: r.logicalId,
+      colour: (r.reading ? currentReadings.find((x) => x.id === r.reading)?.colour : undefined) ?? BASE_MARKER,
+      label: stripMarkdown(commentOf(r)).slice(0, 120) || "Untitled note",
+    })),
+  );
+
   // --- Notes-panel DISCLOSURE surface (Archie-f260 §4 obligation, re-derived for Archie-d48e).
   // The WebGL/PixiJS marks have no per-marker DOM node a screen reader can reach (confirmed: no marker-level
   // ARIA is possible), so the inspector's notes list IS the accessible parallel structure standing in for the
@@ -2358,7 +2371,7 @@
                    an editing canvas needs the surrounding context and the shape's resize handles on
                    screen, and a full-bleed fit shoved the marker under the viewport edges. Section
                    camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
-              <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} />
+              <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator dots={dotItems} bind:selected getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} />
             {:else}
               <div class="no-canvas">Loading…</div>
             {/if}

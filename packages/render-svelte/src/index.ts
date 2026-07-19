@@ -15,3 +15,7 @@ export type { MarkerStyle, FrameOverlay } from "@render/mount";
 // ratio with the SAME function studio imports straight from @render/mount, without adding that
 // package as a direct viewer dependency.
 export { formatZoomRatio } from "@render/mount";
+// Zoom band (Archie-a6fb / Archie-c1d9): same re-export boundary — the viewer weights its marks by
+// scale (withZoomBand, from @render/core) using the SAME ratio→band thresholds studio imports straight
+// from @render/mount, without adding that package as a direct viewer dependency.
+export { zoomBand, type ZoomBand } from "@render/mount";

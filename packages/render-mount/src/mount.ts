@@ -19,6 +19,7 @@ import { dispatchFitBounds, applyFitBounds, clampedFitRect, type FitOptions, typ
 import { createFrameOverlay, type FrameViewerLike } from "./frame-overlay.js";
 import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
+import { imageToNavigatorPixel, type NavigatorDot } from "./marker-dots.js";
 import { xyzTileSource } from "./xyz.js";
 import { dziOsdSource } from "./dzi.js";
 import type { W3CSelector, TileSourceDescriptor } from "@render/core";
@@ -258,6 +259,63 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
   // the duck type in ways TS can't verify structurally — asserted once here, at the wiring point.
   const frameOverlay = createFrameOverlay(viewer as unknown as FrameViewerLike);
 
+  // Navigator note-dots (Archie-c1d9) — tiny dots INSIDE the OSD navigator marking where each note
+  // lives on the whole image. Appended as CHILDREN of the navigator element so they inherit its
+  // position AND its auto-fade (a sibling fixed layer would float on over a faded navigator). The
+  // navigator shows the whole image aspect-fit, so a note's image-space centre maps via the pure
+  // imageToNavigatorPixel letterbox fit; positions are static in navigator space (recomputed on
+  // resize / annotation change, not per pan frame). Colour = the note's Reading hue.
+  let navDots: NavigatorDot[] = [];
+  const navDotEls = new Map<string, HTMLElement>();
+  const navigatorEl = (): HTMLElement | undefined =>
+    (viewer as unknown as { navigator?: { element?: HTMLElement } }).navigator?.element ?? undefined;
+  const renderNavDots = (): void => {
+    const navEl = navigatorEl();
+    if (!navEl) return; // locator off — nothing to plot into
+    const item = viewer.world.getItemAt(0);
+    const size = item?.getContentSize?.();
+    const navW = navEl.clientWidth, navH = navEl.clientHeight;
+    // Reconcile: drop dot els no longer in the set.
+    for (const [id, el] of navDotEls) {
+      if (!navDots.some((d) => d.id === id)) { el.remove(); navDotEls.delete(id); }
+    }
+    if (!size) return; // image not painted yet — re-render fires again on open/resize
+    const anns = annotator.getAnnotations() as Array<{ id?: string; target?: { selector?: { value?: string } } }>;
+    for (const d of navDots) {
+      const v = anns.find((a) => a.id === d.id)?.target?.selector?.value;
+      const box = v ? selectorBBox({ type: v.includes("<") ? "SvgSelector" : "FragmentSelector", value: v } as W3CSelector) : null;
+      const px = box
+        ? imageToNavigatorPixel({ x: box.x + box.w / 2, y: box.y + box.h / 2 }, { w: size.x, h: size.y }, { w: navW, h: navH })
+        : null;
+      let el = navDotEls.get(d.id);
+      if (!px) { if (el) { el.remove(); navDotEls.delete(d.id); } continue; } // whole-object/bare-IRI note → no dot
+      if (!el) {
+        el = document.createElement("div");
+        el.className = "archie-nav-dot";
+        el.setAttribute("aria-hidden", "true");
+        // Inline-styled (the mount is a CSS-free lib, and these live in OSD's navigator DOM where the
+        // app's stylesheet can't reach): a tiny centred dot with a hairline ring for contrast on any tile.
+        Object.assign(el.style, {
+          position: "absolute",
+          pointerEvents: "none",
+          width: "6px",
+          height: "6px",
+          borderRadius: "50%",
+          transform: "translate(-50%, -50%)",
+          boxShadow: "0 0 0 1px rgba(0,0,0,0.55)",
+          zIndex: "20",
+        } as Partial<CSSStyleDeclaration>);
+        navEl.appendChild(el);
+        navDotEls.set(d.id, el);
+      }
+      el.style.left = `${px.x}px`;
+      el.style.top = `${px.y}px`;
+      el.style.background = d.colour;
+    }
+  };
+  // The navigator re-lays-out on viewer resize; note dots are otherwise static (whole-image map).
+  viewer.addHandler("resize", renderNavDots);
+
   // Shared rect math for markerScreenRect(s): selector bbox in image px → viewer-element coords +
   // the container's page offset, so a position:fixed anchor works regardless of layout (ADR-0006).
   const rectFromSelectorValue = (
@@ -288,6 +346,7 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       // W3CImageAnnotation. setAnnotations accepts Partial<E>[] (replace mode) — a WADM record that
       // omits optional fields is still a valid partial. Narrow to that instead of erasing the type.
       annotator.setAnnotations(ok as Partial<W3CImageAnnotation>[], true);
+      renderNavDots(); // note positions may have moved — reconcile the navigator dots
     },
     setStyle(styleFor) {
       // Wire a per-annotation style to Annotorious's DrawingStyleExpression<ImageAnnotation>: it
@@ -330,6 +389,10 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     setFrame(frame: FrameOverlay | null) {
       if (frame === null) frameOverlay.clear();
       else frameOverlay.draw(frame);
+    },
+    setNavigatorDots(dots: NavigatorDot[]) {
+      navDots = dots;
+      renderNavDots();
     },
     setDrawingEnabled(enabled: boolean) {
       annotator.setDrawingEnabled(enabled);
@@ -377,6 +440,8 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
       if (disposed) return;
       disposed = true;
       frameOverlay.clear();
+      for (const el of navDotEls.values()) el.remove();
+      navDotEls.clear();
       selectL.clear();
       createL.clear();
       updateL.clear();
