@@ -24,7 +24,7 @@ const GRAMMAR = {
 
 // --- Screen markers: role/label selectors, one per screen, mutually exclusive. ---
 //   library : the "The Rosettes" exhibit CARD (LibraryHome only)
-//   overview: the "Overview mode" canvas/list toggle group (ExhibitOverview only)
+//   overview: the "Overview mode" grid/list toggle group (ExhibitOverview only)
 //   editor  : the "Exhibit objects" filmstrip nav (App editor header only)
 // (A bare heading "The Rosettes" is shared by overview AND editor headers, so it can't distinguish
 // them; these three are each single-screen.)

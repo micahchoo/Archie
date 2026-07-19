@@ -1,14 +1,3 @@
-<script module lang="ts">
-  // Session-only transient screen state (ADR-0024 #6): how a PLACE looks beyond its address — the
-  // overview's canvas pan-zoom. Module-level so it survives a component remount WITHIN the session (leave
-  // an exhibit, come back, find it framed as you left it) but resets on a fresh load (the URL alone is
-  // honored then). Best-effort — a plain Map keyed by exhibit slug. (The Canvas/List mode is a persisted
-  // view preference owned elsewhere, NOT a transient — excluded here.) Library transient (search text) is
-  // one place, so it rides App-instance state instead (see gallerySearch).
-  type OverviewScreen = { tx: number; ty: number; z: number };
-  const overviewScreens = new Map<string, OverviewScreen>();
-</script>
-
 <script lang="ts">
   // Studio editor (Phase-2 UI, browser-verified later). Real annotate loop over the headless-
   // tested @render/core AnnotationSession: draw on the canvas → create note → edit body/tags/
@@ -195,10 +184,10 @@
   const savedLastPlace: Place = (() => { try { return parsePlace(localStorage.getItem(LAST_PLACE_KEY) ?? ""); } catch { return LIBRARY; } })();
 
   // --- Transient screen state mirrors (ADR-0024 #6). Bound into the child screens; App remembers them
-  // across the child's remount within the session. Overview pan-zoom is per-slug (overviewScreens map); the
-  // library search is one place, so App-instance state is its session memory (resets on reload). (The two
-  // toggles — overview Canvas/List, library Exhibits/All-images — are PERSISTED prefs owned elsewhere.) ---
-  let ovTx = $state(0), ovTy = $state(0), ovZ = $state(1);
+  // across the child's remount within the session. The library search is one place, so App-instance state
+  // is its session memory (resets on reload). (The overview's Grid/List mode + grid density are PERSISTED
+  // prefs owned in view-prefs; the retired canvas's pan-zoom transient was removed with the canvas — the
+  // grid persists no spatial state, so there's nothing per-slug to remember here anymore.) ---
   let gallerySearch = $state("");
   // Lazy deep-zoom canvas (OpenSeadragon + Annotorious — the largest dep). Loaded the moment the user
   // enters an exhibit (overview or editor), so it's warm by the time an object opens, while staying OUT
@@ -429,10 +418,10 @@
       syncUrl(); // push the settled landing place (no-op if a caller/history replay is still suspending)
     }
   }
-  // Enter the overview scale for `slug`, restoring the transient look (mode + pan-zoom) remembered for it
-  // within this session (ADR-0024 #6). The single funnel for "show overview" so restore never gets skipped.
-  function enterOverview(slug: string) {
-    restoreOverviewScreen(slug);
+  // Enter the overview scale. The single funnel for "show overview". (The mode is a persisted view
+  // preference read live by the child; the retired canvas's per-slug pan-zoom restore is gone — the grid
+  // keeps no transient spatial state.)
+  function enterOverview(_slug: string) {
     view = "overview";
   }
   async function backToLibrary() {
@@ -652,21 +641,6 @@
     if (!isTauri()) return;
     try { localStorage.setItem(LAST_PLACE_KEY, url); } catch { /* best-effort — private mode just won't restore */ }
   }
-  // Best-effort session memory for the overview's transient look (ADR-0024 #6): snapshot the tableau
-  // pan-zoom under the current slug whenever it changes while the overview is showing.
-  function restoreOverviewScreen(slug: string) {
-    const s = overviewScreens.get(slug);
-    ovTx = s?.tx ?? 0; ovTy = s?.ty ?? 0; ovZ = s?.z ?? 1;
-  }
-  $effect(() => {
-    // Skip while a transition is in flight (navSyncSuspendCount > 0): during openExhibit, currentSlug
-    // moves to the NEW slug synchronously while view is still "overview" and ovTx/ovTy/ovZ still hold the
-    // OUTGOING exhibit's pan-zoom — an unguarded write would stamp A's transform under B's slug (N1). Once
-    // settled, restoreOverviewScreen has loaded the right values and the count is 0, so this snapshots B.
-    if (view !== "overview" || navSyncSuspendCount > 0) return;
-    overviewScreens.set(currentSlug, { tx: ovTx, ty: ovTy, z: ovZ });
-  });
-
   // URL → STATE. Apply a place to the view, degrading an unresolvable one to its nearest surviving ancestor
   // (ADR-0024 #4) and naming what was missing. Suspends the sync effect for the whole transition, then does
   // its OWN history bookkeeping: push a fresh entry, replace the bar in place (boot + a degrade correction),
@@ -1929,9 +1903,6 @@
       onbulkdelete={requestBulkDelete}
       {bulkConfirming}
       onvisible={(ids) => (visibleIds = ids)}
-      bind:tx={ovTx}
-      bind:ty={ovTy}
-      bind:z={ovZ}
       onstartnarrative={() => openObject(OBJECTS[0]?.id ?? currentObjectId)}
       rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}

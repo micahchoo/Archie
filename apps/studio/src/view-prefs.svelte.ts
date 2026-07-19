@@ -11,10 +11,24 @@
 // try/catch idiom as App.svelte's FIRST_ADD_KEY — private mode / disabled storage just means the
 // preference resets to default next load, never an error.
 
-export type OverviewMode = "canvas" | "list";
+// Overview mode: the exhibit overview's Grid/List switch. The old spatial-canvas mode (pan/zoom over a
+// transformed tableau) was retired (SCALE-GALLERY: it persisted NO spatial data and deterred use above
+// ~100 objects) and replaced by a plain scrollable, virtualized GRID. A value of "canvas" persisted from
+// before the retirement migrates to "grid" on read — see loadOverviewMode.
+export type OverviewMode = "grid" | "list";
 export type GalleryView = "exhibits" | "wall";
+// Grid density (SCALE-GALLERY): a 2-step per-device preference (Comfortable / Compact) for the overview
+// GRID, mirroring the viewer gallery wall's density toggle (apps/viewer/src/grid-density.ts, Phase 4). The
+// metrics couple the grid's min column width AND its `contain-intrinsic-size` estimate — they MUST move
+// together or the content-visibility virtualization mis-reserves height and scrolling janks; one function
+// returns both so a caller can't set one and forget the other. (Studio's earlier density "Size" range
+// slider was REMOVED in Archie-a9fc in favour of one fixed size; this lighter 2-step toggle is its
+// replacement — a discrete choice, not a continuous slider, so it reintroduces neither the fiddly control
+// nor the per-pixel intrinsic-size drift the slider risked.)
+export type OverviewDensity = "comfortable" | "compact";
 
 const OVERVIEW_MODE_KEY = "archie.overviewMode.v1";
+const OVERVIEW_DENSITY_KEY = "archie.overviewDensity.v1";
 const GALLERY_VIEW_KEY = "archie.libraryGalleryView.v1";
 // Editor chrome (Archie-c7ef): the filmstrip rail's collapsed state and the inspector panel's width
 // are "how the author likes the editor to look" — persisted view preferences, last-set wins (CONTEXT.md
@@ -28,7 +42,24 @@ const INSPECTOR_WIDTH_KEY = "archie.editorInspectorWidth.v1";
 const LEGACY_DOCK_WIDTH_KEY = "archie.editorDockWidth.v1";
 
 function loadOverviewMode(): OverviewMode {
-  try { return localStorage.getItem(OVERVIEW_MODE_KEY) === "list" ? "list" : "canvas"; } catch { return "canvas"; }
+  // "list" stays list; EVERYTHING else — a fresh install, garbage, OR a legacy "canvas" left in storage
+  // from before the spatial canvas was retired — resolves to the new default "grid". That collapse IS the
+  // canvas→grid migration: no explicit rewrite needed, the read simply never yields "canvas" again.
+  try { return localStorage.getItem(OVERVIEW_MODE_KEY) === "list" ? "list" : "grid"; } catch { return "grid"; }
+}
+function loadOverviewDensity(): OverviewDensity {
+  try { return localStorage.getItem(OVERVIEW_DENSITY_KEY) === "compact" ? "compact" : "comfortable"; } catch { return "comfortable"; }
+}
+
+/** The overview grid metrics for a density: `minCol` feeds `minmax(<minCol>, 1fr)` (the flex-wrap plate
+ *  width), `intrinsic` feeds `contain-intrinsic-size: auto <intrinsic>` (the off-screen height estimate the
+ *  content-visibility virtualization reserves). They move in lockstep — a plate's real rendered height
+ *  tracks its width, so a narrower Compact column needs a shorter intrinsic estimate or the scrollbar
+ *  jumps. Comfortable matches the retired canvas plate's 12.5rem width. */
+export function overviewDensityMetrics(d: OverviewDensity): { minCol: string; intrinsic: string } {
+  return d === "compact"
+    ? { minCol: "9rem", intrinsic: "12rem" }
+    : { minCol: "12.5rem", intrinsic: "15.5rem" };
 }
 function loadGalleryView(): GalleryView {
   try { return localStorage.getItem(GALLERY_VIEW_KEY) === "wall" ? "wall" : "exhibits"; } catch { return "exhibits"; }
@@ -40,8 +71,9 @@ function loadInspectorWidth(): number | null {
   try { const v = localStorage.getItem(INSPECTOR_WIDTH_KEY) ?? localStorage.getItem(LEGACY_DOCK_WIDTH_KEY); return v ? (Number(v) || null) : null; } catch { return null; }
 }
 
-const s = $state<{ overviewMode: OverviewMode; galleryView: GalleryView; railCollapsed: boolean; inspectorWidth: number | null }>({
+const s = $state<{ overviewMode: OverviewMode; overviewDensity: OverviewDensity; galleryView: GalleryView; railCollapsed: boolean; inspectorWidth: number | null }>({
   overviewMode: loadOverviewMode(),
+  overviewDensity: loadOverviewDensity(),
   galleryView: loadGalleryView(),
   railCollapsed: loadRailCollapsed(),
   inspectorWidth: loadInspectorWidth(),
@@ -55,6 +87,12 @@ export const viewPrefs = {
   setOverviewMode(v: OverviewMode) {
     s.overviewMode = v;
     try { localStorage.setItem(OVERVIEW_MODE_KEY, v); } catch { /* private mode — resets next load, harmless */ }
+  },
+
+  get overviewDensity(): OverviewDensity { return s.overviewDensity; },
+  setOverviewDensity(v: OverviewDensity) {
+    s.overviewDensity = v;
+    try { localStorage.setItem(OVERVIEW_DENSITY_KEY, v); } catch { /* private mode — resets next load, harmless */ }
   },
 
   get galleryView(): GalleryView { return s.galleryView; },
@@ -89,6 +127,7 @@ export const viewPrefs = {
  *  resetSaveQueueForTests) — a test can stub localStorage, call this, and observe a fresh default/restore. */
 export function reloadViewPrefsForTests(): void {
   s.overviewMode = loadOverviewMode();
+  s.overviewDensity = loadOverviewDensity();
   s.galleryView = loadGalleryView();
   s.railCollapsed = loadRailCollapsed();
   s.inspectorWidth = loadInspectorWidth();
