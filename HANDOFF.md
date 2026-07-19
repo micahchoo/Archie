@@ -22,10 +22,13 @@ note editor, SafetyState everywhere, single ⌘S owner; review fixes `19276c4`).
 post-merge each time: svelte-check 0/11, 350 studio tests, studio+viewer builds. Main
 also carries the sibling collab session's merges (render-core/spine, no studio overlap).
 
-**Agents running (worktrees; ALL worktrees spawn at stale session-start HEAD — brief them
-to `git reset --hard <current main sha>` first):**
-- `create-implementer` (sonnet) — `create/import-dialog`: ticket `Archie-51cc` (Variant A
-  scrimmed New-exhibit dialog, three expanding paths, paste-validated IIIF, page-drop).
+Also merged: `564f975` create/import-dialog (`Archie-51cc` closed; ship deviation:
+read-only derived titles on folder/IIIF paths → follow-up `Archie-46bf`) · `d226a4f`
+beats/spine-deep-links (`Archie-696d` closed). 370 studio tests post-merge.
+
+**Agents running:** none (wave 2 agents all merged). NOTE: a concurrent session has
+uncommitted visual-token WIP in the shared checkout (tokens.css, viewer components,
+App/LibraryHome one-liners) — merges here used stash-around; don't clobber it.
 
 **Process per branch (user directive, updated 2026-07-19): AUTO-MERGE WHEN GREEN** —
 code-review agent on completion → fix loop if needed → once review-clean, merge to main
