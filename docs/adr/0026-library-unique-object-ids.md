@@ -72,7 +72,12 @@ every legacy `o<n>` reference into its composed form:
    (`packages/render-core/src/link/link.ts`), never through a hand-rolled regex over the body
    text, so a link embedded in arbitrary prose is found the same way link resolution already
    finds it
-4. `SectionRecord.objectId` through the structure/spine logs (`spine/structure.ts` and friends)
+4. section object refs — in **both** places sections persist: `exhibits[].sections[]` inside
+   `library.json` (the shipping default — the structure rev-log ships flag-OFF, so library.json
+   is the section source of truth) and the structure-log history pages (flag-ON). In each,
+   `objectId` composes under the owning exhibit and section `prose` is swept for `archie:` refs
+   like any other body (class 3 mechanics). Framing this as "through the structure logs" alone
+   was the original draft's error — the engine's review caught the default-OFF path as a miss
 5. the pending-notes sidecar
 
 Full annotation history is rewritten, including tombstones — a tombstone still names an object,
