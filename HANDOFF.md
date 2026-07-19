@@ -97,12 +97,14 @@ projection, a911 persist, 6b8e attribution} → 42f3 studio flag. Probe ledger l
 `build/section-record` merged (fe6d06e impl + 3840a3f review fixes; 08af closed) —
 `spine/structure.ts` SectionRecord family, six carry sentinels, C13/C14 resolve,
 containment+parity tests, tolerant projection. Post-merge 886/886, tsc 0, root 0. Review
-PASS both axes; 3 gaps closed test-only. **Wave 3 dispatching: c16d (single-pass group-by
-projection) + a911 (persist pages) + 6b8e (note attribution) in PARALLEL worktrees** —
-disjoint territory: c16d touches heads.ts+structure.ts projection; a911 new persist files;
-6b8e wadm/types + log/merge sentinels + serialize. Watch: 6b8e (AnnotationRecord field)
-and c16d (structure.ts edit) both near wave-2 files — merge order: c16d first, then a911,
-then 6b8e, re-gating each. Wave 4 = 42f3 after. (Serial waves pre-approved.)
+PASS both axes; 3 gaps closed test-only. **Wave 3: c16d MERGED + closed** (d12e794 + 07d53a6 threshold fix; review clean both axes;
+post-merge 892/892, tsc 0, root 0). **a911 BUILT** (`build/structure-persist` @ `3549126`,
+901/901 in-worktree; reviewers `a911-review-standards`+`a911-review-spec` running — NOTE
+a911 branch based on 25e00c1, will need re-gate after c16d merge on merge). **6b8e still
+building** (`build-note-attribution` — AnnotationRecord attribution field + visibility.ts).
+Merge order: a911 next when reviews clean, then 6b8e, re-gating each. Wave 4 = 42f3 after.
+(Spend limit killed all 3 mid-wave once; user said continue; resumed OK. If spend-limit
+deaths recur, stop and surface.)
 
 **Ops (verified this session):** worktrees ALWAYS stale (5/5) — Step 0 reset + file-existence
 check in every brief. Review agents must END with SendMessage to main (plain text lost).
