@@ -14,6 +14,7 @@ import type { Library } from "../model/model.js";
 import { fsJsonSource } from "../publish/read.js";
 import { objIdFromCanvasId } from "./manifest.js";
 import type { IIIFManifest } from "./presentation.js";
+import { mapLimit, PUBLISH_CONCURRENCY } from "../concurrency.js";
 
 /** One Object in the library-level image index (ADR-0023 pinned format). */
 export interface ImageIndexEntry {
@@ -47,21 +48,26 @@ export interface ImageIndex {
  */
 export async function buildImageIndex(fs: Filesystem, library: Library): Promise<ImageIndex> {
   const src = fsJsonSource(fs);
-  const images: ImageIndexEntry[] = [];
-  for (const exhibit of library.exhibits) {
+  // Read every {slug}/manifest.json under a bounded pool (SCALE-GALLERY: this ran serially post-loop on
+  // EVERY publish, incremental included — a 100-manifest sequential re-read). `mapLimit` preserves input
+  // order, so entries stay in library order then per-exhibit canvas order (the ADR-0023 pinned format).
+  // Read-after-write uniformity is untouched: still reads the published manifest (fresh OR incrementally
+  // skipped), and `getOptional`'s absent(→null, omit)-vs-torn(→throw, propagate) contract is preserved —
+  // a torn manifest rejects one worker, which rejects `mapLimit`, which throws out of buildImageIndex.
+  const perExhibit = await mapLimit(library.exhibits, PUBLISH_CONCURRENCY, async (exhibit) => {
     const manifest = await src.getOptional<IIIFManifest>(`${exhibit.slug}/manifest.json`); // torn → throws (loud); absent → null (omit)
-    if (!manifest) continue;
-    for (const canvas of manifest.items) {
+    if (!manifest) return [];
+    return manifest.items.map((canvas): ImageIndexEntry => {
       const thumbnail = canvas.thumbnail?.[0]?.id;
-      images.push({
+      return {
         objectId: objIdFromCanvasId(canvas.id),
         exhibitSlug: exhibit.slug,
         title: canvas.label?.none?.[0] ?? "",
         ...(thumbnail !== undefined ? { thumbnail } : {}),
         ...(canvas.width !== undefined ? { width: canvas.width } : {}),
         ...(canvas.height !== undefined ? { height: canvas.height } : {}),
-      });
-    }
-  }
-  return { images };
+      };
+    });
+  });
+  return { images: perExhibit.flat() };
 }

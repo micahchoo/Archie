@@ -33,6 +33,7 @@ import { projectHeads } from "../spine/heads.js";
 import { headsPageFromRecords, headsPagesByReading, citationIdMap, targetSource } from "../spine/serialize.js";
 import { stamp } from "../migrate/migrate.js";
 import { ARCHIE_LIBRARY_MARKER } from "./marker.js";
+import { mapLimit, PUBLISH_CONCURRENCY } from "../concurrency.js";
 
 export interface PublishOptions {
   /** Absolute base for ids, e.g. `https://user.github.io/lib/`. */
@@ -327,8 +328,15 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     }
   }
 
-  for (const exhibit of library.exhibits) {
-    if (inc && !inc.exhibits.has(exhibit.slug)) continue; // incremental: only dirty exhibits are (re)written
+  // PERF (SCALE-GALLERY): exhibits are independent — each writes only its own {slug}/ subtree, reads the
+  // shared read-only linkIndex/rw, and pushes to brokenLinks/incompleteCanvases (synchronous array pushes,
+  // atomic on the single JS thread; cross-exhibit push order is advisory and untested). Fan them out under
+  // a bounded pool instead of a serial waterfall (the 100-exhibit wall). The `await` on mapLimit is a hard
+  // barrier: EVERY exhibit's writes complete before the library-level projections (index.html / sitemaps /
+  // images.json) and the archie.json COMMIT MARKER below — the marker-LAST ordering contract (Issue 25b) is
+  // preserved exactly, now "strictly after ALL exhibits" rather than "after the last serial exhibit".
+  await mapLimit(library.exhibits, PUBLISH_CONCURRENCY, async (exhibit) => {
+    if (inc && !inc.exhibits.has(exhibit.slug)) return; // incremental: only dirty exhibits are (re)written
     const exDir = await root.getDirectory(exhibit.slug, { create: true });
     let runAssets = !inc || inc.reassets.has(exhibit.slug); // rerun the expensive asset-copy + tiling passes?
 
@@ -485,7 +493,11 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     const { index, pages } = toHistory(log, { baseUrl: citeBase, historyBase: historyBaseAbs });
     const histDir = await (await exDir.getDirectory("annotations", { create: true })).getDirectory("history", { create: true });
     await writeJson(histDir, "index.json", index);
-    for (const [logicalId, page] of Object.entries(pages)) await writeJson(histDir, `${logicalId}.json`, page);
+    // History pages are independent files under histDir (each a distinct {logicalId}.json); fan out under
+    // the bounded pool. Ordering vs index.json is unchanged — index.json is written above, before the pool.
+    await mapLimit(Object.entries(pages), PUBLISH_CONCURRENCY, async ([logicalId, page]) => {
+      await writeJson(histDir, `${logicalId}.json`, page);
+    });
 
     // Structure rev-log sidecar (Archie-aef4): {slug}/structure/history/ beside the annotation
     // history — the exchange leg that makes the import merge (mergeImportedStructure) reachable
@@ -514,9 +526,10 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
       // AnnotationCollections below instead. Three-tier, like exhibits.json for the Gallery.
       await writeJson(exDir, "readings.json", readings);
       const rdDir = await (await exDir.getDirectory("annotations", { create: true })).getDirectory("readings", { create: true });
-      for (const r of readings) {
+      // One AnnotationCollection per Reading — independent {rid}.json files (readings.json written above); fan out.
+      await mapLimit(readings, PUBLISH_CONCURRENCY, async (r) => {
         await writeJson(rdDir, `${r.id}.json`, toReadingCollection(r, collId(r.id)));
-      }
+      });
     }
     // Narrative spine as a WADM AnnotationCollection (ADR-0017): each Section ALSO serialized as a
     // `supplementing` annotation, so pure-WADM/IIIF annotation tools (which read AnnotationPages, NOT IIIF
@@ -579,7 +592,7 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
     // advisory counts identical to the JSON path (canvas-matched refs already reported above).
     const htmlRecords = heads.map((h) => rewriteHeadBodies(h, exhibit.slug, rw, []));
     await writeText(exDir, "index.html", exhibitPageHtml(exhibit, htmlRecords, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.renderBody !== undefined ? { renderBody: opts.renderBody } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
-  }
+  });
   // Library landing + sitemap (ADR-0014): the human/crawler entry the data repo never had.
   await writeText(root, "index.html", libraryPageHtml(library, { baseUrl, ...(opts.viewerBase !== undefined ? { viewerBase: opts.viewerBase } : {}), ...(opts.publishedAt !== undefined ? { publishedAt: opts.publishedAt } : {}) }));
   // Crawler sitemaps: keep sitemap.txt (the simple, already-cited surface) AND add the standard
