@@ -11,17 +11,42 @@ vi.stubGlobal("localStorage", {
 
 beforeEach(() => store.clear());
 
-describe("canvas-first-use — legend flag", () => {
-  it("defaults to not-seen", () => {
-    expect(legendSeen()).toBe(false);
+describe("canvas-first-use — legend flag (per-mode)", () => {
+  it("defaults to not-seen in both modes", () => {
+    expect(legendSeen("canvas")).toBe(false);
+    expect(legendSeen("list")).toBe(false);
   });
 
   it("marks seen and stays seen (metadata write, not a toggle)", () => {
-    markLegendSeen();
-    expect(legendSeen()).toBe(true);
-    expect(store.get("archie.canvasLegendSeen.v1")).toBe("1");
-    markLegendSeen(); // idempotent — a second mark doesn't unset anything
-    expect(legendSeen()).toBe(true);
+    markLegendSeen("canvas");
+    expect(legendSeen("canvas")).toBe(true);
+    expect(store.get("archie.canvasLegendSeen.v2.canvas")).toBe("1");
+    markLegendSeen("canvas"); // idempotent — a second mark doesn't unset anything
+    expect(legendSeen("canvas")).toBe(true);
+  });
+
+  it("a reorder demonstrated in LIST mode does NOT mark the CANVAS legend seen (Archie-adae)", () => {
+    markLegendSeen("list");
+    expect(legendSeen("list")).toBe(true);
+    expect(legendSeen("canvas")).toBe(false); // canvas legend still shows next time canvas mode is on
+  });
+
+  it("a reorder demonstrated in CANVAS mode does NOT mark the LIST flag seen", () => {
+    markLegendSeen("canvas");
+    expect(legendSeen("canvas")).toBe(true);
+    expect(legendSeen("list")).toBe(false);
+  });
+
+  it("migration: the OLD single flag grandfathers BOTH modes as seen", () => {
+    store.set("archie.canvasLegendSeen.v1", "1"); // pre-split user who already dismissed it
+    expect(legendSeen("canvas")).toBe(true);
+    expect(legendSeen("list")).toBe(true);
+  });
+
+  it("migration: the old flag is read-only — marking one mode doesn't touch it", () => {
+    store.set("archie.canvasLegendSeen.v1", "1");
+    markLegendSeen("canvas");
+    expect(store.get("archie.canvasLegendSeen.v1")).toBe("1"); // unchanged, never written forward
   });
 });
 
@@ -30,10 +55,11 @@ describe("canvas-first-use — hint flag", () => {
     expect(hintSeen()).toBe(false);
   });
 
-  it("marks seen independently of the legend flag", () => {
+  it("marks seen independently of the legend flags", () => {
     markHintSeen();
     expect(hintSeen()).toBe(true);
-    expect(legendSeen()).toBe(false); // two separate keys, not one shared "onboarded" flag
+    expect(legendSeen("canvas")).toBe(false); // separate keys, not one shared "onboarded" flag
+    expect(legendSeen("list")).toBe(false);
   });
 });
 
@@ -44,9 +70,9 @@ describe("canvas-first-use — private-mode tolerance", () => {
       setItem: () => { throw new Error("SecurityError"); },
       removeItem: () => { throw new Error("SecurityError"); },
     });
-    expect(() => legendSeen()).not.toThrow();
-    expect(legendSeen()).toBe(false); // treated as never-seen — cue simply re-shows, harmless
-    expect(() => markLegendSeen()).not.toThrow();
+    expect(() => legendSeen("canvas")).not.toThrow();
+    expect(legendSeen("canvas")).toBe(false); // treated as never-seen — cue simply re-shows, harmless
+    expect(() => markLegendSeen("canvas")).not.toThrow();
     expect(() => hintSeen()).not.toThrow();
     expect(() => markHintSeen()).not.toThrow();
 

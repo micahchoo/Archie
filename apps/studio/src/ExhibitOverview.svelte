@@ -13,6 +13,7 @@
   import { moveBlock, marqueeHits, START, END, type ClickMods, type PlateRect } from "./overview-selection.js";
   import { viewPrefs } from "./view-prefs.svelte.js";
   import { legendSeen, markLegendSeen, hintSeen, markHintSeen } from "./canvas-first-use.js";
+  import { isReorderable, reorderBlockedMessage } from "./reorder-state.js";
 
   type OverviewObject = { id: string; label: string; source: string; mediaType?: "image" | "sound" | "video" };
 
@@ -146,11 +147,15 @@
   const mode = $derived(viewPrefs.overviewMode);
   let viewport = $state<HTMLDivElement | null>(null);
 
-  // First-use-only chrome (Archie-a9fc chrome trim): the pan/zoom legend and the "click to open" hint
-  // each teach a one-time gesture, then hide permanently once demonstrated (a successful drag / a plate
-  // open) — app-global, not per-slug (canvas-first-use.ts). Seeded once at mount from the persisted flag,
-  // same idiom as App.svelte's FIRST_ADD_KEY local $state seed.
-  let showLegend = $state(!legendSeen());
+  // First-use-only chrome (Archie-a9fc chrome trim): the pan/zoom legend teaches its gesture ONCE per
+  // MODE (canvas-first-use.ts LegendMode — Archie-adae review: a reorder demonstrated in list mode used
+  // to dismiss the canvas legend unseen), then hides permanently; the "click to open" hint is identical
+  // in both modes so it stays a single flag. Seeded once at mount from the persisted flag, same idiom as
+  // App.svelte's FIRST_ADD_KEY local $state seed. (The legend's REORDERABILITY-STATE job — "search/sort
+  // is blocking drag" — is now a separate, always-on indicator below; it is not first-use chrome.)
+  // Always seeded from the CANVAS flag — the legend element only ever renders inside the canvas block
+  // below, regardless of which mode is active when this component happens to mount.
+  let showLegend = $state(!legendSeen("canvas"));
   let showHint = $state(!hintSeen());
 
   // --- Toolbar: search / sort (Phase 2). VIEW-only local $state — these never touch the canonical
@@ -161,7 +166,14 @@
   let sortMode = $state<"reading" | "name" | "recent">("reading");
   // Reorder is meaningless outside canonical order — a drop index in a filtered/sorted view ≠ canonical
   // index. So drag is live ONLY in reading order with no active search; otherwise the grip/legend say why.
-  const reorderable = $derived(sortMode === "reading" && search.trim() === "");
+  // Pure predicates live in reorder-state.ts (tested headless) — this $derived is its only caller here,
+  // plus the canvas indicator, the list-mode hint, AND the list grip's title all share reorderMessage
+  // below (never !reorderable / "clear search & sort" duplicated as separate, driftable copies).
+  const reorderable = $derived(isReorderable(sortMode, search));
+  // "" while reorderable; otherwise the ACCURATE reason (search-only / sort-only / both — review
+  // follow-up: the old fixed "Clear search & sort to reorder" wrongly told a search-only user to also
+  // clear a sort they'd never touched).
+  const reorderMessage = $derived(reorderBlockedMessage(sortMode, search));
   // The plate/row NUMBER is the canonical reading-order position — stable even when the view is sorted by
   // name/recency (sort is a view, never a reorder), so a sorted plate still shows where it reads.
   const orderIndexOf = $derived(new Map(objects.map((o, i) => [o.id, i])));
@@ -292,8 +304,12 @@
     if (!sameOrder(cur, next)) {
       onreorder(next); // skip a no-op drop — no spurious persist + folder mirror
       // First SUCCESSFUL drag (an actual reorder, not a no-op drop) dismisses the pan/zoom legend
-      // permanently (canvas-first-use.ts) — the user has just demonstrated the gesture.
-      if (showLegend) { showLegend = false; markLegendSeen(); }
+      // permanently for the mode it happened IN (canvas-first-use.ts LegendMode, Archie-adae review) —
+      // a reorder demonstrated via the list row grip no longer marks the CANVAS legend seen, since the
+      // user never saw it. `mode` is read live here (not the mount-time seed), so it reflects whichever
+      // UI's drag handlers actually fired this commit.
+      markLegendSeen(mode);
+      if (mode === "canvas" && showLegend) showLegend = false;
     }
   }
   const commitReorder = (beforeId: string | null) => commit(beforeId ?? END);
@@ -484,14 +500,32 @@
       {#if showLegend}
         <div class="canvas-legend" aria-hidden="true">
           <!-- Drag-legend disambiguation (staging spec §6): once a narrative exists, drag here no longer sets
-               "the order visitors see" — the SECTION order does. Demote drag to the fallback grid order. -->
-          <span class="g lead"><span class="ico">⇅</span> {!reorderable ? "Clear search & sort to reorder" : hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a media item to set the reading order"}</span>
-          <span class="dot">·</span>
+               "the order visitors see" — the SECTION order does. Demote drag to the fallback grid order.
+               Omitted entirely when !reorderable — teaching a gesture that's currently disabled would be
+               wrong; the persistent .reorder-state indicator below covers that case instead (Archie-adae:
+               the legend teaches ONCE, reorderability is a standing state, the two are no longer one span). -->
+          {#if reorderable}
+            <span class="g lead"><span class="ico">⇅</span> {hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a media item to set the reading order"}</span>
+            <span class="dot">·</span>
+          {/if}
           <span class="g"><span class="ico">✥</span> Drag the canvas to pan</span>
           <span class="dot">·</span>
           <span class="g"><span class="ico">⊙</span> Scroll to zoom</span>
         </div>
       {/if}
+      <!-- Reorderability STATE (Archie-adae review — split from the retired-after-first-use teaching
+           legend above): always-relevant, so it's not a dismissible tip — it simply tracks whether search
+           or sort is currently blocking drag-to-reorder, appearing/disappearing with that condition. Lives
+           near the toolbar's search/sort controls (top-left) rather than under the pan/zoom legend
+           (top-centre), so it never collides with — or gets mistaken for — the first-use chrome (the
+           .reorder-state max-width clamp below keeps it clear of the centred legend at narrow widths too).
+           role "status" (not aria-hidden, unlike the legend) so screen readers hear it the moment
+           reordering is actually disabled, not just see a color change. The element itself stays MOUNTED
+           always — only its text toggles empty ↔ message — rather than {#if}-mounting/unmounting it: some
+           assistive tech only announces a live region for a change to EXISTING content, not one that
+           appears with content already in it (review NIT). reorderMessage is "" while reorderable, so it
+           renders nothing visible; class:visible drives the opacity so an empty status never paints a box. -->
+      <p class="reorder-state" class:visible={!!reorderMessage} role="status">{reorderMessage}</p>
       <div class="zoomctl" role="group" aria-label="Zoom">
         <button class="fit" onclick={fit} title="Reset to 100%">Fit</button>
         <span class="pct" aria-live="polite">{Math.round(z * 100)}%</span>
@@ -503,7 +537,7 @@
   {:else}
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
-    <p class="list-hint">{!reorderable ? "Clear search & sort to reorder" : hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order."}</p>
+    <p class="list-hint">{reorderMessage || (hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order.")}</p>
     <ul class="list">
       <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
@@ -514,7 +548,7 @@
         <li class:dragging={dragId === o.id} class:over={overId === o.id} class:selected={selection.has(o.id)}
           ondragover={(e) => onPlateDragOver(e, o.id)}
           ondrop={(e) => { e.preventDefault(); commitReorder(o.id); }}>
-          <button type="button" class="grip" class:off={!reorderable} draggable={reorderable} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd} title={reorderable ? "Drag to reorder" : "Clear search & sort to reorder"} aria-label="Reorder {o.label}">⠿</button>
+          <button type="button" class="grip" class:off={!reorderable} draggable={reorderable} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd} title={reorderable ? "Drag to reorder" : reorderMessage} aria-label="Reorder {o.label}">⠿</button>
           <button data-plate-id={o.id} onclick={(e) => onPlateClick(e, o.id)} ondblclick={() => openPlate(o.id)} aria-pressed={selectMode ? selection.has(o.id) : undefined}>
             {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
             <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
@@ -592,6 +626,20 @@
   .canvas-legend .g { display: inline-flex; align-items: center; gap: var(--space-1); }
   .canvas-legend .ico { color: var(--accent-2); font-size: 0.95rem; }
   .canvas-legend .dot { color: var(--ink-canvas-muted); }
+  /* Reorderability state (Archie-adae) — a standing status label, deliberately quieter/flatter than the
+     dismissible-looking .canvas-legend bubble (a plain border, no shadow-lift, muted ink not secondary):
+     it never goes away on its own, so it shouldn't read as a tip you can dismiss. Top-left, opposite the
+     top-centre legend and the bottom-right zoom cluster, so the two never collide when both show at once
+     (a first-time user who searches before ever dragging). The element STAYS MOUNTED even when empty
+     (review NIT: an {#if}-toggled role="status" isn't reliably announced by all AT, since some only
+     announce a CHANGE to existing content, not new content arriving already-populated) — .visible is an
+     opacity toggle, not a mount toggle, so it never paints a visible empty box either. max-width clamps
+     against the VIEWPORT's own width (not a fixed rem), shrinking below ~950-1000px canvas width so this
+     top-left label can't grow wide enough to run into the horizontally-centred legend (review NIT).
+     clamp()'s 8rem floor keeps max-width from going negative/zero on a very narrow viewport (calc(50% -
+     12rem) alone would). */
+  .reorder-state { position: absolute; top: var(--space-4); left: var(--space-6); margin: 0; max-width: clamp(8rem, calc(50% - 12rem), 18rem); padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.1em; line-height: 1.4; color: var(--ink-canvas-muted); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); pointer-events: none; opacity: 0; transition: opacity 140ms ease; }
+  .reorder-state.visible { opacity: 1; }
 
   .plate { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: 12.5rem; cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); transition: transform 180ms ease, box-shadow 180ms ease; }
   .plate:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
