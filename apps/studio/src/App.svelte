@@ -344,7 +344,12 @@
   }
   // Overview ↔ object (invention #1): descend from a plate into close annotation, then climb back. Going
   // back to the overview KEEPS the resolved thumbnails (unlike backToLibrary, which frees them).
-  function openObject(objId: string) { editingObjectId = null; switchObject(objId); view = "editor"; }
+  // A plain plate/rail open must drop any stale beat focus itself: switchObject's focusSectionId reset is
+  // guarded by `id === currentObjectId` (early return), so re-opening the object a deep link just landed on
+  // (e.g. overview → beat → back → same object's plate) would otherwise leave the old focusSectionId armed —
+  // NarrativeEditor's activeSectionId effect would then steal focus/scroll/pulse on a click that meant
+  // nothing more than "open this object" (code review, Archie-696d follow-up).
+  function openObject(objId: string) { editingObjectId = null; switchObject(objId); focusSectionId = null; view = "editor"; }
   // Library-Gallery wall click-through (Phase 3.2): open an object in ITS exhibit's editor. ALWAYS
   // openExhibit first — `currentSlug` is a cursor, NOT a "this exhibit is loaded" flag: after
   // backToLibrary (assets.revokeAll emptied the thumbs) or at boot/post-replace, currentSlug can name a
@@ -480,7 +485,10 @@
   function navigateToSection(sectionId: string) {
     const s = (currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
     if (!s) return;
-    switchObject(s.objectId); // rail-jump to the section's object (no-op when already there; clears focusSectionId)
+    // rail-jump to the section's object. switchObject early-returns (no-op, INCLUDING skipping its own
+    // focusSectionId reset) when already on that object — harmless here because the next line sets
+    // focusSectionId unconditionally regardless of which branch switchObject took.
+    switchObject(s.objectId);
     focusSectionId = sectionId; // set AFTER switchObject → drives the canvas focus fragment + the lit "active" card
   }
   // --- Spine deep link (Archie-696d, decision Archie-da38): each read-only overview spine row is a beat

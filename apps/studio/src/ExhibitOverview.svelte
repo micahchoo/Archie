@@ -393,7 +393,9 @@
                      wasn't pruned (deleteObjectNotesAndMeta drops the object, not orphaned sections). No
                      sensible editor target exists for it, so the row goes inert rather than link to a
                      nonexistent object — never a button/link, so it's out of the tab order too. -->
-                <div class="ns-beat ns-beat-gone" aria-disabled="true" title="This section's media item was removed">
+                <!-- aria-disabled dropped (code review NIT 2): a role-less div doesn't map it to anything
+                     for AT — the visible "Media item removed" text already carries the meaning. -->
+                <div class="ns-beat ns-beat-gone" title="This section's media item was removed">
                   <span class="ns-n">{i + 1}</span>
                   <span class="ns-title">{s.title || `Section ${i + 1}`}</span>
                   <span class="ns-with">Media item removed</span>

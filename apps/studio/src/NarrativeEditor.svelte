@@ -68,11 +68,15 @@
   // spec's "must not rely on color alone".
   let cardEls = $state<Record<string, HTMLLIElement | null>>({});
   let pulseId = $state<string | null>(null);
+  // Checked once (not reactive to a live OS-setting flip mid-session — matches how the rest of the app
+  // treats this preference). The CSS `.card.pulse` media query is the belt to this suspenders: it alone
+  // is enough to kill the animation, this just also keeps the scroll itself from being a moving jump.
+  const prefersReducedMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
   $effect(() => {
     const id = activeSectionId;
     if (!id) return;
     const el = cardEls[id];
-    el?.scrollIntoView({ block: "center", behavior: "smooth" });
+    el?.scrollIntoView({ block: "center", behavior: prefersReducedMotion ? "auto" : "smooth" });
     el?.focus();
     pulseId = id;
     const t = setTimeout(() => { pulseId = null; }, 1200);
@@ -261,6 +265,11 @@
   @keyframes section-pulse {
     0% { outline: 3px solid var(--accent-2); outline-offset: 1px; }
     100% { outline: 3px solid transparent; outline-offset: 8px; }
+  }
+  /* Code review NIT 1: the pulse is decorative motion — kill it under prefers-reduced-motion. The card's
+     .active border-left + the focus-driven scroll/aria-label still land the reader on the right section. */
+  @media (prefers-reduced-motion: reduce) {
+    .card.pulse { animation: none; }
   }
 
   .ord { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
