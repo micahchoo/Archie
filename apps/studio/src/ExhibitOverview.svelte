@@ -13,7 +13,7 @@
   import { moveBlock, marqueeHits, START, END, type ClickMods, type PlateRect } from "./overview-selection.js";
   import { viewPrefs } from "./view-prefs.svelte.js";
   import { legendSeen, markLegendSeen, hintSeen, markHintSeen } from "./canvas-first-use.js";
-  import { isReorderable } from "./reorder-state.js";
+  import { isReorderable, reorderBlockedMessage } from "./reorder-state.js";
 
   type OverviewObject = { id: string; label: string; source: string; mediaType?: "image" | "sound" | "video" };
 
@@ -166,10 +166,14 @@
   let sortMode = $state<"reading" | "name" | "recent">("reading");
   // Reorder is meaningless outside canonical order — a drop index in a filtered/sorted view ≠ canonical
   // index. So drag is live ONLY in reading order with no active search; otherwise the grip/legend say why.
-  // Pure predicate lives in reorder-state.ts (tested headless) — this $derived is its only caller here,
-  // plus the persistent canvas reorder-state indicator below shares the SAME predicate (never !reorderable
-  // duplicated as a second, driftable condition).
+  // Pure predicates live in reorder-state.ts (tested headless) — this $derived is its only caller here,
+  // plus the canvas indicator, the list-mode hint, AND the list grip's title all share reorderMessage
+  // below (never !reorderable / "clear search & sort" duplicated as separate, driftable copies).
   const reorderable = $derived(isReorderable(sortMode, search));
+  // "" while reorderable; otherwise the ACCURATE reason (search-only / sort-only / both — review
+  // follow-up: the old fixed "Clear search & sort to reorder" wrongly told a search-only user to also
+  // clear a sort they'd never touched).
+  const reorderMessage = $derived(reorderBlockedMessage(sortMode, search));
   // The plate/row NUMBER is the canonical reading-order position — stable even when the view is sorted by
   // name/recency (sort is a view, never a reorder), so a sorted plate still shows where it reads.
   const orderIndexOf = $derived(new Map(objects.map((o, i) => [o.id, i])));
@@ -513,12 +517,15 @@
            legend above): always-relevant, so it's not a dismissible tip — it simply tracks whether search
            or sort is currently blocking drag-to-reorder, appearing/disappearing with that condition. Lives
            near the toolbar's search/sort controls (top-left) rather than under the pan/zoom legend
-           (top-centre), so it never collides with — or gets mistaken for — the first-use chrome. role
-           "status" (not aria-hidden, unlike the legend) so screen readers hear it the moment reordering
-           is actually disabled, not just see a color change. -->
-      {#if !reorderable}
-        <p class="reorder-state" role="status">Reordering is off while search or sort is active — clear both to turn it back on.</p>
-      {/if}
+           (top-centre), so it never collides with — or gets mistaken for — the first-use chrome (the
+           .reorder-state max-width clamp below keeps it clear of the centred legend at narrow widths too).
+           role "status" (not aria-hidden, unlike the legend) so screen readers hear it the moment
+           reordering is actually disabled, not just see a color change. The element itself stays MOUNTED
+           always — only its text toggles empty ↔ message — rather than {#if}-mounting/unmounting it: some
+           assistive tech only announces a live region for a change to EXISTING content, not one that
+           appears with content already in it (review NIT). reorderMessage is "" while reorderable, so it
+           renders nothing visible; class:visible drives the opacity so an empty status never paints a box. -->
+      <p class="reorder-state" class:visible={!!reorderMessage} role="status">{reorderMessage}</p>
       <div class="zoomctl" role="group" aria-label="Zoom">
         <button class="fit" onclick={fit} title="Reset to 100%">Fit</button>
         <span class="pct" aria-live="polite">{Math.round(z * 100)}%</span>
@@ -530,7 +537,7 @@
   {:else}
     <!-- 1b fallback: the explicit list (the contrast the gate measures the canvas against). Same
          drag-to-reorder — a vertical list is the most legible place to set sequence. -->
-    <p class="list-hint">{!reorderable ? "Clear search & sort to reorder" : hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order."}</p>
+    <p class="list-hint">{reorderMessage || (hasNarrative ? "Visitors follow your section order — dragging here sets the fallback grid order." : "Drag a row by its ⠿ handle to set the reading order.")}</p>
     <ul class="list">
       <li class="dropstart-row" class:armed={dragId && objects[0]?.id !== dragId} class:over={overId === START}
         ondragover={(e) => { if (dragId && objects[0]?.id !== dragId) { e.preventDefault(); overId = START; } }}
@@ -541,7 +548,7 @@
         <li class:dragging={dragId === o.id} class:over={overId === o.id} class:selected={selection.has(o.id)}
           ondragover={(e) => onPlateDragOver(e, o.id)}
           ondrop={(e) => { e.preventDefault(); commitReorder(o.id); }}>
-          <button type="button" class="grip" class:off={!reorderable} draggable={reorderable} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd} title={reorderable ? "Drag to reorder" : "Clear search & sort to reorder"} aria-label="Reorder {o.label}">⠿</button>
+          <button type="button" class="grip" class:off={!reorderable} draggable={reorderable} ondragstart={(e) => onPlateDragStart(e, o.id)} ondragend={onDragEnd} title={reorderable ? "Drag to reorder" : reorderMessage} aria-label="Reorder {o.label}">⠿</button>
           <button data-plate-id={o.id} onclick={(e) => onPlateClick(e, o.id)} ondblclick={() => openPlate(o.id)} aria-pressed={selectMode ? selection.has(o.id) : undefined}>
             {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
             <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
@@ -623,8 +630,16 @@
      dismissible-looking .canvas-legend bubble (a plain border, no shadow-lift, muted ink not secondary):
      it never goes away on its own, so it shouldn't read as a tip you can dismiss. Top-left, opposite the
      top-centre legend and the bottom-right zoom cluster, so the two never collide when both show at once
-     (a first-time user who searches before ever dragging). */
-  .reorder-state { position: absolute; top: var(--space-4); left: var(--space-6); margin: 0; max-width: 18rem; padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.1em; line-height: 1.4; color: var(--ink-canvas-muted); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); pointer-events: none; }
+     (a first-time user who searches before ever dragging). The element STAYS MOUNTED even when empty
+     (review NIT: an {#if}-toggled role="status" isn't reliably announced by all AT, since some only
+     announce a CHANGE to existing content, not new content arriving already-populated) — .visible is an
+     opacity toggle, not a mount toggle, so it never paints a visible empty box either. max-width clamps
+     against the VIEWPORT's own width (not a fixed rem), shrinking below ~950-1000px canvas width so this
+     top-left label can't grow wide enough to run into the horizontally-centred legend (review NIT).
+     clamp()'s 8rem floor keeps max-width from going negative/zero on a very narrow viewport (calc(50% -
+     12rem) alone would). */
+  .reorder-state { position: absolute; top: var(--space-4); left: var(--space-6); margin: 0; max-width: clamp(8rem, calc(50% - 12rem), 18rem); padding: var(--space-1) var(--space-3); font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.1em; line-height: 1.4; color: var(--ink-canvas-muted); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); pointer-events: none; opacity: 0; transition: opacity 140ms ease; }
+  .reorder-state.visible { opacity: 1; }
 
   .plate { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: 12.5rem; cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); transition: transform 180ms ease, box-shadow 180ms ease; }
   .plate:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
