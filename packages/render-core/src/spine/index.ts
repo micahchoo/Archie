@@ -6,3 +6,16 @@ export * from "./heads.js";
 export * from "./serialize.js";
 export * from "./deserialize.js";
 export * from "./persist.js";
+
+// Brand-id constructors + their types (wadm/brand.js) — re-exported so a spine consumer can
+// construct branded ids (transport/CRDT mapping, server tier) without reaching through the heavy
+// root barrel or `as`-casting. Costs nothing: brand.js is ALREADY in this entry's module graph
+// as a value import (log.ts mints, deserialize.ts brands) — measured 11 modules before and after.
+export {
+  asClientId,
+  asLogicalId,
+  asRevId,
+  type ClientId,
+  type LogicalId,
+  type RevId,
+} from "../wadm/brand.js";
