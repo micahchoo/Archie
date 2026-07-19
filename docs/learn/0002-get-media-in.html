@@ -24,17 +24,21 @@
         <p class="standfirst">The slow way is to start blank and add files one by one. Three onramps fill an <span class="term" data-term="exhibit">Exhibit</span> — two of them save real time.</p>
         <div class="flow">
           <div class="stack">
-            <span class="tile"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg> Blank title</span>
+            <span class="tile"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v5h5"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg> Start empty</span>
             <span class="tile"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> Media folder</span>
             <span class="tile"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg> IIIF link</span>
           </div>
           <div class="arrow">→</div>
           <div class="out">Your Exhibit<small>media in, in order</small></div>
         </div>
-        <figure class="real">
-          <img src="assets/img/studio-create-tile.png" alt="The Studio 'new exhibit' tile: a title field with a Create button, plus '… or add a media folder' and '… or paste a IIIF link'">
-          <figcaption><b>All three live in one tile</b> — the dashed "+" card on the Studio Library home (real screenshot).</figcaption>
-        </figure>
+        <!-- SCREENSHOT REMOVED: studio-create-tile.png showed the pre-redesign inline create tile
+             (title field + Create + inline "…or add a media folder"). The current UI is a dashed
+             "+ New exhibit" tile that opens a scrimmed dialog offering the three choices below.
+             FLAG: a human should re-shoot the new CreateExhibitDialog for this slide. -->
+        <div class="callout">
+          <span class="label">Where it lives</span>
+          On the Studio Library home, the dashed <b>"+ New exhibit"</b> tile opens one dialog — pick <b>Start empty</b>, <b>From a media folder</b>, or <b>From a IIIF link</b>. The two folder/IIIF choices are the ones people miss.
+        </div>
       </div>
     </section>
 
@@ -43,20 +47,21 @@
       <div class="slide-inner">
         <h2>The two you'd miss</h2>
         <div class="nouns">
-          <div class="noun"><b>Type a title → Create</b>
-            <span class="rel">The obvious one. Starts an empty exhibit; you add media as you go.</span></div>
-          <div class="noun"><b>… or add a media folder</b><span class="flag">easy to miss</span>
-            <span class="rel">Point at a folder and every image, audio, or video file becomes an <span class="term" data-term="object">Object</span>, kept in the folder's order. One gesture builds the whole exhibit.</span></div>
-          <div class="noun"><b>… or paste a IIIF link</b><span class="flag">easy to miss</span>
-            <span class="rel">Paste a <span class="term" data-term="iiif">IIIF</span> manifest URL from a library or museum — its images flow straight in, already captioned.</span></div>
+          <div class="noun"><b>Start empty</b>
+            <span class="rel">The obvious one. Opens an empty exhibit; you add media as you go.</span></div>
+          <div class="noun"><b>From a media folder</b><span class="flag">easy to miss</span>
+            <span class="rel">Point at a folder and every image, audio, or video file becomes an <span class="term" data-term="object">Object</span>, kept in the folder's order — one gesture builds the whole exhibit. Subfolders can each become their own exhibit, and the title comes prefilled from the folder's name (edit it before you create).</span></div>
+          <div class="noun"><b>From a IIIF link</b><span class="flag">easy to miss</span>
+            <span class="rel">Paste a <span class="term" data-term="iiif">IIIF</span> manifest URL from a library or museum — Archie validates it as you paste, then its images flow straight in, already captioned.</span></div>
         </div>
+        <p class="flow-cap">Already inside an exhibit? The same dialog returns as <b>"+ Add media"</b> (in the editor) or the <b>Add media</b> plate (on the overview) — same folder and IIIF paths, plus <b>A map</b> for a geographic basemap.</p>
         <div class="aside-adv adv">
           <span class="label">For the standards-minded</span>
           The IIIF onramp bootstraps from any institutional manifest — tens of thousands are published by libraries and museums, so you can annotate a source collection without downloading a thing. A folder import keeps each file's original name as provenance, so your Objects stay citable back to source.
         </div>
         <div class="callout">
           <span class="label">Try it</span>
-          In Studio, open the dashed <b>"+"</b> tile and choose <b>"… or add a media folder."</b> Watch a whole Exhibit appear, each file already an Object in order.
+          In Studio, click the dashed <b>"+ New exhibit"</b> tile and choose <b>"From a media folder."</b> Watch a whole Exhibit appear, each file already an Object in order.
         </div>
       </div>
     </section>
