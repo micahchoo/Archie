@@ -16,13 +16,14 @@ export const PUBLISH_CONCURRENCY = 6;
  * result (`out[i]` is always `fn(items[i], i)`, regardless of completion order).
  *
  * FAILURE SEMANTICS (bail-fast, verified by the concurrency.test.ts regression): the FIRST rejection is
- * re-thrown to the caller, and once any item has failed the pool stops pulling UNSTARTED items — so a
- * failed publish cannot leave background workers writing into exhibit subtrees after the caller has moved
- * on (that straggler-vs-retry interleave is exactly the torn-write the render-core-data-integrity rule
- * guards). Items already IN FLIGHT at the moment of failure still run to completion — this is cooperative
- * bail, NOT cancellation; `fn` is never aborted mid-await, there is no AbortSignal. A caller that must
- * guarantee no residual writes has to await this call before retrying (publishLibrary does: the exhibit
- * pool is a single awaited `mapLimit`).
+ * re-thrown to the caller, and once any item has failed the pool stops pulling UNSTARTED items. Items
+ * already IN FLIGHT at the moment of failure still run to completion — and because the rejection reaches
+ * the caller as soon as the first worker throws, up to `limit - 1` of them may land writes SHORTLY AFTER
+ * the caller observes the failure. This is cooperative bail, NOT cancellation; `fn` is never aborted
+ * mid-await, there is no AbortSignal. So bail-fast bounds the residue to the in-flight pool width (vs the
+ * whole remaining library pre-fix) but does not eliminate it — a retry loop that must not interleave with
+ * residual writes (the torn-write the render-core-data-integrity rule guards) needs its own settling
+ * discipline, e.g. a brief delay or a generation check, not just `await` on this call.
  */
 export async function mapLimit<T, R>(
   items: readonly T[],
