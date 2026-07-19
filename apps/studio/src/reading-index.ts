@@ -36,24 +36,3 @@ export function readingBadge(key: string | null | undefined, readingIds: readonl
   const n = readingNumber(key, readingIds);
   return n >= 1 ? circled(n) : "";
 }
-
-/**
- * The live-region text spoken when a note is selected via keyboard in the notes listbox (§4). Reuses the
- * §3 reading NUMBER so the same number names a reading in the legend, the layer chip, and here — but as the
- * plain word "reading N", NOT the circled glyph (a screen reader reads "①" as "circled digit one", noise).
- * Shape: `"{comment or (untitled)}, note {i} of {n}, reading {N}, {reading label}."` (the "reading N," clause
- * is dropped for an unknown/pruned reading — number 0).
- */
-export function noteAnnouncement(opts: {
-  comment: string;
-  index: number; // 0-based position in the visible notes list
-  count: number;
-  readingKey: string | null | undefined;
-  readingLabel: string;
-  readingIds: readonly string[];
-}): string {
-  const c = opts.comment.trim() || "(untitled)";
-  const n = readingNumber(opts.readingKey, opts.readingIds);
-  const reading = n >= 1 ? `reading ${n}, ${opts.readingLabel}` : opts.readingLabel;
-  return `${c}, note ${opts.index + 1} of ${opts.count}, ${reading}.`;
-}

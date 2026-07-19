@@ -15,8 +15,8 @@
   // layers in the WADM form → publish to .archie.zip. Logic lives in core; this is the thin shell.
   import { onMount, tick } from "svelte";
   import ReadingsModal from "./ReadingsModal.svelte";
-  // The readings RAIL that floated over the canvas is RETIRED from the editor (Archie-b671): its
-  // controls now live as a subordinate panel in the sidebar's "This object" zone (see the body markup).
+  // The readings RAIL that floated over the canvas is RETIRED from the editor (Archie-b671): its controls
+  // live as the Readings panel in the navigator's "This object" zone (Archie-d48e — see the body markup).
   import SafetyState from "./SafetyState.svelte";
   // Canvas is lazy-loaded (see CanvasComp below) — it pulls OpenSeadragon + Annotorious, the studio's
   // largest dependency, and Studio boots into the library view that never mounts it. Keeping it out of
@@ -48,6 +48,7 @@
   import { modality } from "./modality.svelte";
   import { applyClick, selectAll as selectAllIds, applyMarquee, type ClickMods } from "./overview-selection.js";
   import { teardownAndRemoveExhibits } from "./exhibit-teardown.js";
+  import { warnAnnotationPublishCorruption } from "./publish-warnings.js";
   import {
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
@@ -65,14 +66,15 @@
   // createPublishFlows is imported DYNAMICALLY (ensurePub below) so its fflate + dompurify + GitHub-publish
   // deps stay OUT of the startup bundle — publishing is a deliberate action, never needed at boot.
   import { createReadingState } from "./reading-state.svelte.js";
-  import { readingBadge, readingNumber, noteAnnouncement } from "./reading-index.js";
+  import { readingBadge, readingNumber } from "./reading-index.js";
   import { distinctEditors, hasMultipleEditors, editorLabel, attributionChip } from "./collab-attribution.js";
   import { loadImportFreshness, freshnessBadgeText } from "./import-freshness.js";
   import MergeReview from "./MergeReview.svelte";
   import { roveIndex } from "./roving.js";
+  import { dedupeHeadsByLogicalId } from "./note-heads.js";
   import { hasRealWorkIn } from "./safety-state.svelte.js";
-  // Persisted editor-chrome view preferences (Archie-c7ef): the filmstrip's collapsed state + the docked
-  // note editor's width. Same module the overview Canvas/List + library lens live in.
+  // Persisted editor-chrome view preferences (Archie-c7ef): the filmstrip's collapsed state + the
+  // inspector panel's width. Same module the overview Canvas/List + library lens live in.
   import { viewPrefs } from "./view-prefs.svelte.js";
   import { narrativeCueReducer } from "./narrative-cue-reducer.js";
   // Seed / default-exhibit data lives in seed-data.ts (the DOMINO cut): DEFAULT_EXHIBITS, the per-slug
@@ -738,13 +740,17 @@
     setSections([...secs, { id: newSectionId(), title: `Section ${secs.length + 1}`, objectId: n.objectId, ...(n.start ? { start: n.start } : {}), prose: n.lead }]);
   }
 
-  // --- Docked note editor (Archie-b671): the WADM form is a STABLE right-edge element, not a floater. It
-  // replaces both the marker-anchored popover AND the pinned inspector (their drag/pin machinery is gone).
-  // The dock is layout, so nothing streams a marker screen-rect anymore; selecting a note or a canvas marker
-  // populates it, Esc deselects (the existing Esc ladder), and its width is a persisted view preference. ---
-  // Docked-editor width: a px OVERRIDE of the CSS clamp() default (null ⇒ default ~320px), persisted via
+  // --- Inspector panel (Archie-d48e navigator/inspector split; supersedes the Archie-b671 dock): the RIGHT
+  // panel is "what is selected" — the object's notes list, with the selected note expanding IN PLACE into the
+  // WADM form (no separate dock, no cross-canvas twin of the selected note). Selecting a note in the list OR a
+  // canvas marker populates it; Esc deselects (the existing Esc ladder); its width is a persisted view pref. ---
+  // Inspector width: a px OVERRIDE of the CSS clamp() default (null ⇒ default ~320px), persisted via
   // view-prefs (Archie-c7ef). Local $state mirrors the pref so ResizeDivider can bind it; oncommit writes back.
-  let dockWidth = $state<number | null>(viewPrefs.dockWidth);
+  let inspectorWidth = $state<number | null>(viewPrefs.inspectorWidth);
+  // The left navigator's Narrative row is a COLLAPSED accordion (Archie-d48e): the row shows the section
+  // count and expands to reveal the existing create-row + NarrativeEditor. Component state only, never routed
+  // to the URL (ADR-0024 #6 — a panel's open/closed is not a place).
+  let narrativeOpen = $state(false);
 
   // Resizable / collapsible sidebar (Phase-2 expandability). `asideWidth` is a px OVERRIDE
   // of the responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom
@@ -768,7 +774,8 @@
   // togglePanel / openPanelTo) is retired: both scopes are present at once, so nothing to expand or reveal.
 
   // "Done" on the note editor: commit any uncommitted comment text (edits already autosave live, but a click
-  // might not have blurred the textarea first), then deselect → the dock returns to its empty state.
+  // might not have blurred the textarea first), then deselect → the note's inspector card collapses back to
+  // its header.
   function closeNote() {
     if (sel && commentEl) applyForm(commentEl.value, tagsOf(sel).join(", "));
     selected = null;
@@ -959,8 +966,8 @@
   let editing = $state<string | null>(null);
   // Per-note edit gate (Archie-90f1, merge contract C4: appendEdit/appendDelete refuse a plural-head
   // note). Selecting a conflicted note still highlights it on the canvas (`selected`), but `editing`
-  // stays null so the dock shows the "needs review" card (below) instead of a form that would throw on
-  // its first write — resolve in MergeReview first, then it opens normally.
+  // stays null so the note's inspector card expands to the "needs review" gate (below) instead of a form
+  // that would throw on its first write — resolve in MergeReview first, then it opens normally.
   $effect(() => { if (selected !== null) editing = conflictedNoteIds.has(selected) ? null : selected; });
   // ADR-0011: creation is gesture-initiated, not a sticky tool mode. Selection is ambient (the canvas
   // resting state). `creating` is the transient armed state for a NEW NOTE — null = not drawing; a chosen
@@ -978,7 +985,7 @@
   const drawArmed = $derived(creating !== null || framingSectionId !== null || placingPendingId !== null); // canvas in draw mode while any gesture is live
   const drawShape = $derived<DrawTool>(creating ?? "rectangle"); // framing always frames a box
   // P-2 (archie-ux Q-2): reading DISPLAY state — visible SET + active pen, never conflated.
-  // The subordinate Readings panel in the sidebar's "This object" zone is the one home (Archie-b671);
+  // The Readings panel in the navigator's "This object" zone is the one home (Archie-b671 / Archie-d48e);
   // the floating canvas rail and the old dropdown are both retired.
   const rdg = createReadingState();
   $effect(() => { rdg.reconcile(currentReadings); });
@@ -1229,7 +1236,12 @@
   // silently hide notes in the next.
   let editorFilter = $state<string>("all");
   const editorOptions = $derived.by<string[]>(() => { void rev; return [...distinctEditors(allNotes)]; });
-  const objNotes = $derived(allNotes.filter((r) => srcOf(r.target) === canvasId));
+  // ONE row per note (Archie-d48e): session.notes() returns every live head, so an edit-vs-edit conflict
+  // yields 2+ records sharing a logicalId — deduped here to one max-rev representative so the inspector's
+  // logicalId-keyed list (and the object-scoped reading counts) are per-NOTE, not per-head. Both sides stay
+  // reachable for resolution via session.conflictHeads() (MergeReview); exhibit-wide allNotes is left with
+  // all heads on purpose (editor-diversity / attribution legitimately counts every editor's head).
+  const objNotes = $derived(dedupeHeadsByLogicalId(allNotes.filter((r) => srcOf(r.target) === canvasId)));
   const notes = $derived(
     objNotes.filter((r) => rdg.noteVisible(r) && (editorFilter === "all" || String(r.lastEditor ?? "unknown") === editorFilter)),
   );
@@ -1276,55 +1288,25 @@
   // affordance applied to annotations). null = none.
   let hoverNote = $state<string | null>(null);
 
-  // --- Notes-panel LISTBOX keyboard surface (Archie-f260 §4, docs/research/a11y-interactions.md §4).
+  // --- Notes-panel DISCLOSURE surface (Archie-f260 §4 obligation, re-derived for Archie-d48e).
   // The WebGL/PixiJS marks have no per-marker DOM node a screen reader can reach (confirmed: no marker-level
-  // ARIA is possible), so the present-notes list IS the accessible parallel structure: role="listbox",
-  // role="option" per note, roving tabindex, and selection-follows-focus. Arrowing to a note sets `selected`
-  // — the SAME channel a click uses (bind:selected on the Canvas → marker selection + the docked editor), so
-  // one wire gives DOM-level AND canvas-level traversal with no new state. The roving index math is the shared
-  // roveIndex; the spoken position reuses the §3 reading number so legend, chip and announcement agree. ---
+  // ARIA is possible), so the inspector's notes list IS the accessible parallel structure standing in for the
+  // marks. Under Archie-d48e, selecting a note EXPANDS it into the edit form in place — so this is a DISCLOSURE
+  // (accordion), not a listbox: each note is a native <button aria-expanded> (real focus + native Enter/Space
+  // activation), and activating it drives `selected` — the SAME channel a canvas-marker click uses
+  // (bind:selected on the Canvas). Selection is DELIBERATE (activation), never selection-follows-focus: because
+  // selecting now opens a heavy edit form, arrowing must not silently open one. The old roving/listbox
+  // machinery (roving tabindex, arrow-nav, spoken position) retired WITH the listbox role it served — a native
+  // button needs none of it (it's a real tab stop, natively activatable, and carries its own expanded state). ---
   let notesListEl = $state<HTMLElement | null>(null);
-  let notesRoveId = $state<string | null>(null); // which option holds tabindex 0 (roving)
-  let notesAnnounce = $state(""); // the mounted polite live region's text (toggled, never unmounted)
-  const readingLabelOf = (rd: string | undefined | null): string =>
-    rd ? (currentReadings.find((x) => x.id === rd)?.name ?? rd) : "General notes";
-  // Keep the roving cursor on a real, visible note: follow the open note when there is one, else hold the
-  // current option, else fall back to the first. Runs whenever the visible `notes` set or `editing` changes.
+  // Marker-follow (Archie-d48e): selecting a note on the CANVAS expands its card IN PLACE in the inspector
+  // list — bring that card into view when it might be off-screen (the list can be taller than the panel).
+  // Runs post-DOM on `editing` change so the expanded form is already laid out; a no-op when already visible.
   $effect(() => {
-    const ids: string[] = notes.map((n) => n.logicalId);
-    if (ids.length === 0) { notesRoveId = null; return; }
-    if (editing && ids.includes(editing)) { notesRoveId = editing; return; }
-    if (notesRoveId && ids.includes(notesRoveId)) return;
-    notesRoveId = ids[0]!;
+    const id = editing;
+    if (!id) return;
+    notesListEl?.querySelector<HTMLElement>(`[data-note-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
-  function focusNoteOption(id: string) {
-    notesListEl?.querySelector<HTMLElement>(`[data-note-id="${CSS.escape(id)}"]`)?.focus();
-  }
-  function onNotesKeyDown(e: KeyboardEvent) {
-    const ids: string[] = notes.map((n) => n.logicalId);
-    // A li[role=option] has NO native activation (unlike a <button>), so Enter/Space must explicitly select
-    // the focused option — otherwise Tab-into-listbox then Enter does nothing.
-    if (e.key === "Enter" || e.key === " ") {
-      if (notesRoveId) { e.preventDefault(); selected = notesRoveId; }
-      return;
-    }
-    const cur = notesRoveId ? ids.indexOf(notesRoveId) : -1;
-    const next = roveIndex(cur, ids.length, e.key);
-    if (next === null) return; // not a nav key — do nothing
-    e.preventDefault();
-    const r = notes[next]!;
-    notesRoveId = r.logicalId;
-    selected = r.logicalId; // selection follows focus → drives the canvas marker + opens the dock (existing wire)
-    notesAnnounce = noteAnnouncement({
-      comment: stripMarkdown(commentOf(r)),
-      index: next,
-      count: ids.length,
-      readingKey: r.reading ?? "base",
-      readingLabel: readingLabelOf(r.reading),
-      readingIds,
-    });
-    void tick().then(() => focusNoteOption(r.logicalId));
-  }
   // Canvas re-applies styles only when the styleOf PROP IDENTITY changes ($effect dep) — a stable
   // function would freeze the comparing/solo regime (browser-harness finding). This derived mints
   // a fresh identity whenever the display state (visibility/solo/hover/readings/log) changes.
@@ -1693,12 +1675,14 @@
   }
   // Load EVERY exhibit's annotation log for publish, keyed by exhibit id (publishLibrary's getLog):
   // the current exhibit uses the live session (freshest, incl. unsaved); others load from their dir.
-  async function loadAllLogs(): Promise<Record<string, AnnotationLog>> {
+  // `forPublish` gates the torn-store warns (Archie-a690): publish ships what reads, and each
+  // collapse must be loud there — but this loader also feeds citation building, which stays silent.
+  async function loadAllLogs(forPublish = false): Promise<Record<string, AnnotationLog>> {
     const map: Record<string, AnnotationLog> = {};
     for (const ex of lib.meta.exhibits) {
-      if (ex.slug === currentSlug) { map[ex.id] = sess.session.entries; continue; }
-      const dir = await openExhibitAnnotationsDir(ex.slug);
-      map[ex.id] = dir ? (await AnnotationSession.load(dir, author)).entries : [];
+      const s = ex.slug === currentSlug ? sess.session : await openExhibitAnnotationsDir(ex.slug).then((dir) => (dir ? AnnotationSession.load(dir, author) : null));
+      map[ex.id] = s?.entries ?? [];
+      if (forPublish && s) warnAnnotationPublishCorruption(ex.slug, s.entries.length, s.loadCorruption);
     }
     return map;
   }
@@ -1779,7 +1763,7 @@
     const created = createPublishFlows({
       baseUrl: BASE,
       flushExhibit: () => save(),
-      loadAllLogs,
+      loadAllLogs: () => loadAllLogs(true), // publish path — torn-store warns ON (Archie-a690)
       buildFullLibrary: () => buildFullLibrary(),
       exhibits: () => lib.meta.exhibits,
       canFolder: () => bnd.canFolder,
@@ -2064,8 +2048,9 @@
   {/if}
 
   <div class="body">
-    <!-- ONE WADM form definition (ADR-0006), rendered into EITHER the floating marker popover OR the
-         docked inspector below — never forked. Declared at .body scope so both sites can {@render} it. -->
+    <!-- ONE WADM form definition (ADR-0006) — never forked. The inspector's selected note card expands in
+         place by {@render}-ing this snippet (Archie-d48e). Declared at .body scope so the inspector site can
+         reach it; a single definition keeps the edit form identical wherever it hosts. -->
     {#snippet noteForm()}
       <NoteEditor sel={sel!} editing={editing!} {currentReadings} bind:commentEl
         {showAttribution} you={author}
@@ -2123,44 +2108,51 @@
           </div>
         </div>
       {/if}
-          <!-- Narrative (exhibit-wide) — the spine spans every item and persists across rail switches. Always
-               visible now (no accordion): the create row (add / from-a-note) sits above the display-only spine. -->
-          <div class="panel-title-row">
+          <!-- Narrative (exhibit-wide) — a COLLAPSED navigator row (Archie-d48e): the spine spans every item
+               and persists across rail switches, but in the navigator ("where am I") it folds to a labelled
+               count row that expands to the EXISTING create-row + display-only spine (no new authoring
+               surface). Open/closed is component state only — never a place (ADR-0024 #6). -->
+          <button type="button" class="nav-row" aria-expanded={narrativeOpen} onclick={() => (narrativeOpen = !narrativeOpen)}>
+            <span class="nav-row-chev" aria-hidden="true">▸</span>
             <h3 class="panel-title">Narrative</h3>
             <span class="panel-note">{narrativeSectionCount > 0 ? `${narrativeSectionCount} ${narrativeSectionCount === 1 ? "section" : "sections"}` : "Not started"}</span>
-          </div>
-          <div class="panel-create">
-            <button type="button" class="create-add" onclick={addSection} disabled={OBJECTS.length === 0} title="Add a new section to this exhibit's narrative"><span aria-hidden="true">＋</span> Add a section</button>
-            {#if narrativeNotes.length > 0}
-              <select class="from-note" aria-label="Add a section from an existing note" title="Turn an existing note into a new section"
-                onchange={(e) => { const el = e.currentTarget as HTMLSelectElement; const n = narrativeNotes.find((x) => x.id === el.value); if (n) addSectionFromNote(n); el.selectedIndex = 0; }}>
-                <option value="">＋ from a note…</option>
-                {#each narrativeNotes as n (n.id)}<option value={n.id}>{n.lead.slice(0, 40)}</option>{/each}
-              </select>
+          </button>
+          {#if narrativeOpen}
+            <div class="panel-create">
+              <button type="button" class="create-add" onclick={addSection} disabled={OBJECTS.length === 0} title="Add a new section to this exhibit's narrative"><span aria-hidden="true">＋</span> Add a section</button>
+              {#if narrativeNotes.length > 0}
+                <select class="from-note" aria-label="Add a section from an existing note" title="Turn an existing note into a new section"
+                  onchange={(e) => { const el = e.currentTarget as HTMLSelectElement; const n = narrativeNotes.find((x) => x.id === el.value); if (n) addSectionFromNote(n); el.selectedIndex = 0; }}>
+                  <option value="">＋ from a note…</option>
+                  {#each narrativeNotes as n (n.id)}<option value={n.id}>{n.lead.slice(0, 40)}</option>{/each}
+                </select>
+              {/if}
+            </div>
+            {#if NarrativeEditorComp}
+              {@const NE = NarrativeEditorComp}
+              <NE
+                sections={currentExhibit?.sections ?? []}
+                objects={OBJECTS}
+                {currentObjectId}
+                conflictedIds={conflictedSectionIds}
+                activeSectionId={focusSectionId}
+                framingId={framingSectionId}
+                cleared={clearedSlug === currentSlug}
+                onchange={setSections}
+                onframe={startFraming}
+                oncancelframe={cancelFraming}
+                onnavigate={navigateToSection}
+                onrequestcite={requestCite}
+              />
             {/if}
-          </div>
-          {#if NarrativeEditorComp}
-            {@const NE = NarrativeEditorComp}
-            <NE
-              sections={currentExhibit?.sections ?? []}
-              objects={OBJECTS}
-              {currentObjectId}
-              conflictedIds={conflictedSectionIds}
-              activeSectionId={focusSectionId}
-              framingId={framingSectionId}
-              cleared={clearedSlug === currentSlug}
-              onchange={setSections}
-              onframe={startFraming}
-              oncancelframe={cancelFraming}
-              onnavigate={navigateToSection}
-              onrequestcite={requestCite}
-            />
           {/if}
         </div>
       </section>
 
-      <!-- ── ZONE 2 · THIS OBJECT — object-LOCAL: readings, notes and detail belong to the one media item in
-           view and SWAP as you switch objects on the rail (unlike the exhibit-wide spine above). -->
+      <!-- ── ZONE 2 · THIS OBJECT — object-LOCAL "what is this object": readings (visibility) and detail
+           belong to the one media item in view and SWAP as you switch objects on the rail (unlike the
+           exhibit-wide spine above). The notes list + new-note tools left for the inspector / canvas strip
+           (Archie-d48e); this zone is navigator-only now. -->
       <section class="zone zone-object">
         <header class="zone-header">
           <span class="zone-kicker">This object</span>
@@ -2179,21 +2171,16 @@
           {/if}
         </header>
         <div class="zone-body">
-          <!-- Notes (this item) — the object-local annotate loop. Title, the readings legend (now grouped
-               inside the Notes group), create tools, the present-notes list, and the folded "To place"
-               worklist group below. -->
-          <div class="panel-title-row">
-            <h3 class="panel-title">Notes</h3>
-            <span class="panel-note">{notes.length} {notes.length === 1 ? "note" : "notes"}</span>
-          </div>
-          <!-- Readings — SUBORDINATE to Notes (Archie-b671 amendment): a quiet legend, not a peer workspace.
-               Visibility checkbox + colour swatch + name + count on THIS object + the file-into pen radio;
-               "Manage readings…" opens the existing ReadingsModal. (The floating rail is retired.)
-               Sits UNDER the Notes header now, so the subordination reads in layout, not just type style
-               (usability pass 2026-07-18). -->
+          <!-- Readings (Archie-d48e) — the navigator's "what's visible" control, PRIMARY in the object zone
+               now that the notes list moved to the inspector: a visibility checkbox + colour swatch + name +
+               this-object count + the file-into pen radio per reading. "Manage readings…" opens the existing
+               ReadingsModal. (Amends Archie-b671, where Readings sat subordinate under a Notes header.) -->
           {#if current}
+            <div class="panel-title-row">
+              <h3 class="panel-title">Readings</h3>
+              <span class="panel-note">visibility</span>
+            </div>
             <section class="readings-panel" aria-label="Readings">
-              <h3 class="panel-title subordinate">Readings</h3>
               <div class="readings-rows">
                 {#each [{ id: "base", name: "General notes", colour: "var(--accent)" }, ...currentReadings] as r (r.id)}
                   <div class="reading-row" class:active-reading={rdg.active === r.id}
@@ -2217,8 +2204,9 @@
             </section>
           {/if}
           {#if showAttribution}
-            <!-- Filter-by-editor lens (Archie-90f1) — composes with the Readings visibility filter above
-                 (both narrow the same notes list); gated on ≥2 distinct editors so a solo exhibit never
+            <!-- Filter-by-editor lens (Archie-90f1) — a visibility lens like the Readings toggles, so it
+                 stays in the navigator; it composes with them to narrow the inspector's notes list on the
+                 right (both are "which notes show"). Gated on ≥2 distinct editors so a solo exhibit never
                  shows this control. -->
             <label class="editor-filter">
               <span class="field-head">Editor</span>
@@ -2228,108 +2216,11 @@
               </select>
             </label>
           {/if}
-        <div class="notes-create">
-          {#if current && !isAvCurrent}
-            <!-- ADR-0011: drawing is armed only by creating a note. Choose a shape, draw the region on the
-                 image; the armed "drawing" cue lives in the status strip now (off the sidebar). -->
-            <div class="new-note">
-              <span class="nn-lead">New note</span>
-              <!-- Geo-annotations reuse Box/Outline on a Map (no pin tool — 2026-06-18 grilling Q4); geo-truth is captured on draw. -->
-              <button type="button" onclick={() => (creating = "rectangle")} title={isMapCurrent ? "Draw a rectangular region on the map" : "Draw a rectangular region"}><span aria-hidden="true">▭</span> Box</button>
-              <button type="button" onclick={() => (creating = "polygon")} title={isMapCurrent ? "Trace an irregular region on the map" : "Trace an irregular outline"}><span aria-hidden="true">⬠</span> Outline</button>
-              <!-- Whole-object Note (ADR-0018): no region — targets the bare canvas IRI, frames the whole
-                   object. (Converting an EXISTING note is the Scope control in the note form, not here.) -->
-              <button type="button" onclick={() => createWholeObjectNote()} title={isMapCurrent ? "Note on the whole map (no region)" : "Note on the whole image (no region)"}><span aria-hidden="true">▣</span> Whole {isMapCurrent ? "map" : "image"}</button>
-            </div>
-          {/if}
-          <p class="hint">{isAvCurrent ? "Play the recording · “Mark start” then “Add note” pins a note to that moment · click any note to jump back and edit." : "Pick a shape · draw the region · click a marker to edit it in the dock on the right."}</p>
-          <!-- Bulk on-ramps (⑥ CSV, ⑦ WADM) folded into ONE quiet disclosure — three always-visible
-               "… or add notes from…" rows crowded the create column (usability pass 2026-07-18). Native
-               <details>, the "To place" idiom. -->
-          <details class="import-notes">
-            <summary>Import notes…</summary>
-            {#if current && !isAvCurrent}
-              <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
-              <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, comment — x, y, w, h, tags, reading all optional, header row first. Rows with no x,y,w,h arrive as “needs placement”: draw each box with Set area. Use a media item’s label in the object column, or leave it blank for the current one.">From a CSV</button>
-              <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
-                onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
-              <button type="button" class="csv-import" onclick={downloadCsvTemplate} title="Download a starter CSV pre-filled with this exhibit's items. Fill in the blanks in Excel or Sheets, then add it back — rows without x,y,w,h become “needs placement”.">Download a starter CSV to fill in</button>
-            {/if}
-            <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
-            <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="Import notes from Archie or another annotation tool.">From an annotation file</button>
-            <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Add notes from a file"
-              onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesWadm(f).catch((err) => { console.error("Notes add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
-          </details>
-        </div>
-        <div class="notes-body">
-          <!-- What's already on this item — the present-notes list (empty-state when none or all hidden). -->
-          {#if notes.length === 0}
-            <p class="empty">{isAvCurrent ? "No notes on this recording yet. Mark a moment, then add a note to pin it." : objNotes.length > 0 ? (editorFilter !== "all" ? "No notes here from that editor. Try “All editors”." : "This media item has notes, but they’re hidden. Turn on a reading to show them.") : "No notes on this media item yet. Pick Box or Outline above, then draw the region."}</p>
-          {/if}
-          <!-- Notes-panel LISTBOX (Archie-f260 §4): the keyboard/AT surface standing in for the WebGL marks.
-               ul=listbox, each note li=option with roving tabindex + aria-selected; arrows rove and select
-               (selection follows focus), driving the canvas through the existing `selected` wire. The button
-               is retired — the option row IS the interactive element (no nested interactive inside an option). -->
-          <ul class="notes-list" role="listbox" aria-label="Notes on this object" bind:this={notesListEl}>
-            {#each notes as r (r.rev)}
-              <!-- Hovering a note solos its MARK on the canvas (the rail's hover affordance, per-note). -->
-              <li role="option" data-note-id={r.logicalId}
-                class="note-opt" class:sel={editing === r.logicalId}
-                aria-selected={editing === r.logicalId}
-                tabindex={r.logicalId === notesRoveId ? 0 : -1}
-                onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}
-                onclick={() => (selected = r.logicalId)}
-                onkeydown={onNotesKeyDown}
-                onfocus={() => (notesRoveId = r.logicalId)}>
-                <div class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</div>
-                <div class="meta">
-                    {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource?.kind === "xyz" ? currentTileSource : undefined)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
-                    {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
-                    <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern).
-                         The circled reading number (Archie-f260 §3) leads the chip so the note's reading is identified without relying on the border colour. -->
-                    {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}><span class="layer-num" aria-hidden="true">{readingBadge(r.reading, readingIds)}</span> {rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}><span class="layer-num" aria-hidden="true">{readingBadge("base", readingIds)}</span> General notes</span>{/if}
-                    <!-- Attribution chip (Archie-90f1) — "Meera · 2d ago", gated on ≥2 distinct editors. -->
-                    {#if showAttribution}<span class="attribution">{attributionChip(r, author)}</span>{/if}
-                    {#if conflictedNoteIds.has(r.logicalId)}<span class="conflict-badge" title="Two people edited this note — Review to resolve">Needs review</span>{/if}
-                </div>
-              </li>
-            {/each}
-          </ul>
-          <!-- Mounted polite live region for keyboard note-traversal position announcements (§4). -->
-          <p class="sr-only" role="status" aria-live="polite">{notesAnnounce}</p>
-          <!-- All notes (image / audio / video) edit in the docked editor on the right (ADR-0006 / Archie-b671);
-               the sidebar is creation + the present-notes list — no inline form. -->
-        </div>
 
-        {#if pendingNotes.length > 0}
-          <!-- "To place" (Archie-b671) — FOLDED INTO Notes as a collapsible group (was its own panel). NOT a
-               creation tool: a worklist you READ, then place each on the image. Native <details> = a real,
-               labelled disclosure. Absent at 0. -->
-          <details class="to-place" open>
-            <summary><span class="tp-label">To place</span><span class="count-badge">{pendingNotes.length}</span></summary>
-            <p class="hint">Read a note, then “Place on image” and draw its box on the picture — that turns it into a real note there. The card stays lit while you draw, so you can keep reading it.</p>
-            <ul class="np-list">
-              {#each pendingNotes as p (p.id)}
-                <li class="np-row" class:placing={p.id === placingPendingId}>
-                  <p class="np-cmt">“{p.comment}”</p>
-                  <div class="np-meta">
-                    <span class="np-obj">on {objectLabelOf(p.objectId)}</span>
-                    {#if p.tags.length}<span class="np-tags">{p.tags.map((t) => "#" + t).join(" ")}</span>{/if}
-                  </div>
-                  <div class="np-actions">
-                    {#if p.id === placingPendingId}
-                      <span class="np-drawing">Drawing… pick a spot on the {isMapCurrent ? "map" : "image"}</span>
-                      <button type="button" class="np-del" onclick={cancelPlacing}>Cancel</button>
-                    {:else}
-                      <button type="button" class="np-set" onclick={() => startPlacing(p.id)} title="Go to {objectLabelOf(p.objectId)} and draw this note’s box on the image">Place on image</button>
-                      <button type="button" class="np-del" onclick={() => removePending(p.id)} title="Remove this imported note">Remove</button>
-                    {/if}
-                  </div>
-                </li>
-              {/each}
-            </ul>
-          </details>
-        {/if}
+          <!-- The notes LIST + new-note tools left this zone (Archie-d48e navigator/inspector split): the
+               list (with the selected card expanding in place into the edit form) is the INSPECTOR on the
+               right; the Box/Outline/Whole-image tools + filing-into indicator are a strip on the canvas's
+               top edge. This zone keeps only "what is this object" — Readings, the editor lens, and Details. -->
 
           <!-- Details (this item) — the object's description + credit/licence (rights grill Q6). Always
                visible in the object zone now (was a separate accordion panel). Label unified to "Details"
@@ -2361,70 +2252,185 @@
       ondragover={(e) => { e.preventDefault(); dragOver = true; }}
       ondragleave={(e) => { if (e.target === e.currentTarget) dragOver = false; }}
     >
-      <!-- {#key} forces a fresh mount when the object changes: Canvas reads `source` only in
-           onMount (no source $effect), so switching objects must remount to load the new image.
-           Gated on sourceReadyFor(current) so the object's on-demand master (Phase 1.2) is minted AND
-           in the slot before mount — a non-asset (IIIF) source is ready at once. -->
-      {#if current && isAvCurrent && assets.sourceReadyFor(currentSlug, current)}
-        <!-- AV object → temporal editor (remount on object switch so the media element reloads). -->
-        {#key canvasId}
-          {#if AvEditorComp}
-            {@const Av = AvEditorComp}
-            <Av source={currentSource} label={current.label} mediaType={current.mediaType}
-              slug={currentSlug} assetName={isAsset(current.source) ? current.source.slice(ASSET_PREFIX.length) : null}
-              {annotations} bind:selected oncreate={onCreateTime} oncreatewhole={createWholeObjectNote} onimport={onImportTranscript}
-              onimporterror={(msg) => (importNote = msg)} />
-          {:else}
-            <div class="no-canvas">Loading…</div>
+      <!-- New-note tool strip (Archie-d48e / Archie-a9fc) — chrome on the canvas's TOP EDGE, its own row,
+           NEVER floating over the image (it sits above .canvas-plate, not on it). The Box/Outline/Whole-image
+           create tools (ADR-0011: drawing arms only from a create act) + a read-only "filing into <reading>"
+           indicator echoing the pen set in the Readings panel. Image/Map objects only — AV creation is the
+           AvEditor's own transport. -->
+      {#if current && !isAvCurrent}
+        <div class="tool-strip">
+          <span class="ts-lead">New note</span>
+          <!-- Box / Outline ARM a draw mode (aria-pressed reflects it; click again to disarm); the armed tool
+               wears a filled amber state so "I'm drawing this shape" reads at a glance. Geo-annotations reuse
+               Box/Outline on a Map (no pin tool — 2026-06-18 grilling Q4); geo-truth is captured on draw. -->
+          <button type="button" class="ts-tool" class:armed={creating === "rectangle"} aria-pressed={creating === "rectangle"} onclick={() => (creating = creating === "rectangle" ? null : "rectangle")} title={isMapCurrent ? "Draw a rectangular region on the map" : "Draw a rectangular region"}><span aria-hidden="true">▭</span> Box</button>
+          <button type="button" class="ts-tool" class:armed={creating === "polygon"} aria-pressed={creating === "polygon"} onclick={() => (creating = creating === "polygon" ? null : "polygon")} title={isMapCurrent ? "Trace an irregular region on the map" : "Trace an irregular outline"}><span aria-hidden="true">⬠</span> Outline</button>
+          <!-- Whole-object Note (ADR-0018): no region — targets the bare canvas IRI, frames the whole object,
+               fires immediately (no armed draw mode). (Converting an EXISTING note is the Scope control in the
+               note form, not here.) -->
+          <button type="button" class="ts-tool" onclick={() => createWholeObjectNote()} title={isMapCurrent ? "Note on the whole map (no region)" : "Note on the whole image (no region)"}><span aria-hidden="true">▣</span> Whole {isMapCurrent ? "map" : "image"}</button>
+          <!-- Filing-into indicator: the destination reading (the pen is set in the navigator's Readings panel).
+               Hidden WHILE drawing (creating) — the status strip shows its own "filing into" then, so keeping
+               this would double it (review nit Archie-d48e). -->
+          {#if !creating}
+            <span class="ts-into" title="New notes file into the active reading — set the pen (✎) in the Readings panel.">filing into <span class="ts-rd" style={`border-color:${activeReadingColour}`}><span class="ts-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {activeReadingLabel}</span></span>
           {/if}
-        {/key}
-      {:else if current && assets.sourceReadyFor(currentSlug, current)}
-        {#key canvasId}
-          {#if CanvasComp}
-            <!-- noteViewFraction 0.5: selecting a note frames it at HALF the view, not edge-to-edge —
-                 an editing canvas needs the surrounding context and the shape's resize handles on
-                 screen, and a full-bleed fit shoved the marker under the viewport edges. Section
-                 camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
-            <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} />
-          {:else}
-            <div class="no-canvas">Loading…</div>
-          {/if}
-        {/key}
-        {#if isMapCurrent && currentTileSource?.kind === "xyz" && currentTileSource.attribution}
-          <!-- Basemap attribution (REQUIRED by the tile provider's terms — DESIGN.md D6). Narrowed to the
-               xyz (basemap) variant: only XyzTileSource carries attribution, DZI is an image pyramid (Issue 12). -->
-          <div class="map-attribution">{currentTileSource.attribution}</div>
-        {/if}
-      {:else if current}
-        <div class="no-canvas">Loading…</div>
-      {:else}
-        <div class="no-canvas">Add media — drop an image here, or use “+ Media” in the “Exhibit” panel.</div>
+        </div>
       {/if}
-      <!-- The canvas carries ZERO chrome now (Archie-a9fc / Archie-b671): the note editor is docked to the
-           right edge (below), the readings controls live in the sidebar, and mode/toast messaging lives in the
-           status strip. Nothing floats over the artefact. -->
+      <div class="canvas-plate">
+        <!-- {#key} forces a fresh mount when the object changes: Canvas reads `source` only in
+             onMount (no source $effect), so switching objects must remount to load the new image.
+             Gated on sourceReadyFor(current) so the object's on-demand master (Phase 1.2) is minted AND
+             in the slot before mount — a non-asset (IIIF) source is ready at once. -->
+        {#if current && isAvCurrent && assets.sourceReadyFor(currentSlug, current)}
+          <!-- AV object → temporal editor (remount on object switch so the media element reloads). -->
+          {#key canvasId}
+            {#if AvEditorComp}
+              {@const Av = AvEditorComp}
+              <Av source={currentSource} label={current.label} mediaType={current.mediaType}
+                slug={currentSlug} assetName={isAsset(current.source) ? current.source.slice(ASSET_PREFIX.length) : null}
+                {annotations} bind:selected oncreate={onCreateTime} oncreatewhole={createWholeObjectNote} onimport={onImportTranscript}
+                onimporterror={(msg) => (importNote = msg)} />
+            {:else}
+              <div class="no-canvas">Loading…</div>
+            {/if}
+          {/key}
+        {:else if current && assets.sourceReadyFor(currentSlug, current)}
+          {#key canvasId}
+            {#if CanvasComp}
+              <!-- noteViewFraction 0.5: selecting a note frames it at HALF the view, not edge-to-edge —
+                   an editing canvas needs the surrounding context and the shape's resize handles on
+                   screen, and a full-bleed fit shoved the marker under the viewport edges. Section
+                   camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
+              <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator bind:selected getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} />
+            {:else}
+              <div class="no-canvas">Loading…</div>
+            {/if}
+          {/key}
+          {#if isMapCurrent && currentTileSource?.kind === "xyz" && currentTileSource.attribution}
+            <!-- Basemap attribution (REQUIRED by the tile provider's terms — DESIGN.md D6). Narrowed to the
+                 xyz (basemap) variant: only XyzTileSource carries attribution, DZI is an image pyramid (Issue 12). -->
+            <div class="map-attribution">{currentTileSource.attribution}</div>
+          {/if}
+        {:else if current}
+          <div class="no-canvas">Loading…</div>
+        {:else}
+          <div class="no-canvas">Add media — drop an image here, or use “+ Media” in the “Exhibit” panel.</div>
+        {/if}
+      </div>
+      <!-- Nothing floats over the artefact (Archie-a9fc): the note editor is the INSPECTOR on the right, the
+           new-note tools are the strip on this canvas's TOP EDGE (above), readings live in the navigator, and
+           mode/toast messaging is the status strip. -->
     </main>
-    <!-- Docked note editor (Archie-b671) — a STABLE right-edge element (layout, not a floater): selecting a
-         note in the sidebar list OR a marker on the canvas populates it; Esc deselects (the editor's Esc
-         ladder); its width is a persisted view preference, resizable via the ResizeDivider (280 min, ~320
-         default). Replaces BOTH the floating popover and the pinned inspector. -->
-    <ResizeDivider side="right" label="note editor" min={280} max={560} collapsible={false} bind:width={dockWidth} oncommit={(s) => viewPrefs.setDockWidth(s.width)} />
-    <aside class="dock" style:--studio-dock-w={dockWidth != null ? `${dockWidth}px` : null} aria-label="Note editor">
-      {#if sel && !drawArmed}
-        {@render noteForm()}
-      {:else if selected !== null && conflictedNoteIds.has(selected)}
-        <!-- Per-note edit gate (Archie-90f1): this note has plural heads (merge contract C4) — edit
-             actions would throw, so the dock points at Review instead of a form. -->
-        <div class="dock-empty conflict">
-          <p class="de-lead">Two people edited this note.</p>
-          <p class="de-sub">Resolve it in Review before editing — the other version stays in history either way.</p>
-          <button type="button" class="de-review" onclick={() => (mergeReviewOpen = true)}>Review</button>
-        </div>
-      {:else}
-        <div class="dock-empty">
-          <p class="de-lead">Select a note or a marker to edit it here.</p>
-          <p class="de-sub">The note editor is docked to the right edge — nothing floats over the canvas.</p>
-        </div>
+    <!-- Inspector panel (Archie-d48e) — "what is selected", a STABLE right-edge element (layout, not a
+         floater): the object's notes list, where the selected card expands IN PLACE into the WADM form
+         (no dock, no cross-canvas twin). Selecting a note here OR a marker on the canvas expands it; Esc
+         deselects (the Esc ladder). Width is a persisted view preference, resizable via the ResizeDivider. -->
+    <ResizeDivider side="right" label="inspector" min={280} max={560} collapsible={false} bind:width={inspectorWidth} oncommit={(s) => viewPrefs.setInspectorWidth(s.width)} />
+    <aside class="inspector" style:--studio-inspector-w={inspectorWidth != null ? `${inspectorWidth}px` : null} aria-label="Notes inspector">
+      <div class="panel-title-row inspector-head">
+        <h3 class="panel-title">Notes</h3>
+        <span class="panel-note">{#if notes.length === objNotes.length}{notes.length} {notes.length === 1 ? "note" : "notes"}{:else}{notes.length} of {objNotes.length} shown{/if}</span>
+      </div>
+      <!-- Bulk on-ramps (⑥ CSV, ⑦ WADM) folded into ONE quiet disclosure — the import affordance travels with
+           the notes list to the inspector (Archie-d48e). Native <details>, the "To place" summary dress. -->
+      <details class="import-notes">
+        <summary>Import notes…</summary>
+        {#if current && !isAvCurrent}
+          <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
+          <button type="button" class="csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, comment — x, y, w, h, tags, reading all optional, header row first. Rows with no x,y,w,h arrive as “needs placement”: draw each box with Set area. Use a media item’s label in the object column, or leave it blank for the current one.">From a CSV</button>
+          <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
+            onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesCsv(f).catch((err) => { console.error("CSV add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+          <button type="button" class="csv-import" onclick={downloadCsvTemplate} title="Download a starter CSV pre-filled with this exhibit's items. Fill in the blanks in Excel or Sheets, then add it back — rows without x,y,w,h become “needs placement”.">Download a starter CSV to fill in</button>
+        {/if}
+        <!-- WADM on-ramp (⑦): annotations exported by Archie, Recogito, or any W3C producer. -->
+        <button type="button" class="csv-import" onclick={() => wadmEl?.click()} title="Import notes from Archie or another annotation tool.">From an annotation file</button>
+        <input bind:this={wadmEl} type="file" accept=".json,application/json,application/ld+json" style="display:none" aria-label="Add notes from a file"
+          onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void flows.importNotesWadm(f).catch((err) => { console.error("Notes add failed", err); window.alert("Couldn't add those notes."); }); el.value = ""; }} />
+      </details>
+
+      <!-- What's on this item — the present-notes list (empty-state when none or all hidden). -->
+      {#if notes.length === 0}
+        <p class="empty">{isAvCurrent ? "No notes on this recording yet. Mark a moment, then add a note to pin it." : objNotes.length > 0 ? (editorFilter !== "all" ? "No notes here from that editor. Try “All editors”." : "This media item has notes, but they’re hidden. Turn on a reading to show them.") : "No notes on this media item yet. Pick Box or Outline on the canvas strip, then draw the region."}</p>
+      {/if}
+      <!-- Notes-panel DISCLOSURE (Archie-f260 §4 obligation, re-derived for Archie-d48e): the keyboard/AT
+           surface standing in for the un-focusable WebGL marks. Each note is a native <button aria-expanded>
+           (a real tab stop, natively activatable — no roving tabindex / arrow machinery to strand); activating
+           it selects the note (drives the canvas via the existing `selected` wire) AND expands it in place into
+           the edit form. Keyed by logicalId so a live edit (which appends a new rev) does NOT remount the row
+           and drop focus mid-interaction. The conflicted-selected note expands to the review gate instead. -->
+      <ul class="notes-list" aria-label="Notes on this object" bind:this={notesListEl}>
+        {#each notes as r (r.logicalId)}
+          {@const showForm = editing === r.logicalId && !drawArmed}
+          {@const showGate = selected === r.logicalId && conflictedNoteIds.has(r.logicalId)}
+          {@const expanded = showForm || showGate}
+          <li class="note-item">
+            <!-- Hovering a note solos its MARK on the canvas (the rail's hover affordance, per-note). Clicking
+                 selects+expands; clicking the already-open note collapses it (disclosure toggle). -->
+            <button type="button" class="note-opt" class:sel={editing === r.logicalId}
+              data-note-id={r.logicalId}
+              aria-expanded={expanded}
+              aria-controls={expanded ? `note-editor-${r.logicalId}` : undefined}
+              onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}
+              onclick={() => (selected = selected === r.logicalId ? null : r.logicalId)}>
+              <span class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</span>
+              <span class="meta">
+                  {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource?.kind === "xyz" ? currentTileSource : undefined)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
+                  {#each tagsOf(r) as t}<span class="tag">#{t}</span>{/each}
+                  <!-- border carries the reading colour; text stays ink so ANY user colour passes AA on paper (viewer Reader's border-only pattern).
+                       The circled reading number (Archie-f260 §3) leads the chip so the note's reading is identified without relying on the border colour. -->
+                  {#if r.reading}{@const rd = currentReadings.find((x) => x.id === r.reading)}<span class="layer" style={rd?.colour ? `border-color:${rd.colour}` : ""}><span class="layer-num" aria-hidden="true">{readingBadge(r.reading, readingIds)}</span> {rd?.name ?? r.reading}</span>{:else if currentReadings.length > 0}<span class="layer" style={`border-color:${BASE_MARKER}`}><span class="layer-num" aria-hidden="true">{readingBadge("base", readingIds)}</span> General notes</span>{/if}
+                  <!-- Attribution chip (Archie-90f1) — "Meera · 2d ago", gated on ≥2 distinct editors. -->
+                  {#if showAttribution}<span class="attribution">{attributionChip(r, author)}</span>{/if}
+                  {#if conflictedNoteIds.has(r.logicalId)}<span class="conflict-badge" title="Two people edited this note — Review to resolve">Needs review</span>{/if}
+              </span>
+            </button>
+            {#if showForm}
+              <!-- Selected note EXPANDS in place into the edit form (never forked — the same {@render noteForm()}
+                   the dock used to host). `!drawArmed` collapses it while a region is being (re)drawn. -->
+              <div class="note-editor-region" id={`note-editor-${r.logicalId}`}>
+                {@render noteForm()}
+              </div>
+            {:else if showGate}
+              <!-- Per-note edit gate (Archie-90f1): plural heads (merge contract C4) — edit actions would throw,
+                   so the expanded region points at Review instead of a form. -->
+              <div class="note-editor-region conflict" id={`note-editor-${r.logicalId}`}>
+                <p class="de-lead">Two people edited this note.</p>
+                <p class="de-sub">Resolve it in Review before editing — the other version stays in history either way.</p>
+                <button type="button" class="de-review" onclick={() => (mergeReviewOpen = true)}>Review</button>
+              </div>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+
+      {#if pendingNotes.length > 0}
+        <!-- "To place" (Archie-b671, now in the inspector per Archie-d48e) — a collapsible worklist you READ,
+             then place each on the image. NOT a creation tool. Native <details> = a real, labelled disclosure. -->
+        <details class="to-place" open>
+          <summary><span class="tp-label">To place</span><span class="count-badge">{pendingNotes.length}</span></summary>
+          <p class="hint">Read a note, then “Place on image” and draw its box on the picture — that turns it into a real note there. The card stays lit while you draw, so you can keep reading it.</p>
+          <ul class="np-list">
+            {#each pendingNotes as p (p.id)}
+              <li class="np-row" class:placing={p.id === placingPendingId}>
+                <p class="np-cmt">“{p.comment}”</p>
+                <div class="np-meta">
+                  <span class="np-obj">on {objectLabelOf(p.objectId)}</span>
+                  {#if p.tags.length}<span class="np-tags">{p.tags.map((t) => "#" + t).join(" ")}</span>{/if}
+                </div>
+                <div class="np-actions">
+                  {#if p.id === placingPendingId}
+                    <span class="np-drawing">Drawing… pick a spot on the {isMapCurrent ? "map" : "image"}</span>
+                    <button type="button" class="np-del" onclick={cancelPlacing}>Cancel</button>
+                  {:else}
+                    <button type="button" class="np-set" onclick={() => startPlacing(p.id)} title="Go to {objectLabelOf(p.objectId)} and draw this note’s box on the image">Place on image</button>
+                    <button type="button" class="np-del" onclick={() => removePending(p.id)} title="Remove this imported note">Remove</button>
+                  {/if}
+                </div>
+              </li>
+            {/each}
+          </ul>
+        </details>
       {/if}
     </aside>
   </div>
@@ -2558,13 +2564,39 @@
 
   /* Breadcrumb crumb — the object level of "Exhibit › Object" (the spine is exhibit-level, notes object-level). */
   .crumb { font-family: var(--font-display); font-size: 1.2rem; font-weight: 300; color: var(--ink-canvas-secondary); margin-left: var(--space-1); }
-  /* New-note affordance (ADR-0011): the create entry in the notes pane. Choose a shape → draw the region.
-     Paper surface (it lives in the sidebar). The armed "drawing" cue lives in the status strip now, so the
-     buttons stay steady while drawing. */
-  .new-note { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
-  .new-note .nn-lead { font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); }
-  .new-note > button { font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em; padding: var(--space-1) var(--space-3); background: var(--surface-paper-card); color: var(--ink-paper-primary); border: 1px solid var(--accent-2-paper); border-radius: var(--radius-sm); cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease, border-color 160ms ease; }
-  .new-note > button:hover { color: var(--ink-paper-primary); background: var(--accent-2-muted); border-color: var(--accent-2-hover); box-shadow: var(--shadow-lift-low); }
+  /* New-note tool strip (Archie-d48e / Archie-a9fc) — chrome on the canvas's TOP EDGE (its own row inside
+     <main>, above .canvas-plate — never over the image). Canvas-toned so it belongs to the canvas region:
+     the "New note" eyebrow, the Box/Outline/Whole tools, and a right-aligned "filing into <reading>" echo. */
+  .tool-strip { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); border-bottom: 1px solid var(--border-canvas); }
+  /* The group label carries a touch more weight — this strip's action group leads the eye (user note). Ink
+     (not the 0.62 secondary) so a bold text-ui-sm eyebrow clears AA on the strip surface (≈10:1). */
+  .tool-strip .ts-lead { font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-canvas-primary); }
+  /* New-note tools are the strip's PRIMARY action group — a stronger amber resting affordance (fill tint +
+     amber border + weight, a comfortable hit area) than a plain ghost button, so they read as the thing to do
+     here. Amber (secondary accent), NOT emerald: the emerald signal stays rationed to Publish. TEXT is ink,
+     not amber (the amber lives in the border + tint fill) — the same ink-text-on-amber idiom the .layer chip
+     uses to pass AA: ink-on-tint ≈10:1, vs amber-on-tint's 3.3:1 which fails at this size. */
+  .tool-strip .ts-tool { display: inline-flex; align-items: center; gap: var(--space-1); font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 600; letter-spacing: 0.04em; padding: var(--space-2) var(--space-3); background: var(--accent-2-muted); color: var(--ink-canvas-primary); border: 1px solid var(--accent-2); border-radius: var(--radius-sm); cursor: pointer; transition: background 160ms ease, box-shadow 160ms ease, border-color 160ms ease; }
+  .tool-strip .ts-tool:hover { border-color: var(--accent-2-hover); box-shadow: var(--shadow-lift-mid); }
+  .tool-strip .ts-tool:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+  /* Armed (Box/Outline mid-draw) — a filled amber state, clearly distinct from the outlined resting look, so
+     "I'm drawing this shape" reads at a glance. The DARKER amber (--accent-2-paper-hover) carries the parchment
+     text at AA (≈5:1; the base --accent-2 fill only reached 3.6:1). Reinforces the status strip's mode banner. */
+  .tool-strip .ts-tool.armed { background: var(--accent-2-paper-hover); color: var(--ink-on-accent); border-color: var(--accent-2-paper-hover); box-shadow: var(--shadow-lift-low); }
+  .tool-strip .ts-tool.armed:hover { box-shadow: var(--shadow-lift-mid); }
+  /* Filing-into echo (read-only) — the destination reading, right-aligned; the pen itself is in the Readings panel. */
+  .tool-strip .ts-into { margin-left: auto; display: inline-flex; align-items: center; gap: var(--space-2); font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-secondary); }
+  .tool-strip .ts-rd { font-weight: 500; letter-spacing: 0; color: var(--ink-canvas-primary); background: var(--surface-canvas-raised); border: 1px solid var(--border-canvas-emphasis); border-left-width: 3px; border-radius: var(--radius-sm); padding: 1px var(--space-2); }
+  .tool-strip .ts-rd .ts-rd-num { font-family: var(--font-mono); color: var(--ink-canvas-secondary); }
+
+  /* Navigator accordion row (Archie-d48e) — a collapsed panel header that toggles open: the ▸ caret, the
+     panel title, and the count/status. Full-width quiet button; the caret rotates when open. */
+  .nav-row { display: flex; align-items: baseline; gap: var(--space-2); width: 100%; margin: var(--space-4) 0 var(--space-2); padding: 0; background: none; border: none; cursor: pointer; text-align: left; }
+  .nav-row:first-child { margin-top: 0; }
+  .nav-row .nav-row-chev { align-self: center; font-size: 0.7rem; color: var(--ink-paper-muted); transition: transform 0.16s ease; }
+  .nav-row[aria-expanded="true"] .nav-row-chev { transform: rotate(90deg); }
+  .nav-row:hover .panel-title { color: var(--accent-2); }
+  .nav-row:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; border-radius: var(--radius-sm); }
 
   /* Status strip (Archie-5e96 / Archie-b671) — ABSENT when idle. The ONE slim bar between the rail and the
      canvas where the rail's non-nav cargo went: mode banners (framing / drawing) + import toasts. Canvas-toned
@@ -2606,14 +2638,10 @@
   .panel-title-row { display: flex; align-items: baseline; gap: var(--space-3); margin: var(--space-4) 0 var(--space-2); }
   .panel-title-row:first-child { margin-top: 0; }
   .panel-title { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: 1.1rem; line-height: 1; color: var(--ink-paper-primary); }
-  /* Readings is SUBORDINATE to Notes (Archie-b671): a smaller, quieter eyebrow, not a peer title. */
-  .panel-title.subordinate { font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-paper-secondary); margin: 0 0 var(--space-1); }
   .panel-note { margin-left: auto; font-family: var(--font-ui); font-size: var(--text-ui-xs, 0.7rem); letter-spacing: 0.04em; color: var(--ink-paper-muted); }
   .panel-create { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
-  /* Notes create stacks its rows (draw tools → import links → hint). */
-  .notes-create { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-2); margin-bottom: var(--space-3); }
 
-  /* Readings panel (subordinate) — a quiet legend in the object zone: visibility checkbox + swatch + name +
+  /* Readings panel — a quiet legend in the object zone: visibility checkbox + swatch + name +
      count + the file-into pen; retired the floating canvas rail. Rows are compact so it reads as SECONDARY. */
   .readings-panel { margin-bottom: var(--space-3); }
   .readings-rows { display: flex; flex-direction: column; gap: 1px; }
@@ -2747,8 +2775,12 @@
   @keyframes import-spin { to { transform: rotate(360deg); } }
 
   .body { display: flex; flex: 1; min-height: 0; }
-  main { flex: 1; min-width: 0; background: var(--surface-canvas); position: relative; }
-  /* The armed canvas wears its mode — soft inset accent ring + crosshair, gone on disarm. */
+  /* The canvas column is a flex COLUMN now (Archie-d48e): the new-note tool strip is its own chrome row on
+     the top edge, and .canvas-plate takes the rest — so nothing floats over the artefact (Archie-a9fc). */
+  main { flex: 1; min-width: 0; background: var(--surface-canvas); display: flex; flex-direction: column; }
+  /* The image plate — the positioning context for the OSD canvas, its overlays, and the map attribution.
+     min-height:0 lets the canvas fill the space left by the tool strip in the column flex. */
+  .canvas-plate { flex: 1; min-height: 0; position: relative; }
   /* Geo-annotation: basemap attribution credit (REQUIRED by the tile provider — DESIGN.md D6). Bottom-left
      so it clears the bottom-right OSD locator mini-map. Warm charcoal scrim keeps it legible over map tiles. */
   .map-attribution {
@@ -2756,30 +2788,40 @@
     font-family: var(--font-ui, system-ui), sans-serif; font-size: 0.7rem; letter-spacing: 0.02em; color: var(--paper);
     background: rgba(59, 49, 56, 0.55); padding: 3px var(--space-2); border-radius: var(--radius-sm);
   }
-  main.drawing { cursor: crosshair; }
-  main.drawing::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 30; border-radius: var(--radius-md); box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-inset-fog); }
+  /* The armed canvas wears its mode — soft inset accent ring + crosshair, gone on disarm (scoped to the
+     plate so the ring frames the image, never the tool strip above it). */
+  main.drawing .canvas-plate { cursor: crosshair; }
+  main.drawing .canvas-plate::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 30; border-radius: var(--radius-md); box-shadow: inset 0 0 0 2px var(--accent), var(--shadow-inset-fog); }
   /* Drag-and-drop import feedback over the canvas */
-  main.drag-over { outline: 2px dashed var(--accent-2); outline-offset: -8px; border-radius: var(--radius-md); }
+  main.drag-over .canvas-plate { outline: 2px dashed var(--accent-2); outline-offset: -8px; border-radius: var(--radius-md); }
 
-  /* Docked note editor (Archie-b671) — a STABLE right-edge element (layout, not a floater). Replaces both
-     the floating popover and the pinned inspector; nothing floats over the canvas. Width is a persisted view
-     preference (--studio-dock-w, set by the ResizeDivider), clamp() default lands near 320px. */
-  .dock {
-    width: var(--studio-dock-w, clamp(280px, 22vw, 420px)); flex-shrink: 0; overflow: auto; box-sizing: border-box;
+  /* Inspector panel (Archie-d48e) — "what is selected", a STABLE right-edge element (layout, not a floater):
+     the notes list with the selected card expanding IN PLACE into the WADM form. Replaces the Archie-b671
+     dock. Width is a persisted view preference (--studio-inspector-w, set by the ResizeDivider). */
+  .inspector {
+    width: var(--studio-inspector-w, clamp(280px, 22vw, 420px)); flex-shrink: 0; overflow: auto; box-sizing: border-box;
+    padding: var(--space-4) var(--space-5);
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
   }
-  .dock :global(.wadm) { margin-top: 0; border-top: none; padding: var(--space-4); }
-  .dock-empty { padding: var(--space-6) var(--space-4); text-align: center; color: var(--ink-paper-muted); }
-  .dock-empty .de-lead { margin: 0; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
-  .dock-empty .de-sub { margin: var(--space-2) 0 0; font-family: var(--font-body); font-size: var(--text-ui-sm); line-height: 1.5; }
-  /* Per-note edit gate card (Archie-90f1) — same quiet dock-empty tone, plus the one action out of it. */
-  .dock-empty.conflict .de-review {
+  .inspector .inspector-head { margin-top: 0; }
+  /* Selected note card expanded in place → the WADM form. It sheds its own top margin/border (the card IS
+     the frame), and gets a quiet accent left-edge so it reads as the open member of the list. */
+  /* The edit form / review gate revealed below the expanded note button (Archie-d48e disclosure): a quiet
+     paper card tucked under its header, tied to it by the same accent left-edge, so header + form read as one
+     open unit. The WADM form sheds its own top margin/border (the region IS the frame). */
+  .note-editor-region { margin: 0; padding: var(--space-3) var(--space-4); background: var(--surface-paper-card); border-left: 2px solid var(--accent); border-radius: 0 0 var(--radius-md) var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  .note-editor-region :global(.wadm) { margin-top: 0; border-top: none; padding-top: 0; }
+  /* Per-note edit gate card (Archie-90f1) — the conflicted selected note expands to a review prompt, not a form. */
+  .note-editor-region.conflict { color: var(--ink-paper-muted); }
+  .note-editor-region .de-lead { margin: 0; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; color: var(--ink-paper-secondary); }
+  .note-editor-region .de-sub { margin: var(--space-2) 0 0; font-family: var(--font-body); font-size: var(--text-ui-sm); line-height: 1.5; }
+  .note-editor-region .de-review {
     margin-top: var(--space-4); cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); font-weight: 500; letter-spacing: 0.04em;
     padding: var(--space-2) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
     border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); transition: box-shadow 160ms ease;
   }
-  .dock-empty.conflict .de-review:hover { box-shadow: var(--shadow-lift-low); }
+  .note-editor-region .de-review:hover { box-shadow: var(--shadow-lift-low); }
 
   /* Sidebar — the two-zone notebook (warm paper) */
   .sidebar {
@@ -2792,18 +2834,19 @@
   /* Collapsed = give the canvas the whole width (image-first). The divider stays (anti-trap: always expandable). */
   .sidebar.collapsed { width: 0; min-width: 0; padding: 0; border-left: 0; overflow: hidden; }
   ul { list-style: none; margin: 0; padding: 0; }
-  /* Long note lists scroll HERE (the spine .cards 50vh idiom, NarrativeEditor) so Detail and Remove
-     never sink arbitrarily deep in the single sidebar scroll (usability pass 2026-07-18). */
-  .notes-list { max-height: 45vh; overflow-y: auto; }
-  /* Visually-hidden live region (keyboard note-traversal announcements) — present for AT, invisible on screen. */
-  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  /* The notes list lives in the inspector now (Archie-d48e), which scrolls as one column — so the list is
+     natural height (no nested 45vh scroll) and the expanded in-place editor is never boxed into a sub-pane. */
+  .notes-list { margin-bottom: var(--space-3); }
+  /* Each note is a disclosure item (Archie-d48e): the button header + (when open) its editor region. The li
+     carries the inter-item spacing so the header and its region stay flush. */
+  .note-item { margin-bottom: var(--space-2); }
 
-  /* Annotation note card — warm paper, soft rounded, separated by tone + shadow (no hard border). The card
-     IS the listbox option now (Archie-f260 §4): the row itself is the interactive/focusable element, so the
-     card styles live on .note-opt rather than an inner button. */
+  /* Annotation note card — warm paper, soft rounded, separated by tone + shadow (no hard border). The card IS
+     the disclosure BUTTON now (Archie-d48e): a native <button aria-expanded> that selects + expands the note,
+     so the card styles live on .note-opt (the button itself). */
   .note-opt {
     display: block; width: 100%; text-align: left; cursor: pointer;
-    padding: var(--space-3) var(--space-4); margin-bottom: var(--space-2);
+    padding: var(--space-3) var(--space-4); margin: 0;
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
     border: none; border-left: 2px solid transparent;
     border-radius: var(--radius-md);
@@ -2811,10 +2854,12 @@
     transition: background 160ms ease, box-shadow 160ms ease;
   }
   .note-opt:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
-  /* The keyboard surface needs a real focus ring now that the row takes focus (roving tabindex). */
+  /* The disclosure button's focus ring (native button focus — a real tab stop). */
   .note-opt:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
-  /* Selected = a quiet signal: a soft accent left-edge + faint tint, never a loud fill. */
+  /* Selected = a quiet signal: a soft accent left-edge + faint tint, never a loud fill. When expanded, the
+     header's bottom corners square so it joins flush to the editor region tucked directly beneath it. */
   .note-opt.sel { border-left-color: var(--accent); background: var(--accent-muted); }
+  .note-opt.sel[aria-expanded="true"] { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
   .comment { font-family: var(--font-body); font-size: var(--text-note); line-height: 1.6; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
   .meta { margin-top: var(--space-2); display: flex; gap: var(--space-2); flex-wrap: wrap; align-items: center; }
   .tag { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-2); }

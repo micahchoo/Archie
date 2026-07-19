@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readingNumber, circled, readingBadge, noteAnnouncement } from "./reading-index.js";
+import { readingNumber, circled, readingBadge } from "./reading-index.js";
 
 const IDS = ["r1", "r2", "r3"];
 
@@ -39,23 +39,5 @@ describe("readingBadge", () => {
   });
   it("is empty for an unknown reading (number 0)", () => {
     expect(readingBadge("gone", IDS)).toBe("");
-  });
-});
-
-describe("noteAnnouncement", () => {
-  it("names comment, 1-based position, and the reading as the plain word 'reading N' (not a circled glyph SRs mangle)", () => {
-    expect(
-      noteAnnouncement({ comment: "A cipher mark", index: 0, count: 3, readingKey: "r1", readingLabel: "Cipher", readingIds: IDS }),
-    ).toBe("A cipher mark, note 1 of 3, reading 2, Cipher.");
-  });
-  it("falls back to (untitled) for an empty comment and to base's number/label", () => {
-    expect(
-      noteAnnouncement({ comment: "   ", index: 2, count: 4, readingKey: undefined, readingLabel: "General notes", readingIds: IDS }),
-    ).toBe("(untitled), note 3 of 4, reading 1, General notes.");
-  });
-  it("drops the 'reading N,' clause for an unknown reading (number 0) but keeps the label", () => {
-    expect(
-      noteAnnouncement({ comment: "orphan", index: 0, count: 1, readingKey: "gone", readingLabel: "gone", readingIds: IDS }),
-    ).toBe("orphan, note 1 of 1, gone.");
   });
 });

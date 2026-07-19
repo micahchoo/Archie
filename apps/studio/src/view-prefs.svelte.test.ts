@@ -73,6 +73,54 @@ describe("view-prefs — galleryView", () => {
   });
 });
 
+describe("view-prefs — inspectorWidth (Archie-d48e: dock → inspector rename)", () => {
+  it("defaults to null (the CSS clamp() width) when nothing is stored", () => {
+    expect(viewPrefs.inspectorWidth).toBeNull();
+  });
+
+  it("persists a set width under the new key and survives a reload", () => {
+    viewPrefs.setInspectorWidth(360);
+    expect(viewPrefs.inspectorWidth).toBe(360);
+    expect(store.get("archie.editorInspectorWidth.v1")).toBe("360");
+
+    reloadViewPrefsForTests();
+    expect(viewPrefs.inspectorWidth).toBe(360);
+  });
+
+  it("falls back to the legacy dock-width key so a rename doesn't lose an existing user's width", () => {
+    store.set("archie.editorDockWidth.v1", "412"); // width dragged before the rename
+    reloadViewPrefsForTests();
+    expect(viewPrefs.inspectorWidth).toBe(412);
+  });
+
+  it("prefers the new key over the legacy key when both exist", () => {
+    store.set("archie.editorDockWidth.v1", "412");
+    store.set("archie.editorInspectorWidth.v1", "300");
+    reloadViewPrefsForTests();
+    expect(viewPrefs.inspectorWidth).toBe(300);
+  });
+
+  it("clearing to null removes the new key (back to the default width)", () => {
+    viewPrefs.setInspectorWidth(360);
+    viewPrefs.setInspectorWidth(null);
+    expect(viewPrefs.inspectorWidth).toBeNull();
+    expect(store.has("archie.editorInspectorWidth.v1")).toBe(false);
+  });
+
+  it("clearing to null ALSO removes the legacy key, so a reset doesn't resurrect the old dock width", () => {
+    store.set("archie.editorDockWidth.v1", "412"); // a pre-rename width still in storage
+    reloadViewPrefsForTests();
+    expect(viewPrefs.inspectorWidth).toBe(412); // fallback picked it up
+
+    viewPrefs.setInspectorWidth(null); // ResizeDivider reset
+    expect(store.has("archie.editorDockWidth.v1")).toBe(false);
+    expect(store.has("archie.editorInspectorWidth.v1")).toBe(false);
+
+    reloadViewPrefsForTests(); // a fresh load must NOT bring the legacy width back
+    expect(viewPrefs.inspectorWidth).toBeNull();
+  });
+});
+
 describe("view-prefs — private-mode tolerance", () => {
   it("read/write never throw when localStorage itself throws (mirrors canvas-first-use.test.ts)", () => {
     vi.stubGlobal("localStorage", {
