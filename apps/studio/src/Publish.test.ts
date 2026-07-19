@@ -152,21 +152,23 @@ describe("publish machine — device flow", () => {
     expect(m2.state).toBe("name-site");
   });
 
-  it("poll 'expired' silently fetches a fresh code (auto-restart), never an error screen", async () => {
+  // Archie-7d9b: the OLD behavior silently re-minted a fresh code on expiry — that swaps the visible code
+  // out from under an author mid-look, and since this poll runs independent of the component's lifecycle,
+  // an abandoned auth attempt would loop re-minting in the background for as long as the app stayed open.
+  it("poll 'expired' sets auth-expired directly — never silently re-mints a fresh code", async () => {
     let calls = 0;
     const m = createPublishMachine(makeDeps({
       signIn: async (onCode) => {
         calls++;
         onCode({ userCode: "CODE", verificationUri: "u", expiresIn: 900 });
-        if (calls === 1) return Promise.reject({ kind: "expired", message: "code expired" });
-        return SESSION;
+        return Promise.reject({ kind: "expired", message: "code expired" });
       },
     }));
     m.open();
     await m.continueWithGitHub();
-    await flush();
-    expect(calls).toBe(2);
-    expect(m.state).toBe("name-site");
+    expect(calls).toBe(1); // no auto-restart — one poll, one rejection, done
+    expect(m.state).toBe("auth-expired");
+    expect(m.code).toBeNull();
   });
 
   it("'device-flow-disabled' → auth-config-error (developer-facing, not a normal-user screen)", async () => {

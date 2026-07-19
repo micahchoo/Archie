@@ -6,7 +6,7 @@
   //   PublishDialog.svelte's old content, folded in unchanged (Local/zip destinations are unchanged per spec).
   //   Choosing "Publish to the web" enters the GitHub wizard (`menuPhase === "wizard"`) IN THE SAME surface —
   //   no second modal opens over/behind the first. The wizard's entry screens (intro-desktop / web-intro) get
-  //   an in-surface "‹ Back" that returns to step 1 — the modality contract's nested-flow rule (CONTEXT.md →
+  //   an in-surface "← Back" that returns to step 1 — the modality contract's nested-flow rule (CONTEXT.md →
   //   Surfaces: "opening one from inside another replaces it — in-surface back affordance if the flow is
   //   nested"). The wizard state machine + all its copy live in publish-machine.svelte.ts (typechecked +
   //   headlessly testable — see that file's header + Publish.test.ts); this file is the thin view.
@@ -27,6 +27,7 @@
   import type { GitHubTarget, BrokenLink, IncompleteCanvas, GitHubPublishResult, PublishProgress } from "@render/core";
   import type { DeploySession, DeployTarget, DeployProgress } from "./deploy/types.js";
   import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
+  import { untrack } from "svelte";
   import { createPublishMachine, isResumableState } from "./publish-machine.svelte.js";
   import { isTauri } from "./tauri-fs.js";
   // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return, single-scrim
@@ -190,15 +191,30 @@
 
   // Whenever the surface (re)opens: reset the chooser's transient bits, then resume the wizard exactly
   // where it was left (a pending device code, an in-flight/finished publish) — or land fresh on step 1.
+  //
+  // MUST depend on `open` ONLY. `machine.open()` reads `machine.state` (its resumable-state guard), and
+  // the menuPhase line reads it again directly — in Svelte 5 either read registers as an effect
+  // dependency unless shielded, so every in-wizard transition (intro→advanced, a device-code poll landing
+  // on name-site, a name-taken re-seed) would re-run this effect and call machine.open() again, which
+  // recomputes/reseeds any non-resumable state right out from under the wizard. `untrack()` around
+  // everything past the `open` check keeps those reads out of the dependency set, so this effect only
+  // ever re-fires on an actual open/close of the surface — never on internal wizard transitions.
+  // UNTESTABLE headlessly: vitest compiles runes for SSR here (no DOM/mount harness), so `$effect` never
+  // runs in this suite — this class of bug (a self-resetting effect) only surfaces under a real Svelte
+  // runtime. Verify in-browser post-merge; publish-machine.svelte.ts's own transition tests (Publish.test.ts)
+  // are what stay headlessly testable.
   $effect(() => {
     if (!open) return;
-    destErrorMsg = ""; zipUrl = ""; copied = false; copiedWc = false; copiedEmbed = false;
-    machine.open();
-    menuPhase = isResumableState(machine.state) ? "wizard" : "choose";
+    untrack(() => {
+      destErrorMsg = ""; zipUrl = ""; copied = false; copiedWc = false; copiedEmbed = false;
+      machine.open();
+      menuPhase = isResumableState(machine.state) ? "wizard" : "choose";
+    });
   });
-  // Tick the device-code countdown once a second while it's showing.
+  // Tick the device-code countdown once a second while it's showing AND the surface is open — no point
+  // ticking a countdown nobody can see, and it keeps this effect quiet while the surface is closed.
   $effect(() => {
-    if (machine.state !== "device-code") return;
+    if (!open || machine.state !== "device-code") return;
     const id = setInterval(() => machine.tick(), 1000);
     return () => clearInterval(id);
   });
@@ -222,7 +238,7 @@
   async function enterWizard() {
     if (await onenterweb()) menuPhase = "wizard";
   }
-  /** In-surface "‹ Back" from the wizard's entry screens to step 1 (the modality contract's nested-flow
+  /** In-surface "← Back" from the wizard's entry screens to step 1 (the modality contract's nested-flow
    *  rule) — NOT a close, so it never touches machine state. */
   function backToChooser() { menuPhase = "choose"; }
 
@@ -238,7 +254,7 @@
   /** Dismiss a FINISHED wizard attempt (Done on success / Cancel on error) — unlike `close()`, this
    *  acknowledges the result so the next open recomputes a fresh entry screen (e.g. the return-visit
    *  update-confirm) instead of showing the same stale success/error screen forever. A close mid-flight —
-   *  Esc, scrim-click, "‹ Back", or manual-pages' "I'll do it later" — must NEVER call this; only an
+   *  Esc, scrim-click, "← Back", or manual-pages' "I'll do it later" — must NEVER call this; only an
    *  explicit, deliberate dismissal of a completed attempt does. */
   function finishWizard() { machine.dismissResult(); close(); }
 
@@ -431,7 +447,7 @@
             <button type="button" class="linkish" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
           </div>
         </div>
-        <div class="actions"><button type="button" class="ghost" onclick={backToChooser}>‹ Back</button></div>
+        <div class="actions"><button type="button" class="ghost" onclick={backToChooser}>← Back</button></div>
 
       {:else if machine.state === "device-code"}
         <header>
@@ -450,9 +466,17 @@
             Waiting for you to authorize… <span class="muted">(expires {machine.countdownLabel})</span>
           </p>
         </div>
-        <!-- Cancel here is a CLEAN, session-resumable cancel (Archie-7d9b): the machine keeps this pending
-             code, and reopening lands right back on this screen with the same code — no warning needed. -->
-        <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>
+        <!-- ‹Back› (SHOULD-FIX 1): the parked device code is otherwise a dead end for the rest of the
+             session — reopening always resumes straight back here (isResumableState), so without an
+             in-surface escape the local/zip destinations become unreachable until the code is abandoned
+             or expires. Back only swaps the visible phase — the machine (and the pending code) is
+             untouched, matching Cancel's resumability. Cancel itself is a CLEAN, session-resumable cancel
+             (Archie-7d9b): the machine keeps this pending code, and reopening lands right back on this
+             screen with the same code — no warning needed. -->
+        <div class="actions">
+          <button type="button" class="ghost" onclick={backToChooser}>← Back</button>
+          <button type="button" class="ghost" onclick={close}>Cancel</button>
+        </div>
 
       {:else if machine.state === "auth-expired"}
         <header>
@@ -461,7 +485,11 @@
           <p class="lede">Start again to get a new one.</p>
         </header>
         <div class="actions">
-          <button type="button" class="ghost" onclick={close}>Cancel</button>
+          <button type="button" class="ghost" onclick={backToChooser}>← Back</button>
+          <!-- The code is dead — nothing left here to resume, so Cancel ACKNOWLEDGES (finishWizard) rather
+               than just closing, so the next open computes a fresh entry screen instead of re-showing this
+               same dead-end sentinel forever. -->
+          <button type="button" class="ghost" onclick={finishWizard}>Cancel</button>
           <button class="primary" onclick={() => machine.retryAuth()}>Start again</button>
         </div>
 
@@ -674,7 +702,7 @@
             <button type="button" class="linkish" onclick={() => machine.openAdvanced()}>I already use GitHub →</button>
           </div>
         </div>
-        <div class="actions"><button type="button" class="ghost" onclick={backToChooser}>‹ Back</button></div>
+        <div class="actions"><button type="button" class="ghost" onclick={backToChooser}>← Back</button></div>
 
       {:else if machine.state === "advanced"}
         <!-- ADVANCED (token) form — verbatim pre-Task-10 dialog. -->

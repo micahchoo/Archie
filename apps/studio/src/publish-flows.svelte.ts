@@ -233,18 +233,28 @@ export function createPublishFlows(deps: PublishDeps) {
       return fs;
     },
     /** Entering the GitHub wizard step from the destination chooser (Archie-1921 — one merged surface
-     *  now, so this no longer flips its own open flag): project ONCE, caching the tree and surfacing
-     *  broken intra-Library links so the author sees them before publishing. Returns false (stay on the
-     *  chooser) if the size-guard confirm was declined — the confirm dialog IS the feedback. */
+     *  now, so this no longer flips its own open flag). Returns false (stay on the chooser) if the
+     *  size-guard confirm was declined — the confirm dialog IS the feedback. Returns true as soon as that
+     *  guard passes, WITHOUT waiting for the site projection: the caller flips to the wizard screen right
+     *  away (no invisible gap staring at the chooser while a large library tiles/projects), and the
+     *  projection keeps running in the background, filling in `brokenLinks`/`incompleteCanvases`
+     *  reactively once it lands — same timing the old two-dialog code had (PublishDialog closed and the
+     *  GitHub dialog opened immediately; only the advisory warnings arrived a moment later). */
     async openPublish(): Promise<boolean> {
       if (!(await publishSizeOk())) return false; // size guard before the network push
       s.brokenLinks = [];
       s.incompleteCanvases = [];
       cachedSiteFs = null;
-      const { fs, brokenLinks: bl, incompleteCanvases: ic } = await projectSite(false);
-      cachedSiteFs = fs;
-      s.brokenLinks = bl;
-      s.incompleteCanvases = ic;
+      void projectSite(false).then(({ fs, brokenLinks: bl, incompleteCanvases: ic }) => {
+        cachedSiteFs = fs;
+        s.brokenLinks = bl;
+        s.incompleteCanvases = ic;
+      }).catch((e) => {
+        // A projection failure here degrades to "no cached tree yet" — collectSiteFiles() re-projects on
+        // demand at actual publish time, so this is a lost warm cache, not a lost publish. Log rather
+        // than swallow silently (this is now a fire-and-forget promise with no caller to report to).
+        console.error("Publish: background site projection failed", e);
+      });
       return true;
     },
     /** Local flow: pick a folder + write the published tree; returns the folder name (null = cancelled). */
