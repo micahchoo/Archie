@@ -3,6 +3,7 @@
 // painting AnnotationPage. Language maps use the `none` key (no declared language) in v1.
 
 import type { W3CAnnotation } from "../wadm/types.js";
+import type { MetadataEntry } from "../model/model.js";
 
 export const IIIF_PRESENTATION_CONTEXT = "https://iiif.io/api/presentation/3/context.json" as const;
 
@@ -34,6 +35,9 @@ export interface IIIFRightsProps {
   rights?: string;
   requiredStatement?: IIIFLabelValue;
   metadata?: IIIFLabelValue[];
+  /** Archie extension (iiif/metadata.ts): the raw MetadataEntry[] behind the display `metadata[]`
+   *  pairs — the lossless round-trip carrier. Pure IIIF viewers ignore it. */
+  archieMetadata?: MetadataEntry[];
   provider?: IIIFAgent[];
 }
 

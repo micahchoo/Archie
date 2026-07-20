@@ -1,12 +1,14 @@
 // Project a model `RightsFields` → the IIIF rights properties spread onto a Collection (Library) /
-// Manifest (Exhibit) / Canvas (Object). Core-first: emits `rights` (a license URI) + `requiredStatement`
-// (the MUST-display credit). One helper, used by toCollection + toManifest + toCanvas, so the three
-// levels project identically (the "same fields at every level" design). CONTEXT "Exhibit / Library
-// rights & metadata"; Q1–Q3. NB: Phase 1 emits each level's OWN values — the opt-in cascade
-// (child borrows parent) resolves in the later `inherit` phase, not here.
+// Manifest (Exhibit) / Canvas (Object). Emits `rights` (a license URI) + `requiredStatement`
+// (the MUST-display credit) + the descriptive `metadata`/`archieMetadata` pair (Archie-c6bf; the
+// projection lives in iiif/metadata.ts). One helper, used by toCollection + toManifest + toCanvas,
+// so the three levels project identically (the "same fields at every level" design). CONTEXT
+// "Exhibit / Library rights & metadata"; Q1–Q3. NB: Phase 1 emits each level's OWN values — the
+// opt-in cascade (child borrows parent) resolves in the later `inherit` phase, not here.
 
 import type { RightsFields } from "../model/model.js";
 import { langMap, type IIIFRightsProps } from "./presentation.js";
+import { metadataProps, metadataFromIIIF } from "./metadata.js";
 
 /** Default `requiredStatement` label when the author leaves it blank (CONTEXT Q3). */
 export const DEFAULT_ATTRIBUTION_LABEL = "Attribution";
@@ -58,7 +60,9 @@ export function rightsProps(fields: RightsFields | undefined): IIIFRightsProps {
       value: langMap(rs.value),
     };
   }
-  return out;
+  // Descriptive metadata (Archie-c6bf): display pairs + the lossless archieMetadata extension —
+  // emitted only when entries exist (byte-stable when absent, same contract as the fields above).
+  return { ...out, ...metadataProps(fields) };
 }
 
 /** First value of a IIIF language map (Archie writes single-language `none` maps). */
@@ -81,5 +85,9 @@ export function rightsFromIIIF(res: IIIFRightsProps | undefined): RightsFields {
       value: unLang(res.requiredStatement.value),
     };
   }
+  // Round-trip the raw entries from the archieMetadata extension (sanitized — untrusted tree). The
+  // display `metadata[]` pairs are NOT read here: they're a lossy projection (import owns that path).
+  const metadata = metadataFromIIIF(res);
+  if (metadata) out.metadata = metadata;
   return out;
 }
