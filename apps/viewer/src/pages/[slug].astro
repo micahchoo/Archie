@@ -1,11 +1,13 @@
 ---
 // DYNAMIC exhibit reader page (the published read-only exhibit). Reached from the Gallery (index).
-// ONE template for every per-exhibit page — getStaticPaths enumerates the exhibit slugs (the SAME
-// source the publish generator uses, via og-image's exhibitSlugs) and renders ExhibitView, the layout
-// orchestrator (Grid overview ⇄ object Reader). Replaces the four near-identical voynich*.astro /
-// language-atlas.astro pages: every OG/meta/JSON-LD change now happens HERE, once. Per-slug copy
-// (title / og / JSON-LD type+about+license) is carried as props from getStaticPaths.
+// ONE template for every per-exhibit page — getStaticPaths enumerates every card in
+// public/published/exhibits.json (the SAME source sitemap.xml.ts routes from, via og-image's
+// exhibitSlugs) and renders ExhibitView, the layout orchestrator (Grid overview ⇄ object Reader).
+// Replaces the four near-identical voynich*.astro / language-atlas.astro pages: every OG/meta/JSON-LD
+// change now happens HERE, once. Per-slug copy (title / og / JSON-LD type+about+license) is carried
+// as props from getStaticPaths; slugs without authored copy default it from their exhibits.json card.
 import type { GetStaticPaths } from "astro";
+import exhibitsJson from "../../public/published/exhibits.json";
 import ExhibitView from "../components/ExhibitView.svelte";
 import "../tokens.css";
 import "@annotorious/openseadragon/annotorious-openseadragon.css";
@@ -25,15 +27,18 @@ type ExhibitMeta = {
   ogTitle: string; // og:title + JSON-LD name
   description: string; // meta description + og:description (+ JSON-LD description unless overridden)
   jsonLdType: string; // schema.org @type
-  aboutName: string; // schema.org about.name
-  license: string; // schema.org license URL
+  aboutName?: string; // schema.org about.name — omitted from the JSON-LD when not authored
+  license?: string; // schema.org license URL — omitted when not authored (never guess a license)
   jsonLdDescription?: string; // override when the JSON-LD copy differs from the meta description
 };
 
 export const getStaticPaths = (() => {
-  // The per-slug copy table. Enumerating its keys is the route set — the SAME exhibits the generator
-  // emits into public/published/. Only slugs carrying authored page-meta render a reader page (this
-  // mirrors the old hand-written page set: voynich / voynich-rosettes / voynich-reading / language-atlas).
+  // The route set is EVERY card in exhibits.json — the same source sitemap.xml.ts derives its routes
+  // from (og-image's exhibitSlugs is `exhibitsJson.exhibits.map(slug)`), so every URL the sitemap
+  // advertises builds, and a third-party dropped-zip exhibit gets a static/OG page with no edit here.
+  // META is the per-slug authored-copy override table (the old hand-written page set plus sampler);
+  // a slug without an entry defaults title/og/description from its card, with a generic JSON-LD
+  // CreativeWork and no about/license claim (we can't assert a license we weren't told).
   const META: Record<string, ExhibitMeta> = {
     voynich: {
       title: "Voynich manuscript",
@@ -83,7 +88,17 @@ export const getStaticPaths = (() => {
       license: "https://creativecommons.org/licenses/by/3.0/",
     },
   };
-  return Object.keys(META).map((slug) => ({ params: { slug }, props: META[slug]! }));
+  return exhibitsJson.exhibits.map((card) => ({
+    params: { slug: card.slug },
+    props:
+      META[card.slug] ??
+      ({
+        title: card.title,
+        ogTitle: card.title,
+        description: card.description,
+        jsonLdType: "CreativeWork",
+      } satisfies ExhibitMeta),
+  }));
 }) satisfies GetStaticPaths;
 
 const { slug } = Astro.params;
@@ -118,8 +133,8 @@ const jsonLdDescription = meta.jsonLdDescription ?? meta.description;
         "@type": meta.jsonLdType,
         name: meta.ogTitle,
         description: jsonLdDescription,
-        about: { "@type": "CreativeWork", name: meta.aboutName },
-        license: meta.license,
+        ...(meta.aboutName ? { about: { "@type": "CreativeWork", name: meta.aboutName } } : {}),
+        ...(meta.license ? { license: meta.license } : {}),
       })}
     />
     <link rel="stylesheet" href={base + "fonts/fonts.css"} />
