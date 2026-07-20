@@ -24,7 +24,7 @@
   // cancellation wired to component lifecycle, so they keep running in the background across a close — a
   // publish that finishes while the surface is closed lands on success/manual-pages/error and is reflected
   // the moment the surface reopens (requirement 3).
-  import type { GitHubTarget, BrokenLink, IncompleteCanvas, GitHubPublishResult, PublishProgress } from "@render/core";
+  import type { GitHubTarget, BrokenLink, IncompleteCanvas, MissingAsset, GitHubPublishResult, PublishProgress } from "@render/core";
   import type { CorruptLogFinding } from "./publish-warnings.js";
   import type { DeploySession, DeployTarget, DeployProgress } from "./deploy/types.js";
   import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
@@ -39,6 +39,7 @@
   // anywhere public, share one link into the canonical Viewer instance (ADR-0009). ONE config source
   // (ADR-0013 amendment): archie.config.json — build-gh-pages.sh reads the same file via node -p.
   import archieConfig from "../../../archie.config.json";
+  import ZipExportFields, { allSelected, baseNameOf, exportOpts, selectedCount } from "./ZipExportFields.svelte";
 
   let {
     open = false,
@@ -49,6 +50,8 @@
     onzip,
     ondownload,
     onenterweb,
+    exhibits = [],
+    suggestedZipName = "",
     // --- desktop device-flow seams (App.svelte wires these from deploy-flows in Task 13) ---
     library = { id: "", title: "" },
     deviceFlowAvailable = false,
@@ -66,6 +69,7 @@
     brokenLinks = [],
     incompleteCanvases = [],
     corruptLogs = [],
+    missingAssets = [],
   }: {
     open?: boolean;
     canFolder?: boolean;
@@ -73,13 +77,18 @@
     viewerTree?: string;
     onclose: () => void;
     onfolder: () => Promise<string | null>;
-    onzip: () => Promise<string>;
-    /** Save the whole library as a portable .archie.zip — a copy to keep, re-open, or hand to someone.
+    onzip: (opts?: { name?: string; slugs?: string[] }) => Promise<string>;
+    /** Save the library as a portable .archie.zip — a copy to keep, re-open, or hand to someone.
+     *  `opts` from the working-copy chooser: a custom file name and/or the exhibit subset to include.
      *  Resolves true only if a save actually happened (false = size-guard declined / picker cancelled). */
-    ondownload: () => Promise<boolean>;
+    ondownload: (opts?: { name?: string; slugs?: string[] }) => Promise<boolean>;
     /** Entering the GitHub wizard step from the chooser: runs the size-guard confirm + caches the site
      *  projection (publish-flows' openPublish). Resolves false if the author declined the guard — stay put. */
     onenterweb: () => Promise<boolean>;
+    /** The exportable (non-template) exhibits, for the working-copy chooser's include list. */
+    exhibits?: { slug: string; title: string }[];
+    /** The name the export starts from — the bound zip's name, else derived from the library title. */
+    suggestedZipName?: string;
     library?: { id: string; title: string };
     deviceFlowAvailable?: boolean;
     remembered?: { target: DeployTarget; url: string } | null;
@@ -103,6 +112,9 @@
     /** Exhibits whose annotation/section history reads from a torn store — the readable subset (or, when
      *  all-corrupt, nothing) ships. Surfaced as a pre-publish advisory (Archie-a690). */
     corruptLogs?: CorruptLogFinding[];
+    /** Imported images whose bytes the library's storage couldn't produce — the publish references
+     *  them but doesn't contain them (the round-trip loss, 2026-07-19). Post-save advisory. */
+    missingAssets?: MissingAsset[];
   } = $props();
 
   const isTauriEnv = isTauri();
@@ -142,7 +154,7 @@
   });
 
   // === step 1: the destination chooser (former PublishDialog.svelte) ===================================
-  type MenuPhase = "choose" | "local" | "working" | "done-folder" | "done-zip" | "done-download" | "error" | "wizard";
+  type MenuPhase = "choose" | "zip-options" | "local" | "working" | "done-folder" | "done-zip" | "done-download" | "error" | "wizard";
   let menuPhase = $state<MenuPhase>("choose");
   let folderName = $state("");
   let zipName = $state("");
@@ -235,7 +247,7 @@
   }
   async function saveZip() {
     menuPhase = "working"; destErrorMsg = "";
-    try { zipName = await onzip(); menuPhase = "done-zip"; }
+    try { zipName = await onzip(exportOpts(exportBase, exportSel, exhibits)); menuPhase = "done-zip"; }
     catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't download the zip."; menuPhase = "error"; }
   }
   /** Step 1 → the GitHub wizard: run the size-guard + cache the projection, then enter — the guard's own
@@ -246,6 +258,37 @@
   /** In-surface "← Back" from the wizard's entry screens to step 1 (the modality contract's nested-flow
    *  rule) — NOT a close, so it never touches machine state. */
   function backToChooser() { menuPhase = "choose"; }
+
+  // === the zip export fields (ZipExportFields): name the file, pick the exhibits =======================
+  // ONE state pair serves both zip surfaces (the working-copy panel and the local-publish fallback) —
+  // they're re-armed on entry and never shown at once.
+  let exportBase = $state(""); // file name without the .archie.zip suffix (shown as a fixed adornment)
+  let exportSel = $state<Record<string, boolean>>({});
+  let exporting = $state(false);
+  const exportCount = $derived(selectedCount(exportSel, exhibits));
+  function armExportFields() {
+    exportBase = baseNameOf(suggestedZipName);
+    exportSel = allSelected(exhibits);
+    destErrorMsg = "";
+  }
+  function openZipOptions() {
+    armExportFields();
+    menuPhase = "zip-options";
+  }
+  function openLocal() {
+    if (!canFolder) armExportFields(); // the fallback downloads a zip — same fields, local flavor
+    menuPhase = "local";
+  }
+  /** Save via the OS picker. Stay on the panel when nothing was saved (guard declined / picker
+   *  cancelled) — done-download must never claim a save that didn't happen. */
+  async function saveWorkingCopy() {
+    exporting = true; destErrorMsg = "";
+    try {
+      if (await ondownload(exportOpts(exportBase, exportSel, exhibits))) menuPhase = "done-download";
+    } catch (e) {
+      destErrorMsg = e instanceof Error ? e.message : "Couldn't save the file.";
+    } finally { exporting = false; }
+  }
 
   function close() {
     menuPhase = "choose";
@@ -361,13 +404,11 @@
             <span class="c-desc">A free, permanent website that's yours — Archie builds it and puts it online in one motion. Best when you want a real address to share or cite.</span>
           </button>
         {/if}
-        <button class="choice" onclick={() => (menuPhase = "local")}>
+        <button class="choice" onclick={openLocal}>
           <span class="c-title">Locally</span>
           <span class="c-desc">Write the site to the Viewer's folder and preview it. No account.</span>
         </button>
-        <!-- Stay on the chooser until the save actually happens (the OS picker is modal anyway) —
-             done-download must never claim a save the user cancelled. -->
-        <button class="choice" onclick={async () => { if (await ondownload().catch(() => false)) menuPhase = "done-download"; }}>
+        <button class="choice" onclick={openZipOptions}>
           <span class="c-title">Share a working copy</span>
           <span class="c-desc">A copy of your library a colleague can open, annotate, and send back to you — or keep as your own backup, or share as a link. One <code>.archie.zip</code> file. Good for a work in progress, not a permanent citation.</span>
         </button>
@@ -381,6 +422,24 @@
       </div>
       <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>
 
+    {:else if menuPhase === "zip-options"}
+      <header>
+        <p class="eyebrow">Publish</p>
+        <h2>Share a working copy</h2>
+        <p class="lede">Name the file and choose what goes in it.</p>
+      </header>
+      <div class="body">
+        <ZipExportFields {exhibits} bind:name={exportBase} bind:selected={exportSel}
+          subsetWarning="Notes that link to an exhibit you've left out will show as plain text in the copy." />
+        {#if destErrorMsg}<p class="err">⚠ {destErrorMsg}</p>{/if}
+        <div class="actions">
+          <button type="button" class="ghost" onclick={backToChooser}>← Back</button>
+          <!-- Stay here until the save actually happens (the OS picker is modal anyway) — done-download
+               must never claim a save the user cancelled. -->
+          <button class="primary" disabled={exporting || exportCount === 0} onclick={saveWorkingCopy}>{exporting ? "Saving…" : "Save copy"}</button>
+        </div>
+      </div>
+
     {:else if menuPhase === "done-download"}
       <header>
         <p class="eyebrow">Publish</p>
@@ -389,6 +448,21 @@
       </header>
       <div class="result">
         <p class="ok">Downloaded your <code>.archie.zip</code>.</p>
+        {#if missingAssets.length > 0}
+          <!-- The round-trip-loss advisory (2026-07-19): a saved zip that references images it
+               doesn't contain must say so HERE, on the flow that produced it — the console warn
+               alone let an assetless export pass for a complete one. -->
+          <div class="broken" role="status">
+            <p class="b-head">{missingAssets.length} {missingAssets.length === 1 ? "image isn't" : "images aren't"} in the saved file</p>
+            <p class="b-sub">Their files weren't in this library's storage, so anyone opening the copy will see broken images there. This usually means the library was opened from a copy that didn't carry its image files — re-add the originals, then save again.</p>
+            <ul>
+              {#each missingAssets.slice(0, 5) as m}
+                <li><code>/{m.exhibitSlug}</code> · {m.name}</li>
+              {/each}
+              {#if missingAssets.length > 5}<li class="more">…and {missingAssets.length - 5} more</li>{/if}
+            </ul>
+          </div>
+        {/if}
         <p class="line"><strong>Working with someone?</strong> Send them the file — they open it in their own Archie, annotate their pass, and send it back. Open their copy here and Archie shows who added what.</p>
         <p class="line">Keep it yourself too, as a backup or to re-open here any time.</p>
         <p class="line"><strong>Share it as a link (no install for the reader):</strong> upload the zip anywhere public — your site, a GitHub release, the Internet Archive — then paste its URL:</p>
@@ -752,6 +826,18 @@
                 </ul>
               </div>
             {/if}
+            {#if missingAssets.length > 0}
+              <div class="broken" role="status">
+                <p class="b-head">{missingAssets.length} {missingAssets.length === 1 ? "image isn't" : "images aren't"} in this library's storage</p>
+                <p class="b-sub">The published site will reference these images but can't show them. This usually means the library was opened from a copy that didn't carry its image files — re-add the originals to fix it, or publish anyway with those images broken.</p>
+                <ul>
+                  {#each missingAssets.slice(0, 5) as m}
+                    <li><code>/{m.exhibitSlug}</code> · {m.name}</li>
+                  {/each}
+                  {#if missingAssets.length > 5}<li class="more">…and {missingAssets.length - 5} more</li>{/if}
+                </ul>
+              </div>
+            {/if}
             {#if incompleteCanvases.length > 0}
               <div class="broken" role="status">
                 <p class="b-head">{incompleteCanvases.length} {incompleteCanvases.length === 1 ? "image has" : "images have"} no known width/height</p>
@@ -824,6 +910,8 @@
           <p class="line muted">Pick it once, then re-publish any time — Archie clears out old files for you.</p>
         {:else}
           <p class="line">Your browser can't pick a folder, so this downloads a <code>.archie.zip</code> instead. You'll then unzip it into the folder the Viewer reads from — instructions next.</p>
+          <ZipExportFields {exhibits} bind:name={exportBase} bind:selected={exportSel}
+            subsetWarning="The local site will hold only the exhibits you pick — anything unzipped there from an earlier full copy stays behind." />
         {/if}
         {#if menuPhase === "error"}<p class="err">⚠ {destErrorMsg}</p>{/if}
         <div class="actions">
@@ -831,7 +919,7 @@
           {#if canFolder}
             <button class="primary" disabled={menuPhase === "working"} onclick={chooseFolder}>{menuPhase === "working" ? "Writing…" : "Choose folder…"}</button>
           {:else}
-            <button class="primary" disabled={menuPhase === "working"} onclick={saveZip}>{menuPhase === "working" ? "Downloading…" : "Download .archie.zip"}</button>
+            <button class="primary" disabled={menuPhase === "working" || exportCount === 0} onclick={saveZip}>{menuPhase === "working" ? "Downloading…" : "Download .archie.zip"}</button>
           {/if}
         </div>
       </div>
@@ -974,6 +1062,7 @@
   .cb input { margin-top: 2px; accent-color: var(--accent-2); }
   .cb-text { font-family: var(--font-body); font-size: 0.8125rem; color: var(--ink-paper-primary); }
   .cb-sub { color: var(--ink-paper-secondary); }
+
 
   /* --- advanced (token) form — verbatim styles --- */
   form { display: flex; flex-direction: column; gap: var(--space-3); }

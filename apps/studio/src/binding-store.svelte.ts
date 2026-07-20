@@ -27,8 +27,10 @@ export interface BindingDeps {
    *  (spike-0002) carries the incremental scope + orphan removals; omitted (or removals-only) = full
    *  publish. Removals apply to full writes too, so a resync / Save still prunes. */
   writeToFolder: (fs: Filesystem, plan?: FolderWritePlan) => Promise<void>;
-  /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled. */
-  downloadProjectZip: () => Promise<boolean>;
+  /** Download the library as .archie.zip (size-guarded). False = the user declined/cancelled.
+   *  `opts` = the Save dialog's custom name / exhibit subset (ZipExportFields); absent = bound
+   *  name, whole library — what the automatic safety flushes always pass. */
+  downloadProjectZip: (opts?: { name?: string; slugs?: string[] }) => Promise<boolean>;
   /** Replace the OPFS project from a loaded library (the shared open-zip/open-folder body).
    *  `srcFs` is the SOURCE tree it was loaded from — the flag-ON structure-log merge (Archie-2a9a)
    *  re-reads `{slug}/structure/history/` pages from it (they are not part of LoadedLibrary). */
@@ -234,10 +236,15 @@ export function createBindingStore(deps: BindingDeps) {
       rememberBinding();
     },
 
-    /** Save to the bound location; if unbound, establish a binding (Save As). ⌘S / the Save button. */
-    async saveProject() {
+    /** Save to the bound location; if unbound, establish a binding (Save As). ⌘S / the Save button.
+     *  `opts` (zip sinks only) carries the Save dialog's custom file name / exhibit subset. A PARTIAL
+     *  save (a strict subset) deliberately does NOT clear `dirty` or rebind: the file on disk isn't
+     *  the whole project, so calling it "saved" would let unsaved exhibits read as safe. The automatic
+     *  safety flushes pass no opts and keep the full-library behavior. */
+    async saveProject(opts?: { name?: string; slugs?: string[] }) {
       if (s.busy) return;
       s.busy = true; s.error = null;
+      const partial = (opts?.slugs?.length ?? 0) > 0;
       try {
         await deps.flushExhibit(); // flush the current exhibit's edits so the published tree is current
         if (s.binding.kind === "unbound") {
@@ -248,15 +255,18 @@ export function createBindingStore(deps: BindingDeps) {
             s.binding = { kind: "folder", name: fb.name, handleKey: fb.key };
             await fullFolderWrite(fb.fs); // full tree + pruned removals; preserves mid-flight dirt
           } else {
-            s.binding = { kind: "file", name: deps.zipName() };
-            if (!(await deps.downloadProjectZip())) return; // declined the large-library zip → stay unsaved
+            if (!(await deps.downloadProjectZip(opts))) return; // declined the large-library zip → stay unsaved
+            if (partial) return; // a subset copy is not this project's save file — stay unbound + dirty
+            s.binding = { kind: "file", name: opts?.name?.trim() || deps.zipName() };
           }
         } else if (s.binding.kind === "folder") {
           const fs = await reacquireFolder();
           if (!fs) return;
           await fullFolderWrite(fs); // full tree + pruned removals; preserves mid-flight dirt
         } else {
-          if (!(await deps.downloadProjectZip())) return; // declined the large-library zip → stay unsaved
+          if (!(await deps.downloadProjectZip(opts))) return; // declined the large-library zip → stay unsaved
+          if (partial) return; // as above: the bound file still holds the last FULL save
+          if (opts?.name?.trim()) s.binding = { kind: "file", name: opts.name.trim() }; // renamed → the new file is the binding
         }
         s.dirty = false;
         rememberBinding();

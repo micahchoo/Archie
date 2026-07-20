@@ -23,6 +23,7 @@
   // button funnel every "bring something in" through one surface (folder / IIIF / Map). It absorbed the
   // retired AddMapModal's Map path, so there is no longer a standalone map modal to lazy-load.
   import CreateExhibitDialog from "./CreateExhibitDialog.svelte";
+  import SaveZipDialog from "./SaveZipDialog.svelte";
   // NarrativeEditor (narrative panel) is lazy-loaded — see NarrativeEditorComp below.
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
@@ -1871,12 +1872,24 @@
   const bnd = createBindingStore({
     flushExhibit: () => save(),
     writeToFolder: async (fs) => (await ensurePub()).writeToFolder(fs),
-    downloadProjectZip: async () => (await ensurePub()).downloadProjectZip(),
+    downloadProjectZip: async (opts) => (await ensurePub()).downloadProjectZip(opts),
     replaceProjectFrom: (loaded, srcFs) => flows.replaceProjectFrom(loaded, srcFs),
     zipName: () => zipNameFor(lib.meta.title || PROJECT_TITLE),
   });
   /** The capability-routed Open (folder on Chromium, else the zip file picker). */
   function openProject() { if (bnd.canFolder) void bnd.openProjectFolder(); else zipInputEl?.click(); }
+  // The Save dialog (SaveZipDialog): shown only when this Save lands in a `.archie.zip` — a file
+  // binding, or the first save on a browser with no folder picker. A folder-bound Save writes the
+  // tree in place with no prompt (unchanged), and the automatic safety flushes below never route
+  // here — they call saveProject() directly, whole library, no dialog.
+  let saveZipOpen = $state(false);
+  const savesAsZip = $derived(bnd.binding.kind === "file" || (bnd.binding.kind === "unbound" && !bnd.canFolder));
+  function requestSave() {
+    if (savesAsZip) saveZipOpen = true;
+    else void bnd.saveProject();
+  }
+  const exportableExhibits = $derived(lib.meta.exhibits.filter((e) => !isTemplate(e.slug)).map((e) => ({ slug: e.slug, title: e.title })));
+  const suggestedZipName = $derived(bnd.binding.kind === "file" && bnd.binding.name ? bnd.binding.name : zipNameFor(lib.meta.title || PROJECT_TITLE));
   // ⌘S is owned by SafetyState now (Archie-c76d (a)): whichever SafetyState is mounted (library / overview /
   // editor headers — mutually exclusive views, so exactly one is ever live) runs the universal flush. The old
   // App-level onBindingKey ⌘S branch is deleted — it double-fired under a Saved flash and opened a picker.
@@ -1943,7 +1956,7 @@
     bindingBusy={bnd.busy}
     bindingError={bnd.error}
     recents={bnd.recents}
-    onsave={() => void bnd.saveProject()}
+    onsave={requestSave}
     onopenproject={openProject}
     onopenrecent={(r) => void bnd.openRecent(r, openProject)}
     onforgetrecent={(r) => bnd.forgetRecent(r)}
@@ -1973,7 +1986,7 @@
     {#snippet overviewSafety()}
       <SafetyState readOnly={tabReadOnly} sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
         bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
-        hasRealWork={safetyHasRealWork} onflush={() => void bnd.saveProject()} />
+        hasRealWork={safetyHasRealWork} onflush={requestSave} />
     {/snippet}
     <ExhibitOverview
       safety={overviewSafety}
@@ -2050,7 +2063,7 @@
          explicitly (optional prop — silent under-report if omitted, save-reviewer contract). -->
     <SafetyState readOnly={tabReadOnly} sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
       bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
-      hasRealWork={safetyHasRealWork} onflush={() => void bnd.saveProject()} />
+      hasRealWork={safetyHasRealWork} onflush={requestSave} />
     <button class="publish-signal" onclick={() => maybePromptIdentity(() => void ensurePub().then((p) => p.openMenu()))}>Publish & share…</button>
     <HelpMenu ontutorial={() => (tutorialOpen = true)} onshortcuts={() => (helpOpen = true)} />
   </header>
@@ -2566,6 +2579,8 @@
       onzip={p.localPublishZip}
       ondownload={p.download}
       onenterweb={p.openPublish}
+      exhibits={exportableExhibits}
+      suggestedZipName={suggestedZipName}
       library={deployLibrary}
       deviceFlowAvailable={dp?.deviceFlowAvailable ?? false}
       remembered={dp?.remembered ?? null}
@@ -2581,10 +2596,20 @@
       brokenLinks={p.brokenLinks}
       incompleteCanvases={p.incompleteCanvases}
       corruptLogs={p.corruptLogs}
+      missingAssets={p.missingAssets}
     />
   {/if}
   {#if cmdkOpen && CmdKComp}{@const CK = CmdKComp}<CK open={cmdkOpen} entries={cmdkEntries} onpick={insertCite} onclose={() => (cmdkOpen = false)} />{/if}
 {/if}
+<!-- The Save dialog for zip-sink saves (file binding / no folder picker): name the file, pick the
+     exhibits. Folder-bound saves and the automatic safety flushes bypass it entirely. -->
+<SaveZipDialog
+  open={saveZipOpen}
+  exhibits={exportableExhibits}
+  suggestedName={suggestedZipName}
+  busy={bnd.busy}
+  onsave={(opts) => { saveZipOpen = false; void bnd.saveProject(opts); }}
+  oncancel={() => (saveZipOpen = false)} />
 <!-- GLOBAL: the scoped add-media chooser (Archie-56cf). ONE instance, opened in add-to-exhibit scope by
      BOTH the overview Add-media plate (onaddobject) and the editor "+ Add media" button. Its paths route
      to the into-exhibit ingest flows: folder → addFiles (straight into this exhibit), IIIF →

@@ -7,7 +7,7 @@
 // library-meta.svelte.ts): the $state container is never reassigned, getters stay live.
 import {
   MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, publishToGitHub, renderMarkdown, readStructureReport, asExhibitId,
-  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
+  type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type MissingAsset, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
 } from "@render/core";
 import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk } from "./binding.js";
 import type { CorruptLogFinding } from "./publish-warnings.js";
@@ -30,6 +30,14 @@ export interface FolderWritePlan {
   incremental?: IncrementalScope;
   removedExhibits?: string[];
   removedObjects?: { slug: string; objId: string; assetName?: string }[];
+}
+
+/** The Publish dialog's working-copy export options: a custom `.archie.zip` file name (the OS save
+ *  dialog remains the final arbiter) and/or the subset of exhibit slugs to include. Absent field =
+ *  the derived/bound name, the whole library. */
+export interface ZipExportOpts {
+  name?: string;
+  slugs?: string[];
 }
 
 export interface PublishDeps {
@@ -69,11 +77,12 @@ export function createPublishFlows(deps: PublishDeps) {
   // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
   // the old `dialogOpen`/`publishOpen` pair (one per dialog, toggled in lockstep by the chooser's
   // "Publish to the web" card) is gone now that there's only one surface to show or hide.
-  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[] }>({
+  const s = $state<{ open: boolean; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[]; missingAssets: MissingAsset[] }>({
     open: false, // the merged Publish & Share surface
     brokenLinks: [], // intra-Library links that degrade to plain text on publish (dialog advisory)
     incompleteCanvases: [], // Image objects publishing with no width/height (IIIF Pres 3 §5.3; dialog advisory)
     corruptLogs: [], // torn annotation/structure stores publishing under-represented (Archie-a690; dialog advisory)
+    missingAssets: [], // imported-asset sources whose bytes the store couldn't produce — published dangling (round-trip loss advisory)
   });
   let cachedSiteFs: MemoryFilesystem | null = null; // the no-originals projection from openPublish, reused by publish
 
@@ -174,10 +183,12 @@ export function createPublishFlows(deps: PublishDeps) {
     }
   };
 
-  // Metadata-only imported-asset byte estimate (File.size — never reads bytes).
-  async function estimateLibraryBytes(): Promise<number> {
+  // Metadata-only imported-asset byte estimate (File.size — never reads bytes). `slugs` = only these
+  // exhibits count (a partial working-copy export); absent = the whole library.
+  async function estimateLibraryBytes(slugs?: string[]): Promise<number> {
     let total = 0;
     for (const ex of deps.exhibits()) {
+      if (slugs && !slugs.includes(ex.slug)) continue;
       for (const o of ex.objects) {
         if (isAsset(o.source)) total += await assetSize(ex.slug, o.source.slice(ASSET_PREFIX.length));
       }
@@ -185,8 +196,8 @@ export function createPublishFlows(deps: PublishDeps) {
     return total;
   }
   /** True = ok to build the in-memory zip. Over the threshold, confirm + steer (folder / link-by-URL). */
-  async function zipSizeOk(): Promise<boolean> {
-    const bytes = await estimateLibraryBytes();
+  async function zipSizeOk(slugs?: string[]): Promise<boolean> {
+    const bytes = await estimateLibraryBytes(slugs);
     if (bytes < ZIP_WARN_BYTES) return true;
     const mb = Math.round(bytes / (1024 * 1024));
     const steer = deps.canFolder()
@@ -203,7 +214,7 @@ export function createPublishFlows(deps: PublishDeps) {
   }
   // Project the Library into the static site tree (in a MemoryFilesystem). Same projection the zip
   // uses — different sink. withOriginals (opt-in) re-projects with preserved source files included.
-  async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; corruptLogs: CorruptLogFinding[] }> {
+  async function projectSite(withOriginals: boolean): Promise<{ fs: MemoryFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[]; missingAssets: MissingAsset[]; corruptLogs: CorruptLogFinding[] }> {
     // Torn-store advisory (Archie-a690): the annotation findings come back from the loadAllLogs pass
     // (which just warned on them); the structure findings are collected as publishLibrary reads each
     // exhibit's section log via this per-run `collect` sink. Combined, they feed the dialog advisory.
@@ -211,10 +222,11 @@ export function createPublishFlows(deps: PublishDeps) {
     const logs = await deps.loadAllLogs();
     const annotationCorruption = deps.annotationCorruption?.() ?? [];
     const fs = new MemoryFilesystem();
-    const { brokenLinks, incompleteCanvases } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
+    const { brokenLinks, incompleteCanvases, missingAssets } = await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure: makeGetStructure((f) => structureCorruption.push(f)), ...STATIC_PAGE_OPTS, ...(withOriginals ? { getOriginal: (slug: string, name: string) => readOriginalBytes(slug, name) } : {}) });
     if (brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
     if (incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
-    return { fs, brokenLinks, incompleteCanvases, corruptLogs: [...annotationCorruption, ...structureCorruption] };
+    if (missingAssets.length > 0) console.warn(`Publish: ${missingAssets.length} imported image(s) have no stored bytes — they publish as broken references`, missingAssets);
+    return { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs: [...annotationCorruption, ...structureCorruption] };
   }
   // Flatten the projected tree to the path→FileContent map the git-trees push consumes. A no-originals
   // publish reuses the tree openPublish already built; an originals publish re-projects (rare, opt-in).
@@ -225,32 +237,42 @@ export function createPublishFlows(deps: PublishDeps) {
   // The publish opts shared by every zip sink (streaming + eager): the SAME projection (media tiling,
   // baked thumbnails, structure/history sidecars, static pages) the folder/GH sinks use.
   const zipPublishOpts = () => ({ baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS });
-  // Publish the full library into ANY Filesystem sink (a streaming zip target OR an eager ZipFilesystem).
+  // The library a zip export ships: the full build, optionally narrowed to the chosen exhibits (the
+  // Publish dialog's working-copy chooser). Filtering AFTER buildFullLibrary keeps the template
+  // exclusion and every mapper in one place; a cite into an omitted exhibit degrades to plain text
+  // via publishLibrary's link index, surfaced in brokenLinks like any other unresolvable cite.
+  function libraryForZip(slugs?: string[]): Library {
+    const lib = deps.buildFullLibrary();
+    return slugs ? { ...lib, exhibits: lib.exhibits.filter((ex) => slugs.includes(ex.slug)) } : lib;
+  }
+  // Publish the library into ANY Filesystem sink (a streaming zip target OR an eager ZipFilesystem).
   // ONE projection for the two zip paths (streaming disk save / eager download); returns the advisories.
-  async function publishInto(fs: Filesystem): Promise<PublishResult> {
+  async function publishInto(fs: Filesystem, slugs?: string[]): Promise<PublishResult> {
     const logs = await deps.loadAllLogs();
-    return publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], zipPublishOpts());
+    return publishLibrary(fs, libraryForZip(slugs), (id: string) => logs[id] ?? [], zipPublishOpts());
   }
   // Assemble the whole site into an in-memory ZipFilesystem (the EAGER path — Tauri/non-Chromium).
   // Ceiling-guarded (EAGER_ZIP_CEILING_BYTES) so a library that balloons past what a webview can hold
   // aborts early with an actionable error instead of OOMing (SCALE #2).
-  async function buildZipFs(): Promise<{ fs: ZipFilesystem } & PublishResult> {
+  async function buildZipFs(slugs?: string[]): Promise<{ fs: ZipFilesystem } & PublishResult> {
     const fs = new ZipFilesystem({ maxUncompressedBytes: EAGER_ZIP_CEILING_BYTES });
-    const result = await publishInto(fs);
+    const result = await publishInto(fs, slugs);
     return { fs, ...result };
   }
   // Save the library as a .archie.zip. Chromium streams the whole tree straight to disk in bounded
   // memory (SCALE #1 — media never accumulates); elsewhere (Tauri / non-Chromium) fall back to the
   // size-guarded eager build. Returns whether a save happened + the publish advisories.
-  async function saveProjectZip(): Promise<{ saved: boolean } & Partial<PublishResult>> {
-    const name = deps.currentZipName();
+  // `opts` comes from the dialog's working-copy chooser: a custom file name (the OS dialog remains the
+  // final arbiter) and/or a subset of exhibits; absent = the current name, the whole library.
+  async function saveProjectZip(opts: ZipExportOpts = {}): Promise<{ saved: boolean; name?: string } & Partial<PublishResult>> {
+    const name = opts.name?.trim() || deps.currentZipName();
     if (supportsStreamingZipSave()) {
       const target = await openStreamingZipSave(name); // picker; null = dismissed
       if (!target) return { saved: false };
       try {
-        const result = await publishInto(target.fs); // writes straight to disk, media released as it goes
+        const result = await publishInto(target.fs, opts.slugs); // writes straight to disk, media released as it goes
         await target.finish(); // central directory + close the handle
-        return { saved: true, ...result };
+        return { saved: true, name: target.name, ...result }; // target.name = what the picker actually chose
       } catch (e) {
         await target.abort(); // discard the partial file (never throws)
         if ((e as Error)?.name === "AbortError") return { saved: false }; // handle revoked mid-write
@@ -258,10 +280,11 @@ export function createPublishFlows(deps: PublishDeps) {
       }
     }
     // Eager fallback (Tauri desktop / non-Chromium): size-guard BEFORE assembly, then build + save.
-    if (!(await zipSizeOk())) return { saved: false };
-    const { fs, brokenLinks, incompleteCanvases } = await buildZipFs();
+    if (!(await zipSizeOk(opts.slugs))) return { saved: false };
+    const { fs, brokenLinks, incompleteCanvases, missingAssets } = await buildZipFs(opts.slugs);
     const res = await saveZipToDisk(fs, name);
-    return { saved: res.kind !== "cancelled", brokenLinks, incompleteCanvases };
+    if (res.kind === "cancelled") return { saved: false, brokenLinks, incompleteCanvases, missingAssets };
+    return { saved: true, name: res.name, brokenLinks, incompleteCanvases, missingAssets };
   }
   // ONE folder writer for the two folder sinks (binding autosave/Save + local publish). Takes the
   // Filesystem seam directly (FSA or Tauri), so the caller owns capability selection (folder-backend).
@@ -276,9 +299,10 @@ export function createPublishFlows(deps: PublishDeps) {
     await publishLibrary(fs, deps.buildFullLibrary(), (id: string) => logs[id] ?? [], { baseUrl: deps.baseUrl, getAsset, getThumbnail, tileObject, tileRemote, getStructure, ...STATIC_PAGE_OPTS, ...plan });
   }
   /** Download the library as .archie.zip. False = the user declined/cancelled. Chromium streams to
-   *  disk in bounded memory; else the size-guarded eager path. */
-  async function downloadProjectZip(): Promise<boolean> {
-    return (await saveProjectZip()).saved;
+   *  disk in bounded memory; else the size-guarded eager path. `opts` = the save surfaces' custom
+   *  name / exhibit subset (ZipExportFields); absent = bound name, whole library. */
+  async function downloadProjectZip(opts?: ZipExportOpts): Promise<boolean> {
+    return (await saveProjectZip(opts)).saved;
   }
 
   return {
@@ -287,6 +311,7 @@ export function createPublishFlows(deps: PublishDeps) {
     get brokenLinks(): BrokenLink[] { return s.brokenLinks; },
     get incompleteCanvases(): IncompleteCanvas[] { return s.incompleteCanvases; },
     get corruptLogs(): CorruptLogFinding[] { return s.corruptLogs; },
+    get missingAssets(): MissingAsset[] { return s.missingAssets; },
     openMenu() { s.open = true; },
     close() { s.open = false; },
 
@@ -297,10 +322,14 @@ export function createPublishFlows(deps: PublishDeps) {
     /** The Publish-dialog zip download (SCALE #1: Chromium streams straight to disk in bounded memory;
      *  surfaces brokenLinks via console). Returns whether a save actually HAPPENED — done-download must
      *  not claim a save the user cancelled. */
-    async download(): Promise<boolean> {
-      const { saved, brokenLinks, incompleteCanvases } = await saveProjectZip();
+    async download(opts?: ZipExportOpts): Promise<boolean> {
+      const { saved, brokenLinks, incompleteCanvases, missingAssets } = await saveProjectZip(opts);
       if (brokenLinks && brokenLinks.length > 0) console.warn(`Publish: ${brokenLinks.length} broken intra-Library link(s) degraded to plain text`, brokenLinks);
       if (incompleteCanvases && incompleteCanvases.length > 0) console.warn(`Publish: ${incompleteCanvases.length} image object(s) publishing with no width/height (IIIF Pres 3 §5.3)`, incompleteCanvases);
+      // The round-trip-loss advisory (2026-07-19): a save that references images it doesn't contain
+      // must be VISIBLE — the done-download screen reads this reactively, so set it before returning.
+      s.missingAssets = missingAssets ?? [];
+      if (s.missingAssets.length > 0) console.warn(`Publish: ${s.missingAssets.length} imported image(s) have no stored bytes — the saved zip references them but does not contain them`, s.missingAssets);
       return saved;
     },
     /** GH publish (includeOriginals opt-in from the dialog; onProgress reports upload/commit/Pages). */
@@ -313,9 +342,10 @@ export function createPublishFlows(deps: PublishDeps) {
      *  broken-links / incomplete-canvas advisories the same way `openPublish` does. */
     async projectSiteFs(): Promise<Filesystem> {
       await deps.flushExhibit();
-      const { fs, brokenLinks, incompleteCanvases, corruptLogs } = await projectSite(false);
+      const { fs, brokenLinks, incompleteCanvases, missingAssets, corruptLogs } = await projectSite(false);
       s.brokenLinks = brokenLinks;
       s.incompleteCanvases = incompleteCanvases;
+      s.missingAssets = missingAssets;
       s.corruptLogs = corruptLogs;
       return fs;
     },
@@ -332,11 +362,13 @@ export function createPublishFlows(deps: PublishDeps) {
       s.brokenLinks = [];
       s.incompleteCanvases = [];
       s.corruptLogs = [];
+      s.missingAssets = [];
       cachedSiteFs = null;
-      void projectSite(false).then(({ fs, brokenLinks: bl, incompleteCanvases: ic, corruptLogs: cl }) => {
+      void projectSite(false).then(({ fs, brokenLinks: bl, incompleteCanvases: ic, missingAssets: ma, corruptLogs: cl }) => {
         cachedSiteFs = fs;
         s.brokenLinks = bl;
         s.incompleteCanvases = ic;
+        s.missingAssets = ma;
         s.corruptLogs = cl;
       }).catch((e) => {
         // A projection failure here degrades to "no cached tree yet" — collectSiteFiles() re-projects on
@@ -355,10 +387,10 @@ export function createPublishFlows(deps: PublishDeps) {
       return fb.name;
     },
     /** Local flow (non-Chromium, no folder picker): save the project zip; returns its filename. */
-    async localPublishZip(): Promise<string> {
+    async localPublishZip(opts?: ZipExportOpts): Promise<string> {
       await deps.flushExhibit();
-      await downloadProjectZip();
-      return deps.currentZipName();
+      const { name } = await saveProjectZip(opts);
+      return name ?? (opts?.name?.trim() || deps.currentZipName());
     },
   };
 }
