@@ -111,13 +111,25 @@ async function cardCount(page, name) {
 
 /** Drive the WHOLE fixture in ONE folder ingest: uploading the wrapper (.scratch/seed-src, which holds
  *  the three exhibit subfolders) gives 3-segment webkitRelativePaths, so planFolderImportGroups
- *  (folder-import.ts:72) splits them into 3 exhibits and — being "several new exhibits" — lands back at
- *  the LIBRARY (App.svelte:544), where the cards are assertable. A single flat folder would instead open
- *  the new exhibit's editor and hide the library cards. */
+ *  (folder-import.ts:72) splits them into 3 exhibits ("per-subfolder" is the dialog's default
+ *  grouping) and — being "several new exhibits" — lands back at the LIBRARY (App.svelte:544), where
+ *  the cards are assertable. A single flat folder would instead open the new exhibit's editor and
+ *  hide the library cards.
+ *  ROUTE (updated 2026-07-20): the bare LibraryHome webkitdirectory input is retired — the folder
+ *  path now lives inside CreateExhibitDialog ("New exhibit" tile → "From a media folder" path card
+ *  → hidden input → primary submit → oncreatefromfolder, the same downstream handler as before). */
 async function ingestAll(page) {
+  await page.getByText("New exhibit", { exact: true }).first().click();
+  const folderCard = page.locator("button.path-card", { hasText: "From a media folder" }).first();
+  await folderCard.waitFor({ state: "visible", timeout: 8000 });
+  await folderCard.click();
   const input = page.locator('input[type="file"][webkitdirectory]').first();
-  if (!(await input.count())) throw new Error("folder-ingest input (webkitdirectory) not found on LibraryHome");
-  await input.setInputFiles(SRC_DIR); // → onchange → oncreatefromfolder → newExhibitFromFolder (all 3 groups)
+  if (!(await input.count())) throw new Error("folder-ingest input (webkitdirectory) not found in the create dialog's folder path");
+  await input.setInputFiles(SRC_DIR); // → onDirChange → applyFolderFiles (summary + per-subfolder grouping)
+  const submit = page.locator(".dialog button.btn-primary").first();
+  await submit.waitFor({ state: "visible", timeout: 8000 });
+  for (let i = 0; i < 40 && !(await submit.isEnabled()); i++) await sleep(250); // summary lands async
+  await submit.click(); // → submitFolder → oncreatefromfolder → newExhibitFromFolder (all 3 groups)
   // The import bakes 70 masters+thumbs then alerts "Added 70 files to 3 exhibits" (auto-accepted by the
   // page dialog handler). Poll until every target exhibit shows its full count.
   for (let i = 0; i < 180; i++) {

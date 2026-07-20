@@ -1,0 +1,49 @@
+name: Scale check
+
+# Pre-release scale drill (Archie-676f): seeds a REAL 70-object OPFS library through the Studio
+# UI (scripts/seed-fixture.mjs — production ingest bytes, not a store-writer shortcut) and asserts
+# coarse budgets (scripts/scale-check.mjs): full asset counts after OPFS reload, library mount
+# cost, 30-plate overview open cost. The script boots the Studio dev server itself.
+#
+# workflow_dispatch ONLY — this pays a dev-server boot + a multi-minute UI-driven ingest, so it is
+# run deliberately before releases and must never block PRs.
+on:
+  workflow_dispatch:
+
+jobs:
+  scale-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium (+ OS deps)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Seed 70-object library and assert scale budgets
+        run: node scripts/scale-check.mjs
+
+      - name: Upload seed artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scale-check-artifacts
+          path: |
+            .scratch/seed-verify.png
+            .scratch/seed-dev.log
+          retention-days: 7
