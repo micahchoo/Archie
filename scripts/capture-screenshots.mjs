@@ -3,14 +3,16 @@
 // One-shot, best-effort capture of the two running dev apps for the docs layer.
 //   Viewer (Astro, :4321) — file-routed, trivial: one shot per page.
 //   Studio (Svelte SPA, :5173) — hash-routed since ADR-0024 (place-addressable nav), but this sweep
-//   still drives it by CLICKING through the seeded demo exhibits (Voynich grid, Bidar map, AV
-//   recording) — clicks now also update the URL, which doesn't change what's captured. Every exhibit
+//   still drives it by CLICKING through the seeded demo exhibits (Voynich grid, sampler AV,
+//   geo-map) — clicks now also update the URL, which doesn't change what's captured. Every exhibit
 //   lands on its Overview first (ADR-0024 #2 removed the single-object skip); the flows below all open
 //   multi-object exhibits, which already went to the overview, so the capture path is unchanged.
 //
 // Captures are desktop only (1440x900) — Archie is not optimized for mobile.
-// Studio capture is best-effort: a missed selector is logged to the manifest as
-// `skipped` and the sweep continues — it never crashes the whole run.
+// Studio capture is best-effort MID-SWEEP: a missed selector is logged to the manifest as
+// `skipped` and the sweep continues — one failure never aborts the batch. But the RUN is
+// gated (Archie-b975): after the sweep, every EXPECTED_SHOTS entry must be on disk above a
+// size floor and the skip count must be 0, or the process exits non-zero (lib/capture-gate.mjs).
 //
 // Run:  node scripts/capture-screenshots.mjs
 // Needs: playwright resolvable (installed in a sibling temp dir is fine) + a
@@ -18,11 +20,12 @@
 //
 // Output: docs/screenshots/auto/<name>.<viewport>.png  + manifest.json
 
-import { chromium } from "playwright";
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
 import path from "node:path";
+import { settle, launchBrowser, PLATE_SELECTOR } from "./lib/driver.mjs";
+import { evaluateCaptureGate } from "./lib/capture-gate.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 // OUT_DIR lets a temp-dir copy (where playwright is installed) still write into the repo.
@@ -63,15 +66,31 @@ async function clickExhibitCard(page, titleRe) {
   return title;
 }
 
+// Every shot this sweep DECLARES (the capture gate's contract, Archie-b975): a run is only
+// green when each of these exists on disk above the size floor and NOTHING was skipped.
+// Adding a capture below means adding its name here — an unregistered shot fails the gate
+// as "missing from manifest" the moment this list and the sweep drift.
+const EXPECTED_SHOTS = [
+  "viewer-home", "viewer-voynich", "viewer-geo-map",
+  "viewer-narrative", "viewer-search", "viewer-sheet", "viewer-av", "viewer-lightbox",
+  "studio-library", "studio-overview", "studio-editor-image", "studio-editor-av",
+  "studio-meta", "studio-shortcuts", "studio-publish", "studio-readings",
+  "studio-narrative", "studio-map", "studio-ingest", "studio-cite", "studio-editor-video",
+  "embed-host",
+];
+
 const manifest = [];
 function record(name, viewport, status, detail) {
   manifest.push({ name, viewport, status, detail, at: new Date().toISOString() });
   console.log(`  [${status}] ${name}.${viewport}${detail ? ` — ${detail}` : ""}`);
 }
 
-async function settle(page, ms = 1000) {
-  try { await page.waitForLoadState("networkidle", { timeout: 8000 }); } catch {}
-  await page.waitForTimeout(ms); // OSD/Annotorious canvas + WaveSurfer need extra time
+// goto that FAILS on a non-OK main document. Playwright's goto only throws on network errors —
+// a 404 renders fine and screenshots fine, which is exactly how the sunset /bidar route kept
+// "capturing" its own error page. A 404 is a broken drive path; make it a skip the gate can see.
+async function gotoOk(page, url) {
+  const resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20000 });
+  if (resp && !resp.ok()) throw new Error(`HTTP ${resp.status()} at ${url}`);
 }
 
 async function shoot(page, name, viewport) {
@@ -85,13 +104,15 @@ async function captureViewer(browser, viewport) {
   const pages = [
     ["viewer-home", `${VIEWER}/`],
     ["viewer-voynich", `${VIEWER}/voynich`],
-    ["viewer-bidar", `${VIEWER}/bidar`],
+    // The bidar exhibit was sunset 2026-06-09 (.gitignore §"bidar example"); geo-map is the
+    // live geo/map demo in the published sample tree.
+    ["viewer-geo-map", `${VIEWER}/geo-map`],
   ];
   for (const [name, url] of pages) {
     const ctx = await browser.newContext({ viewport: VIEWPORTS[viewport] });
     const page = await ctx.newPage();
     try {
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20000 });
+      await gotoOk(page, url);
       await settle(page);
       await shoot(page, name, viewport);
     } catch (e) {
@@ -199,12 +220,18 @@ async function captureViewerStates(browser, viewport) {
       try {
         await cards.nth(i).click({ timeout: 3000 });
         await page.waitForTimeout(500);
-        const t = page.locator(".tile").first();
+        // NoteMedia tiles are `button.tile`; the Gallery wall's `a.tile` also matches a bare
+        // `.tile` and its non-actionable hit is a 30s click timeout — scope to the button.
+        const t = page.locator("button.tile").first();
         if (await t.count()) { tile = t; break; }
       } catch {}
     }
-    if (!tile) throw new Error("no NoteMedia .tile found after selecting notes");
-    await tile.click();
+    if (!tile) throw new Error("no NoteMedia button.tile found after selecting notes");
+    // dispatchEvent, not click: at 1440x900 the reader's filmstrip (`ul.strip`) overlays the
+    // sidebar tile and intercepts real pointer events (measured 2026-07-20 — an app-side z-order
+    // overlap this docs harness must not gate on; flagged to the viewer lane). The handler is the
+    // tile's own onclick, so the lightbox path exercised is the real one.
+    await tile.dispatchEvent("click");
     // The lightbox is a full-screen overlay — give it a beat to mount the media.
     await page.waitForTimeout(1200);
   });
@@ -216,7 +243,7 @@ async function onePage(browser, viewport, name, url, interact) {
   const ctx = await browser.newContext({ viewport: VIEWPORTS[viewport] });
   const page = await ctx.newPage();
   try {
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 20000 });
+    await gotoOk(page, url);
     await settle(page);
     if (interact) await interact(page);
     await shoot(page, name, viewport);
@@ -231,7 +258,7 @@ async function captureStudio(browser, viewport) {
   const ctx = await browser.newContext({ viewport: VIEWPORTS[viewport] }); // fresh = clean seed
   const page = await ctx.newPage();
   try {
-    await page.goto(STUDIO, { waitUntil: "domcontentloaded", timeout: 20000 });
+    await gotoOk(page, STUDIO);
     await settle(page, 1800); // first-run seed into IndexedDB/OPFS
     await shoot(page, "studio-library", viewport); // LibraryHome — "Your library"
 
@@ -245,7 +272,7 @@ async function captureStudio(browser, viewport) {
       // Overview objects are `<button class="plate">`; a single click opens the editor
       // (onopenobject). Exclude the trailing ".plate.add" (the "Add object" tile). Plates paint
       // after the tableau lays out — wait for one so a fast first-context run doesn't miss them.
-      const plate = page.locator("button.plate:not(.add)").first();
+      const plate = page.locator(PLATE_SELECTOR).first();
       try { await plate.waitFor({ state: "visible", timeout: 6000 }); } catch {}
       if (await plate.count()) {
         await plate.click();
@@ -266,7 +293,7 @@ async function captureStudio(browser, viewport) {
   const ctx2 = await browser.newContext({ viewport: VIEWPORTS[viewport] });
   const page2 = await ctx2.newPage();
   try {
-    await page2.goto(STUDIO, { waitUntil: "domcontentloaded", timeout: 20000 });
+    await gotoOk(page2, STUDIO);
     await settle(page2, 1800);
     const av = page2.getByText(EXHIBITS.av, { exact: true }).first();
     if (await av.count()) {
@@ -276,7 +303,7 @@ async function captureStudio(browser, viewport) {
       // lands on the overview. Open the SOUND plate specifically (its caption carries "Kryptogramm"
       // / the ♪ glyph, not a folio label) so the AvEditor (WaveSurfer) mounts, not the image editor.
       const soundPlate = page2.locator("button.plate", { hasText: /Kryptogramm|Audio|♪/ }).first();
-      const anyPlate = page2.locator("button.plate:not(.add)").last(); // o12 is the last plate
+      const anyPlate = page2.locator(PLATE_SELECTOR).last(); // o12 is the last plate
       const target = (await soundPlate.count()) ? soundPlate : anyPlate;
       try { await target.waitFor({ state: "visible", timeout: 6000 }); } catch {}
       if (await target.count()) { await target.click(); await settle(page2, 1200); }
@@ -298,12 +325,12 @@ async function captureStudio(browser, viewport) {
 async function openStudioEditor(browser, viewport) {
   const ctx = await browser.newContext({ viewport: VIEWPORTS[viewport] });
   const page = await ctx.newPage();
-  await page.goto(STUDIO, { waitUntil: "domcontentloaded", timeout: 20000 });
+  await gotoOk(page, STUDIO);
   await settle(page, 1800); // first-run seed into IndexedDB/OPFS
   try { await clickExhibitCard(page, EXHIBITS.voynich); } catch { await ctx.close(); return null; }
   await settle(page, 1200); // multi-object exhibit ⇒ overview
   // Plates paint after the overview tableau lays out — wait for one, then open it to enter the editor.
-  const plate = page.locator("button.plate:not(.add)").first();
+  const plate = page.locator(PLATE_SELECTOR).first();
   try { await plate.waitFor({ state: "visible", timeout: 6000 }); } catch {}
   if (await plate.count()) {
     await plate.click();
@@ -317,7 +344,7 @@ async function captureStudioStates(browser, viewport) {
   // studio-meta — exhibit metadata + rights. The LibraryHome per-card pencil (`button.edit-meta`,
   // aria-label "Edit details for …") opens the shared DetailsEditor + RightsEditor drawer.
   await studioOne(browser, viewport, "studio-meta", async (page) => {
-    await page.goto(STUDIO, { waitUntil: "domcontentloaded", timeout: 20000 });
+    await gotoOk(page, STUDIO);
     await settle(page, 1800);
     const pencil = page.locator("button.edit-meta").first();
     if (!(await pencil.count())) throw new Error("library per-card edit-meta pencil not found");
@@ -327,7 +354,7 @@ async function captureStudioStates(browser, viewport) {
 
   // studio-shortcuts — the `?` cheat-sheet overlay (ShortcutsHelp; dialog aria-label "Keyboard shortcuts").
   await studioOne(browser, viewport, "studio-shortcuts", async (page) => {
-    await page.goto(STUDIO, { waitUntil: "domcontentloaded", timeout: 20000 });
+    await gotoOk(page, STUDIO);
     await settle(page, 1800);
     await page.keyboard.press("Shift+Slash"); // "?"
     await page.waitForTimeout(500);
@@ -349,10 +376,12 @@ async function captureStudioStates(browser, viewport) {
   });
 
   // The remaining states live in the editor — open it once per state (fresh seed each context).
-  // studio-readings — the readings rail's `button.manage` ("Manage readings…") opens ReadingsModal.
+  // studio-readings — the readings panel in the navigator's "This object" zone (the floating canvas
+  // rail is retired, Archie-b671); its `button.readings-manage` opens ReadingsModal.
   await studioEditorOne(browser, viewport, "studio-readings", async (page) => {
-    const manage = page.locator("button.manage").first();
-    if (!(await manage.count())) throw new Error("readings rail manage button not found");
+    const manage = page.locator("button.readings-manage").first();
+    if (!(await manage.count())) throw new Error("readings panel manage button not found");
+    await manage.scrollIntoViewIfNeeded().catch(() => {});
     await manage.click();
     await page.waitForTimeout(600);
   });
@@ -368,25 +397,30 @@ async function captureStudioStates(browser, viewport) {
     await page.waitForTimeout(600);
   });
 
-  // studio-map — the Add-Map modal. The "+ Map" toggle (`button.add-obj-toggle`,
-  // title "Add a map (geo-annotation)") opens AddMapModal.
+  // studio-map — the "A map" path inside the one Add-media chooser (the split +Media/+Map pair is
+  // retired, Archie-beb6/56cf): `button.add-obj-toggle` opens the scoped CreateExhibitDialog; the
+  // `.path-card` whose title is "A map" flips it to the map panel (basemap + area picker).
   await studioEditorOne(browser, viewport, "studio-map", async (page) => {
-    const map = page.locator('button[title="Add a map (geo-annotation)"]').first();
-    if (!(await map.count())) throw new Error("+ Map toggle not found");
-    await map.click();
+    const add = page.locator("button.add-obj-toggle").first();
+    if (!(await add.count())) throw new Error("+ Add media toggle not found");
+    await add.click();
+    await page.waitForTimeout(500);
+    const mapCard = page.locator("button.path-card", { hasText: "A map" }).first();
+    if (!(await mapCard.count())) throw new Error("'A map' path card not found in the Add-media chooser");
+    await mapCard.click();
     await page.waitForTimeout(700);
   });
 
-  // studio-ingest — the media ingest form. The "+ Media" toggle reveals the URL field
-  // (input placeholder "Link to an image, audio, or video") — the IIIF/media picker entry.
+  // studio-ingest — the one Add-media chooser (folder / IIIF / link / map paths; the old "+ Media"
+  // URL field is retired with the split pair). `button.add-obj-toggle` opens it; the shot anchors
+  // on the path cards themselves — the ingest entry surface.
   await studioEditorOne(browser, viewport, "studio-ingest", async (page) => {
-    const media = page.getByRole("button", { name: /\+ Media/i }).first();
-    if (!(await media.count())) throw new Error("+ Media toggle not found");
-    await media.click();
-    await page.waitForTimeout(500);
-    // Bring the URL field into view to anchor the shot on the ingest affordance.
-    const field = page.locator('input[placeholder="Link to an image, audio, or video"]').first();
-    if (await field.count()) await field.scrollIntoViewIfNeeded().catch(() => {});
+    const add = page.locator("button.add-obj-toggle").first();
+    if (!(await add.count())) throw new Error("+ Add media toggle not found");
+    await add.click();
+    const cards = page.locator("button.path-card").first();
+    await cards.waitFor({ state: "visible", timeout: 4000 });
+    await page.waitForTimeout(400);
   });
 
   // studio-cite — the cite palette (CmdK; dialog aria-label "Cite a note or exhibit"). It is
@@ -413,12 +447,12 @@ async function captureStudioStates(browser, viewport) {
   // renders a <video> + frame-draw overlay when mediaType === "video". Open the exhibit → overview →
   // click the video plate (its caption carries "Big Buck Bunny" / the ▶ glyph, not the ♪ audio one).
   await studioOne(browser, viewport, "studio-editor-video", async (page) => {
-    await page.goto(STUDIO, { waitUntil: "domcontentloaded", timeout: 20000 });
+    await gotoOk(page, STUDIO);
     await settle(page, 1800);
     await clickExhibitCard(page, EXHIBITS.sampler);
     await settle(page, 1200); // → overview (multi-object: video + audio + image)
     const videoPlate = page.locator("button.plate", { hasText: /Big Buck Bunny|annotate a frame|▶/ }).first();
-    const firstPlate = page.locator("button.plate:not(.add)").first(); // sv1 is authored first
+    const firstPlate = page.locator(PLATE_SELECTOR).first(); // sv1 is authored first
     const target = (await videoPlate.count()) ? videoPlate : firstPlate;
     try { await target.waitFor({ state: "visible", timeout: 6000 }); } catch {}
     if (!(await target.count())) throw new Error("sampler video plate not found on overview");
@@ -521,23 +555,9 @@ async function captureEmbed(browser, viewport) {
   host.server.close();
 }
 
-async function launch() {
-  // Prefer bundled chromium; fall back to system chromium (snap) with --no-sandbox.
-  try {
-    return await chromium.launch({ headless: true });
-  } catch (e) {
-    console.log(`  bundled chromium failed (${e.message.slice(0, 80)}); trying system chromium`);
-    return await chromium.launch({
-      headless: true,
-      executablePath: "/usr/bin/chromium-browser",
-      args: ["--no-sandbox", "--disable-dev-shm-usage"],
-    });
-  }
-}
-
 async function main() {
   await mkdir(OUT, { recursive: true });
-  const browser = await launch();
+  const browser = await launchBrowser();
   for (const viewport of Object.keys(VIEWPORTS)) {
     console.log(`\n== ${viewport} ==`);
     await captureViewer(browser, viewport);
@@ -548,7 +568,24 @@ async function main() {
   await writeFile(path.join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2));
   const ok = manifest.filter((m) => m.status === "captured").length;
   const skip = manifest.filter((m) => m.status === "skipped").length;
-  console.log(`\nDONE: ${ok} captured, ${skip} skipped. Manifest: docs/screenshots/auto/manifest.json`);
+  console.log(`\nDONE: ${ok} captured, ${skip} skipped. Manifest: ${path.relative(REPO, path.join(OUT, "manifest.json"))}`);
+
+  // --- Post-run gate (Archie-b975): "best-effort" applies to the SWEEP (one broken selector
+  // doesn't abort the batch), never to the EXIT CODE. A run that skipped anything, or wrote a
+  // suspiciously small file, or missed a declared shot, must fail so CI/callers can see it.
+  const fileSizes = {};
+  for (const m of manifest) {
+    if (m.status !== "captured") continue;
+    const file = `${m.name}.${m.viewport}.png`;
+    try { fileSizes[file] = (await stat(path.join(OUT, file))).size; } catch { /* gate reports it as missing */ }
+  }
+  const gate = evaluateCaptureGate({ manifest, expected: EXPECTED_SHOTS, viewports: Object.keys(VIEWPORTS), fileSizes });
+  if (!gate.ok) {
+    console.error(`\nGATE FAIL — ${gate.problems.length} problem(s):`);
+    for (const p of gate.problems) console.error(`  ✗ ${p}`);
+    process.exit(1);
+  }
+  console.log("GATE PASS: every declared shot captured, on disk, above the size floor; nothing skipped.");
 }
 
 main().catch((e) => { console.error("FATAL", e); process.exit(1); });

@@ -25,13 +25,11 @@
 // Needs: playwright resolvable + a chromium (bundled or system). The Studio dev server (:5173) is
 //        booted automatically if it isn't already running.
 
-import { chromium } from "playwright";
-import { mkdir, writeFile, rm, readdir, readFile, open } from "node:fs/promises";
+import { mkdir, writeFile, rm, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { spawn } from "node:child_process";
-import http from "node:http";
 import path from "node:path";
+import { sleep, PLATE_SELECTOR, launchPersistentProfile, ensureStudioServer } from "./lib/driver.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 // The Studio dev server serves under base `/studio/` (apps/studio/vite.config.ts:30) and Vite
@@ -57,42 +55,7 @@ const SIZES = [
   [4200, 2400], [1800, 1150], [1150, 1800], [4400, 2100], [2000, 1333],
 ];
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const log = (msg) => console.log(msg);
-
-/** HTTP status for a URL (0 = unreachable). A served SPA route answers 200; a wrong base path 404s. */
-function probe(url) {
-  return new Promise((resolve) => {
-    const req = http.get(url, (res) => { res.resume(); resolve(res.statusCode ?? 0); });
-    req.on("error", () => resolve(0));
-    req.setTimeout(2000, () => { req.destroy(); resolve(0); });
-  });
-}
-const live = (u) => probe(u).then((s) => s > 0 && s < 400);
-async function firstLive(urls) { for (const u of urls) if (await live(u)) return u; return null; }
-
-/** Resolve a reachable Studio URL; boot the dev server if none of the candidates answer. Returns
- *  { url, stop } — `stop` is a no-op when we reused an already-running server (never kill what we
- *  didn't start). The URL is DISCOVERED (probe, or parse Vite's "Local:" line) to survive the
- *  `/studio/` base + Vite's port auto-increment. */
-async function ensureStudioServer() {
-  const found = await firstLive(STUDIO_CANDIDATES);
-  if (found) { log(`• Studio dev server already up at ${found}`); return { url: found, stop: () => {} }; }
-  log("• Studio dev server not running — booting `pnpm --filter @archie/studio dev`…");
-  const bootLog = path.join(REPO, ".scratch", "seed-dev.log");
-  const fh = await open(bootLog, "w");
-  const child = spawn("pnpm", ["--filter", "@archie/studio", "dev"], { cwd: REPO, stdio: ["ignore", fh.fd, fh.fd], detached: true });
-  let url = null;
-  for (let i = 0; i < 120 && !url; i++) {
-    await sleep(1000);
-    const m = (await readFile(bootLog, "utf8").catch(() => "")).match(/(https?:\/\/localhost:\d+\/studio\/)/);
-    if (m && (await live(m[1]))) url = m[1];
-  }
-  await fh.close();
-  if (!url) { try { process.kill(-child.pid); } catch {} throw new Error(`Studio dev server didn't serve a /studio/ URL within 120s (see ${bootLog})`); }
-  log(`• Studio dev server up at ${url}`);
-  return { url, stop: () => { try { process.kill(-child.pid); } catch {} } };
-}
 
 /** Render one flat-color placeholder PNG with a big visible label, in-page, and write it to disk. */
 async function writePlaceholder(genPage, filePath, { w, h, big, hue }) {
@@ -148,13 +111,25 @@ async function cardCount(page, name) {
 
 /** Drive the WHOLE fixture in ONE folder ingest: uploading the wrapper (.scratch/seed-src, which holds
  *  the three exhibit subfolders) gives 3-segment webkitRelativePaths, so planFolderImportGroups
- *  (folder-import.ts:72) splits them into 3 exhibits and — being "several new exhibits" — lands back at
- *  the LIBRARY (App.svelte:544), where the cards are assertable. A single flat folder would instead open
- *  the new exhibit's editor and hide the library cards. */
+ *  (folder-import.ts:72) splits them into 3 exhibits ("per-subfolder" is the dialog's default
+ *  grouping) and — being "several new exhibits" — lands back at the LIBRARY (App.svelte:544), where
+ *  the cards are assertable. A single flat folder would instead open the new exhibit's editor and
+ *  hide the library cards.
+ *  ROUTE (updated 2026-07-20): the bare LibraryHome webkitdirectory input is retired — the folder
+ *  path now lives inside CreateExhibitDialog ("New exhibit" tile → "From a media folder" path card
+ *  → hidden input → primary submit → oncreatefromfolder, the same downstream handler as before). */
 async function ingestAll(page) {
+  await page.getByText("New exhibit", { exact: true }).first().click();
+  const folderCard = page.locator("button.path-card", { hasText: "From a media folder" }).first();
+  await folderCard.waitFor({ state: "visible", timeout: 8000 });
+  await folderCard.click();
   const input = page.locator('input[type="file"][webkitdirectory]').first();
-  if (!(await input.count())) throw new Error("folder-ingest input (webkitdirectory) not found on LibraryHome");
-  await input.setInputFiles(SRC_DIR); // → onchange → oncreatefromfolder → newExhibitFromFolder (all 3 groups)
+  if (!(await input.count())) throw new Error("folder-ingest input (webkitdirectory) not found in the create dialog's folder path");
+  await input.setInputFiles(SRC_DIR); // → onDirChange → applyFolderFiles (summary + per-subfolder grouping)
+  const submit = page.locator(".dialog button.btn-primary").first();
+  await submit.waitFor({ state: "visible", timeout: 8000 });
+  for (let i = 0; i < 40 && !(await submit.isEnabled()); i++) await sleep(250); // summary lands async
+  await submit.click(); // → submitFolder → oncreatefromfolder → newExhibitFromFolder (all 3 groups)
   // The import bakes 70 masters+thumbs then alerts "Added 70 files to 3 exhibits" (auto-accepted by the
   // page dialog handler). Poll until every target exhibit shows its full count.
   for (let i = 0; i < 180; i++) {
@@ -173,7 +148,7 @@ async function tryAnnotate(page) {
   try {
     await page.locator("button.card", { hasText: EXHIBITS[0].name }).first().click();
     await sleep(1500);
-    const plate = page.locator("button.plate:not(.add)").first();
+    const plate = page.locator(PLATE_SELECTOR).first();
     if (!(await plate.count())) return { ok: false, why: "no plate on overview" };
     await plate.click();
     await sleep(2500); // OSD deep-zoom mount
@@ -199,26 +174,14 @@ async function tryAnnotate(page) {
   }
 }
 
-async function launchContext() {
-  const opts = { headless: true, viewport: VIEWPORT };
-  try {
-    return await chromium.launchPersistentContext(PROFILE_DIR, opts);
-  } catch (e) {
-    log(`  bundled chromium failed (${String(e.message).slice(0, 70)}); trying system chromium`);
-    return await chromium.launchPersistentContext(PROFILE_DIR, {
-      ...opts, executablePath: "/usr/bin/chromium-browser", args: ["--no-sandbox", "--disable-dev-shm-usage"],
-    });
-  }
-}
-
 async function main() {
   const t0 = Date.now();
   log(`\n=== Archie fixture seed ===  (${FRESH ? "--fresh: wiping first" : "idempotent"})`);
   if (FRESH) { await rm(PROFILE_DIR, { recursive: true, force: true }); await rm(SRC_DIR, { recursive: true, force: true }); }
   await mkdir(path.join(REPO, ".scratch"), { recursive: true });
 
-  const { url: STUDIO, stop: stopServer } = await ensureStudioServer();
-  const context = await launchContext();
+  const { url: STUDIO, stop: stopServer } = await ensureStudioServer({ repo: REPO, candidates: STUDIO_CANDIDATES, log });
+  const context = await launchPersistentProfile(PROFILE_DIR, { viewport: VIEWPORT });
   let created = 0;
   try {
     await generateImages(context);
