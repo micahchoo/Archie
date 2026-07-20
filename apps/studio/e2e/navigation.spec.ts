@@ -40,24 +40,33 @@ const marker = (page: Page) => ({
 
 const hashOf = (page: Page) => page.evaluate(() => location.hash);
 
+// The screen-marker checks above auto-retry (Playwright locator matchers), but the address bar and the
+// screen are written by TWO SEPARATE steps of App.svelte's boot/nav chain — the marker becomes visible once
+// `loadLibraryMeta` resolves and meta reconciles, while `syncUrl`/`applyPlace`'s `history.replaceState` runs
+// a few `await`s later in the SAME onMount chain (writer-lock claim, session restore, ...). Normally that gap
+// is sub-frame and invisible; after this spec's rapid-traversal bursts leave lingering async work (session
+// flush/persist from the burst's own gotoPlace calls), a FRESH `page.goto` boot's gap widens enough for a
+// plain unretried hash read to lose the race. `expect.poll` waits for the SAME already-configured
+// `expect.timeout` (no bespoke sleep) for the canonical hash the sequence should end at — asserting the real
+// invariant, just not on the first tick.
 async function expectLibrary(page: Page) {
   const m = marker(page);
   await expect(m.libraryCard.first()).toBeVisible();
   await expect(m.overviewGroup).toBeHidden();
   await expect(m.editorNav).toBeHidden();
-  expect(await hashOf(page)).toBe(HASH_LIBRARY);
+  await expect.poll(() => hashOf(page)).toBe(HASH_LIBRARY);
 }
 async function expectOverview(page: Page) {
   const m = marker(page);
   await expect(m.overviewGroup).toBeVisible();
   await expect(m.editorNav).toBeHidden();
-  expect(await hashOf(page)).toBe(HASH_OVERVIEW);
+  await expect.poll(() => hashOf(page)).toBe(HASH_OVERVIEW);
 }
 async function expectEditor(page: Page) {
   const m = marker(page);
   await expect(m.editorNav).toBeVisible();
   await expect(m.overviewGroup).toBeHidden();
-  expect(await hashOf(page)).toBe(HASH_EDITOR);
+  await expect.poll(() => hashOf(page)).toBe(HASH_EDITOR);
 }
 
 // The core invariant the rapid-traversal scenario guards: WHEREVER the app settles, the URL in the
