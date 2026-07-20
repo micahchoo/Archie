@@ -1,3 +1,2 @@
 https://micahchoo.github.io/Archie/viewer/published/index.html
-https://micahchoo.github.io/Archie/viewer/published/assets/index.html
 https://micahchoo.github.io/Archie/viewer/published/screenshots/index.html

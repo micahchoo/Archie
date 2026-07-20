@@ -9,15 +9,6 @@
   },
   "items": [
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/assets/manifest.json",
-      "type": "Manifest",
-      "label": {
-        "none": [
-          "assets"
-        ]
-      }
-    },
-    {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/manifest.json",
       "type": "Manifest",
       "label": {

@@ -2,16 +2,6 @@
   "images": [
     {
       "objectId": "o1",
-      "exhibitSlug": "assets",
-      "title": "o2-APC_SHAYARAS_YARAN-E-ADAB_RUQSANANAZNEEN_20191128_a01"
-    },
-    {
-      "objectId": "o2",
-      "exhibitSlug": "assets",
-      "title": "o3-IMG_9101"
-    },
-    {
-      "objectId": "o1",
       "exhibitSlug": "screenshots",
       "title": "e1-embed",
       "width": 1440,
