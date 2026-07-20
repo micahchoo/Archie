@@ -15,7 +15,7 @@
   // Recents survive sessions (the non-Chromium re-open mitigation) behind a small disclosure, not a
   // permanent list; a lost binding is still surfaced on its own line, never silent.
   import type { ExhibitMeta } from "./store.js";
-  import type { Binding, RecentProject, RightsFields } from "@render/core";
+  import type { Binding, MetadataEntry, RecentProject, RightsFields } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import CreateExhibitDialog from "./CreateExhibitDialog.svelte";
@@ -65,6 +65,7 @@
     ondismisserror,
     rights,
     onrights,
+    onmetadata,
     libTitle,
     librarySummary,
     ontitle,
@@ -131,6 +132,10 @@
     /** Library-level credit/license (rights grill Q6) — edited via the header → drawer. */
     rights: RightsFields;
     onrights: (next: RightsFields) => void;
+    /** Persist the LIBRARY's Dublin Core entries (Archie-458e) — its own callback, NOT folded into
+     *  onrights, whose patch is keyed to rights+requiredStatement (Archie-5a9b clobber audit). Each
+     *  exhibit's entries go through the existing onpatchexhibit instead. */
+    onmetadata: (next: MetadataEntry[]) => void;
     /** Library identity (Phase 4): title + description, editable in the same drawer. */
     libTitle?: string;
     librarySummary?: string;
@@ -166,7 +171,7 @@
   } = $props();
 
   let rightsOpen = $state(false);
-  const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
+  const hasRights = $derived(!!(rights.rights || rights.requiredStatement || rights.metadata?.length));
   // SafetyState's unbound "Action needed" input (CONTEXT.md — never for untouched seed/template content).
   // Archie-c76d (d): library-level meta edits (title/summary/credit) count as real work too, so binding an
   // unbound library that has only a title set is still surfaced as Action needed.
@@ -479,7 +484,7 @@
     <p class="lede">An exhibit is a collection of annotated media — images, audio, video, or maps you mark up with notes. Create one any time; your work is kept automatically as you go.</p>
 
     <PropsDrawer open={rightsOpen} title="Library details" onclose={() => (rightsOpen = false)}>
-      <DetailsEditor title={libTitle ?? ""} summary={librarySummary ?? ""} rights={rights} scope="library" ontitle={ontitle} onsummary={onsummary} onrights={onrights} />
+      <DetailsEditor title={libTitle ?? ""} summary={librarySummary ?? ""} rights={rights} scope="library" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onmetadata} />
       <!-- Your name (Archie-2bf1) — the PERMANENT counterpart to the lazy IdentityPrompt: library-level,
            not per-form, since it names YOU, not the library. Blank = anonymous (same archie.displayName.v1
            semantics as skipping the lazy prompt, but an explicit choice here rather than a re-promptable gap). -->
@@ -503,6 +508,7 @@
           ontitle={(v) => onpatchexhibit(editingExhibit!.slug, { title: v })}
           onsummary={(v) => onpatchexhibit(editingExhibit!.slug, { summary: v })}
           onrights={(next) => onpatchexhibit(editingExhibit!.slug, { rights: next.rights, requiredStatement: next.requiredStatement })}
+          onmetadata={(metadata) => onpatchexhibit(editingExhibit!.slug, { metadata })}
           onremove={isTemplate(editingExhibit.slug)
             ? undefined
             : () => { const s = editingExhibit!.slug; editingSlug = null; onremoveexhibit(s); }}
