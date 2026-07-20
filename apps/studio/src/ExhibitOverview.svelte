@@ -721,7 +721,7 @@
                    Full title stays in the plate's title tooltip above. "0 notes" ×52 is noise — the
                    count renders only when real. -->
               <span class="caption">
-                <span class="lbl">{#if lbl.tail}<span class="lbl-head">{lbl.head}</span><span class="lbl-tail">{lbl.tail}</span>{:else}{lbl.head}{/if}</span>
+                <span class="lbl">{#if lbl.tail}<span class="lbl-head">{lbl.head}</span><span class="lbl-tail">{lbl.tail}</span>{:else}<span class="lbl-head">{lbl.head}</span>{/if}</span>
                 {#if noteCountOf(o.id) > 0}<span class="cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>{/if}
               </span>
             </button>

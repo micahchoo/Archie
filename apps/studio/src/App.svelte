@@ -828,6 +828,10 @@
   let selAnchor = $state<string | null>(null);
   let selectMode = $state(false); // App-owned so the Esc ladder can exit it (§5) — the toolbar toggles it
   let bulkConfirming = $state(false); // armed second-click guard for bulk delete (inline, on-brand — DetailsEditor idiom)
+  // A takeover from the other tab can flip this tab read-only while a bulk delete sits armed — the
+  // now-disabled tray button would keep its "Confirm — remove N" label. Disarm on the flip; the
+  // requestBulkDelete gate already blocks the commit path either way.
+  $effect(() => { if (!canWriteNow) bulkConfirming = false; });
   // The VISIBLE object order (filtered/sorted) as ExhibitOverview renders it — reported up via onvisible.
   // Shift-range + ⌘A run over THIS, not the canonical array, so they never touch objects hidden by the
   // active filter (canonical ranging would silently select filtered-out items a bulk delete then removes
