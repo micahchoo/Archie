@@ -215,6 +215,30 @@ describe("createReadOnlyOverlay — a11y marker-label (P0-6)", () => {
     expect((v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")).toBe("annotation r");
   });
 
+  it("an oversized labelFor result is capped at the setAttribute chokepoint (hostile-content AT DoS)", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v, { labelFor: () => "x".repeat(5000) }).setAnnotations([rectAnn("r")]);
+    const label = (v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")!;
+    expect(label).toHaveLength(161); // 160 chars + the ellipsis
+    expect(label.endsWith("…")).toBe(true);
+  });
+
+  it("an oversized id is capped on the fallback path too (same chokepoint)", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v).setAnnotations([rectAnn("i".repeat(9000))]);
+    const label = (v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")!;
+    expect(label).toHaveLength(161);
+    expect(label.startsWith("annotation i")).toBe(true);
+    expect(label.endsWith("…")).toBe(true);
+  });
+
+  it("a label at/under the cap passes through untruncated", () => {
+    const v = fakeViewer();
+    const exact = "y".repeat(160);
+    createReadOnlyOverlay(v, { labelFor: () => exact }).setAnnotations([rectAnn("r")]);
+    expect((v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")).toBe(exact);
+  });
+
   it("the label NEVER comes from the selector value (hostile-string proof)", () => {
     const v = fakeViewer();
     createReadOnlyOverlay(v).setAnnotations([polyAnn("p", "<svg><polygon points='10,10 110,10 60,90'/><script>x</script></svg>")]);

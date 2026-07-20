@@ -68,6 +68,21 @@ describe("labelFromAnnotations — human names for overlay shapes (Archie-9413)"
     expect(label("a1")).toBe("Heading note");
   });
 
+  it("a markdown-only FIRST line (image) is skipped — the real text below announces, not the raw id", () => {
+    const label = labelFromAnnotations([noteAnn("a1", "![figure](url)\nThe sun face")]);
+    expect(label("a1")).toBe("The sun face");
+  });
+
+  it("a whitespace-only comment falls back to the annotation <id> form", () => {
+    const label = labelFromAnnotations([noteAnn("a1", "   \n  ")]);
+    expect(label("a1")).toBe("annotation a1");
+  });
+
+  it("a markdown-only comment (nothing but an image) falls back to the annotation <id> form", () => {
+    const label = labelFromAnnotations([noteAnn("a1", "![](x)")]);
+    expect(label("a1")).toBe("annotation a1");
+  });
+
   it("unknown id falls back to the annotation <id> form", () => {
     const label = labelFromAnnotations([noteAnn("a1", "hi")]);
     expect(label("missing")).toBe("annotation missing");

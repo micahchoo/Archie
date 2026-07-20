@@ -25,6 +25,15 @@ import {
 
 const NS = "http://www.w3.org/2000/svg";
 
+/** Cap for a shape's accessible name (Archie-9413 review): a hostile `.archie.zip` can carry a
+ * multi-hundred-KB comment line (bounded only by SRC_MAX_BYTES) or an arbitrarily long id, and an
+ * AT reads aria-label IN FULL on every focus. ONE chokepoint — whatever labelFor OR the
+ * `annotation <id>` fallback produced is truncated where setAttribute happens. */
+const MAX_LABEL_CHARS = 160;
+
+const capLabel = (s: string): string =>
+  s.length > MAX_LABEL_CHARS ? `${s.slice(0, MAX_LABEL_CHARS)}…` : s;
+
 /** The geometry-only descriptor the SVG layer draws (NO DOM). */
 export type OverlayShape =
   | { kind: "rect"; box: Box }
@@ -129,7 +138,7 @@ export function createReadOnlyOverlay(
     // through the SAME emitSelect the click path uses. Label NEVER from the selector value — only
     // from labelFor or the id fallback, and setAttribute-only (the header's no-markup rule stands).
     svg.setAttribute("role", "button");
-    svg.setAttribute("aria-label", labelFor ? labelFor(id) : `annotation ${id}`);
+    svg.setAttribute("aria-label", capLabel(labelFor ? labelFor(id) : `annotation ${id}`));
     svg.setAttribute("tabindex", "0");
     svg.addEventListener("keydown", (e) => {
       if (e.key !== "Enter" && e.key !== " ") return;
