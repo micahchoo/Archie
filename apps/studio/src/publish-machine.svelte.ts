@@ -188,6 +188,7 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     persistFailed: boolean; // "couldn't stay signed in" — surfaced on success, non-fatal
     recheckPending: boolean; // manual-pages: a [recheck] round-trip is in flight
     recheckSaysOff: boolean; // manual-pages: the last recheck came back "still not on" (honest, non-fatal)
+    openUrlFailed: boolean; // the last "open in browser" was rejected (Archie-2139) — honest, non-fatal
   }>({
     state: "intro-desktop",
     session: null,
@@ -207,6 +208,7 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     persistFailed: false,
     recheckPending: false,
     recheckSaysOff: false,
+    openUrlFailed: false,
   });
 
   /** Compute the opening screen from the runtime + any restored session (GHPAGES-PUBLISH-UX §states). A
@@ -242,6 +244,7 @@ export function createPublishMachine(deps: PublishMachineDeps) {
    *  mid-auth is a clean, non-destructive cancel, not a reset. An expired device code is the one resumable
    *  state that itself transitions, to the plain start-again sentinel. */
   function open(): void {
+    s.openUrlFailed = false; // click-scoped feedback — a reopen never shows a stale "couldn't open" note
     if (isResumableState(s.state)) {
       if (s.state === "device-code" && s.code && now() >= s.expiresAt) s.state = "auth-expired";
       if (deps.initialSession) s.session = deps.initialSession;
@@ -263,6 +266,7 @@ export function createPublishMachine(deps: PublishMachineDeps) {
   function dismissResult(): void {
     s.result = null;
     s.error = null;
+    s.openUrlFailed = false;
     s.state = computeInitial();
     if (s.state === "name-site" || s.state === "update-confirm") seedTarget();
   }
@@ -271,6 +275,7 @@ export function createPublishMachine(deps: PublishMachineDeps) {
    *  auto-advance to naming on success. Typed rejections route to the right recovery screen. */
   async function continueWithGitHub(): Promise<void> {
     s.error = null;
+    s.openUrlFailed = false;
     try {
       const session = await deps.signIn((c) => {
         s.code = c;
@@ -297,9 +302,25 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     }
   }
 
+  /** Open an external URL in the system browser (Archie-2139). The ONE seam every browser-open goes
+   *  through — "Open my site", the device page, and the view's secondary anchors (commit / Pages
+   *  settings / custom-domain docs) on desktop. A rejection (e.g. the opener capability scope refusing
+   *  the URL) is surfaced as the non-fatal `openUrlFailed` status — the persistFailed family, honest and
+   *  visible — never a silent `.catch(() => {})`: the old swallow made a scope miss look like a dead
+   *  button. TOKEN SAFETY (Q-12): every URL routed here is token-free by construction (site/commit/
+   *  settings URLs from owner+repo, GitHub's own doc/login pages). */
+  async function openExternal(url: string): Promise<void> {
+    s.openUrlFailed = false;
+    try {
+      await deps.openUrl(url);
+    } catch {
+      s.openUrlFailed = true;
+    }
+  }
+
   /** Open github.com/login/device in the system browser for the user to enter the code. */
   async function openDevicePage(): Promise<void> {
-    if (s.code) await deps.openUrl(s.code.verificationUri).catch(() => {});
+    if (s.code) await openExternal(s.code.verificationUri);
   }
 
   /** Copy the device code again (the [Copy code] button; it was already pre-copied on entry). */
@@ -345,6 +366,7 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     s.progress = null;
     s.error = null;
     s.persistFailed = false;
+    s.openUrlFailed = false;
     if (s.staySignedIn) {
       // Best-effort, non-fatal: a keyring miss just means re-auth next launch (deploy-flows contract).
       const ok = await deps.persistSession(session).catch(() => false);
@@ -463,7 +485,7 @@ export function createPublishMachine(deps: PublishMachineDeps) {
   }
 
   async function openSite(): Promise<void> {
-    if (s.result) await deps.openUrl(s.result.url).catch(() => {});
+    if (s.result) await openExternal(s.result.url);
   }
   async function copyLink(): Promise<void> {
     if (s.result) await deps.copy(s.result.url).catch(() => {});
@@ -494,6 +516,8 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     get persistFailed(): boolean { return s.persistFailed; },
     get recheckPending(): boolean { return s.recheckPending; },
     get recheckSaysOff(): boolean { return s.recheckSaysOff; },
+    /** The last browser-open was rejected (Archie-2139) — the view shows an honest, non-fatal note. */
+    get openUrlFailed(): boolean { return s.openUrlFailed; },
 
     /** The remembered live URL for the return-visit confirm ("Update {url}…"). */
     get updateUrl(): string { return deps.remembered?.url ?? ""; },
@@ -569,6 +593,7 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     // --- transitions ---
     open,
     continueWithGitHub,
+    openExternal,
     openDevicePage,
     copyCode,
     retryAuth,
