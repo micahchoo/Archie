@@ -4,11 +4,12 @@
   // blob URL only when it scrolls near the viewport (IntersectionObserver), so opening the Library never
   // fan-out-mints every object's thumb (which would pin N OPFS Files at once — the Phase 1.2 finding), and
   // it REVOKES on destroy, so leaving the wall / toggling views frees them. An imported (/assets) object
-  // mints an OPFS baked-thumb blob; a remote/IIIF object uses a derived thumbnail URL (no mint); AV objects
+  // mints an OPFS baked-thumb blob (or its MASTER when no thumb was baked — a small or legacy import);
+  // a remote/IIIF object uses a derived thumbnail URL (no mint); AV objects
   // paint a type glyph (no image to load).
   import { onMount, onDestroy } from "svelte";
   import { thumbnailUrl } from "@render/core";
-  import { readThumbUrl, isAsset, ASSET_PREFIX } from "./store.js";
+  import { readThumbUrl, readAssetUrl, isAsset, ASSET_PREFIX } from "./store.js";
   import { commitMintedThumb } from "./gallery-data.js";
 
   let { slug, source, mediaType, alt = "" }: {
@@ -30,11 +31,16 @@
   async function resolve() {
     if (url) return;
     if (isAsset(source)) {
-      const u = await readThumbUrl(slug, source.slice(ASSET_PREFIX.length)); // OPFS baked thumb → fresh blob URL
+      const name = source.slice(ASSET_PREFIX.length);
+      // OPFS baked thumb → fresh blob URL. No baked thumb is NOT a failure: bake.ts returns null BY
+      // DESIGN for masters already ≤ THUMB_DIM (and legacy pre-thumb imports never baked), so fall back
+      // to the MASTER as the plate — exactly what the editor rail/overview does (asset-urls.svelte.ts
+      // resolveThumbs' railFallbackUrls / thumbFor).
+      const u = (await readThumbUrl(slug, name)) ?? (await readAssetUrl(slug, name));
       // Destroyed mid-mint? commitMintedThumb revokes the orphan blob and returns null (no leak, no set).
       const kept = commitMintedThumb(u, destroyed, URL.revokeObjectURL);
       if (destroyed) return;
-      if (kept) { url = kept; minted = true; } else { failed = true; } // no baked thumb → honest placeholder
+      if (kept) { url = kept; minted = true; } else { failed = true; } // neither thumb NOR master → honest placeholder
     } else {
       url = thumbnailUrl(source, 480); // remote / IIIF — a derived URL, nothing to mint or revoke
     }

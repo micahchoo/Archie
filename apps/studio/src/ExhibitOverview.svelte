@@ -26,6 +26,12 @@
 
   type OverviewObject = { id: string; label: string; source: string; mediaType?: "image" | "sound" | "video" };
 
+  /** The no-thumb plate glyph, by the object's ACTUAL media type: video ▶, sound ♪, and image (or
+   *  absent mediaType, which means image) ▣ — the app's existing whole-IMAGE glyph (App.svelte's
+   *  "Whole image" note tool), so an image whose thumb failed to resolve never wears the sound glyph. */
+  const typeGlyph = (mediaType?: OverviewObject["mediaType"]): string =>
+    mediaType === "video" ? "▶" : mediaType === "sound" ? "♪" : "▣";
+
   let {
     title,
     layout,
@@ -710,7 +716,7 @@
               {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
               <span class="order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
               <span class="frame" class:av={!thumb}>
-                {#if thumb}<span class="img" style={`background-image:url(${thumb})`}></span>{:else}<span class="glyph" aria-hidden="true">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}
+                {#if thumb}<span class="img" style={`background-image:url(${thumb})`}></span>{:else}<span class="glyph" aria-hidden="true">{typeGlyph(o.mediaType)}</span>{/if}
               </span>
               <!-- Caption legibility at scale (O3): WIDTH-ADAPTIVE middle truncation keeps a filename
                    title's distinguishing SUFFIX visible (…07a vs …07b — end-truncation amputated it).
@@ -811,7 +817,7 @@
               title={o.label}>
               {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
               <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
-              <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph" aria-hidden="true">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}</span>
+              <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph" aria-hidden="true">{typeGlyph(o.mediaType)}</span>{/if}</span>
               <span class="li-lbl">{midEllipsis(o.label, 40)}</span>
               {#if noteCountOf(o.id) > 0}<span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>{/if}
             </button>
