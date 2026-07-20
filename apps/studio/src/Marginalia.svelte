@@ -25,7 +25,17 @@
   // Disclosure: ticks-only at EVERY density (the direction-C density gate is gone) — a near-invisible
   // rail is the whole bet, not a crowded-only mode. Fixed ~34px width; it never resizes on hover
   // (nothing to reveal — the ticks are already the whole rail).
-  import { layoutMarginalia } from "@render/core";
+  //
+  // Whole-image notes (Archie-e913): a bare-IRI note has no on-screen marker rect (it renders as a
+  // canvas FRAME overlay, not an Annotorious marker), so it can never anchor into the point solve below
+  // — feeding it a NaN anchor just buckets it into the ▼ overflow forever, same as an off-screen note,
+  // which is wrong (it's not off-screen, it has no "where"). Rather than synthesize a fake rect into
+  // `rects` (the shared onmarkerrects stream other consumers — the far-band dot layer, the selection
+  // popover — trust as real geometry), the caller marks such items `wholeImage: true` and the rail gives
+  // them their own reserved slot at the top: real DOM flow (not manual pixel math) so the point-tick
+  // solve below it — bound to `el`, which sits AFTER the slot in the layout — never sees that space and
+  // can't collide with it.
+  import { layoutMarginalia, partitionMarginaliaItems } from "@render/core";
 
   type Rect = { left: number; top: number; right: number; bottom: number };
   let {
@@ -37,8 +47,9 @@
   }: {
     /** The visible notes, in list order (ids match `rects` keys). `colour` is the note's reading
      *  colour (hex) — the rail shows WHERE notes sit and HOW MANY, never note text (the inspector
-     *  owns reading the note). */
-    items: { id: string; colour: string }[];
+     *  owns reading the note). `wholeImage` (bare-IRI, no selector) routes the note to the reserved
+     *  top slot instead of the anchor-based tick solve. */
+    items: { id: string; colour: string; wholeImage?: boolean }[];
     /** Marker screen rects in PAGE coords (Canvas `onmarkerrects` stream). Null = unresolvable. */
     rects: Record<string, Rect | null>;
     /** The focused note (drives which tick is pinned + fattened). */
@@ -54,22 +65,28 @@
   let el = $state<HTMLElement | null>(null);
 
   const colourOf = $derived(Object.fromEntries(items.map((i) => [i.id, i.colour] as const)));
+  // Point items feed the anchor solve; whole-image items get the reserved slot above it. Order
+  // preserved within each group (partitionMarginaliaItems) — aria numbering below stays stable.
+  const split = $derived(partitionMarginaliaItems(items));
+  const pointItems = $derived(split.points);
+  const wholeItems = $derived(split.whole);
 
   // Place one tick per note. Ticks are treated as zero-height POINTS for the solver (height: 0) —
   // `layoutMarginalia`'s gap gives exactly the prototype's "nudge apart by a min-gap" behaviour, and
   // its capacity check buckets whatever truly can't fit into the below gutter instead of silently
   // overflowing the rail's bottom edge (an improvement over the prototype's naive point-pusher, which
   // has no such floor). The selected note's tick is PINNED so it always stays reachable, even when its
-  // region is off-screen.
+  // region is off-screen. (A selected WHOLE-image note has no point entry — no pin needed, it's always
+  // visible in its own slot — `layoutMarginalia` degrades an absent pinId to the plain solve.)
   const model = $derived.by(() => {
     void rects; // dep: re-solve on each marker frame
     const box = el?.getBoundingClientRect();
-    if (!box || items.length === 0) return null;
+    if (!box || pointItems.length === 0) return null;
     const anchor = (id: string) => {
       const r = rects[id];
       return r ? (r.top + r.bottom) / 2 - box.top : NaN;
     };
-    const entries = items.map((i) => ({ id: i.id, anchorY: anchor(i.id), height: 0 }));
+    const entries = pointItems.map((i) => ({ id: i.id, anchorY: anchor(i.id), height: 0 }));
     const layout = layoutMarginalia(entries, {
       viewportH: box.height,
       gap: GAP,
@@ -87,52 +104,93 @@
   class="marginalia-rail"
   role="group"
   aria-label="Notes by region — tick rail"
-  bind:this={el}
   onpointerleave={() => onhover?.(null)}
 >
-  {#if model}
-    {#if model.above.length > 0}
-      <button type="button" class="bucket up" onclick={() => onselect?.(model.above[model.above.length - 1]!)}>
-        <span aria-hidden="true">▲</span>{model.above.length}
-      </button>
-    {/if}
-    <div class="ticks" role="list">
-      {#each items as it, i (it.id)}
-        {#if it.id in model.topOf}
-          <button
-            type="button"
-            class="tick"
-            class:sel={selected === it.id}
-            style={`top:${model.topOf[it.id]}px;background:${colourOf[it.id]}`}
-            aria-label={`Note ${i + 1} of ${items.length}`}
-            onclick={() => onselect?.(it.id)}
-            onpointerenter={() => onhover?.(it.id)}
-          ></button>
-        {/if}
+  {#if wholeItems.length > 0}
+    <div class="whole-slot" role="list" aria-label="Whole-image notes">
+      {#each wholeItems as it, wi (it.id)}
+        <button
+          type="button"
+          class="whole-tick"
+          class:sel={selected === it.id}
+          style={`background:${colourOf[it.id]}`}
+          aria-label={wholeItems.length > 1 ? `Whole-image note (${wi + 1} of ${wholeItems.length})` : "Whole-image note"}
+          onclick={() => onselect?.(it.id)}
+          onpointerenter={() => onhover?.(it.id)}
+        ></button>
       {/each}
     </div>
-    {#if model.below.length > 0}
-      <button type="button" class="bucket down" onclick={() => onselect?.(model.below[0]!)}>
-        <span aria-hidden="true">▼</span>{model.below.length}
-      </button>
-    {/if}
   {/if}
+  <div class="rail-body" bind:this={el}>
+    {#if model}
+      {#if model.above.length > 0}
+        <button type="button" class="bucket up" onclick={() => onselect?.(model.above[model.above.length - 1]!)}>
+          <span aria-hidden="true">▲</span>{model.above.length}
+        </button>
+      {/if}
+      <div class="ticks" role="list">
+        {#each pointItems as it, i (it.id)}
+          {#if it.id in model.topOf}
+            <button
+              type="button"
+              class="tick"
+              class:sel={selected === it.id}
+              style={`top:${model.topOf[it.id]}px;background:${colourOf[it.id]}`}
+              aria-label={`Note ${i + 1} of ${pointItems.length}`}
+              onclick={() => onselect?.(it.id)}
+              onpointerenter={() => onhover?.(it.id)}
+            ></button>
+          {/if}
+        {/each}
+      </div>
+      {#if model.below.length > 0}
+        <button type="button" class="bucket down" onclick={() => onselect?.(model.below[0]!)}>
+          <span aria-hidden="true">▼</span>{model.below.length}
+        </button>
+      {/if}
+    {/if}
+  </div>
 </div>
 
 <style>
   /* A layout column beside the canvas (never an overlay) — FIXED width, never resizes: ticks are the
-     whole rail at every density, so there is nothing to reveal on hover. */
+     whole rail at every density, so there is nothing to reveal on hover. Column layout: the whole-image
+     slot (if any) takes its real flow height FIRST, so the point-tick body below it (`.rail-body`,
+     flex: 1 1 auto) never overlaps it — no manual pixel math, no collision to guard against. */
   .marginalia-rail {
-    position: relative;
+    display: flex;
+    flex-direction: column;
     flex: 0 0 34px;
     width: 34px;
     min-height: 0;
-    overflow: hidden;
     background: var(--surface-canvas);
     border-left: 1px solid var(--border-canvas);
   }
 
+  .rail-body { position: relative; flex: 1 1 auto; min-height: 0; overflow: hidden; }
+
   .ticks { position: absolute; inset: 0; }
+
+  /* Whole-image affordance (Archie-e913): "the whole page" has no meaningful vertical position, so it's
+     a full-width bar pinned at the rail's TOP, outside the anchor solve entirely — styled like a tick
+     (same faint/hover/selected language) but shape-distinct (full-width, not left-inset) so it never
+     reads as "a note that happens to be at the top of the image". */
+  .whole-slot {
+    position: relative; flex: 0 0 auto;
+    display: flex; flex-direction: column; gap: 2px;
+    padding: 3px 4px;
+  }
+  .whole-tick {
+    width: 100%; height: 3px; border-radius: 1px;
+    padding: 0; margin: 0; border: none; cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 120ms ease, height 120ms ease, box-shadow 140ms ease;
+  }
+  .whole-tick:hover { opacity: 0.85; }
+  .whole-tick.sel {
+    height: 5px; opacity: 1;
+    box-shadow: 0 0 0 1px var(--accent);
+  }
   /* One mark per note, coloured by its reading; a note's vertical position on the rail = its
      region's position on the image. Faint until selected — near-invisible is the point. */
   .tick {
@@ -163,6 +221,6 @@
   .bucket.down { bottom: 4px; }
 
   @media (prefers-reduced-motion: reduce) {
-    .tick { transition: none; }
+    .tick, .whole-tick { transition: none; }
   }
 </style>

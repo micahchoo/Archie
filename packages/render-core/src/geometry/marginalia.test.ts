@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { layoutMarginalia, type MarginItem } from "./marginalia.js";
+import { layoutMarginalia, partitionMarginaliaItems, type MarginItem } from "./marginalia.js";
 
 // MARGINALIA-PLAN cut B: the solver is the heart of worklist 2.1 — dense headless coverage here
 // is what lets the margin component stay a thin projection.
@@ -133,5 +133,34 @@ describe("layoutMarginalia — pinned (focused) item: no self-eviction", () => {
     expect(pin).toBeDefined();
     expect(pin!.top).toBe(0);
     expect(r.below).toContain("b"); // no room beneath an oversized pin — neighbour gutters honestly
+  });
+});
+
+// Archie-e913: the rail's whole-image split. Pure — no anchors/rects involved, just a partition by flag.
+describe("partitionMarginaliaItems", () => {
+  it("splits whole-image items out, preserving order within each group", () => {
+    const items = [
+      { id: "a" },
+      { id: "b", wholeImage: true },
+      { id: "c" },
+      { id: "d", wholeImage: true },
+    ];
+    expect(partitionMarginaliaItems(items)).toEqual({
+      points: [{ id: "a" }, { id: "c" }],
+      whole: [{ id: "b", wholeImage: true }, { id: "d", wholeImage: true }],
+    });
+  });
+
+  it("wholeImage: false and absent both count as a point item", () => {
+    const items = [{ id: "a", wholeImage: false }, { id: "b" }];
+    expect(partitionMarginaliaItems(items)).toEqual({ points: items, whole: [] });
+  });
+
+  it("all-whole and empty inputs degrade cleanly", () => {
+    expect(partitionMarginaliaItems([{ id: "a", wholeImage: true }])).toEqual({
+      points: [],
+      whole: [{ id: "a", wholeImage: true }],
+    });
+    expect(partitionMarginaliaItems([])).toEqual({ points: [], whole: [] });
   });
 });

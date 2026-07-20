@@ -44,6 +44,23 @@ export interface MarginLayout {
 }
 
 /**
+ * Rail-item split (Archie-e913): a whole-image note (bare-IRI target, no geometric selector) has no
+ * on-screen marker rect, so it can never anchor into the point-based solve above — feeding it a NaN
+ * anchor just buckets it into the below gutter forever. Rather than synthesize a fake rect (the shared
+ * `markerScreenRects` stream other consumers — dots, the selection popover — trust as real geometry),
+ * the rail partitions its items up front: whole-image ids get a dedicated, always-visible slot; the rest
+ * go through the normal anchor solve untouched. Pure partition, order-preserving within each group.
+ */
+export function partitionMarginaliaItems<T extends { wholeImage?: boolean }>(
+  items: T[],
+): { points: T[]; whole: T[] } {
+  const points: T[] = [];
+  const whole: T[] = [];
+  for (const it of items) (it.wholeImage ? whole : points).push(it);
+  return { points, whole };
+}
+
+/**
  * Place margin cards beside their anchors without overlap.
  *
  * Algorithm: partition off-screen anchors to gutters → sort in-view items by anchor (stable) →
