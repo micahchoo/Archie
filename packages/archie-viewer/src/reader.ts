@@ -9,7 +9,8 @@ import {
   createReadOnlyMount,
   type ReadOnlyMountSurface,
 } from "@render/mount";
-import type { AObject, W3CAnnotation } from "@render/core";
+import { commentOfAnnotation, stripMarkdown } from "@render/core";
+import type { AObject, AnnotationLike, W3CAnnotation } from "@render/core";
 
 /** What the element hands the reader to open one object: the object (source/tileSource), its published
  *  head notes (rendered as overlay regions), the canvas IRI annotations target, and the offline flag. */
@@ -50,6 +51,23 @@ export function isRemoteSource(object: AObject): boolean {
 }
 
 /**
+ * Accessible-name source for the overlay's region shapes (Archie-9413): id → the note's FIRST comment
+ * line as PLAIN text (render-core's canonical `stripMarkdown` — the same strip the viewer's list
+ * snippets use), so a shape announces a human name instead of "annotation <rawULID>". The text comes
+ * from `commentOfAnnotation` (the published-query body read) — NEVER from selector values. Unknown id or
+ * an empty comment falls back to the overlay's own `annotation <id>` form.
+ */
+export function labelFromAnnotations(annotations: W3CAnnotation[]): (id: string) => string {
+  return (id) => {
+    const ann = annotations.find((a) => String((a as AnnotationLike).id ?? "") === id);
+    if (!ann) return `annotation ${id}`;
+    const firstLine = commentOfAnnotation(ann).split("\n").find((l) => l.trim().length > 0) ?? "";
+    const label = stripMarkdown(firstLine);
+    return label.length > 0 ? label : `annotation ${id}`;
+  };
+}
+
+/**
  * Mount the read-only deep-zoom surface for ONE object into `container`. Resolves once OSD opens.
  * Offline + a remote source → throws OfflineRemoteBlockedError BEFORE constructing OSD (no network
  * touch). The returned surface is the element's handle to setAnnotations / fitBounds / destroy.
@@ -67,6 +85,11 @@ export async function openObject(
     ...(opts.object.tileSource ? { tileSource: opts.object.tileSource } : {}),
     ...(opts.canvasId ? { canvasId: opts.canvasId } : {}),
     ...(opts.onSelect ? { onSelect: opts.onSelect } : {}),
+    // Archie-9413: shapes announce the note's first comment line, not "annotation <rawULID>".
+    labelFor: labelFromAnnotations(opts.annotations),
+    // Archie-6f25: the locator mini-map, matching the full viewer (Reader.svelte passes `locator`
+    // unconditionally too — read-mount mounts it auto-fading, so it stays quiet on small images).
+    locator: true,
   });
 
   surface.setAnnotations(opts.annotations);
