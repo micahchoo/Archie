@@ -1977,6 +1977,7 @@
       scrollTop={ovScrollInitial}
       onscrolled={rememberOverviewScroll}
       onscrollflush={flushOverviewScroll}
+      canWrite={writerLock.canWrite || !writerLock.otherTabActive}
       onstartnarrative={() => openObject(vs.OBJECTS[0]?.id ?? vs.currentObjectId)}
       rights={{ ...(vs.currentExhibit.rights ? { rights: vs.currentExhibit.rights } : {}), ...(vs.currentExhibit.requiredStatement ? { requiredStatement: vs.currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}
