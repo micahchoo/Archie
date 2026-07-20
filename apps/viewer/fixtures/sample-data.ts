@@ -3,7 +3,7 @@
 // publishLibrary and reads it back per-exhibit, exactly as a static consumer would. One log per exhibit;
 // each note targets its object's canvas.
 import { appendNew, asClientId, asExhibitId, asLibraryId, type AObject, type AnnotationLog, type Library, type Section } from "@render/core";
-import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichSections, voynichCredits } from "./voynich.js";
+import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichSections, voynichCredits, voynichExhibitMetadata } from "./voynich.js";
 // Single source of truth lives in the viewer-owned base module (not this demo file), so the shell
 // can import canvasIdFor without pulling in demo fixtures. Re-exported for gen-published.mts.
 import { BASE, canvasIdFor } from "../src/published-base.js";
@@ -192,6 +192,9 @@ const voynichObjs: AObject[] = voynichObjects.map((o) => ({
   ...(o.duration !== undefined ? { duration: o.duration } : {}),
   ...(o.rights ? { rights: o.rights } : {}),
   ...(o.requiredStatement ? { requiredStatement: o.requiredStatement } : {}),
+  // Descriptive metadata (Archie-b50f) rides the same object-level carry as the credit — dropping it
+  // here would publish folios whose Details tab is empty while the seed says otherwise.
+  ...(o.metadata?.length ? { metadata: o.metadata } : {}),
 }));
 // The SINGLE exhibit's object set: only o9 (the Rosettes foldout), carrying its own Beinecke credit.
 const rosettesObjs: AObject[] = voynichObjs.filter((o) => o.id === "ex-voynich.o9");
@@ -222,13 +225,13 @@ export const library: Library = {
     //
     // SINGLE — "The Rosettes": just o9 (the f85v–86r foldout), no sections → resolveLayout = single → Reader
     // deep-zoom + the 3-option readings legend over the one canvas.
-    { id: asExhibitId("ex-voynich-rosettes"), slug: "voynich-rosettes", title: "The Rosettes", summary: "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: rosettesObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
+    { id: asExhibitId("ex-voynich-rosettes"), slug: "voynich-rosettes", title: "The Rosettes", summary: "A single-folio deep-zoom study: the Rosettes foldout (f85v–86r), the largest spread in MS 408, read three ways — cipher, hoax, and natural language — over one canvas.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: rosettesObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits }, metadata: voynichExhibitMetadata },
     // GRID — "The Whole Manuscript" (the MAIN voynich slug): all 11 folios + the sounded page, NO sections →
     // resolveLayout = grid → ObjectGrid; click a folio → Reader with the prev/next carousel + legend + tags.
-    { id: asExhibitId("ex-voynich"), slug: "voynich", title: "The Whole Manuscript", summary: "A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.", cover: "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg", objects: voynichObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
+    { id: asExhibitId("ex-voynich"), slug: "voynich", title: "The Whole Manuscript", summary: "A grid of all eleven folios of MS 408 across its six sections — herbal, astronomical, balneological, cosmological, pharmaceutical, and recipes — to browse side by side, each readable three ways, with a sounded page.", cover: "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg", objects: voynichObjs, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits }, metadata: voynichExhibitMetadata },
     // NARRATIVE — "Reading the Unreadable": all + the sounded page, the 6-beat voynichSections attached →
     // resolveLayout = narrative → NarrativeReader (the section spine + the readings-legend fix + AV notes).
-    { id: asExhibitId("ex-voynich-reading"), slug: "voynich-reading", title: "Reading the Unreadable", summary: "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: voynichObjs, sections: voynichSectionsTyped, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits } },
+    { id: asExhibitId("ex-voynich-reading"), slug: "voynich-reading", title: "Reading the Unreadable", summary: "A narrative walk through the six divisions of MS 408 — herbal to recipes — pausing on each to read the same undeciphered marks three ways, ending on a page sounded aloud.", cover: "https://collections.library.yale.edu/iiif/2/1006231/full/400,/0/default.jpg", objects: voynichObjs, sections: voynichSectionsTyped, readings: voynichReadings, requiredStatement: { label: "Source", value: voynichCredits }, metadata: voynichExhibitMetadata },
     // GRID — "Where Languages Go Silent" (③+⑬): UNESCO's endangered-languages atlas via the Internet
     // Archive's IIIF (CC BY-SA 4.0 on every object). Two Readings (Linguist's/Community) carry the
     // rival-interpretations differentiator beyond manuscripts. cover = a 400px IIIF derivative of the

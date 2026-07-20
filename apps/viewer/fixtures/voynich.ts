@@ -12,7 +12,7 @@
 // o12 is the SOUND object (the Kryptogramm sonification of folio 18v) — the AV evidence in the
 // cipher/hoax/natural-language debate (04-design §E; 02-av-and-material-manifest §1). It maps to o2 (f18v),
 // the very page it sonifies.
-import { asObjectId, type AObject } from "@render/core";
+import { asObjectId, type AObject, type MetadataEntry } from "@render/core";
 
 export const voynichTitle = "The Voynich Manuscript";
 export const voynichCredits =
@@ -36,7 +36,47 @@ const AV_SOURCE = "https://archive.org/download/kryptogramm/04-f18v.mp3";
 // Schwerdtfeger's Kryptogramm, a DIFFERENT rights-holder → its own CC BY-NC-SA 3.0 statement + URI.
 const BEINECKE_RIGHTS = "http://creativecommons.org/publicdomain/mark/1.0/"; // Public Domain Mark 1.0 (LICENSES)
 const BEINECKE_STATEMENT = { label: "Source", value: "Beinecke Rare Book & Manuscript Library, Yale University — MS 408 (public domain)" } as const;
-const folio = (o: AObject): AObject => ({ ...o, rights: BEINECKE_RIGHTS, requiredStatement: { ...BEINECKE_STATEMENT } });
+
+// DESCRIPTIVE METADATA (Archie-b50f) — the seed's dcterms entries, so the shipped sample actually
+// exercises the reader's Details tab and the exhibit header run instead of leaving both invisible.
+// MS 408 facts (dating, hands, provenance) per docs/exhibits/voynich-rewrite/01; the SET is the
+// object default field list (DEFAULT_METADATA_FIELDS.object) plus the three shapes the panel exists
+// to handle: a REPEAT (two creators), a RELABEL ("Archive" over dcterms:source), a VERBATIM import
+// pair ("Shelfmark", no property), and a LONG value (provenance) that clamps with a Show more.
+const VOYNICH_PROVENANCE =
+  "Possibly acquired by Rudolf II of Bohemia, who is said to have paid 600 ducats for it; then the " +
+  "botanist Jacobus Horčický de Tepenecz, whose erased signature survives on f1r; then Georg Baresch " +
+  "of Prague, who sent it to Athanasius Kircher in Rome by 1666; bought by Wilfrid Voynich from the " +
+  "Jesuit library at Villa Mondragone, Frascati, in 1912, and given to Yale in 1969.";
+
+/** The per-folio entry list. `label` is the seed's own object label ("f25v — Herbal"), which carries
+ *  both the folio number (→ dcterms:identifier) and the manuscript section (→ dcterms:subject). */
+const folioMetadata = (label: string): MetadataEntry[] => {
+  const [folioId = label, rest = ""] = label.split(" — ");
+  const section = rest.split(" (")[0] ?? rest;
+  return [
+    { property: "dcterms:creator", value: "Unknown scribe" },
+    { property: "dcterms:creator", value: "Unknown illustrator" }, // a REPEAT: one label, stacked values
+    { property: "dcterms:date", value: "ca. 1404–1438 (vellum, radiocarbon dated, 95% confidence)" },
+    { property: "dcterms:subject", value: `${section} section` },
+    { property: "dcterms:type", value: "Manuscript folio (vellum)" },
+    { property: "dcterms:language", value: "Undeciphered script (“Voynichese”)" },
+    { property: "dcterms:identifier", value: `Beinecke MS 408, ${folioId}` },
+    { property: "dcterms:source", label: "Archive", value: "Beinecke Rare Book & Manuscript Library, Yale University" }, // a RELABEL
+    { label: "Shelfmark", value: "MS 408" }, // a VERBATIM imported pair — no property
+    { property: "dcterms:provenance", value: VOYNICH_PROVENANCE }, // LONG: clamps with a Show more
+  ];
+};
+
+/** Exhibit-level entries — about the MANUSCRIPT the three exhibits share, never about one folio
+ *  (object entries live on the object; the header run must not restate them). */
+export const voynichExhibitMetadata: MetadataEntry[] = [
+  { property: "dcterms:subject", value: "Beinecke MS 408 — the Voynich manuscript" },
+  { property: "dcterms:date", value: "ca. 1404–1438" },
+  { property: "dcterms:language", value: "Undeciphered script (“Voynichese”); curatorial text in English" },
+];
+
+const folio = (o: AObject): AObject => ({ ...o, rights: BEINECKE_RIGHTS, requiredStatement: { ...BEINECKE_STATEMENT }, metadata: folioMetadata(o.label) });
 export const voynichObjects: AObject[] = [
   folio({ id: asObjectId("ex-voynich.o1"), source: iiif("1006076"), label: "f1r — Herbal (opening page)", width: 2972, height: 3766 }),
   folio({ id: asObjectId("ex-voynich.o2"), source: iiif("1006109"), label: "f18v — Herbal (the sonified folio)", width: 2846, height: 3781 }),
