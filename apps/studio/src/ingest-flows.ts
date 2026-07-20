@@ -27,7 +27,7 @@ import { manifestToExhibit, ManifestImportError, classifyIiifDocument, labelToSt
 import { traverseCollection, urlSegment, type DiscoveredManifest, type TraverseResult } from "./collection-import.js";
 import { planCsvImport, type CsvPendingNote } from "./csv-import.js";
 import { planWadmImport } from "./wadm-import.js";
-import type { ImportTone } from "./ingest-activity.js";
+import { createImportRunTracker, type ImportTone } from "./ingest-activity.js";
 import { collabBreakdown, collabSummaryText } from "./collab.js";
 import { recordImportFreshness } from "./import-freshness.js";
 import { rectSel } from "./seed-data.js";
@@ -212,6 +212,9 @@ export interface IngestContext {
    *  thumb baked) so the grid shows it before the next exhibit reopen re-runs the eager thumb wave. */
   setPlate: (objId: string, url: string) => void;
   setCurrentObjectId: (id: string) => void;
+  /** The ONE live-progress slot App renders. Flows never call this directly — they tick a per-run
+   *  handle from `importRuns` (createImportRunTracker), which arbitrates overlapping runs in front of
+   *  this setter so concurrent imports can't alternate in the band or blank each other's progress. */
   setImportStatus: (s: { name: string; index: number; total: number } | null) => void;
   /** The terminal message for an import. `tone` defaults to "ok" — pass "problem" when the message
    *  reports a REFUSAL or a failure, so the overview's ingest band can pick its glyph honestly. Proven
@@ -254,6 +257,11 @@ export function createIngestFlows(ctx: IngestContext) {
   // Boot-cached flag read (feature-flags.ts contract: callers read once, never mid-session). The
   // App passes its own boot-cached STRUCTURE_REVLOG const; the fallback covers direct construction.
   const STRUCTURE_REVLOG = ctx.structureRevlog ?? structureRevlogEnabled();
+  // ALL ticking flows go through this tracker, never ctx.setImportStatus directly: every ingest call
+  // site is fire-and-forget, so two runs can overlap, and with four flows writing the one unkeyed
+  // slot their ticks alternated in the band and the first `finally` to fire blanked the survivor
+  // mid-run. The tracker (ingest-activity.ts) keys each run and lets the oldest reported one lead.
+  const importRuns = createImportRunTracker(ctx.setImportStatus);
   // Best-effort natural dimensions (IIIF wants them); resolves null if the URL can't be loaded.
   function imageDims(src: string): Promise<{ w: number; h: number } | null> {
     return new Promise((resolve) => {
@@ -362,12 +370,13 @@ export function createIngestFlows(ctx: IngestContext) {
     const targetSlug = opened.slug;
     const batch = beginBatch(targetSlug);
     let added = 0;
+    const run = importRuns.begin();
     try {
       for (let i = 0; i < links.length; i++) {
         const { source, label } = links[i]!;
         const src = source.trim();
         if (!src) continue;
-        ctx.setImportStatus({ name: label, index: i + 1, total: links.length });
+        run.tick({ name: label, index: i + 1, total: links.length });
         const mt = mediaTypeFromSource(src);
         const dims = mt === "image" ? await imageDims(src) : null; // best-effort, same as addObject
         batch.add({
@@ -382,7 +391,7 @@ export function createIngestFlows(ctx: IngestContext) {
       }
       await batch.flush(); // durable-before-return, same tail contract as addFiles
     } finally {
-      ctx.setImportStatus(null);
+      run.end();
     }
     const where = exhibitBySlug(targetSlug)?.title ?? "this exhibit";
     if (added > 0) ctx.setImportNote(`Added ${added} linked image${added === 1 ? "" : "s"} to “${where}” — they stay on their server; Archie keeps the links.`);
@@ -558,9 +567,10 @@ export function createIngestFlows(ctx: IngestContext) {
     let added = 0, unexplained = 0;
     const notes: string[] = [];
     const refusals: { reason: AddFileRefusal; name: string }[] = [];
+    const run = importRuns.begin();
     try {
       for (let i = 0; i < list.length; i++) {
-        ctx.setImportStatus({ name: list[i]!.name, index: i + 1, total: list.length });
+        run.tick({ name: list[i]!.name, index: i + 1, total: list.length });
         // Skip-and-tally (code-review defect 1): addObjectFromFile can THROW — bakeDisplayMaster /
         // downscaleIfNeeded reject on a corrupt/undecodable image (createImageBitmap), realistic in a big
         // drop. An escaping throw would skip the trailing flush and LOSE the successfully-processed files
@@ -586,7 +596,7 @@ export function createIngestFlows(ctx: IngestContext) {
       }
       await batch.flush(); // durable-before-return: the batch's tail is committed before we compose the summary
     } finally {
-      ctx.setImportStatus(null);
+      run.end();
     }
     // Confirm the add AND name where it landed (reuses the importNote idiom that already confirms cites).
     // Compose one message so a mixed batch (some added, some unreadable) reads cleanly.
@@ -641,6 +651,7 @@ export function createIngestFlows(ctx: IngestContext) {
     const titleOverride = groups.length === 1 && title && title.trim() !== "" ? title.trim() : undefined;
     let failed = 0, imported = 0;
     const refusals: { reason: AddFileRefusal; name: string }[] = [];
+    const run = importRuns.begin();
     try {
       for (const g of groups) {
         await ctx.newExhibit(titleOverride ?? g.name);
@@ -660,7 +671,7 @@ export function createIngestFlows(ctx: IngestContext) {
         const batch = beginBatch(targetSlug);
         for (let i = 0; i < g.files.length; i++) {
           const p = g.files[i]!;
-          ctx.setImportStatus({ name: p.name, index: i + 1, total: g.files.length });
+          run.tick({ name: p.name, index: i + 1, total: g.files.length });
           // Re-wrap typeless files (.tiff, .avif on some platforms) with the inferred MIME the
           // plan admitted them under — addObjectFromFile branches on File.type.
           const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
@@ -679,7 +690,7 @@ export function createIngestFlows(ctx: IngestContext) {
         await batch.flush(); // commit this group's tail before minting the next group's exhibit
       }
     } finally {
-      ctx.setImportStatus(null);
+      run.end();
     }
     // Same shape as addFiles': the head, then a clause per refusal REASON, then the unclassifiable
     // remainder as a bare count that admits it is one.
@@ -737,17 +748,18 @@ export function createIngestFlows(ctx: IngestContext) {
     // (a typical manifest = one persist), not one full-library.json rewrite per canvas. Progress still ticks
     // per object. A flush throwing (storage broken) PROPAGATES — the collection drain catches it as fatal.
     const batch = beginBatch(targetSlug);
+    const run = importRuns.begin();
     try {
       for (let i = 0; i < plan.objects.length; i++) {
         const o = plan.objects[i]!;
-        ctx.setImportStatus({ name: o.label, index: i + 1, total: plan.objects.length });
+        run.tick({ name: o.label, index: i + 1, total: plan.objects.length });
         if (!exhibitBySlug(targetSlug)) break; // exhibit vanished (deleted mid-import) — stop; a flush is a no-op on it
         batch.add({ id: mintObjectId(), ...o });
         await batch.flushIfFull();
       }
       await batch.flush();
     } finally {
-      ctx.setImportStatus(null);
+      run.end();
     }
   }
   // IIIF manifest URL → NEW exhibit (contributor-broadening ②, Archie-bc01): one paste bootstraps from any

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ingestActivityOf } from "./ingest-activity.js";
+import { ingestActivityOf, createImportRunTracker, type IngestStatus } from "./ingest-activity.js";
 
 describe("ingestActivityOf", () => {
   it("is null when nothing has happened", () => {
@@ -66,5 +66,83 @@ describe("ingestActivityOf", () => {
     expect(ingestActivityOf(2, { name: "b.jpg", index: 3, total: 4 }, null)).toMatchObject({
       kind: "running", name: "b.jpg",
     });
+  });
+});
+
+describe("createImportRunTracker — concurrent runs share one status slot", () => {
+  const s = (name: string, index = 1, total = 5): IngestStatus => ({ name, index, total });
+  const setup = () => {
+    const published: (IngestStatus | null)[] = [];
+    const tracker = createImportRunTracker((v) => published.push(v));
+    return { published, tracker, last: () => published.at(-1) };
+  };
+
+  it("a single run publishes its ticks and nulls on end", () => {
+    const { tracker, last } = setup();
+    const run = tracker.begin();
+    run.tick(s("a.jpg", 1));
+    expect(last()).toMatchObject({ name: "a.jpg", index: 1 });
+    run.tick(s("b.jpg", 2));
+    expect(last()).toMatchObject({ name: "b.jpg", index: 2 });
+    run.end();
+    expect(last()).toBeNull();
+  });
+
+  it("the oldest reported run leads; a younger run's ticks never alternate in", () => {
+    // THE BUG (pre-tracker): two overlapping drops alternated filenames and totals in the band as
+    // their ticks interleaved through the one unkeyed global.
+    const { tracker, last } = setup();
+    const a = tracker.begin();
+    const b = tracker.begin();
+    a.tick(s("a1.jpg", 1, 10));
+    b.tick(s("b1.jpg", 1, 3));
+    expect(last()).toMatchObject({ name: "a1.jpg", total: 10 }); // a leads
+    b.tick(s("b2.jpg", 2, 3));
+    a.tick(s("a2.jpg", 2, 10));
+    expect(last()).toMatchObject({ name: "a2.jpg", total: 10 }); // still a — no flapping
+  });
+
+  it("a sibling finishing does NOT blank a still-running lead", () => {
+    // THE OTHER HALF OF THE BUG: the first flow to finish nulled the shared slot out from under the
+    // survivor. Now an end() removes only its own entry.
+    const { tracker, last } = setup();
+    const a = tracker.begin();
+    const b = tracker.begin();
+    a.tick(s("a1.jpg", 3, 10));
+    b.tick(s("b1.jpg", 3, 3));
+    b.end(); // the younger run finishes first
+    expect(last()).toMatchObject({ name: "a1.jpg", index: 3, total: 10 }); // a undisturbed
+  });
+
+  it("when the lead ends, the next-oldest reported run takes over; when all end, null", () => {
+    const { tracker, last } = setup();
+    const a = tracker.begin();
+    const b = tracker.begin();
+    a.tick(s("a1.jpg", 9, 10));
+    b.tick(s("b1.jpg", 1, 3));
+    a.end();
+    expect(last()).toMatchObject({ name: "b1.jpg", total: 3 }); // b promoted with ITS progress
+    b.end();
+    expect(last()).toBeNull();
+  });
+
+  it("a run that never ticked (refused up front) ends without disturbing anything", () => {
+    const { tracker, published, last } = setup();
+    const a = tracker.begin();
+    a.tick(s("a1.jpg"));
+    const refused = tracker.begin(); // e.g. addFiles bailing on storeReady before any tick
+    refused.end();
+    expect(last()).toMatchObject({ name: "a1.jpg" });
+    expect(published.every((p) => p === null || p.name === "a1.jpg")).toBe(true);
+  });
+
+  it("tick and end after end are inert, not a resurrection", () => {
+    const { tracker, last } = setup();
+    const a = tracker.begin();
+    a.tick(s("a1.jpg"));
+    a.end();
+    a.tick(s("ghost.jpg")); // a straggling callback after the finally must not repaint the band
+    a.end();
+    expect(last()).toBeNull();
   });
 });

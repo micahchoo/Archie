@@ -70,3 +70,47 @@ export function ingestActivityOf(
   if (note) return { kind: "done", message: note.message, ok: note.ok };
   return null;
 }
+
+/** A handle on one ingest run's slice of the shared status slot. */
+export type ImportRun = {
+  /** Report this run's current item. Displayed only while this run LEADS (see tracker). */
+  tick: (s: IngestStatus) => void;
+  /** The run is over — success or failure, the flows call this in their `finally`. Removes only this
+   *  run's entry; a sibling still in flight keeps (or takes over) the display. */
+  end: () => void;
+};
+
+/**
+ * Arbitrate N concurrent ingest runs over the ONE status slot App renders.
+ *
+ * The bug this closes: every ingest call site is fire-and-forget, so two drops overlap — and with all
+ * four ticking flows writing one unkeyed global, their ticks ALTERNATED in the band (the filename and
+ * "N of M" flapping between two unrelated batches), and whichever run finished first nulled the slot
+ * out from under the survivor mid-run. Both are display-arbitration problems, so the fix lives here —
+ * in front of the publish callback — not in the flows (which now just tick their own handle) and not
+ * in App (whose `setImportStatus` seam keeps its exact signature, test doubles untouched).
+ *
+ * Policy: the OLDEST run that has reported a status leads, and keeps leading until it ends — stable,
+ * never alternates. When it ends the next-oldest reported run takes over; when all end, null.
+ */
+export function createImportRunTracker(publish: (s: IngestStatus | null) => void): { begin: () => ImportRun } {
+  const runs: { id: number; status: IngestStatus | null }[] = [];
+  let seq = 0;
+  const emit = () => publish(runs.find((r) => r.status)?.status ?? null);
+  return {
+    begin() {
+      const id = ++seq;
+      runs.push({ id, status: null });
+      return {
+        tick(s: IngestStatus) {
+          const r = runs.find((x) => x.id === id);
+          if (r) { r.status = s; emit(); }
+        },
+        end() {
+          const i = runs.findIndex((x) => x.id === id);
+          if (i !== -1) { runs.splice(i, 1); emit(); }
+        },
+      };
+    },
+  };
+}
