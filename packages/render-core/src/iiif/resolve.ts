@@ -68,6 +68,14 @@ export type TileSource =
 
 const IMAGE_EXT_RE = /\.(jpe?g|png|webp|avif|gif|tiff?|svg)(\?.*)?$/i;
 
+/** Whether a URL/path names a raster image by extension — the SAME list resolveTileSource uses to
+ *  classify a string source as a direct image. Exported so consumers filtering candidate files (the
+ *  studio's folder-by-URL listing) share this one definition instead of growing a second list that
+ *  would drift from what the canvas can actually render. */
+export function hasImageExtension(path: string): boolean {
+  return IMAGE_EXT_RE.test(path);
+}
+
 /** Fill an XYZ `{z}/{x}/{y}` template (the one place the slippy-tile URL grammar lives). */
 export function fillXyzTemplate(template: string, z: number, x: number, y: number): string {
   return template

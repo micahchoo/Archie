@@ -293,6 +293,50 @@ export function createIngestFlows(ctx: IngestContext) {
     const dims = mt === "image" ? await imageDims(src) : null; // dimension-probe only makes sense for images
     await appendObject({ id, source: src, label: label.trim() || "Untitled object", ...(dims ? { width: dims.w, height: dims.h } : {}), ...(mt !== "image" ? { mediaType: mt } : {}) });
   }
+  // Add MANY remote-URL objects in one run — the folder-by-URL confirm (CreateExhibitDialog's folder
+  // picker → selectedLinks). Each entry lands exactly as addObject would store it (a zero-copy remote
+  // reference; nothing is downloaded beyond the same best-effort dimension probe). This exists apart
+  // from a per-entry addObject loop for the two reasons addFiles does: the target exhibit is PINNED
+  // up front (mid-flow exhibit-switch protection, tend Issue 7 / ledgers/NEGSPACE.md) and the
+  // library.json appends are batched (one persist per IMPORT_PERSIST_CHUNK, not per object). No quota
+  // preflight and no storeReady gate, deliberately: no OPFS bytes are written — the references live in
+  // library.json alone, same as a single hand-pasted link.
+  async function addUrlObjects(links: { source: string; label: string }[]) {
+    const opened = exhibit();
+    if (!opened) {
+      ctx.setImportNote("Open an exhibit first.");
+      return;
+    }
+    if (links.length === 0) return;
+    ctx.setImportNote("");
+    const targetSlug = opened.slug;
+    const batch = beginBatch(targetSlug);
+    let added = 0;
+    try {
+      for (let i = 0; i < links.length; i++) {
+        const { source, label } = links[i]!;
+        const src = source.trim();
+        if (!src) continue;
+        ctx.setImportStatus({ name: label, index: i + 1, total: links.length });
+        const mt = mediaTypeFromSource(src);
+        const dims = mt === "image" ? await imageDims(src) : null; // best-effort, same as addObject
+        batch.add({
+          id: mintObjectId(),
+          source: src,
+          label: label.trim() || "Untitled object",
+          ...(dims ? { width: dims.w, height: dims.h } : {}),
+          ...(mt !== "image" ? { mediaType: mt } : {}),
+        });
+        added++;
+        await batch.flushIfFull();
+      }
+      await batch.flush(); // durable-before-return, same tail contract as addFiles
+    } finally {
+      ctx.setImportStatus(null);
+    }
+    const where = exhibitBySlug(targetSlug)?.title ?? "this exhibit";
+    if (added > 0) ctx.setImportNote(`Added ${added} linked image${added === 1 ? "" : "s"} to “${where}” — they stay on their server; Archie keeps the links.`);
+  }
   // Add-map modal (Phase 3 / Q3 — invented UX, human-gated): a Map is an Object whose source is its tile
   // template and which carries the tileSource descriptor (medium = Map). The modal supplies template + bounds.
   async function addMapObject(m: { label: string; tileSource: XyzTileSource }) {
@@ -1027,7 +1071,7 @@ export function createIngestFlows(ctx: IngestContext) {
   }
 
   return {
-    imageDims, appendObject, addObject, addMapObject, addObjectFromFile, addFiles,
+    imageDims, appendObject, addObject, addUrlObjects, addMapObject, addObjectFromFile, addFiles,
     newExhibitFromFolder, newExhibitFromManifest, addManifestToExhibit, fetchManifestPlan, fetchCollectionPreview, newExhibitsFromCollection,
     importNotesCsv, importNotesWadm, replaceProjectFrom, openZip,
   };
