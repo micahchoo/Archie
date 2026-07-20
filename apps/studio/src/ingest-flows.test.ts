@@ -21,6 +21,14 @@ vi.mock("./store.js", async (importOriginal) => ({
 // file's processing is deterministic AND so a marked "corrupt" file can REJECT the way a real undecodable
 // image does (bakeDisplayMaster/downscaleIfNeeded throw), which the defect-1 skip-and-tally test needs.
 // No existing test exercises the image path (they all use audio), so this mock is inert for them.
+// The TIFF transcode decodes via UTIF + canvas (browser-only, like bake.js) — mock it the same way so
+// the WIRING is provable headless: a tiff-MIME file must route here, and its output must become the
+// stored master. The real decode is verified in the browser (tiff-transcode.ts header).
+vi.mock("./tiff-transcode.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./tiff-transcode.js")>()), // real isTiffMime — only the decode is stubbed
+  transcodeTiff: vi.fn(async () => ({ blob: new Blob([new Uint8Array([1])], { type: "image/webp" }), width: 8, height: 8 })),
+}));
+
 vi.mock("./bake.js", () => ({
   bakeDisplayMaster: vi.fn(async () => ({ blob: new Blob([new Uint8Array([0])]), width: 10, height: 10 })),
   downscaleIfNeeded: vi.fn(async (file: File) => {
@@ -733,5 +741,99 @@ describe("newExhibitFromManifest — descriptive metadata lands on the exhibit +
     expect(ex.metadata).toEqual([{ property: "dcterms:creator", label: "Author", value: "Ada" }]);
     expect(ex.objects[0]!.metadata).toEqual([{ property: "dcterms:date", value: "1843" }]);
     expect(ex.objects[1]!.metadata).toBeUndefined();
+  });
+});
+
+describe("storage failure stops the batch early (no-preflight contract, docs/research/browser-storage-quota.md)", () => {
+  // The quota preflight is gone: Chromium's estimate() headroom is a ~10 GiB privacy constant, so the
+  // only honest storage signal is the write itself failing. These tests pin the replacement contract:
+  // first storage refusal → stop, keep the committed prefix, count the rest as not attempted.
+  const makeAudio = (name: string, rel?: string) =>
+    Object.assign(new File([new Uint8Array([0])], name, { type: "audio/mpeg" }), { webkitRelativePath: rel ?? name });
+
+  it("addFiles: keeps the pre-failure adds, refuses the failing file as 'storage', never attempts the rest", async () => {
+    const { ctx, exhibits, notes } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    await ctx.newExhibit("Drop target");
+
+    const store = vi.mocked(await import("./store.js"));
+    store.saveAssetFile.mockClear(); // the module mock is file-wide — count only THIS test's writes
+    store.saveAssetFile
+      .mockImplementationOnce(async () => {}) // a.mp3 lands
+      .mockImplementationOnce(async () => { throw new Error("QuotaExceededError: device full"); }); // b.mp3 fails
+    // c.mp3 / d.mp3 must never reach the writer — the loop stops at the storage refusal.
+
+    await flows.addFiles([makeAudio("a.mp3"), makeAudio("b.mp3"), makeAudio("c.mp3"), makeAudio("d.mp3")]);
+
+    expect(exhibits.find((e) => e.slug === "drop-target")!.objects.length).toBe(1); // committed prefix survives
+    expect(store.saveAssetFile).toHaveBeenCalledTimes(2); // stop means STOP: no doomed writes for c/d
+    const note = notes.at(-1)!;
+    expect(note).toContain("Added 1 file");
+    expect(note).toContain("Couldn't store “b.mp3”"); // the storage refusal names its cause
+    expect(note).toContain("The remaining 2 files were not attempted.");
+  });
+
+  it("newExhibitFromFolder: a storage failure in group 1 stops before minting group 2's exhibit", async () => {
+    const { ctx, exhibits, alerts } = makeCtx();
+    const flows = createIngestFlows(ctx);
+
+    const store = vi.mocked(await import("./store.js"));
+    store.saveAssetFile.mockClear(); // the module mock is file-wide — count only THIS test's writes
+    store.saveAssetFile
+      .mockImplementationOnce(async () => {}) // roll/a.mp3 lands
+      .mockImplementationOnce(async () => { throw new Error("QuotaExceededError: device full"); }); // roll/b.mp3 fails
+
+    await flows.newExhibitFromFolder([
+      makeAudio("a.mp3", "top/roll/a.mp3"),
+      makeAudio("b.mp3", "top/roll/b.mp3"),
+      makeAudio("c.mp3", "top/roll/c.mp3"),
+      makeAudio("d.mp3", "top/spool/d.mp3"),
+      makeAudio("e.mp3", "top/spool/e.mp3"),
+    ]);
+
+    // Group 1 (roll) was minted and keeps its committed prefix; group 2 (spool) must NOT exist —
+    // stopping before minting it is exactly the titled-but-empty-exhibit trail the old preflight
+    // guarded against, now handled without the phantom-quota refusal.
+    expect(exhibits.find((e) => e.slug === "roll")!.objects.length).toBe(1);
+    expect(exhibits.find((e) => e.slug === "spool")).toBeUndefined();
+    expect(store.saveAssetFile).toHaveBeenCalledTimes(2);
+    const summary = alerts.at(-1)!;
+    expect(summary).toContain("Added 1 file to 1 exhibit."); // exhibitsMade, not groups.length
+    expect(summary).toContain("The remaining 3 files were not attempted."); // 1 left in roll + 2 in spool
+  });
+});
+
+describe("TIFF ingest routes through the transcode (docs/research/browser-storage-quota.md follow-up 3)", () => {
+  it("stores a tiff-MIME file as a .webp master with the transcoder's dimensions", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    await ctx.newExhibit("Scans");
+
+    const transcode = vi.mocked(await import("./tiff-transcode.js"));
+    transcode.transcodeTiff.mockClear();
+
+    const tif = new File([new Uint8Array([0x49, 0x49, 0x2a, 0x00])], "BHC_006_GMT_AF_261a.tif", { type: "image/tiff" });
+    await flows.addFiles([tif]);
+
+    expect(transcode.transcodeTiff).toHaveBeenCalledTimes(1); // routed to the TIFF branch, not createImageBitmap
+    const obj = exhibits.find((e) => e.slug === "scans")!.objects[0]! as any;
+    expect(obj.source).toMatch(/\.webp$/); // the stored master is the transcode's WebP, extension truthful
+    expect(obj.width).toBe(8);
+    expect(obj.height).toBe(8);
+  });
+
+  it("classifies a TIFF the decoder rejects as 'undecodable' — named, not just counted", async () => {
+    const { ctx, exhibits, notes } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    await ctx.newExhibit("Scans");
+
+    const transcode = vi.mocked(await import("./tiff-transcode.js"));
+    transcode.transcodeTiff.mockClear();
+    transcode.transcodeTiff.mockImplementationOnce(async () => { throw new Error("UTIF found no IFDs"); });
+
+    await flows.addFiles([new File([new Uint8Array([0])], "damaged.tif", { type: "image/tiff" })]);
+
+    expect(exhibits.find((e) => e.slug === "scans")!.objects.length).toBe(0);
+    expect(notes.at(-1)!).toContain("“damaged.tif” isn't a readable image");
   });
 });

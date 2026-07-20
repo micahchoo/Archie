@@ -104,7 +104,14 @@ describe("asset writes route through the save-queue (Issue 26 / ASSETQ Q1)", () 
   });
 });
 
-describe("quota preflight refuses cleanly (Issue 26 / ASSETQ Q3)", () => {
+describe("no quota preflight — estimate() never gates an import (reverses Issue 26 / ASSETQ Q3)", () => {
+  // The Q3 preflight compared the batch to `estimate().quota - usage`. Chromium reports quota as
+  // `usage + 10 GiB` — a static privacy constant (kStaticStorageQuota) — so that arithmetic refused
+  // any batch over ~9.5 GB regardless of real headroom (measured: a 17.8 GB import refused with
+  // ~1 TB of enforced-quota headroom; docs/research/browser-storage-quota.md). The write itself is
+  // the only truthful signal now; the clean-refusal property Q3 proved lives on in the write path
+  // (reference-after-bytes: a failed write appends no object) and the stop-early contract
+  // (ingest-flows.test.ts "storage failure stops the batch early").
   beforeEach(() => {
     resetSaveQueueForTests();
     saveAssetFile.mockReset().mockResolvedValue(undefined);
@@ -115,15 +122,14 @@ describe("quota preflight refuses cleanly (Issue 26 / ASSETQ Q3)", () => {
     vi.stubGlobal("navigator", { storage: { estimate: async () => ({ quota, usage }) } });
   }
 
-  it("addFiles refuses before any byte lands when the batch won't fit", async () => {
-    const { ctx, exhibits, notes } = makeCtx();
+  it("a batch larger than the REPORTED headroom still attempts its writes — the constant must not gate", async () => {
+    const { ctx, exhibits } = makeCtx();
     const flows = makeFlows(ctx);
-    stubEstimate(1000, 999); // ~1 byte free; the import is 3 bytes
+    stubEstimate(1000, 999); // reported headroom ~1 byte; the import is 3 bytes — the old preflight refused this
     const files = { 0: av(), length: 1, item: () => av() } as unknown as FileList;
     await flows.addFiles(files);
-    expect(saveAssetFile).not.toHaveBeenCalled(); // zero writes attempted
-    expect(exhibits[0]!.objects.length).toBe(0); // zero partial references
-    expect(notes.some((n) => n.includes("isn't enough storage"))).toBe(true);
+    expect(saveAssetFile).toHaveBeenCalled(); // the write is attempted; only a REAL failure refuses
+    expect(exhibits[0]!.objects.length).toBe(1);
   });
 
   it("with ample free space the import proceeds", async () => {

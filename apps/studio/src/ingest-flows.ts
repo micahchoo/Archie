@@ -15,6 +15,7 @@ import {
   type WorkingObjectMeta as ObjectMeta,
 } from "@render/core";
 import { bakeDisplayMaster, downscaleIfNeeded, bakeThumbnail } from "./bake.js";
+import { isTiffMime, transcodeTiff } from "./tiff-transcode.js";
 import {
   openExhibitAnnotationsDir, openExhibitStructureDir, saveAssetFile, saveOriginalFile, saveThumbFile, clearExhibitAnnotations,
   migrateResidentStoreIds, resetIdSchemeState, loadLibraryMeta,
@@ -32,6 +33,7 @@ import { collabBreakdown, collabSummaryText } from "./collab.js";
 import { recordImportFreshness } from "./import-freshness.js";
 import { rectSel } from "./seed-data.js";
 import { enqueueSave } from "./save-queue.svelte.js";
+import { reportStorageFailure, reportStorageOk, requestPersistence } from "./storage-quota.svelte.js";
 import type { LibraryStore } from "./library-meta.svelte.js";
 
 const LARGE_MEDIA_BYTES = 100 * 1024 * 1024; // ~100 MB — above this, suggest linking by URL (never blocks)
@@ -169,25 +171,27 @@ function refusalSentences(refusals: ReadonlyArray<{ reason: AddFileRefusal; name
   return out.length > 3 ? [...out.slice(0, 3), "…"] : out;
 }
 /** Persist one exhibit's asset bytes through the queue (serialized per exhibit). False = write failed
- *  (recorded in saveStatus); the caller must NOT append the referencing object. */
-function persistAsset(slug: string, write: () => Promise<void>): Promise<boolean> {
-  return enqueueSave(`assets:${slug}`, "Media", write);
+ *  (recorded in saveStatus); the caller must NOT append the referencing object. This is also the ONE
+ *  seam that tells the storage chip the truth: a failed asset write is the only observable "storage
+ *  full" signal (the estimate() quota is a privacy constant — see the STOPPED_EARLY header comment),
+ *  and a successful one proves recovery. */
+async function persistAsset(slug: string, write: () => Promise<void>): Promise<boolean> {
+  requestPersistence(); // one-shot, first asset write: ask the engine to exempt this origin from eviction
+  const ok = await enqueueSave(`assets:${slug}`, "Media", write);
+  if (ok) reportStorageOk(); else reportStorageFailure();
+  return ok;
 }
-// OPFS quota preflight (Issue 26 Phase 3): refuse a batch that plainly won't fit BEFORE any byte lands,
-// so an import can't half-write a library.json reference to storage that fills mid-write. estimate() is
-// approximate and absent in some engines (e.g. the node test env) — a missing estimate never blocks.
-async function quotaOkFor(bytes: number): Promise<boolean> {
-  try {
-    const storage = (globalThis.navigator as Navigator & { storage?: { estimate?: () => Promise<{ quota?: number; usage?: number }> } } | undefined)?.storage;
-    const est = await storage?.estimate?.();
-    if (!est || typeof est.quota !== "number" || typeof est.usage !== "number") return true; // can't estimate → let the write try
-    return est.quota - est.usage > bytes * 1.05; // 5% headroom for OPFS/container overhead
-  } catch {
-    return true; // estimate threw (permissions / private mode) → don't block; the write itself still guards
-  }
-}
-const QUOTA_REFUSED_NOTE =
-  "There isn't enough storage on this device to import these files. Free some space and try again — nothing was added.";
+// NO quota preflight — deliberately (reverses Issue 26 Phase 3; docs/research/browser-storage-quota.md).
+// Chromium's estimate() reports quota as `usage + 10 GiB` (a static anti-fingerprinting constant,
+// kStaticStorageQuota, Dec 2024) — so "quota - usage" is ALWAYS ~10 GiB, and a preflight against it
+// refuses any batch over ~9.5 GB regardless of real headroom (the enforced quota is ~60% of disk and
+// deliberately unobservable). Measured here: a 17.8 GB import refused on a disk with ~1 TB of real
+// origin headroom. The only truthful signal is the write itself failing (QuotaExceededError →
+// persistAsset false → the "storage" refusal), so the import loops attempt, then STOP EARLY on the
+// first storage refusal — reference-after-bytes already guarantees a failed write leaves no dangling
+// library.json entry, and stopping avoids grinding through hundreds of doomed writes.
+const STOPPED_EARLY = (n: number) =>
+  `The remaining ${n} file${n === 1 ? " was" : "s were"} not attempted.`;
 
 /** Everything the ingest flows touch in App.svelte's reactive scope, passed explicitly. Reactive reads
  *  are getters (so the flow sees the live value at call time); mutations are setters/store methods. */
@@ -474,7 +478,20 @@ export function createIngestFlows(ctx: IngestContext) {
     // counted, never explained. Catching it HERE (where the phase is known) turns it into a reason.
     // The persistAsset early-returns inside are ordinary returns, not throws — they keep their own reason.
     try {
-    if (!isOrientationNoop(orientation)) {
+    if (isTiffMime(file.type)) {
+      // TIFF PATH (docs/research/browser-storage-quota.md follow-up 3): browsers have no TIFF decoder,
+      // so this format used to pass the image/* gate and then die in createImageBitmap — counted, never
+      // explained, 375 files at once in the Gawan import. Decode via UTIF, store as a WebP display
+      // master (measured 8–15× smaller than the LZW source at equivalent quality). The TIFF original is
+      // deliberately NOT kept in OPFS — retaining it would cancel the storage win; archival masters
+      // belong outside the working store (the research doc's Figma lesson). A throw here (damaged file,
+      // exotic layout UTIF can't parse) falls to the decode-phase catch → the "undecodable" refusal.
+      const t = await transcodeTiff(bytes, MAX_MASTER_DIM);
+      master = t.blob;
+      masterMime = "image/webp";
+      dims = { w: t.width, h: t.height };
+      name = `${id}-${safe.replace(/\.[^.]+$/, "")}.webp`;
+    } else if (!isOrientationNoop(orientation)) {
       // EXIF path: upright PNG master, capped to the §80 display size; the untouched original is
       // preserved for citation (the master differs by rotation — provenance records the transform).
       const baked = await bakeDisplayMaster(file, { maxDim: MAX_MASTER_DIM }); // upright PNG; capped
@@ -550,13 +567,6 @@ export function createIngestFlows(ctx: IngestContext) {
       ctx.setImportNote("Open an exhibit first.", "problem");
       return;
     }
-    // Quota preflight (Issue 26 Phase 3 / ledgers/ASSETQ.md): refuse a batch that plainly won't fit
-    // BEFORE any byte lands, so an import can't half-write library.json references to storage that
-    // fills mid-drop. A missing/approximate estimate never blocks (per-file writes still guard).
-    if (!(await quotaOkFor(list.reduce((n, f) => n + f.size, 0)))) {
-      ctx.setImportNote(QUOTA_REFUSED_NOTE, "problem");
-      return;
-    }
     // Pin the exhibit this drop targets (tend Issue 7, ledgers/NEGSPACE.md): a multi-file drop has the
     // same mid-flow-interruption exposure as the folder/manifest loops below — without this, switching
     // exhibits partway through a drop would silently redirect the remaining files.
@@ -564,7 +574,7 @@ export function createIngestFlows(ctx: IngestContext) {
     // Batch the library.json appends (scale-fix): one persist per IMPORT_PERSIST_CHUNK files, not per file.
     // Per-file asset byte-writes (inside addObjectFromFile) and the per-file progress status are unchanged.
     const batch = beginBatch(targetSlug);
-    let added = 0, unexplained = 0;
+    let added = 0, unexplained = 0, notAttempted = 0;
     const notes: string[] = [];
     const refusals: { reason: AddFileRefusal; name: string }[] = [];
     const run = importRuns.begin();
@@ -585,6 +595,10 @@ export function createIngestFlows(ctx: IngestContext) {
           else if (r.reason) refusals.push({ reason: r.reason, name: list[i]!.name });
           else unexplained++; // storeReady/exhibit-gone: the caller already surfaced those up front
           if (r.note) notes.push(r.note); // advisories on a SUCCESSFUL add (the large-AV nudge)
+          // A storage refusal is TERMINAL for the batch (no-preflight contract, header comment at
+          // STOPPED_EARLY): the device is actually full, so every remaining write is doomed — stop,
+          // count what wasn't attempted, and let the flush commit the survivors.
+          if (r.reason === "storage") { notAttempted = list.length - (i + 1); break; }
         } catch (e) {
           // addObjectFromFile classifies its own throws now, so reaching here means something outside the
           // read/decode phases failed. Log it — an unexplained tally the console can't explain either is
@@ -607,12 +621,13 @@ export function createIngestFlows(ctx: IngestContext) {
     // Successes first, then the caveats — the house order (mirrors the CSV/WADM summaries). Each refusal
     // clause names its CAUSE, so "1 couldn't be added." is gone in favour of what actually went wrong.
     parts.push(...refusalSentences(refusals));
+    if (notAttempted > 0) parts.push(STOPPED_EARLY(notAttempted));
     // Only a failure nothing could classify falls back to a bare count — and it says so, rather than
     // implying a reason exists that we simply declined to give.
     if (unexplained > 0) parts.push(`${unexplained} file${unexplained === 1 ? "" : "s"} couldn't be added, for no reason Archie could identify.`);
     // A batch that lost files is NOT a clean success, even when most of them landed: the overview band's
     // glyph is the loudest thing in it and the first thing scanned, so a partial loss must not wear a ✓.
-    const lost = refusals.length + unexplained;
+    const lost = refusals.length + unexplained + notAttempted;
     if (parts.length > 0) ctx.setImportNote(parts.join(" "), lost > 0 ? "problem" : "ok");
   }
 
@@ -642,19 +657,19 @@ export function createIngestFlows(ctx: IngestContext) {
       ctx.alert("No images, audio, or video found in that folder.");
       return;
     }
-    // Quota preflight for the WHOLE folder (Issue 26 Phase 3): refuse before creating any exhibit or
-    // writing any byte, so a too-large folder can't leave a trail of titled-but-empty exhibits.
-    if (!(await quotaOkFor(files.reduce((n, f) => n + f.size, 0)))) {
-      ctx.alert(QUOTA_REFUSED_NOTE);
-      return;
-    }
     const titleOverride = groups.length === 1 && title && title.trim() !== "" ? title.trim() : undefined;
-    let failed = 0, imported = 0;
+    let failed = 0, imported = 0, notAttempted = 0, exhibitsMade = 0;
     const refusals: { reason: AddFileRefusal; name: string }[] = [];
     const run = importRuns.begin();
     try {
-      for (const g of groups) {
+      // No whole-folder quota preflight (no-preflight contract, header comment at STOPPED_EARLY): the
+      // estimate() headroom is a ~10 GiB privacy constant, so gating on it refused folders the device
+      // could hold. The storage-refusal break below is the honest replacement — it stops before minting
+      // further titled-but-empty exhibits, which is the trail the old preflight existed to prevent.
+      groupLoop: for (let gi = 0; gi < groups.length; gi++) {
+        const g = groups[gi]!;
         await ctx.newExhibit(titleOverride ?? g.name);
+        exhibitsMade++;
         // Pin THIS group's exhibit slug right after creating it (tend Issue 7, ledgers/NEGSPACE.md):
         // the per-file loop below has awaits the user can act during, and a multi-folder import
         // navigates through several exhibits in turn — without pinning, switching exhibits mid-group
@@ -681,6 +696,15 @@ export function createIngestFlows(ctx: IngestContext) {
             else if (r.reason) refusals.push({ reason: r.reason, name: file.name });
             else failed++;
             if (r.note) ctx.setImportNote(r.note); // large-AV nudge; the end-of-import summary overrides it if any
+            // Terminal storage refusal — same contract as addFiles: the device is full, every later
+            // write is doomed. Count the rest of THIS group plus every whole later group, flush this
+            // group's survivors, and stop before minting the next (empty) exhibit.
+            if (r.reason === "storage") {
+              notAttempted = g.files.length - (i + 1)
+                + groups.slice(gi + 1).reduce((n, later) => n + later.files.length, 0);
+              await batch.flush();
+              break groupLoop;
+            }
           } catch (e) {
             console.error(`[ingest] unclassified failure adding ${file.name}`, e);
             failed++; // skip-and-tally: one corrupt scan must not abort the rest of the folder
@@ -696,10 +720,13 @@ export function createIngestFlows(ctx: IngestContext) {
     // remainder as a bare count that admits it is one.
     const tail = [
       ...refusalSentences(refusals),
+      ...(notAttempted > 0 ? [STOPPED_EARLY(notAttempted)] : []),
       ...(failed > 0 ? [`${failed} file${failed === 1 ? "" : "s"} couldn't be added, for no reason Archie could identify.`] : []),
     ];
-    const summary = [`Added ${imported} file${imported === 1 ? "" : "s"} to ${groups.length} exhibit${groups.length === 1 ? "" : "s"}.`, ...tail].join(" ");
-    const lost = refusals.length + failed;
+    // `exhibitsMade`, not `groups.length` — a storage stop mid-folder means later groups never got
+    // their exhibits, and the summary must not claim they did.
+    const summary = [`Added ${imported} file${imported === 1 ? "" : "s"} to ${exhibitsMade} exhibit${exhibitsMade === 1 ? "" : "s"}.`, ...tail].join(" ");
+    const lost = refusals.length + failed + notAttempted;
     if (groups.length > 1) {
       // Several new exhibits — surface the summary via the app's dialog chrome (the rail's importNote
       // isn't rendered at the Library scale). NB: the caller navigates back to the Library separately.

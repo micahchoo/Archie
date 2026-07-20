@@ -51,6 +51,8 @@
   import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, migrateResidentStoreIds, readAssetUrl, readThumbUrl, clearExhibitAnnotations, clearExhibitStructure, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus, setWriterGate, setWriterOtherName } from "./save-queue.svelte.js";
+  import StorageBar from "./StorageBar.svelte";
+  import { refreshQuota } from "./storage-quota.svelte.js";
   import { createWriterLock } from "./writer-lock.svelte.js";
   import { zipNameFor } from "./binding.js";
   import { createBindingStore } from "./binding-store.svelte.js";
@@ -1065,6 +1067,14 @@
   // the floating canvas rail and the old dropdown are both retired.
   const rdg = createReadingState();
   $effect(() => { rdg.reconcile(currentReadings); });
+  // Re-read the storage estimate whenever the save queue drains. EVERY byte-writing path routes
+  // through enqueueSave (library.json, annotations, assets, the folder mirror), so this one seam
+  // catches a 500-file import without ingest-flows.ts needing to know the bar exists. Reading the
+  // pending count is what makes this reactive; the drain edge (pending → 0) is the moment the
+  // estimate has actually moved.
+  $effect(() => {
+    if (saveStatus.pending === 0) void refreshQuota();
+  });
   // The unified Readings modal: name+colour+description in ONE place, the concept explained in its
   // header. Replaces the ADR-0007 first-add gate (ReadingHelp + localStorage flag) — the teaching
   // copy lives permanently in the modal, so there's nothing to remember or re-nag about.
@@ -2691,6 +2701,11 @@
 <MergeReview open={mergeReviewOpen} onclose={() => (mergeReviewOpen = false)} session={sess.session} conflicts={noteConflicts} onchange={bump} />
 <!-- GLOBAL: the onboarding tutorial (embeds docs/learn decks from public/learn). -->
 <TutorialModal open={tutorialOpen} onclose={() => (tutorialOpen = false)} />
+<!-- GLOBAL: the storage chip — fixed bottom-right corner, under every view (library / overview /
+     editor). Shows absolute origin usage and goes critical on a WITNESSED write failure (reported by
+     ingest-flows' persistAsset seam) — never a fraction of estimate().quota, which is a privacy
+     constant (docs/research/browser-storage-quota.md). -->
+<StorageBar />
 </div>
 
 <style>
