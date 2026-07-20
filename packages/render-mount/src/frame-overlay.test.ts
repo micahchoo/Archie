@@ -82,6 +82,43 @@ describe("createFrameOverlay.draw", () => {
   });
 });
 
+describe("createFrameOverlay — keyboard/screen-reader access (Archie-9413)", () => {
+  it("the frame is a focusable, labelled button", () => {
+    const v = fakeViewer();
+    createFrameOverlay(v).draw(frame());
+    const svg = v.overlays[0]!.element as SVGSVGElement;
+    expect(svg.getAttribute("role")).toBe("button");
+    expect(svg.getAttribute("aria-label")).toBe("View whole object");
+    expect(svg.getAttribute("tabindex")).toBe("0");
+  });
+
+  it("Enter activates the note — same path as the border click", () => {
+    const v = fakeViewer();
+    const onActivate = vi.fn();
+    createFrameOverlay(v).draw(frame(onActivate));
+    (v.overlays[0]!.element as SVGSVGElement).dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+    expect(onActivate).toHaveBeenCalledTimes(1);
+  });
+
+  it("Space activates and prevents the default (no host-page scroll)", () => {
+    const v = fakeViewer();
+    const onActivate = vi.fn();
+    createFrameOverlay(v).draw(frame(onActivate));
+    const e = new KeyboardEvent("keydown", { key: " ", cancelable: true });
+    (v.overlays[0]!.element as SVGSVGElement).dispatchEvent(e);
+    expect(onActivate).toHaveBeenCalledTimes(1);
+    expect(e.defaultPrevented).toBe(true);
+  });
+
+  it("a non-activation key does NOT activate", () => {
+    const v = fakeViewer();
+    const onActivate = vi.fn();
+    createFrameOverlay(v).draw(frame(onActivate));
+    (v.overlays[0]!.element as SVGSVGElement).dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(onActivate).not.toHaveBeenCalled();
+  });
+});
+
 describe("createFrameOverlay.clear", () => {
   it("removes the current frame and is a no-op when nothing is drawn", () => {
     const v = fakeViewer();

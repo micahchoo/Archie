@@ -145,6 +145,61 @@ describe("createReadOnlyOverlay.onSelect — hit-test (P0-3)", () => {
   });
 });
 
+describe("createReadOnlyOverlay — keyboard activation (Archie-9413)", () => {
+  it("every drawn shape is focusable: tabindex=0 on the role=button svg", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v).setAnnotations([rectAnn("r"), polyAnn("p")]);
+    for (const o of v.overlays) {
+      const svg = o.element as SVGSVGElement;
+      expect(svg.getAttribute("tabindex")).toBe("0");
+      expect(svg.getAttribute("role")).toBe("button");
+    }
+  });
+
+  it("Enter on a shape fires onSelect with its id — same path as click", () => {
+    const v = fakeViewer();
+    const o = createReadOnlyOverlay(v);
+    const cb = vi.fn();
+    o.onSelect(cb);
+    o.setAnnotations([rectAnn("r")]);
+    (v.overlays[0]!.element as SVGSVGElement).dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+    expect(cb).toHaveBeenCalledTimes(1);
+    expect(cb).toHaveBeenCalledWith("r");
+  });
+
+  it("Space on the second shape selects the second id", () => {
+    const v = fakeViewer();
+    const o = createReadOnlyOverlay(v);
+    const cb = vi.fn();
+    o.onSelect(cb);
+    o.setAnnotations([rectAnn("r"), polyAnn("p")]);
+    (v.overlays[1]!.element as SVGSVGElement).dispatchEvent(new KeyboardEvent("keydown", { key: " " }));
+    expect(cb).toHaveBeenLastCalledWith("p");
+  });
+
+  it("a non-activation key (Tab/Escape) does NOT select", () => {
+    const v = fakeViewer();
+    const o = createReadOnlyOverlay(v);
+    const cb = vi.fn();
+    o.onSelect(cb);
+    o.setAnnotations([rectAnn("r")]);
+    const svg = v.overlays[0]!.element as SVGSVGElement;
+    svg.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab" }));
+    svg.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(cb).not.toHaveBeenCalled();
+  });
+
+  it("activation prevents the default (Space must select, not scroll the host page)", () => {
+    const v = fakeViewer();
+    const o = createReadOnlyOverlay(v);
+    o.onSelect(vi.fn());
+    o.setAnnotations([rectAnn("r")]);
+    const e = new KeyboardEvent("keydown", { key: " ", cancelable: true });
+    (v.overlays[0]!.element as SVGSVGElement).dispatchEvent(e);
+    expect(e.defaultPrevented).toBe(true);
+  });
+});
+
 describe("createReadOnlyOverlay — a11y marker-label (P0-6)", () => {
   it("a drawn shape carries role + the aria-label from labelFor", () => {
     const v = fakeViewer();
@@ -158,6 +213,30 @@ describe("createReadOnlyOverlay — a11y marker-label (P0-6)", () => {
     const v = fakeViewer();
     createReadOnlyOverlay(v).setAnnotations([rectAnn("r")]);
     expect((v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")).toBe("annotation r");
+  });
+
+  it("an oversized labelFor result is capped at the setAttribute chokepoint (hostile-content AT DoS)", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v, { labelFor: () => "x".repeat(5000) }).setAnnotations([rectAnn("r")]);
+    const label = (v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")!;
+    expect(label).toHaveLength(161); // 160 chars + the ellipsis
+    expect(label.endsWith("…")).toBe(true);
+  });
+
+  it("an oversized id is capped on the fallback path too (same chokepoint)", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v).setAnnotations([rectAnn("i".repeat(9000))]);
+    const label = (v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")!;
+    expect(label).toHaveLength(161);
+    expect(label.startsWith("annotation i")).toBe(true);
+    expect(label.endsWith("…")).toBe(true);
+  });
+
+  it("a label at/under the cap passes through untruncated", () => {
+    const v = fakeViewer();
+    const exact = "y".repeat(160);
+    createReadOnlyOverlay(v, { labelFor: () => exact }).setAnnotations([rectAnn("r")]);
+    expect((v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")).toBe(exact);
   });
 
   it("the label NEVER comes from the selector value (hostile-string proof)", () => {

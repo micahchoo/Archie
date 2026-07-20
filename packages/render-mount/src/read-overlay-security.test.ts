@@ -79,4 +79,18 @@ describe("STANDING: hostile SvgSelector renders as geometry only — never inner
     // The whole subtree: the <svg> root + exactly one <polygon> child. No injected nodes.
     expect(svg.querySelectorAll("*")).toHaveLength(1); // just the polygon
   });
+
+  it("(e) a11y surface (Archie-9413) is attribute-only: focusable, labelled WITHOUT selector content, and keyboard activation executes nothing hostile", () => {
+    delete (globalThis as Record<string, unknown>).__x;
+    const v = fakeViewer();
+    createReadOnlyOverlay(v).setAnnotations([hostileAnn]);
+    const svg = v.overlays[0]!.element as SVGSVGElement;
+    // Focusable button, but its accessible name NEVER derives from the hostile selector value.
+    expect(svg.getAttribute("tabindex")).toBe("0");
+    expect(svg.getAttribute("role")).toBe("button");
+    expect(svg.getAttribute("aria-label")).toBe("annotation evil");
+    // Keyboard activation runs the SAME select path as click — no payload executes.
+    svg.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+    expect((globalThis as Record<string, unknown>).__x).toBeUndefined();
+  });
 });
