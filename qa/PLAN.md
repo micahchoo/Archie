@@ -1,5 +1,13 @@
 # QA Goal Harness — source of truth
 
+> **Converged & retired 2026-07-20.** The `/goal` loop reached its exit predicate
+> (`state.json`: `discoveryDryStreak: 2` — the dry-streak fixed point) and the harness
+> is finished. The scripts (`gate.mjs`, `lib.mjs`, `sync-csv.mjs`, `add-features.mjs`)
+> and the ledger-sync `pre-commit` hook were removed — they ran in no CI workflow.
+> `features.jsonl` (canonical) and `features.csv` (final derived view) remain below as
+> the frozen QA ledger. `qa/hooks/` still carries the repo's live git hooks (the LFS
+> safety net — see `hooks/install.sh`). The spec below is preserved as a record.
+
 The `/goal` loop (see bottom) drives this. The evaluator is a tool-less fast model:
 it judges **only what the turn printed**. So completion is a *computed* verdict
 (`node qa/gate.mjs`), never prose. This file is the durable spec; `qa/features.jsonl`

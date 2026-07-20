@@ -1,10 +1,10 @@
 #!/bin/sh
-# Point git at the tracked qa/hooks dir so the QA hooks survive clones.
+# Point git at the tracked qa/hooks dir so the repo's git hooks survive clones.
 # Run once per clone: sh qa/hooks/install.sh
 set -e
 git config core.hooksPath qa/hooks
-chmod +x qa/hooks/pre-commit qa/hooks/post-checkout qa/hooks/post-commit qa/hooks/post-merge qa/hooks/pre-push
-echo "Installed: core.hooksPath -> qa/hooks (pre-commit syncs qa/features.csv)"
+chmod +x qa/hooks/post-checkout qa/hooks/post-commit qa/hooks/post-merge qa/hooks/pre-push
+echo "Installed: core.hooksPath -> qa/hooks (LFS safety net)"
 
 # This directory replaces .git/hooks as the effective hooks dir -- confirm the LFS hooks came
 # along, rather than silently losing them (tend Issue 8, ledgers/COLDSTART.md: a fresh clone's

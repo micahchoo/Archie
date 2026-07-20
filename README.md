@@ -128,7 +128,7 @@ Archie began as a tool for digital-humanities scholars and has broadened to anyo
 ```bash
 git lfs install         # one-time per machine, if you haven't already
 pnpm install            # install the whole workspace
-sh qa/hooks/install.sh  # wire up the repo's git hooks (LFS safety net + QA sync)
+sh qa/hooks/install.sh  # wire up the repo's git hooks (LFS safety net)
 pnpm typecheck          # type-check every package + app
 pnpm test               # run the test suite (~1150 tests)
 ```
