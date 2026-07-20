@@ -80,6 +80,10 @@ describe("NOTE rung (/a/<id> [+ xywh / t])", () => {
     const r = resolveExhibitTarget(fixture(), route({ noteId: "note-1", xywh: "pixel:1,1,2,2" }));
     expect(r.fragment).toEqual({ kind: "xywh", value: "pixel:1,1,2,2" });
   });
+  it("an explicit ?xywh carries BOTH the select id and the region — the element selects the note, then fitRegions the cite (Archie-69a7)", () => {
+    const r = resolveExhibitTarget(fixture(), route({ noteId: "note-1", xywh: "pixel:1,1,2,2" }));
+    expect(r).toEqual({ kind: "object", objectId: "obj-img", selectId: "note-1", fragment: { kind: "xywh", value: "pixel:1,1,2,2" } });
+  });
   it("an explicit ?t on the route resolves a temporal fragment (seek-not-play is the surface's job)", () => {
     const r = resolveExhibitTarget(fixture(), route({ noteId: "note-2", t: "5,10" }));
     expect(r.fragment).toEqual({ kind: "t", value: "5,10" });

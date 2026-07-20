@@ -158,6 +158,30 @@ describe("wireReadOnlySurface.fitBounds — the SHARED dispatchFitBounds oracle 
   });
 });
 
+describe("wireReadOnlySurface.fitRegion — raw region fragment, NOT an annotation (Archie-69a7)", () => {
+  it("an xywh fragment fits through the SAME applyFitBounds oracle (a Section camera target)", () => {
+    const { viewport, calls } = mockViewport();
+    const s = wireReadOnlySurface(viewport, fakeOverlay(), () => annotations);
+    s.fitRegion("xywh=pixel:5,5,50,50");
+    expect(calls[0]).toEqual(fitBoundsRect({ type: "FragmentSelector", value: "xywh=pixel:5,5,50,50" }, PLAIN)!);
+  });
+
+  it("a temporal t= fragment no-ops on the spatial surface (the editor's fitRegion contract)", () => {
+    const { viewport, calls } = mockViewport();
+    const s = wireReadOnlySurface(viewport, fakeOverlay(), () => annotations);
+    s.fitRegion("t=12.5,30");
+    expect(calls).toHaveLength(0);
+  });
+
+  it("uses adapter-supplied fit options (sidebar-reservation parity with fitBounds)", () => {
+    const { viewport, calls } = mockViewport();
+    const sidebar: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: false, detailOpen: true };
+    const s = wireReadOnlySurface(viewport, fakeOverlay(), () => annotations, () => sidebar);
+    s.fitRegion("xywh=pixel:100,50,200,80");
+    expect(calls[0]).toEqual(fitBoundsRect(rectSel, sidebar)!);
+  });
+});
+
 // FIX 1 — whole-object notes get a clickable frame instead of being warn-and-dropped (the voynich/o1
 // case: a bare-canvas-target note with no region geometry). The partition is pure; the frame routing
 // is exercised through the same emitSelect path region clicks use.

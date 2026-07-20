@@ -408,15 +408,15 @@ export class ArchieViewerElement extends HTMLElement {
    * Apply a resolved cite-ladder fragment to the freshly-mounted surface.
    *
    * REAL (wired): a note `selectId` → `setSelected` + `fitBounds` — the overlay's nav contract frames the
-   * note's own region (the region/time out-of-fit case degrades to the whole object inside the shared
-   * fit oracle via clampToContentBounds — render-mount/fitbounds.ts).
+   * note's own region; AND a spatial `xywh` fragment (a Section's camera target / an explicit `?xywh`
+   * cite) → `fitRegion` (Archie-69a7), the raw-region path through the SAME applyFitBounds oracle. When
+   * both are present the explicit fragment runs LAST, so it wins the camera (mirrors the resolver's
+   * explicit-wins rule). An off-image region degrades safely inside the shared oracle (fitbounds.ts —
+   * an unparseable value no-ops; clampToContentBounds guards the fit where content size is known).
    *
-   * PARTIAL (deferred, reported honestly): a SECTION's raw `xywh` region and any `t` time offset have NO
-   * application path on the current read-only surface — `ReadOnlyMountSurface` exposes only id-keyed
-   * `setSelected`/`fitBounds` (read-mount.ts), and the read-only reader mounts NO time-based media
-   * surface at all (no seek). Per Section-142, a landing on time-based media must SEEK-TO-OFFSET WITHOUT
-   * auto-play; that seam doesn't exist in this reader yet, so we do NOT fake it. When a raw-region fit and
-   * an AV seek API land on the surface, wire them here (the resolver already supplies the fragment).
+   * A `t=` fragment has no application on this SPATIAL surface (fitRegion no-ops it, the editor's
+   * contract) — a resolved AV landing never reaches here: #openAvObject routes it to the native player,
+   * which seeks-paused on loadedmetadata (Section-142).
    */
   #applyFragment(surface: ReadOnlyMountSurface, resolved: ResolvedTarget): void {
     if (resolved.selectId) {
@@ -425,7 +425,14 @@ export class ArchieViewerElement extends HTMLElement {
       surface.setSelected(resolved.selectId);
       surface.fitBounds(resolved.selectId);
     }
-    // resolved.fragment (section raw xywh / any t): no surface application path yet — see the doc above.
+    if (resolved.fragment?.kind === "xywh") {
+      // The resolver hands the VALUE with the `xywh=` head stripped (route/`Section.start` parsing);
+      // fitRegion's parser needs the prefixed FragmentSelector form — add it when absent (mirrors
+      // apps/viewer Reader.svelte focusRegion). A `percent:` value parses to null → a safe no-op, so
+      // an unsupported region never breaks the landing (the selectId fit above still frames the note).
+      const v = resolved.fragment.value;
+      surface.fitRegion(v.startsWith("xywh=") ? v : `xywh=${v}`);
+    }
   }
 
   #teardownSurface(): void {

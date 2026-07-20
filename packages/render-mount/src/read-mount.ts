@@ -12,8 +12,8 @@
 
 import OpenSeadragon from "openseadragon";
 import { resolveTileSource, selectorOf, wholeObjectFlagOf } from "@render/core";
-import type { TileSourceDescriptor, W3CAnnotation, AnnotationLike } from "@render/core";
-import { dispatchFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
+import type { TileSourceDescriptor, W3CAnnotation, AnnotationLike, W3CSelector } from "@render/core";
+import { dispatchFitBounds, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import { createReadOnlyOverlay, type LabelFor } from "./read-overlay.js";
 import { createFrameOverlay } from "./frame-overlay.js";
 import { xyzTileSource } from "./xyz.js";
@@ -35,6 +35,11 @@ export interface ReadOnlyMountSurface {
   setSelected(id: SelectionId | null): void;
   /** Zoom/pan so the target's region fills the viewport (handles polygon→bbox via the shared oracle). */
   fitBounds(id: SelectionId): void;
+  /** Zoom/pan to an arbitrary REGION fragment that is NOT an annotation — a Section's camera target
+   *  (ADR-0005 `Section.start`) or an explicit `?xywh` cite (Archie-69a7). `xywh=...` fits the region;
+   *  a temporal `t=...` no-ops here (a spatial canvas can't fit time — same contract as the editor
+   *  MountSurface.fitRegion, surface.ts). */
+  fitRegion(fragment: string): void;
   /** Subscribe to user selection on the surface. Returns an unsubscribe fn. */
   onSelect(cb: (id: SelectionId | null) => void): () => void;
   /** Tear down the OSD viewer + overlay and release listeners. */
@@ -115,6 +120,14 @@ export function wireReadOnlySurface(
     dispatchFitBounds(viewport, getAnnotations(), id, getFitOptions?.() ?? PLAIN_FIT);
   };
 
+  // Fit an arbitrary region fragment (a Section's camera target / an explicit ?xywh cite — NOT an
+  // annotation). Same oracle as fitBounds, but the selector is built from the fragment directly,
+  // exactly as the editor's image path does (mount.ts fitRegion). `t=...` → fitBoundsRect null → no-op.
+  const fitRegion = (fragment: string): void => {
+    const selector = { type: "FragmentSelector", value: fragment } as W3CSelector;
+    applyFitBounds(viewport, selector, getFitOptions?.() ?? PLAIN_FIT);
+  };
+
   // The single selection entry point: notify subscribers AND select-then-fit (the nav contract). A
   // region shape click reaches it via overlay.onSelect; a whole-object FRAME click reaches it via the
   // exposed `emitSelect` — both route through the SAME subscriber set, so the element note-card opens
@@ -137,6 +150,7 @@ export function wireReadOnlySurface(
       overlay.setSelected(id);
     },
     fitBounds,
+    fitRegion,
     emitSelect,
     onSelect(cb: (id: SelectionId | null) => void): () => void {
       selectSubs.add(cb);
@@ -283,6 +297,7 @@ export async function createReadOnlyMount(
     },
     setSelected: surface.setSelected,
     fitBounds: surface.fitBounds,
+    fitRegion: surface.fitRegion,
     onSelect: surface.onSelect,
     destroy(): void {
       surface.destroy();
