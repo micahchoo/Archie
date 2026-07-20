@@ -60,6 +60,19 @@ export function createFrameOverlay(viewer: FrameViewerLike): FrameOverlayControl
       display: "block",
       pointerEvents: "none", // OSD sizes/positions the element to the object's bounds; corners opt back in
     } as Partial<CSSStyleDeclaration>);
+    // Archie-9413: the frame is operable (border click → activate the whole-object note), so expose it
+    // as a keyboard-reachable button. Static label — read-mount has no note-name source to thread here,
+    // and the note card that opens carries the full text. Enter/Space routes through the SAME
+    // onActivate the border click uses. setAttribute-only (no markup ever).
+    svg.setAttribute("role", "button");
+    svg.setAttribute("aria-label", "View whole object");
+    svg.setAttribute("tabindex", "0");
+    svg.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault(); // Space must activate, not scroll the host page
+      e.stopPropagation();
+      frame.onActivate();
+    });
 
     // A QUIET thin border tracing the object — the whole-object indicator. A soft dark halo under the
     // colour line keeps it legible over any media; non-scaling-stroke holds the line weight constant at any

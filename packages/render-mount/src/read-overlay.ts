@@ -124,10 +124,19 @@ export function createReadOnlyOverlay(
       display: "block",
       pointerEvents: "none", // only the geometry opts back in (the hit target)
     } as Partial<CSSStyleDeclaration>);
-    // P0-6: accessible name. role="button" because the shape is clickable (select); label NEVER from
-    // the selector value — only from labelFor or the id fallback.
+    // P0-6 + Archie-9413: accessible name AND keyboard operability. role="button" because the shape
+    // is clickable (select); tabindex=0 puts every region in the tab order; Enter/Space activates
+    // through the SAME emitSelect the click path uses. Label NEVER from the selector value — only
+    // from labelFor or the id fallback, and setAttribute-only (the header's no-markup rule stands).
     svg.setAttribute("role", "button");
     svg.setAttribute("aria-label", labelFor ? labelFor(id) : `annotation ${id}`);
+    svg.setAttribute("tabindex", "0");
+    svg.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      e.preventDefault(); // Space must select, not scroll the host page
+      e.stopPropagation();
+      emitSelect(id);
+    });
     svg.append(geom);
     return svg;
   };
