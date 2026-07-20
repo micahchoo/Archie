@@ -313,9 +313,10 @@ export interface PeakCache {
   peaks: number[][];
 }
 
-/** Read an asset's cached waveform peaks. Null when absent, corrupt, or OPFS is unsupported (→ decode). */
+/** Read an asset's cached waveform peaks. Null when absent, corrupt, failed, or OPFS is unsupported
+ *  (→ decode) — a peaks CACHE is self-healing, so even a real read failure just re-decodes. */
 export async function readPeaks(slug: string, name: string): Promise<PeakCache | null> {
-  const f = await readAssetFile(slug, `${name}.json`, "assets-peaks");
+  const f = await readAssetFileForDisplay(slug, `${name}.json`, "assets-peaks");
   if (!f) return null;
   try {
     const c = JSON.parse(await f.text()) as PeakCache;
@@ -341,16 +342,43 @@ function mimeFromName(name: string): string {
   return EXT_MIME[name.toLowerCase().split(".").pop() ?? ""] ?? "";
 }
 
+/** A real OPFS read failure (quota, permission, wrong-kind entry, backend corruption) — NOT "absent".
+ *  Kept distinct so no caller converts an outage into "nothing stored" (the corrupt≠empty rule,
+ *  .claude/rules/render-core-data-integrity.md §2): the publish readers let this propagate so a failed
+ *  read fails the publish loudly instead of silently shipping without the asset/thumbnail. */
+export class AssetReadFailedError extends Error {
+  override name = "AssetReadFailedError";
+  constructor(slug: string, path: string, cause: unknown) {
+    super(`Failed to read stored asset "${path}" (exhibit "${slug}"): ${cause instanceof Error ? cause.message : String(cause)}`, { cause });
+  }
+}
+
 /** Resolve a stored asset (in the given `sub` dir) to its OPFS File — a LAZY Blob, NOT read into the
- *  JS heap. The shared path-resolution + tolerant read both the blob-URL and raw-blob readers below use:
- *  null when the dir/file is absent or OPFS is unsupported. */
+ *  JS heap. The shared path-resolution both the blob-URL and raw-blob readers below use. Null ONLY when
+ *  genuinely absent (no dir chain / no file / OPFS unsupported — NotFoundError is how `assetsDir` with
+ *  create:false reports a missing chain); any other error throws AssetReadFailedError. */
 async function readAssetFile(slug: string, name: string, sub: string): Promise<File | null> {
   try {
     const dir = await assetsDir(slug, false, sub);
     if (!dir) return null;
     return await (await dir.getFileHandle(name)).getFile();
-  } catch {
-    return null; // not stored (a non-asset source, no baked derivative, or OPFS unsupported)
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "NotFoundError") {
+      return null; // not stored (a non-asset source, no baked derivative, or never imported)
+    }
+    throw new AssetReadFailedError(slug, `${sub}/${name}`, e);
+  }
+}
+
+/** The DISPLAY-path tolerance policy: a real read failure degrades to the caller's placeholder/fallback
+ *  (a grid plate is not worth crashing a render wave) but leaves a loud console trace — deliberately
+ *  unlike the publish readers (readAssetBlob/readThumbBytes), which propagate AssetReadFailedError. */
+async function readAssetFileForDisplay(slug: string, name: string, sub: string): Promise<File | null> {
+  try {
+    return await readAssetFile(slug, name, sub);
+  } catch (e) {
+    console.error(e);
+    return null;
   }
 }
 
@@ -374,9 +402,10 @@ export async function assetSize(slug: string, name: string): Promise<number> {
   }
 }
 
-/** Resolve a stored asset to a fresh blob: URL (caller must revokeObjectURL). Null if absent. */
+/** Resolve a stored asset to a fresh blob: URL (caller must revokeObjectURL). Null if absent — or on a
+ *  real read failure (display path: logged, degraded to the caller's fallback). */
 export async function readAssetUrl(slug: string, name: string): Promise<string | null> {
-  const f = await readAssetFile(slug, name, "assets");
+  const f = await readAssetFileForDisplay(slug, name, "assets");
   return f ? fileToObjectUrl(f, name) : null;
 }
 
@@ -449,7 +478,8 @@ export async function exhibitHasAnnotations(slug: string): Promise<boolean> {
 /** Resolve a stored asset to its OPFS File — a LAZY Blob, NOT read into the JS heap (the publish
  *  getAsset reader, LARGE-MEDIA-MEMORY-CEILING #5). Returning the File (not an ArrayBuffer) lets the
  *  FSA folder backend stream it straight to disk via `createWritable().write(blob)` so even one huge
- *  asset never fully materializes; the zip/memory backends still read it (they need the bytes). Null if absent. */
+ *  asset never fully materializes; the zip/memory backends still read it (they need the bytes). Null ONLY
+ *  if absent; a real read failure propagates AssetReadFailedError (fail the publish, don't ship a hole). */
 export async function readAssetBlob(slug: string, name: string): Promise<Blob | null> {
   return readAssetFile(slug, name, "assets"); // the OPFS File — lazy; not read into memory here
 }
@@ -469,15 +499,18 @@ export async function readOriginalBytes(slug: string, name: string): Promise<Arr
 }
 
 /** Resolve a stored baked thumbnail (`assets-thumb/`) to its OPFS File — lazy, mirroring readAssetBlob
- *  (the publish getThumbnail reader). Null if absent (publishLibrary then drops the thumbnail ref). */
+ *  (the publish getThumbnail reader). Null ONLY if absent (publishLibrary then drops the thumbnail ref);
+ *  a real read failure propagates AssetReadFailedError so the publish fails loudly instead of silently
+ *  shipping a tree without its thumbnails. */
 export async function readThumbBytes(slug: string, name: string): Promise<Blob | null> {
   return readAssetFile(slug, name, "assets-thumb");
 }
 
 /** Resolve a stored baked thumbnail to a fresh blob: URL (caller revokes) — the small gallery/overview
  *  derivative, so the Studio overview/rail paint shrunk plates instead of decoding full-res masters.
- *  Null when no thumbnail was baked (pre-existing import, or an image already small enough). */
+ *  Null when no thumbnail was baked (pre-existing import, or an image already small enough) — or on a
+ *  real read failure (display path: logged, degraded to the master fallback). */
 export async function readThumbUrl(slug: string, name: string): Promise<string | null> {
-  const f = await readAssetFile(slug, name, "assets-thumb"); // no baked thumbnail → caller falls back to the master blob
+  const f = await readAssetFileForDisplay(slug, name, "assets-thumb"); // no baked thumbnail → caller falls back to the master blob
   return f ? fileToObjectUrl(f, name) : null;
 }
