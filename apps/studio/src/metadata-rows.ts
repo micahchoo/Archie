@@ -157,11 +157,19 @@ export function runAt(rows: readonly MetadataRow[], index: number): MetadataRun 
 }
 
 /**
- * Move a row one step, WITHOUT ever interleaving properties (prototype review: Creator/Date/Creator is
- * model-legal and curator-hostile). Two granularities behind one control:
+ * Move a row one step. Two granularities behind one control:
  *   - inside its run, the row swaps with its sibling — this reorders repeated values;
  *   - at the run's edge, the WHOLE RUN hops the neighbouring run — this reorders fields.
  * Returns the next rows plus the moved row's new index (for refocusing), or null at the list's ends.
+ *
+ * The run-hop is what keeps reordering from FRAGMENTING a field: from contiguous rows, no sequence of
+ * steps splits a property into two runs (prototype review: Creator/Date/Creator is model-legal and
+ * curator-hostile). That is a property of this function, NOT an invariant of the row list — interleaved
+ * rows are reachable without moveRow, via `addCustom` (which does not dedupe custom labels, so
+ * Note/Other/Note fragments), `relabelRow`, and `seedRows` (which renders authored entries verbatim, so
+ * an imported IIIF manifest ordered Creator/Date/Creator seeds interleaved). moveRow is data-safe on
+ * such rows — it moves whichever run it lands in, losing, duplicating and smearing nothing — it simply
+ * does not promise to repair a fragmentation it did not create.
  */
 export function moveRow(
   rows: readonly MetadataRow[],

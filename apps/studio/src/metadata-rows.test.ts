@@ -186,7 +186,9 @@ describe("runs", () => {
   });
 });
 
-describe("moveRow — reorder without interleaving", () => {
+// `base()` starts CONTIGUOUS, which is the precondition these tests are about: moveRow never creates
+// interleaving, it does not make interleaving unreachable (addCustom/relabelRow/seedRows all reach it).
+describe("moveRow — reordering never fragments a field", () => {
   const base = () =>
     rows(
       { property: "dcterms:creator", value: "A" },
@@ -220,7 +222,7 @@ describe("moveRow — reorder without interleaving", () => {
     expect(moveRow(base(), 0, 1)!.rows.map((r) => r.value)).toEqual(["B", "A", "1404", "Botany"]);
   });
 
-  it("never leaves a property interleaved, whatever the step", () => {
+  it("never SPLITS a property into two runs, whatever the step, from a contiguous start", () => {
     let rs = base();
     for (const [i, d] of [
       [0, 1],
