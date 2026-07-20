@@ -442,3 +442,24 @@ See `.claude/rules/bound-fetch-defaults.md`. The dist regeneration is **pending*
 own commit and only after the fixed bundle passes smoke (which it now does: 7 cards / 21 objects /
 deep-zoom mounted / 0 console errors). If that commit is missing, the REGENERATE-NOW item is still
 open and the CDN artifact still carries the unbound-fetch bundle.
+
+**Post-merge (2026-07-20, after push `f784c76`):** Dependabot rescan confirms #23 #24 #37 #38 #39
+#40 #10 #52 #53 **fixed**; #51 glib **dismissed** (not_used, comment cites §4c). Declaring esbuild
+`^0.27.3` in packages/archie-viewer/package.json minted **#54** — the same GHSA as #25 against the
+manifest, exactly as §8.2's verifier predicted ("could make that alert louder"). Dismissed
+(not_used: build-API only, serve mode never invoked, Linux CI/dev) with #25 kept open as the single
+tracker that 0.27.7 is in the tree; both clear when astro/vite move to ^0.28. Open count: 11 → 1.
+
+**Post-merge (2026-07-20, after push `f784c76`):** Dependabot rescan confirms #23 #24 #37 #38 #39
+#40 #10 #52 #53 **fixed**; #51 glib **dismissed** (not_used, comment cites §4c). Declaring esbuild
+`^0.27.3` in packages/archie-viewer/package.json minted **#54** — the same GHSA as #25 against the
+manifest, exactly as §8.2's verifier predicted ("could make that alert louder"). Dismissed
+(not_used: build-API only, serve mode never invoked, Linux CI/dev) with #25 kept open as the single
+tracker that 0.27.7 is in the tree; both clear when astro/vite move to ^0.28. Open count: 11 → 1.
+
+**Post-merge (2026-07-20, after push `f784c76`):** Dependabot rescan confirms #23 #24 #37 #38 #39
+#40 #10 #52 #53 **fixed**; #51 glib **dismissed** (not_used, comment cites §4c). Declaring esbuild
+`^0.27.3` in packages/archie-viewer/package.json minted **#54** — the same GHSA as #25 against the
+manifest, exactly as §8.2's verifier predicted ("could make that alert louder"). Dismissed
+(not_used: build-API only, serve mode never invoked, Linux CI/dev) with #25 kept open as the single
+tracker that 0.27.7 is in the tree; both clear when astro/vite move to ^0.28. Open count: 11 → 1.
