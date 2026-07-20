@@ -1952,8 +1952,9 @@
     onclose={() => bnd.closeProject()}
     onrecover={() => { bnd.closeProject(); void bnd.saveProject(); }}
     ondismisserror={() => bnd.dismissError()}
-    rights={{ ...(lib.meta.rights ? { rights: lib.meta.rights } : {}), ...(lib.meta.requiredStatement ? { requiredStatement: lib.meta.requiredStatement } : {}) }}
+    rights={{ ...(lib.meta.rights ? { rights: lib.meta.rights } : {}), ...(lib.meta.requiredStatement ? { requiredStatement: lib.meta.requiredStatement } : {}), ...(lib.meta.metadata ? { metadata: lib.meta.metadata } : {}) }}
     onrights={setLibraryRights}
+    onmetadata={(metadata) => lib.patchLibrary({ metadata })}
     libTitle={lib.meta.title}
     librarySummary={lib.meta.summary}
     ontitle={setLibraryTitle}
@@ -2006,8 +2007,9 @@
       onscrollflush={flushOverviewScroll}
       canWrite={canWriteNow}
       onstartnarrative={() => openObject(vs.OBJECTS[0]?.id ?? vs.currentObjectId)}
-      rights={{ ...(vs.currentExhibit.rights ? { rights: vs.currentExhibit.rights } : {}), ...(vs.currentExhibit.requiredStatement ? { requiredStatement: vs.currentExhibit.requiredStatement } : {}) }}
+      rights={{ ...(vs.currentExhibit.rights ? { rights: vs.currentExhibit.rights } : {}), ...(vs.currentExhibit.requiredStatement ? { requiredStatement: vs.currentExhibit.requiredStatement } : {}), ...(vs.currentExhibit.metadata ? { metadata: vs.currentExhibit.metadata } : {}) }}
       onrights={setExhibitRights}
+      onmetadata={(metadata) => lib.patchExhibit(vs.currentSlug, { metadata })}
       summary={vs.currentExhibit.summary}
       ontitle={setExhibitTitle}
       onsummary={setExhibitSummary}
@@ -2023,11 +2025,12 @@
         <DetailsEditor
           title={editingObject.label}
           summary={editingObject.summary ?? ""}
-          rights={{ ...(editingObject.rights ? { rights: editingObject.rights } : {}), ...(editingObject.requiredStatement ? { requiredStatement: editingObject.requiredStatement } : {}) }}
+          rights={{ ...(editingObject.rights ? { rights: editingObject.rights } : {}), ...(editingObject.requiredStatement ? { requiredStatement: editingObject.requiredStatement } : {}), ...(editingObject.metadata ? { metadata: editingObject.metadata } : {}) }}
           scope="object"
           ontitle={(v) => renameObject(editingObject!.id, v)}
           onsummary={(v) => patchObjectMeta(editingObject!.id, { summary: v })}
           onrights={(next) => patchObjectMeta(editingObject!.id, { rights: next.rights, requiredStatement: next.requiredStatement })}
+          onmetadata={(metadata) => patchObjectMeta(editingObject!.id, { metadata })}
           onremove={canWriteNow ? () => { const id = editingObject!.id; editingObjectId = null; void removeObjectById(id); } : undefined}
           readonly={!canWriteNow}
         />
@@ -2322,15 +2325,16 @@
           {#if vs.current}
             <div class="panel-title-row">
               <h3 class="panel-title">Details</h3>
-              {#if vs.current.summary || vs.current.rights || vs.current.requiredStatement}<span class="panel-note" title="Description or credit set for this item">Set</span>{/if}
+              {#if vs.current.summary || vs.current.rights || vs.current.requiredStatement || vs.current.metadata?.length}<span class="panel-note" title="Description, credit, or metadata set for this item">Set</span>{/if}
             </div>
             <DetailsEditor
               showTitle={false}
               summary={vs.current.summary ?? ""}
-              rights={{ ...(vs.current.rights ? { rights: vs.current.rights } : {}), ...(vs.current.requiredStatement ? { requiredStatement: vs.current.requiredStatement } : {}) }}
+              rights={{ ...(vs.current.rights ? { rights: vs.current.rights } : {}), ...(vs.current.requiredStatement ? { requiredStatement: vs.current.requiredStatement } : {}), ...(vs.current.metadata ? { metadata: vs.current.metadata } : {}) }}
               scope="object"
               onsummary={setObjectSummary}
               onrights={setObjectRights}
+              onmetadata={(metadata) => patchObjectMeta(vs.currentObjectId, { metadata })}
               onremove={removeCurrentObject}
             />
           {/if}

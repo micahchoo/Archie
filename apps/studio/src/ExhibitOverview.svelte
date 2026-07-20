@@ -10,7 +10,7 @@
   // the zoomed-OUT viewing/arranging scale only.
   import type { Snippet } from "svelte";
   import { tick } from "svelte";
-  import type { LayoutType, RightsFields, Section } from "@render/core";
+  import type { LayoutType, MetadataEntry, RightsFields, Section } from "@render/core";
   import DetailsEditor from "./DetailsEditor.svelte";
   import PropsDrawer from "./PropsDrawer.svelte";
   import { moveBlock, marqueeHits, START, END, type ClickMods, type PlateRect } from "./overview-selection.js";
@@ -43,6 +43,7 @@
     onstartnarrative,
     rights,
     onrights,
+    onmetadata,
     summary,
     ontitle,
     onsummary,
@@ -92,6 +93,9 @@
     /** This exhibit's credit/license (rights grill Q6) — edited in the header → drawer. */
     rights: RightsFields;
     onrights: (next: RightsFields) => void;
+    /** Persist this exhibit's Dublin Core entries (Archie-458e) — its own callback, NOT folded into
+     *  onrights, whose patch is keyed to rights+requiredStatement (Archie-5a9b clobber audit). */
+    onmetadata: (next: MetadataEntry[]) => void;
     /** Exhibit identity (Phase 4): description + the title (the existing `title` prop), edited in the drawer. */
     summary?: string;
     ontitle: (v: string) => void;
@@ -146,7 +150,7 @@
   } = $props();
 
   let rightsOpen = $state(false);
-  const hasRights = $derived(!!(rights.rights || rights.requiredStatement));
+  const hasRights = $derived(!!(rights.rights || rights.requiredStatement || rights.metadata?.length));
 
   // The narrative spine surfaced at the overview scale (staging spec §5). 0 → an invitation strip; ≥1 → the
   // ordered spine list + the drag-legend disambiguation. Beats are NOT authored here (§56) — the spine is
@@ -555,7 +559,7 @@
        disabled (readonly → DetailsEditor's fieldset + reason line) and the destructive remove is
        withheld — DetailsEditor renders no remove guard without an onremove. -->
   <PropsDrawer open={rightsOpen} title="Exhibit details" onclose={() => (rightsOpen = false)}>
-    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} onremove={canWrite ? onremove : undefined} readonly={!canWrite} />
+    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onmetadata} onremove={canWrite ? onremove : undefined} readonly={!canWrite} />
   </PropsDrawer>
 
   <!-- Organizing toolbar (Phase 2): find (search titles) · sort (a VIEW, never a reorder) · density (grid
