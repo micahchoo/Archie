@@ -45,7 +45,7 @@ the live one):
 - **Production CDN** — replace the local `<script>` with the jsDelivr line
   (`https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js`).
 
-  For production integrity (optional), add `integrity="sha384-2kT6KuVJkm08Btoug0L+OxGYjUhlH7ro/4VY4nLSB9Ysc0youBLptzrp7A4UevNl" crossorigin="anonymous"` — the SHA-384 of v1's `dist/archie-viewer.js`. An SRI hash must be re-computed if the bundle is re-released.
+  For production integrity (optional), add `integrity="sha384-2kT6KuVJkm08Btoug0L+OxGYjUhlH7ro/4VY4nLSB9Ysc0youBLptzrp7A4UevNl" crossorigin="anonymous"` — the SHA-384 of v1.1's `dist/archie-viewer.js`. An SRI hash must be re-computed if the bundle is re-released.
 
 ---
 
