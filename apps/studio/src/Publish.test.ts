@@ -10,7 +10,7 @@ type DeployProgress = import("./deploy/types.js").DeployProgress;
 type DeployTarget = import("./deploy/types.js").DeployTarget;
 type Deps = Parameters<typeof createPublishMachine>[0];
 
-const SESSION: DeploySession = { login: "micah", token: "gho_secret", persisted: false };
+const SESSION: DeploySession = { login: "micah", token: "gho_secret" };
 const flush = () => new Promise<void>((r) => setTimeout(r, 0));
 
 function makeDeps(over: Partial<Deps> = {}): Deps {
@@ -658,5 +658,92 @@ describe("publish machine — session-resumable auth & progress (Archie-7d9b)", 
     m.open();
     expect(m.state).toBe("manual-pages");
     expect(m.result?.url).toBe("https://micah.github.io/voynich-folios/");
+  });
+});
+
+// Archie-2139: every browser-open goes through ONE seam (openExternal) and fails VISIBLY. The old
+// behavior swallowed an opener rejection with `.catch(() => {})` — on desktop, where the opener
+// capability scoped URLs to exactly the device-login page, that made "Open my site" (a *.github.io
+// URL) a silently dead button. The machine now surfaces the rejection as the non-fatal
+// `openUrlFailed` status (the persistFailed family), and the token never rides on any opened URL.
+describe("publish machine — external opens fail visibly, never silently (Archie-2139)", () => {
+  it("openSite routes the live URL through the opener seam — token-free, and success leaves no failure note", async () => {
+    const opened: string[] = [];
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION, openUrl: async (u) => { opened.push(u); } }));
+    m.open();
+    await m.publish();
+    expect(m.state).toBe("success");
+    await m.openSite();
+    expect(opened).toEqual(["https://micah.github.io/voynich-folios/"]);
+    expect(opened.join()).not.toContain("gho_secret"); // Q-12: the token never appears on an opened URL
+    expect(m.openUrlFailed).toBe(false);
+  });
+
+  it("an opener rejection surfaces as openUrlFailed and does NOT leave the success screen (non-fatal)", async () => {
+    const m = createPublishMachine(makeDeps({ initialSession: SESSION, openUrl: async () => { throw new Error("url not allowed by scope"); } }));
+    m.open();
+    await m.publish();
+    await m.openSite();
+    expect(m.openUrlFailed).toBe(true);
+    expect(m.state).toBe("success"); // the site IS live; the link stays on screen to copy
+  });
+
+  it("openExternal (the secondary anchors: commit / Pages settings / docs) shares the seam — a later success clears the note", async () => {
+    const opened: string[] = [];
+    let refuse = false;
+    const m = createPublishMachine(makeDeps({ openUrl: async (u) => { if (refuse) throw new Error("refused"); opened.push(u); } }));
+    m.open();
+    await m.openExternal("https://github.com/micah/voynich-folios/settings/pages");
+    expect(opened).toEqual(["https://github.com/micah/voynich-folios/settings/pages"]);
+    expect(m.openUrlFailed).toBe(false);
+    refuse = true;
+    await m.openExternal("https://docs.github.com/en/pages/…custom-domains");
+    expect(m.openUrlFailed).toBe(true);
+    refuse = false;
+    await m.openExternal("https://github.com/micah/voynich-folios/commit/abc123");
+    expect(m.openUrlFailed).toBe(false); // each attempt re-arms — a stale note never outlives a working open
+    expect(opened.join()).not.toContain("gho_secret"); // Q-12 holds across the anchor seam too
+  });
+
+  it("the hostname allowlist refuses what the capability glob cannot — lookalike hosts never reach the opener", async () => {
+    const opened: string[] = [];
+    const m = createPublishMachine(makeDeps({ openUrl: async (u) => { opened.push(u); } }));
+    m.open();
+    // glob's `*` crosses `/` under the opener plugin's default match options, so the capability's
+    // https://*.github.io/** entry MATCHES this evil.com URL — the machine's allowlist is the wall
+    // that actually pins the hostname (a remote response like commit html_url or the device-flow
+    // verificationUri reaches openExternal verbatim, so it cannot be trusted by construction).
+    await m.openExternal("https://evil.com/x.github.io/y");
+    expect(opened).toEqual([]); // refused BEFORE the opener — deps.openUrl never invoked
+    expect(m.openUrlFailed).toBe(true); // and refused honestly, with the same visible note
+    await m.openExternal("http://github.com/login/device"); // https only
+    await m.openExternal("https://evil.github.io.evil.com/"); // suffix lookalike host
+    await m.openExternal("https://sub.domain.github.io/x/"); // Pages hosts are exactly ONE label
+    await m.openExternal("not a url at all");
+    expect(opened).toEqual([]);
+    // ...while every host the app legitimately opens still goes through:
+    await m.openExternal("https://micah.github.io/voynich-folios/");
+    expect(m.openUrlFailed).toBe(false);
+    await m.openExternal("https://github.com/login/device");
+    await m.openExternal("https://docs.github.com/en/pages");
+    expect(opened).toEqual([
+      "https://micah.github.io/voynich-folios/",
+      "https://github.com/login/device",
+      "https://docs.github.com/en/pages",
+    ]);
+  });
+
+  it("openDevicePage failure surfaces too (was a silent .catch), and a reopen clears the stale note", async () => {
+    const d = deferredSignIn();
+    const m = createPublishMachine(makeDeps({ signIn: d.signIn, openUrl: async () => { throw new Error("no opener"); } }));
+    m.open();
+    void m.continueWithGitHub();
+    await flush();
+    expect(m.state).toBe("device-code");
+    await m.openDevicePage();
+    expect(m.openUrlFailed).toBe(true);
+    m.open(); // close + reopen — the note is click-scoped feedback, not persistent state
+    expect(m.openUrlFailed).toBe(false);
+    expect(m.state).toBe("device-code"); // resumability untouched
   });
 });

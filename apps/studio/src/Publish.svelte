@@ -134,6 +134,17 @@
     if (typeof navigator !== "undefined" && navigator.clipboard) await navigator.clipboard.writeText(text);
   }
 
+  /** Desktop click-intercept for the wizard's external anchors (Archie-2139): in the Tauri webview a
+   *  plain `target="_blank"` anchor is unreliable (no window.open handler → a silently dead link), so
+   *  route the click through the machine's openExternal seam — same opener path as "Open my site", same
+   *  visible `openUrlFailed` note when the opener refuses. On web builds this is a no-op and the anchor
+   *  opens a tab like any link (the openUrl path is desktop-only). */
+  function externalAnchor(e: MouseEvent, url: string | undefined): void {
+    if (!isTauriEnv || !url) return;
+    e.preventDefault();
+    void machine.openExternal(url);
+  }
+
   // The machine is constructed ONCE (this component is mounted for the app's lifetime; App.svelte only
   // toggles `open`) — see the file header for why that's what makes auth session-resumable. Every data/seam
   // dep is read through a GETTER (a session restored after mount, a library switch) so it stays live on
@@ -712,7 +723,7 @@
           <h2>Your site is live.</h2>
         </header>
         <div class="stack">
-          <a class="text-link hero-url" href={machine.result?.url} target="_blank" rel="noopener">{machine.result?.url}</a>
+          <a class="text-link hero-url" href={machine.result?.url} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, machine.result?.url)}>{machine.result?.url}</a>
           <div class="hero-actions">
             <button class="primary" onclick={() => machine.openSite()}>Open my site</button>
             <button type="button" class="ghost" onclick={() => machine.copyLink()}>Copy link</button>
@@ -725,13 +736,13 @@
           <div class="details">
             <button type="button" class="text-link linkish" onclick={() => (showDomain = !showDomain)}>{showDomain ? "▾" : "▸"} Use your own domain</button>
             {#if showDomain}
-              <p class="note">Want <code>library.yoursite.com</code> instead? GitHub Pages lets you point your own domain at this site — you add the domain in the repository's Pages settings and a matching record at your domain host. <a href={CUSTOM_DOMAIN_DOCS} target="_blank" rel="noopener">GitHub's guide walks through it.</a></p>
+              <p class="note">Want <code>library.yoursite.com</code> instead? GitHub Pages lets you point your own domain at this site — you add the domain in the repository's Pages settings and a matching record at your domain host. <a href={CUSTOM_DOMAIN_DOCS} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, CUSTOM_DOMAIN_DOCS)}>GitHub's guide walks through it.</a></p>
             {/if}
           </div>
           <div class="details">
             <button type="button" class="text-link linkish" onclick={() => (showDetails = !showDetails)}>{showDetails ? "▾" : "▸"} Details</button>
             {#if showDetails}
-              <p class="note"><a href={commitUrl} target="_blank" rel="noopener">Commit {machine.result?.commitSha.slice(0, 7)}</a></p>
+              <p class="note"><a href={commitUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, commitUrl)}>Commit {machine.result?.commitSha.slice(0, 7)}</a></p>
             {/if}
           </div>
         </div>
@@ -747,14 +758,14 @@
         </header>
         <div class="stack">
           <ol class="steps">
-            <li>Open <a href={machine.pagesSettingsUrl} target="_blank" rel="noopener">your repository's Settings › Pages</a>.</li>
+            <li>Open <a href={machine.pagesSettingsUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, machine.pagesSettingsUrl)}>your repository's Settings › Pages</a>.</li>
             <li>Under <strong>Build and deployment</strong>, set <em>Source</em> to <strong>Deploy from a branch</strong>.</li>
             <li>Choose the <code>gh-pages</code> branch and the <code>/ (root)</code> folder, then <strong>Save</strong>.</li>
           </ol>
           {#if machine.recheckSaysOff}
             <p class="note warn">GitHub still shows the site as off. Give it a moment after saving, then check again.</p>
           {/if}
-          <p class="note">Once you've saved, your site will live at <a href={machine.result?.url} target="_blank" rel="noopener">{machine.result?.url}</a>.</p>
+          <p class="note">Once you've saved, your site will live at <a href={machine.result?.url} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, machine.result?.url)}>{machine.result?.url}</a>.</p>
         </div>
         <div class="actions">
           <!-- "Later" is a plain close (stays resumable) — the site IS live, but Pages isn't flipped on
@@ -806,12 +817,12 @@
         {#if advPhase === "done"}
           <div class="result">
             <p class="ok">Published to GitHub Pages.</p>
-            <p class="line">Commit · <a href={commitUrlAdv} target="_blank" rel="noopener">{commitUrlAdv}</a></p>
+            <p class="line">Commit · <a href={commitUrlAdv} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, commitUrlAdv)}>{commitUrlAdv}</a></p>
             {#if pagesEnabled}
-              <p class="line">Pages · <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a> <span class="muted">(may take a minute to go live)</span></p>
+              <p class="line">Pages · <a href={pagesUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, pagesUrl)}>{pagesUrl}</a> <span class="muted">(may take a minute to go live)</span></p>
             {:else}
               <p class="line">Your files are on the <code>{branch}</code> branch. One step left to put them on the web: turn on GitHub Pages for this repository.</p>
-              <p class="line">Open <a href={pagesSettingsUrl} target="_blank" rel="noopener">Settings, then Pages</a>, choose <em>Deploy from a branch</em>, and pick the <code>{branch}</code> branch. Your site then appears at <a href={pagesUrl} target="_blank" rel="noopener">{pagesUrl}</a>.</p>
+              <p class="line">Open <a href={pagesSettingsUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, pagesSettingsUrl)}>Settings, then Pages</a>, choose <em>Deploy from a branch</em>, and pick the <code>{branch}</code> branch. Your site then appears at <a href={pagesUrl} target="_blank" rel="noopener" onclick={(e) => externalAnchor(e, pagesUrl)}>{pagesUrl}</a>.</p>
             {/if}
             <p class="line muted">A published Pages site is read-only. To keep editing, open your library in Studio.</p>
             <button class="primary" onclick={close}>Done</button>
@@ -898,6 +909,13 @@
             </div>
           </form>
         {/if}
+      {/if}
+      <!-- One shared status line for EVERY browser-open in the wizard (Archie-2139): "Open my site",
+           "Open GitHub to enter it", and the desktop-routed anchors all funnel through the machine's
+           openExternal, so a rejected open surfaces here instead of dying silently. Honest and
+           non-fatal — the link stays on screen to copy. -->
+      {#if machine.openUrlFailed}
+        <p class="note warn" role="status">We couldn't open your browser — copy the link and go there yourself.</p>
       {/if}
 
     {:else}
