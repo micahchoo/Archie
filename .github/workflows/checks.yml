@@ -128,6 +128,44 @@ jobs:
       - name: Build Studio + Viewer (verification only — deploy.yml owns the real deploy build)
         run: bash scripts/build-gh-pages.sh
 
+  # Both gates below were written, documented (ADR-0019 + README's maintainer TIP) and then run by
+  # NOTHING — no workflow referenced them until now. They are deliberately scoped to what they
+  # actually prove, and neither asserts dist is rebuilt from current source: this repo's cadence is
+  # periodic batch catch-up (only 2 of 11 archie-viewer src commits ever carried dist), so a
+  # rebuild-and-diff gate would have failed 9 of 11 historical commits. Freshness belongs at the
+  # release boundary, not here.
+  archie-viewer-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Root dist/ is a mirror of packages/archie-viewer/dist/ that exists only so jsDelivr's /gh/
+      # serving resolves at the repo root. ADR-0019's amendment warns it "can silently diverge".
+      # Reliable in CI specifically because a fresh checkout has no untracked build output —
+      # --check diffs working-tree listings, and .gitignore's bare `dist/` hides local strays.
+      - name: Root dist/ mirrors the package dist/
+        run: pnpm sync-dist:check
+
+      # Size ratchet on the embeddable bundle. Builds to a temp dir, so it does not touch the
+      # committed artifact.
+      - name: Embed bundle size ratchet
+        run: pnpm --filter @render/archie-viewer bundle:check
+
   e2e:
     # Studio back/forward navigation gate (Archie-d80f). Separate job so the unit gates above stay fast;
     # this one pays the browser-download + dev-server cost the others don't need. Playwright's own

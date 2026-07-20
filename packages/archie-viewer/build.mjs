@@ -14,7 +14,8 @@
 // separate authoring bundle) stays out of scope; this is the READ bundle only (ADR-0019).
 
 import { gzipSync } from "node:zlib";
-import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire as makeRequire } from "node:module";
@@ -41,9 +42,9 @@ function rawKB(bytes) {
   return +(bytes.length / 1024).toFixed(1);
 }
 
-async function build() {
-  rmSync(OUTDIR, { recursive: true, force: true });
-  mkdirSync(OUTDIR, { recursive: true });
+async function build(outdir) {
+  rmSync(outdir, { recursive: true, force: true });
+  mkdirSync(outdir, { recursive: true });
   const result = await esbuild.build({
     entryPoints: [join(__dirname, "src", "index.ts")],
     bundle: true,
@@ -51,7 +52,7 @@ async function build() {
     format: "esm",
     splitting: true, // emit the lazy reader (OSD) as a separate async chunk
     platform: "browser",
-    outdir: OUTDIR,
+    outdir,
     entryNames: "archie-viewer",
     metafile: true,
     logLevel: "info",
@@ -61,13 +62,13 @@ async function build() {
 
 // Sum the gz size of every emitted .js chunk (entry + async reader chunk) — the total a host would
 // transfer if it opened an object (the worst case). The entry-only number is reported separately.
-function measureDist() {
+function measureDist(outdir) {
   let totalGz = 0;
   let entryGz = 0;
   let entryRaw = 0;
-  for (const name of readdirSync(OUTDIR)) {
+  for (const name of readdirSync(outdir)) {
     if (!name.endsWith(".js")) continue;
-    const bytes = readFileSync(join(OUTDIR, name));
+    const bytes = readFileSync(join(outdir, name));
     totalGz += gzipSync(bytes).length;
     if (name === "archie-viewer.js") { entryGz = gzipSync(bytes).length; entryRaw = bytes.length; }
   }
@@ -80,8 +81,14 @@ function measureDist() {
 
 const CHECK = process.argv.includes("--check");
 
-await build();
-const m = measureDist();
+// --check measures a THROWAWAY build in a temp dir. It must not write OUTDIR: packages/archie-viewer/
+// dist/ is the committed, CDN-published artifact (scripts/sync-dist.mjs mirrors it to the repo root
+// for jsDelivr's /gh/ serving), and a verification step that rewrites the bytes it verifies is not a
+// verification step — `bundle:check` used to leave the released tree dirty as a side effect.
+const outdir = CHECK ? mkdtempSync(join(tmpdir(), "archie-viewer-check-")) : OUTDIR;
+await build(outdir);
+const m = measureDist(outdir);
+if (CHECK) rmSync(outdir, { recursive: true, force: true });
 
 if (CHECK) {
   if (!existsSync(BASELINE)) {
