@@ -14,6 +14,7 @@
     "preview": "astro preview",
     "test": "vitest run",
     "check": "astro check",
+    "precheck:svelte": "astro sync",
     "check:svelte": "svelte-check --workspace . --fail-on-warnings",
     "pretypecheck": "astro sync",
     "typecheck": "tsc --noEmit"
