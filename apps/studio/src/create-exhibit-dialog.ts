@@ -13,6 +13,7 @@ import { manifestToExhibit, ManifestImportError, type ManifestPlan } from "./iii
 import { IIIF_MANIFEST_MAX_BYTES, type CollectionPreview, type CollectionImportOutcome } from "./ingest-flows.js";
 import { urlSegment, type DiscoveredManifest, type TraverseSkip, type SkipReason } from "./collection-import.js";
 import type { PickedFile } from "./folder-import.js";
+import type { FolderEntry } from "./folder-listing.js";
 
 /** The dialog's scope (Archie-beb6, both variants now wired). "new-exhibit" (LibraryHome) mints a NEW
  *  exhibit via oncreate / oncreatefromfolder / oncreatefrommanifest. "add-to-exhibit" (Archie-56cf: the
@@ -207,8 +208,8 @@ export function buildPickerRows(manifests: readonly DiscoveredManifest[]): Picke
 }
 
 /** Live count of checked rows — drives the header ("N exhibits will be created") and the confirm's
- *  disabled-at-zero gate. */
-export function checkedCount(rows: readonly PickerRow[]): number {
+ *  disabled-at-zero gate. Structurally typed so the folder picker's rows (FolderRow below) share it. */
+export function checkedCount(rows: readonly { checked: boolean }[]): number {
   return rows.reduce((n, r) => n + (r.checked ? 1 : 0), 0);
 }
 
@@ -219,9 +220,50 @@ export function selectedRefs(rows: readonly PickerRow[]): DiscoveredManifest[] {
 }
 
 /** Select-all / select-none — mutates `checked` in place (the component's rows are $state, so the mutation
- *  is reactive; a plain array in a test reads back the same way). */
-export function setAllChecked(rows: PickerRow[], checked: boolean): void {
+ *  is reactive; a plain array in a test reads back the same way). Structural for the same reason as
+ *  checkedCount — one definition serves both pickers. */
+export function setAllChecked(rows: { checked: boolean }[], checked: boolean): void {
   for (const r of rows) r.checked = checked;
+}
+
+// ── Folder picker (folder-by-URL, SCOPE-linked-objects.md companion). The Link path's counterpart of
+// the collection picker above: a pasted trailing-slash URL routes through folder-listing.ts's
+// previewFolder, and these pure helpers map its listing into the same rows/count/select-all grammar
+// (deliberately the SAME interaction shape — one picker idiom, not two). Confirm emits zero-copy
+// {source,label} pairs for ingest-flows' addUrlObjects; nothing here fetches.
+
+/** One selectable image row in the folder picker. `entry` is carried verbatim so a confirm stores the
+ *  resolved URL exactly as listed (never re-derived from the display name). */
+export interface FolderRow {
+  entry: FolderEntry;
+  checked: boolean;
+}
+
+/** FolderEntry[] (listing/server order) → picker rows, ALL checked by default — same default as
+ *  buildPickerRows, and for the same reason: "add the folder" is the common intent, unchecking is
+ *  the exception. */
+export function buildFolderRows(entries: readonly FolderEntry[]): FolderRow[] {
+  return entries.map((entry) => ({ entry, checked: true }));
+}
+
+/** The confirm payload: checked rows → addObject's (source, label) vocabulary, in LISTING ORDER
+ *  (filter preserves it — same order contract as selectedRefs). Label = filename minus extension,
+ *  the exact convention addObjectFromFile uses for local files ("folio-12r.jpg" → "folio-12r"), so a
+ *  folder ingested by URL and the same folder dropped as files read identically in the rail. */
+export function selectedLinks(rows: readonly FolderRow[]): { source: string; label: string }[] {
+  return rows.filter((r) => r.checked).map((r) => ({
+    source: r.entry.url,
+    label: r.entry.name.replace(/\.[^.]+$/, "") || "Untitled object",
+  }));
+}
+
+/** The folder picker's quiet skip note (never silent, never modal — the collection picker's rule):
+ *  names what the one-level, images-only listing left out. Null when nothing was skipped. */
+export function folderSkipNote(listing: { skippedDirs: number; skippedFiles: number }): string | null {
+  const parts: string[] = [];
+  if (listing.skippedDirs > 0) parts.push(`${listing.skippedDirs} subfolder${listing.skippedDirs === 1 ? "" : "s"} not included (Archie lists one level)`);
+  if (listing.skippedFiles > 0) parts.push(`${listing.skippedFiles} non-image file${listing.skippedFiles === 1 ? "" : "s"} skipped`);
+  return parts.length > 0 ? parts.join(" · ") : null;
 }
 
 export const HYDRATION_CAP = 100;

@@ -2547,6 +2547,7 @@
     oncreatefrommanifest={(url) => { flows.addManifestToExhibit(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
     onaddmap={(m) => { flows.addMapObject(m).catch((e) => { console.error("Map add failed", e); window.alert("Couldn't add that map."); }); }}
     onaddlink={(source, label) => { flows.addObject(source, label).catch((e) => { console.error("Link add failed", e); window.alert("Couldn't add that link."); }); }}
+    onaddlinks={(links) => { flows.addUrlObjects(links).catch((e) => { console.error("Folder-link add failed", e); window.alert("Couldn't add those linked images."); }); }}
     onclose={() => (addMediaOpen = false)}
   />
 {/if}

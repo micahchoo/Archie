@@ -6,6 +6,7 @@ import {
   routeCollectionPreview, buildPickerRows, checkedCount, selectedRefs, setAllChecked,
   hydrateRowLabels, overCapRefusal, skipNote, skipDetail, type PickerRow,
   summarizeImport, IMPORT_FAILURE_LIST_CAP,
+  buildFolderRows, selectedLinks, folderSkipNote,
 } from "./create-exhibit-dialog.js";
 import type { CollectionPreview, CollectionImportOutcome } from "./ingest-flows.js";
 import type { DiscoveredManifest, TraverseResult, TraverseSkip } from "./collection-import.js";
@@ -488,3 +489,47 @@ describe("summarizeImport — the finished-batch summary surface (Archie-cbf6, P
 // Type-only guard: PickerRow shape stays what the component binds to (checked is a plain boolean).
 const _pickerRowShape: PickerRow = { ref: dm("https://x/a"), label: "a", context: "", needsHydration: true, checked: true };
 void _pickerRowShape;
+
+describe("folder picker helpers (folder-by-URL — same picker grammar as the collection picker)", () => {
+  const entries = [
+    { name: "folio 12r.jpg", url: "https://s.example.org/scans/folio%2012r.jpg" },
+    { name: "folio 12v.jpg", url: "https://s.example.org/scans/folio%2012v.jpg" },
+    { name: "plate.tiff", url: "https://s.example.org/scans/plate.tiff" },
+  ];
+
+  it("buildFolderRows: listing order, all checked by default", () => {
+    const rows = buildFolderRows(entries);
+    expect(rows.map((r) => r.entry.name)).toEqual(["folio 12r.jpg", "folio 12v.jpg", "plate.tiff"]);
+    expect(rows.every((r) => r.checked)).toBe(true);
+  });
+
+  it("checkedCount and setAllChecked serve folder rows (shared, structural)", () => {
+    const rows = buildFolderRows(entries);
+    expect(checkedCount(rows)).toBe(3);
+    setAllChecked(rows, false);
+    expect(checkedCount(rows)).toBe(0);
+  });
+
+  it("selectedLinks: checked rows only, listing order, ENCODED url verbatim + filename-minus-extension label", () => {
+    const rows = buildFolderRows(entries);
+    rows[1]!.checked = false;
+    expect(selectedLinks(rows)).toEqual([
+      { source: "https://s.example.org/scans/folio%2012r.jpg", label: "folio 12r" },
+      { source: "https://s.example.org/scans/plate.tiff", label: "plate" },
+    ]);
+  });
+
+  it("selectedLinks: an extension-only name falls back to the addObject default label", () => {
+    expect(selectedLinks([{ entry: { name: ".jpg", url: "https://s/x/.jpg" }, checked: true }])).toEqual([
+      { source: "https://s/x/.jpg", label: "Untitled object" },
+    ]);
+  });
+
+  it("folderSkipNote: names one-level and images-only skips; null when clean", () => {
+    expect(folderSkipNote({ skippedDirs: 0, skippedFiles: 0 })).toBeNull();
+    expect(folderSkipNote({ skippedDirs: 1, skippedFiles: 0 })).toBe("1 subfolder not included (Archie lists one level)");
+    expect(folderSkipNote({ skippedDirs: 2, skippedFiles: 3 })).toBe(
+      "2 subfolders not included (Archie lists one level) · 3 non-image files skipped",
+    );
+  });
+});

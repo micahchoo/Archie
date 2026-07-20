@@ -30,7 +30,9 @@
     routeCollectionPreview, checkedCount, selectedRefs, setAllChecked,
     hydrateRowLabels, skipNote, skipDetail,
     summarizeImport, type ImportSummary,
+    buildFolderRows, selectedLinks, folderSkipNote, type FolderRow,
   } from "./create-exhibit-dialog.js";
+  import { isFolderUrl, previewFolder } from "./folder-listing.js";
   import type { CollectionPreview, CollectionImportOutcome } from "./ingest-flows.js";
   import type { DiscoveredManifest, TraverseSkip } from "./collection-import.js";
   import type { ManifestPlan } from "./iiif-import.js";
@@ -55,6 +57,7 @@
     onundoimport,
     onaddmap,
     onaddlink,
+    onaddlinks,
     onclose,
   }: {
     open: boolean;
@@ -106,6 +109,11 @@
      *  fires in add-to-exhibit scope (offersLink); label is "" when the optional field was left blank —
      *  addObject itself falls back to "Untitled object". */
     onaddlink?: (source: string, label: string) => void;
+    /** The Link path's FOLDER submit (folder-by-URL): the checked picker rows as addObject-vocabulary
+     *  pairs, in listing order — wired to ingest-flows' addUrlObjects (batched appends, pinned
+     *  exhibit). Optional alongside onaddlink; absent → a trailing-slash URL still previews but the
+     *  picker's confirm is disabled (same degrade idiom as oncreatefromcollection). */
+    onaddlinks?: (links: { source: string; label: string }[]) => void;
     onclose: () => void;
   } = $props();
 
@@ -188,6 +196,58 @@
   // the media-type sniff + best-effort image dimension probe once submitted.
   let linkUrl = $state("");
   let linkLabel = $state("");
+  // Folder-by-URL (SCOPE-linked-objects.md companion): a pasted trailing-slash URL takes a ONE-fetch
+  // detour — previewFolder reads the server's autoindex listing and the picker below chooses which
+  // images to add (each stays a zero-copy remote reference, exactly what a single pasted link makes).
+  // `linkFolder` non-null IS "the folder picker is showing" (the iiifCollection idiom); status/message
+  // cover the checking/refused states; token + AbortController mirror the IIIF path's
+  // supersede-and-actually-stop contract.
+  let linkFolder = $state<{ rows: FolderRow[]; skippedDirs: number; skippedFiles: number } | null>(null);
+  let linkStatus = $state<"idle" | "checking" | "invalid">("idle");
+  let linkMessage = $state("");
+  let linkToken = 0;
+  let linkAbort: AbortController | undefined;
+  const linkIsFolder = $derived(isFolderUrl(linkUrl));
+  const linkFolderChecked = $derived(linkFolder ? checkedCount(linkFolder.rows) : 0);
+  const linkFolderNote = $derived(linkFolder ? folderSkipNote(linkFolder) : null);
+
+  /** Any keystroke/edit on the Link URL invalidates a shown folder picker or refusal — a new URL is a
+   *  fresh preview (the onIiifInput rule), and the abort actually stops an in-flight listing fetch. */
+  function resetLinkPreview(): void {
+    linkToken++;
+    linkAbort?.abort();
+    linkFolder = null;
+    linkStatus = "idle";
+    linkMessage = "";
+  }
+
+  async function checkLinkFolder(): Promise<void> {
+    const token = ++linkToken;
+    linkAbort?.abort();
+    linkAbort = new AbortController();
+    linkFolder = null;
+    linkStatus = "checking";
+    linkMessage = "";
+    const preview = await previewFolder(linkUrl, linkAbort.signal);
+    if (token !== linkToken) return; // superseded by a newer edit/check/close — discard silently
+    if (preview.status === "invalid") {
+      linkStatus = "invalid";
+      linkMessage = preview.message;
+      return;
+    }
+    linkStatus = "idle";
+    linkFolder = {
+      rows: buildFolderRows(preview.listing.entries),
+      skippedDirs: preview.listing.skippedDirs,
+      skippedFiles: preview.listing.skippedFiles,
+    };
+  }
+
+  function submitLinkFolder(): void {
+    if (!linkFolder || linkFolderChecked === 0 || !onaddlinks) return;
+    onaddlinks(selectedLinks(linkFolder.rows));
+    close();
+  }
 
   // ── "Map" path (Archie-56cf) — absorbed from the retired AddMapModal.svelte. Pick a CURATED basemap
   // (terms permit static-site embedding, attribution baked in), set the bounded extent on a pan/zoom
@@ -385,6 +445,7 @@
     // Link path
     linkUrl = "";
     linkLabel = "";
+    resetLinkPreview();
     // Map path
     providerId = PROVIDERS[0]!.id;
     mapLabel = "";
@@ -438,6 +499,8 @@
     clearTimeout(iiifTimer);
     iiifToken++; // discards any in-flight IIIF check's result — the "cancels cleanly" contract
     iiifAbort?.abort(); // and actually stops the network request, not just its result
+    linkToken++; // same contract for an in-flight folder-listing check
+    linkAbort?.abort();
     onclose();
   }
   // The dismissal fork (Archie-cbf6, §Surfaces dismissal contract). Esc / scrim-click / × all route here.
@@ -497,6 +560,12 @@
 
   function submitLink() {
     if (!linkPathValid(linkUrl)) return;
+    // A trailing-slash URL is a FOLDER: the primary action becomes "find its images" (one listing
+    // fetch → picker), not an immediate add — submitLinkFolder does the adding once rows are chosen.
+    if (linkIsFolder) {
+      void checkLinkFolder();
+      return;
+    }
     onaddlink?.(linkUrl.trim(), linkLabel.trim());
     close();
   }
@@ -918,20 +987,63 @@
       {:else if activePath === "link"}
         <!-- "From a link" (Archie-32e8, restoring the pre-Archie-56cf URL-add UI onto ingest-flows.ts's
              addObject) — a URL field + an optional label, no preview: addObject itself sniffs media type
-             and best-effort probes image dimensions once submitted. -->
+             and best-effort probes image dimensions once submitted. A trailing-slash URL is the FOLDER
+             detour (folder-by-URL): one listing fetch, then a picker mirroring the collection picker's
+             grammar — see checkLinkFolder/submitLinkFolder above. -->
         <div class="field">
           <label class="f-label" for="linkUrl">Link</label>
-          <input id="linkUrl" type="url" bind:value={linkUrl} placeholder="https://…/image.jpg" autocomplete="off" />
-          <span class="f-hint">Add a picture, audio, or video that lives at a web address — it stays there; Archie only keeps the link.</span>
+          <input id="linkUrl" type="url" bind:value={linkUrl} oninput={resetLinkPreview} placeholder="https://…/image.jpg" autocomplete="off" />
+          <span class="f-hint">Add a picture, audio, or video that lives at a web address — it stays there; Archie only keeps the link. Paste a folder address ending in “/” to pick from everything inside it.</span>
         </div>
-        <div class="field">
-          <label class="f-label" for="linkLabel">Label (optional)</label>
-          <input id="linkLabel" type="text" bind:value={linkLabel} placeholder="e.g. Herbal folio 12r" autocomplete="off" />
-        </div>
-        <div class="path-actions">
-          <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
-          <button type="button" class="btn btn-primary" disabled={!linkPathValid(linkUrl)} onclick={submitLink}>{createActionLabel(scope)}</button>
-        </div>
+        {#if linkFolder}
+          <!-- Folder picker: the pasted folder's direct-child images, all checked by default (adding the
+               folder is the intent; unchecking is the exception — the collection picker's rule). Confirm
+               emits {source,label} pairs upward; per-file labels come from filenames, so the single Label
+               field below is hidden in this state (it names ONE object, and this adds many). -->
+          <div class="collection-head">
+            <span class="ch-title">{linkFolder.rows.length} image{linkFolder.rows.length === 1 ? "" : "s"} found</span>
+            <span class="ch-count">{linkFolderChecked} will be added</span>
+          </div>
+          {#if linkFolderNote}
+            <p class="collection-note">{linkFolderNote}</p>
+          {/if}
+          <div class="picker-controls">
+            <span class="pc-count">{linkFolderChecked} of {linkFolder.rows.length} selected</span>
+            <button type="button" class="text-link pc-link" onclick={() => linkFolder && setAllChecked(linkFolder.rows, true)}>Select all</button>
+            <span class="pc-sep" aria-hidden="true">·</span>
+            <button type="button" class="text-link pc-link" onclick={() => linkFolder && setAllChecked(linkFolder.rows, false)}>Select none</button>
+          </div>
+          <ul class="picker-list" aria-label="Images to add">
+            {#each linkFolder.rows as row (row.entry.url)}
+              <li>
+                <label class="picker-row">
+                  <input type="checkbox" bind:checked={row.checked} />
+                  <span class="pr-text"><span class="pr-label">{row.entry.name}</span></span>
+                </label>
+              </li>
+            {/each}
+          </ul>
+          <div class="path-actions">
+            <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
+            <button type="button" class="btn btn-primary" disabled={linkFolderChecked === 0 || !onaddlinks} onclick={submitLinkFolder}>Add {linkFolderChecked} image{linkFolderChecked === 1 ? "" : "s"}</button>
+          </div>
+        {:else}
+          {#if !linkIsFolder}
+            <div class="field">
+              <label class="f-label" for="linkLabel">Label (optional)</label>
+              <input id="linkLabel" type="text" bind:value={linkLabel} placeholder="e.g. Herbal folio 12r" autocomplete="off" />
+            </div>
+          {/if}
+          {#if linkStatus === "checking"}
+            <div class="iiif-status checking" role="status"><span class="spinner" aria-hidden="true"></span> Reading the folder’s listing…</div>
+          {:else if linkStatus === "invalid" && linkMessage}
+            <div class="iiif-status invalid" role="alert">{linkMessage}</div>
+          {/if}
+          <div class="path-actions">
+            <button type="button" class="btn btn-ghost" onclick={close}>Cancel</button>
+            <button type="button" class="btn btn-primary" disabled={!linkPathValid(linkUrl) || linkStatus === "checking"} onclick={submitLink}>{linkIsFolder ? "Find images" : createActionLabel(scope)}</button>
+          </div>
+        {/if}
       {:else}
         <!-- Map path (Archie-56cf, absorbed from AddMapModal). Basemap + name + bounded extent. The
              pan/zoom locator is a pointer-only VISUAL over the real numeric edges below — keyboard users
