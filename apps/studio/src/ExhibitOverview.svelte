@@ -17,7 +17,7 @@
   import { viewPrefs, overviewDensityMetrics } from "./view-prefs.svelte.js";
   import { hintSeen, markHintSeen } from "./canvas-first-use.js";
   import { isReorderable, reorderBlockedMessage } from "./reorder-state.js";
-  import { midEllipsis } from "./mid-ellipsis.js";
+  import { midEllipsis, splitForMidTruncation } from "./mid-ellipsis.js";
   import {
     liftRow, moveRow, moveRowTo, indexOfMoving,
     liftAnnouncement, moveAnnouncement, boundaryAnnouncement, dropAnnouncement, cancelAnnouncement,
@@ -551,10 +551,11 @@
     </div>
   </header>
 
-  <!-- Read-only (O1): the drawer still OPENS (viewing details is legitimate) but its destructive remove
-       is withheld — DetailsEditor renders no remove guard without an onremove. -->
+  <!-- Read-only (O1/B3): the drawer still OPENS (viewing details is legitimate) but every field is
+       disabled (readonly → DetailsEditor's fieldset + reason line) and the destructive remove is
+       withheld — DetailsEditor renders no remove guard without an onremove. -->
   <PropsDrawer open={rightsOpen} title="Exhibit details" onclose={() => (rightsOpen = false)}>
-    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} onremove={canWrite ? onremove : undefined} />
+    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} onremove={canWrite ? onremove : undefined} readonly={!canWrite} />
   </PropsDrawer>
 
   <!-- Organizing toolbar (Phase 2): find (search titles) · sort (a VIEW, never a reorder) · density (grid
@@ -689,6 +690,7 @@
           role="presentation" aria-hidden="true"></div>
         {#each displayObjects as o (o.id)}
           {@const thumb = thumbFor(o)}
+          {@const lbl = splitForMidTruncation(o.label)}
           <div class="plate-wrap" class:dragging={dragId === o.id} class:selected={selection.has(o.id)}>
             <button class="plate" class:over={overId === o.id} class:sel-on={selectMode}
               data-plate-id={o.id}
@@ -710,11 +712,16 @@
               <span class="frame" class:av={!thumb}>
                 {#if thumb}<span class="img" style={`background-image:url(${thumb})`}></span>{:else}<span class="glyph" aria-hidden="true">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}
               </span>
-              <!-- Caption legibility at scale (O3): middle-ellipsis keeps a filename title's distinguishing
-                   SUFFIX visible (…07a vs …07b — end-truncation amputated it); the full title stays in the
-                   plate's title tooltip above. "0 notes" ×52 is noise — the count renders only when real. -->
+              <!-- Caption legibility at scale (O3): WIDTH-ADAPTIVE middle truncation keeps a filename
+                   title's distinguishing SUFFIX visible (…07a vs …07b — end-truncation amputated it).
+                   Two spans, no character budget: the head shrinks under CSS end-ellipsis with the plate
+                   width (density-dependent), the tail (last 7 code points) never shrinks — a fixed-max
+                   midEllipsis string would just get RE-truncated by the CSS ellipsis at compact widths.
+                   Head/tail spans must stay ADJACENT (no whitespace) or the gap becomes a wrap point.
+                   Full title stays in the plate's title tooltip above. "0 notes" ×52 is noise — the
+                   count renders only when real. -->
               <span class="caption">
-                <span class="lbl">{midEllipsis(o.label, 24)}</span>
+                <span class="lbl">{#if lbl.tail}<span class="lbl-head">{lbl.head}</span><span class="lbl-tail">{lbl.tail}</span>{:else}{lbl.head}{/if}</span>
                 {#if noteCountOf(o.id) > 0}<span class="cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>{/if}
               </span>
             </button>
@@ -951,7 +958,14 @@
   .frame.av { background: var(--surface-canvas-overlay); }
   .frame .glyph { font-size: 2rem; color: var(--accent-2); }
   .caption { display: flex; flex-direction: column; gap: 2px; }
-  .caption .lbl { font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Width-adaptive middle truncation (O3): the label is a nowrap flex row — the HEAD shrinks under
+     end-ellipsis, the TAIL keeps its intrinsic width (flex:none) so the suffix survives any plate
+     width. min-width:0 lets the head actually shrink below its content; overflow:hidden on .lbl is
+     the backstop for a pathological tail wider than the plate. The tail-less short-label case renders
+     as plain text under the same nowrap/ellipsis. */
+  .caption .lbl { display: flex; min-width: 0; font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .caption .lbl .lbl-head { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .caption .lbl .lbl-tail { flex: none; white-space: nowrap; }
   .caption .cnt { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
   .plate.add { background: transparent; box-shadow: none; border: 1px dashed var(--border-canvas-emphasis); justify-content: center; }
   .plate.add:hover { background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low); }

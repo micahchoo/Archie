@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { midEllipsis } from "./mid-ellipsis.js";
+import { midEllipsis, splitForMidTruncation } from "./mid-ellipsis.js";
 
 describe("midEllipsis", () => {
   it("returns short strings unchanged", () => {
@@ -40,5 +40,40 @@ describe("midEllipsis", () => {
 
   it("leaves degenerate maxima alone rather than emitting nonsense", () => {
     expect(midEllipsis("abcdefgh", 2)).toBe("abcdefgh");
+  });
+
+  it("max=3, the smallest active max: one char each side of the ellipsis", () => {
+    // keep 2 → head 1, tail 1
+    expect(midEllipsis("abcdefgh", 3)).toBe("a…h");
+    expect(midEllipsis("abc", 3)).toBe("abc"); // exactly at max — untouched
+  });
+});
+
+describe("splitForMidTruncation", () => {
+  it("returns short strings whole in head — no tail, no layout change", () => {
+    expect(splitForMidTruncation("BHC006", 7)).toEqual({ head: "BHC006", tail: "" });
+    expect(splitForMidTruncation("exactly", 7)).toEqual({ head: "exactly", tail: "" });
+    expect(splitForMidTruncation("", 7)).toEqual({ head: "", tail: "" });
+  });
+
+  it("splits off exactly the last tailLen code points", () => {
+    expect(splitForMidTruncation("BHC006_GM_folio_scan_07a", 7)).toEqual({
+      head: "BHC006_GM_folio_s",
+      tail: "can_07a",
+    });
+  });
+
+  it("head + tail always reassemble the original", () => {
+    for (const s of ["BHC006_GM_folio_scan_07a", "𝔄𝔅ℭ𝔇𝔈𝔉𝔊ℌℑ𝔍", "a", "", "12345678"]) {
+      const { head, tail } = splitForMidTruncation(s, 7);
+      expect(head + tail).toBe(s);
+    }
+  });
+
+  it("counts code points, not UTF-16 units", () => {
+    const { head, tail } = splitForMidTruncation("𝔄𝔅ℭ𝔇𝔈𝔉𝔊ℌℑ𝔍", 7); // 10 code points
+    expect([...tail]).toHaveLength(7);
+    expect(head).toBe("𝔄𝔅ℭ");
+    expect(tail.includes("�")).toBe(false);
   });
 });

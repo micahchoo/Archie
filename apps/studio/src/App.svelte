@@ -325,6 +325,11 @@
   // {@html} — the name is untrusted same-origin text). otherName is null when that tab is anonymous or
   // the name couldn't be learned (e.g. no BroadcastChannel) — falls back to the prior impersonal copy.
   const otherTabWho = $derived(writerLock.otherName ? `${writerLock.otherName} is editing this library` : "This library is open");
+  // ONE expression for "this tab's edits will be kept" (UX-CRITIQUE O1): the read-only banner's own
+  // condition, shared by the overview's affordance gating AND the destructive keyboard paths so they
+  // can't drift. Pre-claim (otherTabActive still false) it reads writable — no read-only flash at boot;
+  // the save-queue's writer gate still refuses that brief window as before.
+  const canWriteNow = $derived(writerLock.canWrite || !writerLock.otherTabActive);
   let zipInputEl = $state<HTMLInputElement | null>(null); // hidden picker for "Open" on non-Chromium
   let csvEl = $state<HTMLInputElement | null>(null); // hidden picker for the notes-CSV import (⑥)
   let wadmEl = $state<HTMLInputElement | null>(null); // hidden picker for the WADM/JSON import (⑦)
@@ -867,7 +872,11 @@
   }
   // Two-step inline confirm (DetailsEditor idiom — no window.confirm, off-brand for the study): first call
   // arms (the toolbar button morphs to the guard); second commits. Keyboard Delete + the button share this.
+  // Read-only guard HERE (UX-CRITIQUE O1/B1), the one choke point both paths share: the tray button is
+  // disabled in the overview, but keyboard ⌫ routes straight in (selection is reachable read-only via
+  // ⌘A/ctrl-click) — without this, ⌫⌫ armed a disabled button's confirm and then really deleted.
   function requestBulkDelete() {
+    if (!canWriteNow) return;
     if (selection.size === 0) return;
     if (!bulkConfirming) { bulkConfirming = true; return; }
     bulkConfirming = false;
@@ -1977,7 +1986,7 @@
       scrollTop={ovScrollInitial}
       onscrolled={rememberOverviewScroll}
       onscrollflush={flushOverviewScroll}
-      canWrite={writerLock.canWrite || !writerLock.otherTabActive}
+      canWrite={canWriteNow}
       onstartnarrative={() => openObject(vs.OBJECTS[0]?.id ?? vs.currentObjectId)}
       rights={{ ...(vs.currentExhibit.rights ? { rights: vs.currentExhibit.rights } : {}), ...(vs.currentExhibit.requiredStatement ? { requiredStatement: vs.currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}
@@ -1991,6 +2000,8 @@
          object mutation wrappers; the overview only signals which object via oneditobject. -->
     <PropsDrawer open={!!editingObject} title="Media details" onclose={() => (editingObjectId = null)}>
       {#if editingObject}
+        <!-- Read-only (UX-CRITIQUE O1/B3), same treatment as the exhibit drawer: fields disabled with a
+             reason line, remove withheld — viewing stays legitimate. -->
         <DetailsEditor
           title={editingObject.label}
           summary={editingObject.summary ?? ""}
@@ -1999,7 +2010,8 @@
           ontitle={(v) => renameObject(editingObject!.id, v)}
           onsummary={(v) => patchObjectMeta(editingObject!.id, { summary: v })}
           onrights={(next) => patchObjectMeta(editingObject!.id, { rights: next.rights, requiredStatement: next.requiredStatement })}
-          onremove={() => { const id = editingObject!.id; editingObjectId = null; void removeObjectById(id); }}
+          onremove={canWriteNow ? () => { const id = editingObject!.id; editingObjectId = null; void removeObjectById(id); } : undefined}
+          readonly={!canWriteNow}
         />
       {/if}
     </PropsDrawer>

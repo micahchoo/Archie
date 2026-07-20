@@ -16,6 +16,7 @@
     onsummary,
     onrights,
     onremove,
+    readonly = false,
   }: {
     showTitle?: boolean;
     title?: string;
@@ -28,6 +29,11 @@
     onrights: (next: RightsFields) => void;
     /** Destructive remove (Archie-3f4c). Absent → no remove button (e.g. library is not removable). */
     onremove?: () => void;
+    /** Read-only (writer lock, UX-CRITIQUE O1/B3): every field goes disabled (one <fieldset disabled>
+     *  covers title/description/rights without touching RightsEditor) behind a short reason line —
+     *  free-text here was the most work-investing affordance a locked tab still invited. Callers
+     *  should also withhold onremove. Default false: other mounts are untouched. */
+    readonly?: boolean;
   } = $props();
 
   // Inline two-step confirm (3f4c): the button morphs in place to a vermillion guard; the SECOND click
@@ -42,28 +48,42 @@
 </script>
 
 <div class="details">
-  {#if showTitle}
+  {#if readonly}
+    <p class="ro-note">Read-only — take over editing to make changes.</p>
+  {/if}
+  <!-- One <fieldset disabled> covers EVERY form control below (title, description, the whole
+       RightsEditor, a remove if present) via native disabled propagation — no per-input wiring,
+       no prop threading into RightsEditor. -->
+  <fieldset class="fields" disabled={readonly}>
+    {#if showTitle}
+      <label class="field">
+        <span class="field-head">Title</span>
+        <input value={title} placeholder="Name this {scope}" oninput={(e) => ontitle?.((e.currentTarget as HTMLInputElement).value)} />
+      </label>
+    {/if}
     <label class="field">
-      <span class="field-head">Title</span>
-      <input value={title} placeholder="Name this {scope}" oninput={(e) => ontitle?.((e.currentTarget as HTMLInputElement).value)} />
+      <span class="field-head">Description</span>
+      <textarea rows="3" value={summary} placeholder="A short description of this {scope}" oninput={(e) => onsummary((e.currentTarget as HTMLTextAreaElement).value)}></textarea>
     </label>
-  {/if}
-  <label class="field">
-    <span class="field-head">Description</span>
-    <textarea rows="3" value={summary} placeholder="A short description of this {scope}" oninput={(e) => onsummary((e.currentTarget as HTMLTextAreaElement).value)}></textarea>
-  </label>
-  <RightsEditor value={rights} {scope} onchange={onrights} />
-  {#if onremove}
-    <div class="danger">
-      <button type="button" class="remove" class:confirming onclick={onRemoveClick} onblur={() => (confirming = false)}>
-        {confirming ? "Confirm — this can’t be undone" : removeLabel}
-      </button>
-    </div>
-  {/if}
+    <RightsEditor value={rights} {scope} onchange={onrights} />
+    {#if onremove}
+      <div class="danger">
+        <button type="button" class="remove" class:confirming onclick={onRemoveClick} onblur={() => (confirming = false)}>
+          {confirming ? "Confirm — this can’t be undone" : removeLabel}
+        </button>
+      </div>
+    {/if}
+  </fieldset>
 </div>
 
 <style>
   .details { display: flex; flex-direction: column; gap: var(--space-3); }
+  /* The disabled-propagation fieldset is layout-invisible: it takes over .details' column flow (browser
+     default fieldset chrome reset), so the form renders identically to the pre-fieldset markup. */
+  .fields { display: flex; flex-direction: column; gap: var(--space-3); border: 0; padding: 0; margin: 0; min-width: 0; }
+  .fields:disabled { opacity: 0.6; }
+  /* Read-only reason (writer lock) — quiet body voice, mirrors the overview's read-only message. */
+  .ro-note { margin: 0; font-family: var(--font-body), serif; font-size: 0.8rem; font-style: italic; color: var(--ink-paper-secondary); }
   .field { display: flex; flex-direction: column; gap: var(--space-1); }
   .field-head {
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs, 0.7rem); font-weight: 500;
