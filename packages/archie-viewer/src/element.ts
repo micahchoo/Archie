@@ -379,8 +379,11 @@ export class ArchieViewerElement extends HTMLElement {
   // --- AV READER: lazy-import the native-media player only when a sound/video object opens ----------
   // The plain-DOM analogue of #openObject's OSD path: mount a native <audio>/<video> + a cue band that
   // seeks-and-shows-notes (reusing the same note-card pipeline). A resolved `t=` fragment becomes the
-  // initialSeek (seek-paused on loadedmetadata, section-142). Offline-blocked / load errors render the
-  // same notice idiom as the image path; the AV surface tears down with #teardownSurface.
+  // initialSeek (seek-paused on loadedmetadata, section-142); a resolved note `selectId` becomes the
+  // initialSelect (Archie-a9f4) — a TIMED-note cite lands seek-paused at its cue, highlighted, with its
+  // note card open (the player resolves the cue from the note's own t= selector). Offline-blocked /
+  // load errors render the same notice idiom as the image path; the AV surface tears down with
+  // #teardownSurface.
   async #openAvObject(
     host: HTMLElement,
     _exhibit: PortableExhibit,
@@ -396,6 +399,7 @@ export class ArchieViewerElement extends HTMLElement {
         object,
         annotations,
         ...(initialSeek ? { initialSeek } : {}),
+        ...(resolved?.selectId ? { initialSelect: resolved.selectId } : {}),
         offline: this.offline,
       });
     } catch (e) {

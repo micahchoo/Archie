@@ -6,12 +6,13 @@ import type { PortableExhibit, ViewerRoute, W3CAnnotation } from "@render/core";
 import { resolveExhibitTarget } from "./target-resolve.js";
 
 // --- fixtures: a 2-object exhibit with a base note (region selector + a logicalId) and 2 sections ----
-function note(id: string, opts: { logicalId?: string; xywh?: string } = {}): W3CAnnotation {
+function note(id: string, opts: { logicalId?: string; xywh?: string; t?: string } = {}): W3CAnnotation {
+  const value = opts.xywh ? `xywh=${opts.xywh}` : opts.t ? `t=${opts.t}` : null;
   const a: W3CAnnotation = {
     id,
     type: "Annotation",
-    target: opts.xywh
-      ? { type: "SpecificResource", source: "canvas-1", selector: { type: "FragmentSelector", value: `xywh=${opts.xywh}` } }
+    target: value
+      ? { type: "SpecificResource", source: "canvas-1", selector: { type: "FragmentSelector", value } }
       : "canvas-1",
   } as unknown as W3CAnnotation;
   if (opts.logicalId) (a as unknown as Record<string, unknown>)["archie:logicalId"] = opts.logicalId;
@@ -28,7 +29,7 @@ function fixture(): PortableExhibit {
     ],
     annotationsByObject: {
       "obj-img": [note("note-1", { logicalId: "n1", xywh: "pixel:10,20,30,40" }), note("note-2")],
-      "obj-av": [],
+      "obj-av": [note("note-av", { t: "12,20" })],
     },
     readingAnnotationsByObject: { "obj-img": {}, "obj-av": {} },
     readings: [],
@@ -87,6 +88,10 @@ describe("NOTE rung (/a/<id> [+ xywh / t])", () => {
   it("an explicit ?t on the route resolves a temporal fragment (seek-not-play is the surface's job)", () => {
     const r = resolveExhibitTarget(fixture(), route({ noteId: "note-2", t: "5,10" }));
     expect(r.fragment).toEqual({ kind: "t", value: "5,10" });
+  });
+  it("a TIMED AV note resolves selectId with NO spatial fragment — the AV player lands the cue from the note's own t= selector (Archie-a9f4)", () => {
+    const r = resolveExhibitTarget(fixture(), route({ noteId: "note-av" }));
+    expect(r).toEqual({ kind: "object", objectId: "obj-av", selectId: "note-av" });
   });
   it("an unknown note id degrades upward to the exhibit (tombstoned cite, ADR-0003)", () => {
     expect(resolveExhibitTarget(fixture(), route({ noteId: "ghost" }))).toEqual({ kind: "exhibit", degraded: "note-not-found" });
