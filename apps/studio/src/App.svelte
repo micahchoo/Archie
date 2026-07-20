@@ -79,6 +79,7 @@
   // The ingest flows (object-add, exhibit-create, bulk-note import, library-replace) — the DOMINO cut.
   import { createIngestFlows } from "./ingest-flows.js";
   import { ingestActivityOf } from "./ingest-activity.js";
+  import Spinner from "./Spinner.svelte";
   import { buildCsvTemplate, type CsvPendingNote } from "./csv-import.js";
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
@@ -2185,7 +2186,7 @@
         <button type="button" class="ss-cancel" onclick={() => (vs.creating = null)}>Cancel <kbd>Esc</kbd></button>
       {/if}
       {#if importStatus}
-        <span class="ss-import"><span class="import-spinner" aria-hidden="true"></span> Adding “{importStatus.name}”…{#if importStatus.total > 1} ({importStatus.index} of {importStatus.total}){/if}</span>
+        <span class="ss-import"><Spinner size={12} /> Adding “{importStatus.name}”…{#if importStatus.total > 1} ({importStatus.index} of {importStatus.total}){/if}</span>
       {/if}
       {#if importNote}
         <span class="ss-note">{importNote.message}<button type="button" class="ss-note-x" onclick={() => (importNote = null)} aria-label="Dismiss">✕</button></span>
@@ -2970,9 +2971,7 @@
     font-family: var(--font-ui); font-size: var(--text-ui-sm); letter-spacing: 0.04em; transition: color 160ms ease, border-color 160ms ease, background 160ms ease;
   }
   .add-obj-toggle:hover { color: var(--accent-2); border-color: var(--accent-2); background: var(--surface-canvas-overlay); }
-  /* Import spinner (the status strip's "Adding…" toast) — the accent, spinning. */
-  .import-spinner { flex-shrink: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--accent-muted); border-top-color: var(--accent); animation: import-spin 0.7s linear infinite; }
-  @keyframes import-spin { to { transform: rotate(360deg); } }
+  /* (The status strip's "Adding…" ring is the shared <Spinner> primitive — see Spinner.svelte.) */
 
   .body { display: flex; flex: 1; min-height: 0; }
   /* The canvas column is a flex COLUMN now (Archie-d48e): the new-note tool strip is its own chrome row on

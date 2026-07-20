@@ -30,6 +30,7 @@
   import type { DeployResult } from "./deploy/deploy-flows.svelte.js";
   import { untrack } from "svelte";
   import { createPublishMachine, isResumableState } from "./publish-machine.svelte.js";
+  import Spinner from "./Spinner.svelte";
   import { isTauri } from "./tauri-fs.js";
   // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return, single-scrim
   // invariant. ONE `use:scrimmed` now (was two, one per dialog) — merging removes the unmount/remount that
@@ -550,7 +551,7 @@
           <button class="primary" onclick={() => machine.openDevicePage()}>Open GitHub to enter it</button>
           <p class="note">Paste the code there and click Authorize. We'll pick it up automatically — come back here.</p>
           <p class="waiting" role="status">
-            <span class="spinner" aria-hidden="true"></span>
+            <Spinner size={16} />
             Waiting for you to authorize… <span class="muted">(expires {machine.countdownLabel})</span>
           </p>
         </div>
@@ -693,12 +694,12 @@
           {#each machine.steps as step}
             <li class={step.status}>
               <span class="tick" aria-hidden="true">{step.status === "done" ? "✓" : step.status === "active" ? "" : "○"}</span>
-              {#if step.status === "active"}<span class="spinner sm" aria-hidden="true"></span>{/if}
+              {#if step.status === "active"}<Spinner size={13} />{/if}
               <span class="step-label">{step.label}</span>
             </li>
           {/each}
           {#if machine.buildingPages}
-            <li class="active"><span class="spinner sm" aria-hidden="true"></span><span class="step-label">GitHub is building your site…</span></li>
+            <li class="active"><Spinner size={13} /><span class="step-label">GitHub is building your site…</span></li>
           {/if}
         </ul>
         <p class="note">This usually takes under a minute. You can leave this open.</p>
@@ -1032,13 +1033,7 @@
     background: var(--surface-canvas-overlay); border-radius: var(--radius-sm); box-shadow: var(--shadow-inset-fog);
   }
   .waiting { display: flex; align-items: center; gap: var(--space-2); font-family: var(--font-body); font-size: 0.9rem; color: var(--ink-paper-secondary); margin: 0; }
-  .spinner {
-    width: 1rem; height: 1rem; border-radius: 50%; flex: none;
-    border: 2px solid var(--border-canvas); border-top-color: var(--accent);
-    animation: spin 0.8s linear infinite;
-  }
-  .spinner.sm { width: 0.8rem; height: 0.8rem; border-width: 2px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  /* (Ring spinner: the shared <Spinner> primitive now — see Spinner.svelte.) */
 
   /* Publishing checklist — steps tick in order. */
   .checklist { list-style: none; margin: 0 0 var(--space-4); padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }

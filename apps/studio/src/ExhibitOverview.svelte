@@ -19,6 +19,7 @@
   import { isReorderable, reorderBlockedMessage } from "./reorder-state.js";
   import { midEllipsis, splitForMidTruncation } from "./mid-ellipsis.js";
   import type { IngestActivity } from "./ingest-activity.js";
+  import Spinner from "./Spinner.svelte";
   import {
     liftRow, moveRow, moveRowTo, indexOfMoving,
     liftAnnouncement, moveAnnouncement, boundaryAnnouncement, dropAnnouncement, cancelAnnouncement,
@@ -670,7 +671,7 @@
              pre-pass). Spinner, NOT an empty bar: Tropy's `hasProgressBar = progress > 0` switch
              (activity.js:17). A determinate track sitting at zero would claim a measurement we don't have. -->
         <p class="ib-line" role="status">
-          <span class="ib-spinner" aria-hidden="true"></span>
+          <Spinner size={13} />
           <span class="ib-what">Reading what you added…</span>
         </p>
       {:else}
@@ -985,14 +986,10 @@
   .ib-track::-webkit-progress-bar { background: var(--accent-muted); border-radius: var(--radius-sm); }
   .ib-track::-webkit-progress-value { background: var(--accent); border-radius: var(--radius-sm); transition: width 200ms ease; }
   .ib-track::-moz-progress-bar { background: var(--accent); border-radius: var(--radius-sm); }
-  /* The indeterminate lead-in. Track + accent cap is the house spinner geometry; --accent-muted for the
-     track matches App.svelte:2971's .import-spinner, the affordance this band supersedes on this screen.
-     (This is the 5th hand-rolled copy of this spinner in apps/studio — CreateExhibitDialog x2, Publish,
-     App. Consolidating all five into one primitive is a real follow-up, deliberately out of scope here.) */
-  .ib-spinner { flex: none; width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--accent-muted); border-top-color: var(--accent); animation: ingest-spin 0.7s linear infinite; }
-  @keyframes ingest-spin { to { transform: rotate(360deg); } }
+  /* (The indeterminate lead-in ring is the shared <Spinner> primitive — Spinner.svelte — whose
+     --accent-muted track deliberately matches .ib-track above: spinner and bar are the same signal at
+     two levels of knowledge, so they share one track colour.) */
   @media (prefers-reduced-motion: reduce) {
-    .ib-spinner { animation-duration: 2.4s; }
     .ib-track::-webkit-progress-value { transition: none; }
   }
 

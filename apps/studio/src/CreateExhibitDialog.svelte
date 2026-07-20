@@ -38,6 +38,7 @@
   import type { ManifestPlan } from "./iiif-import.js";
   import { summarizeFolderFiles, folderGroupCount, flattenedRelativePaths, type FolderSummary } from "./folder-import.js";
   import { readDroppedFolderFiles } from "./folder-drop.js";
+  import Spinner from "./Spinner.svelte";
   // Scrimmed surface via the shared helper (Archie-5968): the hand-rolled Esc handler, Tab-trap, and
   // focus-return this dialog carried are now the ONE modality implementation. `focusFirst` stays — it is
   // surface-specific (re-focus after switching path view / a prefill open), richer than the helper's
@@ -749,7 +750,7 @@
         <h2>Importing…</h2>
       </div>
       <div class="import-progress" role="status">
-        <span class="ip-spinner" aria-hidden="true"></span>
+        <Spinner size={16} />
         <span class="ip-count">Importing {importPhase.done} of {importPhase.total}…</span>
       </div>
       <div class="path-actions">
@@ -911,7 +912,7 @@
           />
           <span class="f-hint">A IIIF link (from a library or museum site) points at a set of pages Archie can import.</span>
           {#if iiifStatus === "checking"}
-            <div class="iiif-status checking"><span class="spinner" aria-hidden="true"></span> Checking that link…</div>
+            <div class="iiif-status checking"><Spinner size={12} /> Checking that link…</div>
           {:else if iiifStatus === "valid" && iiifPreview}
             <div class="iiif-status valid">Found it.</div>
             <div class="manifest-preview">
@@ -1035,7 +1036,7 @@
             </div>
           {/if}
           {#if linkStatus === "checking"}
-            <div class="iiif-status checking" role="status"><span class="spinner" aria-hidden="true"></span> Reading the folder’s listing…</div>
+            <div class="iiif-status checking" role="status"><Spinner size={12} /> Reading the folder’s listing…</div>
           {:else if linkStatus === "invalid" && linkMessage}
             <div class="iiif-status invalid" role="alert">{linkMessage}</div>
           {/if}
@@ -1396,19 +1397,7 @@
   .iiif-status.invalid {
     color: var(--semantic-error);
   }
-  .spinner {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 2px solid var(--border-canvas-emphasis);
-    border-top-color: var(--accent);
-    animation: spin 0.7s linear infinite;
-  }
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  /* (Ring spinner: the shared <Spinner> primitive now — see Spinner.svelte.) */
   .manifest-preview {
     display: flex;
     align-items: center;
@@ -1553,15 +1542,6 @@
     font-family: var(--font-body);
     font-size: 0.95rem;
     color: var(--ink-canvas-primary);
-  }
-  .ip-spinner {
-    width: 16px;
-    height: 16px;
-    flex: none;
-    border-radius: 50%;
-    border: 2px solid var(--border-canvas-emphasis);
-    border-top-color: var(--accent);
-    animation: spin 0.7s linear infinite;
   }
   .import-summary {
     margin: 0 0 var(--space-3);
