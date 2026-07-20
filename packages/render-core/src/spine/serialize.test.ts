@@ -106,6 +106,80 @@ describe("toHistory (Q-3)", () => {
   });
 });
 
+// Archie-3452: WADM-standard authorship on the heads page — `created` (the logicalId's DAG-root
+// modifiedAt) + `creator` (the head's lastEditor as a WADM Agent), so a pure IIIF/WADM consumer
+// (Mirador) sees authorship, not just `modified`. Synthetic session ids are suppressed; history
+// pages stay byte-stable (archie:lastEditor remains their one authorship field).
+describe("heads-page authorship (Archie-3452) — created + creator", () => {
+  const t2 = "2026-05-25T09:30:00.000Z";
+
+  it("a v1 head carries created === modified and creator {type:'Person', name} from lastEditor", () => {
+    const { log } = appendNew([], { target: rectTarget, body: { type: "TextualBody", value: "x" }, lastEditor: alice, modifiedAt: t, now: 1 });
+    const item = toHeadsPage(log, "page", opts).items[0]!;
+    expect(item.created).toBe(t);
+    expect(item.modified).toBe(t);
+    expect(item.creator).toEqual({ type: "Person", name: "alice" });
+  });
+
+  it("an EDITED head derives created from the DAG ROOT's modifiedAt, creator from the HEAD's lastEditor", () => {
+    const { log: l1, record: v1 } = appendNew([], { target: rectTarget, lastEditor: alice, modifiedAt: t, now: 1 });
+    const { log: l2 } = appendEdit(l1, v1.logicalId, { body: { type: "TextualBody", value: "v2" }, lastEditor: bob, modifiedAt: t2, now: 2 });
+    const item = toHeadsPage(l2, "page", opts).items[0]!;
+    expect(item.created).toBe(t); // when the note was born (v1), not when it was last edited
+    expect(item.modified).toBe(t2);
+    expect(item.creator).toEqual({ type: "Person", name: "bob" }); // the head's editor
+  });
+
+  it.each(["anonymous", "working-reader", "viewer-live"])(
+    "SUPPRESSES creator for the synthetic session id %j (charting decision) — created still emitted",
+    (synthetic) => {
+      const { log } = appendNew([], { target: rectTarget, lastEditor: asClientId(synthetic), modifiedAt: t, now: 1 });
+      const item = toHeadsPage(log, "page", opts).items[0] as unknown as Record<string, unknown>;
+      expect("creator" in item).toBe(false);
+      expect(item.created).toBe(t); // created is timestamp-derived, not identity — never suppressed
+    },
+  );
+
+  it("history pages stay byte-stable: NO created/creator keys (archie:lastEditor remains authoritative there)", () => {
+    const { log: l1, record: v1 } = appendNew([], { target: rectTarget, lastEditor: alice, modifiedAt: t, now: 1 });
+    const { log } = appendEdit(l1, v1.logicalId, { lastEditor: bob, modifiedAt: t2, now: 2 });
+    for (const item of toHistory(log, opts).pages[v1.logicalId]!.items) {
+      const h = item as unknown as Record<string, unknown>;
+      expect("created" in h).toBe(false);
+      expect("creator" in h).toBe(false);
+      expect(h["archie:lastEditor"]).toBeDefined(); // untouched — merge UI + collab banner read it
+    }
+  });
+
+  it("plural roots (adoption: appendNew with an explicit logicalId, merge-contract C18) — created = the EARLIEST root's modifiedAt", () => {
+    const { log: l1, record: rootA } = appendNew([], { target: rectTarget, lastEditor: alice, modifiedAt: t2, now: 1 });
+    // Adopted id: a SECOND parent:null root for the same logicalId — later in the log, EARLIER in time.
+    const { log } = appendNew(l1, { logicalId: rootA.logicalId, target: rectTarget, lastEditor: bob, modifiedAt: t, now: 2 });
+    const page = toHeadsPage(log, "page", opts);
+    expect(page.items).toHaveLength(2); // both roots are heads (honest plural-head degradation)
+    for (const item of page.items) expect(item.created).toBe(t); // earliest modifiedAt wins, regardless of log order
+  });
+
+  it("plural-root TIE (equal modifiedAt) breaks by lowest rev — created is that shared time, deterministically", () => {
+    const { record: seed } = appendNew([], { target: rectTarget, lastEditor: alice, modifiedAt: t, now: 1 });
+    const lo: AnnotationRecord = { logicalId: seed.logicalId, rev: mintRevId(0, () => 0.1), version: 1, parent: null, modifiedAt: t, lastEditor: alice, deleted: false, target: rectTarget };
+    const hi: AnnotationRecord = { logicalId: seed.logicalId, rev: mintRevId(0, () => 0.9), version: 1, parent: null, modifiedAt: t, lastEditor: bob, deleted: false, target: rectTarget };
+    // The lowest rev's record is selected (tied roots share the timestamp by definition, so the
+    // rev arm is a determinism guard: same `created` either way, never an omission or a crash).
+    const page = toHeadsPage([hi, lo], "page", opts); // hi listed FIRST — log order must not matter
+    expect(page.items).toHaveLength(2);
+    for (const item of page.items) expect(item.created).toBe(t);
+  });
+
+  it("omits created when the log holds no DAG root for the head (partial log) rather than inventing one", () => {
+    const { record: v1 } = appendNew([], { target: rectTarget, lastEditor: alice, modifiedAt: t, now: 1 });
+    const orphanV2: AnnotationRecord = { logicalId: v1.logicalId, rev: mintRevId(2, () => 0.5), version: 2, parent: v1.rev, modifiedAt: t2, lastEditor: alice, deleted: false, target: rectTarget };
+    const item = toHeadsPage([orphanV2], "page", opts).items[0] as unknown as Record<string, unknown>;
+    expect("created" in item).toBe(false);
+    expect(item.modified).toBe(t2);
+  });
+});
+
 // 1489: authored per-note emphasis serializes to archie:emphasis (mirror of archie:reading). The
 // load-bearing path is the PUBLISHED heads page the viewer loads (emphasisOf reads it); plus the
 // history reload round-trip. Absence must emit NO key so existing snapshots stay byte-identical.

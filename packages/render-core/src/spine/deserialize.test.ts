@@ -151,3 +151,26 @@ describe("Issue 19c — fromHistory dedupes by rev (mirrors serialize's dedupe)"
     expect(revs.size).toBe(recs.length); // no collisions dropped a genuine record
   });
 });
+
+// Archie-3452: the heads-page-only authorship projection (`created`/`creator`) must be HARMLESSLY
+// IGNORED on parse — they are derived data (root modifiedAt / lastEditor-as-Agent), never a parse
+// source. A history annotation carrying them (foreign data, or a future emitter putting them on
+// history too) reconstructs the identical record it would without them.
+describe("Archie-3452 — deserialize ignores WADM created/creator (derived, not parsed)", () => {
+  it("a history annotation carrying created + creator parses to the SAME record as one without", () => {
+    const { log } = appendNew([], { target, body: { type: "TextualBody", value: "x" }, lastEditor: alice, modifiedAt: "2026-05-24T10:00:00.000Z", now: 1 });
+    const { pages } = toHistory(log, { baseUrl: base });
+    const page = Object.values(pages)[0]!;
+    const plain = fromHistoryPage(page)[0]!;
+    const decorated: W3CAnnotationPage = {
+      ...page,
+      items: page.items.map((i) => ({ ...i, created: "1999-01-01T00:00:00.000Z", creator: { type: "Person", name: "someone else" } }) as W3CAnnotation),
+    };
+    const rec = fromHistoryPage(decorated)[0]!;
+    expect(rec).toEqual(plain); // byte-for-byte the same reconstruction
+    expect(rec.modifiedAt).toBe("2026-05-24T10:00:00.000Z"); // NOT the foreign `created`
+    expect(rec.lastEditor).toBe("alice"); // archie:lastEditor stays authoritative, NOT `creator.name`
+    expect("created" in rec).toBe(false);
+    expect("creator" in rec).toBe(false);
+  });
+});

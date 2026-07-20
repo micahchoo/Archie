@@ -3,6 +3,8 @@
 // toHeadsPage: the canvas AnnotationPage viewers load — ONLY head version(s), each linking
 //   out via archie:hasHistory (→ history page) and prov:wasRevisionOf (→ prior version's
 //   citation id). A pure WADM consumer assigns these to W3CAnnotation and ignores them.
+//   Heads ALSO carry WADM-standard authorship (Archie-3452): `created` (the DAG root's
+//   modifiedAt) + `creator` (the head's lastEditor as an Agent, synthetic ids suppressed).
 // toHistory: per-logicalId AnnotationPage with the FULL version chain + an index map. These
 //   are the citation-dereference targets.
 //
@@ -16,7 +18,7 @@
 // publish-history-aware.
 
 import type { LogicalId, RevId } from "../wadm/brand.js";
-import type { AnnotationLog, AnnotationRecord, W3CAnnotation, ArchieAnnotation, W3CAnnotationPage } from "../wadm/types.js";
+import type { AnnotationLog, AnnotationRecord, IsoDateTime, W3CAgent, W3CAnnotation, ArchieAnnotation, W3CAnnotationPage } from "../wadm/types.js";
 import {
   WADM_CONTEXT,
   ARCHIE_HAS_HISTORY,
@@ -44,13 +46,13 @@ import type { CarryDisposition } from "../model/carry.js";
 // that silently dropped new fields). Zero runtime; it exists only to break the build loudly.
 const _historyCarry = {
   target: "carry", // recordToAnnotation
-  modifiedAt: "carry", // recordToAnnotation → `modified`
+  modifiedAt: "carry", // recordToAnnotation → `modified`; heads pages ALSO surface the DAG root's value as WADM `created` (Archie-3452)
   body: "carry", // recordToAnnotation
   motivation: "carry", // recordToAnnotation
   logicalId: "carry", // withDagMeta ↓
   rev: "carry",
   version: "carry",
-  lastEditor: "carry",
+  lastEditor: "carry", // withDagMeta → archie:lastEditor; heads pages ALSO project it as WADM `creator` unless synthetic (Archie-3452)
   parent: "carry",
   mergeParents: "carry",
   deleted: "carry",
@@ -83,6 +85,50 @@ function dedupe(log: AnnotationLog): AnnotationRecord[] {
     }
   }
   return out;
+}
+
+/** logicalId → the DAG-root record's `modifiedAt`: the note's creation time (Archie-3452). The root
+ *  is a `parent: null` record (v1); a partial log missing its root simply yields no entry (the
+ *  heads page then omits `created` rather than inventing one). Plural roots per logicalId CAN
+ *  arise from the append family: appendNew accepts a caller-supplied logicalId, so cross-copy
+ *  adoption creates a second `parent: null` root for the same id (pinned by merge-contract
+ *  C9/C18). The tiebreak handles that deterministically: earliest `modifiedAt` wins, ties
+ *  broken by lowest `rev`. */
+function rootCreatedAt(log: AnnotationLog): Map<LogicalId, IsoDateTime> {
+  const roots = new Map<LogicalId, AnnotationRecord>();
+  for (const r of dedupe(log)) {
+    if (r.parent !== null) continue;
+    const cur = roots.get(r.logicalId);
+    if (cur === undefined || r.modifiedAt < cur.modifiedAt || (r.modifiedAt === cur.modifiedAt && r.rev < cur.rev)) roots.set(r.logicalId, r);
+  }
+  const out = new Map<LogicalId, IsoDateTime>();
+  for (const [lid, r] of roots) out.set(lid, r.modifiedAt);
+  return out;
+}
+
+/** Synthetic session ids that must NEVER surface as a WADM `creator` (Archie-3452 charting decision).
+ *  These stamp `lastEditor` on records authored without a real identity: "anonymous" (the studio's
+ *  no-display-name fallback, App.svelte), "working-reader" (publish/working.ts's read-session default)
+ *  and "viewer-live" (the viewer's live-source probe, published.ts). They are machine ids, not
+ *  authorship — a pure IIIF/WADM consumer (Mirador) would render them as a person's name. Only real
+ *  authored names become a creator; `archie:lastEditor` on history pages is untouched either way. */
+const SYNTHETIC_EDITORS: ReadonlySet<string> = new Set(["anonymous", "working-reader", "viewer-live"]);
+
+/** The WADM Agent for a head record's `lastEditor`, or undefined when the stamp is synthetic/blank. */
+function creatorOf(lastEditor: string): W3CAgent | undefined {
+  if (lastEditor.trim() === "" || SYNTHETIC_EDITORS.has(lastEditor)) return undefined;
+  return { type: "Person", name: lastEditor };
+}
+
+/**
+ * Citation context for heads-page emission — built from the FULL log (Q-6 ids need every record;
+ * `created` needs each logicalId's DAG root), then shared across per-canvas head subsets.
+ */
+export interface CitationContext {
+  /** rev → collision-disambiguated citation id (Q-6). */
+  ids: Map<RevId, string>;
+  /** logicalId → the DAG-root record's `modifiedAt` (the note's WADM `created` — Archie-3452). */
+  createdAt: Map<LogicalId, IsoDateTime>;
 }
 
 /** Map every record's rev to its (collision-disambiguated) citation id (Q-6). */
@@ -123,6 +169,19 @@ function withProvLink(ann: ArchieAnnotation, parent: RevId | null, ids: Map<RevI
     const parentId = ids.get(parent);
     if (parentId !== undefined) ann[PROV_WAS_REVISION_OF] = parentId;
   }
+  return ann;
+}
+
+/** WADM-standard authorship on a HEAD annotation (Archie-3452): `created` = the logicalId's DAG-root
+ *  `modifiedAt`, `creator` = the head's `lastEditor` as a WADM Agent — so a pure IIIF/WADM consumer
+ *  sees when a note was born and who last authored it, not just `modified`. Each field is emitted
+ *  ONLY when known/real: no root in the log ⇒ no `created`; a synthetic/blank editor ⇒ no `creator`.
+ *  Heads-page only — history pages keep the canonical `archie:lastEditor` and stay byte-stable. */
+function withAuthorship(ann: ArchieAnnotation, record: AnnotationRecord, createdAt: Map<LogicalId, IsoDateTime>): ArchieAnnotation {
+  const created = createdAt.get(record.logicalId);
+  if (created !== undefined) ann.created = created;
+  const creator = creatorOf(record.lastEditor);
+  if (creator !== undefined) ann.creator = creator;
   return ann;
 }
 
@@ -171,13 +230,14 @@ export function targetSource(record: AnnotationRecord): string {
 
 /**
  * Build a heads AnnotationPage from an ALREADY-SELECTED set of head records (e.g. those
- * targeting one canvas). `ids` must be built from the FULL log so prov:wasRevisionOf can
- * resolve parents that live in history, not in this subset.
+ * targeting one canvas). `cite` must be built from the FULL log (citationIdMap) so
+ * prov:wasRevisionOf can resolve parents — and `created` its DAG roots — that live in
+ * history, not in this subset.
  */
-export function headsPageFromRecords(heads: AnnotationRecord[], pageId: string, ids: Map<RevId, string>, opts: SerializeOptions = {}): W3CAnnotationPage {
+export function headsPageFromRecords(heads: AnnotationRecord[], pageId: string, cite: CitationContext, opts: SerializeOptions = {}): W3CAnnotationPage {
   const historyBase = opts.historyBase ?? "annotations/history/";
   const items: W3CAnnotation[] = heads.map((head) => {
-    const ann = withExtensions(withProvLink(recordToAnnotation(head, ids.get(head.rev)!), head.parent, ids), head);
+    const ann = withExtensions(withAuthorship(withProvLink(recordToAnnotation(head, cite.ids.get(head.rev)!), head.parent, cite.ids), head, cite.createdAt), head);
     ann[ARCHIE_HAS_HISTORY] = `${historyBase}${head.logicalId}.json`;
     return ann;
   });
@@ -194,7 +254,7 @@ export function headsPageFromRecords(heads: AnnotationRecord[], pageId: string, 
  */
 export function headsPagesByReading(
   heads: AnnotationRecord[],
-  ids: Map<RevId, string>,
+  cite: CitationContext,
   pageId: (reading: string | undefined) => string,
   collectionId: (reading: string) => string,
   opts: SerializeOptions = {},
@@ -210,7 +270,7 @@ export function headsPagesByReading(
   const defined = [...groups.keys()].filter((k): k is string => k !== undefined).sort(cmp);
   const keys: (string | undefined)[] = groups.has(undefined) ? [undefined, ...defined] : defined;
   return keys.map((reading) => {
-    const page = headsPageFromRecords(groups.get(reading)!, pageId(reading), ids, opts);
+    const page = headsPageFromRecords(groups.get(reading)!, pageId(reading), cite, opts);
     // IIIF P3 models partOf as an ARRAY of {id,type} objects (a bare string crashes IIIF parsers
     // that `.map()` over it, e.g. Clover) — link the reading page to its AnnotationCollection.
     if (reading !== undefined) (page as { partOf?: unknown }).partOf = [{ id: collectionId(reading), type: "AnnotationCollection" }];
@@ -223,13 +283,13 @@ export function headsPagesByReading(
  * each carrying archie:hasHistory + prov:wasRevisionOf. A pure idempotent function of the log.
  */
 export function toHeadsPage(log: AnnotationLog, pageId: string, opts: SerializeOptions = {}): W3CAnnotationPage {
-  const ids = citationIds(log, opts.baseUrl ?? "");
-  return headsPageFromRecords(projectHeads(log), pageId, ids, opts);
+  return headsPageFromRecords(projectHeads(log), pageId, citationIdMap(log, opts.baseUrl ?? ""), opts);
 }
 
-/** Build the rev->citation-id map for a log (exported so per-canvas publish can share it). */
-export function citationIdMap(log: AnnotationLog, baseUrl = ""): Map<RevId, string> {
-  return citationIds(log, baseUrl);
+/** Build the citation context — rev→citation-id map + logicalId→created map — for a log
+ *  (exported so per-canvas publish can build it ONCE from the full log and share it). */
+export function citationIdMap(log: AnnotationLog, baseUrl = ""): CitationContext {
+  return { ids: citationIds(log, baseUrl), createdAt: rootCreatedAt(log) };
 }
 
 export interface HistoryOutput {

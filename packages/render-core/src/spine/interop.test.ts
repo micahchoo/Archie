@@ -103,6 +103,25 @@ describe("THE GATE — pure-WADM-consumer interop (ADR-0003)", () => {
     expect(new Set(ids).size).toBe(2); // distinct ids — valid JSON-LD (Q-6 disambiguation)
   });
 
+  it("authorship is STOCK WADM (Archie-3452): the pure consumer sees created + creator, not just modified", () => {
+    // The whole point of projecting authorship into `created`/`creator` instead of archie:-keys:
+    // a pure consumer (Mirador) reads them without knowing anything about Archie.
+    const t2 = "2026-05-25T09:00:00.000Z";
+    const { log: l1, record: v1 } = appendNew([], { target: note(), body: { type: "TextualBody", value: "x" }, lastEditor: alice, modifiedAt: t, now: 1 });
+    const { log } = appendEdit(l1, v1.logicalId, { body: { type: "TextualBody", value: "y" }, lastEditor: bob, modifiedAt: t2, now: 2 });
+    const [r] = pureWadmConsumer(toHeadsPage(log, `${base}page`, opts));
+    expect(r!.created).toBe(t); // born at v1's time — visible through stock WADM keys
+    expect(r!.modified).toBe(t2);
+    expect(r!.creator).toEqual({ type: "Person", name: "bob" }); // a WADM Agent, not an archie: extension
+  });
+
+  it("a synthetic session id ('anonymous') never reaches the pure consumer as a person's name", () => {
+    const { log } = appendNew([], { target: note(), body: { type: "TextualBody", value: "x" }, lastEditor: asClientId("anonymous"), modifiedAt: t, now: 1 });
+    const [r] = pureWadmConsumer(toHeadsPage(log, `${base}page`, opts));
+    expect(r!.creator).toBeUndefined();
+    expect(r!.created).toBe(t); // timestamps are identity-free — still emitted
+  });
+
   it("a deleted note disappears entirely from the pure consumer's view", () => {
     const { log: l1, record: v1 } = appendNew([], { target: note(), body: { type: "TextualBody", value: "x" }, lastEditor: alice, modifiedAt: t, now: 1 });
     const { log: l2, record: keep } = appendNew(l1, { target: note(), body: { type: "TextualBody", value: "keep" }, lastEditor: alice, modifiedAt: t, now: 2 });

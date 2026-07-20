@@ -214,6 +214,15 @@ describe("AnnotationSession — section attribution threading (Archie-42f3, foll
     expect("archie:section" in byId.get(bare)!).toBe(false);
   });
 
+  it("workingAnnotations emits NO created/creator (Archie-3452: authorship is a PUBLISH heads-page projection, not an editing-surface field)", () => {
+    const s = new AnnotationSession(alice);
+    s.createNote({ target: rect(0, 0, 10, 10) });
+    const ann = s.workingAnnotations()[0] as unknown as Record<string, unknown>;
+    expect("created" in ann).toBe(false);
+    expect("creator" in ann).toBe(false);
+    expect(ann.modified).toBeDefined(); // the surface's one timestamp, unchanged
+  });
+
   it("resolve() inherits `section` from the heads when the choice omits it, and honors an explicit choice", () => {
     const local = new AnnotationSession(alice);
     const id = local.createNote({ target: rect(0, 0, 10, 10), body: text("v1"), section: "s-1" });
