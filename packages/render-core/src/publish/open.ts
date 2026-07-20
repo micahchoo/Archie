@@ -87,7 +87,9 @@ export async function fetchArchieLibraryBytes(
   url: string,
   opts?: { fetch?: typeof fetch; maxBytes?: number },
 ): Promise<Uint8Array> {
-  const fetchImpl = opts?.fetch ?? fetch;
+  // Bound default — bare `fetch` breaks in browsers if a consumer ever object-stores it (WebIDL
+  // receiver brand check; Node doesn't check, so tests can't see it). bound-fetch-defaults.md.
+  const fetchImpl = opts?.fetch ?? globalThis.fetch.bind(globalThis);
   const maxBytes = opts?.maxBytes ?? SRC_MAX_BYTES;
   const res = await fetchImpl(url);
   if (!res.ok) {

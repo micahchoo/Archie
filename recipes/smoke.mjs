@@ -88,7 +88,11 @@ async function main() {
   const pageErrors = [];
   const consoleErrors = [];
   page.on("pageerror", (err) => pageErrors.push(err.message || String(err)));
-  page.on("console", (msg) => { if (msg.type() === "error") consoleErrors.push(msg.text()); });
+  const consoleWarnings = []; // scanned by the detached-fetch assertion — the 2026-07-20 regression
+  page.on("console", (msg) => { //  reached the console only as a DOWNGRADED "transient" warning
+    if (msg.type() === "error") consoleErrors.push(msg.text());
+    if (msg.type() === "warning") consoleWarnings.push(msg.text());
+  });
 
   let canvasMounted = false;
   let galleryCount = 0, objCount = 0;
@@ -114,6 +118,15 @@ async function main() {
     const realPageErrors = pageErrors.filter((m) => !/openseadragon|webgl|swiftshader|GroupMarker/i.test(m));
     record(realPageErrors.length === 0, "no uncaught page errors",
       realPageErrors.length ? realPageErrors.join(" | ") : "none");
+
+    // (4) no detached-fetch regression ANYWHERE in the run — hard assertion on the precise signature,
+    // flake-proof (immune to the WebGL/network noise the soft canvas check tolerates). The 2026-07-20
+    // regression surfaced only as a DOWNGRADED console warning on a lazy path; the 0-cards symptom
+    // above catches the gallery seam, this catches any future seam past it (reader, tiles, media).
+    // See .claude/rules/bound-fetch-defaults.md.
+    const illegal = [...pageErrors, ...consoleErrors, ...consoleWarnings].filter((m) => /Illegal invocation/i.test(m));
+    record(illegal.length === 0, "no 'Illegal invocation' (detached fetch) anywhere",
+      illegal.length ? illegal[0] : "none");
 
     // (best-effort) click into the first exhibit, then the first object → OSD canvas
     if (galleryCount > 0) {

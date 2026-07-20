@@ -4,7 +4,7 @@
 // read parity is covered separately (http.conformance.test.ts); this file pins the HTTP-specific
 // seams, including composition with `fsJsonSource` — the real consumption path.
 
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { HttpFilesystem, ReadOnlyFilesystemError } from "./http.js";
 import { fsJsonSource, FailedReadError } from "../publish/read.js";
 
@@ -201,5 +201,33 @@ describe("HttpFilesystem is read-only", () => {
         for await (const e of root.entries()) void e;
       })(),
     ).rejects.toThrow(/no directory listing/);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// Default-fetch binding (.claude/rules/bound-fetch-defaults.md). Browsers brand-check fetch's
+// receiver; Node's fetch does not, so a bare `fetch` default that gets cfg-stored and method-called
+// passes every Node test and throws "Illegal invocation" in every browser (shipped-bundle outage,
+// caught only by recipes/smoke.mjs, 2026-07-20). This stub re-imposes the browser's check under
+// vitest: any receiver other than `globalThis`/`undefined` (i.e. an object-stored, method-called
+// copy) throws exactly as Chromium does.
+function installBrandCheckedFetch(routes: Record<string, () => Response>): void {
+  const strict = function (this: unknown, input: string | URL | Request): Promise<Response> {
+    if (this !== undefined && this !== globalThis) {
+      throw new TypeError("Failed to execute 'fetch' on 'Window': Illegal invocation (test brand check)");
+    }
+    const make = routes[String(input)];
+    return Promise.resolve(make ? make() : new Response("not found", { status: 404 }));
+  } as unknown as typeof fetch;
+  vi.stubGlobal("fetch", strict);
+}
+
+describe("default fetch binding (bound-fetch-defaults.md)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("the default fetch survives being cfg-stored and method-called (browser receiver brand check)", async () => {
+    installBrandCheckedFetch({ [`${BASE}/exhibits.json`]: () => new Response('{"ok":true}') });
+    const fs = new HttpFilesystem(BASE); // no opts.fetch — the defaulting seam under test
+    expect(await readText(fs, "exhibits.json")).toBe('{"ok":true}');
   });
 });

@@ -413,3 +413,32 @@ with the regenerated `pnpm-lock.yaml` in the same commit or every job fails with
 5. **Add a Rust/Cargo section to `ledgers/DEPS.md`.** Its stated invariant ("every advisory at
    moderate+ fixed or carrying its reason in-row") currently excludes the entire Cargo tree, so the
    glib dismissal and the git2 row have nowhere to live and the next auditor re-derives them.
+
+---
+
+## 8. Follow-up outcomes (same day, 2026-07-20)
+
+1. **Done** — `56bc55f`: loopback bind + inline contract comment. Rule entry folded into
+   [[bound-fetch-defaults]] scope decisions rather than a separate proxy rule.
+2. **Done, re-scoped** — `56bc55f`: the *shipping* path (`build.mjs`) now declares esbuild `^0.27.3`
+   as a devDep and `require`s it plainly (adversarial verify rejected an exact pin: it dedupes by
+   luck and orphans when astro/vite move; reproducibility already comes from the committed lockfile +
+   CI `--frozen-lockfile`). The *measuring* path (`scripts/bundle-size.mjs`) keeps its store scan
+   deliberately — its `:12` comment is considered prior art, and its `--check` loop compares only
+   vite-built app dists, so its compiler pick is unobservable. Correcting §4b's own overstatement:
+   the trap could **not** actually trip the `bundle:check` ratchet — 25.9KB headroom vs a ~2KB
+   compiler delta, and the baseline self-heals on every full build.
+3–5. Still open.
+
+**New, found by acting on the REGENERATE-NOW recommendation (§ was: dist stale, rebuild it):**
+regenerating `packages/archie-viewer/dist/` from current source produced a bundle that renders
+**0 gallery cards** — `recipes/smoke.mjs` FAIL — while the committed (stale) dist passes. The
+staleness was *masking a regression*: bare-`fetch` defaults get object-stored by
+`HttpFilesystem`/`httpJsonSource` and method-called, which browsers reject (WebIDL receiver brand
+check, "Illegal invocation") and Node permits — so all 2,241 unit tests passed against a bundle no
+browser could load. Root-caused, fixed (4 defaulting seams bound), red-green brand-check tests
+added, `embed-smoke` CI job now builds from source and drives real Chromium.
+See `.claude/rules/bound-fetch-defaults.md`. The dist regeneration is **pending** — it lands as its
+own commit and only after the fixed bundle passes smoke (which it now does: 7 cards / 21 objects /
+deep-zoom mounted / 0 console errors). If that commit is missing, the REGENERATE-NOW item is still
+open and the CDN artifact still carries the unbound-fetch bundle.
