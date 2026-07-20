@@ -2,15 +2,18 @@
   // Object thumbnail for the exhibit overview — one designed plate per IMPORTABLE media type, so an
   // audio/video/map object reads as the thing it is instead of a broken image. Extends NoteMedia's
   // av-cover language (video poster + ▶, audio waveform + ♪) up to object scale and adds the one type
-  // NoteMedia has no equivalent for: a MAP (geo object, AObject.tileSource). Image is the real picture;
-  // the others are intentional motifs on warm paper, distinct from the HONEST "couldn't load" error
-  // fallback an actual broken file gets. Type is read off the object: tileSource ⇒ map, else mediaType.
-  import { thumbnailUrl, type AObject } from "@render/core";
+  // NoteMedia has no equivalent for: a MAP (geo object, an `xyz` AObject.tileSource). Image is the real
+  // picture; the others are intentional motifs on warm paper, distinct from the HONEST "couldn't load"
+  // error fallback an actual broken file gets. Type is read off the object in lib/media-thumb.ts:
+  // xyz tileSource ⇒ map, else mediaType — a `dzi` tileSource is a baked pyramid of an ordinary IMAGE
+  // (publish-time tiling stamps it on photos), so it stays on the image path and shows its raster.
+  import type { AObject } from "@render/core";
+  import { thumbKind, thumbSrc } from "../lib/media-thumb.js";
 
   let { object }: { object: AObject } = $props();
 
-  const kind = $derived(object.tileSource ? "map" : (object.mediaType ?? "image"));
-  const imgSrc = $derived(object.thumbnail ?? thumbnailUrl(object.source, 480));
+  const kind = $derived(thumbKind(object));
+  const imgSrc = $derived(thumbSrc(object, 480));
 
   // Deterministic waveform bar heights (NoteMedia's av-cover motif, widened for the bigger plate) — a
   // drawn sound signature, not a real decode.
