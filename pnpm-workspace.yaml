@@ -31,4 +31,5 @@ allowBuilds:
   sharp: true
 minimumReleaseAgeExclude:
   - '@astrojs/svelte@8.1.2'
-  - astro@6.3.8
+  # astro@6.3.8 removed 2026-07-20: dead entry — the tree resolves astro 6.4.8 (R-astro bump,
+  # ledgers/DEPS.md), so the exclusion excluded nothing. @astrojs/svelte@8.1.2 stays: still resolved.

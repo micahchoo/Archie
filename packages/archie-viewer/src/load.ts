@@ -108,7 +108,12 @@ export async function openLibraryFromFile(file: Blob): Promise<LoadedLibrary> {
 export async function openLibraryFromSrc(
   url: string,
   maxBytes: number = SRC_MAX_BYTES,
-  fetchImpl: typeof fetch = fetch,
+  // Bound default (NOT bare `fetch`): this value is threaded into `httpJsonSource` → `HttpFilesystem`,
+  // which stores it on a config object and method-calls it — browsers brand-check the receiver and
+  // throw "Illegal invocation" on a detached Window method. Node's fetch doesn't check, so every unit
+  // test passes while the shipped bundle can't load a single library (caught only by recipes/smoke.mjs,
+  // 2026-07-20). See .claude/rules/bound-fetch-defaults.md.
+  fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis),
 ): Promise<LoadedLibrary> {
   // A non-`.zip` src is a tree base — read it lazily, not as a single payload. If the tree read fails
   // AND the base URL itself serves zip bytes (a `.zip`-less zip link), fall back to the zip path.
@@ -204,7 +209,9 @@ function httpJsonSource(base: string, fetchImpl: typeof fetch): JsonSource {
  * ship a marker file (some static hosts strip dotted/unknown files), so the gallery index parsing IS the
  * acceptance signal. A PRESENT-but-foreign marker is still rejected.
  */
-export async function openLibraryFromTree(base: string, fetchImpl: typeof fetch = fetch): Promise<LoadedLibrary> {
+// Bound default for the same reason as `openLibraryFromSrc`'s — this is an exported entry point, so a
+// caller omitting `fetchImpl` must not inherit a detached (browser-throwing) Window method.
+export async function openLibraryFromTree(base: string, fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis)): Promise<LoadedLibrary> {
   const src = httpJsonSource(base, fetchImpl);
   // ADR-0020 marker gate — the SHARED `assertArchieTreeMarker` (was a hand-rolled copy here). Lenient-on-
   // absent, present-must-be-current; identical policy to the hosted apps/viewer path (published.ts).

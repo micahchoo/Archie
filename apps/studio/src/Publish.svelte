@@ -188,7 +188,9 @@
   }
   // Embed snippet (contributor-broadening ⑩ slice A): TWO ways to embed, per the locked v1 contract
   // (ADR-0021) and the iframe floor (anvil ADR-0006).
-  const CDN_RUNTIME = "https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1/dist/archie-viewer.js";
+  // @v1.1, NOT @v1: the v1 tag's dist/ predates the av-player chunk (git ls-tree v1 dist/ = 3 files)
+  // — a copied snippet at @v1 loads a runtime with no audio/video. @v1.1 is what every recipe pins.
+  const CDN_RUNTIME = "https://cdn.jsdelivr.net/gh/micahchoo/Archie@v1.1/dist/archie-viewer.js";
   // The closing script tag is split (`</scr" + "ipt>`) so the literal doesn't terminate THIS Svelte
   // <script> block — the snippet text is identical to recipes/README.md §1.
   const wcSnippet = $derived(zipUrl.trim() === "" ? "" :

@@ -1,7 +1,7 @@
 // LOAD SEAM tests (test-first). The seam holds NO module globals: every fn takes/returns its
 // `LoadedLibrary` state explicitly, so two opens don't clobber each other. We build a real
 // `.archie.zip` in memory (publishLibrary into a MemoryFilesystem → toZip) and round-trip it.
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   openZipBytes,
   openLibraryFromFile,
@@ -232,5 +232,45 @@ describe("load seam — published-tree-base vector", () => {
       return new Response("<html>404</html>", { status: 404 });
     }) as unknown as typeof fetch;
     await expect(openLibraryFromTree(base, fetchImpl)).rejects.toThrow(/couldn't open the library/i);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------------
+// Default-fetch binding (.claude/rules/bound-fetch-defaults.md). The default `fetchImpl` is threaded
+// into httpJsonSource → HttpFilesystem, which stores it on a config object and METHOD-CALLS it.
+// Browsers brand-check fetch's receiver ("Illegal invocation" on a detached Window method); Node's
+// fetch does not, so a bare-`fetch` default passed every test here while the shipped bundle could not
+// load a single library (0 gallery cards; caught only by recipes/smoke.mjs, 2026-07-20). This stub
+// re-imposes the browser's receiver check under vitest so the default path is red without the bind.
+function installBrandCheckedFetch(routes: Record<string, () => Response>): void {
+  const strict = function (this: unknown, input: string | URL | Request): Promise<Response> {
+    if (this !== undefined && this !== globalThis) {
+      throw new TypeError("Failed to execute 'fetch' on 'Window': Illegal invocation (test brand check)");
+    }
+    const make = routes[String(input)];
+    return Promise.resolve(make ? make() : new Response("not found", { status: 404 }));
+  } as unknown as typeof fetch;
+  vi.stubGlobal("fetch", strict);
+}
+
+describe("default fetch binding (bound-fetch-defaults.md)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  // archie.json deliberately unrouted → 404 → the ADR-0020 marker gate is lenient-on-absent.
+  const treeRoutes = {
+    "https://host/tree/exhibits.json": () =>
+      new Response(JSON.stringify({ library: { title: "Bound" }, exhibits: [] })),
+  };
+
+  it("openLibraryFromSrc's DEFAULT fetch survives the tree path's object storage (HttpFilesystem cfg)", async () => {
+    installBrandCheckedFetch(treeRoutes);
+    const lib = await openLibraryFromSrc("https://host/tree/");
+    expect(lib.gallery.library.title).toBe("Bound");
+  });
+
+  it("openLibraryFromTree's DEFAULT fetch does too (exported entry point, own default)", async () => {
+    installBrandCheckedFetch(treeRoutes);
+    const lib = await openLibraryFromTree("https://host/tree/");
+    expect(lib.gallery.library.title).toBe("Bound");
   });
 });

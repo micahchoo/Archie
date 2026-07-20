@@ -147,7 +147,11 @@ export class HttpFilesystem implements Filesystem {
   constructor(base: string, opts?: { fetch?: typeof fetch; maxBytes?: number }) {
     this.cfg = {
       base: base.endsWith("/") ? base : `${base}/`,
-      fetchImpl: opts?.fetch ?? fetch,
+      // BOUND, never bare `fetch`: cfg stores this and `fetchBytes` invokes it as `this.cfg.fetchImpl(…)`
+      // — a method call whose receiver is `cfg`, not `Window`. Browsers brand-check the receiver and
+      // throw "Illegal invocation"; Node's fetch doesn't, so vitest is structurally blind to the
+      // difference (recipes/smoke.mjs is the browser gate). See .claude/rules/bound-fetch-defaults.md.
+      fetchImpl: opts?.fetch ?? globalThis.fetch.bind(globalThis),
       maxBytes: opts?.maxBytes ?? SRC_MAX_BYTES,
     };
   }

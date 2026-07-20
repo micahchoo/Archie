@@ -105,6 +105,14 @@ jobs:
         # Errors fail this job; the ~11 pre-existing a11y WARNINGS do not (no --fail-on-warnings).
         run: pnpm --filter @archie/studio run check
 
+      - name: svelte-check (apps/viewer)
+        # The viewer's 23 Svelte islands had NO type gate: `astro check` diagnoses .astro files only
+        # (measured 2026-07-20, .claude/rules/svelte-no-typecheck-net.md — a planted undefined
+        # identifier in an island passed astro check AND tsc at 0 errors). Baseline was burned to
+        # zero the same day (1 real indexing error fixed; 9 intentional initial-capture warnings
+        # converted to declared intent via svelte-ignore), so warnings gate too.
+        run: pnpm --filter @archie/viewer run check:svelte
+
   gh-pages-build:
     runs-on: ubuntu-latest
     steps:
@@ -165,6 +173,43 @@ jobs:
       # committed artifact.
       - name: Embed bundle size ratchet
         run: pnpm --filter @render/archie-viewer bundle:check
+
+  # Build the <archie-viewer> bundle from CURRENT SOURCE and drive it in a real browser
+  # (recipes/smoke.mjs against the committed published fixture). This is the only gate that runs the
+  # BUILT EMBED BUNDLE in a real browser (the e2e job drives Studio's dev server, not the embed):
+  # Node's fetch skips the WebIDL receiver brand check, so an unbound-fetch
+  # regression passed every unit suite while the built bundle rendered 0 gallery cards
+  # (bound-fetch-defaults.md, 2026-07-20). Deliberately NOT a freshness gate — it never diffs the
+  # committed dist/ (the repo's cadence is batch catch-up); it asserts source PRODUCES a working
+  # bundle. Dirtying the checkout's dist/ is fine: this job commits nothing.
+  embed-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium (+ OS deps)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build embed bundle from source and smoke it in Chromium
+        run: |
+          pnpm --filter @render/archie-viewer build
+          pnpm sync-dist
+          node recipes/smoke.mjs
 
   e2e:
     # Studio back/forward navigation gate (Archie-d80f). Separate job so the unit gates above stay fast;

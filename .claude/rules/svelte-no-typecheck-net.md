@@ -21,17 +21,16 @@ clean; the same statement planted in `src/pages/index.astro` was caught immediat
 `astro check` diagnoses `.astro` files only — the viewer's 23 Svelte islands, which hold nearly all
 of its UI, have no type gate in `check`, `typecheck`, or CI.
 
-Until a `check:svelte` script exists in apps/viewer, run svelte-check by hand against the viewer
-(the binary is already in the workspace via studio's devDeps):
-
-```bash
-cd apps/viewer && ../../apps/studio/node_modules/.bin/svelte-check --workspace . --output human
-```
-
-Baseline as of 2026-07-20: **1 error, 10 warnings in 5 files** (pre-existing — a possibly-undefined
-in `NarrativeReader.svelte:93` plus `state_referenced_locally` warnings). Compare before/after your
-change; the number must not grow. Wiring this into `apps/viewer/package.json` + checks.yml, and
-burning the baseline down to zero, is an open follow-up.
+**Closed 2026-07-20 (same day, later):** apps/viewer now has the gate — `pnpm --filter @archie/viewer
+run check:svelte` (`svelte-check --workspace . --fail-on-warnings`, own devDep), wired into checks.yml's
+svelte-check job beside studio's. The old baseline (1 error, 10 warnings in 5 files) was burned to
+**zero**: the error was a real unguarded indexed access in `Reader.svelte` `stepObject`; the 10
+warnings were 9 intentional initial-capture sites (props named `initial*`, once-per-open builds,
+prev-value trackers) converted to declared intent via `// svelte-ignore state_referenced_locally`
+with a WHY on each, plus one dead CSS selector. `--fail-on-warnings` means the viewer's baseline is
+**0/0 and a new warning fails CI** — same regression discipline as studio. When silencing
+`state_referenced_locally`, never paste a bare ignore: the comment must say why initial-capture is
+the contract at that site (see the five components for the idiom).
 
 **How to apply now:**
 - After editing any `.svelte` file, run the app's check locally — `pnpm --filter @archie/studio run
