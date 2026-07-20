@@ -6,7 +6,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ZipFilesystem, publishLibrary, appendNew, asClientId, asExhibitId, asLibraryId, asObjectId, type Library, type AnnotationLog, type ExhibitsJson } from "@render/core";
 import {
   openPortableLibrary, closePortableLibrary, isPortable, loadGallery, loadPublishedExhibit,
-  modeFromProbe, probeViewerMode, openLibraryFromFile, openLibraryFromSrc, mergeGalleries, toServingOrigin,
+  modeFromProbe, probeViewerMode, bootErrorMessage, openLibraryFromFile, openLibraryFromSrc, mergeGalleries, toServingOrigin,
 } from "./published.js";
 import { BASE as CANONICAL_BASE } from "./published-base.js";
 
@@ -101,12 +101,16 @@ describe("published.ts hosted/portable seam (PV-2a)", () => {
 });
 
 describe("mode-detect classifier (ADR-0008) — modeFromProbe", () => {
-  it("ok → hosted; absent(404) → portable; transient/corrupt → error (never silently portable)", () => {
+  // Archie-a2b9: the old single "error" mode collapsed offline and corrupt-deploy, so the shell blamed
+  // the reader's connection for a broken deployment. The split is now the contract.
+  it("ok → hosted; absent(404) → portable (the ONLY portable signal — never silently portable on failure)", () => {
     expect(modeFromProbe({ kind: "ok" })).toBe("hosted");
     expect(modeFromProbe({ kind: "absent" })).toBe("portable");
-    expect(modeFromProbe({ kind: "http", status: 500 })).toBe("error");
-    expect(modeFromProbe({ kind: "network" })).toBe("error");
-    expect(modeFromProbe({ kind: "malformed" })).toBe("error");
+  });
+  it("offline-vs-deploy split: network throw → offline; 5xx / corrupt body → broken", () => {
+    expect(modeFromProbe({ kind: "network" })).toBe("offline");
+    expect(modeFromProbe({ kind: "http", status: 500 })).toBe("broken");
+    expect(modeFromProbe({ kind: "malformed" })).toBe("broken");
   });
 });
 
@@ -130,9 +134,28 @@ describe("probeViewerMode (fetch + classify the four+ outcomes)", () => {
 
   it("200 + valid JSON → hosted", async () => { stubFetch({ status: 200, json: { library: {}, exhibits: [] } }); expect(await probeViewerMode()).toBe("hosted"); });
   it("404 → portable (no baked tree)", async () => { stubFetch({ status: 404 }); expect(await probeViewerMode()).toBe("portable"); });
-  it("500 → error", async () => { stubFetch({ status: 500 }); expect(await probeViewerMode()).toBe("error"); });
-  it("network throw → error", async () => { stubFetch({ throws: true }); expect(await probeViewerMode()).toBe("error"); });
-  it("200 + malformed body → error", async () => { stubFetch({ status: 200 }); expect(await probeViewerMode()).toBe("error"); });
+  it("500 → broken (deploy problem, not the reader's connection)", async () => { stubFetch({ status: 500 }); expect(await probeViewerMode()).toBe("broken"); });
+  it("network throw → offline", async () => { stubFetch({ throws: true }); expect(await probeViewerMode()).toBe("offline"); });
+  it("200 + malformed body → broken (corrupt deployment)", async () => { stubFetch({ status: 200 }); expect(await probeViewerMode()).toBe("broken"); });
+});
+
+// Archie-a2b9 done-when: an offline boot and a corrupt-JSON boot show DIFFERENT, accurate messages.
+// The copy lives in published.ts (bootErrorMessage) — beside the classifier, not in ViewerShell — so
+// this suite can pin it without a DOM.
+describe("bootErrorMessage — offline vs deploy-problem copy (Archie-a2b9)", () => {
+  it("offline and corrupt-JSON boots read differently, and each is accurate", () => {
+    const offline = bootErrorMessage("offline"); //       boot path: fetch threw → probe "network"
+    const corrupt = bootErrorMessage("broken"); //        boot path: 200 + unparsable JSON → "malformed"
+    expect(offline).not.toBe(corrupt);
+    expect(offline).toMatch(/connection/i); //            accurate: the reader's side — check the wifi
+    expect(corrupt).not.toMatch(/check your connection/i); // must NOT blame the reader's connection
+    expect(corrupt).toMatch(/publish/i); //               accurate: the deploy's side — republish to fix
+  });
+  it("a probe-ok-but-load-failed boot (e.g. wrong-version marker) reads as a deploy problem, not offline", () => {
+    // boot() reaches bootErrorMessage with "hosted" when exhibits.json probes fine yet loadGallery threw
+    // (NotAnArchieLibraryError from a wrong-version archie.json marker) — same republish-to-fix copy.
+    expect(bootErrorMessage("hosted")).toBe(bootErrorMessage("broken"));
+  });
 });
 
 describe("entry vectors (file + ?src=)", () => {
