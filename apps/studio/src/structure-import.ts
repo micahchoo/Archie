@@ -12,13 +12,52 @@
 // (structure-session ensureLoaded) stays exactly today's behavior.
 import {
   asExhibitId,
+  composeLegacyObjectId,
+  isLegacyObjectId,
   mergeLogs,
   readStructureReport,
+  remapArchieRefs,
   writeStructure,
   type CorruptStructurePage,
   type FsDirectory,
+  type LinkTarget,
+  type SectionLog,
   type SectionRecord,
 } from "@render/core";
+
+/**
+ * ADR-0026 trigger 3 — migrate an INCOMING (possibly legacy-scheme) section log to the composed global
+ * object-id scheme BEFORE it merges against the local (already-migrated) log. The merge reconciles by
+ * `rev`, but the surviving/plural-head records must carry ids in the SAME scheme as the local store, or
+ * the merge folds a legacy `o<n>` into a migrated store (the exact coexistence Archie-8439 forbids).
+ * Determinism is the point: an independently-migrated copy composes the same `<exhibitId>.<ordinal>`, so
+ * two copies align under merge. Same five-class mapping the render-core engine performs, on the class-4
+ * fields a SectionRecord carries — `objectId` composes under the OWNING exhibit; `prose` `archie:` refs
+ * compose under their TARGET exhibit (named by slug), resolved through `exhibitIdBySlug`. The single-source
+ * primitives are reused verbatim: `isLegacyObjectId` is the sole gate, `composeLegacyObjectId` the sole
+ * composer, `remapArchieRefs` the sole ref rewriter (ADR-0026's single-parser contract). Idempotent —
+ * already-composed ids and ULIDs pass through untouched, so re-running is a no-op.
+ */
+export function migrateSectionLogIds(
+  log: SectionLog,
+  ownExhibitId: string,
+  exhibitIdBySlug: ReadonlyMap<string, string>,
+): SectionLog {
+  const mapCrossLink = (t: LinkTarget): LinkTarget => {
+    if (t.objectId === undefined || !isLegacyObjectId(t.objectId)) return t;
+    const targetId = exhibitIdBySlug.get(t.exhibitSlug);
+    return targetId === undefined ? t : { ...t, objectId: composeLegacyObjectId(targetId, t.objectId) };
+  };
+  let changed = false;
+  const out = log.map((rec) => {
+    const objectId = isLegacyObjectId(rec.objectId) ? composeLegacyObjectId(ownExhibitId, rec.objectId) : rec.objectId;
+    const prose = rec.prose !== undefined ? remapArchieRefs(rec.prose, mapCrossLink) : rec.prose;
+    if (objectId === rec.objectId && prose === rec.prose) return rec;
+    changed = true;
+    return prose !== undefined ? { ...rec, objectId, prose } : { ...rec, objectId };
+  });
+  return changed ? out : log;
+}
 
 export interface StructureImportResult {
   /** What happened:
@@ -43,11 +82,17 @@ export interface StructureImportResult {
  * local id, so the SAME id must scope both sides of the merge). `openLocalStructDir` is lazy: it
  * is only invoked once incoming pages are known to exist, so an import WITHOUT structure pages
  * never creates a local `structure/` dir.
+ *
+ * `migrateIncoming` (ADR-0026 trigger 3) is applied to the incoming log AFTER the tolerant read and
+ * BEFORE `mergeLogs`, so both sides of the merge carry object ids in the same (composed) scheme —
+ * see {@link migrateSectionLogIds}. Absent (the pre-8439 tests, or a caller with no library map) ⇒
+ * the incoming log merges as-is (byte-identical to today's behavior).
  */
 export async function mergeImportedStructure(
   srcExhibitDir: FsDirectory,
   exhibitId: string,
   openLocalStructDir: () => Promise<FsDirectory | null>,
+  migrateIncoming?: (log: SectionLog) => SectionLog,
 ): Promise<StructureImportResult> {
   let incDir: FsDirectory;
   try {
@@ -69,9 +114,12 @@ export async function mergeImportedStructure(
     // index without the unreadable pages. structure-session will surface the torn store on open.
     return { action: "local-torn", corruptIncoming: incoming.corrupt };
   }
+  // ADR-0026 trigger 3: bring the incoming log into the local store's (composed) id scheme before the
+  // merge, so a legacy `o<n>` never survives into a migrated store. Idempotent + no-op when absent.
+  const incomingLog = migrateIncoming ? migrateIncoming(incoming.log) : incoming.log;
   // The ONE merge contract (spine/merge.ts) — the same call AnnotationSession.importChanges makes.
   // Plural heads are fine: they gate editing via the projection's `conflicted` set (42f3).
-  const merged = mergeLogs<SectionRecord>(local.log, incoming.log);
+  const merged = mergeLogs<SectionRecord>(local.log, incomingLog);
   await writeStructure(localDir, merged); // pages first, index LAST (rule #1) lives inside
   return { action: "merged", corruptIncoming: incoming.corrupt };
 }

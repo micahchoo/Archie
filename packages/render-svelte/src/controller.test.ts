@@ -18,6 +18,7 @@ function mockSurface() {
     fitBounds,
     fitRegion: vi.fn(),
     setFrame: vi.fn(),
+    setNavigatorDots: vi.fn(),
     setDrawingEnabled: vi.fn(),
     setDrawingTool: vi.fn(),
     markerScreenRect: vi.fn(() => null),

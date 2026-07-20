@@ -24,7 +24,7 @@ const GRAMMAR = {
 
 // --- Screen markers: role/label selectors, one per screen, mutually exclusive. ---
 //   library : the "The Rosettes" exhibit CARD (LibraryHome only)
-//   overview: the "Overview mode" canvas/list toggle group (ExhibitOverview only)
+//   overview: the "Overview mode" grid/list toggle group (ExhibitOverview only)
 //   editor  : the "Exhibit objects" filmstrip nav (App editor header only)
 // (A bare heading "The Rosettes" is shared by overview AND editor headers, so it can't distinguish
 // them; these three are each single-screen.)
@@ -216,5 +216,54 @@ test.describe("Studio place navigation (Archie-d80f)", () => {
 
     expect(errs.pageErrors, errs.pageErrors.join(" | ")).toEqual([]);
     expect(errs.consoleErrors, errs.consoleErrors.join(" | ")).toEqual([]);
+  });
+
+  // The overview GRID's scroll offset is per-slug transient screen state (ADR-0024 #6) — replaces the
+  // retired canvas's tx/ty/z restore. Browser scroll can only be exercised end-to-end (jsdom/vitest can't),
+  // so this lives here. Uses the 12-object "The Whole Manuscript" (slug `voynich`) so the grid overflows;
+  // "The Rosettes" (the other scenarios' fixture) is single-object and never scrolls.
+  test("6. grid scroll offset restores per-exhibit across an object open → back (ADR-0024 #6)", async ({ page }) => {
+    const errs = trackErrors(page);
+    // A short, narrow viewport forces the 12 plates to overflow the scroll region (min a few rows).
+    await page.setViewportSize({ width: 800, height: 640 });
+    await boot(page);
+
+    // Enter the multi-object overview IN-APP (hash change, no reload — a reload would wipe the session-only
+    // per-slug Map this feature relies on). Grid is the default mode on a fresh context.
+    await page.evaluate(() => { location.hash = "#/voynich"; });
+    const grid = page.getByRole("group", { name: "Media items — reading order" });
+    await expect(grid).toBeVisible();
+
+    // Precondition: the grid actually overflows, else the assertion below would pass trivially at 0.
+    const overflow = await grid.evaluate((el) => el.scrollHeight - el.clientHeight);
+    expect(overflow, "grid must overflow for the scroll-restore assertion to mean anything").toBeGreaterThan(40);
+
+    // Scroll down with a REAL wheel gesture (not a programmatic scrollTop set, which never dispatches a
+    // 'scroll' event) so the live report + the unmount backstop are exercised the way a user drives them.
+    await grid.hover();
+    await page.mouse.wheel(0, 260);
+    await expect.poll(async () => grid.evaluate((el) => el.scrollTop), { timeout: 2000 }).toBeGreaterThan(0);
+    const saved = await grid.evaluate((el) => el.scrollTop);
+    expect(saved, "scroll did not take").toBeGreaterThan(0);
+
+    // Open an object (in-app hash change so the Map survives), confirm the editor, then history-back.
+    // Discover a real plate id from the DOM rather than assuming an id scheme — ADR-0026 moved seeds
+    // from ordinal o1..oN to ULID-based ids, and this test must survive either.
+    const targetId = await grid.evaluate((el) => el.querySelectorAll("[data-plate-id]")[4]?.getAttribute("data-plate-id"));
+    expect(targetId, "expected at least 5 plates in the seeded exhibit").toBeTruthy();
+    await page.evaluate((id) => { location.hash = `#/voynich/o/${id}`; }, targetId);
+    await expect(page.getByRole("navigation", { name: "Exhibit objects" })).toBeVisible();
+    await page.goBack();
+    await expect(grid).toBeVisible();
+
+    // Back on the overview, the grid is restored to where we left it (within a few px for the restore
+    // effect's 1px guard + sub-pixel rounding) — NOT reset to the top.
+    await expect
+      .poll(async () => grid.evaluate((el) => el.scrollTop), { timeout: 2000 })
+      .toBeGreaterThan(saved - 5);
+    const restored = await grid.evaluate((el) => el.scrollTop);
+    expect(Math.abs(restored - saved), `restored ${restored} vs saved ${saved}`).toBeLessThanOrEqual(5);
+
+    expect(errs.pageErrors, errs.pageErrors.join(" | ")).toEqual([]);
   });
 });

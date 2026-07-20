@@ -15,8 +15,8 @@
   import Credit from "./Credit.svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { stripMarkdown } from "@render/core";
-  import { type MarkerStyle, formatZoomRatio } from "@render/svelte";
-  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
+  import { type MarkerStyle, formatZoomRatio, zoomBand } from "@render/svelte";
+  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, arrivalPulseIntensity, withArrivalPulse, withZoomBand, type MarkerStyleSpec, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
 
   // Resizable / collapsible reader sidebar (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
   // responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom. Drag math
@@ -133,16 +133,68 @@
   );
 
   // Worklist 1.3 (arrival moment): on first paint — and again when the carousel lands on another
-  // object — the marks pulse twice, then settle to their quiet A2 weight. Answers "where do I
-  // start, what's here?" and gives touch readers (no hover-discovery) a way in.
-  let arrival = $state(false);
-  let pulseTimer: ReturnType<typeof setTimeout> | undefined;
+  // object — the marks briefly emphasize, then settle to their quiet resting weight. Answers "where
+  // do I start, what's here?" and gives touch readers (no hover-discovery) a way in.
+  //
+  // Archie-a6fb: this used to be a CSS breathe on `main.arrival .a9s-annotation`, but Annotorious 3
+  // renders marks to a WebGL canvas with no per-shape SVG node — that selector matched nothing for a
+  // month (probe 2026-07-19). Reimplemented through the SAME style channel the reading colours ride:
+  // a decaying pulse intensity (arrivalPulseIntensity) drives withArrivalPulse over the base styleOf,
+  // re-minting the styleOf identity each frame so Canvas re-applies it (setStyle) and the sweep shows.
+  let pulseIntensity = $state(0);
+  let pulseRaf = 0;
+  // Respect prefers-reduced-motion (parity with the retired `animation: none` rule): no sweep, marks
+  // sit at their resting weight. Guarded for SSR (Astro renders this island server-side first).
+  const reduceMotion = typeof window !== "undefined" && !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   function pulseMarks() {
-    clearTimeout(pulseTimer);
-    arrival = true;
-    pulseTimer = setTimeout(() => (arrival = false), 3400); // 2 × 1.6s breaths + settle
+    if (reduceMotion) return;
+    cancelAnimationFrame(pulseRaf);
+    const start = performance.now();
+    pulseIntensity = 1; // peak now, so the reveal lands on the same frame as arrival
+    const step = () => {
+      const k = arrivalPulseIntensity(performance.now() - start);
+      pulseIntensity = k;
+      pulseRaf = k > 0 ? requestAnimationFrame(step) : 0;
+    };
+    pulseRaf = requestAnimationFrame(step);
   }
-  $effect(() => () => clearTimeout(pulseTimer)); // teardown on destroy
+  $effect(() => () => cancelAnimationFrame(pulseRaf)); // teardown on destroy
+
+  // The pulse must start when the MARKS ARE ACTUALLY PAINTED, not when this island mounts: the OSD
+  // surface resolves only after the (often remote IIIF) image `open` completes, which for the seed's
+  // Yale folios routinely outlasts the ~1.4s pulse — firing at mount would decay the whole sweep
+  // before setStyle can ever apply it (the reveal would be invisible on exactly the app's primary
+  // content). So each object landing ARMS the pulse, and Canvas's first `onzoom` after mount — which
+  // fires once the surface is ready and marks are drawn — DISARMS it and starts the sweep.
+  let armArrival = false;
+  function onCanvasZoom(r: number) {
+    zoomRatio = r;
+    if (armArrival) { armArrival = false; pulseMarks(); }
+  }
+
+  // Scale-aware weight (Archie-c1d9 inherited decision): the coarse zoom band, memoized BY VALUE so it
+  // only re-mints the styleOf identity when the band actually crosses far↔mid↔near (not every zoom
+  // frame) — same shape as studio's zoomBandNow.
+  const band = $derived(zoomBand(zoomRatio));
+  // Wrap the reading styleOf (from ExhibitView) with the scale-aware weight AND the transient arrival
+  // emphasis — one style channel, layered: withZoomBand is the RESTING modulation (far → heavier stroke
+  // for presence at fit-width, near → recede), withArrivalPulse the transient on top. Order matters: the
+  // pulse lerps fillOpacity toward 0.3 for the reveal, and running it LAST keeps the existing comparing
+  // transient exactly as it was (withZoomBand leaves an outline-only mark's fill at 0). At rest (intensity
+  // 0, mid band) it returns the base styleOf UNCHANGED so the identity stays stable between arrivals.
+  const pulsedStyleOf = $derived.by<((id: string) => MarkerStyle | undefined) | undefined>(() => {
+    const base = styleOf;
+    const k = pulseIntensity;
+    const b = band;
+    if (!base) return base;
+    if (k <= 0 && b === "mid") return base; // no modulation active — keep the stable identity
+    return (id: string) => {
+      const s = base(id);
+      if (!s) return s;
+      const scaled = withZoomBand(s as MarkerStyleSpec, b);
+      return k > 0 ? withArrivalPulse(scaled, k) : scaled;
+    };
+  });
 
   // Reset selection when the object ACTUALLY changes (grid → different object) — but not on the
   // first run, so a deep-link's initialSelected survives mount.
@@ -156,7 +208,8 @@
       stepIntoReading = false;
     }
     prevCanvas = c;
-    pulseMarks(); // every landing (first paint or carousel switch) gets the reveal
+    armArrival = true; // every landing (first paint or carousel switch) arms the reveal; the
+                       // canvas-ready onzoom below fires it once marks are actually on screen
   });
 
   // Re-selection seam (A0): when ExhibitView's arriveAtNote re-fires on an ALREADY-mounted Reader
@@ -209,11 +262,11 @@
 <svelte:window onkeydown={onkey} />
 
 <div class="reader">
-  <main class:arrival={arrival}>
+  <main>
     <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
          objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
     {#key object.canvasId}
-      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} {styleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={(r) => (zoomRatio = r)} />
+      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={onCanvasZoom} />
     {/key}
   </main>
 
@@ -321,16 +374,10 @@
     font-family: var(--font-ui), sans-serif; font-size: 0.65rem; font-weight: 500;
     letter-spacing: 0.18em; text-transform: uppercase; margin-right: 2px;
   }
-  /* Worklist 1.3: one-shot arrival reveal — every marker breathes twice, then settles to its quiet
-     A2 resting weight. The class drops off after the timer, so the animation can never recur mid-read. */
-  main.arrival :global(.a9s-annotationlayer .a9s-annotation) { animation: arrival-breathe 1.6s ease-in-out 2; }
-  @keyframes arrival-breathe {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.25; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    main.arrival :global(.a9s-annotationlayer .a9s-annotation) { animation: none; }
-  }
+  /* Worklist 1.3 arrival reveal (Archie-a6fb): the marks' one-shot emphasis-and-settle used to be a
+     CSS breathe here on `.a9s-annotation`, but Annotorious 3 renders marks to WebGL (no per-shape
+     SVG node), so that selector was inert for a month. It now rides the style channel — see
+     pulseMarks / pulsedStyleOf in the script (prefers-reduced-motion honoured there via reduceMotion). */
 
   /* Reader panel — warm paper, quiet catalog entries; separated from the canvas by a soft shadow
      and a hair-thin warm border, not a hard rule. */

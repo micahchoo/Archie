@@ -13,9 +13,9 @@
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import ProseCites from "./ProseCites.svelte";
-  import { type MarkerStyle, type FrameOverlay, formatZoomRatio } from "@render/svelte";
+  import { type MarkerStyle, type FrameOverlay, formatZoomRatio, zoomBand } from "@render/svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
-  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
+  import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, withZoomBand, type MarkerStyleSpec, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
   import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
   import { positionLabel } from "../exhibit-nav.js";
 
@@ -139,7 +139,19 @@
     if (activeReading === null) return base;
     return overlay(base, readingAnnotationsByObject[activeObject.id]?.[activeReading]);
   });
-  const activeStyleOf = $derived(activeObject ? styleFor?.(activeObject.id) : undefined);
+  // Scale-aware weight (Archie-c1d9 inherited decision, parity with Reader): wrap the reading styleOf
+  // with withZoomBand off the coarse band (memoized BY VALUE so the styleOf identity only re-mints on a
+  // band crossing, not every zoom frame). No arrival pulse here — the narrative has no arrival moment.
+  const band = $derived(zoomBand(zoomRatio));
+  const activeStyleOf = $derived.by<((id: string) => MarkerStyle | undefined) | undefined>(() => {
+    const base = activeObject ? styleFor?.(activeObject.id) : undefined;
+    const b = band;
+    if (!base || b === "mid") return base; // mid = the authored resting weight; keep the stable identity
+    return (id: string) => {
+      const s = base(id);
+      return s ? withZoomBand(s as MarkerStyleSpec, b) : s;
+    };
+  });
   // 7e1f coverage border (parity with Reader.svelte): the whole-object mark for the ACTIVE object, if any.
   // Without this a selectorless (ADR-0018) whole-object note has no marker (read-overlay skips it — no
   // geometry to draw) AND no sidebar entry (the aside here is the section spine, not a note list) — so it

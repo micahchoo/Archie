@@ -3,6 +3,7 @@
 // module-1 inversion). Declared separately from index/mount to avoid a circular import.
 
 import type { W3CAnnotation } from "@render/core";
+import type { NavigatorDot } from "./marker-dots.js";
 
 /** A live selection target on the mounted surface (note logicalId or version id). */
 export type SelectionId = string;
@@ -47,6 +48,12 @@ export interface MountSurface {
    *  hit-targets (the centre stays unobstructed). Clicking any corner → `frame.onActivate()`. Pass null
    *  to clear; re-calling replaces the current frame. Image/OSD only (AV deferred — 7e1f). */
   setFrame(frame: FrameOverlay | null): void;
+  /** Plot tiny note-position dots INSIDE the OSD navigator (Archie-c1d9) — where each note lives on the
+   *  whole image, mapped image-space → navigator-element px (imageToNavigatorPixel) and appended as
+   *  children of the navigator element so they inherit its position + auto-fade. No-op when the locator
+   *  (navigator) is off. Pass an empty array to clear; re-calling reconciles to the new set. Decorative
+   *  (aria-hidden) — the navigator is a spatial overview, not a keyboard surface. */
+  setNavigatorDots(dots: NavigatorDot[]): void;
   /** Toggle drawing mode (off = pan/select). */
   setDrawingEnabled(enabled: boolean): void;
   /** Pick the active drawing tool (rect or polygon — the v1 vocab). */
