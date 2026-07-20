@@ -105,6 +105,14 @@ jobs:
         # Errors fail this job; the ~11 pre-existing a11y WARNINGS do not (no --fail-on-warnings).
         run: pnpm --filter @archie/studio run check
 
+      - name: svelte-check (apps/viewer)
+        # The viewer's 23 Svelte islands had NO type gate: `astro check` diagnoses .astro files only
+        # (measured 2026-07-20, .claude/rules/svelte-no-typecheck-net.md — a planted undefined
+        # identifier in an island passed astro check AND tsc at 0 errors). Baseline was burned to
+        # zero the same day (1 real indexing error fixed; 9 intentional initial-capture warnings
+        # converted to declared intent via svelte-ignore), so warnings gate too.
+        run: pnpm --filter @archie/viewer run check:svelte
+
   gh-pages-build:
     runs-on: ubuntu-latest
     steps:

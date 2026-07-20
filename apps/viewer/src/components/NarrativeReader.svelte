@@ -90,6 +90,8 @@
   // Deep-link arrival → land on the right section. An explicit section cite (4.6) wins; else land on the
   // section whose object OWNS the note. The owner search now scans BASE + per-reading pages (4.9) via the
   // shared resolver — a note that lives ONLY on a reading overlay used to fall to section 0.
+  // svelte-ignore state_referenced_locally -- initial-capture is deliberate: the object list is stable
+  // for a mounted narrative (ExhibitView remounts the reader per exhibit); these ids seed arrival only.
   const objectIds = objects.map((o) => o.id);
   const arrivalSection = (() => {
     if (initialSection !== null) return initialSection;
@@ -97,6 +99,8 @@
   })();
 
   let activeIndex = $state(arrivalSection);
+  // svelte-ignore state_referenced_locally -- initial-capture is the contract: seeds once; later
+  // changes are adopted by the re-selection seam (A0) $effect below via prevInitialSelected.
   let selected = $state<string | null>(initialSelected); // a clicked marker (highlight), distinct from the active section
   // Scale cue (Archie-93fd): current zoom / home zoom, streamed live from Canvas's onzoom. Defaults
   // to 1 (home/fit) — the value it settles back to once the canvas mounts and reports its own home.
@@ -108,6 +112,8 @@
   // `activeIndex` were only seeded once at init, so without this the re-selection did nothing. Track the
   // previous value; on a new non-null target, select it AND jump to the section whose object owns it
   // (mirrors arrivalSection — the canvas follows `activeSection.start`, so the camera fits the region).
+  // svelte-ignore state_referenced_locally -- deliberately the initial value: the previous-value tracker
+  // the $effect below compares against; seeding it reactively would defeat the comparison.
   let prevInitialSelected: string | null = initialSelected;
   $effect(() => {
     const next = initialSelected;

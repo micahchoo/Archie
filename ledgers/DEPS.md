@@ -140,3 +140,17 @@ SCALE.md, PRFAQ.md, HARVEST.md) and its generated `apps/viewer/public/published/
 image index — a byproduct of my `gen` smoke, left untracked for that session).
 
 Commit path-scoped, branch `main` re-checked immediately before. Then Issue 15 → `done`.
+
+## Cargo tree (src-tauri) — added 2026-07-20, closing follow-up 5 of DEPS-dependabot-2026-07-20.md §7
+
+The contract's floor ("every advisory at moderate+ fixed or carrying its reason in-row") now covers
+the Rust tree. Toolchain: rustc 1.93.1; audits by Dependabot (no cargo-audit in CI — no cargo step
+exists in CI at all, so every row below is hand-verified only).
+
+| dep | current | class | action / reason-in-row |
+|-----|---------|-------|------------------------|
+| `git2` | 0.19.0 → **0.20.4** | vuln (LOW, #53) → **fixed** | UB dereferencing `git2::Buf` — package-level reachable (gh-pages deploy, `github.rs`), API-level unreachable (`Buf` never constructed). Bumped 2026-07-20 (`6dea295`): manifest to 0.20.4 + libgit2-sys 1.9.4; **never bare `"0.21"`** — its default features drop `https`, compiles clean, dies at runtime klass 16 "no TLS stream" (measured on a github.rs replica). Verified: cargo test 13 ✓, release build ✓, host + **GNOME 49 Flatpak runtime** ldd both link system libssl.so.3, Flatpak rebuilt + installed. Residual: one real gh-pages push from the packaged app (vendored libgit2 1.8.1→1.9.4). |
+| `glib` | 0.18.5 | vuln (MOD, #51) → **reason-in-row / dismiss** | Unsound `VariantStrIter` iterator impls. UNFIXABLE in place: gtk 0.18.2 hard-pins `glib = "0.18"`; no patched 0.18.x exists (fix is 0.20.0). UNREACHABLE: `Variant::array_iter_str` — the sole constructor of the unsound iterator — has zero callers across the full reverse-dependency closure (verified from crate sources). Dismiss on GitHub as "vulnerable code is not actually used"; re-visit only when the Tauri/gtk-rs stack next moves as a unit. |
+
+Everything else in Cargo.lock is transitive under tauri 2.x / wry / gtk-rs and carries no open
+advisory (Dependabot 2026-07-20). A Tauri major is the only event that moves this table wholesale.

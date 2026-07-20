@@ -109,8 +109,9 @@
     line-height: 1.6;
     color: var(--ink-canvas-secondary);
   }
-  /* The file the recipient holds, named so they know what to open (curatorial clarity, not jargon). */
-  .lede code, .cold code {
+  /* The file the recipient holds, named so they know what to open (curatorial clarity, not jargon).
+     (`.cold code` dropped: the cold-link copy no longer names a file in <code>.) */
+  .lede code {
     font-family: var(--font-mono), ui-monospace, monospace;
     font-size: 0.92em;
     color: var(--accent);

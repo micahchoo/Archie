@@ -18,6 +18,8 @@
     onclose: () => void;
   } = $props();
 
+  // svelte-ignore state_referenced_locally -- initial-capture is the contract: `index` says where the
+  // lightbox OPENS; prev/next own `i` from then on.
   let i = $state(index);
   const many = $derived(media.length > 1);
   const cur = $derived(media[i]);

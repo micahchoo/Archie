@@ -29,6 +29,8 @@
 
   // Build the flat index ONCE per open (the note tree is stable for a loaded exhibit). flattenExhibitNotes
   // de-dupes by id across base + reading overlays, so each note is one searchable doc.
+  // svelte-ignore state_referenced_locally -- ONCE-per-open is the design (comment above): the note
+  // tree is stable for a loaded exhibit, and the overlay remounts per open.
   const flat = flattenExhibitNotes(data);
   const index = buildSearchIndex(flat);
 
@@ -41,6 +43,8 @@
 
   let query = $state("");
   // Active tag facets (OR'd by filterResults). Seeded from a chip that opened the overlay pre-scoped.
+  // svelte-ignore state_referenced_locally -- seed-once by design: the chip that opened the overlay
+  // pre-scopes the facets; the user owns activeTags from then on.
   let activeTags = $state<string[]>(initialTag ? [initialTag] : []);
 
   function toggleTag(t: string): void {

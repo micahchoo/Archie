@@ -106,9 +106,10 @@
   function stepObject(delta: number) {
     if (!siblings) return;
     const i = navIdx + delta;
-    if (i < 0 || i >= siblings.length) return;
+    const target = siblings[i]; // bounds-checked below; the local narrows the indexed access for TS
+    if (i < 0 || i >= siblings.length || !target) return;
     stepIntoReading = true;
-    onstep?.(siblings[i].id);
+    onstep?.(target.id);
   }
   // NOTE (dba2): the prev/next carousel that occluded the image TOP-CENTER stays lifted out into the
   // persistent top bar (ViewerShell) — its home for sidebar-open reading. The collapsed-mode popup's footer
@@ -150,6 +151,8 @@
     return rid !== undefined ? readings.find((r) => r.id === rid)?.colour : undefined;
   };
 
+  // svelte-ignore state_referenced_locally -- initial-capture is the contract: `initialSelected` seeds
+  // selection once; LATER changes are adopted by the re-selection $effect below (prevInitialSelected).
   let selected = $state<string | null>(initialSelected);
   // Scale cue (Archie-93fd): current zoom / home zoom, streamed live from Canvas's onzoom. Defaults
   // to 1 (home/fit) — the value it settles back to once the canvas mounts and reports its own home.
@@ -249,6 +252,8 @@
   // value and adopt a new non-null target; `selected` is bound into Canvas (zoomOnSelect), so the
   // camera fits the new mark just as it does on a marker click. Null clears (e.g. arrival dismissed)
   // are NOT forced here — the object-change effect owns clearing, so this only drives positive jumps.
+  // svelte-ignore state_referenced_locally -- deliberately the initial value: this is the previous-value
+  // tracker the $effect below compares against; seeding it reactively would defeat the comparison.
   let prevInitialSelected: string | null = initialSelected;
   $effect(() => {
     const next = initialSelected;
