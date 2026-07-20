@@ -164,7 +164,16 @@ export async function loadPortableExhibit(fs: Filesystem, slug: string): Promise
   const transform: NoteTransform = {
     object: async (o) => {
       const src = await rewriteAssetUrl(root, slug, o.source, blobUrls);
-      const thumb = o.thumbnail !== undefined ? await rewriteThumbUrl(root, slug, o.thumbnail, blobUrls) : undefined;
+      let thumb = o.thumbnail !== undefined ? await rewriteThumbUrl(root, slug, o.thumbnail, blobUrls) : undefined;
+      // Gap-7 fallback (docs/thumbnail-mitigations.md §7-A): an embedded `…/assets-thumb/…` reference
+      // whose file is NOT in the archive is a dead absolute URL offline. When that happens AND the
+      // object's own master asset DID mint, degrade to the master's blob — the plate shows the full
+      // image (heavier but correct) rather than nothing. `thumb === o.thumbnail` + THUMB_SEG means
+      // "embedded thumb that failed to mint" (an external thumbnail has no THUMB_SEG and keeps the
+      // pass-through contract); both-absent keeps the existing leave-as-is behavior.
+      if (thumb !== undefined && thumb === o.thumbnail && thumb.includes(THUMB_SEG) && src.startsWith("blob:")) {
+        thumb = src;
+      }
       if (src === o.source && (thumb === undefined || thumb === o.thumbnail)) return o;
       return { ...o, source: src, ...(thumb !== undefined ? { thumbnail: thumb } : {}) };
     },

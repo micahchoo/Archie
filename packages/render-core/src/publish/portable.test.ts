@@ -187,6 +187,37 @@ describe("baked thumbnail (grid-overview load perf) round-trip", () => {
     revoke();
   });
 
+  // Gap-7 fixture (docs/thumbnail-mitigations.md §7-A; separate builder per the test-fixtures rule):
+  // a manifest that REFERENCES an assets-thumb file the archive doesn't carry — publish the thumb
+  // archive, then strip `assets-thumb/` (and optionally `assets/`) from the opened zip. This is the
+  // torn-bundle shape gap 7 describes: the published absolute thumb URL can't resolve offline.
+  async function buildTornThumbArchive(alsoRemoveAssets = false) {
+    const fs = ZipFilesystem.fromZip(await buildThumbArchive());
+    const slugDir = await (await fs.root()).getDirectory(SLUG);
+    await slugDir.remove("assets-thumb");
+    if (alsoRemoveAssets) await slugDir.remove("assets");
+    return fs;
+  }
+
+  it("falls back to the MASTER asset's blob when the referenced thumb is absent from the archive (gap 7)", async () => {
+    const { exhibit, blobUrls, revoke } = await loadPortableExhibit(await buildTornThumbArchive(), SLUG);
+    const o = exhibit.objects[0]!;
+    expect(o.source.startsWith("blob:")).toBe(true);
+    expect(o.thumbnail).toBe(o.source); // degraded to the master's blob, NOT the dead absolute URL
+    expect(blobUrls).toContain(o.thumbnail);
+    const blob = resolveObjectURL(o.thumbnail!);
+    expect([...new Uint8Array(await blob!.arrayBuffer())]).toEqual([...PNG_BYTES]); // master bytes, not THUMB_BYTES
+    revoke();
+  });
+
+  it("leaves the thumbnail URL as-is when BOTH thumb and master are absent (existing behavior)", async () => {
+    const { exhibit, revoke } = await loadPortableExhibit(await buildTornThumbArchive(true), SLUG);
+    const o = exhibit.objects[0]!;
+    expect(o.source).toBe(`${BASE}${SLUG}/assets/${ASSET_NAME}`); // master didn't mint either
+    expect(o.thumbnail).toBe(`${BASE}${SLUG}/assets-thumb/${ASSET_NAME}`); // unchanged — no blob to degrade to
+    revoke();
+  });
+
   it("drops the thumbnail when getThumbnail is absent — no manifest ref to an unpublished file", async () => {
     const fs = new ZipFilesystem();
     await publishLibrary(fs, thumbLib, () => [], {
