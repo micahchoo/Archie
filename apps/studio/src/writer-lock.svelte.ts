@@ -14,6 +14,11 @@
 // A `.svelte.ts` rune module: the $state container is never reassigned, so `canWrite` reads live across
 // modules (cf. save-queue.svelte.ts). The lock providers are injected so the logic is headless-testable.
 
+// The one downward dependency (writer-lock → save-queue, acyclic — the queue never imports this module;
+// its gate is injected by App): becoming the writer must clear a lingering read-only refusal, or the
+// header shows a stale "⚠ Retry save" until the next write (UX-CRITIQUE O2 follow-up).
+import { clearReadOnlyRefusal } from "./save-queue.svelte.js";
+
 /** The subset of the Web Locks API this module uses (injected so tests can supply a fake or the real one). */
 export interface LocksLike {
   request(
@@ -91,7 +96,7 @@ export function createWriterLock(libraryId: string, opts: WriterLockOptions = {}
   let releaseHeld: (() => void) | null = null; // resolves the held-promise → frees our lock
   let readerWatch: AbortController | null = null; // the queued blocking request that auto-promotes a reader
 
-  function becomeWriter() { s.canWrite = true; s.otherTabActive = false; s.otherName = null; s.ready = true; startPresenceHeartbeat(); }
+  function becomeWriter() { s.canWrite = true; s.otherTabActive = false; s.otherName = null; s.ready = true; clearReadOnlyRefusal(); startPresenceHeartbeat(); }
   function becomeReader() { s.canWrite = false; s.otherTabActive = true; s.ready = true; stopPresenceHeartbeat(); }
   /** Flip to read-only AND queue for the writer's release, so if the current writer later closes this
    *  tab auto-promotes to writer (only one tab left → it should be able to save). */

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { enqueueSave, saveStatus, resetSaveQueueForTests, setWriterGate, setWriterOtherName } from "./save-queue.svelte";
+import { enqueueSave, saveStatus, resetSaveQueueForTests, setWriterGate, setWriterOtherName, clearReadOnlyRefusal } from "./save-queue.svelte";
 
 const tick = () => new Promise<void>((r) => setTimeout(r, 0));
 
@@ -82,6 +82,26 @@ describe("save-queue", () => {
     const ok = await enqueueSave("k", "K", async () => {});
     expect(ok).toBe(true);
     expect(saveStatus.error).toBeNull(); // stale read-only status cleared
+  });
+
+  it("single-writer gate: take-over clears the refusal IMMEDIATELY, before any next write (UX-CRITIQUE O2)", async () => {
+    setWriterGate(() => false);
+    await enqueueSave("k", "K", async () => {});
+    expect(saveStatus.health).toBe("error"); // refused while read-only
+    // Take over: writer-lock's becomeWriter calls clearReadOnlyRefusal the moment this tab may write —
+    // the header must go calm NOW, not show a stale "⚠ Retry save" until the next persist happens by.
+    setWriterGate(() => true);
+    clearReadOnlyRefusal();
+    expect(saveStatus.health).not.toBe("error");
+    expect(saveStatus.error).toBeNull();
+  });
+
+  it("clearReadOnlyRefusal drops ONLY the read-only key — a real write failure keeps its error", async () => {
+    await enqueueSave("k", "K", async () => { throw new Error("disk gone"); });
+    expect(saveStatus.health).toBe("error");
+    clearReadOnlyRefusal();
+    expect(saveStatus.health).toBe("error"); // the genuine failure still surfaces
+    expect(saveStatus.error).toContain("couldn't be stored");
   });
 
   it("single-writer gate: names the other tab in the refusal message when known (Archie-198c)", async () => {

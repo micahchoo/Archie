@@ -78,6 +78,29 @@ describe("computeSafetyState", () => {
     });
   });
 
+  describe("Read-only (UX-CRITIQUE O2: the writer lock trumps every save-health state)", () => {
+    it("is Read-only over a clean pipeline (never a misleading Saved)", () => {
+      expect(computeSafetyState({ ...CLEAN, readOnly: true })).toBe("read-only");
+    });
+
+    it("is Read-only over a queue error — the exact O2 case: a refused write must not offer Retry", () => {
+      expect(computeSafetyState({ ...CLEAN, readOnly: true, saveHealth: "error" })).toBe("read-only");
+    });
+
+    it("is Read-only over a sticky mirror error", () => {
+      expect(computeSafetyState({ ...CLEAN, readOnly: true, bindingError: "nope" })).toBe("read-only");
+    });
+
+    it("is Read-only over Action needed and Saving (no save churn in a tab that doesn't save)", () => {
+      expect(computeSafetyState({ ...CLEAN, readOnly: true, bindingKind: "file", bindingDirty: true })).toBe("read-only");
+      expect(computeSafetyState({ ...CLEAN, readOnly: true, sessDirty: true })).toBe("read-only");
+    });
+
+    it("omitting readOnly keeps the original decision (pre-writer-lock callers stay valid)", () => {
+      expect(computeSafetyState({ ...CLEAN, saveHealth: "error" })).toBe("failed");
+    });
+  });
+
   describe("precedence: Failed > Action needed > Saving > Saved", () => {
     it("Failed wins over a simultaneous Action needed", () => {
       expect(
