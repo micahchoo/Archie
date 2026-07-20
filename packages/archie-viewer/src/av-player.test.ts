@@ -175,6 +175,74 @@ describe("mountAvPlayer — a t= landing computes a clamped PAUSED seek (no auto
   });
 });
 
+describe("mountAvPlayer — an /a/<noteId> cite to a TIMED note lands on the moment (Archie-a9f4)", () => {
+  function shim(media: HTMLMediaElement, dur: number): { ct: () => number; played: () => boolean } {
+    let ct = 0;
+    let played = false;
+    Object.defineProperty(media, "currentTime", { get: () => ct, set: (v: number) => (ct = v), configurable: true });
+    Object.defineProperty(media, "duration", { get: () => dur, configurable: true });
+    media.play = (() => { played = true; return Promise.resolve(); }) as never;
+    return { ct: () => ct, played: () => played };
+  }
+
+  it("on loadedmetadata: seeks PAUSED to the cue's start, highlights it, and shows its note card", () => {
+    const h = host();
+    mountAvPlayer(h, {
+      object: soundObj(),
+      annotations: [timeNote("a", 12, 20, "the chant begins"), timeNote("b", 30, 40, "later")],
+      initialSelect: "a",
+    });
+    const media = h.querySelector("audio") as HTMLMediaElement;
+    const m = shim(media, 100);
+
+    media.dispatchEvent(new Event("loadedmetadata"));
+
+    expect(m.ct()).toBe(12); // landed at the cue's own start (recovered from its t= selector)
+    expect(m.played()).toBe(false); // seek-paused ONLY — no auto-play (section-142)
+    expect(h.querySelector('[data-cue="a"]')!.classList.contains("active")).toBe(true); // highlighted
+    expect(h.querySelector('[data-cue="b"]')!.classList.contains("active")).toBe(false);
+    const card = h.querySelector(".archie-note-card") as HTMLElement;
+    expect(card.hidden).toBe(false); // its note card is open on arrival
+    expect(card.querySelector(".archie-note-card__body")!.textContent).toContain("the chant begins");
+  });
+
+  it("an explicit initialSeek (route ?t) WINS the seek position; the cited cue's card still opens", () => {
+    const h = host();
+    mountAvPlayer(h, {
+      object: soundObj(),
+      annotations: [timeNote("a", 12, 20, "the chant begins")],
+      initialSelect: "a",
+      initialSeek: "50",
+    });
+    const media = h.querySelector("audio") as HTMLMediaElement;
+    const m = shim(media, 100);
+
+    media.dispatchEvent(new Event("loadedmetadata"));
+
+    expect(m.ct()).toBe(50); // the explicit cite won the playhead
+    const card = h.querySelector(".archie-note-card") as HTMLElement;
+    expect(card.hidden).toBe(false); // the cited note's card is still open
+    // The highlight follows the playhead truthfully: 50 is outside [12,20) → not active.
+    expect(h.querySelector('[data-cue="a"]')!.classList.contains("active")).toBe(false);
+  });
+
+  it("an initialSelect naming a whole-track (non-timed) note is an ordinary landing — head 0, no card", () => {
+    const h = host();
+    mountAvPlayer(h, {
+      object: soundObj(),
+      annotations: [timeNote("a", 12, 20, "cue"), wholeNote("w", "about the whole tape")],
+      initialSelect: "w",
+    });
+    const media = h.querySelector("audio") as HTMLMediaElement;
+    const m = shim(media, 100);
+
+    media.dispatchEvent(new Event("loadedmetadata"));
+
+    expect(m.ct()).toBe(0); // no cue to land on — playhead stays at the head, paused
+    expect((h.querySelector(".archie-note-card") as HTMLElement).hidden).toBe(true);
+  });
+});
+
 describe("mountAvPlayer — teardown removes the player + its note card", () => {
   it("destroy() empties the host", () => {
     const h = host();

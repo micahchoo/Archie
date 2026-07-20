@@ -53,6 +53,11 @@ export interface AvPlayerOptions {
   /** Deep-link `t=` offset (the resolved cite-ladder fragment): on loadedmetadata seek-to-offset PAUSED
    *  (section-142 — landing seeks but must NOT auto-play). Garbage / absent → head (0). */
   initialSeek?: string;
+  /** Deep-link note id (the resolved cite-ladder selectId, Archie-a9f4): when it names a TIMED cue,
+   *  land on its moment — seek-paused to the cue's start, highlight it, and show its note card on
+   *  loadedmetadata (the same path a cue CLICK takes). An explicit `initialSeek` still WINS the seek
+   *  position (the resolver's explicit-wins rule). Unknown / whole-track id → ordinary landing. */
+  initialSelect?: string;
   /** When true, refuse a REMOTE (http/https) source — offline embeds show only embedded (blob:/data:)
    *  media, the same boundary the image reader enforces (reader.ts isRemoteSource). */
   offline?: boolean;
@@ -272,14 +277,24 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
   };
   media.addEventListener("error", onError);
 
-  // ---- t= landing: clamped PAUSED seek on loadedmetadata (section-142 — seek, do NOT auto-play) ---
+  // ---- t= / timed-note landing: clamped PAUSED seek on loadedmetadata (section-142 — seek, do NOT
+  // auto-play). An /a/<noteId> cite to a TIMED note (Archie-a9f4) lands the way a cue CLICK does —
+  // seek to the cue's start + show its note card — plus a deterministic highlight sync (paused media
+  // has fired no timeupdate yet). An explicit `initialSeek` (route ?t) WINS the seek position; the
+  // cited cue's card still opens, and the highlight follows the playhead truthfully (activeNoteIndex).
   let didLandSeek = false;
   const onMeta = (): void => {
     if (didLandSeek) return;
     didLandSeek = true;
-    if (!opts.initialSeek) return; // ordinary landing — leave the playhead at the head (0), paused
-    const at = clampSeekStart(opts.initialSeek, media.duration);
+    const landCue = opts.initialSelect ? cues.find((c) => c.id === opts.initialSelect) : undefined;
+    const target = opts.initialSeek ?? (landCue ? String(landCue.range.start) : undefined);
+    if (target === undefined) return; // ordinary landing — leave the playhead at the head (0), paused
+    const at = clampSeekStart(target, media.duration);
     if (at > 0) media.currentTime = at; // paused: no play() (the AV-landing rule)
+    if (landCue) {
+      card.show(noteBodyHtml(annotations, landCue.id)); // the click path's card open, on arrival
+      onTimeUpdate(); // sync the active-cue highlight to the landed playhead
+    }
   };
   media.addEventListener("loadedmetadata", onMeta);
 
