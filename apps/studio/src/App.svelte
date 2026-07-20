@@ -78,6 +78,7 @@
   import { geoLabelOf, geoForTarget, selectorValue } from "./geo-notes.js";
   // The ingest flows (object-add, exhibit-create, bulk-note import, library-replace) — the DOMINO cut.
   import { createIngestFlows } from "./ingest-flows.js";
+  import { ingestActivityOf } from "./ingest-activity.js";
   import { buildCsvTemplate, type CsvPendingNote } from "./csv-import.js";
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
@@ -981,7 +982,45 @@
   // which file is importing; `importNote` carries a transient curator-voice message (unsupported file,
   // or a gentle link-by-URL nudge for very large media). Cleared at the start of each new import.
   let importStatus = $state<{ name: string; index: number; total: number } | null>(null);
-  let importNote = $state("");
+  // The message AND its disposition are ONE value, deliberately. An earlier cut of the overview band kept
+  // `importNote: string` beside a separate `importFailed: boolean`, and the two drifted immediately: only
+  // the runIngest wrapper maintained the flag, so the six other writers below rendered failure text under
+  // a ✓ (a refusal resolves normally — it never throws) and, after a stale flag survived a dismiss,
+  // success text under a ⚠. Pairing them makes an unset disposition a COMPILE error at every writer
+  // instead of a wrong glyph at runtime — the same "make the carry structural" idiom render-core uses for
+  // its model-field sentinels. `ok: false` means the message reports a refusal or a failure.
+  let importNote = $state<{ message: string; ok: boolean } | null>(null);
+  // --- Ingest feedback for the OVERVIEW (the band in ExhibitOverview) ---------------------------------
+  // `importStatus` alone cannot drive a progress band. It is null through each flow's silent discovery
+  // phase (fetchManifestPlan's capped fetch, traverseCollection's walk, newExhibitFromFolder's EXIF
+  // pre-pass) and null again the instant the flow's `finally` fires — so a band bound straight to it would
+  // appear late, then vanish leaving no record of the outcome. Counting in-flight runs HERE, at the call
+  // sites, supplies both missing edges without touching ingest-flows.ts's four tick sites or the 33 tests
+  // over them. `ingestActivityOf` (ingest-activity.ts) folds the three signals into one render model.
+  let importBusy = $state(0);
+  /** Run an ingest flow with the overview band tracking it: clears any stale note, marks the run in
+   *  flight for the lead-in spinner, and settles the band on the outcome.
+   *
+   *  A REJECTION is only one of the two ways an import ends badly, and the rarer one — a flow that
+   *  refuses (no OPFS, over quota) resolves normally and says so through `setImportNote(msg, "problem")`
+   *  above, and a per-file refusal now carries its own classified reason (ingest-flows' AddFileRefusal).
+   *  This catch covers only what neither of those could classify, so `failMessage` deliberately does NOT
+   *  name a cause it cannot know. It states the one thing that IS certain — whether anything landed and
+   *  what to do next — because a confident wrong reason is worse than an honest vague one.
+   *
+   *  NOTE — deliberate behaviour change (flagged for review): the rejection path sets `importNote`
+   *  INSTEAD OF the `window.alert` these five call sites used to raise. Two reports of one failure (a
+   *  blocking alert plus the band's ⚠ line) is a defect, and a modal alert is the thing this whole change
+   *  exists to get away from. The message still reaches the editor too — App's status strip already
+   *  renders `importNote` at the bottom of this file. Console logging is unchanged. */
+  function runIngest(label: string, start: () => Promise<unknown>, failMessage: string): void {
+    importBusy += 1;
+    importNote = null;
+    start()
+      .catch((e) => { console.error(label, e); importNote = { message: failMessage, ok: false }; })
+      .finally(() => { importBusy -= 1; });
+  }
+  const ingestActivity = $derived(ingestActivityOf(importBusy, importStatus, importNote));
   // Drag-and-drop onto the canvas area → the ingest flows' addFiles.
   let dragOver = $state(false);
   function onDrop(e: DragEvent) {
@@ -1567,12 +1606,12 @@
     for (const r of cued) { sess.session.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; }
     if (n > 0) {
       bump();
-      importNote = `Added ${n} note${n === 1 ? "" : "s"} from your captions.`;
+      importNote = { message: `Added ${n} note${n === 1 ? "" : "s"} from your captions.`, ok: true };
     } else {
       // parseCues found no `-->` cue lines — a malformed file or the wrong format entirely. Without
       // this, an unparseable .vtt/.srt gave zero feedback: no alert, no toast (tend Issue 7, NEGSPACE
       // row 1/2) — the user couldn't tell the import from a no-op success.
-      importNote = "That file didn't have any usable captions — check it's a valid .vtt or .srt file.";
+      importNote = { message: "That file didn't have any usable captions — check it's a valid .vtt or .srt file.", ok: false };
     }
   }
 
@@ -1653,7 +1692,7 @@
     pendingCiteInsert = null;
     cmdkOpen = false;
     // Confirm the outcome via the existing status idiom — the dogfood gap was "wasn't sure what the cite did".
-    importNote = `Added a link to “${entry.label}”. Readers can click through to it in your published exhibit.`;
+    importNote = { message: `Added a link to “${entry.label}”. Readers can click through to it in your published exhibit.`, ok: true };
   }
   // Cite-by-image is CmdK's internal Browse tab now (Archie-5968): the palette's `entries` already carry
   // per-note thumbnails (buildCmdEntries), so the eyes-first path is one view of the one surface — no
@@ -1706,7 +1745,7 @@
     if (matches(e, "⌘K") && vs.view === "editor") {
       e.preventDefault();
       if (sel) void requestCite(citeIntoComment);
-      else importNote = "Open a note first — then ⌘K cites another note or exhibit into it.";
+      else importNote = { message: "Open a note first — then ⌘K cites another note or exhibit into it.", ok: false };
       return;
     }
     // Overview organizing (Phase 2): select-all + bulk delete, only at the overview scale and not while
@@ -1793,7 +1832,11 @@
     setPlate: (id, url) => assets.setPlate(id, url),
     setCurrentObjectId: (id) => { vs.currentObjectId = id; },
     setImportStatus: (s) => { importStatus = s; },
-    setImportNote: (s) => { importNote = s; },
+    // The flow declares the tone; App must not infer it. A refusal (no OPFS, over quota, no open
+    // exhibit) composes its note and then RESOLVES, so "did the promise reject?" reads a refusal as a
+    // success — measured in the browser, where an OPFS-less context painted "This browser can't store
+    // files here" with a ✓. Only `tone` distinguishes them.
+    setImportNote: (s, tone) => { importNote = s ? { message: s, ok: tone !== "problem" } : null; },
     addPendingNotes,
     setCollabNote: (s) => { collabNote = s; },
     canvasIdOf: vs.canvasIdOf,
@@ -2019,6 +2062,8 @@
       onscrolled={rememberOverviewScroll}
       onscrollflush={flushOverviewScroll}
       canWrite={canWriteNow}
+      ingest={ingestActivity}
+      onimportdismiss={() => (importNote = null)}
       onstartnarrative={() => openObject(vs.OBJECTS[0]?.id ?? vs.currentObjectId)}
       rights={{ ...(vs.currentExhibit.rights ? { rights: vs.currentExhibit.rights } : {}), ...(vs.currentExhibit.requiredStatement ? { requiredStatement: vs.currentExhibit.requiredStatement } : {}), ...(vs.currentExhibit.metadata ? { metadata: vs.currentExhibit.metadata } : {}) }}
       onrights={setExhibitRights}
@@ -2143,7 +2188,7 @@
         <span class="ss-import"><span class="import-spinner" aria-hidden="true"></span> Adding “{importStatus.name}”…{#if importStatus.total > 1} ({importStatus.index} of {importStatus.total}){/if}</span>
       {/if}
       {#if importNote}
-        <span class="ss-note">{importNote}<button type="button" class="ss-note-x" onclick={() => (importNote = "")} aria-label="Dismiss">✕</button></span>
+        <span class="ss-note">{importNote.message}<button type="button" class="ss-note-x" onclick={() => (importNote = null)} aria-label="Dismiss">✕</button></span>
       {/if}
       {#if noteConflicts.length > 0}
         <!-- Non-blocking merge summary (Archie-90f1, decision Archie-d71c): "am I done? what happened?"
@@ -2408,7 +2453,7 @@
               <Av source={currentSource} label={vs.current.label} mediaType={vs.current.mediaType}
                 slug={vs.currentSlug} assetName={isAsset(vs.current.source) ? vs.current.source.slice(ASSET_PREFIX.length) : null}
                 {annotations} bind:selected={vs.selected} oncreate={onCreateTime} oncreatewhole={createWholeObjectNote} onimport={onImportTranscript}
-                onimporterror={(msg) => (importNote = msg)} />
+                onimporterror={(msg) => (importNote = { message: msg, ok: false })} />
             {:else}
               <div class="no-canvas">Loading…</div>
             {/if}
@@ -2628,11 +2673,11 @@
     open={addMediaOpen}
     scope={{ kind: "add-to-exhibit", slug: vs.currentSlug, title: vs.currentExhibit.title }}
     oncreate={() => {}}
-    oncreatefromfolder={(files) => { flows.addFiles(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add those files."); }); }}
-    oncreatefrommanifest={(url) => { flows.addManifestToExhibit(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
-    onaddmap={(m) => { flows.addMapObject(m).catch((e) => { console.error("Map add failed", e); window.alert("Couldn't add that map."); }); }}
-    onaddlink={(source, label) => { flows.addObject(source, label).catch((e) => { console.error("Link add failed", e); window.alert("Couldn't add that link."); }); }}
-    onaddlinks={(links) => { flows.addUrlObjects(links).catch((e) => { console.error("Folder-link add failed", e); window.alert("Couldn't add those linked images."); }); }}
+    oncreatefromfolder={(files) => runIngest("Folder add failed", () => flows.addFiles(files), "Couldn't finish adding those files — the import stopped part-way. Anything already added is in the grid; try the rest again.")}
+    oncreatefrommanifest={(url) => runIngest("IIIF add failed", () => flows.addManifestToExhibit(url), "Couldn't finish adding from that IIIF link — the import stopped part-way. Anything already added is in the grid; try again.")}
+    onaddmap={(m) => runIngest("Map add failed", () => flows.addMapObject(m), "Couldn't add that map — nothing was added. Try again.")}
+    onaddlink={(source, label) => runIngest("Link add failed", () => flows.addObject(source, label), "Couldn't add that link — nothing was added. Check the address, and try again.")}
+    onaddlinks={(links) => runIngest("Folder-link add failed", () => flows.addUrlObjects(links), "Couldn't finish adding those linked images — the import stopped part-way. Anything already added is in the grid; try the rest again.")}
     onclose={() => (addMediaOpen = false)}
   />
 {/if}

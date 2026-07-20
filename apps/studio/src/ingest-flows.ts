@@ -27,6 +27,7 @@ import { manifestToExhibit, ManifestImportError, classifyIiifDocument, labelToSt
 import { traverseCollection, urlSegment, type DiscoveredManifest, type TraverseResult } from "./collection-import.js";
 import { planCsvImport, type CsvPendingNote } from "./csv-import.js";
 import { planWadmImport } from "./wadm-import.js";
+import type { ImportTone } from "./ingest-activity.js";
 import { collabBreakdown, collabSummaryText } from "./collab.js";
 import { recordImportFreshness } from "./import-freshness.js";
 import { rectSel } from "./seed-data.js";
@@ -121,8 +122,52 @@ export type CollectionImportOutcome = {
 // enqueueSave NEVER throws — it returns false on failure — so the caller MUST branch on the boolean and
 // refuse to append the object on false; that preserves the reference-after-bytes invariant (a
 // library.json ref only lands once its bytes did) while making the failure visible in the chrome.
-const STORAGE_FAIL_NOTE =
-  "Couldn't store that on this device — it wasn't added. Check the save indicator; free some space or save your library as a new copy.";
+// (The former STORAGE_FAIL_NOTE constant became REFUSAL_COPY.storage below, so the storage failure is
+// counted and phrased by the same machinery as every other per-file refusal instead of by a lone string.)
+
+/** Why one file was refused during a batch add.
+ *
+ *  Classified by WHICH PHASE failed — a fact the code holds with certainty — and never by inspecting the
+ *  thrown error. `createImageBitmap` rejects with a host DOMException whose `.name` differs across
+ *  engines, so sniffing it would be a guess wearing the costume of a diagnosis; which `await` was running
+ *  when it threw is not a guess. `storage` deliberately does NOT split quota-vs-permission: `enqueueSave`
+ *  collapses the cause to a boolean and the read-only flag is library-wide rather than per-job, so that
+ *  split is genuinely unknowable here — the copy stays honest about it instead of naming a cause. */
+type AddFileRefusal = "unsupported" | "unreadable" | "undecodable" | "storage";
+
+/** One clause per reason, in both numbers — so a batch that loses 200 files reads as ONE sentence naming
+ *  the cause, not 200 stacked notes. Exactly one file gets NAMED (identifying, and short); two or more
+ *  collapse to a count, because listing them is the wall of text the band can't show. */
+const REFUSAL_COPY: Record<AddFileRefusal, { one: (name: string) => string; many: (n: number) => string }> = {
+  unsupported: {
+    one: (f) => `Archie can’t open “${f}” — it opens images, audio, and video.`,
+    many: (n) => `${n} files weren't added — Archie opens images, audio, and video.`,
+  },
+  unreadable: {
+    one: (f) => `Couldn't read “${f}” from this device — it may have been moved or renamed since you chose it.`,
+    many: (n) => `${n} files couldn't be read from this device — they may have been moved or renamed since you chose them.`,
+  },
+  undecodable: {
+    one: (f) => `“${f}” isn't a readable image — the file may be damaged, or in a format this browser can't open.`,
+    many: (n) => `${n} images couldn't be read — the files may be damaged, or in a format this browser can't open.`,
+  },
+  storage: {
+    one: (f) => `Couldn't store “${f}” on this device — check the save indicator, and free some space.`,
+    many: (n) => `${n} files couldn't be stored on this device — check the save indicator, and free some space.`,
+  },
+};
+
+/** Fold a batch's per-file refusals into at most three clauses (the file's established `; …` cap idiom).
+ *  Callers pass every refusal in order; identical reasons merge. Returns [] when nothing was refused. */
+function refusalSentences(refusals: ReadonlyArray<{ reason: AddFileRefusal; name: string }>): string[] {
+  const byReason = new Map<AddFileRefusal, string[]>();
+  for (const r of refusals) byReason.set(r.reason, [...(byReason.get(r.reason) ?? []), r.name]);
+  const out = [...byReason].map(([reason, names]) =>
+    names.length === 1 ? REFUSAL_COPY[reason].one(names[0]!) : REFUSAL_COPY[reason].many(names.length));
+  // Past three distinct reasons the sentence stops being readable; the per-file console.warn each refusal
+  // already emits is the full record, so nothing is lost — only the band's rendering is capped.
+  return out.length > 3 ? [...out.slice(0, 3), "…"] : out;
+}
 /** Persist one exhibit's asset bytes through the queue (serialized per exhibit). False = write failed
  *  (recorded in saveStatus); the caller must NOT append the referencing object. */
 function persistAsset(slug: string, write: () => Promise<void>): Promise<boolean> {
@@ -168,7 +213,12 @@ export interface IngestContext {
   setPlate: (objId: string, url: string) => void;
   setCurrentObjectId: (id: string) => void;
   setImportStatus: (s: { name: string; index: number; total: number } | null) => void;
-  setImportNote: (s: string) => void;
+  /** The terminal message for an import. `tone` defaults to "ok" — pass "problem" when the message
+   *  reports a REFUSAL or a failure, so the overview's ingest band can pick its glyph honestly. Proven
+   *  necessary by driving the real app: a browser without OPFS refused an import, and a band deriving
+   *  tone from "did the promise reject?" painted the refusal with a ✓ — these flows compose a failure
+   *  note and RESOLVE, so rejection is not the signal. Only the producer knows. */
+  setImportNote: (s: string, tone?: ImportTone) => void;
   /** Stage coordinate-free CSV rows for "Set area" placement (Archie-79c0 sub-cycle B). Returns how many
    *  were NEWLY staged after dedup, so importNotesCsv can report all three buckets (placed/pending/skipped). */
   addPendingNotes: (notes: CsvPendingNote[]) => number;
@@ -304,7 +354,7 @@ export function createIngestFlows(ctx: IngestContext) {
   async function addUrlObjects(links: { source: string; label: string }[]) {
     const opened = exhibit();
     if (!opened) {
-      ctx.setImportNote("Open an exhibit first.");
+      ctx.setImportNote("Open an exhibit first.", "problem");
       return;
     }
     if (links.length === 0) return;
@@ -360,7 +410,7 @@ export function createIngestFlows(ctx: IngestContext) {
   // (committed to library.json in ONE persist per chunk) instead of appended-and-persisted per file. Ids are
   // ULIDs (mintObjectId) either way, so the batch delay never affects id uniqueness. Absent (single-file
   // callers) → the pre-batch immediate appendObject per file. Media byte-writes are per file either way.
-  async function addObjectFromFile(file: File, targetSlug: string = ctx.currentSlug(), batch?: AppendBatch): Promise<{ added: boolean; note?: string }> {
+  async function addObjectFromFile(file: File, targetSlug: string = ctx.currentSlug(), batch?: AppendBatch): Promise<{ added: boolean; note?: string; reason?: AddFileRefusal }> {
     if (!ctx.storeReady()) return { added: false }; // OPFS unavailable — caller surfaces this once
     const ex = exhibitBySlug(targetSlug);
     if (!ex) return { added: false };
@@ -382,23 +432,39 @@ export function createIngestFlows(ctx: IngestContext) {
       const avName = `${id}-${safe}`;
       // Bytes THROUGH the queue, then the object (reference-after-bytes): a failed write is now visible
       // in saveStatus AND aborts the add, so library.json never references bytes that didn't land.
-      if (!(await persistAsset(slug, () => saveAssetFile(slug, avName, file)))) return { added: false, note: STORAGE_FAIL_NOTE };
+      if (!(await persistAsset(slug, () => saveAssetFile(slug, avName, file)))) return { added: false, reason: "storage" };
       await place({ id, source: `${ASSET_PREFIX}${avName}`, label: file.name.replace(/\.[^.]+$/, "") || "Untitled object", mediaType }, URL.createObjectURL(file));
       return file.size > LARGE_MEDIA_BYTES
         ? { added: true, note: `“${file.name}” is large (${Math.round(file.size / (1024 * 1024))} MB). For very large recordings, paste a link instead — it keeps your library small.` }
         : { added: true };
     }
     if (!file.type.startsWith("image/")) {
-      return { added: false, note: `Archie can’t read “${file.name}”. Add an image, audio, or video file.` };
+      return { added: false, reason: "unsupported" };
     }
 
-    const orientation = readExifOrientation(await file.arrayBuffer());
+    // Reading the bytes off the device is its own phase, and its own reason: a file chosen minutes ago can
+    // be gone, renamed, or on a disconnected volume by the time the batch reaches it. Isolated in its own
+    // try so nothing else can be mistaken for it.
+    let bytes: ArrayBuffer;
+    try {
+      bytes = await file.arrayBuffer();
+    } catch (e) {
+      console.warn(`[ingest] could not read ${file.name} from disk`, e);
+      return { added: false, reason: "unreadable" };
+    }
+    const orientation = readExifOrientation(bytes);
     let master: Blob = file;
     let masterMime = file.type || "image/jpeg"; // the stored master's encoding (drives the thumbnail's)
     let name = `${id}-${safe}`;
     let dims: { w: number; h: number } | null = null;
     let provenance: ObjectProvenance | undefined;
 
+    // DECODE PHASE. bakeDisplayMaster / downscaleIfNeeded both route through createImageBitmap, which
+    // rejects on bytes it can't decode — a damaged file, or a format this engine lacks. That throw used to
+    // escape to the callers' bare `catch { failed++ }`, which is why a corrupt file could only ever be
+    // counted, never explained. Catching it HERE (where the phase is known) turns it into a reason.
+    // The persistAsset early-returns inside are ordinary returns, not throws — they keep their own reason.
+    try {
     if (!isOrientationNoop(orientation)) {
       // EXIF path: upright PNG master, capped to the §80 display size; the untouched original is
       // preserved for citation (the master differs by rotation — provenance records the transform).
@@ -409,7 +475,7 @@ export function createIngestFlows(ctx: IngestContext) {
       name = `${id}-${safe.replace(/\.[^.]+$/, "")}.png`;
       const originalName = `${id}-${safe}`;
       // Through the queue: a failed original write aborts the add (no provenance ref to absent bytes).
-      if (!(await persistAsset(slug, () => saveOriginalFile(slug, originalName, file)))) return { added: false, note: STORAGE_FAIL_NOTE };
+      if (!(await persistAsset(slug, () => saveOriginalFile(slug, originalName, file)))) return { added: false, reason: "storage" };
       provenance = { exifOrientation: orientation, transform: orientationTransform(orientation), originalName };
     } else {
       // No rotation needed. If the image exceeds the §80 cap, downscale to a display master PRESERVING
@@ -419,12 +485,16 @@ export function createIngestFlows(ctx: IngestContext) {
       master = prepared.blob;
       dims = { w: prepared.width, h: prepared.height };
     }
+    } catch (e) {
+      console.warn(`[ingest] could not decode ${file.name}`, e);
+      return { added: false, reason: "undecodable" };
+    }
 
     const blobUrl = URL.createObjectURL(master);
     if (!dims) dims = await imageDims(blobUrl); // orientation-1 path: probe the (upright) master
     // Master bytes THROUGH the queue, before appendObject (reference-after-bytes): a failed write is
     // visible in saveStatus AND aborts the add — library.json never references an asset that didn't land.
-    if (!(await persistAsset(slug, () => saveAssetFile(slug, name, master)))) return { added: false, note: STORAGE_FAIL_NOTE };
+    if (!(await persistAsset(slug, () => saveAssetFile(slug, name, master)))) return { added: false, reason: "storage" };
     // Bake a small grid/overview thumbnail from the master (null when the master is already within
     // THUMB_DIM). A thumbnail is a PURE optimization — its failure must NEVER block an import (the grid
     // falls back to the master via thumbnailUrl). Same name, sibling assets-thumb/ dir.
@@ -463,19 +533,19 @@ export function createIngestFlows(ctx: IngestContext) {
     // (addObjectFromFile → storeReady false) left the user with a spinner flash and no explanation —
     // the inverse of the folder-import path, which already warns. (Archie image-upload UX fix.)
     if (!ctx.storeReady()) {
-      ctx.setImportNote("This browser can’t store files here — you may be in a private window. Use a normal window to add media.");
+      ctx.setImportNote("This browser can’t store files here — you may be in a private window. Use a normal window to add media.", "problem");
       return;
     }
     const opened = exhibit();
     if (!opened) {
-      ctx.setImportNote("Open an exhibit first.");
+      ctx.setImportNote("Open an exhibit first.", "problem");
       return;
     }
     // Quota preflight (Issue 26 Phase 3 / ledgers/ASSETQ.md): refuse a batch that plainly won't fit
     // BEFORE any byte lands, so an import can't half-write library.json references to storage that
     // fills mid-drop. A missing/approximate estimate never blocks (per-file writes still guard).
     if (!(await quotaOkFor(list.reduce((n, f) => n + f.size, 0)))) {
-      ctx.setImportNote(QUOTA_REFUSED_NOTE);
+      ctx.setImportNote(QUOTA_REFUSED_NOTE, "problem");
       return;
     }
     // Pin the exhibit this drop targets (tend Issue 7, ledgers/NEGSPACE.md): a multi-file drop has the
@@ -485,8 +555,9 @@ export function createIngestFlows(ctx: IngestContext) {
     // Batch the library.json appends (scale-fix): one persist per IMPORT_PERSIST_CHUNK files, not per file.
     // Per-file asset byte-writes (inside addObjectFromFile) and the per-file progress status are unchanged.
     const batch = beginBatch(targetSlug);
-    let added = 0, failed = 0;
+    let added = 0, unexplained = 0;
     const notes: string[] = [];
+    const refusals: { reason: AddFileRefusal; name: string }[] = [];
     try {
       for (let i = 0; i < list.length; i++) {
         ctx.setImportStatus({ name: list[i]!.name, index: i + 1, total: list.length });
@@ -497,10 +568,19 @@ export function createIngestFlows(ctx: IngestContext) {
         // exactly what the sibling newExhibitFromFolder loop does; the flush below still commits the survivors.
         try {
           const r = await addObjectFromFile(list[i]!, targetSlug, batch);
-          if (r.added) added++; else failed++;
-          if (r.note) notes.push(r.note);
-        } catch {
-          failed++;
+          if (r.added) added++;
+          // A refusal now carries WHY. Note the old shape double-counted: a file refused WITH a note both
+          // incremented `failed` AND pushed the note, so one storage failure read "Couldn't store that on
+          // this device… 1 couldn't be added." — the same event reported twice, the second time blankly.
+          else if (r.reason) refusals.push({ reason: r.reason, name: list[i]!.name });
+          else unexplained++; // storeReady/exhibit-gone: the caller already surfaced those up front
+          if (r.note) notes.push(r.note); // advisories on a SUCCESSFUL add (the large-AV nudge)
+        } catch (e) {
+          // addObjectFromFile classifies its own throws now, so reaching here means something outside the
+          // read/decode phases failed. Log it — an unexplained tally the console can't explain either is
+          // the hole this whole change exists to close.
+          console.error(`[ingest] unclassified failure adding ${list[i]!.name}`, e);
+          unexplained++;
         }
         await batch.flushIfFull();
       }
@@ -514,8 +594,16 @@ export function createIngestFlows(ctx: IngestContext) {
     const parts: string[] = [];
     if (added > 0) parts.push(`Added ${added} file${added === 1 ? "" : "s"} to “${where}”.`);
     parts.push(...notes);
-    if (failed > 0) parts.push(`${failed} couldn't be added.`); // surface the skip tally, like the folder path
-    if (parts.length > 0) ctx.setImportNote(parts.join(" "));
+    // Successes first, then the caveats — the house order (mirrors the CSV/WADM summaries). Each refusal
+    // clause names its CAUSE, so "1 couldn't be added." is gone in favour of what actually went wrong.
+    parts.push(...refusalSentences(refusals));
+    // Only a failure nothing could classify falls back to a bare count — and it says so, rather than
+    // implying a reason exists that we simply declined to give.
+    if (unexplained > 0) parts.push(`${unexplained} file${unexplained === 1 ? "" : "s"} couldn't be added, for no reason Archie could identify.`);
+    // A batch that lost files is NOT a clean success, even when most of them landed: the overview band's
+    // glyph is the loudest thing in it and the first thing scanned, so a partial loss must not wear a ✓.
+    const lost = refusals.length + unexplained;
+    if (parts.length > 0) ctx.setImportNote(parts.join(" "), lost > 0 ? "problem" : "ok");
   }
 
   // Folder → exhibit in one gesture (contributor-broadening ① sub-cycle A, Archie-e1d6): the folder
@@ -552,6 +640,7 @@ export function createIngestFlows(ctx: IngestContext) {
     }
     const titleOverride = groups.length === 1 && title && title.trim() !== "" ? title.trim() : undefined;
     let failed = 0, imported = 0;
+    const refusals: { reason: AddFileRefusal; name: string }[] = [];
     try {
       for (const g of groups) {
         await ctx.newExhibit(titleOverride ?? g.name);
@@ -577,9 +666,12 @@ export function createIngestFlows(ctx: IngestContext) {
           const file = p.file.type ? p.file : new File([p.file], p.file.name, { type: inferredMime(p) });
           try {
             const r = await addObjectFromFile(file, targetSlug, batch);
-            if (r.added) imported++; else failed++;
+            if (r.added) imported++;
+            else if (r.reason) refusals.push({ reason: r.reason, name: file.name });
+            else failed++;
             if (r.note) ctx.setImportNote(r.note); // large-AV nudge; the end-of-import summary overrides it if any
-          } catch {
+          } catch (e) {
+            console.error(`[ingest] unclassified failure adding ${file.name}`, e);
             failed++; // skip-and-tally: one corrupt scan must not abort the rest of the folder
           }
           await batch.flushIfFull();
@@ -589,13 +681,20 @@ export function createIngestFlows(ctx: IngestContext) {
     } finally {
       ctx.setImportStatus(null);
     }
-    const summary = `Added ${imported} file${imported === 1 ? "" : "s"} to ${groups.length} exhibit${groups.length === 1 ? "" : "s"}.${failed > 0 ? ` ${failed} couldn't be added.` : ""}`;
+    // Same shape as addFiles': the head, then a clause per refusal REASON, then the unclassifiable
+    // remainder as a bare count that admits it is one.
+    const tail = [
+      ...refusalSentences(refusals),
+      ...(failed > 0 ? [`${failed} file${failed === 1 ? "" : "s"} couldn't be added, for no reason Archie could identify.`] : []),
+    ];
+    const summary = [`Added ${imported} file${imported === 1 ? "" : "s"} to ${groups.length} exhibit${groups.length === 1 ? "" : "s"}.`, ...tail].join(" ");
+    const lost = refusals.length + failed;
     if (groups.length > 1) {
       // Several new exhibits — surface the summary via the app's dialog chrome (the rail's importNote
       // isn't rendered at the Library scale). NB: the caller navigates back to the Library separately.
       ctx.alert(summary);
-    } else if (failed > 0) {
-      ctx.setImportNote(summary);
+    } else if (lost > 0) {
+      ctx.setImportNote(summary, "problem"); // this branch fires ONLY on a partial loss — never a clean ✓
     }
     return { groups: groups.length };
   }
@@ -882,7 +981,7 @@ export function createIngestFlows(ctx: IngestContext) {
   // SAME createNote path the seeds use. Skip-and-tally per row; fix-and-retry deduped on target+comment.
   async function importNotesCsv(file: File) {
     if (file.size > LOCAL_TEXT_IMPORT_MAX_BYTES) {
-      ctx.setImportNote(`“${file.name}” is too large (${Math.round(file.size / (1024 * 1024))} MB) to import as notes — check it's really a CSV of your annotations.`);
+      ctx.setImportNote(`“${file.name}” is too large (${Math.round(file.size / (1024 * 1024))} MB) to import as notes — check it's really a CSV of your annotations.`, "problem");
       return;
     }
     const session = ctx.session();
@@ -933,20 +1032,22 @@ export function createIngestFlows(ctx: IngestContext) {
     if (dup > 0) parts.push(`${dup} already added.`);
     if (staged > 0) parts.push(`${staged} need${staged === 1 ? "s" : ""} a region — pick “Set area” to draw ${staged === 1 ? "it" : "them"}.`);
     if (plan.skipped.length > 0) parts.push(`Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `line ${s.row}: ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`);
-    ctx.setImportNote(parts.length > 0 ? parts.join(" ") : "That CSV had no notes to add.");
+    // Skipped rows, or a CSV that yielded nothing at all, are outcomes the user needs to act on — not ✓.
+    ctx.setImportNote(parts.length > 0 ? parts.join(" ") : "That CSV had no notes to add.",
+      plan.skipped.length > 0 || parts.length === 0 ? "problem" : "ok");
   }
   // W3C/WADM annotation import (contributor-broadening ⑦ slice A): an AnnotationPage from Archie's own
   // publish, Recogito, or any standard WADM producer lands on this exhibit — re-anchored by the
   // /canvas/<id> tail, selector + bodies verbatim, deduped like the CSV path.
   async function importNotesWadm(file: File) {
     if (file.size > LOCAL_TEXT_IMPORT_MAX_BYTES) {
-      ctx.setImportNote(`“${file.name}” is too large (${Math.round(file.size / (1024 * 1024))} MB) to import as notes — check it's really a notes file.`);
+      ctx.setImportNote(`“${file.name}” is too large (${Math.round(file.size / (1024 * 1024))} MB) to import as notes — check it's really a notes file.`, "problem");
       return;
     }
     const session = ctx.session();
     let json: unknown;
     try { json = JSON.parse(await file.text()); }
-    catch { ctx.setImportNote(`Couldn't read “${file.name}” — it isn't a valid notes file.`); return; }
+    catch { ctx.setImportNote(`Couldn't read “${file.name}” — it isn't a valid notes file.`, "problem"); return; }
     const plan = planWadmImport(json, { objectIds: new Set(ctx.objects().map((o) => o.id)) });
     const keyFor = (target: unknown, body: unknown) => `${JSON.stringify(target)}|${JSON.stringify(body)}`;
     const existing = new Set(session.entries.map((e) => keyFor(e.target, e.body ?? [])));
@@ -968,7 +1069,8 @@ export function createIngestFlows(ctx: IngestContext) {
     const dupNote = dup > 0 ? ` ${dup} already added.` : "";
     ctx.setImportNote(plan.skipped.length > 0
       ? `${head}${dupNote} Skipped ${plan.skipped.length}: ${plan.skipped.slice(0, 3).map((s) => `#${s.index}: ${s.reason}`).join("; ")}${plan.skipped.length > 3 ? "; …" : ""}`
-      : head + dupNote);
+      : head + dupNote,
+      plan.skipped.length > 0 ? "problem" : "ok"); // same rule as the CSV path: a skip is not a clean ✓
   }
   // Replace the current OPFS project with a loaded library (the shared body of "Open zip" + "Open folder"):
   // clear outgoing annotation dirs (no orphans under reused slugs), write each imported log, swap the meta.

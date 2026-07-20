@@ -18,6 +18,7 @@
   import { hintSeen, markHintSeen } from "./canvas-first-use.js";
   import { isReorderable, reorderBlockedMessage } from "./reorder-state.js";
   import { midEllipsis, splitForMidTruncation } from "./mid-ellipsis.js";
+  import type { IngestActivity } from "./ingest-activity.js";
   import {
     liftRow, moveRow, moveRowTo, indexOfMoving,
     liftAnnouncement, moveAnnouncement, boundaryAnnouncement, dropAnnouncement, cancelAnnouncement,
@@ -76,6 +77,8 @@
     onscrolled,
     onscrollflush,
     canWrite = true,
+    ingest = null,
+    onimportdismiss,
   }: {
     title: string;
     layout: LayoutType;
@@ -161,6 +164,14 @@
      *  unchanged) instead of inviting work the store will drop. Viewing stays fully live — search, sort,
      *  density, mode toggle, opening plates/details all keep working. */
     canWrite?: boolean;
+    /** Live ingest feedback, folded by ingest-activity.ts from App's run count + per-item tick + terminal
+     *  note. Before this the overview showed NOTHING during an import it had itself started: App's status
+     *  strip (which carries the same signals as a text toast) renders only in the editor branch. NOT a
+     *  modal — the band is a real flex child above the scroller, so it reserves space instead of covering
+     *  plates, the call `.selection-tray` already made and documented below. */
+    ingest?: IngestActivity | null;
+    /** Dismiss the settled outcome line. Absent → the line renders without its ✕ (App owns the note). */
+    onimportdismiss?: () => void;
   } = $props();
 
   let rightsOpen = $state(false);
@@ -625,6 +636,58 @@
     </div>
   {/if}
 
+  <!-- Ingest feedback — the overview's OWN import surface. App carries the same signals (importStatus /
+       importNote) but renders them only inside its editor-branch status strip, so an import started from
+       THIS screen's Add-media affordances (.tb-add / .plate.add / .li-add → onaddobject) used to show the
+       user nothing at all, for its whole duration.
+       Deliberately a real flex child, NOT a modal and NOT an overlay: `.overview` is a fixed-height flex
+       column whose only scrolling descendant is `.grid-scroll` / `.list`, so a band here is structurally
+       PINNED (it can never scroll away) and takes its height out of the scroller's share rather than
+       covering live plates — the same call `.selection-tray` makes and documents below, after an earlier
+       position:absolute version covered the last plate row.
+       Placed directly under the toolbar for proximity to the ＋ Add media button that started the run, and
+       OUTSIDE the `objects.length > 0` gates gating the toolbar and narrative strip: the first import into
+       an EMPTY exhibit is the longest one a user ever runs, and it is exactly when both of those are absent. -->
+  {#if ingest}
+    <div class="ingest-bar" class:settled={ingest.kind === "done"}>
+      {#if ingest.kind === "running"}
+        <!-- role="status" on the TEXT row only, matching the house pattern (CreateExhibitDialog:751,
+             Publish:890): the live region announces the human sentence while <progress> carries the
+             machine-readable value, so AT reads a count it can also poll rather than a re-announced band. -->
+        <p class="ib-line" role="status">
+          <span class="ib-what">Adding “{ingest.name}”…</span>
+          <span class="ib-count">{ingest.index} of {ingest.total}</span>
+        </p>
+        <!-- Native <progress>, per Tropy's activity pane (../tropy/src/components/activity.js:36 — the
+             closest peer app, and the only prior art in the corpus with a real non-modal determinate bar):
+             role="progressbar", aria-valuenow and aria-valuemax come from the platform, so there is no
+             authored ARIA here to drift out of sync with `value`. This is the FIRST determinate bar in
+             this codebase — every existing progress affordance is a ring spinner + counted text, so there
+             was no internal geometry to match, only the accent/track pairing (App.svelte:2971). -->
+        <progress class="ib-track" value={ingest.done} max={ingest.total}></progress>
+      {:else if ingest.kind === "preparing"}
+        <!-- Total not known yet — the silent discovery phases (manifest fetch, collection walk, EXIF
+             pre-pass). Spinner, NOT an empty bar: Tropy's `hasProgressBar = progress > 0` switch
+             (activity.js:17). A determinate track sitting at zero would claim a measurement we don't have. -->
+        <p class="ib-line" role="status">
+          <span class="ib-spinner" aria-hidden="true"></span>
+          <span class="ib-what">Reading what you added…</span>
+        </p>
+      {:else}
+        <!-- Settled. The band PERSISTS rather than vanishing: importStatus alone has no terminal state, so
+             a bar that simply disappeared would leave someone who looked away during a 400-file import
+             with no idea whether it worked. Dismissed by hand, like the status strip's note (App:2188). -->
+        <p class="ib-line" role="status">
+          <span class="ib-glyph" class:warn={!ingest.ok} aria-hidden="true">{ingest.ok ? "✓" : "⚠"}</span>
+          <span class="ib-what">{ingest.message}</span>
+          {#if onimportdismiss}
+            <button type="button" class="ib-x" onclick={onimportdismiss} aria-label="Dismiss">✕</button>
+          {/if}
+        </p>
+      {/if}
+    </div>
+  {/if}
+
   <!-- Narrative at the overview scale (staging spec §5). 0 sections → an invitation to start; ≥1 → the
        ordered spine, read-only here (beats are authored on the object canvas, §56 — a row drops into it). -->
   {#if objects.length > 0}
@@ -895,6 +958,43 @@
   /* The overview occupies the middle ~80vh band, FULL WIDTH — the canvas is fully available, not a framed
      window. Vertically centred by .overview-stage (App). */
   .overview { display: flex; flex-direction: column; height: 92vh; min-height: 36rem; width: 100%; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); }
+
+  /* Ingest band — a pinned chrome band in the same family as .narrative-strip / .toolbar: full-bleed,
+     --space-6 gutter, one hairline separator. min-height is set to the TALLEST state (the two-row running
+     variant) so the preparing → running → done transitions don't jog the grid below; the band's appearance
+     and dismissal are the only two reflows, and both are user-initiated. */
+  .ingest-bar { display: flex; flex-direction: column; justify-content: center; gap: var(--space-2); min-height: 3.25rem; padding: var(--space-2) var(--space-6); border-bottom: 1px solid var(--border-canvas); box-shadow: inset 3px 0 0 var(--accent); }
+  /* Settled: the accent channel goes quiet — it's a record of what happened, not something in flight. */
+  .ingest-bar.settled { box-shadow: inset 3px 0 0 var(--border-canvas-emphasis); }
+  .ib-line { display: flex; align-items: center; gap: var(--space-3); margin: 0; font-family: var(--font-body); font-size: 0.9rem; line-height: 1.4; color: var(--ink-canvas-primary); }
+  /* The filename is the flexible part and can be arbitrarily long; the count must never wrap or shift. */
+  .ib-what { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  /* …but a SETTLED message must wrap, not ellipsize. Truncation is fine for a filename (identifying, and
+     the next tick replaces it) and wrong for an outcome, where the actionable half is at the END —
+     "This browser can't store files here — you may be in a private window. Use a normal window to add
+     media." clipped at the em-dash tells the user they have a problem and not what to do about it. */
+  .ingest-bar.settled .ib-what { white-space: normal; overflow: visible; }
+  .ib-count { flex: none; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-ui-xs); letter-spacing: 0.08em; color: var(--ink-canvas-muted); }
+  .ib-glyph { flex: none; color: var(--accent); }
+  .ib-glyph.warn { color: var(--semantic-warning); }
+  .ib-x { flex: none; cursor: pointer; background: none; border: none; padding: 0 var(--space-1); font-size: var(--text-ui-xs); color: var(--ink-canvas-muted); }
+  .ib-x:hover { color: var(--ink-canvas-primary); }
+  /* The determinate track. appearance:none + BOTH engine pseudo-elements — a native <progress> ignores
+     background/color on the element itself, so styling only one engine silently leaves the other default. */
+  .ib-track { appearance: none; -webkit-appearance: none; display: block; width: 100%; height: 4px; border: none; border-radius: var(--radius-sm); background: var(--accent-muted); color: var(--accent); }
+  .ib-track::-webkit-progress-bar { background: var(--accent-muted); border-radius: var(--radius-sm); }
+  .ib-track::-webkit-progress-value { background: var(--accent); border-radius: var(--radius-sm); transition: width 200ms ease; }
+  .ib-track::-moz-progress-bar { background: var(--accent); border-radius: var(--radius-sm); }
+  /* The indeterminate lead-in. Track + accent cap is the house spinner geometry; --accent-muted for the
+     track matches App.svelte:2971's .import-spinner, the affordance this band supersedes on this screen.
+     (This is the 5th hand-rolled copy of this spinner in apps/studio — CreateExhibitDialog x2, Publish,
+     App. Consolidating all five into one primitive is a real follow-up, deliberately out of scope here.) */
+  .ib-spinner { flex: none; width: 13px; height: 13px; border-radius: 50%; border: 2px solid var(--accent-muted); border-top-color: var(--accent); animation: ingest-spin 0.7s linear infinite; }
+  @keyframes ingest-spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .ib-spinner { animation-duration: 2.4s; }
+    .ib-track::-webkit-progress-value { transition: none; }
+  }
 
   /* Narrative strip — sits between the header and the canvas; quiet, on the dark canvas ground. The invite
      variant is a one-line CTA; the spine variant a capped, scrollable read-only list (authored elsewhere). */

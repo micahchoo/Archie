@@ -613,7 +613,38 @@ describe("addFiles — one file rejects mid-batch (code-review defect 1)", () =>
     expect(new Set(objs.map((o) => o.id)).size).toBe(4); // unique ids
     expect(appendObjectsSpy).toHaveBeenCalledTimes(1); // the survivors were flushed in the one end-of-drop persist
     expect(notes.at(-1)).toMatch(/Added 4 files/); // success count surfaced
-    expect(notes.at(-1)).toMatch(/1 couldn't be added/); // and the skip tally, like the folder path
+    // …and the skip now says WHY. This file rejected in downscaleIfNeeded — the decode phase — so the
+    // summary names that cause and the file, instead of the old content-free "1 couldn't be added."
+    expect(notes.at(-1)).toMatch(/“corrupt\.png” isn't a readable image/);
+    expect(notes.at(-1)).toMatch(/damaged, or in a format this browser can't open/);
+    expect(notes.at(-1)).not.toMatch(/no reason Archie could identify/); // it WAS identified
+  });
+
+  it("folds many failures of one kind into a single clause, not one line per file", async () => {
+    // The guard against a wall of text: 4 undecodable files must read as ONE sentence with a count, and
+    // must NOT name any of them (naming is reserved for the exactly-one case, where it identifies).
+    const { ctx, notes, exhibits, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-b", slug: "b", title: "B", objects: [] } as unknown as ExhibitMeta);
+    switchTo("b");
+    const img = (name: string) => new File([new Uint8Array([0])], name, { type: "image/png" });
+    await flows.addFiles([img("ok.png"), img("corrupt-1.png"), img("corrupt-2.png"), img("corrupt-3.png"), img("corrupt-4.png")]);
+
+    const summary = notes.at(-1)!;
+    expect(summary).toMatch(/Added 1 file/);
+    expect(summary).toMatch(/4 images couldn't be read/);
+    expect(summary).not.toMatch(/corrupt-1\.png/); // collapsed to a count, not enumerated
+  });
+
+  it("reports an unsupported file by its kind, not as an anonymous failure", async () => {
+    const { ctx, notes, exhibits, switchTo } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    exhibits.push({ id: "ex-c", slug: "c", title: "C", objects: [] } as unknown as ExhibitMeta);
+    switchTo("c");
+    await flows.addFiles([new File([new Uint8Array([0])], "notes.pdf", { type: "application/pdf" })]);
+
+    expect(notes.at(-1)).toMatch(/Archie can’t open “notes\.pdf”/);
+    expect(notes.at(-1)).toMatch(/images, audio, and video/);
   });
 });
 
