@@ -11,6 +11,7 @@
 import type { Filesystem, FsDirectory } from "../fs/seam.js";
 import { ZipFilesystem } from "../fs/zip.js";
 import type { Library } from "../model/model.js";
+import { sanitizeMetadataEntries } from "../model/model.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CAnnotationPage } from "../wadm/types.js";
 import { buildLinkIndex, resolveViewerLink, validateLink, rewriteArchieLinks, type LinkTarget } from "../link/link.js";
 import { toCollection } from "../iiif/collection.js";
@@ -748,6 +749,9 @@ export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
     // Library-level credit/license round-trips via exhibits.json (the friendly model shape lives there).
     ...(ex.library.rights !== undefined ? { rights: ex.library.rights } : {}),
     ...(ex.library.requiredStatement !== undefined ? { requiredStatement: ex.library.requiredStatement } : {}),
+    // Library-level descriptive metadata rides the same mirror — sanitized (a published tree is an
+    // untrusted read boundary; skip malformed entries per-item, never throw).
+    ...(() => { const md = sanitizeMetadataEntries(ex.library.metadata); return md ? { metadata: md } : {}; })(),
   };
   return { library, logs };
 }

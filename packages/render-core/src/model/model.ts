@@ -55,13 +55,71 @@ export function isValidMode(_layout: LayoutType, mode: string | undefined): bool
 }
 
 /**
+ * One descriptive-metadata entry (Dublin Core pipeline, Archie-c6bf). `property` is a
+ * `dcterms:`-prefixed name (dcterms: ONLY — never the legacy `dc:` elements; DCMI recommends the
+ * dcterms twins for new work, see docs/research/dublin-core-vocab.md §1.2). `label` is the optional
+ * per-entry display override (Tropy `field.label` / Omeka "alternate label" prior art) — when absent,
+ * display falls back to the vocabulary's preferred label. A verbatim import (a pair whose label
+ * matched no dcterms property) carries `label` only, no `property`. At least ONE of property/label
+ * must be present ({@link isMetadataEntry}). Array order = display order; a repeated property is
+ * simply a repeated entry (the IIIF `metadata` target is an ordered list of pairs, so repeats are
+ * representable — research asset §4 carry-4).
+ */
+export interface MetadataEntry {
+  /** dcterms:-prefixed property name (e.g. "dcterms:creator"). Absent for a verbatim label-only entry. */
+  property?: string;
+  /** Display-label override (or the sole label of a verbatim entry). */
+  label?: string;
+  /** The entry's value (plain text). */
+  value: string;
+}
+
+/** Is `v` a well-formed {@link MetadataEntry}? `value` a string, at least one of property/label a
+ *  non-empty string, and `property` (when present) dcterms:-prefixed — the model's dcterms:-only rule,
+ *  enforced at read boundaries (a hand-edited tree / third-party zip may carry anything). */
+export function isMetadataEntry(v: unknown): v is MetadataEntry {
+  if (typeof v !== "object" || v === null) return false;
+  const e = v as Record<string, unknown>;
+  if (typeof e.value !== "string") return false;
+  const property = e.property;
+  const label = e.label;
+  if (property !== undefined && (typeof property !== "string" || !property.startsWith("dcterms:") || property === "dcterms:")) return false;
+  if (label !== undefined && typeof label !== "string") return false;
+  const hasProperty = typeof property === "string";
+  const hasLabel = typeof label === "string" && label.trim() !== "";
+  return hasProperty || hasLabel;
+}
+
+/**
+ * Read-boundary filter for an untrusted `metadata` array: keep the well-formed entries (re-built to
+ * exactly the three known fields), SKIP the malformed ones — per-item tolerant, never throw (data-
+ * integrity contract #2: corrupt ≠ empty, and one bad entry must not void its siblings). Returns
+ * `undefined` for a non-array or an array with no valid entries, so callers spread it conditionally
+ * and an absent/empty field stays byte-absent.
+ */
+export function sanitizeMetadataEntries(v: unknown): MetadataEntry[] | undefined {
+  if (!Array.isArray(v)) return undefined;
+  const out: MetadataEntry[] = [];
+  for (const item of v) {
+    if (!isMetadataEntry(item)) continue;
+    out.push({
+      ...(item.property !== undefined ? { property: item.property } : {}),
+      ...(item.label !== undefined ? { label: item.label } : {}),
+      value: item.value,
+    });
+  }
+  return out.length > 0 ? out : undefined;
+}
+
+/**
  * IIIF rights / attribution carried by a Library, Exhibit, or Object — the SAME field set at every
  * level (CONTEXT "Exhibit / Library rights & metadata"; Q1–Q3). Authored as friendly inputs, projected
  * THIN to the IIIF-standard vocabulary at publish so a pure IIIF viewer (Mirador) shows credit + license
  * for free: `requiredStatement` → IIIF `requiredStatement` (a MUST-display label/value pair), `rights`
- * → IIIF `rights` (a single license URI — CC / RightsStatements.org). `provider` / `metadata` /
- * contributors / per-field opt-in `inherit` are ADDITIVE (the IIIF fields exist; exposed progressively).
- * Core-first carries only `requiredStatement` + `rights`.
+ * → IIIF `rights` (a single license URI — CC / RightsStatements.org), `metadata` → IIIF `metadata`
+ * (ordered display pairs) + the lossless `archieMetadata` extension (iiif/metadata.ts). `provider` /
+ * contributors / per-field opt-in `inherit` remain ADDITIVE (the IIIF fields exist; exposed
+ * progressively).
  */
 export interface RightsFields {
   /** A license URI (CC / RightsStatements.org). Projects to IIIF `rights`. Studio = an approved-URI picker. */
@@ -70,6 +128,11 @@ export interface RightsFields {
    *  defaults to "Attribution" at projection when blank. "Republished from X under the same license"
    *  lives HERE (it is statement text, not an approved `rights` URI). */
   requiredStatement?: { label: string; value: string };
+  /** Descriptive Dublin Core entries (Archie-c6bf). Order = display order; repeats allowed. Projects
+   *  to IIIF `metadata` (+ `archieMetadata` for the lossless round trip). Covers ONLY the descriptive
+   *  ground the native fields don't — title/summary/rights/attribution stay native (the excluded
+   *  properties in model/dcterms.ts), so publish never emits two disagreeing title/rights surfaces. */
+  metadata?: MetadataEntry[];
 }
 
 /** One media item inside an Exhibit; projects to an IIIF Canvas. */

@@ -1197,7 +1197,11 @@
   }
 
   // --- Rights & credit (rights grill Phase 2): the shared RightsEditor sets these at all three levels.
-  // Each replaces the level's rights fields with the editor's emitted next-state, then persists. ---
+  // Each replaces the level's rights fields with the editor's emitted next-state, then persists.
+  // DELIBERATE EXCLUSION (Archie-5a9b metadata audit): these patches are KEYED to rights +
+  // requiredStatement only — `metadata` (the Dublin Core entries) is NOT part of the RightsEditor
+  // loop, and the keyed patch + spread-preserving reducers leave an object's/exhibit's/library's
+  // entries intact. Do not widen these to a whole-RightsFields replace. ---
   function setObjectRights(next: RightsFields) {
     const objId = vs.currentObjectId;
     lib.patchObject(vs.currentSlug, objId, { rights: next.rights, requiredStatement: next.requiredStatement });
@@ -1745,11 +1749,9 @@
       isTemplate: (ex: ExhibitMeta) => isTemplate(ex.slug),
     });
   }
-  /** Spread the present `RightsFields` (credit/license) off a store meta — used at every level in
-   *  buildFullLibrary so library/exhibit/object project their authored rights (rights grill Phase 2). */
-  function rightsOf(m: RightsFields): RightsFields {
-    return { ...(m.rights ? { rights: m.rights } : {}), ...(m.requiredStatement ? { requiredStatement: m.requiredStatement } : {}) };
-  }
+  // (The old local `rightsOf` helper is gone — buildFullLibrary delegates to core's workingToLibrary,
+  // whose own rightsOf carries rights + requiredStatement + metadata; a stale local copy here would be
+  // exactly the drop-the-new-field hazard the carry sentinels exist to prevent — Archie-5a9b audit.)
   // Load EVERY exhibit's annotation log for publish, keyed by exhibit id (publishLibrary's getLog):
   // the current exhibit uses the live session (freshest, incl. unsaved); others load from their dir.
   // `forPublish` gates the torn-store warns (Archie-a690): publish ships what reads, and each

@@ -247,9 +247,14 @@
   // Resolves to its full ExhibitMeta so the shared DetailsEditor can read title/description/rights.
   let editingSlug = $state<string | null>(null);
   const editingExhibit = $derived(exhibits.find((e) => e.slug === editingSlug) ?? null);
+  // Projects an exhibit's FULL RightsFields (incl. the Dublin Core `metadata` entries — Archie-5a9b
+  // audit: a projection that drops a field trains callers to clobber it). Consumers stay metadata-safe:
+  // DetailsEditor/RightsEditor write back a KEYED `{ rights, requiredStatement }` patch (below at
+  // onrights) and the bulk-rights dialog only summarizes license/credit — neither touches `metadata`.
   const rightsOf = (e: ExhibitMeta): RightsFields => ({
     ...(e.rights ? { rights: e.rights } : {}),
     ...(e.requiredStatement ? { requiredStatement: e.requiredStatement } : {}),
+    ...(e.metadata && e.metadata.length ? { metadata: e.metadata } : {}),
   });
 
   // --- Exhibit multi-select (SCALE-GALLERY Phase 2, ledgers/PLAN-collection-import.md §9). Transient

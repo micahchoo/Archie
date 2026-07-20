@@ -37,6 +37,10 @@ export function toExhibitsJson(library: Library): ExhibitsJson {
       ...(library.summary !== undefined ? { summary: library.summary } : {}),
       ...(library.rights !== undefined ? { rights: library.rights } : {}),
       ...(library.requiredStatement !== undefined ? { requiredStatement: library.requiredStatement } : {}),
+      // Library-level descriptive metadata passes through raw (Archie-c6bf), exactly as
+      // rights/requiredStatement do — loadLibrary restores it from here (the IIIF display pairs
+      // live on collection.json via rightsProps; THIS is the lossless model-shape mirror).
+      ...(library.metadata && library.metadata.length ? { metadata: library.metadata } : {}),
     },
     exhibits: library.exhibits.map((e, order) => ({
       slug: e.slug,

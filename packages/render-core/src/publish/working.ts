@@ -120,10 +120,15 @@ export interface WorkingLibraryMeta extends RightsFields {
   exhibits: WorkingExhibitMeta[];
 }
 
-/** Spread the present `RightsFields` (credit/license) off a working meta — every level of the
- *  mapping projects its authored rights. */
+/** Spread the present `RightsFields` (credit/license + descriptive metadata) off a working meta —
+ *  every level of the mapping projects its authored rights. Empty `metadata` ([]) is dropped like a
+ *  blank credit — absent and empty are the same authored state. */
 const rightsOf = (m: RightsFields): RightsFields =>
-  ({ ...(m.rights ? { rights: m.rights } : {}), ...(m.requiredStatement ? { requiredStatement: m.requiredStatement } : {}) });
+  ({
+    ...(m.rights ? { rights: m.rights } : {}),
+    ...(m.requiredStatement ? { requiredStatement: m.requiredStatement } : {}),
+    ...(m.metadata && m.metadata.length ? { metadata: m.metadata } : {}),
+  });
 
 /** Is this persisted exhibit a bundled EXAMPLE (a Playground template, mx-6c5c48)? Bundled defaults
  *  carry `seedVersion`; "Keep a copy" strips it (App.svelte fork) — so presence is the cold signal
@@ -149,13 +154,13 @@ export interface WorkingToLibraryOptions {
 const _workingExhibitCarry = {
   id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry",
   layout: "carry", mode: "carry", objects: "carry", sections: "carry", readings: "carry",
-  rights: "carry", requiredStatement: "carry",
+  rights: "carry", requiredStatement: "carry", metadata: "carry",
   seedVersion: { drop: "template marker (Playground example); not a Library field — see includeTemplates filter" },
 } satisfies Record<keyof WorkingExhibitMeta, CarryDisposition>;
 const _workingObjectCarry = {
   id: "carry", source: "carry", label: "carry", summary: "carry", width: "carry", height: "carry",
   mediaType: "carry", format: "carry", originalName: "carry", duration: "carry", tileSource: "carry",
-  thumbnail: "carry", rights: "carry", requiredStatement: "carry",
+  thumbnail: "carry", rights: "carry", requiredStatement: "carry", metadata: "carry",
   provenance: { drop: "exif/transform are Studio-local; only originalName round-trips (→ Library.originalName)" },
 } satisfies Record<keyof WorkingObjectMeta, CarryDisposition>;
 
@@ -204,12 +209,12 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
 const _libraryExhibitCarry = {
   id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry",
   objects: "carry", sections: "carry", readings: "carry", layout: "carry", mode: "carry",
-  rights: "carry", requiredStatement: "carry",
+  rights: "carry", requiredStatement: "carry", metadata: "carry",
 } satisfies Record<keyof Exhibit, CarryDisposition>;
 const _libraryObjectCarry = {
   id: "carry", source: "carry", label: "carry", summary: "carry", mediaType: "carry",
   tileSource: "carry", width: "carry", height: "carry", duration: "carry", format: "carry",
-  originalName: "carry", thumbnail: "carry", rights: "carry", requiredStatement: "carry",
+  originalName: "carry", thumbnail: "carry", rights: "carry", requiredStatement: "carry", metadata: "carry",
   bakeTiles: { drop: "publish-time opt-in (bake remote → local DZI); never on a Library reconstructed from a published tree" },
 } satisfies Record<keyof AObject, CarryDisposition>;
 

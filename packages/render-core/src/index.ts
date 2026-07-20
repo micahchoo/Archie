@@ -69,6 +69,9 @@ export * from "./exif/read.js";
 // Authoring domain model (Library / Exhibit / Object) — the IIIF projections derive from it.
 export * from "./model/model.js";
 export * from "./model/layout.js";
+// DCMI Metadata Terms vocabulary data (Dublin Core pipeline, Archie-c6bf): the 55 dcterms
+// properties + import aliases + native-field exclusions + per-level default field sets.
+export * from "./model/dcterms.js";
 
 // CLEAN-LIFT pure modules (spike-0001): selector geometry, URL/deep-link, IIIF resolution.
 export * from "./geometry/selector.js";
@@ -103,6 +106,8 @@ export * from "./iiif/exhibits.js";
 // Library-level image index baked at publish (ADR-0023) — the Viewer Gallery wall's one-fetch source.
 export * from "./iiif/image-index.js";
 export * from "./iiif/rights.js";
+// Descriptive-metadata projector (Archie-c6bf): MetadataEntry[] ↔ IIIF metadata[] + archieMetadata.
+export * from "./iiif/metadata.js";
 
 // The Filesystem seam (source interface) + its backend projections (Q-5):
 // memory (tests/Playground), zip (DownloadFilesystem core), fsa (Chromium folder, browser).

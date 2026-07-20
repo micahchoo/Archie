@@ -161,6 +161,7 @@ const _manifestObjectRecover = {
   id: "carry", source: "carry", label: "carry", summary: "carry", mediaType: "carry",
   tileSource: "carry", width: "carry", height: "carry", duration: "carry", format: "carry",
   thumbnail: "carry", rights: "carry", requiredStatement: "carry",
+  metadata: "carry", // recovered from the canvas's archieMetadata extension via rightsFromIIIF (iiif/metadata.ts)
   originalName: { drop: "no recoverable ref in the manifest (published to assets-original/ only)" },
   bakeTiles: { drop: "publish-time opt-in; the baked DZI is recovered as tileSource, the flag is spent" },
 } satisfies Record<keyof AObject, CarryDisposition>;

@@ -678,7 +678,20 @@ export function createIngestFlows(ctx: IngestContext) {
       slug = await ctx.newExhibitInLibrary(title);
     }
     opts.onCreated?.(slug);
-    if (opts.summary) ctx.lib.patchExhibit(slug, { summary: opts.summary });
+    // Stamp the manifest's own descriptive data onto the minted exhibit (Archie-c6bf): summary /
+    // rights / credit land on the NATIVE fields, the mapped `metadata` pairs on the entries. The
+    // collection batch's provenance description (opts.summary) WINS over the manifest's own summary —
+    // it's the caller's deliberate stamp (PLAN §6). Per-object entries ride importManifestObjects's
+    // `{ ...o }` spread. Safe on a FRESH exhibit only — addManifestToExhibit deliberately does NOT
+    // stamp these (importing into an existing exhibit must not overwrite its authored fields).
+    const summary = opts.summary ?? plan.summary;
+    const stamp = {
+      ...(summary !== undefined ? { summary } : {}),
+      ...(plan.rights !== undefined ? { rights: plan.rights } : {}),
+      ...(plan.requiredStatement !== undefined ? { requiredStatement: plan.requiredStatement } : {}),
+      ...(plan.metadata && plan.metadata.length ? { metadata: plan.metadata } : {}),
+    };
+    if (Object.keys(stamp).length > 0) ctx.lib.patchExhibit(slug, stamp);
     await importManifestObjects(plan, slug);
     return slug;
   }
