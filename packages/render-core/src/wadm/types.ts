@@ -135,6 +135,20 @@ export type W3CTarget = string | W3CSpecificResource;
 
 // ---- Annotation + Page ----
 
+/** A WADM Agent (spec §3.2.2) — the entity behind `creator`: a Person / Organization / Software.
+ *  Archie emits `{ type: "Person", name }` on published heads pages, projecting the head record's
+ *  `lastEditor` (Archie-3452 — synthetic session ids are suppressed at the serialize seam); the
+ *  remaining optional fields are the spec's, tolerated on foreign annotations. */
+export interface W3CAgent {
+  id?: string;
+  type?: "Person" | "Organization" | "Software";
+  name?: string | string[];
+  nickname?: string;
+  email?: string;
+  email_sha1?: string;
+  homepage?: string | string[];
+}
+
 /** A W3C Web Annotation. Structurally compatible with Annotorious W3CImageAnnotation. */
 export interface W3CAnnotation {
   "@context"?: string | string[];
@@ -145,7 +159,8 @@ export interface W3CAnnotation {
   target: W3CTarget | W3CTarget[];
   created?: IsoDateTime;
   modified?: IsoDateTime;
-  creator?: unknown;
+  /** WADM creator — an Agent or a bare IRI string (spec allows either; Archie writes an Agent). */
+  creator?: W3CAgent | string;
 }
 
 /**
