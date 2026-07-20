@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Metadata panel — placement prototypes (Archie-0ba5)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Prototype chrome: pick a placement variant to react to. Not part of the viewer. -->
+  <div class="proto-bar">
+    <span class="proto-label">Metadata panel · placement prototypes</span>
+    <div class="seg" role="tablist" aria-label="Placement variant">
+      <button class="seg-btn" role="tab" data-variant="a" aria-selected="true">A · Object panel</button>
+      <button class="seg-btn" role="tab" data-variant="b" aria-selected="false">B · Exhibit header</button>
+    </div>
+  </div>
+
+  <!-- ════════ VARIANT A — collapsible panel on the object focus view ════════
+       Echoes Reader.svelte: canvas + paper aside (label → summary → credit → notes).
+       The metadata slip slots between the credit row and the notes list. -->
+  <section id="variant-a" class="variant" aria-label="Variant A — object panel">
+    <div class="topbar">
+      <span class="crumb">‹ Back to Exhibit</span>
+      <span class="carousel">‹ &nbsp;3 / 6&nbsp; ›</span>
+      <span class="open-another">Open another library</span>
+    </div>
+    <div class="reader">
+      <div class="canvas-zone">
+        <figure class="folio soft-card">
+          <img src="https://collections.library.yale.edu/iiif/2/1006123/full/!880,880/0/default.jpg"
+               alt="Voynich manuscript folio 25v — a painted plant with broad leaves" loading="lazy" />
+        </figure>
+      </div>
+      <aside class="pane">
+        <h1 class="object-label">f25v — Herbal</h1>
+        <p class="object-summary">A single broad-leafed plant fills the page; the root system is drawn
+          with the same care as the text no one can read.</p>
+
+        <!-- NATIVE rights slots — the shipped Credit idiom (quiet line + ⓘ). NOT part of the slip. -->
+        <p class="credit-row" data-credit>
+          <span class="credit-line">Beinecke Rare Book &amp; Manuscript Library, Yale University — MS 408 (public domain)</span>
+          <button class="credit-info" aria-expanded="false" aria-label="About &amp; rights" title="About &amp; rights">ⓘ</button>
+        </p>
+
+        <!-- The metadata slip — collapsible, per-object descriptive metadata. -->
+        <section class="meta-panel">
+          <button class="meta-toggle" aria-expanded="true">
+            <span class="eyebrow">Details</span>
+            <span class="meta-count" data-meta-count></span>
+            <span class="chev" aria-hidden="true">▾</span>
+          </button>
+          <dl class="meta-list" data-meta="f25v"></dl>
+        </section>
+
+        <h2 class="eyebrow notes-head">Notes · 3</h2>
+        <ul class="note-list">
+          <li><button><span class="card-preview">The root is drawn from observation — compare the taproot fork against f33v, where the same hand goes schematic.</span></button></li>
+          <li><button><span class="card-preview">Currier hand A throughout this quire; the line spacing tightens near the stem as if the drawing came first.</span></button></li>
+          <li><button><span class="card-preview">Pigment note: the leaf green is a copper salt, consistent with the McCrone 2009 analysis.</span></button></li>
+        </ul>
+        <p class="hint">Select a note, or a marker on the image. Markers stay pinned as you pan and zoom.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ════════ VARIANT B — exhibit-header treatment ════════
+       Echoes ObjectGrid.svelte: eyebrow → h1 → summary → credit, over the card grid.
+       Exhibit-level metadata rides up top; object metadata opens on demand (sheet). -->
+  <section id="variant-b" class="variant" aria-label="Variant B — exhibit header" hidden>
+    <div class="topbar">
+      <span class="crumb">‹ All exhibits</span>
+      <span class="carousel"></span>
+      <span class="open-another">Open another library</span>
+    </div>
+    <div class="overview">
+      <header class="ex-header">
+        <p class="eyebrow">Exhibit · 6 items</p>
+        <h1 class="ex-title">Reading the Unreadable — the Voynich Herbal</h1>
+        <p class="ex-summary">Eleven folios from Beinecke MS 408, read twice: once as botany,
+          once as cipher. Neither reading survives contact with the other.</p>
+
+        <!-- Exhibit-level metadata, up top: one quiet inline run under the summary. -->
+        <dl class="ex-meta" data-ex-meta></dl>
+
+        <!-- Exhibit-level NATIVE rights — same Credit idiom, outside the metadata run. -->
+        <p class="credit-row canvas" data-credit>
+          <span class="credit-line">Voynich folios courtesy of the Beinecke Rare Book and Manuscript Library, Yale University (MS 408), via the IIIF image service.</span>
+          <button class="credit-info" aria-expanded="false" aria-label="About &amp; rights" title="About &amp; rights">ⓘ</button>
+        </p>
+      </header>
+
+      <ul class="grid" data-grid>
+        <!-- cards rendered by app.js -->
+      </ul>
+    </div>
+
+    <!-- Object metadata on demand: a centred sheet (ReadingSheet idiom), one per selection. -->
+    <div class="sheet-scrim" data-sheet hidden>
+      <div class="sheet soft-card" role="dialog" aria-modal="true" aria-label="Object details">
+        <button class="sheet-close" aria-label="Close">✕</button>
+        <p class="eyebrow" data-sheet-eyebrow>Object details</p>
+        <h2 class="sheet-title" data-sheet-title></h2>
+        <dl class="meta-list" data-sheet-meta></dl>
+        <!-- rights foot: typed slots, adjacent but visibly not rows of the slip -->
+        <p class="credit-row sheet-foot">
+          <span class="credit-line">Beinecke Rare Book &amp; Manuscript Library, Yale University — MS 408 (public domain)</span>
+          <span class="license-chip">Public Domain</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>
