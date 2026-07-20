@@ -72,19 +72,14 @@ if (zipPath) {
   const loaded = await loadLibrary(zipFs);
   library = loaded.library;
   getLog = (id) => loaded.logs[id] ?? [];
-  // publishLibrary's own asset-copy step only fires for a RELATIVE `/assets/{name}` source
-  // (site.ts's ASSET_PREFIX check) — but a zip dropped here has ALREADY been through one publish
-  // cycle (Studio's "Publish & Share" always bakes an absolute baseUrl), so loadLibrary's
-  // objectsFromManifest hands back the baked ABSOLUTE URL, never the original relative form. When
-  // that bake used THIS SAME canonical BASE (the common case — dropping your own project's export),
-  // recover the relative shape so the check below fires and the bytes get copied forward instead of
-  // silently dropped on every regen.
-  for (const ex of library.exhibits) {
-    const assetBase = `${BASE}${ex.slug}/assets/`;
-    for (const obj of ex.objects) {
-      if (obj.source.startsWith(assetBase)) (obj as { source: string }).source = `/assets/${obj.source.slice(assetBase.length)}`;
-    }
-  }
+  // A zip dropped here has ALREADY been through one publish cycle (Studio's "Publish & Share"
+  // bakes an absolute baseUrl), so its manifests carry `{base}{slug}/assets/{name}` sources.
+  // loadLibrary itself now recovers those to the relative `/assets/{name}` working form — deriving
+  // the base from each manifest's own id, and ONLY when the bytes exist in the zip (site.ts,
+  // 2026-07-19 round-trip fix; this script's older hand-rolled recovery rewrote blindly against
+  // the canonical BASE, which turned an assetless export's still-working absolute URLs into dead
+  // relative pointers). So by here, sources are relative exactly when getAsset below can serve
+  // them, and publishLibrary's ASSET_PREFIX copy carries the bytes forward.
   getAsset = async (slug, name) => {
     try {
       const dir = await (await (await zipFs.root()).getDirectory(slug)).getDirectory("assets");
@@ -101,7 +96,10 @@ if (zipPath) {
 }
 
 const fs = new MemoryFilesystem();
-await publishLibrary(fs, library, getLog, { baseUrl: BASE, viewerBase: VIEWER_BASE, ...(getAsset ? { getAsset } : {}) });
+const pubResult = await publishLibrary(fs, library, getLog, { baseUrl: BASE, viewerBase: VIEWER_BASE, ...(getAsset ? { getAsset } : {}) });
+// No silent loss: an /assets/-sourced object whose bytes the source zip couldn't produce publishes
+// as a broken reference — say so per item instead of letting the bake pass for complete.
+for (const m of pubResult.missingAssets) console.warn(`gen-published: ${m.exhibitSlug}/${m.name} (object ${m.objectId}) has no bytes in the source — its image will be broken in the baked tree`);
 const files = await collectFiles(await fs.root()); // Record<path, {text}|{base64}>
 
 // What does the EXISTING tree hold that this source doesn't own? (null on first run / fresh clone)

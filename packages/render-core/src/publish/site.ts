@@ -182,11 +182,25 @@ export interface IncompleteCanvas {
   label: string;
 }
 
-/** What publishLibrary reports back: the broken intra-Library links it degraded, and any
- *  spec-non-conformant Canvases (missing dimensions) it shipped anyway. */
+/** An `/assets/{name}`-sourced object whose bytes the wired `getAsset` could not produce: the
+ *  manifest ships with the raw working source (there is nothing better to write), which no server
+ *  will satisfy — the published exhibit's image is BROKEN. Reported, not thrown: one lost asset
+ *  must not veto the rest of the library, but shipping it silently is how an assetless export
+ *  passes for a complete one (the 2026-07-19 round-trip loss). Only populated when `getAsset` is
+ *  wired — a caller that omits it has opted out of asset handling entirely (see PublishOptions). */
+export interface MissingAsset {
+  exhibitSlug: string;
+  objectId: string;
+  name: string;
+}
+
+/** What publishLibrary reports back: the broken intra-Library links it degraded, any
+ *  spec-non-conformant Canvases (missing dimensions) it shipped anyway, and any imported-asset
+ *  sources whose bytes were unavailable (shipped dangling — surface these to the publisher). */
 export interface PublishResult {
   brokenLinks: BrokenLink[];
   incompleteCanvases: IncompleteCanvas[];
+  missingAssets: MissingAsset[];
 }
 
 interface LinkRewrite {
@@ -307,6 +321,7 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   };
   const brokenLinks: BrokenLink[] = [];
   const incompleteCanvases: IncompleteCanvas[] = [];
+  const missingAssets: MissingAsset[] = [];
 
   // Orphan pruning (spike-0002) — BEFORE the write loop, so a remove-then-recreate in one publish deletes
   // the old tree first, then the loop rewrites the fresh exhibit (post-loop pruning would delete that write).
@@ -386,7 +401,13 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
           if (!o.source.startsWith(ASSET_PREFIX)) return o;
           const name = o.source.slice(ASSET_PREFIX.length);
           const bytes = await opts.getAsset!(exhibit.slug, name);
-          if (!bytes) return o; // bytes unavailable — leave source as-is rather than dangling
+          if (!bytes) {
+            // Bytes unavailable — the manifest keeps the raw /assets/ source (nothing better to
+            // write), which IS dangling in the published tree. Report it so the publisher can say
+            // so instead of shipping the loss silently.
+            missingAssets.push({ exhibitSlug: exhibit.slug, objectId: o.id, name });
+            return o;
+          }
           const f = await assetsDir.getFile(name, { create: true });
           const w = await f.writable();
           await w.write(bytes);
@@ -612,7 +633,7 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
   // republish, note-only included). The Viewer keys hosted fetches on `?g=<generation>`.
   const generation = opts.generation ?? generationHash(JSON.stringify(exhibitsJson) + "\u0000" + JSON.stringify(imageIndex) + "\u0000" + (opts.publishedAt ?? ""));
   await writeJson(root, "archie.json", { ...ARCHIE_LIBRARY_MARKER, generation });
-  return { brokenLinks, incompleteCanvases };
+  return { brokenLinks, incompleteCanvases, missingAssets };
 }
 
 /** A tiny, dependency-free stable string hash (djb2) → base36 — the default publish-generation id when
@@ -628,22 +649,60 @@ function generationHash(s: string): string {
  *  fully materializes, then `fs.toZip()` serializes it — the non-Chromium fallback, size-guarded by
  *  the caller. Bounded-memory export goes through `ZipStreamFilesystem` (fs/zip-stream.ts) instead:
  *  publish straight into the streaming sink, skipping this function entirely. */
-export async function libraryToZipFs(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ fs: ZipFilesystem; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }> {
+export async function libraryToZipFs(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ fs: ZipFilesystem } & PublishResult> {
   const fs = new ZipFilesystem();
-  const { brokenLinks, incompleteCanvases } = await publishLibrary(fs, library, getLog, opts);
-  return { fs, brokenLinks, incompleteCanvases };
+  const result = await publishLibrary(fs, library, getLog, opts);
+  return { fs, ...result };
 }
 
 /** Assemble the whole site into a `.archie.zip` (eager: builds the entire archive in memory). */
-export async function libraryToZip(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ zip: Uint8Array; brokenLinks: BrokenLink[]; incompleteCanvases: IncompleteCanvas[] }> {
-  const { fs, brokenLinks, incompleteCanvases } = await libraryToZipFs(library, getLog, opts);
-  return { zip: fs.toZip(), brokenLinks, incompleteCanvases };
+export async function libraryToZip(library: Library, getLog: LogLookup, opts: PublishOptions = {}): Promise<{ zip: Uint8Array } & PublishResult> {
+  const { fs, ...result } = await libraryToZipFs(library, getLog, opts);
+  return { zip: fs.toZip(), ...result };
 }
 
 export interface LoadedLibrary {
   library: Library;
   /** Reloaded annotation log per exhibit slug. */
   logs: Record<string, AnnotationLog>;
+}
+
+/** Invert the publish-time asset rewrite (the `runAssets` pass above): a source published as
+ *  `{base}{slug}/assets/{name}` becomes the working form `/assets/{name}` again, and the
+ *  publish-DERIVED projections riding on it (the DZI pyramid at `{base}{slug}/…_files`, the baked
+ *  `{base}{slug}/assets-thumb/…` thumbnail) are dropped so the next publish re-derives them —
+ *  otherwise a re-publish sees no ASSET_PREFIX match, copies no bytes, and silently emits an
+ *  assetless zip whose manifests still reference the images (the 2026-07-19 round-trip data loss).
+ *  The exhibit's baked base comes from the manifest's own `id` (`{base}{slug}/manifest.json`), so
+ *  recovery works for whatever origin the zip was baked against — but ONLY when the bytes are
+ *  actually in the tree: rewriting without them would turn a still-working absolute URL into a
+ *  dead relative pointer (the defective-export shape). */
+async function recoverAssetSources(objects: AObject[], manifestId: string, exDir: FsDirectory): Promise<AObject[]> {
+  const MARK = "manifest.json";
+  if (!manifestId.endsWith(`/${MARK}`)) return objects; // not a publishLibrary-shaped id — nothing to invert
+  const exhibitBase = manifestId.slice(0, -MARK.length); // `{base}{slug}/`
+  const assetBase = `${exhibitBase}assets/`;
+  if (!objects.some((o) => o.source.startsWith(assetBase))) return objects;
+  let assetsDir: FsDirectory;
+  try {
+    assetsDir = await exDir.getDirectory("assets");
+  } catch {
+    return objects; // no asset bytes in this tree at all — leave every source absolute
+  }
+  return Promise.all(objects.map(async (o) => {
+    if (!o.source.startsWith(assetBase)) return o;
+    const name = o.source.slice(assetBase.length);
+    if (name.length === 0 || name.includes("/")) return o; // not the direct-child shape publish writes
+    try {
+      await assetsDir.getFile(name);
+    } catch {
+      return o; // these bytes are missing — keep the absolute source rather than dangle
+    }
+    const next: AObject = { ...o, source: `/assets/${name}` };
+    if (next.tileSource?.kind === "dzi" && next.tileSource.filesPath.startsWith(exhibitBase)) delete next.tileSource;
+    if (next.thumbnail !== undefined && next.thumbnail.startsWith(`${exhibitBase}assets-thumb/`)) delete next.thumbnail;
+    return next;
+  }));
 }
 
 /**
@@ -673,7 +732,7 @@ export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
       id: asExhibitId(card.slug),
       slug: card.slug,
       title: card.title,
-      objects: objectsFromManifest(manifest),
+      objects: await recoverAssetSources(objectsFromManifest(manifest), manifest.id, exDir),
       ...(sections.length > 0 ? { sections } : {}),
       ...(readings.length > 0 ? { readings } : {}),
       ...(card.description !== undefined ? { summary: card.description } : {}),

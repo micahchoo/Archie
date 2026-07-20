@@ -81,6 +81,17 @@ describe("publishLibrary — write the full site data tree via the seam", () => 
     expect(new Uint8Array(await assetFile.readable())).toEqual(new Uint8Array([9, 8, 7, 6]));
   });
 
+  it("reports an /assets/ object whose bytes getAsset can't produce (missingAssets — no silent dangling source)", async () => {
+    // The 2026-07-19 assetless-export shape: getAsset IS wired but the store has no bytes for the
+    // name (an imported library whose assets never landed). The manifest keeps the raw source
+    // (nothing better to write), but the publisher must HEAR about it instead of shipping a zip
+    // that silently references images it doesn't contain.
+    const fs = new MemoryFilesystem();
+    const exC = { id: asExhibitId("exC"), slug: "c", title: "C", objects: [{ id: asObjectId("o1"), source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }] };
+    const { missingAssets } = await publishLibrary(fs, { id: asLibraryId("lib"), exhibits: [exC] }, () => [], { baseUrl: "https://u.gh.io/lib/", getAsset: async () => null });
+    expect(missingAssets).toEqual([{ exhibitSlug: "c", objectId: "o1", name: "photo.jpg" }]);
+  });
+
   it("leaves /assets/ sources untouched when no getAsset is supplied (backward compatible)", async () => {
     const fs = new MemoryFilesystem();
     const exC = { id: asExhibitId("exC"), slug: "c", title: "C", objects: [{ id: asObjectId("o1"), source: "/assets/photo.jpg", label: "Imported", width: 4, height: 4 }] };
@@ -179,6 +190,58 @@ describe("loadLibrary — inverse of publishLibrary (publish↔load symmetry)", 
     const { library } = await loadLibrary(ZipFilesystem.fromZip(zip));
     expect(library.exhibits[0]!.sections).toEqual(libN.exhibits[0]!.sections);
     expect(library.exhibits[0]!.readings).toEqual(libN.exhibits[0]!.readings);
+  });
+
+  // The publish→import→re-publish asset round trip (2026-07-19): publish bakes `/assets/{name}`
+  // sources to `{base}{slug}/assets/{name}`, but loadLibrary handed that ABSOLUTE URL back, so a
+  // re-publish saw no ASSET_PREFIX match, copied no bytes, and silently emitted an assetless zip
+  // whose manifests still referenced the images. loadLibrary must invert the publish-time asset
+  // rewrite — recover `/assets/{name}` (and drop the publish-derived tileSource/thumbnail
+  // projections, which the next publish re-derives) — whenever the bytes are actually in the tree.
+  it("recovers /assets/ sources (and strips publish projections) so a re-publish keeps the bytes", async () => {
+    const assetBytes = new Uint8Array([1, 2, 3, 4]).buffer;
+    const dzi: DziTileSource = { kind: "dzi", width: 8, height: 8, tileSize: 254, overlap: 1, format: "image/jpeg", filesPath: "photo.jpg_files" };
+    const libA: Library = {
+      id: asLibraryId("R"),
+      exhibits: [{ id: asExhibitId("r"), slug: "r", title: "R", objects: [{ id: asObjectId("o1"), source: "/assets/photo.jpg", label: "P", width: 8, height: 8, thumbnail: "/assets-thumb/photo.jpg" }] }],
+    };
+    const { zip } = await libraryToZip(libA, () => [], {
+      baseUrl: base,
+      getAsset: async () => assetBytes,
+      getThumbnail: async () => new Uint8Array([5, 6]).buffer,
+      tileObject: async () => ({ descriptor: dzi, tiles: new Map([["0/0_0.jpg", new Blob([new Uint8Array([9])])]]) }),
+    });
+    const { library } = await loadLibrary(ZipFilesystem.fromZip(zip));
+    const o = library.exhibits[0]!.objects[0]!;
+    expect(o.source).toBe("/assets/photo.jpg"); // recovered working form, not the baked absolute URL
+    expect(o.tileSource).toBeUndefined(); // publish projection — re-derived by the next publish's tileObject
+    expect(o.thumbnail).toBeUndefined(); // idem via getThumbnail
+    // The full round trip: re-publish the LOADED library, feeding bytes from the loaded tree (the
+    // gen-published / Studio-import wiring) — the second tree must carry the asset bytes again.
+    const srcRoot = await ZipFilesystem.fromZip(zip).root();
+    const { zip: zip2 } = await libraryToZip(library, () => [], {
+      baseUrl: base,
+      getAsset: async (slug, name) => {
+        try { return await (await (await (await srcRoot.getDirectory(slug)).getDirectory("assets")).getFile(name)).readable(); } catch { return null; }
+      },
+    });
+    const root2 = await ZipFilesystem.fromZip(zip2).root();
+    const copied = await (await (await (await root2.getDirectory("r")).getDirectory("assets")).getFile("photo.jpg")).readable();
+    expect(new Uint8Array(copied)).toEqual(new Uint8Array(assetBytes));
+  });
+
+  it("leaves an absolute self-asset source untouched when the tree lacks the bytes (defective export)", async () => {
+    // Today's failure shape: a zip whose manifest references {base}{slug}/assets/… with NO assets
+    // dir (an assetless export). Rewriting to /assets/ would turn a working remote URL into a dead
+    // relative pointer — the source must stay absolute.
+    const src = `${base}d/assets/photo.jpg`;
+    const libD: Library = {
+      id: asLibraryId("D"),
+      exhibits: [{ id: asExhibitId("d"), slug: "d", title: "D", objects: [{ id: asObjectId("o1"), source: src, label: "P", width: 8, height: 8 }] }],
+    };
+    const { zip } = await libraryToZip(libD, () => [], { baseUrl: base }); // no getAsset — external-source path, no bytes written
+    const { library } = await loadLibrary(ZipFilesystem.fromZip(zip));
+    expect(library.exhibits[0]!.objects[0]!.source).toBe(src);
   });
 });
 

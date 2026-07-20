@@ -984,6 +984,40 @@ export function createIngestFlows(ctx: IngestContext) {
       const dir = await openExhibitAnnotationsDir(e.slug);
       if (dir) await new AnnotationSession(author, loaded.logs[e.slug] ?? []).save(dir, { baseUrl: ctx.baseUrl });
     }
+    // Carry the incoming library's media BYTES into the working store — the Studio half of
+    // loadLibrary's `/assets/{name}` source recovery (render-core site.ts, 2026-07-19 round-trip
+    // fix). Without this, recovered sources render broken in the editor AND the next publish's
+    // getAsset finds nothing, exporting an assetless zip that still references its images (the
+    // silent loss the recovery exists to close). Publish writes three byte dirs per exhibit
+    // (site.ts: assets/, assets-thumb/, assets-original/); mirror each to its store sibling.
+    // Per-item tolerant: one unreadable/unwritable file skips-and-reports — it never aborts the
+    // replace (the corruption→absence rule: the rest of the import must land).
+    if (srcFs) {
+      const bytesRoot = await srcFs.root();
+      const sinks = [
+        ["assets", saveAssetFile],
+        ["assets-thumb", saveThumbFile],
+        ["assets-original", saveOriginalFile],
+      ] as const;
+      for (const e of loaded.library.exhibits) {
+        for (const [sub, save] of sinks) {
+          let dir: FsDirectory;
+          try {
+            dir = await (await bytesRoot.getDirectory(e.slug)).getDirectory(sub);
+          } catch {
+            continue; // this exhibit's tree publishes no such dir — nothing to carry
+          }
+          for await (const entry of dir.entries()) {
+            if (entry.kind !== "file") continue;
+            try {
+              await save(e.slug, entry.name, await (await dir.getFile(entry.name)).getFile());
+            } catch (err) {
+              console.warn(`[import] ${e.slug}: couldn't carry ${sub}/${entry.name} into the library's storage — that item will show as missing`, err);
+            }
+          }
+        }
+      }
+    }
     // Flag-ON structure-log merge (Archie-2a9a): an incoming exhibit that carries structure/history/
     // pages MERGES them into the local exhibit's log — the same mergeLogs contract annotations use —
     // so exchanged copies keep section history and concurrent section edits surface as plural heads
