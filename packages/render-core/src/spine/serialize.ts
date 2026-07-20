@@ -88,10 +88,12 @@ function dedupe(log: AnnotationLog): AnnotationRecord[] {
 }
 
 /** logicalId → the DAG-root record's `modifiedAt`: the note's creation time (Archie-3452). The root
- *  is the `parent: null` record (v1); a partial log missing its root simply yields no entry (the
- *  heads page then omits `created` rather than inventing one). Plural roots per logicalId cannot
- *  arise from the append family (logicalIds are minted ULIDs), but a hand-built log is tolerated
- *  deterministically: earliest `modifiedAt` wins, ties broken by lowest `rev`. */
+ *  is a `parent: null` record (v1); a partial log missing its root simply yields no entry (the
+ *  heads page then omits `created` rather than inventing one). Plural roots per logicalId CAN
+ *  arise from the append family: appendNew accepts a caller-supplied logicalId, so cross-copy
+ *  adoption creates a second `parent: null` root for the same id (pinned by merge-contract
+ *  C9/C18). The tiebreak handles that deterministically: earliest `modifiedAt` wins, ties
+ *  broken by lowest `rev`. */
 function rootCreatedAt(log: AnnotationLog): Map<LogicalId, IsoDateTime> {
   const roots = new Map<LogicalId, AnnotationRecord>();
   for (const r of dedupe(log)) {

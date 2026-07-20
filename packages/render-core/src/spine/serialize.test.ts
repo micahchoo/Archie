@@ -151,6 +151,26 @@ describe("heads-page authorship (Archie-3452) — created + creator", () => {
     }
   });
 
+  it("plural roots (adoption: appendNew with an explicit logicalId, merge-contract C18) — created = the EARLIEST root's modifiedAt", () => {
+    const { log: l1, record: rootA } = appendNew([], { target: rectTarget, lastEditor: alice, modifiedAt: t2, now: 1 });
+    // Adopted id: a SECOND parent:null root for the same logicalId — later in the log, EARLIER in time.
+    const { log } = appendNew(l1, { logicalId: rootA.logicalId, target: rectTarget, lastEditor: bob, modifiedAt: t, now: 2 });
+    const page = toHeadsPage(log, "page", opts);
+    expect(page.items).toHaveLength(2); // both roots are heads (honest plural-head degradation)
+    for (const item of page.items) expect(item.created).toBe(t); // earliest modifiedAt wins, regardless of log order
+  });
+
+  it("plural-root TIE (equal modifiedAt) breaks by lowest rev — created is that shared time, deterministically", () => {
+    const { record: seed } = appendNew([], { target: rectTarget, lastEditor: alice, modifiedAt: t, now: 1 });
+    const lo: AnnotationRecord = { logicalId: seed.logicalId, rev: mintRevId(0, () => 0.1), version: 1, parent: null, modifiedAt: t, lastEditor: alice, deleted: false, target: rectTarget };
+    const hi: AnnotationRecord = { logicalId: seed.logicalId, rev: mintRevId(0, () => 0.9), version: 1, parent: null, modifiedAt: t, lastEditor: bob, deleted: false, target: rectTarget };
+    // The lowest rev's record is selected (tied roots share the timestamp by definition, so the
+    // rev arm is a determinism guard: same `created` either way, never an omission or a crash).
+    const page = toHeadsPage([hi, lo], "page", opts); // hi listed FIRST — log order must not matter
+    expect(page.items).toHaveLength(2);
+    for (const item of page.items) expect(item.created).toBe(t);
+  });
+
   it("omits created when the log holds no DAG root for the head (partial log) rather than inventing one", () => {
     const { record: v1 } = appendNew([], { target: rectTarget, lastEditor: alice, modifiedAt: t, now: 1 });
     const orphanV2: AnnotationRecord = { logicalId: v1.logicalId, rev: mintRevId(2, () => 0.5), version: 2, parent: v1.rev, modifiedAt: t2, lastEditor: alice, deleted: false, target: rectTarget };
