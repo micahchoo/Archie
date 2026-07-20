@@ -99,3 +99,11 @@ describe("bulk-rights", () => {
     });
   });
 });
+
+describe("bulk rights never touches Dublin Core metadata (Archie-5a9b invariant)", () => {
+  it("a fully-gated patch carries ONLY the rights/credit keys — no `metadata` key to clobber entries", () => {
+    const patch = buildBulkRightsPatch({ changeLicense: true, license: "http://creativecommons.org/licenses/by/4.0/", changeCredit: true, credit: "Someone" });
+    expect(Object.keys(patch).sort()).toEqual(["requiredStatement", "rights"]);
+    expect("metadata" in patch).toBe(false);
+  });
+});

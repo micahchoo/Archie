@@ -40,7 +40,10 @@ export type RightsFieldsPatch = { [K in keyof RightsFields]?: RightsFields[K] | 
 
 /** The patch a submit builds — ONLY the gated fields, each carrying its KEY (present-with-`undefined` = a
  *  deliberate clear; absent = leave unchanged). Fed straight to patchExhibitsIn / lib.patchExhibits, where
- *  `{ ...e, ...patch }` overwrites exactly the present keys and leaves the rest alone. */
+ *  `{ ...e, ...patch }` overwrites exactly the present keys and leaves the rest alone.
+ *  INVARIANT (Archie-5a9b metadata audit): the patch NEVER carries a `metadata` key — a bulk license/credit
+ *  stamp must never clobber an exhibit's Dublin Core entries. If bulk metadata editing ever ships, it gets
+ *  its own gated field here; do not fold it into the rights/credit gates. */
 export function buildBulkRightsPatch(form: BulkRightsForm): RightsFieldsPatch {
   const patch: RightsFieldsPatch = {};
   if (form.changeLicense) patch.rights = form.license || undefined;
