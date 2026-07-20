@@ -8,7 +8,7 @@
   import { parseRoute, breadcrumbFor, shouldRenderGalleryFromJson, LIVE_CHANNEL, type ViewerRoute, type ExhibitsJson, type ImageIndex } from "@render/core";
   import { CITE_GALLERY, type GalleryRef } from "../cite-context.js";
   import {
-    loadGallery, loadImageIndex, probeViewerMode, openLibraryFromSrc, openLibraryFromFile, closePortableLibrary,
+    loadGallery, loadImageIndex, probeViewerMode, bootErrorMessage, openLibraryFromSrc, openLibraryFromFile, closePortableLibrary,
     initLiveSource, isPortable,
   } from "../published.js";
   import Gallery from "./Gallery.svelte";
@@ -118,11 +118,15 @@
       }
     }
     if (await loadAndShow()) return;
-    // No library loaded — distinguish "no baked tree" (→ empty hall) from a real failure.
+    // No library loaded — distinguish "no baked tree" (→ empty hall) from a real failure, and WHICH
+    // failure (Archie-a2b9): "offline" gets the connection message; a deploy/data problem ("broken":
+    // corrupt JSON / 5xx — or "hosted": the probe read fine yet the load failed, e.g. a wrong-version
+    // marker) gets the republish one. One collapsed message here used to blame the reader's connection
+    // for a broken deployment.
     const mode = await probeViewerMode();
     if (mode === "portable") phase = "empty";
     else {
-      errorMsg = "Couldn’t reach the library. Check your connection and reload.";
+      errorMsg = bootErrorMessage(mode);
       phase = "error";
     }
   }

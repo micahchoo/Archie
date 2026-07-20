@@ -124,6 +124,9 @@ importers:
       astro:
         specifier: ^6.4.6
         version: 6.4.8(@types/node@25.9.1)(lightningcss@1.32.0)(rollup@4.60.4)(yaml@2.9.0)
+      happy-dom:
+        specifier: ^20.9.0
+        version: 20.9.0
       svelte:
         specifier: ^5.15.0
         version: 5.55.9

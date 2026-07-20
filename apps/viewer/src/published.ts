@@ -171,7 +171,12 @@ export async function initLiveSource(): Promise<boolean> {
 // ----------------------------------------------------------------------------------------------
 
 // --- mode detection (ADR-0008: auto-detect hosted vs portable by baked-tree presence) ---------
-export type ViewerMode = "hosted" | "portable" | "error";
+// The two failure modes were ONE ("error") until Archie-a2b9: collapsing them made ViewerShell blame
+// the reader's connection for a corrupt deployment. Coarse offline-vs-deploy-problem split:
+//  - "offline": the fetch itself threw — the deployment may be fine; the READER can't reach it.
+//  - "broken": the deployment answered but isn't serving a readable tree (5xx / non-OK / a 200 whose
+//    body isn't JSON, i.e. a host's HTML error page or a torn deploy) — reloading won't fix the wifi.
+export type ViewerMode = "hosted" | "portable" | "offline" | "broken";
 
 /** The outcome of probing for a baked published tree (`exhibits.json`). */
 export type ModeProbe =
@@ -184,16 +189,32 @@ export type ModeProbe =
 /**
  * Pure classifier (the deceptively-simple item): which mode does a probe imply? A **404 is the ONLY**
  * "this is a data-less portable shell" signal; every other failure is an error — a transient (5xx /
- * offline) or corrupt (malformed) hosted tree must NOT be silently misread as "portable".
+ * offline) or corrupt (malformed) hosted tree must NOT be silently misread as "portable" — split
+ * offline (network throw) vs broken (reachable but unreadable) so the shell can say which it was.
  */
 export function modeFromProbe(p: ModeProbe): ViewerMode {
   switch (p.kind) {
     case "ok": return "hosted";
     case "absent": return "portable";
+    case "network": return "offline";
     case "http":
-    case "network":
-    case "malformed": return "error";
+    case "malformed": return "broken";
   }
+}
+
+/**
+ * User-facing copy for a boot that found no readable library (Archie-a2b9). Lives beside the classifier
+ * (not in ViewerShell) so vitest can pin "offline and corrupt-deploy read differently". Two messages:
+ *  - "offline" → the connection message (the reader's side; reloading once back online fixes it).
+ *  - everything else → a deploy/data problem the reader's connection can't explain: "broken" (5xx /
+ *    corrupt JSON), and "hosted" — the probe read exhibits.json fine yet the gallery load still failed
+ *    (e.g. a wrong-version `archie.json` marker → NotAnArchieLibraryError), which is the same
+ *    republish-to-fix situation, not a connectivity one.
+ */
+export function bootErrorMessage(mode: Exclude<ViewerMode, "portable">): string {
+  return mode === "offline"
+    ? "Couldn’t reach the library. Check your connection and reload."
+    : "This library’s data couldn’t be read — the site looks broken, not your connection. Reload to try again; if it keeps failing, whoever published this site needs to publish it again.";
 }
 
 /** Probe the deployment for a baked tree and classify the mode. Short-circuits to "portable" when a

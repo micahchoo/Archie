@@ -33,6 +33,7 @@
     "@astrojs/check": "^0.9.4",
     "@astrojs/svelte": "^8.1.2",
     "astro": "^6.4.6",
+    "happy-dom": "^20.9.0",
     "svelte": "^5.15.0",
     "svelte-check": "^4.7.1",
     "typescript": "^5.9.3",
