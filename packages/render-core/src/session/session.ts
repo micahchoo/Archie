@@ -71,7 +71,7 @@ const _workingAnnotationCarry = {
   version: { drop: "citation ordinal — publish-projection concern, not part of the editing surface" },
   parent: { drop: "DAG topology — the working surface reads heads only" },
   mergeParents: { drop: "DAG topology — the working surface reads heads only" },
-  lastEditor: { drop: "stamp — not rendered on the editing surface (MergeReview reads it off the record, not this shape)" },
+  lastEditor: { drop: "stamp — not rendered on the editing surface (MergeReview reads it off the record, not this shape). The WADM `creator` projection of this field is publish-only (headsPageFromRecords, Archie-3452): the working surface deliberately emits neither `creator` nor `created`, so synthetic ids ('anonymous') never masquerade as authorship on the canvas" },
   deleted: { drop: "heads() excludes tombstones (projectHeads) — a working annotation is live by construction" },
 } satisfies Record<keyof AnnotationRecord, CarryDisposition>;
 void _workingAnnotationCarry; // zero-runtime: exists only to break the build on an unclassified field

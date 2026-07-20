@@ -68,6 +68,11 @@ exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibi
                   "value": "Voynichese: ~35,000 characters across ~240 leaves in a single distinctive script."
                 }
               ],
+              "created": "t",
+              "creator": {
+                "type": "Person",
+                "name": "scholar-a"
+              },
               "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000004XXXXXXXXXXXXXXXX.json"
             },
             {
@@ -92,6 +97,11 @@ exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibi
                   "purpose": "tagging"
                 }
               ],
+              "created": "t",
+              "creator": {
+                "type": "Person",
+                "name": "scholar-a"
+              },
               "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000005XXXXXXXXXXXXXXXX.json"
             }
           ],
@@ -122,6 +132,11 @@ exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibi
                   "value": "Under the cipher hypothesis this paragraph is a noun-heavy passage; word-length clustering at 4–6 glyphs fits an enciphered natural language."
                 }
               ],
+              "created": "t",
+              "creator": {
+                "type": "Person",
+                "name": "scholar-a"
+              },
               "archie:reading": "cipher",
               "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000001XXXXXXXXXXXXXXXX.json"
             }
@@ -164,6 +179,11 @@ exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibi
                   "value": "Under the hoax hypothesis the same block is meaningless — its statistical regularity is reproducible with a Cardan grille (Rugg 2004)."
                 }
               ],
+              "created": "t",
+              "creator": {
+                "type": "Person",
+                "name": "scholar-a"
+              },
               "archie:reading": "hoax",
               "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000002XXXXXXXXXXXXXXXX.json"
             }
@@ -206,6 +226,11 @@ exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibi
                   "value": "Under the natural-language hypothesis the same block is plaintext in an invented alphabet — its word-entropy sits within the natural-language range (Amancio et al. 2013; Bax 2014)."
                 }
               ],
+              "created": "t",
+              "creator": {
+                "type": "Person",
+                "name": "scholar-a"
+              },
               "archie:reading": "abjad",
               "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000003XXXXXXXXXXXXXXXX.json"
             }

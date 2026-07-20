@@ -34,8 +34,8 @@ const _historyParse = {
   version: "carry",
   parent: "carry",
   mergeParents: "carry",
-  modifiedAt: "carry",
-  lastEditor: "carry",
+  modifiedAt: "carry", // from `modified`. A WADM `created` key is IGNORED — it is the heads-page projection of the root's modifiedAt (Archie-3452), derived data, never a parse source.
+  lastEditor: "carry", // from archie:lastEditor. A WADM `creator` key is IGNORED — the heads-page projection of lastEditor (Archie-3452); archie:lastEditor stays the one authoritative field.
   deleted: "carry",
   body: "carry",
   target: "carry",
