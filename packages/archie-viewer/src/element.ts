@@ -22,7 +22,7 @@
 //                   is absent. Foreign/unknown → gallery; malformed → gallery (never an error).
 //   offline       — BOOLEAN attr (presence = on): block remote tile/media fetch (passed to the reader).
 
-import { parseRoute, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit } from "@render/core";
+import { parseRoute, thumbnailUrl, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit } from "@render/core";
 import type { ReadOnlyMountSurface } from "@render/mount";
 import {
   openLibraryFromFile,
@@ -58,6 +58,8 @@ const TEMPLATE_STYLES = `
   .grid { list-style: none; margin: 0; padding: 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
   .grid button, .grid a { display: flex; flex-direction: column; text-align: left; width: 100%; padding: 0; border: none; border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.08); cursor: pointer; text-decoration: none; color: inherit; }
   .grid .cover { width: 100%; aspect-ratio: 3/2; object-fit: cover; background: #e7ded7; display: grid; place-items: center; color: #8a7a6c; }
+  .grid .cover .glyph { font-size: 1.8rem; line-height: 1; align-self: end; }
+  .grid .cover .kind { align-self: start; font-size: .85rem; }
   .grid .caption { padding: 1rem; display: flex; flex-direction: column; gap: .25rem; }
   .grid .title { font-size: 1.2rem; }
   .grid .count, .grid .desc { font-size: .85rem; color: #6b5d52; }
@@ -516,13 +518,28 @@ export class ArchieViewerElement extends HTMLElement {
         <ul class="grid">
           ${cards.map((c) => `
             <li><button type="button" data-slug="${escapeAttr(c.slug)}">
-              ${c.cover ? `<img class="cover" src="${escapeAttr(c.cover)}" alt="" loading="lazy" />` : `<span class="cover">${escapeHtml(c.title)}</span>`}
+              ${c.cover ? `<img class="cover" src="${escapeAttr(c.cover)}" alt="" loading="lazy" data-fallback="${escapeAttr(c.title)}" />` : `<span class="cover">${escapeHtml(c.title)}</span>`}
               <span class="caption"><span class="title">${escapeHtml(c.title)}</span>${c.description ? `<span class="desc">${escapeHtml(c.description)}</span>` : ""}</span>
             </button></li>`).join("")}
         </ul>
       </div>`;
     for (const btn of this.#root.querySelectorAll<HTMLButtonElement>("[data-slug]")) {
       btn.addEventListener("click", () => void this.#openExhibit(btn.dataset["slug"]!));
+    }
+    this.#wireCoverFallbacks();
+  }
+
+  /** A 404'd cover/thumb degrades to the SAME label-text cover the no-thumbnail path renders — never a
+   *  raw broken-image icon (apps/viewer Gallery.svelte parity: onerror → markFailed → title-text). The
+   *  fallback text rides `data-fallback` because these cards are built as an innerHTML string. */
+  #wireCoverFallbacks(): void {
+    for (const img of this.#root.querySelectorAll<HTMLImageElement>("img.cover[data-fallback]")) {
+      img.addEventListener("error", () => {
+        const span = document.createElement("span");
+        span.className = "cover";
+        span.textContent = img.dataset["fallback"] ?? "";
+        img.replaceWith(span);
+      }, { once: true });
     }
   }
 
@@ -537,12 +554,13 @@ export class ArchieViewerElement extends HTMLElement {
         <ul class="grid">
           ${objects.map((o) => `
             <li><button type="button" data-obj="${escapeAttr(o.id)}">
-              ${o.thumbnail ? `<img class="cover" src="${escapeAttr(o.thumbnail)}" alt="" loading="lazy" />` : `<span class="cover">${escapeHtml(o.label)}</span>`}
+              ${objectCoverHtml(o)}
               <span class="caption"><span class="title">${escapeHtml(o.label)}</span><span class="count">${countOf(o.id)} ${countOf(o.id) === 1 ? "note" : "notes"}</span></span>
             </button></li>`).join("")}
         </ul>
       </div>`;
     this.#root.querySelector<HTMLButtonElement>('[data-act="back"]')!.addEventListener("click", () => this.#setView({ kind: "gallery" }));
+    this.#wireCoverFallbacks();
     for (const btn of this.#root.querySelectorAll<HTMLButtonElement>("[data-obj]")) {
       btn.addEventListener("click", () => {
         const obj = objects.find((o) => o.id === btn.dataset["obj"]);
@@ -565,6 +583,26 @@ export class ArchieViewerElement extends HTMLElement {
       this.#setView({ kind: "exhibit", exhibit });
     });
   }
+}
+
+/**
+ * The object-card cover cell (apps/viewer MediaThumbnail.svelte parity). An IMAGE-kind object gets a
+ * real picture: the baked `thumbnail` where one exists, else a sized thumbnail DERIVED from the source
+ * (`thumbnailUrl` — a bare IIIF service base is not itself an `<img src>`; remote-IIIF / external-raster
+ * objects have NO baked thumbnail by design, see model.ts AObject.thumbnail). AV and map objects get a
+ * lightweight glyph+kind cue instead of a fake picture. Kind discriminator matches MediaThumbnail /
+ * the model: only an `xyz` tileSource is a MAP — a `dzi` descriptor is a tiled IMAGE. `data-fallback`
+ * carries the label the onerror degrade renders (#wireCoverFallbacks).
+ */
+function objectCoverHtml(o: AObject): string {
+  const kind = o.tileSource?.kind === "xyz" ? "map" : (o.mediaType ?? "image");
+  if (kind === "image") {
+    const src = o.thumbnail ?? thumbnailUrl(o.source, 480);
+    return `<img class="cover" src="${escapeAttr(src)}" alt="" loading="lazy" data-fallback="${escapeAttr(o.label)}" />`;
+  }
+  const glyph = kind === "video" ? "▶" : kind === "sound" ? "♪" : "⌖";
+  const word = kind === "video" ? "Video" : kind === "sound" ? "Audio" : "Map";
+  return `<span class="cover"><span class="glyph" aria-hidden="true">${glyph}</span><span class="kind">${word}</span></span>`;
 }
 
 function escapeHtml(s: string): string {

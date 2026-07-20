@@ -260,6 +260,110 @@ describe("AV medium branch (ADR-0019): a sound/video object mounts the native pl
   });
 });
 
+describe("object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Gallery parity)", () => {
+  // A mixed-media exhibit, published+reopened through a REAL zip so the recovered PortableExhibit is what
+  // the element actually renders from (mediaType and tileSource round-trip; a baked thumbnail would too,
+  // but remote-IIIF/external/AV objects carry NONE — the exact class the o.thumbnail-only bug blanked).
+  async function loadMixedGrid(): Promise<ArchieViewerElement> {
+    const library: Library = {
+      id: asLibraryId("L"),
+      title: "Mixed Lib",
+      exhibits: [
+        {
+          id: asExhibitId("e1"),
+          slug: "mixed",
+          title: "Mixed Exhibit",
+          objects: [
+            { id: asObjectId("iiif1"), source: "https://example.org/iiif/o1/info.json", label: "IIIF plate" },
+            { id: asObjectId("raster1"), source: "https://example.org/photo.jpg", label: "Plain raster" },
+            { id: asObjectId("snd1"), source: "https://example.org/rec.mp3", label: "Recording", mediaType: "sound" },
+            { id: asObjectId("vid1"), source: "https://example.org/clip.mp4", label: "Clip", mediaType: "video" },
+            {
+              id: asObjectId("map1"), source: "xyz", label: "Basemap",
+              tileSource: { kind: "xyz", template: "https://tile.example/{z}/{x}/{y}.png", maxZoom: 3 },
+            },
+            {
+              id: asObjectId("dzi1"), source: "https://example.org/big.jpg", label: "Deep zoom",
+              tileSource: { kind: "dzi", width: 4000, height: 3000, tileSize: 254, overlap: 1, format: "image/jpeg", filesPath: "big_files" },
+            },
+          ],
+        },
+      ],
+    };
+    const fs = new ZipFilesystem();
+    await publishLibrary(fs, library, () => [], { baseUrl: "https://u.gh.io/lib/" });
+    const el = mount();
+    el.setAttribute("target", "#/mixed");
+    await el.openFile(new Blob([fs.toZip() as BlobPart]));
+    for (let i = 0; i < 20; i++) await Promise.resolve();
+    return el;
+  }
+
+  const coverIn = (el: ArchieViewerElement, objId: string): Element | null =>
+    el.shadowRoot!.querySelector(`[data-obj="${objId}"] .cover`);
+
+  it("a remote-IIIF object with NO baked thumbnail derives a sized Image-API thumb (not a blank label)", async () => {
+    const el = await loadMixedGrid();
+    const cover = coverIn(el, "iiif1");
+    expect(cover?.tagName).toBe("IMG");
+    expect(cover?.getAttribute("src")).toBe("https://example.org/iiif/o1/full/480,/0/default.jpg");
+  });
+
+  it("a plain external raster passes through as its own renderable URL", async () => {
+    const el = await loadMixedGrid();
+    const cover = coverIn(el, "raster1");
+    expect(cover?.tagName).toBe("IMG");
+    expect(cover?.getAttribute("src")).toBe("https://example.org/photo.jpg");
+  });
+
+  it("AV objects get a glyph+kind cue, never a fake <img>", async () => {
+    const el = await loadMixedGrid();
+    const snd = coverIn(el, "snd1");
+    expect(snd?.tagName).toBe("SPAN");
+    expect(snd?.textContent).toContain("Audio");
+    const vid = coverIn(el, "vid1");
+    expect(vid?.tagName).toBe("SPAN");
+    expect(vid?.textContent).toContain("Video");
+  });
+
+  it("an xyz map object gets the map cue; a DZI-tiled object stays an IMAGE (no motif conflation)", async () => {
+    const el = await loadMixedGrid();
+    const map = coverIn(el, "map1");
+    expect(map?.tagName).toBe("SPAN");
+    expect(map?.textContent).toContain("Map");
+    // dzi = a baked pyramid of a single IMAGE — must render a picture, not the map cue.
+    const dzi = coverIn(el, "dzi1");
+    expect(dzi?.tagName).toBe("IMG");
+  });
+
+  it("a 404'd thumb degrades to the label-text cover (never a broken-image icon)", async () => {
+    const el = await loadMixedGrid();
+    const img = coverIn(el, "iiif1") as HTMLImageElement;
+    img.dispatchEvent(new Event("error"));
+    const cover = coverIn(el, "iiif1");
+    expect(cover?.tagName).toBe("SPAN");
+    expect(cover?.textContent).toBe("IIIF plate");
+  });
+
+  it("a 404'd gallery COVER degrades to the title-text cover the no-cover path renders", async () => {
+    const el = await loadMixedGrid();
+    // Back to the gallery; if this library's card carries a cover img, error-degrade it. Either way the
+    // gallery must never leave a broken-image icon: any cover img carries the data-fallback wiring.
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[data-act="back"]')!.click();
+    const img = el.shadowRoot!.querySelector<HTMLImageElement>('[data-slug="mixed"] img.cover');
+    if (img) {
+      expect(img.dataset["fallback"]).toBe("Mixed Exhibit");
+      img.dispatchEvent(new Event("error"));
+      const cover = el.shadowRoot!.querySelector('[data-slug="mixed"] .cover');
+      expect(cover?.tagName).toBe("SPAN");
+      expect(cover?.textContent).toBe("Mixed Exhibit");
+    } else {
+      // No cover baked by this publish path → the no-cover title-text span is already the render.
+      expect(el.shadowRoot!.querySelector('[data-slug="mixed"] .cover')?.tagName).toBe("SPAN");
+    }
+  });
+});
+
 describe("iiif-content interop deep-link (ADR-0021 deferred-additive, integration through a real library)", () => {
   // buildArchiveBytes publishes with baseUrl "https://u.gh.io/lib/", object id "o1" → the canvas IRI is
   // `https://u.gh.io/lib/{slug}/canvas/o1`. We encode Content States against THAT via the donor codec.
