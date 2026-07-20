@@ -17,8 +17,15 @@ a blind bump.
    `DOMPurify.sanitize` at module load; the **publish pipeline runs it server-side under Node**
    (`static-pages.ts`/`site.ts:85` via `gen-published.mts` + `build-gh-pages.sh`), where jsdom *is*
    the DOM. Plain `dompurify` would throw in Node. → action is a **major bump to 3.18**, not a swap.
-2. **The only CRITICAL is dev-and-UI-only.** `vitest <3.2.6` "UI server arbitrary file read" fires
-   under `vitest --ui`; the repo runs `vitest run`. Real exposure ≈ 0, but it's above the floor.
+2. **The only CRITICAL is dev-only, guarded by the invocation.** `vitest <3.2.6` "UI server arbitrary
+   file read" fires under `vitest --ui`; the repo runs `vitest run`. Real exposure ≈ 0, but it's above
+   the floor. **Corrected 2026-07-20 (RESOLVED, see below):** the guard is the *invocation*, not the
+   absence of `@vitest/ui`. The vulnerable `readTestFile`/`saveTestFile` RPC handlers live in vitest
+   **core**, which is installed, and vitest auto-installs `@vitest/ui` on demand the moment anyone
+   runs `vitest --ui`. The actual control is `if (options.api && options.watch)` — every package test
+   script is plain `vitest run` (watch=false). So "we don't have @vitest/ui installed" was never the
+   reason it was safe; anyone typing `vitest --ui` locally would have been exposed.
+   **Now moot: fixed by the vitest 2→3.2.7 bump (`ledgers/DEPS-dependabot-2026-07-20.md` §3a).**
 3. **`astro` advisories fix inside major 6** (6.3.8 → ≥6.4.6) — the SSRF (high), XSS-spread (mod), and
    transitive js-yaml (mod) all clear without the astro-7 major.
 4. **Zero unused** — every declared dep has a real reference (even `http-proxy` → `scripts/dev-proxy.mjs`).
@@ -96,7 +103,7 @@ published site.
 
 | id | reason deferred (in-row) | fixed by (planned) |
 |----|--------------------------|--------------------|
-| **R-vitest** vitest <3.2.6 (CRIT) | dev-only **and** UI-only — fires under `vitest --ui`; repo runs `vitest run`. Exposure ≈ 0 | scope B: vitest 2→3.2.6+ (coupled w/ vite; per-app rune-test risk) |
+| **R-vitest** vitest <3.2.6 (CRIT) | ~~dev-only **and** UI-only~~ → dev-only, guarded by the *invocation* (`vitest run` sets watch=false), NOT by `@vitest/ui` being absent — handlers are in vitest core and the UI auto-installs on demand (corrected 2026-07-20). Exposure ≈ 0 either way | **DONE 2026-07-20** — vitest 2.1.9→3.2.7; also evicted vite 5.4.21, closing R-vite. See `ledgers/DEPS-dependabot-2026-07-20.md` |
 | **R-undici** undici ×7 (3 high/2 mod/2 low) | **FIXED** — `pnpm-workspace.yaml` override `undici@<7.28.0: '>=7.28.0 <8'` → undici 7.28.0 · verified `gen` EXIT 0 + render-core 734 + viewer 75 | done (user-directed add) |
 | **R-vite** vite ×5 (1 high/mods) | dev/build tooling (test runner + astro build); not shipped | scope B: vite 6→8 (coupled w/ vitest) |
 | **R-jsyaml** js-yaml (mod) | transitive via astro's markdown-remark (build tooling); not clearable within astro major 6 | scope B/C: astro 7, or a js-yaml override |

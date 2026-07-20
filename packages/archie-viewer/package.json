@@ -19,6 +19,7 @@
     "@render/mount": "workspace:*"
   },
   "devDependencies": {
+    "esbuild": "^0.27.3",
     "happy-dom": "^20.9.0"
   }
 }

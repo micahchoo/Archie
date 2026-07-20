@@ -140,6 +140,9 @@ importers:
         specifier: workspace:*
         version: link:../render-mount
     devDependencies:
+      esbuild:
+        specifier: ^0.27.3
+        version: 0.27.7
       happy-dom:
         specifier: ^20.9.0
         version: 20.9.0
