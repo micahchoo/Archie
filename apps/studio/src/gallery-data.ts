@@ -68,12 +68,17 @@ export function flattenLibraryImages(exhibits: ReadonlyArray<ExhibitMeta>): Gall
   return out;
 }
 
-/** The cover object for an exhibit's card — its first object, or null when empty. (No explicit-cover field
+/** The cover object for an exhibit's card — the first IMAGE object (thumbnail-mitigations gap 5: an
+ *  AV-first exhibit full of images should lead with a picture, not a glyph), falling back to the first
+ *  object of any kind when no image exists (an all-AV exhibit keeps its honest motif cover), or null when
+ *  empty. "Image" uses the same discriminator as the viewer's thumbKind (media-thumb.ts): an `xyz`
+ *  tileSource is a map — not an image — otherwise `mediaType ?? "image"` decides. (No explicit-cover field
  *  exists on the working model yet; when one lands, prefer it here — the one place cover choice is decided.) */
 export function coverOf(exhibit: ExhibitMeta): Cover | null {
-  const first: ObjectMeta | undefined = exhibit.objects[0];
-  if (!first) return null;
-  return { slug: exhibit.slug, objectId: first.id, source: first.source, ...(first.mediaType ? { mediaType: first.mediaType } : {}) };
+  const isImage = (o: ObjectMeta): boolean => o.tileSource?.kind !== "xyz" && (o.mediaType ?? "image") === "image";
+  const pick: ObjectMeta | undefined = exhibit.objects.find(isImage) ?? exhibit.objects[0];
+  if (!pick) return null;
+  return { slug: exhibit.slug, objectId: pick.id, source: pick.source, ...(pick.mediaType ? { mediaType: pick.mediaType } : {}) };
 }
 
 /** Filter exhibits by title OR description for the cards view (case-insensitive, diacritic-folded — the
