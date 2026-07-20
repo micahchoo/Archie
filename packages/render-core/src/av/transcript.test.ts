@@ -166,6 +166,13 @@ describe("serializeVtt / serializeSrt", () => {
     expect(parseVtt(out)).toEqual([{ start: 1, end: 2, text: "para one\npara two" }]);
   });
 
+  it("keeps a cue whose text starts with a newline — the edge would form a blank line with the timestamp join and orphan the text", () => {
+    for (const text of ["\nHello", "\n\nHello", " \nHello", "Hello\n"]) {
+      expect(parseVtt(serializeVtt([{ start: 1, end: 2, text }]))).toEqual([{ start: 1, end: 2, text: "Hello" }]);
+      expect(parseSrt(serializeSrt([{ start: 1, end: 2, text }]))).toEqual([{ start: 1, end: 2, text: "Hello" }]);
+    }
+  });
+
   it("serializes an empty cue list as a bare header (VTT) / empty string (SRT)", () => {
     expect(serializeVtt([])).toBe("WEBVTT\n");
     expect(serializeSrt([])).toBe("");

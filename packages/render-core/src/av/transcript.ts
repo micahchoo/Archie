@@ -183,9 +183,11 @@ function formatTimestamp(seconds: number, decimal: "." | ","): string {
 }
 
 /** A blank line ends a cue block (parseCues splits on it), so a hand-authored note whose text
- *  contains one would corrupt the file — collapse blank lines inside cue text. */
+ *  contains one would corrupt the file — collapse interior blank lines AND trim the edges: a text
+ *  merely STARTING with a newline (or a whitespace-only first line) forms the fatal blank line
+ *  with the serializer's own timestamp-line join. Round-trip-neutral — parseCues trims cue text. */
 function cueText(text: string): string {
-  return text.replace(/\n\s*\n/g, "\n");
+  return text.trim().replace(/\n\s*\n/g, "\n");
 }
 
 /** Serialize cues as WebVTT — the write-side inverse of parseVtt. */
