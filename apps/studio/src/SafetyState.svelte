@@ -13,6 +13,7 @@
   import type { SaveHealth } from "./save-queue.svelte.js";
 
   let {
+    readOnly = false,
     sessDirty = false,
     saveHealth,
     bindingKind,
@@ -22,6 +23,9 @@
     hasRealWork,
     onflush,
   }: {
+    /** Writer-lock stage — true when another tab holds the writer lock so this tab's writes are refused
+     *  (writer-lock.svelte.ts, UX-CRITIQUE O2). Trumps every save-health state, including Failed. */
+    readOnly?: boolean;
     /** Session stage, immediate — exhibit-session.svelte.ts `dirty`. Omit outside the editor. */
     sessDirty?: boolean;
     /** Session stage, app-wide — save-queue.svelte.ts `saveStatus.health`. */
@@ -42,7 +46,7 @@
   } = $props();
 
   const safety = $derived(
-    computeSafetyState({ sessDirty, saveHealth, bindingKind, bindingDirty, bindingBusy, bindingError, hasRealWork }),
+    computeSafetyState({ readOnly, sessDirty, saveHealth, bindingKind, bindingDirty, bindingBusy, bindingError, hasRealWork }),
   );
 
   // Action-needed has two causes with different copy (CONTEXT.md — "Save" names exactly one act, but the
@@ -60,6 +64,7 @@
   }
 
   function act(): void {
+    if (safety === "read-only") return; // this tab doesn't save (UX-CRITIQUE O2) — no flush, no false "Saved" flash
     if (safety === "saved") flashSaved();
     else if (safety === "failed" || safety === "action-needed") onflush();
     // "saving": nothing to do — the act is already underway.
@@ -76,7 +81,11 @@
 
 <svelte:window onkeydown={onSaveKey} />
 
-{#if safety === "saved"}
+{#if safety === "read-only"}
+  <!-- The writer lock lives elsewhere (UX-CRITIQUE O2): calm, inert — never a retry CTA, never Saved/Saving
+       churn. The take-over control stays with the read-only banner; this only tells the truth about saving. -->
+  <span class="safety-state read-only" role="status" title="This tab doesn't save — take over editing to make changes.">Read-only</span>
+{:else if safety === "saved"}
   <span class="safety-state saved" class:affirm role="status">Saved</span>
 {:else if safety === "saving"}
   <span class="safety-state saving" role="status">Saving…</span>
@@ -99,6 +108,7 @@
   .safety-state.saved { color: var(--ink-canvas-secondary); font-weight: 400; transition: color 200ms ease; }
   .safety-state.saved.affirm { color: var(--semantic-success); }
   .safety-state.saving { color: var(--ink-canvas-secondary); font-weight: 400; }
+  .safety-state.read-only { color: var(--ink-canvas-secondary); font-weight: 400; }
   /* Chrome + the resting underline come from .text-link. The COLOUR is deliberately kept local and
      semantic (rust = failed, ochre = needs action) rather than the primitive's amber — the state is
      the message here. Local specificity wins, so .text-link supplies only the underline. */

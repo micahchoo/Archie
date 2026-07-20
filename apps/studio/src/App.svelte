@@ -325,6 +325,10 @@
   // {@html} — the name is untrusted same-origin text). otherName is null when that tab is anonymous or
   // the name couldn't be learned (e.g. no BroadcastChannel) — falls back to the prior impersonal copy.
   const otherTabWho = $derived(writerLock.otherName ? `${writerLock.otherName} is editing this library` : "This library is open");
+  // UX-CRITIQUE O2: the ONE derived "this tab cannot write" gate — the read-only banner and every
+  // SafetyState mount (library / overview / editor) read the same condition, so the header can never
+  // offer "⚠ Retry save" in a tab whose writes the save-queue gate refuses by design.
+  const tabReadOnly = $derived(writerLock.otherTabActive && !writerLock.canWrite);
   let zipInputEl = $state<HTMLInputElement | null>(null); // hidden picker for "Open" on non-Chromium
   let csvEl = $state<HTMLInputElement | null>(null); // hidden picker for the notes-CSV import (⑥)
   let wadmEl = $state<HTMLInputElement | null>(null); // hidden picker for the WADM/JSON import (⑦)
@@ -1863,7 +1867,7 @@
   onchange={(e) => { const el = e.currentTarget as HTMLInputElement; const f = el.files?.[0]; if (f) void openZipFile(f); el.value = ""; }} />
 
 <div class="app">
-{#if writerLock.otherTabActive && !writerLock.canWrite}
+{#if tabReadOnly}
   <!-- Issue 22 single-writer: this tab is read-only because another tab holds the writer lock. Editing
        here won't save (the save-queue gate refuses it) until the user takes over. Reuses the amber
        banner styling (attention, not error). Archie-198c: names the other tab when known (otherTabWho),
@@ -1913,6 +1917,7 @@
       flows.newExhibitsFromCollection(selected, { signal: hooks.signal, onProgress: hooks.onProgress, planCache })}
     onundoimport={(slugs) => void removeExhibitsById(slugs)}
     {isTemplate}
+    readOnly={tabReadOnly}
     binding={bnd.binding}
     bindingDirty={bnd.dirty}
     bindingBusy={bnd.busy}
@@ -1946,7 +1951,7 @@
     <!-- The one save UI (Archie-0b7b / Archie-c76d), threaded into the overview header's save slot as a
          snippet — the SAME SafetyState the editor + library mount, so ⌘S + the indicator are identical here. -->
     {#snippet overviewSafety()}
-      <SafetyState sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
+      <SafetyState readOnly={tabReadOnly} sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
         bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
         hasRealWork={safetyHasRealWork} onflush={() => void bnd.saveProject()} />
     {/snippet}
@@ -2019,7 +2024,7 @@
     <!-- The one save UI (Archie-0b7b / Archie-c76d) — replaces the old savestate span + Save button. Inert
          text when Saved/Saving, the control itself when Action needed/Failed; owns ⌘S. sessDirty is passed
          explicitly (optional prop — silent under-report if omitted, save-reviewer contract). -->
-    <SafetyState sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
+    <SafetyState readOnly={tabReadOnly} sessDirty={sess.storeReady && sess.dirty} saveHealth={saveStatus.health}
       bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
       hasRealWork={safetyHasRealWork} onflush={() => void bnd.saveProject()} />
     <button class="publish-signal" onclick={() => maybePromptIdentity(() => void ensurePub().then((p) => p.openMenu()))}>Publish & share…</button>

@@ -1,6 +1,7 @@
 // The Safety State computation (CONTEXT.md → Persistence; ticket Archie-0b7b "One save vocabulary").
-// "Safety state" is the single user-facing answer to "will my work survive?" — Saved / Saving… /
-// Action needed / Failed, with STRICT precedence Failed > Action needed > Saving > Saved. It reports
+// "Safety state" is the single user-facing answer to "will my work survive?" — Read-only / Saved /
+// Saving… / Action needed / Failed, with STRICT precedence Read-only > Failed > Action needed >
+// Saving > Saved (read-only means this tab doesn't write at all — UX-CRITIQUE O2). It reports
 // the WHOLE pipeline: the session stage (edits into the working store — exhibit-session.svelte.ts'
 // `dirty` + the app-wide save-queue health, save-queue.svelte.ts) AND the mirror stage (the bound-disk
 // copy — binding-store.svelte.ts' `dirty`/`busy`/`error`/`binding.kind`). "Saved" is claimed only when
@@ -13,9 +14,14 @@
 import type { Binding } from "@render/core";
 import type { SaveHealth } from "./save-queue.svelte.js";
 
-export type SafetyStateValue = "failed" | "action-needed" | "saving" | "saved";
+export type SafetyStateValue = "read-only" | "failed" | "action-needed" | "saving" | "saved";
 
 export interface SafetyStateInputs {
+  /** Writer-lock stage (writer-lock.svelte.ts, Issue 22 / UX-CRITIQUE O2): true when ANOTHER tab holds
+   *  the writer lock, so this tab's writes are refused by design. Trumps every save-health state — a
+   *  retry CTA in a tab that cannot write is a promise the system will break. Optional so the original
+   *  callers (and tests) that predate the writer lock stay valid. */
+  readOnly?: boolean;
   /** Session stage, immediate: an edit made in the last debounce window, not yet even enqueued for the
    *  OPFS write (exhibit-session.svelte.ts `dirty`). Only meaningful while an exhibit is open in the
    *  editor — pass `false` at a mount site with no current exhibit (e.g. the library home). */
@@ -71,6 +77,8 @@ export function hasRealWorkIn(
 /**
  * The one decision. Evaluated top-down in precedence order — each predicate is independent, strict
  * precedence just picks the first that's true:
+ *   0. Read-only      — another tab holds the writer lock (UX-CRITIQUE O2): this tab doesn't save at
+ *                        all, so NO save-health state is honest here — not even Saved.
  *   1. Failed        — a write errored (queue-wide) or the mirror stage is sticky-unreachable.
  *   2. Action needed  — the mirror stage can't auto-complete and nothing is currently trying: a `file`
  *                        binding has gone stale (needs an explicit flush), or the library is `unbound`
@@ -83,7 +91,9 @@ export function hasRealWorkIn(
  *   4. Saved          — the default: nothing dirty, nothing in flight, nothing failed.
  */
 export function computeSafetyState(inputs: SafetyStateInputs): SafetyStateValue {
-  const { sessDirty, saveHealth, bindingKind, bindingDirty, bindingBusy, bindingError, hasRealWork } = inputs;
+  const { readOnly, sessDirty, saveHealth, bindingKind, bindingDirty, bindingBusy, bindingError, hasRealWork } = inputs;
+
+  if (readOnly) return "read-only";
 
   if (saveHealth === "error" || bindingError !== null) return "failed";
 

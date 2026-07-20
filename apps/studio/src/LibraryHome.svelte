@@ -50,6 +50,7 @@
     oncreatefromcollection,
     onundoimport,
     isTemplate,
+    readOnly = false,
     binding,
     bindingDirty,
     bindingBusy,
@@ -108,6 +109,8 @@
     onundoimport: (slugs: string[]) => void;
     /** Is this exhibit a bundled example (a template — playground, not saved)? Marks it in the grid. */
     isTemplate: (slug: string) => boolean;
+    /** Another tab holds the writer lock — SafetyState yields to it (UX-CRITIQUE O2). */
+    readOnly?: boolean;
     /** Where this library's canonical bytes live (unbound / folder / file). */
     binding: Binding;
     /** Unsaved-to-disk at the Library scale (only meaningful once bound). */
@@ -447,6 +450,7 @@
              control itself when Action needed/Failed. Archie-2308: moved here from the project bar, the
              library HEADER's action row — the same slot the editor header mounts it in. -->
         <SafetyState
+          {readOnly}
           saveHealth={saveStatus.health}
           bindingKind={binding.kind}
           {bindingDirty}
