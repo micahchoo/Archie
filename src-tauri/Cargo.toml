@@ -39,7 +39,15 @@ keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 # Plain git2 (no vendored-openssl) validated by docs/spikes/2026-07-git2-in-tauri.md: libgit2 is
 # statically vendored (good for Flatpak); it links the system OpenSSL for TLS. Keep vendored-openssl in
 # reserve for a build host without libssl-dev (see the spike). libssh2/SSH unused — we push over HTTPS.
-git2 = "0.19"
+# NB the spike validated this at git2 0.19 / vendored libgit2 1.8.1; 0.20.4 vendors 1.9.x, so the
+# system-libssl link must be re-checked against the GNOME 49 runtime in the packaging pass.
+# 0.20.4 clears GHSA/RUSTSEC alert #53 (UB dereferencing git2::Buf — a null guard added to
+# Deref/DerefMut in src/buf.rs; this crate never constructs a Buf, so the alert is package-level
+# reachable but API-level unreachable). Do NOT use a bare "0.21": its default features are [] where
+# 0.20.4 has [ssh, https], so the identical code compiles clean but vendors libgit2 with no TLS and
+# push dies at runtime with klass 16 "there is no TLS stream available". If 0.21 is ever taken it
+# must be { version = "0.21", features = ["https"] }. See ledgers/DEPS-dependabot-2026-07-20.md §3b.
+git2 = "0.20.4"
 
 [dev-dependencies]
 # Temp dirs for the stage-and-commit tests (gh_push_tree).

@@ -12,6 +12,20 @@ overrides:
   vite@>=8.0.0 <8.0.16: '8.0.16'
   # undici: force the jsdom→undici transitive past the <7.28.0 advisory cluster (7 CVEs: TLS bypass / SSRF / cache poisoning). dev/build-only — jsdom exists only in the Node publish + test paths, never the browser bundle. BOUND to major 7 (undici 8 breaks jsdom 29's fetch). (tend Issue 15 / ledgers/DEPS.md)
   undici@<7.28.0: '>=7.28.0 <8'
+  # js-yaml: astro 6.4.8 + @astrojs/internal-helpers 0.10.0 both declare ^4.1.1 — the top of
+  # GHSA-h67p-54hq-rp68's range (<=4.1.1). 4.2.0 is INSIDE ^4.1.1, so no declared range is violated.
+  # Build-time only: nothing in app source parses YAML, and untrusted ingest (.archie.zip, IIIF) is
+  # JSON. BOUND to major 4 — js-yaml 5.x is a TS rewrite (flat exports, load drops !!merge by
+  # default); same unbounded-'>=' trap as undici 8 / jsdom 29 (ledgers/DEPS.md:105-111). Resolves
+  # DEPS.md's R-jsyaml row without the astro-7 major it listed as the alternative (DEPS.md:102).
+  js-yaml@<4.2.0: '>=4.2.0 <5'
+  # vite 7.x (astro/viewer dev server): fs.deny bypass (HIGH #37) + launch-editor NTLMv2 (MOD #39),
+  # advisory row >=7.0.0 <=7.3.4, patched 7.3.5 (7.3.4 was never published). Reachable from the LAN,
+  # not just localhost: scripts/dev-proxy.mjs calls server.listen(PORT) with no host and forwards
+  # every non-/studio path (incl. /@fs) to astro dev on :4321. BOUND to major 7 — astro 6.4.8 and
+  # @astrojs/svelte 8.1.2 both declare vite ^7.3.2, the ranges this file's vite comment warns about.
+  # Disjoint from the vite@>=8.0.0 key above; pnpm 11 accepts multiple range-scoped keys per package.
+  vite@>=7.0.0 <7.3.5: '>=7.3.5 <8'
 allowBuilds:
   esbuild: true
   sharp: true

@@ -14,23 +14,26 @@
 // separate authoring bundle) stays out of scope; this is the READ bundle only (ADR-0019).
 
 import { gzipSync } from "node:zlib";
-import { readdirSync, readFileSync, writeFileSync, existsSync, statSync, mkdirSync, rmSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire as makeRequire } from "node:module";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(__dirname, "..", "..");
 const OUTDIR = join(__dirname, "dist");
 const BASELINE = join(__dirname, "bundle-size.json");
 
-// esbuild is a transitive (vitest/vite) dep, not hoisted — resolve it from the pnpm store, version-
-// agnostic (the same trick scripts/bundle-size.mjs uses; a hardcoded pin breaks on every re-resolve).
+// esbuild is a DECLARED devDep of this package, so the compiler is a lockfile-pinned build input —
+// not whatever the pnpm store happens to sort last. This used to scan node_modules/.pnpm and take
+// `.sort().pop()`, which is LEXICOGRAPHIC, not semver ("0.9.0" > "0.27.7", "0.25.9" > "0.25.12"):
+// the compiler for a committed, CDN-published artifact was picked by string sort over an ambient
+// directory. scripts/bundle-size.mjs keeps that scan deliberately — any esbuild measures, and its
+// ratchet compares only vite-built app dists — but here the compiler's output IS the shipped bytes.
+// Range is ^0.27.3 to match astro's own declared range, so this stays deduped with astro/vite rather
+// than orphaning a second store entry; bounded (caret-on-0.x = <0.28.0) per the undici-8 lesson.
 const require = makeRequire(import.meta.url);
-const storeDir = join(ROOT, "node_modules", ".pnpm");
-const esbuildEntry = readdirSync(storeDir).filter((d) => /^esbuild@/.test(d)).sort().pop();
-if (!esbuildEntry) throw new Error("no esbuild in the pnpm store — run install first");
-const esbuild = require(join(storeDir, esbuildEntry, "node_modules", "esbuild"));
+const esbuild = require("esbuild");
 
 function gzKB(bytes) {
   return +(gzipSync(Buffer.from(bytes)).length / 1024).toFixed(1);
@@ -39,9 +42,9 @@ function rawKB(bytes) {
   return +(bytes.length / 1024).toFixed(1);
 }
 
-async function build() {
-  rmSync(OUTDIR, { recursive: true, force: true });
-  mkdirSync(OUTDIR, { recursive: true });
+async function build(outdir) {
+  rmSync(outdir, { recursive: true, force: true });
+  mkdirSync(outdir, { recursive: true });
   const result = await esbuild.build({
     entryPoints: [join(__dirname, "src", "index.ts")],
     bundle: true,
@@ -49,7 +52,7 @@ async function build() {
     format: "esm",
     splitting: true, // emit the lazy reader (OSD) as a separate async chunk
     platform: "browser",
-    outdir: OUTDIR,
+    outdir,
     entryNames: "archie-viewer",
     metafile: true,
     logLevel: "info",
@@ -59,13 +62,13 @@ async function build() {
 
 // Sum the gz size of every emitted .js chunk (entry + async reader chunk) — the total a host would
 // transfer if it opened an object (the worst case). The entry-only number is reported separately.
-function measureDist() {
+function measureDist(outdir) {
   let totalGz = 0;
   let entryGz = 0;
   let entryRaw = 0;
-  for (const name of readdirSync(OUTDIR)) {
+  for (const name of readdirSync(outdir)) {
     if (!name.endsWith(".js")) continue;
-    const bytes = readFileSync(join(OUTDIR, name));
+    const bytes = readFileSync(join(outdir, name));
     totalGz += gzipSync(bytes).length;
     if (name === "archie-viewer.js") { entryGz = gzipSync(bytes).length; entryRaw = bytes.length; }
   }
@@ -78,8 +81,14 @@ function measureDist() {
 
 const CHECK = process.argv.includes("--check");
 
-await build();
-const m = measureDist();
+// --check measures a THROWAWAY build in a temp dir. It must not write OUTDIR: packages/archie-viewer/
+// dist/ is the committed, CDN-published artifact (scripts/sync-dist.mjs mirrors it to the repo root
+// for jsDelivr's /gh/ serving), and a verification step that rewrites the bytes it verifies is not a
+// verification step — `bundle:check` used to leave the released tree dirty as a side effect.
+const outdir = CHECK ? mkdtempSync(join(tmpdir(), "archie-viewer-check-")) : OUTDIR;
+await build(outdir);
+const m = measureDist(outdir);
+if (CHECK) rmSync(outdir, { recursive: true, force: true });
 
 if (CHECK) {
   if (!existsSync(BASELINE)) {

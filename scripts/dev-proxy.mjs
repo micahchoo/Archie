@@ -34,6 +34,12 @@ const server = http.createServer((req, res) => {
 server.on("upgrade", (req, socket, head) => {
   proxy.ws(req, socket, head, { target: targetFor(req.url) }, () => socket.destroy());
 });
-server.listen(PORT, () => {
+// Loopback ONLY. This proxy forwards /studio/* to vite unrewritten — including vite's /@fs path —
+// so a wildcard bind puts the dev server's filesystem surface on the LAN. Every consumer reaches the
+// front door by name at localhost (start.mjs, dev.sh, capture-screenshots, verify-*, README
+// quickstart); nothing in this repo needs a non-loopback bind. "127.0.0.1" literal, not "localhost":
+// listen() with a hostname goes through dns.lookup, so the bound interface would depend on the
+// machine's resolver. Do not drop the host argument.
+server.listen(PORT, "127.0.0.1", () => {
   console.log(`front door  → http://localhost:${PORT}  (/studio/ → ${STUDIO}, everything else → ${VIEWER})`);
 });
