@@ -53,6 +53,9 @@
   import { createWriterLock } from "./writer-lock.svelte.js";
   import { zipNameFor } from "./binding.js";
   import { createBindingStore } from "./binding-store.svelte.js";
+  // The view-state store (worklist 0.3 cut 3): the canonical editor cursor — view triple + selection +
+  // the derivations riding them. See view-state.svelte.ts for the deferred-from-the-DOMINO-cut rationale.
+  import { createViewState } from "./view-state.svelte.js";
   // createPublishFlows is imported DYNAMICALLY (ensurePub below) so its fflate + dompurify + GitHub-publish
   // deps stay OUT of the startup bundle — publishing is a deliberate action, never needed at boot.
   import { createReadingState } from "./reading-state.svelte.js";
@@ -161,7 +164,18 @@
     Object.fromEntries(lib.meta.exhibits.map((e) => [e.slug, freshnessBadgeText(loadImportFreshness(e.slug))])),
   );
 
-  let view = $state<"library" | "overview" | "editor">("library");
+  // --- The canonical VIEW STATE (worklist 0.3 cut 3 — view-state.svelte.ts): the view triple
+  // (view / currentSlug / currentObjectId), the selection cursor (selected / editing / creating +
+  // hoverNote), and the derivations riding them (currentExhibit / OBJECTS / current / canvasId /
+  // currentObjectIndex / currentPlace). switchObject resets the App-owned transients an object switch
+  // also drops (placingPendingId, focusSectionId), both declared below — the closure is only CALLED at
+  // runtime, never during init, so their TDZ is not a concern. ---
+  const vs = createViewState({
+    exhibits: () => lib.meta.exhibits,
+    baseUrl: BASE,
+    initialSlug: DEFAULT_EXHIBITS[0]!.slug,
+    onObjectSwitch: () => { placingPendingId = null; focusSectionId = null; },
+  });
 
   // --- Place-addressable navigation (ADR-0024). A *place* — library | overview(slug) | editor(slug,objId)
   // — is mirrored to the URL as a hash route (docs/research/routing-mechanism.md). Every place change pushes
@@ -199,12 +213,12 @@
   // covers the brief first-open gap. Loaded once, then cached.
   let CanvasComp = $state<typeof import("@render/svelte/Canvas.svelte").default | null>(null);
   $effect(() => {
-    if (view !== "library" && !CanvasComp) void import("@render/svelte/Canvas.svelte").then((m) => { CanvasComp = m.default; });
+    if (vs.view !== "library" && !CanvasComp) void import("@render/svelte/Canvas.svelte").then((m) => { CanvasComp = m.default; });
   });
   // Lazy heavy editors, loaded only on the (rare) paths that use them — out of the startup bundle.
   let AvEditorComp = $state<typeof import("./AvEditor.svelte").default | null>(null);
   let NarrativeEditorComp = $state<typeof import("./NarrativeEditor.svelte").default | null>(null);
-  $effect(() => { if (view === "editor" && !NarrativeEditorComp) void import("./NarrativeEditor.svelte").then((m) => { NarrativeEditorComp = m.default; }); });
+  $effect(() => { if (vs.view === "editor" && !NarrativeEditorComp) void import("./NarrativeEditor.svelte").then((m) => { NarrativeEditorComp = m.default; }); });
   // The Publish surface loads alongside the publish flows (ensurePub) — it only renders under {#if pub}.
   // ONE component now (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface).
   let PublishComp = $state<typeof import("./Publish.svelte").default | null>(null);
@@ -219,9 +233,6 @@
   // must see that release.
   let templateSlugs = $state(new Set(DEFAULT_EXHIBITS.map((d) => d.slug)));
   const isTemplate = (slug: string) => templateSlugs.has(slug);
-  let currentSlug = $state(DEFAULT_EXHIBITS[0]!.slug);
-  const currentExhibit = $derived(lib.meta.exhibits.find((e) => e.slug === currentSlug) ?? lib.meta.exhibits[0]);
-  const OBJECTS = $derived(currentExhibit?.objects ?? []);
   // SafetyState's "Action needed" input, shared by the editor + overview header mounts (Archie-c76d): true
   // once any exhibit is real (non-template) work OR library-level meta has been authored (title/summary/
   // credit — decision (d); extended app-locally in hasRealWorkIn, no model fields added).
@@ -231,8 +242,6 @@
     ...(lib.meta.rights !== undefined ? { rights: lib.meta.rights } : {}),
     ...(lib.meta.requiredStatement !== undefined ? { requiredStatement: lib.meta.requiredStatement } : {}),
   }));
-  // Canvas IRI for an object of the CURRENT exhibit (matches publishLibrary's grammar per slug).
-  const canvasIdOf = (objId: string) => `${BASE}${currentSlug}/canvas/${objId}`;
 
   // --- imported-image assets: stored in OPFS, source "/assets/{name}", resolved to blob: URLs ---
   // ASSET_PREFIX / isAsset live in store.ts now (one definition — App + publish flows share it).
@@ -266,8 +275,8 @@
     },
   });
   // Thin App-side wrappers preserve the zero-arg save()/scheduleSave() call sites (they thread the live slug).
-  const save = () => sess.save(currentSlug);
-  const scheduleSave = () => sess.scheduleSave(currentSlug);
+  const save = () => sess.save(vs.currentSlug);
+  const scheduleSave = () => sess.scheduleSave(vs.currentSlug);
 
   // --- Structure rev-log (Archie-42f3), behind archie.structureRevlog — read ONCE at boot. OFF (the
   // default): everything below is inert — no structure/ dir, no reads/writes, setSections behaves
@@ -285,8 +294,8 @@
   // Load the entered exhibit's structure log (once per slug; seeds from a pre-revlog `sections` array
   // on the first flag-on run). Reruns on meta changes but ensureLoaded no-ops once loaded.
   $effect(() => {
-    if (!STRUCTURE_REVLOG || view === "library") return;
-    const ex = currentExhibit;
+    if (!STRUCTURE_REVLOG || vs.view === "library") return;
+    const ex = vs.currentExhibit;
     if (!ex) return;
     void structure.ensureLoaded(ex.slug, ex.id, ex.sections ?? []);
   });
@@ -398,16 +407,16 @@
   async function openExhibit(slug: string) {
     suspendSync();
     try {
-    const prevSlug = currentSlug;
+    const prevSlug = vs.currentSlug;
     const ex = lib.meta.exhibits.find((e) => e.slug === slug);
     // The editor CURSOR + reading display are App-owned VIEW state — reset them synchronously up front
     // (cheap, no await), matching the original ordering where currentSlug moves before the async load.
-    currentSlug = slug;
-    currentObjectId = ex?.objects[0]?.id ?? "o1";
+    vs.currentSlug = slug;
+    vs.currentObjectId = ex?.objects[0]?.id ?? "o1";
     editingObjectId = null; // drop any overview pencil edit-cursor from the outgoing exhibit
-    selected = null;
-    editing = null;
-    creating = null;
+    vs.selected = null;
+    vs.editing = null;
+    vs.creating = null;
     placingPendingId = null; // drop any armed placement from the outgoing exhibit
     clearSel(); selectMode = false; // selection is exhibit-scoped (Phase 2) — the incoming exhibit starts clean
     void loadPendingNotes().then((m) => { pendingNotes = m[slug] ?? []; }); // this exhibit's coordinate-free imports awaiting a box
@@ -440,14 +449,14 @@
   // mode + density are persisted view preferences read live by the child; scroll is the transient here.)
   function enterOverview(slug: string) {
     restoreOverviewScroll(slug);
-    view = "overview";
+    vs.view = "overview";
   }
   async function backToLibrary() {
     sess.cancelPendingSave();
     await save();
     assets.revokeAll(); // free the previous exhibit's blob: URLs (thumbs + master slot)
     editingObjectId = null; // drop any overview pencil edit-cursor as we leave the overview
-    view = "library";
+    vs.view = "library";
   }
   // Overview ↔ object (invention #1): descend from a plate into close annotation, then climb back. Going
   // back to the overview KEEPS the resolved thumbnails (unlike backToLibrary, which frees them).
@@ -456,7 +465,7 @@
   // (e.g. overview → beat → back → same object's plate) would otherwise leave the old focusSectionId armed —
   // NarrativeEditor's activeSectionId effect would then steal focus/scroll/pulse on a click that meant
   // nothing more than "open this object" (code review, Archie-696d follow-up).
-  function openObject(objId: string) { editingObjectId = null; switchObject(objId); focusSectionId = null; view = "editor"; }
+  function openObject(objId: string) { editingObjectId = null; vs.switchObject(objId); focusSectionId = null; vs.view = "editor"; }
   // Library-Gallery wall click-through (Phase 3.2): open an object in ITS exhibit's editor. ALWAYS
   // openExhibit first — `currentSlug` is a cursor, NOT a "this exhibit is loaded" flag: after
   // backToLibrary (assets.revokeAll emptied the thumbs) or at boot/post-replace, currentSlug can name a
@@ -466,7 +475,7 @@
     await openExhibit(slug);
     openObject(objId);
   }
-  async function backToOverview() { editingObjectId = null; await save(); enterOverview(currentSlug); }
+  async function backToOverview() { editingObjectId = null; await save(); enterOverview(vs.currentSlug); }
 
   // --- Destructive removes (Archie-3f4c). Object → tombstone its notes (ADR-0003 append-only; recoverable
   // via history, orphaned tombstones don't project), then drop the object. Exhibit → clear its annotation
@@ -474,23 +483,23 @@
   // Tombstone an object's notes (ADR-0003 append-only; recoverable via history) then drop it from meta. The
   // shared core: removeCurrentObject navigates afterwards; the overview pencil's removeObjectById stays put.
   async function deleteObjectNotesAndMeta(objId: string) {
-    const cid = canvasIdOf(objId);
+    const cid = vs.canvasIdOf(objId);
     for (const r of sess.session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) sess.session.deleteNote(r.logicalId as LogicalId);
     bump();
     // Tag the incremental mirror BEFORE removeObject so the trigger it fires (via onAfterPersist) sees the
     // removal: rewrite the exhibit's manifest AND prune the object's orphaned tree files (spike-0002). The
     // removeObject reducer can't do this — only here do we still know the object's imported-asset name.
-    const gone = OBJECTS.find((o) => o.id === objId);
+    const gone = vs.OBJECTS.find((o) => o.id === objId);
     const assetName = gone && isAsset(gone.source) ? gone.source.slice(ASSET_PREFIX.length) : undefined;
-    bnd.markObjectRemoved(currentSlug, objId, assetName);
-    await lib.removeObject(currentSlug, objId);
+    bnd.markObjectRemoved(vs.currentSlug, objId, assetName);
+    await lib.removeObject(vs.currentSlug, objId);
   }
   async function removeCurrentObject() {
-    const objId = currentObjectId;
-    const remaining = OBJECTS.filter((o) => o.id !== objId);
+    const objId = vs.currentObjectId;
+    const remaining = vs.OBJECTS.filter((o) => o.id !== objId);
     await deleteObjectNotesAndMeta(objId);
-    if (remaining[0]) switchObject(remaining[0].id);
-    else { selected = null; editing = null; creating = null; await backToOverview(); } // last object → empty exhibit overview (valid post-e5c0)
+    if (remaining[0]) vs.switchObject(remaining[0].id);
+    else { vs.selected = null; vs.editing = null; vs.creating = null; await backToOverview(); } // last object → empty exhibit overview (valid post-e5c0)
   }
   // Overview pencil-CRUD delete (Archie-79be): remove ANY object without opening it; stay in the overview.
   // If the cursor pointed at the removed object, advance it to a survivor so the (unmounted) editor stays valid.
@@ -499,7 +508,7 @@
     // ADR-0024 #2: Overview is mandatory at every object count, so a delete from the overview STAYS on the
     // overview (even down to one, or zero — the empty overview is the only place to re-add). Just keep the
     // (unmounted) editor cursor valid: if it pointed at the removed object, advance it to a survivor.
-    if (objId === currentObjectId) { const surv = OBJECTS.find((o) => o.id !== objId); if (surv) switchObject(surv.id); }
+    if (objId === vs.currentObjectId) { const surv = vs.OBJECTS.find((o) => o.id !== objId); if (surv) vs.switchObject(surv.id); }
   }
   // Remove exhibits by slug — the ONE teardown definition (Archie-ddaa), used by singular pencil delete,
   // bulk delete, and undo-import. NOT meta-only: each slug's session + on-disk structure/annotation logs are
@@ -510,7 +519,7 @@
   async function removeExhibitsById(slugs: string[]) {
     await teardownAndRemoveExhibits(
       {
-        currentSlug,
+        currentSlug: vs.currentSlug,
         forgetCurrentSession: () => sess.forgetCurrent(),
         forgetStructure: (slug) => structure.forget(slug),
         clearStructure: clearExhibitStructure,
@@ -526,8 +535,8 @@
     await removeExhibitsById([slug]);
   }
   async function removeCurrentExhibit() {
-    await removeExhibitById(currentSlug);
-    view = "library";
+    await removeExhibitById(vs.currentSlug);
+    vs.view = "library";
   }
   // --- The KEYSTONE matched-pair cue state (staging spec §3 / §7). The leading published surface is a pure
   // function of sections.length (ADR-0016 contract): 0→1 flips the front door TO the narrative; last→0 flips
@@ -547,15 +556,15 @@
   // The reducer decides commit-intent + which cue to raise from the count transition; App owns the side
   // effects it can't (localStorage "seen" flag, patchExhibit, the $state cue vars).
   function setSections(sections: Section[]) {
-    const prev = currentExhibit?.sections?.length ?? 0;
-    const v = narrativeCueReducer(prev, sections.length, firstAddSeen(currentSlug));
+    const prev = vs.currentExhibit?.sections?.length ?? 0;
+    const v = narrativeCueReducer(prev, sections.length, firstAddSeen(vs.currentSlug));
     // last→0 (commit:false, cue:"clear"): reverting the front door is consequential — stash the (empty)
     // intent pending the inline confirm strip ("Remove" → confirmClear, "Keep" → cancelClear). Don't commit.
-    if (!v.commit) { pendingClear = { slug: currentSlug }; return; }
-    lib.patchExhibit(currentSlug, { sections });
+    if (!v.commit) { pendingClear = { slug: vs.currentSlug }; return; }
+    lib.patchExhibit(vs.currentSlug, { sections });
     // Flag-ON (Archie-42f3): the committed array ALSO reconciles into the structure rev-log (the
     // appends are the source; the patch above is its snapshot). Inert when the flag is off.
-    if (STRUCTURE_REVLOG) applyStructure(currentSlug, sections);
+    if (STRUCTURE_REVLOG) applyStructure(vs.currentSlug, sections);
     // MF-2: every committed write retires any pending last→0 confirm. Resolving a last-remove by ADDING (or
     // editing a title while the strip is up) commits a non-empty spine — the strip's "Remove the last
     // section?" copy is now false and confirmClear would wipe the spine without a fresh confirm. Reset it.
@@ -564,8 +573,8 @@
     // 0→1 (cue:"first-add"): the exhibit just became narrative-led. Announce the front-door flip once per
     // exhibit; markSeen at fire-time (the reducer gates on the seen flag we passed in) so a refresh before
     // dismiss won't re-fire.
-    if (v.cue === "first-add") firstAddCueSlug = currentSlug;
-    if (v.markSeen) markFirstAddSeen(currentSlug);
+    if (v.cue === "first-add") firstAddCueSlug = vs.currentSlug;
+    if (v.markSeen) markFirstAddSeen(vs.currentSlug);
   }
   // The last→0 confirm resolved "Remove": commit the clear (the front door reverts to the grid; the
   // NarrativeEditor's empty state then shows the "Narrative cleared…" copy). A pending FIRST-ADD cue can't
@@ -587,16 +596,16 @@
   // creation; navigating between objects (navigateToSection) WALKS the spine, it never rebinds.
   let framingSectionId = $state<string | null>(null);
   function startFraming(sectionId: string) {
-    const s = (currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
+    const s = (vs.currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
     if (!s) return;
-    switchObject(s.objectId); // jump the rail to the section's object so you frame on the right canvas
-    creating = null; // framing and new-note are mutually exclusive gestures
+    vs.switchObject(s.objectId); // jump the rail to the section's object so you frame on the right canvas
+    vs.creating = null; // framing and new-note are mutually exclusive gestures
     framingSectionId = sectionId; // arms the OSD box draw via drawArmed (image objects); AV frames via "Set in"
   }
   function cancelFraming() { framingSectionId = null; }
   // Capture a framed camera onto the section (objectId = the object now in view, set when framing began).
   function setSectionStart(sectionId: string, start: string) {
-    setSections((currentExhibit?.sections ?? []).map((s) => (s.id === sectionId ? { ...s, start, objectId: currentObjectId } : s)));
+    setSections((vs.currentExhibit?.sections ?? []).map((s) => (s.id === sectionId ? { ...s, start, objectId: vs.currentObjectId } : s)));
   }
 
   // --- narrative card NAVIGATION (mirrors the viewer's NarrativeReader.activate) ---
@@ -605,12 +614,12 @@
   // section shows — the editor counterpart of the reader's focus={activeSection.start} (NarrativeReader.svelte).
   let focusSectionId = $state<string | null>(null);
   function navigateToSection(sectionId: string) {
-    const s = (currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
+    const s = (vs.currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
     if (!s) return;
     // rail-jump to the section's object. switchObject early-returns (no-op, INCLUDING skipping its own
     // focusSectionId reset) when already on that object — harmless here because the next line sets
     // focusSectionId unconditionally regardless of which branch switchObject took.
-    switchObject(s.objectId);
+    vs.switchObject(s.objectId);
     focusSectionId = sectionId; // set AFTER switchObject → drives the canvas focus fragment + the lit "active" card
   }
   // --- Spine deep link (Archie-696d, decision Archie-da38): each read-only overview spine row is a beat
@@ -623,37 +632,25 @@
   // highlight pulse. ExhibitOverview only renders a row as a link when the beat's object still exists
   // (degraded rows never call this), so the guard below is belt-and-suspenders against a stale click.
   function openBeat(sectionId: string) {
-    const s = (currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
-    if (!s || !OBJECTS.some((o) => o.id === s.objectId)) return;
+    const s = (vs.currentExhibit?.sections ?? []).find((x) => x.id === sectionId);
+    if (!s || !vs.OBJECTS.some((o) => o.id === s.objectId)) return;
     editingObjectId = null;
-    view = "editor";
+    vs.view = "editor";
     navigateToSection(sectionId);
   }
-  // Which object of the exhibit the editor is showing. Switching resets transient view state. Declared here
-  // (not with the other object state below) because canvasFocus reads it — svelte-check flags the TDZ (Issue 12).
-  let currentObjectId = $state("o1");
-
-  // --- Place navigation machinery (declared here — after currentObjectId, which currentPlace reads). ---
-  // The current place is a pure function of the view triple. Reading ONLY view/slug/object means modals,
-  // panels, selections and viewports can never leak into the URL (ADR-0024 #6, the "not a place" guarantee).
-  const currentPlace = $derived<Place>(
-    view === "library" ? LIBRARY
-    : view === "overview" ? { kind: "overview", slug: currentSlug }
-    : { kind: "editor", slug: currentSlug, objectId: currentObjectId },
-  );
   // STATE → URL. Runs after any SETTLED place change and pushes a NEW history entry (ADR-0024 #3 — including
   // filmstrip object switches, which flow through currentObjectId). Suspended during multi-step transitions
   // and history replay; a hash-only URL keeps the /studio/ pathname, so this is base-path/static-host safe.
   function syncUrl() {
     if (!navReady || navSyncSuspendCount > 0) return;
-    const url = serializePlace(currentPlace);
+    const url = serializePlace(vs.currentPlace);
     if (url === committedUrl) return;
     committedUrl = url;
     history.pushState({ url }, "", url);
     rememberLastPlace(url);
     fallbackNotice = null; // any successful (push) navigation clears a stale degrade notice (N2)
   }
-  $effect(() => { void currentPlace; syncUrl(); });
+  $effect(() => { void vs.currentPlace; syncUrl(); });
   // Desktop-only: remember the last place so a relaunch (no address bar) can restore it (ADR-0024 #5).
   function rememberLastPlace(url: string) {
     if (!isTauri()) return;
@@ -718,10 +715,10 @@
   // inside this exhibit at a non-library scale.
   async function gotoPlace(place: Place) {
     if (place.kind === "library") {
-      if (view !== "library") await backToLibrary(); else view = "library";
+      if (vs.view !== "library") await backToLibrary(); else vs.view = "library";
       return;
     }
-    if (view === "library" || currentSlug !== place.slug) await openExhibit(place.slug); // lands overview (#2)
+    if (vs.view === "library" || vs.currentSlug !== place.slug) await openExhibit(place.slug); // lands overview (#2)
     if (place.kind === "overview") enterOverview(place.slug);
     else openObject(place.objectId); // switchObject + view = editor
   }
@@ -743,21 +740,21 @@
   // The framed region the active card points at, passed to Canvas.focus to fit the viewport to it (ADR-0005
   // Section.start). Gated on object-match so a stale fragment never fits the wrong canvas; a temporal `t=` AV
   // fragment no-ops on the spatial canvas anyway (AV uses AvEditor, which takes no focus).
-  const focusSection = $derived((currentExhibit?.sections ?? []).find((s) => s.id === focusSectionId) ?? null);
-  const canvasFocus = $derived(focusSection && focusSection.objectId === currentObjectId ? (focusSection.start ?? null) : null);
+  const focusSection = $derived((vs.currentExhibit?.sections ?? []).find((s) => s.id === focusSectionId) ?? null);
+  const canvasFocus = $derived(focusSection && focusSection.objectId === vs.currentObjectId ? (focusSection.start ?? null) : null);
   // Section count for the Narrative accordion header (shown even when that panel is collapsed).
-  const narrativeSectionCount = $derived((currentExhibit?.sections ?? []).length);
+  const narrativeSectionCount = $derived((vs.currentExhibit?.sections ?? []).length);
   // Section creation lives in App now (NarrativeEditor is display-only): the narrative panel's create row —
   // OUTSIDE the collapsing body, always reachable — calls these. A new section is anchored to the item you're
   // viewing; "from a note" seeds object + camera + prose from an existing Note (ADR-0005 model-(A) mitigation).
   const newSectionId = () => `s-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
   function addSection() {
-    if (!currentObjectId) return;
-    const secs = currentExhibit?.sections ?? [];
-    setSections([...secs, { id: newSectionId(), title: `Section ${secs.length + 1}`, objectId: currentObjectId }]);
+    if (!vs.currentObjectId) return;
+    const secs = vs.currentExhibit?.sections ?? [];
+    setSections([...secs, { id: newSectionId(), title: `Section ${secs.length + 1}`, objectId: vs.currentObjectId }]);
   }
   function addSectionFromNote(n: { objectId: string; start?: string; lead: string }) {
-    const secs = currentExhibit?.sections ?? [];
+    const secs = vs.currentExhibit?.sections ?? [];
     setSections([...secs, { id: newSectionId(), title: `Section ${secs.length + 1}`, objectId: n.objectId, ...(n.start ? { start: n.start } : {}), prose: n.lead }]);
   }
 
@@ -799,14 +796,14 @@
   // its header.
   function closeNote() {
     if (sel && commentEl) applyForm(commentEl.value, tagsOf(sel).join(", "));
-    selected = null;
-    editing = null;
+    vs.selected = null;
+    vs.editing = null;
   }
   // Reorder the current exhibit's objects to a new id sequence (the overview's drag-reorder). Object array
   // ORDER is the canonical reading order (Grid display order / Narrative sequence; ADR model.ts) — the
   // published projection derives from it, so this is real structure, settable nowhere else in the app.
   function reorderObjects(orderedIds: string[]) {
-    const ex = currentExhibit;
+    const ex = vs.currentExhibit;
     if (!ex) return;
     const byId = new Map(ex.objects.map((o) => [o.id, o]));
     const next: ObjectMeta[] = [];
@@ -828,7 +825,7 @@
   // active filter (canonical ranging would silently select filtered-out items a bulk delete then removes
   // unseen). Falls back to canonical before the overview has reported (e.g. select-all with no toolbar use).
   let visibleIds = $state<string[]>([]);
-  const rangeIds = () => (visibleIds.length ? visibleIds : OBJECTS.map((o) => o.id));
+  const rangeIds = () => (visibleIds.length ? visibleIds : vs.OBJECTS.map((o) => o.id));
   function clearSel() { selection = new Set(); selAnchor = null; bulkConfirming = false; }
   function onOverviewSelect(id: string, mods: ClickMods) {
     bulkConfirming = false; // changing the selection disarms a pending bulk delete
@@ -851,22 +848,22 @@
   async function bulkRemove(ids: ReadonlySet<string>) {
     // Canonical order, NOT rangeIds(): a delete must honor the whole selection even when a live
     // search filter hides some selected plates — visible-order here would silently skip them.
-    const present = OBJECTS.map((o) => o.id);
+    const present = vs.OBJECTS.map((o) => o.id);
     const list = present.filter((id) => ids.has(id)); // canonical order, only ids still in the exhibit
     if (list.length === 0) { clearSel(); return; }
     for (const objId of list) {
-      const cid = canvasIdOf(objId);
+      const cid = vs.canvasIdOf(objId);
       for (const r of sess.session.notes().filter((n) => !n.deleted && srcOf(n.target) === cid)) sess.session.deleteNote(r.logicalId as LogicalId);
-      const gone = OBJECTS.find((o) => o.id === objId);
+      const gone = vs.OBJECTS.find((o) => o.id === objId);
       const assetName = gone && isAsset(gone.source) ? gone.source.slice(ASSET_PREFIX.length) : undefined;
-      bnd.markObjectRemoved(currentSlug, objId, assetName); // per-id orphan cleanup (asset name known only here)
+      bnd.markObjectRemoved(vs.currentSlug, objId, assetName); // per-id orphan cleanup (asset name known only here)
     }
     bump();
-    await lib.removeObjects(currentSlug, list); // single persist → single onAfterPersist mirror
+    await lib.removeObjects(vs.currentSlug, list); // single persist → single onAfterPersist mirror
     clearSel(); selectMode = false;
     // ADR-0024 #2 (mirror removeObjectById): bulk delete from the overview STAYS on the overview at any
     // object count; just keep the (unmounted) editor cursor valid if the open object was among the deleted.
-    if (list.includes(currentObjectId)) { const surv = OBJECTS.find((o) => !list.includes(o.id)); if (surv) switchObject(surv.id); }
+    if (list.includes(vs.currentObjectId)) { const surv = vs.OBJECTS.find((o) => !list.includes(o.id)); if (surv) vs.switchObject(surv.id); }
   }
   // Two-step inline confirm (DetailsEditor idiom — no window.confirm, off-brand for the study): first call
   // arms (the toolbar button morphs to the guard); second commits. Keyboard Delete + the button share this.
@@ -883,10 +880,10 @@
   // in hand ⇒ nothing else to lose (§146 trap avoided by construction).
   let keeping = $state(false);
   async function keepCopy() {
-    const ex = lib.meta.exhibits.find((e) => e.slug === currentSlug);
-    if (!ex || !isTemplate(currentSlug)) return;
+    const ex = lib.meta.exhibits.find((e) => e.slug === vs.currentSlug);
+    if (!ex || !isTemplate(vs.currentSlug)) return;
     keeping = true;
-    const from = currentSlug;
+    const from = vs.currentSlug;
     let slug = `${ex.slug}-copy`, n = 2;
     while (lib.meta.exhibits.some((e) => e.slug === slug)) slug = `${ex.slug}-copy-${n++}`;
     const { seedVersion: _omit, ...rest } = ex; // a user copy is not a reconciled default
@@ -980,21 +977,18 @@
 
   let rev = $state(0);
   const bump = () => { rev += 1; sess.markDirty(); scheduleSave(); };
-  let selected = $state<string | null>(null);
   // `editing` drives the WADM form. It FOLLOWS `selected` on real selections but NOT on the null
   // deselect Annotorious fires when setAnnotations replaces the set (which happens on every edit) —
   // otherwise the form would close after every change (P2-5). Cleared explicitly on delete/switch.
-  let editing = $state<string | null>(null);
   // Per-note edit gate (Archie-90f1, merge contract C4: appendEdit/appendDelete refuse a plural-head
   // note). Selecting a conflicted note still highlights it on the canvas (`selected`), but `editing`
   // stays null so the note's inspector card expands to the "needs review" gate (below) instead of a form
   // that would throw on its first write — resolve in MergeReview first, then it opens normally.
-  $effect(() => { if (selected !== null) editing = conflictedNoteIds.has(selected) ? null : selected; });
+  $effect(() => { if (vs.selected !== null) vs.editing = conflictedNoteIds.has(vs.selected) ? null : vs.selected; });
   // ADR-0011: creation is gesture-initiated, not a sticky tool mode. Selection is ambient (the canvas
   // resting state). `creating` is the transient armed state for a NEW NOTE — null = not drawing; a chosen
   // shape = "draw the next region, then disarm". Narrative camera framing (framingSectionId) shares the
   // same draw path. The two are mutually exclusive. No persistent Select|Rect|Polygon palette anymore.
-  let creating = $state<DrawTool | null>(null);
   // Scale cue (Archie-93fd): current zoom / home zoom, streamed live from the canvas (Canvas.svelte's
   // onzoom, itself MountSurface.getZoomRatio — zoom-band.ts's own ratio). Defaults to 1 (home/fit) so
   // the tool strip reads "1×" before the canvas has mounted, matching the eventual at-rest value.
@@ -1007,8 +1001,8 @@
   // `placingPendingId` arms that draw — geometry comes from onCreate, exactly like narrative framing.
   let pendingNotes = $state<PendingNote[]>([]);
   let placingPendingId = $state<string | null>(null);
-  const drawArmed = $derived(creating !== null || framingSectionId !== null || placingPendingId !== null); // canvas in draw mode while any gesture is live
-  const drawShape = $derived<DrawTool>(creating ?? "rectangle"); // framing always frames a box
+  const drawArmed = $derived(vs.creating !== null || framingSectionId !== null || placingPendingId !== null); // canvas in draw mode while any gesture is live
+  const drawShape = $derived<DrawTool>(vs.creating ?? "rectangle"); // framing always frames a box
   // P-2 (archie-ux Q-2): reading DISPLAY state — visible SET + active pen, never conflated.
   // The Readings panel in the navigator's "This object" zone is the one home (Archie-b671 / Archie-d48e);
   // the floating canvas rail and the old dropdown are both retired.
@@ -1018,26 +1012,24 @@
   // header. Replaces the ADR-0007 first-add gate (ReadingHelp + localStorage flag) — the teaching
   // copy lives permanently in the modal, so there's nothing to remember or re-nag about.
   let readingsOpen = $state(false);
-  const current = $derived(OBJECTS.find((o) => o.id === currentObjectId) ?? OBJECTS[0]);
   // The overview pencil's edit target (pencil-CRUD, Archie-79be) — a transient cursor independent of
   // currentObjectId, so editing a plate's details opens a drawer WITHOUT navigating into the object.
   let editingObjectId = $state<string | null>(null);
-  const editingObject = $derived(currentExhibit?.objects.find((o) => o.id === editingObjectId) ?? null);
-  const canvasId = $derived(canvasIdOf(currentObjectId));
+  const editingObject = $derived(vs.currentExhibit?.objects.find((o) => o.id === editingObjectId) ?? null);
   // AV objects (sound/video) get the temporal AvEditor instead of the OSD Canvas (draw tools too).
-  const isAvCurrent = $derived(current?.mediaType === "sound" || current?.mediaType === "video");
-  $effect(() => { if (view === "editor" && isAvCurrent && !AvEditorComp) void import("./AvEditor.svelte").then((m) => { AvEditorComp = m.default; }); });
+  const isAvCurrent = $derived(vs.current?.mediaType === "sound" || vs.current?.mediaType === "video");
+  $effect(() => { if (vs.view === "editor" && isAvCurrent && !AvEditorComp) void import("./AvEditor.svelte").then((m) => { AvEditorComp = m.default; }); });
   // Map objects (geo-annotation): a tileSource descriptor mounts a slippy-map basemap on the same OSD
   // Canvas. The pin tool + lng/lat readout are gated on this.
-  const currentTileSource = $derived(current?.tileSource);
-  const isMapCurrent = $derived(!!current?.tileSource);
+  const currentTileSource = $derived(vs.current?.tileSource);
+  const isMapCurrent = $derived(!!vs.current?.tileSource);
   // The image URL the Canvas mounts: imported (/assets) objects resolve to their on-demand master blob;
   // non-asset (IIIF/remote) objects use their source directly (the `assets` store owns the distinction).
-  const currentSource = $derived(assets.canvasSource(currentSlug, current));
+  const currentSource = $derived(assets.canvasSource(vs.currentSlug, vs.current));
   // Mint the CURRENT object's master ON DEMAND (Phase 1.2). Thumbs are resolved eagerly for the whole
   // exhibit at open; the full-res master (canvas/OSD source) is read only for the object in view, and
   // re-read on object/exhibit switch. ensureMaster id-guards so a rapid switch commits only the last mint.
-  $effect(() => { void assets.ensureMaster(currentSlug, current); });
+  $effect(() => { void assets.ensureMaster(vs.currentSlug, vs.current); });
   // Resolved image URL for an object's rail thumbnail (asset → baked-thumb blob, or a master fallback for
   // a legacy no-thumb import; else a RENDERABLE derivative — a bare IIIF service base isn't an image, so
   // thumbnailUrl derives a sized JPEG; plain files pass through).
@@ -1045,24 +1037,14 @@
     o.tileSource ? thumbnailUrl(o.tileSource, 240) // a Map → its z0 world tile (thumbnailUrl handles the descriptor)
     : isAsset(o.source) ? assets.thumbFor(o.id) : thumbnailUrl(o.source, 240)
   );
-  function switchObject(id: string) {
-    if (id === currentObjectId) return;
-    currentObjectId = id;
-    selected = null;
-    editing = null;
-    creating = null; // cancel any armed new-note gesture when changing objects
-    placingPendingId = null; // …and any armed pending-placement (a manual switch leaves the bound object)
-    focusSectionId = null; // a manual rail switch drops the narrative card's frame focus (navigateToSection re-sets it)
-  }
   // Keep the ACTIVE rail tile on screen at scale: narrative jumps, [ / ] stepping, and wall click-through
   // all move currentObjectId without a rail click, and at 100+ objects the tile is usually off-screen.
   // $effect runs post-DOM-update, so .obj.on is already the new tile.
   let railEl = $state<HTMLElement | null>(null);
   $effect(() => {
-    void currentObjectId;
+    void vs.currentObjectId;
     railEl?.querySelector(".obj.on")?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
   });
-  const currentObjectIndex = $derived(OBJECTS.findIndex((o) => o.id === currentObjectId));
 
   // --- Filmstrip rail roving tabindex + aria-current (Archie-f260 §2, docs/research/a11y-interactions.md §2).
   // The rail is the one nav scheme ([ / ] is its keyboard face, Archie-5e96); this adds APG-grid roving so
@@ -1072,11 +1054,11 @@
   // it changes (click / [ ] / narrative jump) so tabbing in lands on where you are; arrows then rove freely. ---
   let railFocusId = $state<string | null>(null);
   $effect(() => {
-    railFocusId = OBJECTS.some((o) => o.id === currentObjectId) ? currentObjectId : (OBJECTS[0]?.id ?? null);
+    railFocusId = vs.OBJECTS.some((o) => o.id === vs.currentObjectId) ? vs.currentObjectId : (vs.OBJECTS[0]?.id ?? null);
   });
   function onRailKeyDown(e: KeyboardEvent) {
-    const ids = OBJECTS.map((o) => o.id);
-    const cur = railFocusId ? ids.indexOf(railFocusId) : ids.indexOf(currentObjectId);
+    const ids = vs.OBJECTS.map((o) => o.id);
+    const cur = railFocusId ? ids.indexOf(railFocusId) : ids.indexOf(vs.currentObjectId);
     const next = roveIndex(cur, ids.length, e.key);
     if (next === null) return; // Enter/Space activate the focused tile natively (onclick → switchObject)
     e.preventDefault();
@@ -1085,14 +1067,14 @@
     railEl?.querySelector<HTMLElement>(`[data-obj-id="${CSS.escape(id)}"]`)?.focus();
   }
   // --- pending notes (coordinate-free imports → "Set area" placement; Archie-79c0 sub-cycle B) ---
-  const objectLabelOf = (id: string) => OBJECTS.find((o) => o.id === id)?.label ?? id;
+  const objectLabelOf = (id: string) => vs.OBJECTS.find((o) => o.id === id)?.label ?? id;
   const newPendingId = () => `p-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e4).toString(36)}`;
   // Persist the current exhibit's pending list into the slug-keyed sidecar (whole-map I/O; single writer).
   // Routed through the save queue (SILENCE row 1, tend Issue 4): a direct OPFS write here had no catch
   // anywhere in its call chain, so a quota/permission failure was an unhandled rejection — invisible.
   async function persistPending() {
     const map = await loadPendingNotes();
-    if (pendingNotes.length) map[currentSlug] = [...pendingNotes]; else delete map[currentSlug];
+    if (pendingNotes.length) map[vs.currentSlug] = [...pendingNotes]; else delete map[vs.currentSlug];
     await enqueueSave("pending-notes", "Pending notes", () => savePendingNotes(map));
   }
   // IngestContext hook: stage coordinate-free CSV rows, deduped by (object, comment). Returns the NEW count.
@@ -1118,32 +1100,32 @@
   function startPlacing(id: string) {
     const p = pendingNotes.find((n) => n.id === id);
     if (!p) return;
-    switchObject(p.objectId); // pending notes span the exhibit — land on the right canvas first
-    creating = null; framingSectionId = null;
+    vs.switchObject(p.objectId); // pending notes span the exhibit — land on the right canvas first
+    vs.creating = null; framingSectionId = null;
     placingPendingId = id; // arm AFTER the switch (switchObject nulls it)
   }
   function cancelPlacing() { placingPendingId = null; }
   const placingPending = $derived(placingPendingId ? (pendingNotes.find((p) => p.id === placingPendingId) ?? null) : null);
   // "Fill in the blank" on-ramp: download a starter CSV seeded with THIS exhibit's items (csv-import).
   function downloadCsvTemplate() {
-    const csv = buildCsvTemplate(OBJECTS.map((o) => ({ id: o.id, label: o.label, ...(o.mediaType ? { mediaType: o.mediaType } : {}) })));
+    const csv = buildCsvTemplate(vs.OBJECTS.map((o) => ({ id: o.id, label: o.label, ...(o.mediaType ? { mediaType: o.mediaType } : {}) })));
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
-    a.href = url; a.download = `${currentSlug || "exhibit"}-notes-template.csv`; a.click();
+    a.href = url; a.download = `${vs.currentSlug || "exhibit"}-notes-template.csv`; a.click();
     URL.revokeObjectURL(url);
   }
   // Step to the previous/next object on the rail ([ / ] shortcuts).
   function stepObject(dir: -1 | 1) {
-    if (OBJECTS.length < 2) return;
-    const i = OBJECTS.findIndex((o) => o.id === currentObjectId);
-    const j = Math.max(0, Math.min(OBJECTS.length - 1, i + dir));
-    if (OBJECTS[j]) switchObject(OBJECTS[j]!.id);
+    if (vs.OBJECTS.length < 2) return;
+    const i = vs.OBJECTS.findIndex((o) => o.id === vs.currentObjectId);
+    const j = Math.max(0, Math.min(vs.OBJECTS.length - 1, i + dir));
+    if (vs.OBJECTS[j]) vs.switchObject(vs.OBJECTS[j]!.id);
   }
   // Rename an object (its label is authored structure → persist to library.json). Empty = ignored.
   function renameObject(objId: string, label: string) {
     const l = label.trim();
     if (!l) return;
-    lib.patchObject(currentSlug, objId, { label: l });
+    lib.patchObject(vs.currentSlug, objId, { label: l });
   }
 
   // --- Reading mode (ADR-0016 "narrative as an emergent reading mode"): the leading surface is a PURE
@@ -1151,9 +1133,9 @@
   // (resolveLayoutType); drives only display (the overview intent line). The deprecated stored
   // `exhibit.layout` is NEVER read or written here. The LayoutPicker is retired.
   const currentLayout = $derived<LayoutType>(
-    currentExhibit ? resolveLayoutType(currentExhibit.objects, currentExhibit.sections) : "single",
+    vs.currentExhibit ? resolveLayoutType(vs.currentExhibit.objects, vs.currentExhibit.sections) : "single",
   );
-  const currentReadings = $derived<Reading[]>(currentExhibit?.readings ?? []);
+  const currentReadings = $derived<Reading[]>(vs.currentExhibit?.readings ?? []);
   // Reading identity is no longer colour-only (W25 / Archie-f260 §3, WCAG 1.4.1): a shared NUMBER — base is
   // ①, each reading follows in registry order — labels the reading in the readings panel, the notes-list
   // layer chip, the note editor's picker, the filing cue, AND the keyboard note-selection announcement, so a
@@ -1180,31 +1162,31 @@
   // --- Readings (ADR-0007): the exhibit's curated interpretive passes. Persisted on ExhibitMeta,
   // published as a registry + per-reading AnnotationPages. A note belongs to ONE reading or none (base). ---
   function setReadings(readings: Reading[]) {
-    lib.patchExhibit(currentSlug, { readings });
+    lib.patchExhibit(vs.currentSlug, { readings });
   }
   // Reading colours (ADR-0007: colour identifies the reading; the viewer legend is a colour radio). The
   // curator may PICK one (Archie-1489) — auto-cycled as the sensible default so naming-and-go still works.
   const READING_PALETTE = ["#3A8C5D", "#a3553a", "#4c5d8a", "#8a6d3b", "#6b4c8a", "#3a7d8a"];
   function setNoteReading(reading: string | null) {
-    if (!editing) return;
-    sess.session.editNote(editing as LogicalId, { reading });
+    if (!vs.editing) return;
+    sess.session.editNote(vs.editing as LogicalId, { reading });
     bump();
   }
   // Per-note emphasis (Archie-1489): EMPHASIS ONLY — opacity/weight, never hue (hue = the reading, ADR-0007).
   function setNoteEmphasis(emphasis: Emphasis) {
-    if (!editing) return;
-    sess.session.editNote(editing as LogicalId, { emphasis });
+    if (!vs.editing) return;
+    sess.session.editNote(vs.editing as LogicalId, { emphasis });
     bump();
   }
 
   // --- Rights & credit (rights grill Phase 2): the shared RightsEditor sets these at all three levels.
   // Each replaces the level's rights fields with the editor's emitted next-state, then persists. ---
   function setObjectRights(next: RightsFields) {
-    const objId = currentObjectId;
-    lib.patchObject(currentSlug, objId, { rights: next.rights, requiredStatement: next.requiredStatement });
+    const objId = vs.currentObjectId;
+    lib.patchObject(vs.currentSlug, objId, { rights: next.rights, requiredStatement: next.requiredStatement });
   }
   function setExhibitRights(next: RightsFields) {
-    lib.patchExhibit(currentSlug, { rights: next.rights, requiredStatement: next.requiredStatement });
+    lib.patchExhibit(vs.currentSlug, { rights: next.rights, requiredStatement: next.requiredStatement });
   }
   function setLibraryRights(next: RightsFields) {
     lib.patchLibrary({ rights: next.rights, requiredStatement: next.requiredStatement });
@@ -1216,21 +1198,21 @@
   function setLibraryTitle(v: string) { lib.patchLibrary({ title: v }); }
   function setLibrarySummary(v: string) { lib.patchLibrary({ summary: v }); }
   function setExhibitTitle(v: string) {
-    lib.patchExhibit(currentSlug, { title: v });
+    lib.patchExhibit(vs.currentSlug, { title: v });
   }
   function setExhibitSummary(v: string) {
-    lib.patchExhibit(currentSlug, { summary: v });
+    lib.patchExhibit(vs.currentSlug, { summary: v });
   }
   function setObjectSummary(v: string) {
-    const objId = currentObjectId;
-    lib.patchObject(currentSlug, objId, { summary: v });
+    const objId = vs.currentObjectId;
+    lib.patchObject(vs.currentSlug, objId, { summary: v });
   }
 
   // --- Per-item metadata edit (pencil CRUD, Archie-79be): id-parameterized siblings of the cursor wrappers
   // above. The library grid edits any EXHIBIT and the overview edits any OBJECT without opening it, so these
   // take an explicit id instead of reading currentSlug/currentObjectId. Object edits target the open exhibit. ---
   function patchExhibitMeta(slug: string, fields: Partial<ExhibitMeta>) { lib.patchExhibit(slug, fields); }
-  function patchObjectMeta(objId: string, fields: Partial<ObjectMeta>) { lib.patchObject(currentSlug, objId, fields); }
+  function patchObjectMeta(objId: string, fields: Partial<ObjectMeta>) { lib.patchObject(vs.currentSlug, objId, fields); }
 
   // A W3C annotation target is `W3CTarget | W3CTarget[]`; Archie authors ONE target per note, so
   // normalize to the single target wherever a single is required (createNote/editNote/geoForTarget).
@@ -1241,10 +1223,10 @@
   // Hide-by-ancestry (Archie-42f3, flag-on only): notes attributed to a TOMBSTONED section are
   // filtered from the working surfaces at data level (spine/visibility.ts hiddenNoteIds). Flag off
   // ⇒ structure.hiddenIds returns the constant empty set and both filters are identity.
-  const hiddenByStructure = $derived.by<ReadonlySet<string>>(() => { void rev; return structure.hiddenIds(currentSlug, sess.session.entries); });
+  const hiddenByStructure = $derived.by<ReadonlySet<string>>(() => { void rev; return structure.hiddenIds(vs.currentSlug, sess.session.entries); });
   // Sections with plural heads (unresolved concurrent edits) — gates the NarrativeEditor's edit
   // affordances (merge contract C4). Empty set whenever the flag is off.
-  const conflictedSectionIds = $derived<ReadonlySet<string>>(structure.conflictedLocalIds(currentSlug));
+  const conflictedSectionIds = $derived<ReadonlySet<string>>(structure.conflictedLocalIds(vs.currentSlug));
   // NOTES with plural heads (Archie-90f1, merge contract C4/C5) — the annotation-level sibling of
   // conflictedSectionIds above. Source-agnostic: session.conflicts() just reads the log, so this reflects
   // whatever put plural heads there (a merged colleague's zip today; a live-sync transport tomorrow) — the
@@ -1266,11 +1248,11 @@
   // logicalId-keyed list (and the object-scoped reading counts) are per-NOTE, not per-head. Both sides stay
   // reachable for resolution via session.conflictHeads() (MergeReview); exhibit-wide allNotes is left with
   // all heads on purpose (editor-diversity / attribution legitimately counts every editor's head).
-  const objNotes = $derived(dedupeHeadsByLogicalId(allNotes.filter((r) => srcOf(r.target) === canvasId)));
+  const objNotes = $derived(dedupeHeadsByLogicalId(allNotes.filter((r) => srcOf(r.target) === vs.canvasId)));
   const notes = $derived(
     objNotes.filter((r) => rdg.noteVisible(r) && (editorFilter === "all" || String(r.lastEditor ?? "unknown") === editorFilter)),
   );
-  const objAnnotations = $derived.by<W3CAnnotation[]>(() => { void rev; return sess.session.workingAnnotations().filter((a) => srcOf(a.target) === canvasId && !hiddenByStructure.has(a.id)); });
+  const objAnnotations = $derived.by<W3CAnnotation[]>(() => { void rev; return sess.session.workingAnnotations().filter((a) => srcOf(a.target) === vs.canvasId && !hiddenByStructure.has(a.id)); });
   // O(1) marker lookup for the live styler: Annotorious calls styleOf per marker on every restyle
   // (hover / solo / reading toggle), so a per-call array scan was O(n²) across the canvas. Rebuilt only
   // when the working-annotation set changes.
@@ -1278,7 +1260,7 @@
   const annotations = $derived<W3CAnnotation[]>(
     objAnnotations.filter((a) => rdg.isVisible(((a as unknown as Record<string, unknown>)["archie:reading"] as string | undefined) ?? "base")),
   );
-  const sel = $derived(notes.find((r) => r.logicalId === editing));
+  const sel = $derived(notes.find((r) => r.logicalId === vs.editing));
   // Note count per canvas, built ONCE per allNotes change — the overview/library lists call this per
   // object, so the old per-call filter was O(objects × notes) on every `rev` bump. O(1) lookup now.
   // Deduped by logicalId first (Archie-d7ee): allNotes carries EVERY live head, so an edit-vs-edit
@@ -1289,7 +1271,7 @@
     for (const r of dedupeHeadsByLogicalId(allNotes)) { const c = srcOf(r.target); if (c === undefined) continue; m.set(c, (m.get(c) ?? 0) + 1); }
     return m;
   });
-  const noteCountOf = (objId: string) => noteCountByCanvas.get(canvasIdOf(objId)) ?? 0;
+  const noteCountOf = (objId: string) => noteCountByCanvas.get(vs.canvasIdOf(objId)) ?? 0;
   // Recency per canvas for the overview's "recently-annotated" sort (Phase 2) — MAX modifiedAt over the
   // object's notes, built ONCE per allNotes change (same shape as noteCountByCanvas). modifiedAt is an ISO
   // string, so lexicographic MAX = chronological MAX; "" (no notes) sorts oldest. Exhibit-scoped, which is
@@ -1299,7 +1281,7 @@
     for (const r of allNotes) { const c = srcOf(r.target); if (c === undefined) continue; const t = r.modifiedAt ?? ""; const cur = m.get(c); if (cur === undefined || t > cur) m.set(c, t); }
     return m;
   });
-  const lastAnnotatedOf = (objId: string) => lastAnnotatedByCanvas.get(canvasIdOf(objId)) ?? "";
+  const lastAnnotatedOf = (objId: string) => lastAnnotatedByCanvas.get(vs.canvasIdOf(objId)) ?? "";
   // Live marker styling (Archie-1489) — mirrors the viewer's readingStyleOf so the curator authors against
   // what a visitor sees. Colour = the note's reading (ADR-0007); reading-less notes get a neutral forest-
   // green default (so base marks are visible). Per-note emphasis modulates opacity/weight ONLY, never hue.
@@ -1313,8 +1295,7 @@
   // Solo (rail-row hover, B4): the soloed reading's fill returns while comparing. null = none.
   let soloReading = $state<string | null>(null);
   // Per-NOTE solo: hovering a note in the list lights its mark on the canvas (the rail's hover
-  // affordance applied to annotations). null = none.
-  let hoverNote = $state<string | null>(null);
+  // affordance applied to annotations) — `vs.hoverNote`, driven by the notes list + the marginalia rail.
 
   // --- Marginalia rail (Archie-dff3, direction B — collapsed tick rail) — the surviving marginalia
   // engine, re-presented as a near-invisible tick rail beside the canvas (NOT the reverted floating
@@ -1363,7 +1344,7 @@
   // list — bring that card into view when it might be off-screen (the list can be taller than the panel).
   // Runs post-DOM on `editing` change so the expanded form is already laid out; a no-op when already visible.
   $effect(() => {
-    const id = editing;
+    const id = vs.editing;
     if (!id) return;
     notesListEl?.querySelector<HTMLElement>(`[data-note-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
@@ -1380,7 +1361,7 @@
   const styleOfLive = $derived.by(() => {
     void rdg.comparing(currentReadings);
     void soloReading;
-    void hoverNote;
+    void vs.hoverNote;
     void rev;
     void zoomBandNow;
     return (id: string) => markerStyleOf(id);
@@ -1395,7 +1376,7 @@
     const base = readingMarkerStyle(colour, emphasisOf(a), {
       comparing: rdg.comparing(currentReadings),
       soloed: soloReading !== null && (rid ?? "base") === soloReading,
-      highlighted: hoverNote === id, // the hovered list note's mark is momentarily the brightest thing
+      highlighted: vs.hoverNote === id, // the hovered list note's mark is momentarily the brightest thing
     });
     // Layer the zoom-band weight ON TOP (post-modulation): far → heavier stroke for presence at
     // fit-width; near → the outline recedes. Composes with the regime above, one style channel.
@@ -1408,7 +1389,7 @@
   // objects have no OSD canvas, so no frame there (their whole-track band lives in the viewer's MediaPlayer).
   const frameMark = $derived.by<{ markId: string; colour: string } | null>(() => {
     if (isAvCurrent) return null;
-    const w = current?.width, h = current?.height;
+    const w = vs.current?.width, h = vs.current?.height;
     for (const a of annotations) {
       if (!a.id) continue;
       if (isWholeObjectFor(selectorOf(a), w ?? 0, h ?? 0, wholeObjectFlagOf(a))) {
@@ -1421,7 +1402,7 @@
   });
   // The OSD frame overlay; its corners activate (select) the framed note, like a marker click.
   const studioFrame = $derived<FrameOverlay | null>(
-    frameMark ? { colour: frameMark.colour, onActivate: () => (selected = frameMark.markId) } : null,
+    frameMark ? { colour: frameMark.colour, onActivate: () => (vs.selected = frameMark.markId) } : null,
   );
   // Drop the framed note's own rect from the canvas array (a ≥75% region note would otherwise draw rect +
   // frame); a bare-IRI whole-object note has no rect, so this is a no-op for the common case.
@@ -1444,11 +1425,11 @@
     if (!sb) return []; // whole-object / no-region selected → no stack to step through
     return objNotes.filter((r) => { const b = bboxOf(r.target); return !!b && bboxIoU(sb, b) >= 0.5; });
   });
-  const coLocatedIndex = $derived(coLocated.findIndex((r) => r.logicalId === editing));
+  const coLocatedIndex = $derived(coLocated.findIndex((r) => r.logicalId === vs.editing));
   function cycleCoLocated(dir: 1 | -1) {
     if (coLocated.length < 2) return;
     const i = ((coLocatedIndex < 0 ? 0 : coLocatedIndex) + dir + coLocated.length) % coLocated.length;
-    selected = coLocated[i]!.logicalId;
+    vs.selected = coLocated[i]!.logicalId;
   }
 
   // --- canvas lifecycle ---
@@ -1477,7 +1458,7 @@
         });
         removePending(p.id); // drop from the worklist + persist (reveals Notes once the list empties)
         bump();
-        selected = id;
+        vs.selected = id;
       }
       placingPendingId = null;
       return;
@@ -1490,15 +1471,15 @@
       sess.session.editNote(retargetingNoteId as LogicalId, { target: oneTarget(a.target), ...(cgeo !== undefined ? { geo: cgeo } : {}) });
       bump();
       retargetingNoteId = null;
-      creating = null;
+      vs.creating = null;
       return;
     }
     // On a Map, capture the region's geo-truth (lng/lat) alongside the pixel selector (Q4/ADR-0015).
     const geo = isMapCurrent ? geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) : undefined;
     const id = sess.session.createNote({ target: oneTarget(a.target), ...(geo ? { geo } : {}), ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) }); // the PEN, never visibility (Q1)
     bump();
-    selected = id;
-    creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
+    vs.selected = id;
+    vs.creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
   }
   // Is the open note a region note (has a spatial/temporal selector)? Drives the note-form Scope control.
   const selHasSelector = (r: AnnotationRecord | undefined): boolean =>
@@ -1507,31 +1488,31 @@
   // CREATES one (there's no region to draw). CONVERTING an existing note is a separate, EXPLICIT affordance
   // in the note's own form (`setNoteScope`) — not an overload of this create button.
   function createWholeObjectNote() {
-    const id = sess.session.createNote({ target: canvasId, ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) });
+    const id = sess.session.createNote({ target: vs.canvasId, ...(rdg.newNoteReading() !== undefined ? { reading: rdg.newNoteReading()! } : {}) });
     bump();
-    selected = id;
-    creating = null;
+    vs.selected = id;
+    vs.creating = null;
   }
   // Change the OPEN note's scope (ADR-0018) — the explicit conversion affordance, surfaced in the note form
   // beside the note it acts on. "whole" drops the selector → bare IRI (clearing any geo); "region" arms a box
   // so the next draw gives the note geometry (onCreate's whole→region branch performs the edit). Both are
   // versioned `target` edits, reversible.
   function setNoteScope(scope: "whole" | "region") {
-    if (!editing) return;
+    if (!vs.editing) return;
     if (scope === "whole") {
       if (!selHasSelector(sel)) return; // already whole-object — no-op
-      sess.session.editNote(editing as LogicalId, { target: srcOf(sel!.target) ?? canvasId, ...(isMapCurrent ? { geo: null } : {}) });
+      sess.session.editNote(vs.editing as LogicalId, { target: srcOf(sel!.target) ?? vs.canvasId, ...(isMapCurrent ? { geo: null } : {}) });
       bump();
     } else {
       // "Draw a region" (whole→region) OR "Redraw bounds" (replace a region): arm a draw that re-targets
       // THIS note. Default to a box; the toolbar can switch to Outline before drawing (retarget persists).
-      retargetingNoteId = editing;
-      creating = "rectangle";
+      retargetingNoteId = vs.editing;
+      vs.creating = "rectangle";
     }
   }
   // Geometry edit on canvas → re-derive geo-truth on a Map (null clears it if the new shape is unparseable).
   const onUpdate = (a: W3CAnnotation) => { sess.session.editNote(a.id as LogicalId, { target: oneTarget(a.target), ...(isMapCurrent ? { geo: geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null } : {}) }); bump(); };
-  const onDelete = (id: string) => { sess.session.deleteNote(id as LogicalId); bump(); if (selected === id) selected = null; if (editing === id) editing = null; };
+  const onDelete = (id: string) => { sess.session.deleteNote(id as LogicalId); bump(); if (vs.selected === id) vs.selected = null; if (vs.editing === id) vs.editing = null; };
   // Hand-annotate AV: AvEditor marked a [start,end] region → create a supplementing time note, then
   // select it so the WADM form opens to type the note (the temporal analogue of onCreate for OSD draws).
   function onCreateTime(start: number, end: number, box?: { x: number; y: number; w: number; h: number }) {
@@ -1543,16 +1524,16 @@
       framingSectionId = null;
       return;
     }
-    const target = { type: "SpecificResource" as const, source: canvasId, selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value } };
+    const target = { type: "SpecificResource" as const, source: vs.canvasId, selector: { type: "FragmentSelector" as const, conformsTo: "http://www.w3.org/TR/media-frags/", value } };
     const id = sess.session.createNote({ target, body: [{ type: "TextualBody", value: "", purpose: "supplementing" }], motivation: "supplementing" });
     bump();
-    selected = id;
+    vs.selected = id;
   }
   // Import a WebVTT/SRT transcript for the current AV object → supplementing time notes. APPEND-ONLY
   // (archie-av Q-1, advisor): each cue becomes a new note even if it overlaps existing ones — no
   // destructive replace, no heuristic merge. Format-agnostic (importTranscript's parser handles both).
   function onImportTranscript(text: string) {
-    const cued = importTranscript([], text, { source: canvasId, lastEditor: author });
+    const cued = importTranscript([], text, { source: vs.canvasId, lastEditor: author });
     let n = 0;
     for (const r of cued) { sess.session.createNote({ target: r.target, ...(r.body !== undefined ? { body: r.body } : {}), ...(r.motivation !== undefined ? { motivation: r.motivation } : {}) }); n++; }
     if (n > 0) {
@@ -1573,10 +1554,10 @@
   // empty/whitespace tag values; the prior local impl kept "" — empty tag chips no longer render.
 
   function applyForm(comment: string, tagsCsv: string) {
-    if (!editing) return;
+    if (!vs.editing) return;
     const body: W3CBody[] = [{ type: "TextualBody", value: comment, purpose: "commenting" }];
     for (const t of tagsCsv.split(",").map((s) => s.trim()).filter(Boolean)) body.push({ type: "TextualBody", value: t, purpose: "tagging" });
-    sess.session.editNote(editing as LogicalId, { body }); // reading carries forward; change it via setNoteReading
+    sess.session.editNote(vs.editing as LogicalId, { body }); // reading carries forward; change it via setNoteReading
     bump();
   }
   // AV note time range (for the WADM form's conditional time fieldset). Null for image (xywh) notes.
@@ -1584,8 +1565,8 @@
   // helpers taking `currentTileSource` explicitly (the DOMINO cut). App calls them with that descriptor.
   const timeOf = (r: AnnotationRecord) => parseTimeFragment(selectorValue(r));
   function applyTime(start: number, end: number) {
-    if (!editing) return;
-    sess.session.editNote(editing as LogicalId, { target: timeSel(canvasId, Math.max(0, start), Math.max(start, end)) });
+    if (!vs.editing) return;
+    sess.session.editNote(vs.editing as LogicalId, { target: timeSel(vs.canvasId, Math.max(0, start), Math.max(start, end)) });
     bump();
   }
   // mm:ss ⇄ seconds for the AV time fieldset moved into NoteEditor.svelte (the WADM form owns them now).
@@ -1607,13 +1588,13 @@
       // Thumbnails feed the picker's Browse (tile) view — the cite-by-image path (Archie-5968). Resolve
       // them for the CURRENT exhibit only — thumbSrc works against the live OBJECTS there; cross-exhibit
       // objects stay text-only in Browse (no thumb), so image-citing is scoped to this exhibit's media.
-      const isCur = ex.slug === currentSlug;
+      const isCur = ex.slug === vs.currentSlug;
       const objThumb = (objId: string): string => {
         if (!isCur || !objId) return "";
-        const obj = OBJECTS.find((o) => o.id === objId);
+        const obj = vs.OBJECTS.find((o) => o.id === objId);
         return obj ? thumbSrc(obj) : "";
       };
-      out.push({ id: `ex:${ex.slug}`, kind: "exhibit", exhibitSlug: ex.slug, exhibitTitle: ex.title, label: linkLabel(ex.title), ref: encodeLinkRef({ exhibitSlug: ex.slug }), thumb: isCur && OBJECTS[0] ? thumbSrc(OBJECTS[0]) : "" });
+      out.push({ id: `ex:${ex.slug}`, kind: "exhibit", exhibitSlug: ex.slug, exhibitTitle: ex.title, label: linkLabel(ex.title), ref: encodeLinkRef({ exhibitSlug: ex.slug }), thumb: isCur && vs.OBJECTS[0] ? thumbSrc(vs.OBJECTS[0]) : "" });
       // Whole-Object cites (ADR-0018) — each object is a Browse tile and a Search row ("cite this folio").
       for (const obj of ex.objects ?? []) {
         out.push({ id: `o:${ex.slug}:${obj.id}`, kind: "object", exhibitSlug: ex.slug, exhibitTitle: ex.title, label: linkLabel(obj.label ?? obj.id), ref: encodeLinkRef({ exhibitSlug: ex.slug, objectId: obj.id }), thumb: objThumb(obj.id) });
@@ -1693,7 +1674,7 @@
     }
     // ⌘K — cite into the note being edited (works inside the textarea too). With nothing selected, give a
     // hint instead of a silent no-op (shortcuts.ts advertises ⌘K; the dead-key was a dogfood gap).
-    if (matches(e, "⌘K") && view === "editor") {
+    if (matches(e, "⌘K") && vs.view === "editor") {
       e.preventDefault();
       if (sel) void requestCite(citeIntoComment);
       else importNote = "Open a note first — then ⌘K cites another note or exhibit into it.";
@@ -1701,26 +1682,26 @@
     }
     // Overview organizing (Phase 2): select-all + bulk delete, only at the overview scale and not while
     // typing in the toolbar search. ⌘A must preventDefault or the browser selects the whole page's text.
-    if (matches(e, "⌘A") && view === "overview" && !typingInField(e)) { e.preventDefault(); selectAllObjects(); return; }
-    if (matches(e, "⌫") && view === "overview" && !typingInField(e) && selection.size > 0) { e.preventDefault(); requestBulkDelete(); return; }
+    if (matches(e, "⌘A") && vs.view === "overview" && !typingInField(e)) { e.preventDefault(); selectAllObjects(); return; }
+    if (matches(e, "⌫") && vs.view === "overview" && !typingInField(e) && selection.size > 0) { e.preventDefault(); requestBulkDelete(); return; }
     // Esc page-level ladder (only reached with NO scrimmed surface open — the modality gate above returns
     // first): disarm a new-note gesture → camera framing → pending placement → SELECTION → select-mode →
     // overview → library.
     if (matches(e, "Esc")) {
-      if (creating) { e.preventDefault(); creating = null; return; } // disarm a new-note gesture first
+      if (vs.creating) { e.preventDefault(); vs.creating = null; return; } // disarm a new-note gesture first
       if (framingSectionId) { e.preventDefault(); cancelFraming(); return; }
       if (placingPendingId) { e.preventDefault(); cancelPlacing(); return; } // disarm a pending-note placement
-      if (sel) { e.preventDefault(); selected = null; editing = null; return; }
+      if (sel) { e.preventDefault(); vs.selected = null; vs.editing = null; return; }
       // Phase 2 rungs — clear a selection first, then leave select-mode, BEFORE backing out of the overview.
-      if (view === "overview" && selection.size > 0) { e.preventDefault(); clearSel(); return; }
-      if (view === "overview" && selectMode) { e.preventDefault(); selectMode = false; return; }
-      if (view === "editor") { e.preventDefault(); void backToOverview(); return; }
-      if (view === "overview") { e.preventDefault(); void backToLibrary(); return; }
+      if (vs.view === "overview" && selection.size > 0) { e.preventDefault(); clearSel(); return; }
+      if (vs.view === "overview" && selectMode) { e.preventDefault(); selectMode = false; return; }
+      if (vs.view === "editor") { e.preventDefault(); void backToOverview(); return; }
+      if (vs.view === "overview") { e.preventDefault(); void backToLibrary(); return; }
       return;
     }
     // Image-canvas shortcuts — bare letters, so skip while typing / on AV / while framing.
-    if (typingInField(e) || view !== "editor" || isAvCurrent || framingSectionId) return;
-    if (matches(e, "⌫") && editing) { e.preventDefault(); onDelete(editing); }
+    if (typingInField(e) || vs.view !== "editor" || isAvCurrent || framingSectionId) return;
+    if (matches(e, "⌫") && vs.editing) { e.preventDefault(); onDelete(vs.editing); }
     else if (matches(e, "[")) { e.preventDefault(); stepObject(-1); }
     else if (matches(e, "]")) { e.preventDefault(); stepObject(1); }
   }
@@ -1756,7 +1737,7 @@
     const map: Record<string, AnnotationLog> = {};
     const corruption: CorruptLogFinding[] = [];
     for (const ex of lib.meta.exhibits) {
-      const s = ex.slug === currentSlug ? sess.session : await openExhibitAnnotationsDir(ex.slug).then((dir) => (dir ? AnnotationSession.load(dir, author) : null));
+      const s = ex.slug === vs.currentSlug ? sess.session : await openExhibitAnnotationsDir(ex.slug).then((dir) => (dir ? AnnotationSession.load(dir, author) : null));
       map[ex.id] = s?.entries ?? [];
       if (forPublish && s) {
         const finding = warnAnnotationPublishCorruption(ex.slug, s.entries.length, s.loadCorruption);
@@ -1775,28 +1756,28 @@
     baseUrl: BASE,
     lib,
     author: () => author,
-    currentSlug: () => currentSlug,
+    currentSlug: () => vs.currentSlug,
     storeReady: () => sess.storeReady,
-    objects: () => OBJECTS,
-    currentObjectId: () => currentObjectId,
+    objects: () => vs.OBJECTS,
+    currentObjectId: () => vs.currentObjectId,
     currentReadings: () => currentReadings,
     session: () => sess.session,
     seedMaster: (slug, id, url) => assets.seedMaster(slug, id, url),
     setPlate: (id, url) => assets.setPlate(id, url),
-    setCurrentObjectId: (id) => { currentObjectId = id; },
+    setCurrentObjectId: (id) => { vs.currentObjectId = id; },
     setImportStatus: (s) => { importStatus = s; },
     setImportNote: (s) => { importNote = s; },
     addPendingNotes,
     setCollabNote: (s) => { collabNote = s; },
-    canvasIdOf,
-    switchObject,
-    toEditor: () => { view = "editor"; },
+    canvasIdOf: vs.canvasIdOf,
+    switchObject: vs.switchObject,
+    toEditor: () => { vs.view = "editor"; },
     newExhibit,
     newExhibitInLibrary: createExhibitInLibrary, // Archie-cbf6: non-navigating create for the collection batch
     openExhibit,
     bump,
     cancelPendingSave: () => sess.cancelPendingSave(),
-    finishReplace: () => { structure.reset(); currentSlug = lib.meta.exhibits[0]!.slug; view = "library"; pendingNotes = []; void enqueueSave("pending-notes", "Pending notes", () => savePendingNotes({})); }, // destructive replace wipes the old project's pending sidecar + the structure session's cached logs (the merged/imported logs are on disk — Archie-2a9a)
+    finishReplace: () => { structure.reset(); vs.currentSlug = lib.meta.exhibits[0]!.slug; vs.view = "library"; pendingNotes = []; void enqueueSave("pending-notes", "Pending notes", () => savePendingNotes({})); }, // destructive replace wipes the old project's pending sidecar + the structure session's cached logs (the merged/imported logs are on disk — Archie-2a9a)
     confirmReplace: (msg) => window.confirm(msg),
     alert: (msg) => window.alert(msg),
     structureRevlog: STRUCTURE_REVLOG, // the boot-cached flag read (feature-flags.ts contract) — gates the import-side structure merge (Archie-2a9a)
@@ -1902,7 +1883,7 @@
     <button type="button" class="cn-x" onclick={() => (fallbackNotice = null)} aria-label="Dismiss">✕</button>
   </div>
 {/if}
-{#if view === "library"}
+{#if vs.view === "library"}
   {#if collabNote}
     <!-- ⑧ collaboration summary (draft copy — human-gated): amber=transient, the playground
          banner's tone family at library scale. -->
@@ -1960,7 +1941,7 @@
     onidentity={setIdentity}
     bind:gallerySearch
   />
-{:else if view === "overview" && currentExhibit}
+{:else if vs.view === "overview" && vs.currentExhibit}
   <div class="overview-stage">
     <!-- The one save UI (Archie-0b7b / Archie-c76d), threaded into the overview header's save slot as a
          snippet — the SAME SafetyState the editor + library mount, so ⌘S + the indicator are identical here. -->
@@ -1971,12 +1952,12 @@
     {/snippet}
     <ExhibitOverview
       safety={overviewSafety}
-      title={currentExhibit.title}
+      title={vs.currentExhibit.title}
       layout={currentLayout}
-      objects={OBJECTS}
+      objects={vs.OBJECTS}
       {noteCountOf}
       thumbFor={(o) => (o.mediaType && o.mediaType !== "image") ? "" : thumbSrc(o)}
-      sections={currentExhibit.sections ?? []}
+      sections={vs.currentExhibit.sections ?? []}
       onopenobject={openObject}
       onopenbeat={openBeat}
       oneditobject={(objId) => (editingObjectId = objId)}
@@ -1996,10 +1977,10 @@
       scrollTop={ovScrollInitial}
       onscrolled={rememberOverviewScroll}
       onscrollflush={flushOverviewScroll}
-      onstartnarrative={() => openObject(OBJECTS[0]?.id ?? currentObjectId)}
-      rights={{ ...(currentExhibit.rights ? { rights: currentExhibit.rights } : {}), ...(currentExhibit.requiredStatement ? { requiredStatement: currentExhibit.requiredStatement } : {}) }}
+      onstartnarrative={() => openObject(vs.OBJECTS[0]?.id ?? vs.currentObjectId)}
+      rights={{ ...(vs.currentExhibit.rights ? { rights: vs.currentExhibit.rights } : {}), ...(vs.currentExhibit.requiredStatement ? { requiredStatement: vs.currentExhibit.requiredStatement } : {}) }}
       onrights={setExhibitRights}
-      summary={currentExhibit.summary}
+      summary={vs.currentExhibit.summary}
       ontitle={setExhibitTitle}
       onsummary={setExhibitSummary}
       onremove={removeCurrentExhibit}
@@ -2027,7 +2008,7 @@
     <button class="exhibit-back" onclick={backToOverview}><span aria-hidden="true">←</span> Overview</button>
     <!-- Breadcrumb: Exhibit › Object — surfaces the two scales (the spine lives at the exhibit level, notes
          at the object level; the crumb names where you are). -->
-    <h1 class="wordmark">{currentExhibit?.title}</h1>{#if current}<span class="crumb">› {current.label}</span>{/if}<span class="sub">Studio</span>
+    <h1 class="wordmark">{vs.currentExhibit?.title}</h1>{#if vs.current}<span class="crumb">› {vs.current.label}</span>{/if}<span class="sub">Studio</span>
     <span class="spacer"></span>
     <!-- ADR-0011: no persistent tool palette. Selection is ambient; drawing arms only from a CREATE act
          ("New note" in the notes pane, or narrative camera framing). -->
@@ -2047,7 +2028,7 @@
 
   <ReadingsModal open={readingsOpen} readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => rdg.setActive(id)} onclose={() => (readingsOpen = false)} />
 
-  {#if isTemplate(currentSlug)}
+  {#if isTemplate(vs.currentSlug)}
     <!-- Per-exhibit playground banner (§115): an EXAMPLE is a template — exploring it is honest play,
          stated plainly, with the keep-path right here. Amber = transient/attention (not green=action,
          not vermillion=error). A user's own exhibit shows no banner (it's saved). -->
@@ -2071,20 +2052,20 @@
     </button>
     <nav class="objects" aria-label="Exhibit objects" bind:this={railEl}
       onwheel={(e) => { const el = e.currentTarget as HTMLElement; if (el.scrollWidth <= el.clientWidth || e.deltaY === 0) return; el.scrollLeft += e.deltaY; e.preventDefault(); }}>
-      {#if OBJECTS.length === 0}
+      {#if vs.OBJECTS.length === 0}
         <span class="no-objects">No media yet — add one from the “Exhibit” panel.</span>
       {/if}
-      {#if OBJECTS.length > 1}
+      {#if vs.OBJECTS.length > 1}
         <!-- Orientation at scale: sticky, so "where am I" survives scrolling a 100+ rail. -->
-        <span class="rail-pos" aria-live="polite">{currentObjectIndex + 1} / {OBJECTS.length}</span>
+        <span class="rail-pos" aria-live="polite">{vs.currentObjectIndex + 1} / {vs.OBJECTS.length}</span>
       {/if}
-      {#each OBJECTS as o (o.id)}
-        <button class="obj" class:on={o.id === currentObjectId} data-obj-id={o.id}
-          onclick={() => switchObject(o.id)}
+      {#each vs.OBJECTS as o (o.id)}
+        <button class="obj" class:on={o.id === vs.currentObjectId} data-obj-id={o.id}
+          onclick={() => vs.switchObject(o.id)}
           onkeydown={onRailKeyDown}
           onfocus={() => (railFocusId = o.id)}
           tabindex={o.id === railFocusId ? 0 : -1}
-          aria-current={o.id === currentObjectId ? "true" : undefined}
+          aria-current={o.id === vs.currentObjectId ? "true" : undefined}
           title={o.label}>
           <span class="obj-thumb" style={`background-image:url(${thumbSrc(o)})`}></span>
           <span class="obj-meta">
@@ -2099,17 +2080,17 @@
   <!-- Status strip (Archie-5e96 / Archie-b671) — ABSENT when idle. Between the rail and the canvas: the ONE
        slim bar the rail's non-nav cargo moved into — mode banners (framing / drawing) and import toasts,
        off the rail and off the canvas. role="status" so a screen reader announces the mode/toast. -->
-  {#if framingSectionId || creating || importStatus || importNote || noteConflicts.length > 0}
+  {#if framingSectionId || vs.creating || importStatus || importNote || noteConflicts.length > 0}
     <div class="status-strip" role="status">
       {#if framingSectionId}
         <span class="ss-tag">Setting the view</span>
         <span class="ss-msg">{isAvCurrent ? "Mark a moment on the recording to set where this section opens — the view, not a note." : "Draw a box to set what this section shows — the view, not a note."}</span>
         <button type="button" class="ss-cancel" onclick={cancelFraming}>Cancel <kbd>Esc</kbd></button>
-      {:else if creating}
+      {:else if vs.creating}
         <span class="ss-tag">Drawing a region</span>
-        <span class="ss-msg">Draw the {creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"} — it becomes your note’s place{isMapCurrent ? ", anchored to its longitude/latitude" : ""}. Drag pans again once you’ve drawn.</span>
+        <span class="ss-msg">Draw the {vs.creating === "rectangle" ? "box" : "outline"} on the {isMapCurrent ? "map" : "image"} — it becomes your note’s place{isMapCurrent ? ", anchored to its longitude/latitude" : ""}. Drag pans again once you’ve drawn.</span>
         <span class="ss-into" title="This note files into the active reading (the pen in the readings panel).">Filing into <span class="ss-rd" style={`border-color:${activeReadingColour}`}><span class="ss-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {activeReadingLabel}</span></span>
-        <button type="button" class="ss-cancel" onclick={() => (creating = null)}>Cancel <kbd>Esc</kbd></button>
+        <button type="button" class="ss-cancel" onclick={() => (vs.creating = null)}>Cancel <kbd>Esc</kbd></button>
       {/if}
       {#if importStatus}
         <span class="ss-import"><span class="import-spinner" aria-hidden="true"></span> Adding “{importStatus.name}”…{#if importStatus.total > 1} ({importStatus.index} of {importStatus.total}){/if}</span>
@@ -2133,7 +2114,7 @@
          place by {@render}-ing this snippet (Archie-d48e). Declared at .body scope so the inspector site can
          reach it; a single definition keeps the edit form identical wherever it hosts. -->
     {#snippet noteForm()}
-      <NoteEditor sel={sel!} editing={editing!} {currentReadings} bind:commentEl
+      <NoteEditor sel={sel!} editing={vs.editing!} {currentReadings} bind:commentEl
         {showAttribution} you={author}
         {commentOf} {tagsOf} {timeOf}
         {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {setNoteScope} {requestCite} {citeIntoComment} {closeNote} {onDelete}
@@ -2151,7 +2132,7 @@
       <section class="zone zone-exhibit">
         <header class="zone-header">
           <span class="zone-kicker">Exhibit</span>
-          <span class="zone-name">{currentExhibit?.title}</span>
+          <span class="zone-name">{vs.currentExhibit?.title}</span>
           <!-- ONE "bring something in" affordance (Archie-beb6 / Archie-56cf): the split +Media / +Map
                pair is retired for a single "+ Add media" that opens the scoped chooser (folder / IIIF /
                Map) in add-to-exhibit scope — the same dialog the overview plate opens. Adding media grows
@@ -2161,7 +2142,7 @@
           </div>
         </header>
         <div class="zone-body">
-      {#if firstAddCueSlug === currentSlug}
+      {#if firstAddCueSlug === vs.currentSlug}
         <!-- KEYSTONE matched-pair cue, FIRST-ADD (0→1): the one-time, non-blocking, dismissible note that
              adding beat #1 changed the exhibit's published front door. Sits directly above the spine card so
              it reads as "about this thing you just did." Dismisses on "Got it" and never re-shows for this
@@ -2177,7 +2158,7 @@
           </div>
         </div>
       {/if}
-      {#if pendingClear?.slug === currentSlug}
+      {#if pendingClear?.slug === vs.currentSlug}
         <!-- KEYSTONE matched-pair cue, LAST-REMOVE (last→0): removing the final section reverts the front
              door, so confirm first (the only section delete that confirms; non-last deletes are silent).
              Transient — NOT persisted; it must fire every time the narrative is genuinely cleared. -->
@@ -2200,7 +2181,7 @@
           </button>
           {#if narrativeOpen}
             <div class="panel-create">
-              <button type="button" class="create-add" onclick={addSection} disabled={OBJECTS.length === 0} title="Add a new section to this exhibit's narrative"><span aria-hidden="true">＋</span> Add a section</button>
+              <button type="button" class="create-add" onclick={addSection} disabled={vs.OBJECTS.length === 0} title="Add a new section to this exhibit's narrative"><span aria-hidden="true">＋</span> Add a section</button>
               {#if narrativeNotes.length > 0}
                 <select class="from-note" aria-label="Add a section from an existing note" title="Turn an existing note into a new section"
                   onchange={(e) => { const el = e.currentTarget as HTMLSelectElement; const n = narrativeNotes.find((x) => x.id === el.value); if (n) addSectionFromNote(n); el.selectedIndex = 0; }}>
@@ -2212,13 +2193,13 @@
             {#if NarrativeEditorComp}
               {@const NE = NarrativeEditorComp}
               <NE
-                sections={currentExhibit?.sections ?? []}
-                objects={OBJECTS}
-                {currentObjectId}
+                sections={vs.currentExhibit?.sections ?? []}
+                objects={vs.OBJECTS}
+                currentObjectId={vs.currentObjectId}
                 conflictedIds={conflictedSectionIds}
                 activeSectionId={focusSectionId}
                 framingId={framingSectionId}
-                cleared={clearedSlug === currentSlug}
+                cleared={clearedSlug === vs.currentSlug}
                 onchange={setSections}
                 onframe={startFraming}
                 oncancelframe={cancelFraming}
@@ -2237,13 +2218,13 @@
       <section class="zone zone-object">
         <header class="zone-header">
           <span class="zone-kicker">This object</span>
-          {#if current}
+          {#if vs.current}
             <!-- THE object title — editable in place (Enter or blur commits via renameObject). Was doubled:
                  this header span + a big .object-title input above the note list; the input had no edit
                  affordance and clipped long labels with no ellipsis (usability pass 2026-07-18). The ✎ is
                  the affordance; title= carries the full label when it ellipsizes. -->
-            <input class="zone-name-edit" value={current.label} title={current.label}
-              onchange={(e) => renameObject(currentObjectId, (e.currentTarget as HTMLInputElement).value)}
+            <input class="zone-name-edit" value={vs.current.label} title={vs.current.label}
+              onchange={(e) => renameObject(vs.currentObjectId, (e.currentTarget as HTMLInputElement).value)}
               onkeydown={(e) => { if (e.key === "Enter") (e.currentTarget as HTMLInputElement).blur(); }}
               aria-label="Object label" />
             <span class="zone-name-pen" aria-hidden="true">✎</span>
@@ -2256,7 +2237,7 @@
                now that the notes list moved to the inspector: a visibility checkbox + colour swatch + name +
                this-object count + the file-into pen radio per reading. "Manage readings…" opens the existing
                ReadingsModal. (Amends Archie-b671, where Readings sat subordinate under a Notes header.) -->
-          {#if current}
+          {#if vs.current}
             <div class="panel-title-row">
               <h3 class="panel-title">Readings</h3>
               <span class="panel-note">visibility</span>
@@ -2307,15 +2288,15 @@
                visible in the object zone now (was a separate accordion panel). Label unified to "Details"
                (decision Archie-3e0a, ticket Archie-ebf4) — same word the library/exhibit chips and the
                card/plate/row pencils use for this same surface. -->
-          {#if current}
+          {#if vs.current}
             <div class="panel-title-row">
               <h3 class="panel-title">Details</h3>
-              {#if current.summary || current.rights || current.requiredStatement}<span class="panel-note" title="Description or credit set for this item">Set</span>{/if}
+              {#if vs.current.summary || vs.current.rights || vs.current.requiredStatement}<span class="panel-note" title="Description or credit set for this item">Set</span>{/if}
             </div>
             <DetailsEditor
               showTitle={false}
-              summary={current.summary ?? ""}
-              rights={{ ...(current.rights ? { rights: current.rights } : {}), ...(current.requiredStatement ? { requiredStatement: current.requiredStatement } : {}) }}
+              summary={vs.current.summary ?? ""}
+              rights={{ ...(vs.current.rights ? { rights: vs.current.rights } : {}), ...(vs.current.requiredStatement ? { requiredStatement: vs.current.requiredStatement } : {}) }}
               scope="object"
               onsummary={setObjectSummary}
               onrights={setObjectRights}
@@ -2338,14 +2319,14 @@
            create tools (ADR-0011: drawing arms only from a create act) + a read-only "filing into <reading>"
            indicator echoing the pen set in the Readings panel. Image/Map objects only — AV creation is the
            AvEditor's own transport. -->
-      {#if current && !isAvCurrent}
+      {#if vs.current && !isAvCurrent}
         <div class="tool-strip">
           <span class="ts-lead">New note</span>
           <!-- Box / Outline ARM a draw mode (aria-pressed reflects it; click again to disarm); the armed tool
                wears a filled amber state so "I'm drawing this shape" reads at a glance. Geo-annotations reuse
                Box/Outline on a Map (no pin tool — 2026-06-18 grilling Q4); geo-truth is captured on draw. -->
-          <button type="button" class="ts-tool" class:armed={creating === "rectangle"} aria-pressed={creating === "rectangle"} onclick={() => (creating = creating === "rectangle" ? null : "rectangle")} title={isMapCurrent ? "Draw a rectangular region on the map" : "Draw a rectangular region"}><span aria-hidden="true">▭</span> Box</button>
-          <button type="button" class="ts-tool" class:armed={creating === "polygon"} aria-pressed={creating === "polygon"} onclick={() => (creating = creating === "polygon" ? null : "polygon")} title={isMapCurrent ? "Trace an irregular region on the map" : "Trace an irregular outline"}><span aria-hidden="true">⬠</span> Outline</button>
+          <button type="button" class="ts-tool" class:armed={vs.creating === "rectangle"} aria-pressed={vs.creating === "rectangle"} onclick={() => (vs.creating = vs.creating === "rectangle" ? null : "rectangle")} title={isMapCurrent ? "Draw a rectangular region on the map" : "Draw a rectangular region"}><span aria-hidden="true">▭</span> Box</button>
+          <button type="button" class="ts-tool" class:armed={vs.creating === "polygon"} aria-pressed={vs.creating === "polygon"} onclick={() => (vs.creating = vs.creating === "polygon" ? null : "polygon")} title={isMapCurrent ? "Trace an irregular region on the map" : "Trace an irregular outline"}><span aria-hidden="true">⬠</span> Outline</button>
           <!-- Whole-object Note (ADR-0018): no region — targets the bare canvas IRI, frames the whole object,
                fires immediately (no armed draw mode). (Converting an EXISTING note is the Scope control in the
                note form, not here.) -->
@@ -2354,7 +2335,7 @@
             <!-- Filing-into indicator: the destination reading (the pen is set in the navigator's Readings
                  panel). Hidden WHILE drawing (creating) — the status strip shows its own "filing into" then,
                  so keeping this would double it (review nit Archie-d48e). -->
-            {#if !creating}
+            {#if !vs.creating}
               <span class="ts-into" title="New notes file into the active reading — set the pen (✎) in the Readings panel.">filing into <span class="ts-rd" style={`border-color:${activeReadingColour}`}><span class="ts-rd-num" aria-hidden="true">{readingBadge(rdg.active, readingIds)}</span> {activeReadingLabel}</span></span>
             {/if}
             <!-- Scale cue (Archie-93fd): HOW FAR IN, the locator's missing companion. Quiet chrome ON
@@ -2371,27 +2352,27 @@
              onMount (no source $effect), so switching objects must remount to load the new image.
              Gated on sourceReadyFor(current) so the object's on-demand master (Phase 1.2) is minted AND
              in the slot before mount — a non-asset (IIIF) source is ready at once. -->
-        {#if current && isAvCurrent && assets.sourceReadyFor(currentSlug, current)}
+        {#if vs.current && isAvCurrent && assets.sourceReadyFor(vs.currentSlug, vs.current)}
           <!-- AV object → temporal editor (remount on object switch so the media element reloads). -->
-          {#key canvasId}
+          {#key vs.canvasId}
             {#if AvEditorComp}
               {@const Av = AvEditorComp}
-              <Av source={currentSource} label={current.label} mediaType={current.mediaType}
-                slug={currentSlug} assetName={isAsset(current.source) ? current.source.slice(ASSET_PREFIX.length) : null}
-                {annotations} bind:selected oncreate={onCreateTime} oncreatewhole={createWholeObjectNote} onimport={onImportTranscript}
+              <Av source={currentSource} label={vs.current.label} mediaType={vs.current.mediaType}
+                slug={vs.currentSlug} assetName={isAsset(vs.current.source) ? vs.current.source.slice(ASSET_PREFIX.length) : null}
+                {annotations} bind:selected={vs.selected} oncreate={onCreateTime} oncreatewhole={createWholeObjectNote} onimport={onImportTranscript}
                 onimporterror={(msg) => (importNote = msg)} />
             {:else}
               <div class="no-canvas">Loading…</div>
             {/if}
           {/key}
-        {:else if current && assets.sourceReadyFor(currentSlug, current)}
-          {#key canvasId}
+        {:else if vs.current && assets.sourceReadyFor(vs.currentSlug, vs.current)}
+          {#key vs.canvasId}
             {#if CanvasComp}
               <!-- noteViewFraction 0.5: selecting a note frames it at HALF the view, not edge-to-edge —
                    an editing canvas needs the surrounding context and the shape's resize handles on
                    screen, and a full-bleed fit shoved the marker under the viewport edges. Section
                    camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
-              <CanvasComp source={currentSource} tileSource={currentTileSource} {canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator dots={dotItems} bind:selected getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} />
+              <CanvasComp source={currentSource} tileSource={currentTileSource} canvasId={vs.canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator dots={dotItems} bind:selected={vs.selected} getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} />
             {:else}
               <div class="no-canvas">Loading…</div>
             {/if}
@@ -2401,7 +2382,7 @@
                  xyz (basemap) variant: only XyzTileSource carries attribution, DZI is an image pyramid (Issue 12). -->
             <div class="map-attribution">{currentTileSource.attribution}</div>
           {/if}
-        {:else if current}
+        {:else if vs.current}
           <div class="no-canvas">Loading…</div>
         {:else}
           <div class="no-canvas">Add media — drop an image here, or use “+ Media” in the “Exhibit” panel.</div>
@@ -2417,13 +2398,13 @@
          at all. Sparse exhibits show only faint ticks (revealed on hover); crowded ones show counted
          cluster chips + a heat band. Chips DRIVE selection/hover, they don't edit — the inspector on the
          right is still where a note opens. -->
-    {#if current && !isAvCurrent && marginaliaItems.length > 0}
+    {#if vs.current && !isAvCurrent && marginaliaItems.length > 0}
       <Marginalia
         items={marginaliaItems}
         rects={markerRects}
-        {selected}
-        onselect={(id) => (selected = selected === id ? null : id)}
-        onhover={(id) => (hoverNote = id)}
+        selected={vs.selected}
+        onselect={(id) => (vs.selected = vs.selected === id ? null : id)}
+        onhover={(id) => (vs.hoverNote = id)}
       />
     {/if}
     <!-- Inspector panel (Archie-d48e) — "what is selected", a STABLE right-edge element (layout, not a
@@ -2440,7 +2421,7 @@
            the notes list to the inspector (Archie-d48e). Native <details>, the "To place" summary dress. -->
       <details class="import-notes">
         <summary>Import notes…</summary>
-        {#if current && !isAvCurrent}
+        {#if vs.current && !isAvCurrent}
           <!-- Bulk on-ramp for spreadsheet-first authors (⑥): regions are xywh, so image objects only. -->
           <button type="button" class="text-link csv-import" onclick={() => csvEl?.click()} title="Import notes from a CSV. Columns: object, comment — x, y, w, h, tags, reading all optional, header row first. Rows with no x,y,w,h arrive as “needs placement”: draw each box with Set area. Use a media item’s label in the object column, or leave it blank for the current one.">From a CSV</button>
           <input bind:this={csvEl} type="file" accept=".csv,text/csv" style="display:none" aria-label="Add notes from a CSV file"
@@ -2465,18 +2446,18 @@
            and drop focus mid-interaction. The conflicted-selected note expands to the review gate instead. -->
       <ul class="notes-list" aria-label="Notes on this object" bind:this={notesListEl}>
         {#each notes as r (r.logicalId)}
-          {@const showForm = editing === r.logicalId && !drawArmed}
-          {@const showGate = selected === r.logicalId && conflictedNoteIds.has(r.logicalId)}
+          {@const showForm = vs.editing === r.logicalId && !drawArmed}
+          {@const showGate = vs.selected === r.logicalId && conflictedNoteIds.has(r.logicalId)}
           {@const expanded = showForm || showGate}
           <li class="note-item">
             <!-- Hovering a note solos its MARK on the canvas (the rail's hover affordance, per-note). Clicking
                  selects+expands; clicking the already-open note collapses it (disclosure toggle). -->
-            <button type="button" class="note-opt" class:sel={editing === r.logicalId}
+            <button type="button" class="note-opt" class:sel={vs.editing === r.logicalId}
               data-note-id={r.logicalId}
               aria-expanded={expanded}
               aria-controls={expanded ? `note-editor-${r.logicalId}` : undefined}
-              onmouseenter={() => (hoverNote = r.logicalId)} onmouseleave={() => (hoverNote = null)}
-              onclick={() => (selected = selected === r.logicalId ? null : r.logicalId)}>
+              onmouseenter={() => (vs.hoverNote = r.logicalId)} onmouseleave={() => (vs.hoverNote = null)}
+              onclick={() => (vs.selected = vs.selected === r.logicalId ? null : r.logicalId)}>
               <span class="comment">{stripMarkdown(commentOf(r)) || "(untitled)"}</span>
               <span class="meta">
                   {#if isMapCurrent}{@const g = geoLabelOf(r, currentTileSource?.kind === "xyz" ? currentTileSource : undefined)}{#if g}<span class="geo" title="Longitude and latitude — the centre of this region on the map.">📍 {g}</span>{/if}{/if}
@@ -2582,10 +2563,10 @@
      (Archie-32e8 — restores the pre-Archie-56cf URL-add UI onto the ingest flow, which survived that cut
      ready-made but UI-less). Start-empty/oncreate never fire in this scope. Mounted only with a current
      exhibit so the scope's slug/title are real. -->
-{#if currentExhibit}
+{#if vs.currentExhibit}
   <CreateExhibitDialog
     open={addMediaOpen}
-    scope={{ kind: "add-to-exhibit", slug: currentSlug, title: currentExhibit.title }}
+    scope={{ kind: "add-to-exhibit", slug: vs.currentSlug, title: vs.currentExhibit.title }}
     oncreate={() => {}}
     oncreatefromfolder={(files) => { flows.addFiles(files).catch((e) => { console.error("Folder add failed", e); window.alert("Couldn't add those files."); }); }}
     oncreatefrommanifest={(url) => { flows.addManifestToExhibit(url).catch((e) => { console.error("IIIF add failed", e); window.alert("Couldn't load that IIIF link."); }); }}
