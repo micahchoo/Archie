@@ -330,12 +330,12 @@
         />
         <ul class="picker-list" id="{uid}-list" role="listbox" aria-label="Metadata fields" bind:this={listEl}>
           {#if items.length === 0}
-            <li class="picker-empty">
+            <li class="picker-empty" role="presentation">
               {query.trim() ? `Nothing in the vocabulary matches “${query.trim()}”.` : "Every field is already in use."}
             </li>
           {/if}
           {#each items as p, i (p.property)}
-            <li>
+            <li role="presentation">
               <button
                 type="button" role="option" tabindex="-1"
                 id="{uid}-opt-{i}"
@@ -350,7 +350,7 @@
               </button>
             </li>
           {/each}
-          <li>
+          <li role="presentation">
             <button
               type="button" role="option" tabindex="-1"
               id="{uid}-custom"
