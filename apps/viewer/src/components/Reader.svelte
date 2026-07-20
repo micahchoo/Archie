@@ -13,8 +13,9 @@
   import SidebarObjectNav from "./SidebarObjectNav.svelte";
   import NotePopup from "./NotePopup.svelte";
   import Credit from "./Credit.svelte";
+  import MetadataList from "./MetadataList.svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
-  import { stripMarkdown } from "@render/core";
+  import { stripMarkdown, metadataRows } from "@render/core";
   import { type MarkerStyle, formatZoomRatio, zoomBand } from "@render/svelte";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, arrivalPulseIntensity, withArrivalPulse, withZoomBand, type MarkerStyleSpec, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
 
@@ -112,6 +113,36 @@
   // NOTE (dba2): the prev/next carousel that occluded the image TOP-CENTER stays lifted out into the
   // persistent top bar (ViewerShell) — its home for sidebar-open reading. The collapsed-mode popup's footer
   // stepper is bottom-left, so it never re-creates that occlusion. ExhibitView drives both from `selectedObjectId`.
+
+  // Descriptive metadata (Archie-b50f) — the OBJECT's own entries, projected to display rows. It joins
+  // the sidebar as a TAB beside Notes, not as another stacked slip: the sidebar is already spoken for,
+  // and stacking made an expanded long value push the notes list below the fold. `rights` is the same
+  // prop the credit line reads (metadata rides RightsFields), so this needs no new data path.
+  const metaRows = $derived(metadataRows(rights));
+  const hasDetails = $derived(metaRows.length > 0);
+  // The reader's CHOICE survives stepping to a sibling object (comparing one field across objects is
+  // the reason to open Details at all); `tab` collapses it to Notes whenever this object has no
+  // metadata, so a tab can never be selected while its panel doesn't exist.
+  const TABS = ["notes", "details"] as const;
+  let tabWanted = $state<(typeof TABS)[number]>("notes");
+  const tab = $derived<(typeof TABS)[number]>(hasDetails ? tabWanted : "notes");
+  let tablistEl = $state<HTMLElement | null>(null);
+  // APG tabs, automatic activation: arrows/Home/End move focus AND selection (both panels are cheap
+  // to render, so there's nothing to defer with manual activation). Roving tabindex lives on the
+  // buttons — exactly one tab is in the tab order at a time.
+  function onTabKey(e: KeyboardEvent) {
+    const i = TABS.indexOf(tab);
+    const next =
+      e.key === "ArrowRight" ? (i + 1) % TABS.length
+      : e.key === "ArrowLeft" ? (i - 1 + TABS.length) % TABS.length
+      : e.key === "Home" ? 0
+      : e.key === "End" ? TABS.length - 1
+      : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    tabWanted = TABS[next]!;
+    tablistEl?.querySelectorAll<HTMLElement>('[role="tab"]')[next]?.focus();
+  }
 
   // A note's Reading colour (from the registry) — accents its list card + marker (ADR-0007).
   const readingColourOf = (it: W3CAnnotation): string | undefined => {
@@ -289,17 +320,10 @@
        overflow:hidden) must leave the a11y tree + tab order too — `inert` stops its note list and
        SidebarObjectNav being announced or tabbed as invisible duplicates of the card (and its footer
        stepper). The ResizeDivider is a sibling, so un-collapsing stays reachable. -->
-  <aside class:collapsed={asideCollapsed} inert={asideCollapsed} style:--reader-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
-    {#if onback && !objectNav}
-      <button class="exhibit-back soft-btn" onclick={() => onback?.()}>← Back to Exhibit</button>
-    {/if}
-    <!-- The sidebar is ALWAYS the note list now (parity with the narrative spine): selecting a note floats
-         the shared NotePopup over the canvas rather than swapping this pane to a detail view. The selected
-         note's list card stays lit (.active) so the open list shows which note the floating card holds. -->
-    <h1 class="object-label">{object.label}</h1>
-    {#if object.summary}<p class="object-summary">{object.summary}</p>{/if}
-    <p class="credit-row"><Credit {rights} tone="paper" /></p>
-    <h2 class="eyebrow">Notes · {annotations.length}</h2>
+  <!-- The note list, ONE definition: it renders either inside the Notes tabpanel (this object has
+       metadata) or bare under the plain "Notes · N" heading (it doesn't). A snippet, not a copy —
+       the two branches must never drift. -->
+  {#snippet notesPanel()}
     {#if annotations.length === 0}
       <p class="empty">No notes on this image yet.</p>
     {/if}
@@ -319,6 +343,44 @@
       {/each}
     </ul>
     <p class="hint">Select a note, or a marker on the image. Markers stay pinned as you pan and zoom, and selecting one zooms in.</p>
+  {/snippet}
+
+  <aside class:collapsed={asideCollapsed} inert={asideCollapsed} style:--reader-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
+    {#if onback && !objectNav}
+      <button class="exhibit-back soft-btn" onclick={() => onback?.()}>← Back to Exhibit</button>
+    {/if}
+    <!-- The sidebar is ALWAYS the note list now (parity with the narrative spine): selecting a note floats
+         the shared NotePopup over the canvas rather than swapping this pane to a detail view. The selected
+         note's list card stays lit (.active) so the open list shows which note the floating card holds. -->
+    <h1 class="object-label">{object.label}</h1>
+    {#if object.summary}<p class="object-summary">{object.summary}</p>{/if}
+    <!-- The credit sits ABOVE the tab pair, visible from both tabs: the IIIF requiredStatement is a
+         MUST-display, and it must never become a row of the Details list (rights are a typed slot,
+         distinguished by FORM — tracked mono line vs. the list's hanging-key voice). -->
+    <p class="credit-row"><Credit {rights} tone="paper" /></p>
+    {#if hasDetails}
+      <!-- Real APG tablist (roving tabindex, automatic activation) — not styled divs. -->
+      <div class="tabs" role="tablist" aria-label="About this image" bind:this={tablistEl}>
+        <button type="button" role="tab" id="reader-tab-notes" aria-controls="reader-panel-notes"
+                aria-selected={tab === "notes"} tabindex={tab === "notes" ? 0 : -1}
+                onclick={() => (tabWanted = "notes")} onkeydown={onTabKey}>Notes · {annotations.length}</button>
+        <button type="button" role="tab" id="reader-tab-details" aria-controls="reader-panel-details"
+                aria-selected={tab === "details"} tabindex={tab === "details" ? 0 : -1}
+                onclick={() => (tabWanted = "details")} onkeydown={onTabKey}>Details · {metaRows.length}</button>
+      </div>
+      <!-- tabindex=0 on the panels per APG: the Notes panel holds no focusable element when the object
+           has no notes, and a keyboard reader must still be able to reach what the tab revealed. -->
+      <div role="tabpanel" id="reader-panel-notes" aria-labelledby="reader-tab-notes" tabindex="0" hidden={tab !== "notes"}>
+        {@render notesPanel()}
+      </div>
+      <div role="tabpanel" id="reader-panel-details" aria-labelledby="reader-tab-details" tabindex="0" hidden={tab !== "details"}>
+        <MetadataList rows={metaRows} />
+      </div>
+    {:else}
+      <!-- No metadata on this object: no lone tab. The sidebar keeps exactly its pre-b50f shape. -->
+      <h2 class="eyebrow">Notes · {annotations.length}</h2>
+      {@render notesPanel()}
+    {/if}
     {#if objectNav && siblings && currentId}
       <SidebarObjectNav {siblings} {currentId} onstep={(id) => onstep?.(id)} onoverview={() => onoverview?.()} />
     {/if}
@@ -397,6 +459,26 @@
      own its colour/type; just give it bottom rhythm here. */
   aside h2 { margin: 0 0 var(--space-4); }
   ul { list-style: none; margin: 0; padding: 0; }
+
+  /* Notes | Details tab pair (Archie-b50f). It stands exactly where the "Notes · N" eyebrow stood and
+     keeps that voice — tracked uppercase chrome, no pill, no fill. The selected tab is signalled by
+     ink weight PLUS a 2px accent rule, so the state survives greyscale and low contrast; the shared
+     hairline under the pair is what makes the two read as one control rather than two labels. */
+  .tabs { display: flex; gap: var(--space-5); margin: 0 0 var(--space-4); border-bottom: 1px solid var(--border-paper-emphasis); }
+  .tabs button {
+    background: none; border: none; cursor: pointer;
+    padding: 0 0 var(--space-2); margin-bottom: -1px;
+    border-bottom: 2px solid transparent;
+    font-family: var(--font-ui); font-size: var(--text-ui-md); font-weight: 400;
+    letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--ink-paper-secondary);
+    transition: color 160ms ease, border-color 160ms ease;
+  }
+  .tabs button:hover { color: var(--ink-paper-primary); }
+  .tabs button[aria-selected="true"] { color: var(--ink-paper-primary); border-bottom-color: var(--accent); }
+  /* The panel is focusable (APG) but is not itself an affordance — no focus ring styling beyond the
+     browser default outline, which only shows for keyboard focus. */
+  [role="tabpanel"]:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 4px; border-radius: var(--radius-sm); }
 
   /* Note card (list state) — warm paper, soft shadow, generous corners. The 3px left edge carries
      the note's Reading colour (inline binding) and turns to the quiet accent signal on hover. */

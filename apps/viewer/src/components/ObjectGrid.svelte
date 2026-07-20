@@ -4,8 +4,9 @@
   // reading, strategy §27). Deliberately a PLAIN thumbnail grid, NOT the Phase-3 "overview-as-canvas"
   // invention (a zoomable canvas-of-objects) — that stays gated. Selecting a card opens its Reader.
   import { onMount } from "svelte";
-  import { type AObject, type RightsFields } from "@render/core";
+  import { metadataRows, type AObject, type RightsFields } from "@render/core";
   import Credit from "./Credit.svelte";
+  import MetadataRun from "./MetadataRun.svelte";
   import MediaThumbnail from "./MediaThumbnail.svelte";
   import { type Density, loadGridDensity, saveGridDensity, densityMetrics } from "../grid-density.js";
 
@@ -33,6 +34,11 @@
   onMount(() => { density = loadGridDensity(); });
   const metrics = $derived(densityMetrics(density));
   function setDensity(d: Density) { density = d; saveGridDensity(d); }
+
+  // EXHIBIT-level descriptive metadata (Archie-b50f) — one quiet inline run under the summary. Object
+  // metadata is deliberately NOT surfaced here: it belongs to the object you opened, and a per-card
+  // "Details" affordance would compete with the one job of this surface (choose something to read).
+  const exhibitMeta = $derived(metadataRows(rights));
 </script>
 
 <main class="overview">
@@ -41,6 +47,7 @@
     <h1>{title}</h1>
     {#if summary}<p class="summary">{summary}</p>{/if}
     <p class="credit-row"><Credit {rights} tone="canvas" /></p>
+    <MetadataRun rows={exhibitMeta} />
     {#if objects.length > 1}
       <!-- Density — a 2-step segmented toggle (Phase 4). Discrete, one-tap: an audience surface needs no
            fine control (the slider is the Studio editing surface). Persisted per-device in localStorage. -->

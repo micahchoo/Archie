@@ -306,7 +306,10 @@
   // opt-in cascade (that collapsed at publish) — so the exhibit chrome shows the exhibit's own credit and
   // the Reader shows the OBJECT's own credit, with NO display-time inheritance (no silent drift; Q2). Where
   // an object should carry its own provenance (each Voynich folio = Beinecke), that lives on the object.
-  const pick = (r: RightsFields | undefined): RightsFields => ({ ...(r?.rights ? { rights: r.rights } : {}), ...(r?.requiredStatement ? { requiredStatement: r.requiredStatement } : {}) });
+  // Descriptive metadata (Archie-b50f) rides the SAME already-resolved path as credit/license — it is
+  // a RightsFields member, so it needs no second fetch and inherits the no-display-time-cascade rule:
+  // the exhibit header shows the exhibit's own entries, the reader's Details tab the object's own.
+  const pick = (r: RightsFields | undefined): RightsFields => ({ ...(r?.rights ? { rights: r.rights } : {}), ...(r?.requiredStatement ? { requiredStatement: r.requiredStatement } : {}), ...(r?.metadata?.length ? { metadata: r.metadata } : {}) });
   const exhibitRights = $derived(pick(data ?? undefined));
   const objectRightsOf = (objectId: string): RightsFields => pick(data?.objects.find((x) => x.id === objectId));
 
