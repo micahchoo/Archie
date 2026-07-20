@@ -136,6 +136,15 @@ jobs:
       - name: Build Studio + Viewer (verification only — deploy.yml owns the real deploy build)
         run: bash scripts/build-gh-pages.sh
 
+      # Root bundle ratchet (Archie-9925): scripts/bundle-size.mjs --check against
+      # docs/bundle-size.json. Lives HERE because this is the one per-PR job where both app
+      # dists already exist (the build step above); the fast unit jobs never build, and the
+      # archie-viewer-artifact job ratchets the EMBED bundle — a separate artifact with its
+      # own baseline. Growth > max(10%, 10KB) gz over the committed baseline fails; refresh
+      # deliberately with `pnpm bundle:baseline` after `pnpm build`.
+      - name: App bundle size ratchet
+        run: pnpm bundle:check
+
   # Both gates below were written, documented (ADR-0019 + README's maintainer TIP) and then run by
   # NOTHING — no workflow referenced them until now. They are deliberately scoped to what they
   # actually prove, and neither asserts dist is rebuilt from current source: this repo's cadence is
