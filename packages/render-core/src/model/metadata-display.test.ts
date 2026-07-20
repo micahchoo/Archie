@@ -171,12 +171,23 @@ describe("metadataRows — native slots are never rows", () => {
   });
 
   it("keeps BOTH on a NEAR match — only an exact echo yields", () => {
+    // The real pair this rule was written against, kept verbatim from the Voynich seed as it shipped
+    // before the Archie-b50f review: a relabeled "Archive" holding the institution name, and a credit
+    // line that ADDS a shelfmark and a rights phrase to it. Neither string contains the other exactly,
+    // and we cannot know which is the fuller statement — so both survive, and the panel's FORM (mono
+    // tracked credit line vs. the list's key/value voice) is what keeps them legible.
+    //
+    // The seed itself no longer ships this pair (its Archive row is the Yale catalog record, clearly
+    // distinct from the credit) — the flagship sample shouldn't showcase the awkward case as its
+    // default impression. The CASE lives here instead: this test is the near-match example.
     const rows = metadataRows(
       md([{ property: "dcterms:source", label: "Archive", value: "Beinecke Rare Book & Manuscript Library, Yale University" }], {
-        requiredStatement: { label: "Attribution", value: "Beinecke Library" },
+        requiredStatement: { label: "Source", value: "Beinecke Rare Book & Manuscript Library, Yale University — MS 408 (public domain)" },
       }),
     );
     expect(rows).toHaveLength(1);
+    expect(rows[0]!.label).toBe("Archive");
+    expect(rows[0]!.values.map((v) => v.text)).toEqual(["Beinecke Rare Book & Manuscript Library, Yale University"]);
   });
 
   it("drops a value that echoes the license URI", () => {

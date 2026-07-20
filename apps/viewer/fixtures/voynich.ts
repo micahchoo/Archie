@@ -50,19 +50,29 @@ const VOYNICH_PROVENANCE =
   "Jesuit library at Villa Mondragone, Frascati, in 1912, and given to Yale in 1969.";
 
 /** The per-folio entry list. `label` is the seed's own object label ("f25v — Herbal"), which carries
- *  both the folio number (→ dcterms:identifier) and the manuscript section (→ dcterms:subject). */
+ *  both the folio number (→ dcterms:identifier) and the manuscript section (→ dcterms:subject). A
+ *  label WITHOUT the em-dash separator yields no section, and emits no subject row at all — deriving
+ *  a value from a split means handling the no-split case, and " section" is not a fact about a folio. */
 const folioMetadata = (label: string): MetadataEntry[] => {
   const [folioId = label, rest = ""] = label.split(" — ");
-  const section = rest.split(" (")[0] ?? rest;
+  const section = (rest.split(" (")[0] ?? rest).trim();
   return [
     { property: "dcterms:creator", value: "Unknown scribe" },
     { property: "dcterms:creator", value: "Unknown illustrator" }, // a REPEAT: one label, stacked values
     { property: "dcterms:date", value: "ca. 1404–1438 (vellum, radiocarbon dated, 95% confidence)" },
-    { property: "dcterms:subject", value: `${section} section` },
+    ...(section ? [{ property: "dcterms:subject", value: `${section} section` } as const] : []),
     { property: "dcterms:type", value: "Manuscript folio (vellum)" },
     { property: "dcterms:language", value: "Undeciphered script (“Voynichese”)" },
     { property: "dcterms:identifier", value: `Beinecke MS 408, ${folioId}` },
-    { property: "dcterms:source", label: "Archive", value: "Beinecke Rare Book & Manuscript Library, Yale University" }, // a RELABEL
+    // A RELABEL ("Archive" over dcterms:source). Its value is the Yale CATALOG RECORD [YALE-IIIF,
+    // 01-manuscript-foundation §Sources] — the resource the folio images are actually derived from —
+    // deliberately NOT the holding institution's name. An institution name here near-matches the
+    // requiredStatement credit line above it without exactly echoing it, so the (correct) exact-echo-only
+    // dedupe rule keeps BOTH and every folio's Details tab shows a row restating the credit in a second
+    // voice. The rule stays as it is — hiding authored data is the worse failure — but the FLAGSHIP seed
+    // shouldn't ship that awkward pair as its default impression. The near-match case is pinned in
+    // render-core's metadata-display.test.ts, where it belongs.
+    { property: "dcterms:source", label: "Archive", value: "https://collections.library.yale.edu/catalog/2002046" },
     { label: "Shelfmark", value: "MS 408" }, // a VERBATIM imported pair — no property
     { property: "dcterms:provenance", value: VOYNICH_PROVENANCE }, // LONG: clamps with a Show more
   ];
