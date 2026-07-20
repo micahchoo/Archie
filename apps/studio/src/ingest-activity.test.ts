@@ -126,6 +126,24 @@ describe("createImportRunTracker — concurrent runs share one status slot", () 
     expect(last()).toBeNull();
   });
 
+  it("an older run reporting late takes the lead back — once, without flapping", () => {
+    // The one sanctioned lead change besides end(): run A begins first but sits in a silent discovery
+    // phase (the folder flow awaits newExhibit before its first tick), so B leads briefly; A's first
+    // tick moves the lead back to A, where it stays — begin-order is fixed, so this happens at most
+    // once per late reporter. Pinned so the doc comment's "bounded exception" stays true of the code.
+    const { tracker, last } = setup();
+    const a = tracker.begin(); // older, but slow to report
+    const b = tracker.begin();
+    b.tick(s("b1.jpg", 1, 3));
+    expect(last()).toMatchObject({ name: "b1.jpg" }); // b leads while a is silent
+    a.tick(s("a1.jpg", 1, 10));
+    expect(last()).toMatchObject({ name: "a1.jpg" }); // a takes over on its first tick
+    b.tick(s("b2.jpg", 2, 3));
+    expect(last()).toMatchObject({ name: "a1.jpg" }); // and b can't take it back
+    a.end();
+    expect(last()).toMatchObject({ name: "b2.jpg", index: 2 });
+  });
+
   it("a run that never ticked (refused up front) ends without disturbing anything", () => {
     const { tracker, published, last } = setup();
     const a = tracker.begin();

@@ -90,8 +90,12 @@ export type ImportRun = {
  * in front of the publish callback — not in the flows (which now just tick their own handle) and not
  * in App (whose `setImportStatus` seam keeps its exact signature, test doubles untouched).
  *
- * Policy: the OLDEST run that has reported a status leads, and keeps leading until it ends — stable,
- * never alternates. When it ends the next-oldest reported run takes over; when all end, null.
+ * Policy: the OLDEST run that has reported a status leads — ticks never alternate between runs. The
+ * lead moves only when a run ends (the next-oldest reported run takes over; when all end, null) or —
+ * the one bounded exception — when an OLDER run reports late: a younger run may lead briefly while an
+ * older one is still in its silent discovery phase (the folder flow awaits newExhibit before its first
+ * tick), and the older run takes over on its first tick. Begin-order is fixed, so the lead can only
+ * move backward once per late reporter — never flapping.
  */
 export function createImportRunTracker(publish: (s: IngestStatus | null) => void): { begin: () => ImportRun } {
   const runs: { id: number; status: IngestStatus | null }[] = [];
