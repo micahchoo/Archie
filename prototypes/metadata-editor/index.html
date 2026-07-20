@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archie Studio — pick-from-vocab metadata editor prototype</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <span class="wordmark">Archie Studio</span>
+    <span class="topbar-note">metadata editor prototype (throwaway)</span>
+    <div class="spacer"></div>
+    <div class="proto-controls" aria-label="Prototype-only controls">
+      <span class="proto-label">level</span>
+      <div class="level-toggle" role="group" aria-label="Editing level">
+        <button class="level-btn" data-level="library" type="button">Library</button>
+        <button class="level-btn" data-level="exhibit" type="button">Exhibit</button>
+        <button class="level-btn active" data-level="object" type="button">Object</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="body">
+
+    <!-- Dim stage: just enough Studio behind the drawer for the form to read in situ. -->
+    <main class="stage" id="stage" aria-hidden="true">
+      <div class="stage-plates" id="stagePlates"></div>
+      <p class="stage-caption" id="stageCaption"></p>
+    </main>
+
+    <!-- The drawer — DetailsEditor's context: title, description, rights, then the metadata block. -->
+    <aside class="drawer" aria-label="Details editor">
+      <header class="drawer-head">
+        <span class="drawer-kicker" id="drawerKicker">Object</span>
+        <h2 class="drawer-name" id="drawerName">Folio 2r</h2>
+      </header>
+
+      <div class="drawer-body" id="drawerBody">
+
+        <label class="field" id="titleField">
+          <span class="field-head">Title</span>
+          <input id="titleInput" type="text">
+        </label>
+        <p class="field-aside" id="titleAside" hidden>The object’s label is edited inline in the rail — not here.</p>
+
+        <label class="field">
+          <span class="field-head">Description</span>
+          <textarea id="summaryInput" rows="3"></textarea>
+        </label>
+
+        <!-- Echo of RightsEditor (static — not the prototype's subject) -->
+        <label class="field">
+          <span class="field-head">Attribution / credit</span>
+          <textarea id="creditInput" rows="2"></textarea>
+        </label>
+        <label class="field">
+          <span class="field-head">License</span>
+          <select id="licenseSelect">
+            <option value="">No license chosen</option>
+            <option value="pd">Public Domain Mark</option>
+            <option value="cc0">CC0 1.0</option>
+            <option value="ccby" selected>CC BY 4.0</option>
+            <option value="ccbysa">CC BY-SA 4.0</option>
+            <option value="ccbyncnd">CC BY-NC-ND 4.0</option>
+            <option value="inc">In Copyright</option>
+          </select>
+        </label>
+        <p class="hint">Shown to anyone who views or reuses this <span class="scope-noun">object</span>.</p>
+
+        <!-- ───────── the prototype's subject: pick-from-vocab metadata ───────── -->
+        <section class="meta" aria-label="Metadata fields">
+          <div class="meta-head">
+            <span class="field-head">Metadata</span>
+            <span class="meta-count" id="metaCount"></span>
+          </div>
+
+          <div class="meta-rows" id="metaRows"></div>
+
+          <div class="meta-foot">
+            <div class="addfield-wrap">
+              <button class="addfield-btn" id="addFieldBtn" type="button" aria-haspopup="listbox" aria-expanded="false">
+                + Add a field
+              </button>
+              <div class="picker" id="picker" hidden>
+                <input class="picker-search" id="pickerSearch" type="text"
+                       placeholder="Search fields…" role="combobox" aria-expanded="true"
+                       aria-controls="pickerList" aria-autocomplete="list" autocomplete="off">
+                <ul class="picker-list" id="pickerList" role="listbox" aria-label="Dublin Core fields"></ul>
+                <button class="picker-custom" id="pickerCustom" type="button">
+                  Custom label — a field of your own, outside the vocabulary
+                </button>
+              </div>
+            </div>
+            <p class="meta-note">Empty fields aren’t saved — scaffolding to fill in or remove.</p>
+          </div>
+
+          <details class="persist" id="persistDetails">
+            <summary>What this level saves <span class="persist-count" id="persistCount"></span></summary>
+            <pre class="persist-json" id="persistJson"></pre>
+          </details>
+        </section>
+
+      </div>
+    </aside>
+
+  </div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
