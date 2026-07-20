@@ -5,7 +5,7 @@
 // App's internals so the capability seam is isolated. Browser-verified (FSA / localStorage / download).
 
 import { parseRecents, serializeRecents, ZipStreamFilesystem, type Binding, type RecentProject, type ZipFilesystem, type Filesystem } from "@render/core";
-import { isTauri, saveTauriFile } from "./tauri-fs.js";
+import { isTauri, saveTauriFile, openTauriStreamingZipSave } from "./tauri-fs.js";
 
 const RECENTS_KEY = "archie.recentProjects.v1";
 const BINDING_KEY = "archie.activeBinding.v1";
@@ -25,18 +25,24 @@ export async function pickFolder(): Promise<FileSystemDirectoryHandle | null> {
   catch { return null; /* user dismissed the picker */ }
 }
 
-/** Download zip bytes as a file — the non-Chromium "Save = download .archie.zip" (the Word-doc-2003 model). */
-export function downloadZip(bytes: Uint8Array, filename: string): void {
-  const name = filename.endsWith(".archie.zip") ? filename : `${filename}.archie.zip`;
-  const url = URL.createObjectURL(new Blob([bytes as unknown as BlobPart], { type: "application/zip" }));
+/** Hand a Blob to the browser's download pipeline (anchor click), deferring the object-URL revoke so
+ *  the download has committed first (immediate revoke cancels it in some browsers). A blob URL is a
+ *  REFERENCE — for a disk-backed File (OPFS staging) the browser streams from disk, no memory copy. */
+function triggerBlobDownload(blob: Blob, name: string, revokeAfterMs: number): void {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = name;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  // Defer revoke so the download has committed (immediate revoke cancels it in some browsers).
-  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  setTimeout(() => URL.revokeObjectURL(url), revokeAfterMs);
+}
+
+/** Download zip bytes as a file — the non-Chromium "Save = download .archie.zip" (the Word-doc-2003 model). */
+export function downloadZip(bytes: Uint8Array, filename: string): void {
+  const name = filename.endsWith(".archie.zip") ? filename : `${filename}.archie.zip`;
+  triggerBlobDownload(new Blob([bytes as unknown as BlobPart], { type: "application/zip" }), name, 60_000);
 }
 
 /** Chromium-class browsers expose `showSaveFilePicker` → a writable file STREAM. This is where the
@@ -60,13 +66,14 @@ export type ZipSaveResult =
   | { kind: "cancelled" };
 
 /**
- * EAGER save of a fully-built library zip to disk — the fallback for when write-through streaming is
- * unavailable: Tauri desktop (native Save dialog → plugin-fs) and non-Chromium browsers (anchor
- * download; the honest floor — no streaming download sink without a service worker). The Chromium
- * streaming path does NOT come here: it publishes into a `ZipStreamFilesystem` via
- * `openStreamingZipSave`, so the tree never materializes. `fs.toZip()` here builds the whole archive
- * as a 2nd full copy in memory, so callers gate it first with a size estimate (`zipSizeOk`) and the
- * tree itself carries an early-abort ceiling (`ZipFilesystem` `maxUncompressedBytes`).
+ * EAGER save of a fully-built library zip to disk — the floor for when write-through streaming is
+ * unavailable, which since the OPFS-staged and Tauri sinks landed means only a browser with neither
+ * `showSaveFilePicker` nor OPFS `createWritable` (older Safari-class). Tauri/Chromium/Firefox all
+ * stream via `openStreamingZipSave` instead, so the tree never materializes there. `fs.toZip()` here
+ * builds the whole archive as a 2nd full copy in memory, so callers gate it first with a size
+ * estimate (`zipSizeOk`) and the tree itself carries an early-abort ceiling (`ZipFilesystem`
+ * `maxUncompressedBytes`). (The isTauri branch is kept as a defensive fallback for direct callers,
+ * though the publish flow no longer routes desktop saves here.)
  */
 export async function saveZipToDisk(fs: ZipFilesystem, filename: string): Promise<ZipSaveResult> {
   const name = filename.endsWith(".archie.zip") ? filename : `${filename}.archie.zip`;
@@ -81,12 +88,28 @@ export async function saveZipToDisk(fs: ZipFilesystem, filename: string): Promis
   return { kind: "downloaded", name };
 }
 
-/** Streaming save is available where a Chromium `showSaveFilePicker` handle exists AND we're not in
- *  the Tauri webview (desktop has no picker — it saves eager via `saveTauriFile`). When true, the
- *  publish flow writes the whole tree straight to disk in bounded memory (SCALE requirement #1);
- *  when false it falls back to `saveZipToDisk` (eager, size-guarded). */
+/** Firefox/Safari-class fallback capability: no save picker, but OPFS `createWritable` exists — the
+ *  zip can be STAGED in OPFS (streamed to browser-managed disk in bounded memory), then handed to the
+ *  download pipeline as a disk-backed File. Guarded per-feature: node/older Safari fail a probe. */
+export function supportsOpfsStagedZipSave(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    typeof navigator.storage?.getDirectory === "function" &&
+    typeof FileSystemFileHandle !== "undefined" &&
+    "createWritable" in FileSystemFileHandle.prototype &&
+    typeof document !== "undefined"
+  );
+}
+
+/** Streaming save is available on ALL THREE first-class platforms now — Chromium (`showSaveFilePicker`
+ *  → write-through to the picked file), Tauri desktop (native dialog → plugin-fs handle), and
+ *  Firefox/Safari (OPFS staging → disk-backed download). When true, the publish flow writes the whole
+ *  tree in bounded memory with NO size ceiling (SCALE requirement #1); when false (a browser with
+ *  neither a picker nor OPFS `createWritable`) it falls back to `saveZipToDisk` (eager, size-guarded,
+ *  1 GiB ceiling — the honest floor). */
 export function supportsStreamingZipSave(): boolean {
-  return !isTauri() && supportsFileStreamSave();
+  if (isTauri()) return true; // desktop streams via plugin-fs (openTauriStreamingZipSave)
+  return supportsFileStreamSave() || supportsOpfsStagedZipSave();
 }
 
 /** A save picker opened as a write-through streaming zip target (see `openStreamingZipSave`). */
@@ -101,14 +124,118 @@ export interface StreamingZipTarget {
   abort(): Promise<void>;
 }
 
+// ——— OPFS staging (the Firefox/Safari streaming sink) ———————————————————————————————————————————
+
+/** OPFS staging dir for in-flight zip exports. A SIBLING of the project store dir at the OPFS root
+ *  (store.ts's "archie-demo-project") — never inside it, so store sweeps/reads can't collide. */
+const EXPORT_TMP_DIR = "archie-export-tmp";
+/** How long after the anchor click the staged file + its object URL live: long enough for the
+ *  browser to finish copying a multi-GB file into the user's download location, short enough that
+ *  the staging copy doesn't squat on quota. The sweep catches anything this timer never reached
+ *  (tab closed mid-window). */
+const STAGED_CLEANUP_MS = 5 * 60_000;
+/** Sweep staged files older than this at the next export — only ever leftovers from a crashed or
+ *  closed session (a live export's file is younger, and its own timer deletes it). */
+const STAGED_SWEEP_AGE_MS = 10 * 60_000;
+
+/** The minimal OPFS surface the staged save touches — structural slices of the real handle types, so
+ *  tests can inject an in-memory fake (the same reason ZipSink exists render-core-side). */
+export interface StagedDirLike {
+  keys(): AsyncIterableIterator<string>;
+  getFileHandle(name: string, opts?: { create?: boolean }): Promise<{
+    createWritable(): Promise<{ write(c: Uint8Array): void | Promise<void>; close(): void | Promise<void>; abort?(): void | Promise<void> }>;
+    getFile(): Promise<File>;
+  }>;
+  removeEntry(name: string): Promise<void>;
+}
+/** The staged save's environment seam (production defaults; injectable for tests). */
+export interface StagedSaveEnv {
+  /** The staging directory (production: `{OPFS root}/archie-export-tmp`). */
+  dir(): Promise<StagedDirLike>;
+  /** Hand the finished disk-backed File to the download pipeline (production: anchor click). */
+  deliver(file: File, name: string): void;
+  /** Schedule the post-download cleanup (production: setTimeout at STAGED_CLEANUP_MS). */
+  later(fn: () => void): void;
+}
+
+const realStagedEnv: StagedSaveEnv = {
+  async dir() {
+    const root = await navigator.storage.getDirectory();
+    // keys() lives in the DOM iterable lib; the structural type keeps us honest about what we touch.
+    return (await root.getDirectoryHandle(EXPORT_TMP_DIR, { create: true })) as unknown as StagedDirLike;
+  },
+  deliver: (file, name) => triggerBlobDownload(file, name, STAGED_CLEANUP_MS),
+  later: (fn) => void setTimeout(fn, STAGED_CLEANUP_MS),
+};
+
+/** Best-effort: drop staged exports a crashed/closed session left behind. Never blocks the save. */
+async function sweepStaleStaged(dir: StagedDirLike): Promise<void> {
+  try {
+    const names: string[] = [];
+    for await (const n of dir.keys()) names.push(n);
+    for (const n of names) {
+      try {
+        const f = await (await dir.getFileHandle(n)).getFile();
+        if (Date.now() - f.lastModified > STAGED_SWEEP_AGE_MS) await dir.removeEntry(n);
+      } catch { /* vanished mid-sweep / not a file — skip */ }
+    }
+  } catch { /* sweep is advisory */ }
+}
+
 /**
- * Open a `showSaveFilePicker` handle and wrap its writable stream in a `ZipStreamFilesystem`, so a
- * publish pass can write the whole tree straight to disk without ever holding the media in memory
- * (SCALE LARGE-MEDIA-MEMORY-CEILING A — the ~10 GB of masters/thumbs/tiles streams to disk and
- * releases). `null` = the user dismissed the picker. Only call when `supportsStreamingZipSave()`.
+ * The no-picker streaming save (Firefox/Safari): stream the archive into an OPFS staging file in
+ * bounded memory (media released as it goes — same ZipStreamFilesystem contract as the picker path),
+ * then hand the DISK-BACKED File to the download pipeline. `URL.createObjectURL` on that File is a
+ * reference, not a copy — the browser streams it from disk into the user's Downloads, so the archive
+ * never materializes in memory at any point. The staging copy is deleted after `STAGED_CLEANUP_MS`
+ * (and stale ones swept on the next export). Unlike the picker path there is nothing to dismiss, so
+ * this never returns null — the browser's own download UI is the user-facing surface.
+ */
+export async function openOpfsStagedZipSave(filename: string, env: StagedSaveEnv = realStagedEnv): Promise<StreamingZipTarget> {
+  const name = filename.endsWith(".archie.zip") ? filename : `${filename}.archie.zip`;
+  const dir = await env.dir();
+  await sweepStaleStaged(dir);
+  const tmpName = `${Date.now().toString(36)}-${name}`; // unique per export; sweep-aged by mtime
+  const handle = await dir.getFileHandle(tmpName, { create: true });
+  const writable = await handle.createWritable();
+  const fs = new ZipStreamFilesystem({
+    write: (chunk) => writable.write(chunk),
+    close: () => writable.close(),
+  });
+  const discard = async () => {
+    try { await dir.removeEntry(tmpName); } catch (e) { console.warn("openOpfsStagedZipSave: couldn't remove the staged export", e); }
+  };
+  return {
+    fs,
+    name,
+    finish: async () => {
+      await fs.finish(); // drains + central directory + closes the OPFS writable (commits the staged file)
+      env.deliver(await handle.getFile(), name);
+      env.later(() => void discard()); // delete the staging copy once the download has committed
+    },
+    // The primary publish failure surfaces to the caller; cleanup failing is a SEPARATE secondary
+    // failure — log rather than mask the primary (tend Issue 4 posture, matching the picker path).
+    abort: async () => {
+      try { await writable.abort?.(); } catch { /* already closed by a failed sink close — fine */ }
+      await discard();
+    },
+  };
+}
+
+/**
+ * Open a streaming `.archie.zip` save target on whatever this platform provides — the capability
+ * dance mirrors `supportsStreamingZipSave` and stays invisible to the user (CONTEXT principle #5):
+ *  - Tauri desktop → native Save dialog + plugin-fs handle (tauri-fs.ts);
+ *  - Chromium → `showSaveFilePicker` → write-through to the picked file;
+ *  - Firefox/Safari → OPFS staging → disk-backed download (`openOpfsStagedZipSave`).
+ * Every branch publishes into a `ZipStreamFilesystem`, so the whole tree streams in bounded memory
+ * (SCALE LARGE-MEDIA-MEMORY-CEILING A — the ~10 GB of masters/thumbs/tiles never accumulates).
+ * `null` = the user dismissed the dialog (picker/Tauri only). Only call when `supportsStreamingZipSave()`.
  */
 export async function openStreamingZipSave(filename: string): Promise<StreamingZipTarget | null> {
   const name = filename.endsWith(".archie.zip") ? filename : `${filename}.archie.zip`;
+  if (isTauri()) return openTauriStreamingZipSave(name);
+  if (!supportsFileStreamSave()) return openOpfsStagedZipSave(name);
   let handle: FileSystemFileHandle;
   try {
     handle = await (window as unknown as SavePicker).showSaveFilePicker({

@@ -156,4 +156,35 @@ describe("ZipStreamFilesystem — write-through streaming zip sink", () => {
     expect(events[events.length - 1]).toBe("close"); // close is last
     expect(events.filter((e) => e === "close")).toHaveLength(1); // exactly once
   });
+
+  // Format guard (ZIP_FORMAT_LIMITS): fflate's writer silently wraps a >65 535 entry count and
+  // truncates >4 GiB offsets (wzf writes them unchecked), so the stream must REFUSE with the
+  // actionable steer instead of emitting a corrupt archive. Limits are injected tiny — the guard
+  // logic is identical at the production ceilings.
+  it("format guard: refuses the entry that would overflow the 2-byte entry count", async () => {
+    const c = collector();
+    const fs = new ZipStreamFilesystem(c.sink, { maxEntries: 2, maxBytes: 0xffff_ffff });
+    await writeText(fs, "a.json", "{}");
+    await writeText(fs, "b.json", "{}");
+    await expect(writeText(fs, "c.json", "{}")).rejects.toThrow(/publish to a folder/i);
+    // The refusal names the limit, not a generic failure.
+    await expect(writeText(fs, "d.json", "{}")).rejects.toThrow(/files/i);
+  });
+
+  it("format guard: refuses once emitted bytes overflow a 4-byte offset", async () => {
+    const c = collector();
+    const fs = new ZipStreamFilesystem(c.sink, { maxEntries: 65_535, maxBytes: 1500 });
+    await writeBin(fs, "ex/assets/m0.bin", new Uint8Array(1000)); // under the ceiling — fine
+    // This entry's emission pushes `written` past maxBytes → its commit rejects (post-drain check).
+    await expect(writeBin(fs, "ex/assets/m1.bin", new Uint8Array(1000))).rejects.toThrow(/publish to a folder/i);
+  });
+
+  it("format guard: a full stream at the production limits is untouched (round-trips)", async () => {
+    const c = collector();
+    const fs = new ZipStreamFilesystem(c.sink); // default ZIP_FORMAT_LIMITS
+    await writeText(fs, "ex/manifest.json", '{"ok":true}');
+    await writeBin(fs, "ex/assets/m.bin", new Uint8Array(10_000));
+    await fs.finish();
+    expect(Object.keys(unzipSync(c.bytes()))).toHaveLength(2);
+  });
 });

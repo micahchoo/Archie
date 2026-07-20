@@ -23,7 +23,7 @@
 
 import { Zip, ZipPassThrough, strToU8 } from "fflate";
 import type { Filesystem, FsDirectory, FsFile, FsWritable } from "./seam.js";
-import type { ZipSink } from "./zip.js";
+import { ZIP_FORMAT_LIMITS, zipFormatError, type ZipFormatLimits, type ZipSink } from "./zip.js";
 
 function join(prefix: string, name: string): string {
   return prefix === "" ? name : `${prefix}/${name}`;
@@ -50,11 +50,20 @@ class StreamState {
   private streamErr: Error | undefined;
   /** Serializes concurrent commits: each awaits the previous, so entries never interleave. */
   private tail: Promise<void> = Promise.resolve();
+  /** Format-guard counters (`ZIP_FORMAT_LIMITS`): entries committed, bytes emitted into the archive. */
+  private entries = 0;
+  private written = 0;
 
-  constructor(private readonly sink: ZipSink) {
+  constructor(
+    private readonly sink: ZipSink,
+    private readonly limits: ZipFormatLimits = ZIP_FORMAT_LIMITS,
+  ) {
     this.zip = new Zip((err, chunk) => {
       if (err) this.streamErr = err;
-      else if (chunk && chunk.length) this.outbox.push(chunk);
+      else if (chunk && chunk.length) {
+        this.written += chunk.length;
+        this.outbox.push(chunk);
+      }
     });
   }
 
@@ -63,15 +72,23 @@ class StreamState {
    * — exactly one file is added→pushed→drained at a time: `ZipPassThrough` emits its whole entry
    * synchronously during `push(final)` (so no other entry can be mid-emission), and the drain awaits
    * the sink before the next commit runs. Resolves once this entry has been written to the sink.
+   *
+   * Format guard: fflate's writer has NO overflow checks (see `ZIP_FORMAT_LIMITS`), so refuse — with
+   * the actionable steer — the entry that would breach the 2-byte entry count, and the archive whose
+   * emitted bytes have overflowed a 4-byte offset (checked AFTER emission: once `written` exceeds the
+   * ceiling, this and every later entry's central-directory offset is already unrepresentable).
    */
   commit(path: string, bytes: Uint8Array): Promise<void> {
     const run = this.tail.then(async () => {
       if (this.streamErr) throw this.streamErr;
+      if (this.entries >= this.limits.maxEntries) throw zipFormatError("entries", this.limits);
+      this.entries++;
       const entry = new ZipPassThrough(path);
       this.zip.add(entry);
       entry.push(bytes, true); // synchronous for ZipPassThrough → this entry's chunks are now in outbox
       await this.drain();
       if (this.streamErr) throw this.streamErr;
+      if (this.written > this.limits.maxBytes) throw zipFormatError("bytes", this.limits);
     });
     // Keep the chain alive even if this link rejects (a later commit must not inherit the rejection),
     // but still surface the failure to THIS caller.
@@ -192,8 +209,10 @@ class StreamDir implements FsDirectory {
  */
 export class ZipStreamFilesystem implements Filesystem {
   private readonly state: StreamState;
-  constructor(sink: ZipSink) {
-    this.state = new StreamState(sink);
+  /** `limits` is injectable ONLY so tests can trip the format guard cheaply — production always
+   *  streams under the canonical `ZIP_FORMAT_LIMITS`. */
+  constructor(sink: ZipSink, limits?: ZipFormatLimits) {
+    this.state = new StreamState(sink, limits);
   }
   async root(): Promise<FsDirectory> {
     return new StreamDir(this.state, "");

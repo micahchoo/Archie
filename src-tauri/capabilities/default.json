@@ -17,6 +17,8 @@
     "fs:allow-read-dir",
     "fs:allow-remove",
     "fs:allow-exists",
+    "fs:allow-open",
+    "fs:allow-write",
     {
       "identifier": "fs:scope",
       "allow": [{ "path": "$APPDATA/**" }, { "path": "$HOME/**" }]

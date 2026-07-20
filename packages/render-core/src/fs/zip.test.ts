@@ -178,3 +178,24 @@ describe("ZipFilesystem — eager-assembly memory ceiling (maxUncompressedBytes)
     await expect(write(fs, "b.bin", 800)).resolves.toBeUndefined(); // fits again
   });
 });
+
+// Format guard (ZIP_FORMAT_LIMITS): fflate's zipSync writes the EOCD entry count into a 2-byte field
+// with no overflow check, so a >65 535-file tree would serialize to a silently corrupt archive (its
+// own reader would reopen count-mod-65536 files). toZip must refuse instead. Limits injected tiny —
+// same guard at the production ceiling.
+describe("ZipFilesystem — toZip entry-count format guard", () => {
+  const write = async (fs: ZipFilesystem, name: string): Promise<void> => {
+    const w = await (await (await fs.root()).getFile(name, { create: true })).writable();
+    await w.write("{}");
+    await w.close();
+  };
+
+  it("refuses a tree past the entry ceiling with the actionable steer", async () => {
+    const fs = new ZipFilesystem();
+    await write(fs, "a.json");
+    await write(fs, "b.json");
+    await write(fs, "c.json");
+    expect(() => fs.toZip({ maxEntries: 2, maxBytes: 0xffff_ffff })).toThrow(/publish to a folder/i);
+    expect(() => fs.toZip({ maxEntries: 3, maxBytes: 0xffff_ffff })).not.toThrow(); // at the limit — fine
+  });
+});

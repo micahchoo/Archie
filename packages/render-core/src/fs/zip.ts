@@ -56,6 +56,41 @@ export interface ZipSink {
 }
 
 /**
+ * Classic (non-Zip64) .zip WRITER ceilings — what fflate 0.8.3 can emit CORRECTLY. Its end-of-central-
+ * directory writer (`wzf`) stores the entry count in a 2-byte field and every offset in a 4-byte field
+ * with NO overflow check, so an archive with more than 65 535 entries or data past 4 GiB isn't refused
+ * — it's emitted with silently wrapped/truncated headers that readers then mis-parse (fflate's own
+ * `unzipSync` reads the 2-byte count back, so a 70k-entry export would reopen as ~4.5k files: silent
+ * data loss). Both zip serializers (`ZipFilesystem.toZip`, `ZipStreamFilesystem`) enforce these and
+ * throw an ACTIONABLE error instead. Injectable only so tests can trip the guard cheaply (a tiny
+ * ceiling) — production always uses this default. NOTE: distinct from `ZIP_LIMITS`, the READ-side
+ * zip-bomb caps.
+ */
+export interface ZipFormatLimits {
+  /** Max central-directory entries a 2-byte EOCD count can index. */
+  readonly maxEntries: number;
+  /** Max archive bytes before a 4-byte local-header/central-directory offset overflows. */
+  readonly maxBytes: number;
+}
+export const ZIP_FORMAT_LIMITS: ZipFormatLimits = {
+  maxEntries: 65_535,
+  maxBytes: 0xffff_ffff,
+};
+
+/** The actionable refusal both zip serializers throw at a `ZIP_FORMAT_LIMITS` breach. */
+export function zipFormatError(kind: "entries" | "bytes", limits: ZipFormatLimits): Error {
+  const what =
+    kind === "entries"
+      ? `more than ${limits.maxEntries.toLocaleString()} files`
+      : `more than ${(limits.maxBytes / (1024 * 1024 * 1024)).toFixed(0)} GB of data`;
+  return new Error(
+    `This library doesn't fit in a .archie.zip: it has ${what}, which is past what the classic ` +
+      `.zip format can index — the archive would be silently corrupt. Publish to a folder instead ` +
+      `(it has no such limit), or export a subset of exhibits.`,
+  );
+}
+
+/**
  * The eager in-memory tree behind a `ZipFilesystem`. Optionally bounded by `maxBytes`: the eager
  * publish/assembly path (`toZip()` builds a 2nd full copy, so peak ≈ 2× the tree) holds the WHOLE
  * published tree — media included — in this Map, which OOMs a webview at scale. When a ceiling is
@@ -185,8 +220,14 @@ export class ZipFilesystem implements Filesystem {
   async root(): Promise<FsDirectory> {
     return new ZipDir(this.store, "");
   }
-  /** Serialize the whole tree to a zip (the canonical `.archie.zip` to download on Save). */
-  toZip(): Uint8Array {
+  /** Serialize the whole tree to a zip (the canonical `.archie.zip` to download on Save). Refuses a
+   *  tree past `ZIP_FORMAT_LIMITS.maxEntries` — many small files (DZI tiles) can breach the 2-byte
+   *  entry count well under the byte ceilings, and fflate would emit a silently corrupt archive.
+   *  (The byte side needs no check here: the eager path is ceilinged at 1 GiB by its store, far
+   *  below the 4 GiB offset overflow.) `limits` is injectable ONLY for tests (fromZip's pattern);
+   *  production always serializes under the canonical default. */
+  toZip(limits: ZipFormatLimits = ZIP_FORMAT_LIMITS): Uint8Array {
+    if (this.store.files.size > limits.maxEntries) throw zipFormatError("entries", limits);
     const data: Record<string, Uint8Array> = {};
     for (const [k, v] of this.store.files) data[k] = v;
     return zipSync(data);

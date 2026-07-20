@@ -65,12 +65,13 @@ export interface PublishDeps {
 
 // The .archie.zip / GH upload guard threshold (LARGE-MEDIA-MEMORY-CEILING #1).
 const ZIP_WARN_BYTES = 250 * 1024 * 1024; // ~250 MB
-// Hard early-abort ceiling for the EAGER in-memory assembly (Tauri desktop / non-Chromium). That path
-// holds the whole tree in a Map AND toZip() builds a 2nd full copy → peak ≈2×; a browser tab OOMs on
-// ArrayBuffer allocation around a couple GB. 1 GiB uncompressed (≈2 GiB peak) is the backstop — past
-// it ZipFilesystem throws an actionable "publish to a folder / link by URL" error instead of OOMing
-// (SCALE requirement #2). It catches media the pre-assembly asset-size estimate can't see (generated
-// DZI tiles, remote bakes). The Chromium STREAMING path needs no ceiling — it never accumulates the tree.
+// Hard early-abort ceiling for the EAGER in-memory assembly — now only the floor for a browser with
+// neither `showSaveFilePicker` nor OPFS `createWritable` (Chromium, Firefox/Safari, and Tauri all
+// STREAM via openStreamingZipSave, which needs no ceiling — the tree never accumulates; its only
+// bound is the .zip format itself, ZIP_FORMAT_LIMITS). The eager path holds the whole tree in a Map
+// AND toZip() builds a 2nd full copy → peak ≈2×; a browser tab OOMs on ArrayBuffer allocation around
+// a couple GB. 1 GiB uncompressed (≈2 GiB peak) is the backstop — past it ZipFilesystem throws an
+// actionable "publish to a folder / link by URL" error instead of OOMing (SCALE requirement #2).
 const EAGER_ZIP_CEILING_BYTES = 1024 * 1024 * 1024; // 1 GiB
 
 export function createPublishFlows(deps: PublishDeps) {
@@ -259,9 +260,11 @@ export function createPublishFlows(deps: PublishDeps) {
     const result = await publishInto(fs, slugs);
     return { fs, ...result };
   }
-  // Save the library as a .archie.zip. Chromium streams the whole tree straight to disk in bounded
-  // memory (SCALE #1 — media never accumulates); elsewhere (Tauri / non-Chromium) fall back to the
-  // size-guarded eager build. Returns whether a save happened + the publish advisories.
+  // Save the library as a .archie.zip. All first-class platforms stream the whole tree in bounded
+  // memory (SCALE #1 — media never accumulates): Chromium via the save picker, Tauri via the native
+  // dialog + plugin-fs, Firefox/Safari via OPFS staging + disk-backed download. Only a browser with
+  // none of those falls back to the size-guarded eager build. Returns whether a save happened + the
+  // publish advisories.
   // `opts` comes from the dialog's working-copy chooser: a custom file name (the OS dialog remains the
   // final arbiter) and/or a subset of exhibits; absent = the current name, the whole library.
   async function saveProjectZip(opts: ZipExportOpts = {}): Promise<{ saved: boolean; name?: string } & Partial<PublishResult>> {

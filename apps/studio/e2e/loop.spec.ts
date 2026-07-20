@@ -104,8 +104,10 @@ async function bootClean(page: Page) {
 // Every navigation: identity pre-seeded (skip the first-publish identity prompt), and the File System
 // Access pickers removed so the app takes its deterministic, Playwright-capturable fallbacks —
 // canFolder=false (binding-store.svelte.ts, folder-backend.ts) routes "Locally" to the zip DOWNLOAD,
-// and supportsFileStreamSave()=false (binding.ts) makes saveZipToDisk emit an <a download> anchor
-// (the only sink Playwright's download API can intercept).
+// and supportsFileStreamSave()=false (binding.ts) routes the zip save to the OPFS-STAGED streaming
+// sink (openOpfsStagedZipSave — headless Chromium has OPFS createWritable), which still ends in an
+// <a download> anchor click (the only sink Playwright's download API can intercept). So the captured
+// + unzipped archive below is a REAL end-to-end check of the staged streaming path.
 async function installInit(page: Page) {
   await page.addInitScript((key) => {
     try { localStorage.setItem(key, "E2E Tester"); } catch { /* private mode */ }

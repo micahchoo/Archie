@@ -8,7 +8,8 @@
 // is false there, so the import() never runs). That keeps the desktop deps off the browser's hot
 // path while still letting the packaged app load them from the bundle.
 
-import { TauriFilesystem, type TauriFsBridge, type TauriDirEntry } from "@render/core";
+import { TauriFilesystem, ZipStreamFilesystem, type TauriFsBridge, type TauriDirEntry } from "@render/core";
+import type { StreamingZipTarget } from "./binding.js"; // type-only — erased, no runtime cycle
 
 /** True when running inside the Tauri webview. v2 always injects __TAURI_INTERNALS__. */
 export function isTauri(): boolean {
@@ -83,4 +84,62 @@ export async function saveTauriFile(suggestedName: string, bytes: Uint8Array): P
   const { writeFile } = await import("@tauri-apps/plugin-fs");
   await writeFile(path, bytes);
   return path;
+}
+
+/** The slice of a plugin-fs `FileHandle` the streaming zip sink needs (injectable for tests —
+ *  the real handle comes from `fs.open`, which vitest can't reach). */
+export interface TauriFileHandleLike {
+  write(data: Uint8Array): Promise<number>;
+  close(): Promise<void>;
+}
+
+/** Drain ONE chunk fully into a plugin-fs handle. `FileHandle.write` follows the POSIX contract —
+ *  it may commit FEWER bytes than given and returns how many — so a single bare call can silently
+ *  truncate the archive; loop until the chunk is fully committed. */
+export async function writeAllToTauriHandle(fh: TauriFileHandleLike, chunk: Uint8Array): Promise<void> {
+  let off = 0;
+  while (off < chunk.byteLength) {
+    const n = await fh.write(off === 0 ? chunk : chunk.subarray(off));
+    if (n <= 0) throw new Error(`plugin-fs write made no progress at byte ${off}/${chunk.byteLength}`);
+    off += n;
+  }
+}
+
+/**
+ * Desktop streaming `.archie.zip` save — the Tauri analogue of the browser `openStreamingZipSave`
+ * (SCALE #1): native Save dialog → plugin-fs `open()` → each published file streams through the
+ * fflate zip into the handle and is released, so a full-media export runs in bounded memory instead
+ * of tripping the eager path's 1 GiB assembly ceiling. `null` = the user cancelled the dialog.
+ *
+ * Deliberately streams STRAIGHT to the picked path (no temp-then-rename, unlike TauriFilesystem's
+ * durable-state writes — see .claude/rules/tauri-fs-seam.md): the dialog's runtime scope grant
+ * covers exactly the picked path, so a sibling `.tmp` may be OUTSIDE the static fs scope
+ * (`$HOME/**`/`$APPDATA/**`) when the user saves elsewhere, and the export artifact is not app
+ * state — on failure `abort()` removes the partial file and the error surfaces, same posture as
+ * the eager `saveTauriFile` (truncate-then-write) this replaces on the streaming path.
+ */
+export async function openTauriStreamingZipSave(suggestedName: string): Promise<StreamingZipTarget | null> {
+  const { save } = await import("@tauri-apps/plugin-dialog");
+  const path = await save({
+    defaultPath: suggestedName,
+    filters: [{ name: "Archie library", extensions: ["zip"] }],
+  });
+  if (!path) return null;
+  const fsp = await import("@tauri-apps/plugin-fs");
+  const fh = await fsp.open(path, { write: true, create: true, truncate: true });
+  const fs = new ZipStreamFilesystem({
+    write: (chunk) => writeAllToTauriHandle(fh, chunk),
+    close: () => fh.close(),
+  });
+  return {
+    fs,
+    name: path.split("/").pop() || suggestedName,
+    finish: () => fs.finish(), // drains queued entries + central directory, then closes the handle
+    // The primary publish failure surfaces to the caller; cleanup failing is a SEPARATE secondary
+    // failure (a stuck partial file) — log rather than mask the primary (tend Issue 4 posture).
+    abort: async () => {
+      try { await fh.close(); } catch { /* already closed by a failed sink close — fine */ }
+      try { await fsp.remove(path); } catch (e) { console.warn("openTauriStreamingZipSave: couldn't remove the partial export", e); }
+    },
+  };
 }
