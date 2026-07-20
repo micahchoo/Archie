@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Archie Studio default capability — native filesystem (the TauriFsBridge surface) + folder dialog, scoped to the app-data dir and the user's home. Opener is scoped to exactly the URLs the app opens (Archie-2139): github.com (device login, commit, settings/pages), *.github.io (the published site), docs.github.com (the custom-domain guide) — never https://**.",
+  "description": "Archie Studio default capability — native filesystem (the TauriFsBridge surface) + folder dialog, scoped to the app-data dir and the user's home. Opener globs (Archie-2139) cover github.com (device login, commit, settings/pages), *.github.io (the published site), docs.github.com (the custom-domain guide) — never https://**. DEFENSE-IN-DEPTH ONLY: the opener plugin matches with glob's default options, where * crosses /, so the *.github.io entry cannot pin the hostname; the load-bearing check is the hostname allowlist in publish-machine's openExternal (isAllowedExternalUrl).",
   "windows": ["main"],
   "permissions": [
     "core:default",

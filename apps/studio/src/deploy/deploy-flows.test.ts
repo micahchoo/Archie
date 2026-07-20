@@ -245,6 +245,18 @@ describe("signInWithGitHub — device flow → session", () => {
     expect(pollArgs).toEqual({ clientId: "Iv1.testclientid", deviceCode: "dc-1", interval: 5, expiresIn: 900 });
   });
 
+  it("refuses a login that isn't a plain GitHub handle — no separator smuggling into constructed URLs", async () => {
+    // `login` seeds `owner` in every github.com / *.github.io URL the app builds and opens; a response
+    // carrying separators (evil.com/x → https://evil.com/x.github.io/…) must die here at the source.
+    routeInvoke({
+      gh_device_start: () => ({ userCode: "X", verificationUri: "u", deviceCode: "dc", interval: 5, expiresIn: 900 }),
+      gh_device_poll: () => ({ token: "gho_t" }),
+    });
+    stubFetch([userOk("evil.com/x")]);
+    const { signInWithGitHub } = await import("./deploy-flows.svelte.js");
+    await expect(signInWithGitHub(() => {})).rejects.toMatchObject({ kind: "gh" });
+  });
+
   it("surfaces a poll rejection as-is (typed DeployError from Rust)", async () => {
     routeInvoke({
       gh_device_start: () => ({ userCode: "X", verificationUri: "u", deviceCode: "dc", interval: 5, expiresIn: 900 }),

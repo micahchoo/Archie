@@ -702,6 +702,35 @@ describe("publish machine — external opens fail visibly, never silently (Archi
     refuse = false;
     await m.openExternal("https://github.com/micah/voynich-folios/commit/abc123");
     expect(m.openUrlFailed).toBe(false); // each attempt re-arms — a stale note never outlives a working open
+    expect(opened.join()).not.toContain("gho_secret"); // Q-12 holds across the anchor seam too
+  });
+
+  it("the hostname allowlist refuses what the capability glob cannot — lookalike hosts never reach the opener", async () => {
+    const opened: string[] = [];
+    const m = createPublishMachine(makeDeps({ openUrl: async (u) => { opened.push(u); } }));
+    m.open();
+    // glob's `*` crosses `/` under the opener plugin's default match options, so the capability's
+    // https://*.github.io/** entry MATCHES this evil.com URL — the machine's allowlist is the wall
+    // that actually pins the hostname (a remote response like commit html_url or the device-flow
+    // verificationUri reaches openExternal verbatim, so it cannot be trusted by construction).
+    await m.openExternal("https://evil.com/x.github.io/y");
+    expect(opened).toEqual([]); // refused BEFORE the opener — deps.openUrl never invoked
+    expect(m.openUrlFailed).toBe(true); // and refused honestly, with the same visible note
+    await m.openExternal("http://github.com/login/device"); // https only
+    await m.openExternal("https://evil.github.io.evil.com/"); // suffix lookalike host
+    await m.openExternal("https://sub.domain.github.io/x/"); // Pages hosts are exactly ONE label
+    await m.openExternal("not a url at all");
+    expect(opened).toEqual([]);
+    // ...while every host the app legitimately opens still goes through:
+    await m.openExternal("https://micah.github.io/voynich-folios/");
+    expect(m.openUrlFailed).toBe(false);
+    await m.openExternal("https://github.com/login/device");
+    await m.openExternal("https://docs.github.com/en/pages");
+    expect(opened).toEqual([
+      "https://micah.github.io/voynich-folios/",
+      "https://github.com/login/device",
+      "https://docs.github.com/en/pages",
+    ]);
   });
 
   it("openDevicePage failure surfaces too (was a silent .catch), and a reopen clears the stale note", async () => {

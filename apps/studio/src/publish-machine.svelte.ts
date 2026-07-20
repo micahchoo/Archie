@@ -156,6 +156,27 @@ export function errorCopyFor(err: DeployError): { message: string; offerSignInAg
   }
 }
 
+/** The LOAD-BEARING wall for what openExternal may hand the system browser (Archie-2139 review).
+ *  The desktop opener capability's glob scope cannot pin a wildcard hostname: the plugin matches with
+ *  glob's default options, where `*` crosses `/` (measured on glob 0.3.3, the pinned matcher:
+ *  `https://*.github.io/**` matches `https://evil.com/x.github.io/y`). And several URLs reach the seam
+ *  verbatim from REMOTE responses — the commit `html_url` from GitHub's REST API, the device-flow
+ *  `verificationUri`, the login-derived Pages URL — so "our URLs are safe by construction" does not
+ *  hold. The check that actually pins hosts is this one: https only, hostname exactly `github.com` /
+ *  `docs.github.com`, or a single-label `*.github.io` (Pages hosts are exactly one label). The
+ *  capability scope stays as defense-in-depth behind it. */
+function isAllowedExternalUrl(url: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return false; // unparseable → refuse
+  }
+  if (u.protocol !== "https:") return false;
+  const host = u.hostname.toLowerCase();
+  return host === "github.com" || host === "docs.github.com" || /^[a-z0-9-]+\.github\.io$/.test(host);
+}
+
 /** Normalize any thrown value to a typed DeployError (deploy-flows already rejects typed; this guards
  *  the fake/unknown case in tests and defensive paths). */
 function asDeployError(e: unknown): DeployError {
@@ -311,6 +332,10 @@ export function createPublishMachine(deps: PublishMachineDeps) {
    *  settings URLs from owner+repo, GitHub's own doc/login pages). */
   async function openExternal(url: string): Promise<void> {
     s.openUrlFailed = false;
+    if (!isAllowedExternalUrl(url)) {
+      s.openUrlFailed = true; // refused, honestly — same non-fatal note as an opener rejection
+      return;
+    }
     try {
       await deps.openUrl(url);
     } catch {

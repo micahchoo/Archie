@@ -259,14 +259,18 @@ const GITHUB_CLIENT_ID = ((archieConfig as { githubOAuthClientId?: string }).git
 export const deviceFlowAvailable: boolean = GITHUB_CLIENT_ID !== "";
 
 /** GitHub's login lookup — the one REST call the token identity needs after auth. 401 ⇒ the token is bad
- *  (used by restoreSession to distinguish a revoked token from a transient failure). */
+ *  (used by restoreSession to distinguish a revoked token from a transient failure). The login is
+ *  allowlist-checked (letters/digits/dash, plus underscore for Enterprise managed users) before it
+ *  becomes `session.login` — it seeds `owner` in every constructed github.com / *.github.io URL, so a
+ *  response smuggling separators (`evil.com/x`) is refused here, at the source (Archie-2139 review). */
 async function fetchLogin(token: string): Promise<string> {
   const res = await fetch("https://api.github.com/user", {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github+json" },
   });
   if (!res.ok) throw deployError("gh", "GitHub sign-in couldn't verify your account. Try signing in again.", res.status);
   const body = (await res.json().catch(() => null)) as { login?: string } | null;
-  if (!body?.login) throw deployError("gh", "GitHub sign-in couldn't verify your account. Try signing in again.");
+  if (!body?.login || !/^[A-Za-z0-9_-]+$/.test(body.login))
+    throw deployError("gh", "GitHub sign-in couldn't verify your account. Try signing in again.");
   return body.login;
 }
 
