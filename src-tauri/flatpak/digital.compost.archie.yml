@@ -22,6 +22,16 @@ finish-args:
   - --share=ipc # required with X11
   - --share=network # remote-hosted templates (e.g. Bidar) + future sharing; local-first otherwise
   - --filesystem=home # user-picked Project folders + "Save .archie.zip" land in the real home dir
+  # "Stay signed in" (github.rs Q-12): keyring's sync-secret-service feature talks to the host
+  # keyring daemon at org.freedesktop.secrets on the session bus. Without this talk-name the
+  # sandbox silently gets NO_REPLY/access-denied, save_token() returns false, and the session
+  # token is dropped on every relaunch.
+  - --talk-name=org.freedesktop.secrets
+  # NOT needed: a talk-name for tauri-plugin-opener. Archie grants only opener:allow-open-url
+  # (capabilities/default.json) and openUrl() runs the `open` crate → xdg-open, which in the
+  # GNOME runtime is the flatpak-xdg-utils shim calling the OpenURI portal on
+  # org.freedesktop.portal.Desktop — a bus name Flatpak permits by default. (revealItemInDir
+  # would need --talk-name=org.freedesktop.FileManager1, but it is neither permitted nor called.)
   # - --env=WEBKIT_DISABLE_COMPOSITING_MODE=1 # uncomment if the webview renders black on Wayland
 
 modules:
