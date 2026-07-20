@@ -108,13 +108,13 @@
 >
   {#if wholeItems.length > 0}
     <div class="whole-slot" role="list" aria-label="Whole-image notes">
-      {#each wholeItems as it (it.id)}
+      {#each wholeItems as it, wi (it.id)}
         <button
           type="button"
           class="whole-tick"
           class:sel={selected === it.id}
           style={`background:${colourOf[it.id]}`}
-          aria-label={wholeItems.length > 1 ? `Whole-image note (${wholeItems.indexOf(it) + 1} of ${wholeItems.length})` : "Whole-image note"}
+          aria-label={wholeItems.length > 1 ? `Whole-image note (${wi + 1} of ${wholeItems.length})` : "Whole-image note"}
           onclick={() => onselect?.(it.id)}
           onpointerenter={() => onhover?.(it.id)}
         ></button>
