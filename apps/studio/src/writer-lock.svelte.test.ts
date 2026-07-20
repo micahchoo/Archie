@@ -3,6 +3,7 @@
 // contend exactly like two tabs). The BroadcastChannel fallback is exercised with an in-memory bus.
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { createWriterLock } from "./writer-lock.svelte.js";
+import { enqueueSave, saveStatus, setWriterGate, resetSaveQueueForTests } from "./save-queue.svelte.js";
 
 const settle = (ms = 30) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -62,6 +63,25 @@ describe("writer-lock — Web Locks path (real navigator.locks)", () => {
       expect(b.canWrite).toBe(true); // the taker now writes
       expect(a.canWrite).toBe(false); // the former writer lost the lock (stolen)
     } finally { a.release(); b.release(); await settle(); }
+  });
+
+  it("becoming the writer clears a recorded read-only refusal at once — no stale Retry save (UX-CRITIQUE O2)", async () => {
+    const id = `lib-${Math.random()}`;
+    const a = createWriterLock(id);
+    const b = createWriterLock(id);
+    try {
+      a.claim(); await settle();
+      b.claim(); await settle();
+      // Tab b is read-only; a persist routed through the queue is refused and records the refusal.
+      setWriterGate(() => b.canWrite);
+      expect(await enqueueSave("k", "K", async () => {})).toBe(false);
+      expect(saveStatus.health).toBe("error");
+      // Take over: becomeWriter must clear the refusal IMMEDIATELY, before any next write happens by.
+      b.takeOver(); await settle();
+      expect(b.canWrite).toBe(true);
+      expect(saveStatus.health).not.toBe("error");
+      expect(saveStatus.error).toBeNull();
+    } finally { a.release(); b.release(); resetSaveQueueForTests(); await settle(); }
   });
 
   it("a reader auto-promotes to writer when the writer releases (tab close)", async () => {

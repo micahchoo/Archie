@@ -54,6 +54,12 @@ let writerOtherName: (() => string | null) | null = null;
 /** Install (or clear, with null) the "who holds the writer role" getter for the read-only message. */
 export function setWriterOtherName(getter: (() => string | null) | null): void { writerOtherName = getter; }
 
+/** Drop a recorded read-only refusal the moment this tab BECOMES the writer (UX-CRITIQUE O2 follow-up:
+ *  writer-lock.svelte.ts calls this from becomeWriter — take-over AND auto-promotion). Without it the
+ *  refusal key lingers until the NEXT gate-passing persist, so the header shows a stale "⚠ Retry save"
+ *  in a tab that can now write. Only the read-only key is cleared — real write failures keep theirs. */
+export function clearReadOnlyRefusal(): void { delete s.errors[READ_ONLY_KEY]; }
+
 /**
  * Serialize `job` after all prior jobs for `key`, recording health. `label` is the human name used
  * in the error surface ("Notes", "Library details"). Resolves `true` on success, `false` on failure.

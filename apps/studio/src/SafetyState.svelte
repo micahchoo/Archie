@@ -83,8 +83,9 @@
 
 {#if safety === "read-only"}
   <!-- The writer lock lives elsewhere (UX-CRITIQUE O2): calm, inert — never a retry CTA, never Saved/Saving
-       churn. The take-over control stays with the read-only banner; this only tells the truth about saving. -->
-  <span class="safety-state read-only" role="status" title="This tab doesn't save — take over editing to make changes.">Read-only</span>
+       churn. The take-over control AND the explanation stay with the read-only banner; this only tells the
+       truth about saving (no hover-only tooltip — no sibling state uses one, and it has no keyboard/SR path). -->
+  <span class="safety-state read-only" role="status">Read-only</span>
 {:else if safety === "saved"}
   <span class="safety-state saved" class:affirm role="status">Saved</span>
 {:else if safety === "saving"}

@@ -540,10 +540,12 @@
           </button>
         {/if}
       </p>
-      {#if saveStatus.health === "error"}
+      {#if saveStatus.health === "error" && !readOnly}
         <!-- Worklist 0.1 (loud saves): a failed write is never silent — the queue's last error, verbatim.
              SafetyState (header) already flips to "Failed"/"⚠ Retry save"; this is the one place the
-             actual message text still surfaces. -->
+             actual message text still surfaces. Suppressed while read-only (UX-CRITIQUE O2): the refusal
+             is by design and the banner already explains it; error keys survive and resurface after
+             take-over. -->
         <p class="save-error" role="alert"><span aria-hidden="true">⚠</span> {saveStatus.error}</p>
       {/if}
     </section>
