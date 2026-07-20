@@ -35,7 +35,7 @@
     </header>
     <form onsubmit={(e) => { e.preventDefault(); save(); }}>
       <!-- svelte-ignore a11y_autofocus -->
-      <input bind:value={name} placeholder="e.g. Micah Alex" autocomplete="off" autofocus />
+      <input bind:value={name} placeholder="e.g. Ada Lovelace" autocomplete="off" autofocus />
       <div class="actions">
         <button type="button" class="ghost" onclick={onskip}>Skip for now</button>
         <button type="submit" class="primary" disabled={name.trim() === ""}>Use this name</button>

@@ -480,7 +480,7 @@
            semantics as skipping the lazy prompt, but an explicit choice here rather than a re-promptable gap). -->
       <div class="identity-field">
         <span class="field-head">Your name</span>
-        <input value={identity} placeholder="e.g. Micah Alex" autocomplete="off"
+        <input value={identity} placeholder="e.g. Ada Lovelace" autocomplete="off"
           oninput={(e) => onidentity((e.currentTarget as HTMLInputElement).value)} aria-label="Your name" />
         <p class="field-hint">Shown to collaborators next to notes you write, and marks your edits when copies merge. Leave blank to stay anonymous.</p>
       </div>
