@@ -253,6 +253,17 @@ seam for B, so A does not paint us out of it.
 single-decision-site comment (`gallery-data.ts:71-72`); `MediaThumbnail.svelte`'s
 `kind` derivation (`:12`) for the image-vs-AV test to reuse.
 
+**MITIGATED (`mitig/cover-fallback`) — option A on both sides.** `coverOf` and a
+new `deriveCover` in `toExhibitsJson` both prefer the first image object (same
+xyz-vs-mediaType discriminator as `thumbKind`); authored covers always win;
+all-AV/empty stay coverless. Review-confirmed limitation: with no `baseUrl` in
+`toExhibitsJson`, a cover derived from a *baked local* asset is emitted
+tree-relative (`{slug}/assets-thumb/{name}`), which no current consumer resolves —
+those covers degrade to the title card via the existing onerror paths (a visual
+no-op vs before, not a regression). The win lands for remote/IIIF-source exhibits.
+Follow-up (after the `site.ts` WIP): thread `baseUrl` into `toExhibitsJson` at its
+`site.ts:306` call site so hosted local-import covers resolve.
+
 ---
 
 ## 6 — The "All images" wall turns AV and plain rasters into text tiles
@@ -327,6 +338,12 @@ already uses for external thumbs.
 target; the "leave external URLs unchanged" contract (`:117-118`) shows the
 existing degrade-gracefully seam.
 
+**MITIGATED (`mitig/degrade-paths`, option A; B remains gap 4).** When an embedded
+thumb fails to mint but the master minted, the object's `thumbnail` now aliases the
+master's `blob:` URL (no duplicate blob, single-entry revoke — review confirmed no
+double-revoke risk); external thumbs keep the pass-through, both-absent keeps
+leave-as-is. Pinned by the new `buildTornThumbArchive` fixture.
+
 ---
 
 ## 8 — Studio plates use CSS `background-image` with no `onerror`
@@ -364,15 +381,30 @@ after the WIP lands. **Prior art.** `apps/viewer/src/components/Gallery.svelte:3
 (the broken-cover fallback, audit gap #10 — already fixed on the viewer side);
 `MediaThumbnail.svelte:19-28`.
 
+**MITIGATED — ExhibitOverview half (`mitig/degrade-paths`).** Both plates (grid
+`.img`, list `.li-thumb`) are real `<img loading="lazy" draggable="false">` with an
+`onerror` → `failed`-set → `typeGlyph` fallback, pixel-equivalent object-fit crop.
+The `App.svelte` rail half stays open behind its WIP; when doing it, also wire
+`thumbnailCandidates` chain stepping into the studio plates (they currently consume
+the single-URL `thumbFor`, so a level-0 IIIF thumb still glyphs in studio where the
+viewer recovers).
+
 ---
 
-## Suggested order
+## Status & remaining order
 
-1. **Now, clean files:** 2 (probe guard), 5 (cover fallback), 7-A (portable
-   fallback), 8-`ExhibitOverview` half. Each is small, isolated, and removes a
-   visible blank.
-2. **After the WIP lands:** 3 (bake-error tally), 4 (`missingThumbnails` report),
-   1 (AV poster), 8-`App.svelte` half — all gated on `ingest-flows.ts` /
-   `site.ts` / `App.svelte` / `publish-flows.svelte.ts`.
-3. **Falls out of the above:** 6 (the wall fills itself once 1 and 2 land; add the
-   motif stopgap only if the interim text tiles bother anyone).
+**Done (2026-07-20, branches `mitig/derive-guard` / `mitig/cover-fallback` /
+`mitig/degrade-paths`, review verdict merge×3):** 2 (candidate chain), 5 (cover
+fallback), 7-A (portable master fallback), 8-`ExhibitOverview` half.
+
+**After the WIP lands:** 3 (bake-error tally), 4 (`missingThumbnails` report),
+1 (AV poster), 8-`App.svelte` half — all gated on `ingest-flows.ts` / `site.ts` /
+`App.svelte` / `publish-flows.svelte.ts` — plus three review follow-ups:
+`baseUrl` threading for derived local covers (gap 5 note), studio chain stepping
+(gap 8 note), and og-image adopting the shared fallback helper (gap 2 note).
+
+**Falls out of the above:** 6 (the wall fills itself once 1 and 2 land; add the
+motif stopgap only if the interim text tiles bother anyone). Cosmetic residual
+from the review: an exhibit *cover* is one URL (schema), so a level-0 cover falls
+to the title card while the same object's grid plate recovers via the chain —
+acceptable until covers grow chain support.
