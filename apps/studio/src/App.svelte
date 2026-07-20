@@ -1308,10 +1308,21 @@
   // off it. Each tick's colour is the note's reading colour (mirroring markerStyleOf's base
   // fallback) — WHERE + HOW MUCH only, never a text lead (user-verdict strip, Archie-dff3). ---
   let markerRects = $state<Record<string, { left: number; top: number; right: number; bottom: number } | null>>({});
+  // Is the open note a region note (has a spatial/temporal selector)? Drives the note-form Scope control
+  // AND (Archie-e913) marginaliaItems' `wholeImage` flag below — moved up from its original spot beside
+  // setNoteScope so both readers see one definition (script order matters: $derived reads eagerly).
+  const selHasSelector = (r: AnnotationRecord | undefined): boolean =>
+    !!r && typeof r.target !== "string" && (r.target as { selector?: unknown }).selector != null;
+  // Archie-e913: a whole-image (bare-IRI) note has no marker rect — `markerRects[id]` is always null for
+  // it (mount.ts's markerScreenRects only sees Annotorious-registered markers, and canvasAnnotations drops
+  // the framed whole-object note entirely). Rather than synthesize a fake rect into that shared stream
+  // (dots/selection-popover consumers trust it as real geometry — see Marginalia.svelte's header comment),
+  // the rail is told directly which ids are whole-image and gives them their own reserved slot.
   const marginaliaItems = $derived(
     notes.map((r) => ({
       id: r.logicalId,
       colour: (r.reading ? currentReadings.find((x) => x.id === r.reading)?.colour : undefined) ?? BASE_MARKER,
+      wholeImage: !selHasSelector(r),
     })),
   );
   const marginaliaRectIds = $derived(notes.map((r) => r.logicalId));
@@ -1481,9 +1492,6 @@
     vs.selected = id;
     vs.creating = null; // the gesture produced its note; disarm back to ambient selection (ADR-0011)
   }
-  // Is the open note a region note (has a spatial/temporal selector)? Drives the note-form Scope control.
-  const selHasSelector = (r: AnnotationRecord | undefined): boolean =>
-    !!r && typeof r.target !== "string" && (r.target as { selector?: unknown }).selector != null;
   // Whole-object (Object-level) Note — a BARE canvas IRI target, no selector (ADR-0018). The toolbar toggle
   // CREATES one (there's no region to draw). CONVERTING an existing note is a separate, EXPLICIT affordance
   // in the note's own form (`setNoteScope`) — not an overload of this create button.
