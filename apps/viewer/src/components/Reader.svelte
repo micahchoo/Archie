@@ -374,7 +374,15 @@
         {@render notesPanel()}
       </div>
       <div role="tabpanel" id="reader-panel-details" aria-labelledby="reader-tab-details" tabindex="0" hidden={tab !== "details"}>
-        <MetadataList rows={metaRows} />
+        <!-- Key on the object (same identity as the canvas key above) so the list REMOUNTS when the
+             carousel steps: MetadataList's per-value expansion is plain $state keyed by row+index, and
+             ExhibitView keys Reader on the EXHIBIT id — so one instance serves every folio. Without this
+             key, expanding Provenance on one folio leaves the next folio's Provenance pre-expanded
+             ("Show less") on a value the reader never opened. The TAB choice deliberately survives the
+             step (it lives in Reader, above this key); the expansion deliberately does not. -->
+        {#key object.canvasId}
+          <MetadataList rows={metaRows} />
+        {/key}
       </div>
     {:else}
       <!-- No metadata on this object: no lone tab. The sidebar keeps exactly its pre-b50f shape. -->
