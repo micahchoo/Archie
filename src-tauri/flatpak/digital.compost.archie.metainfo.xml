@@ -13,6 +13,39 @@
     </p>
   </description>
   <launchable type="desktop-id">digital.compost.archie.desktop</launchable>
+  <developer id="digital.compost">
+    <name>Micah Choo</name>
+  </developer>
+  <!-- Screenshot URLs track the public repo's main branch (raw.githubusercontent.com) — the PNGs
+       are committed under docs/screenshots/auto/. Flathub caches these at build time, but the URLs
+       are not pinned: if main's screenshots are re-captured, the listing follows. Pin to a release
+       tag when cutting a Flathub submission. -->
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/micahchoo/Archie/main/docs/screenshots/auto/studio-editor-image.desktop.png</image>
+      <caption>Annotating a manuscript folio on the deep-zoom canvas</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/micahchoo/Archie/main/docs/screenshots/auto/studio-overview.desktop.png</image>
+      <caption>Exhibit overview: objects, annotations, and publish status at a glance</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/micahchoo/Archie/main/docs/screenshots/auto/studio-readings.desktop.png</image>
+      <caption>Managing readings, layered interpretations of one source</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/micahchoo/Archie/main/docs/screenshots/auto/studio-narrative.desktop.png</image>
+      <caption>Composing a narrative from exhibit sections</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/micahchoo/Archie/main/docs/screenshots/auto/studio-map.desktop.png</image>
+      <caption>Adding a map layer to an exhibit</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/micahchoo/Archie/main/docs/screenshots/auto/viewer-home.desktop.png</image>
+      <caption>The published viewer, a self-contained static site</caption>
+    </screenshot>
+  </screenshots>
   <provides>
     <binary>archie</binary>
   </provides>
