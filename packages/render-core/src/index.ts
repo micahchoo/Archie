@@ -72,6 +72,9 @@ export * from "./model/layout.js";
 // DCMI Metadata Terms vocabulary data (Dublin Core pipeline, Archie-c6bf): the 55 dcterms
 // properties + import aliases + native-field exclusions + per-level default field sets.
 export * from "./model/dcterms.js";
+// Reader-facing display projection over those entries (Archie-b50f): flat authored list → one
+// labelled row per field with its values stacked. The Viewer's metadata panel + exhibit run.
+export * from "./model/metadata-display.js";
 
 // CLEAN-LIFT pure modules (spike-0001): selector geometry, URL/deep-link, IIIF resolution.
 export * from "./geometry/selector.js";
