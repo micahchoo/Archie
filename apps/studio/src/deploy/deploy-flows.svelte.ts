@@ -273,8 +273,8 @@ async function fetchLogin(token: string): Promise<string> {
 /**
  * Sign in with GitHub's device flow: start the flow (Rust), surface the user code via `onCode` so the UI
  * can show "enter this code at github.com/login/device", then poll (Rust, blocks until the scholar
- * authorizes) and look up the login. Resolves an in-memory {@link DeploySession} with `persisted: false`
- * — persistence is the separate, opt-in {@link persistSession} (Q-12). Poll rejections are already typed
+ * authorizes) and look up the login. Resolves an in-memory {@link DeploySession} — persistence is the
+ * separate, opt-in {@link persistSession} (Q-12). Poll rejections are already typed
  * DeployErrors from Rust (`expired` / `denied` / …) and pass through unchanged.
  */
 export async function signInWithGitHub(
@@ -294,7 +294,7 @@ export async function signInWithGitHub(
     expiresIn: start.expiresIn, // the Rust deadline guard needs this — see github.rs gh_device_poll.
   });
   const login = await fetchLogin(token);
-  return { login, token, persisted: false };
+  return { login, token };
 }
 
 /**
@@ -313,7 +313,7 @@ export async function persistSession(s: DeploySession): Promise<boolean> {
  *  - no token stored ⇒ null (no network).
  *  - token rejected (401, e.g. revoked) ⇒ forget it ({@link signOut}) and return null.
  *  - transient failure (offline, 5xx) ⇒ null WITHOUT clearing — the token may still be good next launch.
- * On restore the session is `persisted: true` (it came from the keyring). Web / non-Tauri ⇒ null.
+ * Web / non-Tauri ⇒ null.
  */
 export async function restoreSession(): Promise<DeploySession | null> {
   if (!isTauri()) return null;
@@ -322,7 +322,7 @@ export async function restoreSession(): Promise<DeploySession | null> {
   if (!token) return null;
   try {
     const login = await fetchLogin(token);
-    return { login, token, persisted: true };
+    return { login, token };
   } catch (e) {
     if (isDeployError(e) && e.status === 401) await signOut(); // revoked → forget it
     return null; // any validation failure is a signed-out startup, never an error dialog

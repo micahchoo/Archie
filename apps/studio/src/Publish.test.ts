@@ -10,7 +10,7 @@ type DeployProgress = import("./deploy/types.js").DeployProgress;
 type DeployTarget = import("./deploy/types.js").DeployTarget;
 type Deps = Parameters<typeof createPublishMachine>[0];
 
-const SESSION: DeploySession = { login: "micah", token: "gho_secret", persisted: false };
+const SESSION: DeploySession = { login: "micah", token: "gho_secret" };
 const flush = () => new Promise<void>((r) => setTimeout(r, 0));
 
 function makeDeps(over: Partial<Deps> = {}): Deps {

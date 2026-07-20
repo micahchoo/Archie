@@ -71,15 +71,15 @@ export type DeployError = {
 
 /**
  * An authenticated GitHub session, in memory for the life of a publish. Holds
- * the token (Q-12) — so this type is never persisted or logged as-is. `persisted`
- * records whether the token also made it into the OS keyring (false = the store
- * was unavailable and the scholar will have to sign in again next time).
+ * the token (Q-12) — so this type is never persisted or logged as-is. Whether
+ * the token also reached the OS keyring is deliberately NOT carried here: the
+ * publish machine's `persistFailed` status reports a keyring miss at publish
+ * time (the "sign in again next time" note), so a field here would be an
+ * unread duplicate (Archie-b53d).
  */
 export type DeploySession = {
   login: string;
   token: string;
-  /** True iff the token was successfully saved to the OS keyring (Q-12). */
-  persisted: boolean;
 };
 
 /**

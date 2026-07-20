@@ -80,7 +80,7 @@ function stubLocalStorage() {
 }
 
 // --- fixtures ---------------------------------------------------------------------------------------
-const session: DeploySession = { login: "alice", token: "gho_secret_xyz", persisted: true };
+const session: DeploySession = { login: "alice", token: "gho_secret_xyz" };
 const target: DeployTarget = { owner: "alice", repo: "my-exhibit", branch: "gh-pages" };
 
 /** A minimal projected site: one text page + one binary asset, so both write paths are exercised. */
@@ -233,8 +233,9 @@ describe("signInWithGitHub — device flow → session", () => {
 
     // the user-facing code (userCode + verificationUri + expiresIn) is surfaced BEFORE the poll resolves.
     expect(codes).toEqual([{ userCode: "WDJB-MJHT", verificationUri: "https://github.com/login/device", expiresIn: 900 }]);
-    // a fresh session carries the token in memory and is NOT yet persisted (persistSession is separate).
-    expect(result).toEqual({ login: "alice", token: "gho_signed_in", persisted: false });
+    // a fresh session carries the token in memory only — keyring persistence is the separate,
+    // opt-in persistSession call (its outcome is the machine's persistFailed status, Archie-b53d).
+    expect(result).toEqual({ login: "alice", token: "gho_signed_in" });
 
     // invoke arg shapes: camelCase clientId for start; deviceCode/interval/expiresIn threaded to poll (Q — the
     // Rust deadline guard needs expiresIn).
@@ -258,23 +259,23 @@ describe("persistSession — stay signed in (Q-12)", () => {
   it("saves the token to the keyring and reports the outcome honestly", async () => {
     routeInvoke({ gh_token_save: () => true });
     const { persistSession } = await import("./deploy-flows.svelte.js");
-    expect(await persistSession({ login: "alice", token: "gho_x", persisted: false })).toBe(true);
+    expect(await persistSession({ login: "alice", token: "gho_x" })).toBe(true);
     expect(invoke).toHaveBeenCalledWith("gh_token_save", { token: "gho_x" });
   });
 
   it("returns false (never throws) when the keyring is unavailable", async () => {
     routeInvoke({ gh_token_save: () => false });
     const { persistSession } = await import("./deploy-flows.svelte.js");
-    expect(await persistSession({ login: "alice", token: "gho_x", persisted: false })).toBe(false);
+    expect(await persistSession({ login: "alice", token: "gho_x" })).toBe(false);
   });
 });
 
 describe("restoreSession — startup 'stay signed in' (Q-12)", () => {
-  it("loads a stored token, validates it, and returns a persisted session", async () => {
+  it("loads a stored token, validates it, and returns the restored session", async () => {
     routeInvoke({ gh_token_load: () => "gho_stored" });
     stubFetch([userOk("alice")]);
     const { restoreSession } = await import("./deploy-flows.svelte.js");
-    expect(await restoreSession()).toEqual({ login: "alice", token: "gho_stored", persisted: true });
+    expect(await restoreSession()).toEqual({ login: "alice", token: "gho_stored" });
   });
 
   it("returns null (and never fetches) when no token is stored", async () => {

@@ -348,7 +348,6 @@ export function createPublishMachine(deps: PublishMachineDeps) {
     if (s.staySignedIn) {
       // Best-effort, non-fatal: a keyring miss just means re-auth next launch (deploy-flows contract).
       const ok = await deps.persistSession(session).catch(() => false);
-      s.session = { ...session, persisted: ok };
       s.persistFailed = !ok;
     }
     try {
