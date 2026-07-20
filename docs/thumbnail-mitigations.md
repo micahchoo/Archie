@@ -119,6 +119,30 @@ Do not hand-roll a second probe — extract `og-image.ts`'s `probeUpsize` shape 
 a shared module and have both call it (the repo's anti-drift convention, ADR-0013,
 which `og-image.ts`'s own header cites).
 
+**MITIGATED (grid surfaces, `mitig/derive-guard`) — via an error-driven candidate
+chain, a variant of A with the same recovery and zero extra requests.** The HEAD
+probe fits `og-image.ts` (build-time, no `<img>` to lean on), but the grid plates
+render real `<img>` elements that already fire `onerror` — so instead of probing
+before paint, the derive now returns an ORDERED candidate list and the plate steps
+down it one rung per error: sized IIIF `/full/{w},/0/default.jpg` → the level-0
+static `{base}/full/full/0/default.jpg` → (when the source only classified as IIIF
+by the extensionless *default*, i.e. possibly a misclassified plain image) the raw
+source → the existing honest placeholder/label cover. No request is added on the
+happy path and no derive goes async. The ONE definition (the ADR-0013 point above)
+is `thumbnailCandidates` in `packages/render-core/src/iiif/thumb-fallback.ts`
+(exported via the `@render/core` barrel), consumed by both grid surfaces:
+`apps/viewer/src/lib/media-thumb.ts` `thumbSrcChain` → `MediaThumbnail.svelte`
+(attempt-indexed `onerror` stepping), and the embed's
+`packages/archie-viewer/src/element.ts` `objectCoverHtml`/`#wireCoverFallbacks`
+(the remaining rungs ride `data-srcs`). The viewer Gallery's wall/covers need no
+change — the wall renders only baked thumbs (no runtime derive, by design, gap 6)
+and exhibit covers are authored URLs; both already carry the `onerror`→text
+fallback. **Follow-up:** `og-image.ts` keeps its own `probeUpsize` for now (the
+file carries uncommitted WIP from another session); once that WIP lands, fold its
+probe onto the shared helper (probe the chain's rungs instead of a hand-built
+upsize) so the fallback order can't drift between the unfurl and the grids. B
+(bake at ingest) remains the eventual portable/offline answer, unchanged.
+
 **Effort.** M (A) / L (B). **Files.** `resolve.ts` + a new shared probe helper (or
 `og-image.ts` promoted); grid/rail consumers unchanged if the guard lives in
 `thumbnailUrl`'s callers. **Prior art.** `apps/viewer/src/og-image.ts:21-39`.

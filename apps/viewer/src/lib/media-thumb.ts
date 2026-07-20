@@ -7,7 +7,7 @@
 // image, not a world projection" (resolve.ts's own contrast) that publish-time tile baking
 // (publish/site.ts tileObject / tileRemote) stamps onto ordinary IMAGE-medium objects. Keying on bare
 // presence made every tiled photo render the graticule+pin Map plate and ignore its raster thumbnail.
-import { thumbnailUrl, type AObject, type MediaType } from "@render/core";
+import { thumbnailCandidates, type AObject, type MediaType } from "@render/core";
 
 export type ThumbKind = MediaType | "map";
 
@@ -18,11 +18,20 @@ export function thumbKind(object: Pick<AObject, "tileSource" | "mediaType">): Th
 }
 
 /**
- * The renderable `<img src>` for an image-kind plate. Prefer the baked display thumbnail; else derive
- * via thumbnailUrl from the tileSource descriptor when one exists (a DZI resolves to its level-0 tile
- * `{filesPath}/0/0_0.{ext}` — resolve.ts documents exactly this grid-path preference), falling back to
- * classifying the raw source string.
+ * The ordered `<img src>` candidates for an image-kind plate — the shared render-core chain
+ * (thumbnail-mitigations gap 2): baked thumbnail first, then the derived forms (a DZI's level-0 tile;
+ * a IIIF service's sized JPEG → level-0 static full → raw source when the extensionless default may
+ * have misclassified a plain image). The plate steps down one candidate per `<img onerror>` and shows
+ * the honest "couldn't load" card only past the end.
+ */
+export function thumbSrcChain(object: Pick<AObject, "thumbnail" | "tileSource" | "source">, width = 480): string[] {
+  return thumbnailCandidates(object, width);
+}
+
+/**
+ * The single best renderable `<img src>` (the chain's head) — for call sites with no error-driven
+ * stepping (the plate itself uses thumbSrcChain).
  */
 export function thumbSrc(object: Pick<AObject, "thumbnail" | "tileSource" | "source">, width = 480): string {
-  return object.thumbnail ?? thumbnailUrl(object.tileSource ?? object.source, width);
+  return thumbSrcChain(object, width)[0]!;
 }

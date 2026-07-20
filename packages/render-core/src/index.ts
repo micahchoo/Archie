@@ -89,6 +89,9 @@ export * from "./url/route.js";
 export * from "./url/breadcrumb.js";
 export * from "./note/media.js";
 export * from "./iiif/resolve.js";
+// Grid-thumbnail candidate chain (thumbnail-mitigations gap 2) — the ONE fallback-order definition
+// the viewer grid plates and the <archie-viewer> embed step through on <img onerror>.
+export * from "./iiif/thumb-fallback.js";
 // IIIF Image API region/thumb URLs — the free build-time crop path for IIIF-backed objects (ADR-0018 cites).
 export * from "./iiif/image.js";
 
