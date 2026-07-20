@@ -17,6 +17,7 @@
   import { viewPrefs, overviewDensityMetrics } from "./view-prefs.svelte.js";
   import { hintSeen, markHintSeen } from "./canvas-first-use.js";
   import { isReorderable, reorderBlockedMessage } from "./reorder-state.js";
+  import { midEllipsis, splitForMidTruncation } from "./mid-ellipsis.js";
   import {
     liftRow, moveRow, moveRowTo, indexOfMoving,
     liftAnnouncement, moveAnnouncement, boundaryAnnouncement, dropAnnouncement, cancelAnnouncement,
@@ -59,6 +60,7 @@
     scrollTop = 0,
     onscrolled,
     onscrollflush,
+    canWrite = true,
   }: {
     title: string;
     layout: LayoutType;
@@ -136,6 +138,11 @@
      *  report, which can be lost when scrollTop is set programmatically / wheel events are coalesced (no
      *  synchronous 'scroll' before teardown). App writes this UNGUARDED (it fires inside a suspended nav). */
     onscrollflush?: (top: number) => void;
+    /** The writer-lock gate (UX-CRITIQUE O1): false = another tab holds editing and the store refuses
+     *  writes, so every MUTATING affordance here goes visibly inert (aria-disabled + muted, layout
+     *  unchanged) instead of inviting work the store will drop. Viewing stays fully live — search, sort,
+     *  density, mode toggle, opening plates/details all keep working. */
+    canWrite?: boolean;
   } = $props();
 
   let rightsOpen = $state(false);
@@ -186,16 +193,26 @@
   // W9+W12 grill): canvas plates and list rows now use ONE fixed size (the former slider midpoint). ---
   let search = $state("");
   let sortMode = $state<"reading" | "name" | "recent">("reading");
+  // Eyebrow honesty (O6): the header's last segment names the ACTIVE arrangement — "reading order" only
+  // while the view really is reading order; otherwise it echoes the sort dropdown's own label.
+  const sortEyebrow = $derived(
+    sortMode === "name" ? "sorted by name" : sortMode === "recent" ? "sorted by recently annotated" : "reading order",
+  );
   // Reorder is meaningless outside canonical order — a drop index in a filtered/sorted view ≠ canonical
   // index. So drag is live ONLY in reading order with no active search; otherwise the grip/legend say why.
   // Pure predicates live in reorder-state.ts (tested headless) — this $derived is its only caller here,
   // plus the canvas indicator, the list-mode hint, AND the list grip's title all share reorderMessage
   // below (never !reorderable / "clear search & sort" duplicated as separate, driftable copies).
-  const reorderable = $derived(isReorderable(sortMode, search));
-  // "" while reorderable; otherwise the ACCURATE reason (search-only / sort-only / both — review
-  // follow-up: the old fixed "Clear search & sort to reorder" wrongly told a search-only user to also
-  // clear a sort they'd never touched).
-  const reorderMessage = $derived(reorderBlockedMessage(sortMode, search));
+  // The writer lock joins the same gate (O1): read-only makes drag/move-mode inert through the ONE
+  // predicate every drag/lift path already consults, and the read-only reason rides the SAME message
+  // channel the search/sort block reasons use (grid hint, list hint, grip title) — not a parallel one.
+  const READ_ONLY_MSG = "Read-only — take over editing (banner above) to make changes.";
+  const reorderable = $derived(canWrite && isReorderable(sortMode, search));
+  // "" while reorderable; otherwise the ACCURATE reason (read-only outranks search/sort — clearing a
+  // search wouldn't help a locked-out tab; search-only / sort-only / both — review follow-up: the old
+  // fixed "Clear search & sort to reorder" wrongly told a search-only user to also clear a sort they'd
+  // never touched).
+  const reorderMessage = $derived(canWrite ? reorderBlockedMessage(sortMode, search) : READ_ONLY_MSG);
   // The plate/row NUMBER is the canonical reading-order position — stable even when the view is sorted by
   // name/recency (sort is a view, never a reorder), so a sorted plate still shows where it reads.
   const orderIndexOf = $derived(new Map(objects.map((o, i) => [o.id, i])));
@@ -509,7 +526,7 @@
   <header>
     <button class="back" onclick={onback}><span aria-hidden="true">←</span> Exhibits</button>
     <div class="titles">
-      <p class="eyebrow">Exhibit · {objects.length} {objects.length === 1 ? "media item" : "media items"} · reading order</p>
+      <p class="eyebrow">Exhibit · {objects.length} {objects.length === 1 ? "media item" : "media items"} · {sortEyebrow}</p>
       <h1>{title}</h1>
       <p class="intent">{LAYOUT_INTENT[layout]}</p>
     </div>
@@ -534,8 +551,11 @@
     </div>
   </header>
 
+  <!-- Read-only (O1/B3): the drawer still OPENS (viewing details is legitimate) but every field is
+       disabled (readonly → DetailsEditor's fieldset + reason line) and the destructive remove is
+       withheld — DetailsEditor renders no remove guard without an onremove. -->
   <PropsDrawer open={rightsOpen} title="Exhibit details" onclose={() => (rightsOpen = false)}>
-    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onremove} />
+    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} onremove={canWrite ? onremove : undefined} readonly={!canWrite} />
   </PropsDrawer>
 
   <!-- Organizing toolbar (Phase 2): find (search titles) · sort (a VIEW, never a reorder) · density (grid
@@ -565,12 +585,23 @@
           <button type="button" class:on={density === "compact"} aria-pressed={density === "compact"} onclick={() => viewPrefs.setOverviewDensity("compact")}>Compact</button>
         </div>
       {/if}
+      <!-- Persistent add (O7): the growth action stays reachable at 52 items instead of sinking below the
+           fold with the trailing plate/row (which stays — it's also the END drop target). Same handler. -->
+      <button type="button" class="tb-add" class:ro={!canWrite} aria-disabled={!canWrite || undefined}
+        onclick={() => { if (canWrite) onaddobject(); }}
+        title={canWrite ? "Add media to this exhibit" : READ_ONLY_MSG}>
+        <span aria-hidden="true">＋</span> Add media
+      </button>
       <!-- Select toggle only — the row itself NEVER morphs (decision Archie-315e / audit W10: the old
            inline "N selected · Remove N · Clear" used to grow here beside Size/Sort). Entering select-mode
            now slides in a DISTINCT bottom tray (.selection-tray below) that carries the bulk actions;
            search/sort/this toggle keep their fixed home regardless of selection state. -->
-      <button type="button" class="tb-select" class:on={selectMode} onclick={onselectmode} aria-pressed={selectMode}
-        title="Select several media items to reorder or remove together">
+      <!-- Read-only (O1): ENTERING select-mode is inert (its only bulk action, Remove, is refused), but a
+           tab already IN select-mode when the lock flips can still leave it — never trap the user. -->
+      <button type="button" class="tb-select" class:on={selectMode} class:ro={!canWrite && !selectMode}
+        aria-disabled={(!canWrite && !selectMode) || undefined}
+        onclick={() => { if (canWrite || selectMode) onselectmode(); }} aria-pressed={selectMode}
+        title={canWrite || selectMode ? "Select several media items to reorder or remove together" : READ_ONLY_MSG}>
         Select
       </button>
     </div>
@@ -585,7 +616,9 @@
           <p class="ns-eyebrow">Exhibit narrative</p>
           <p class="ns-line">Guide visitors through the media with your writing.</p>
         </div>
-        <button class="ns-start" onclick={() => onstartnarrative?.()}><span aria-hidden="true">＋</span> Start the narrative</button>
+        <button class="ns-start" class:ro={!canWrite} aria-disabled={!canWrite || undefined}
+          title={canWrite ? undefined : READ_ONLY_MSG}
+          onclick={() => { if (canWrite) onstartnarrative?.(); }}><span aria-hidden="true">＋</span> Start the narrative</button>
       </div>
     {:else}
       <div class="narrative-strip spine">
@@ -657,6 +690,7 @@
           role="presentation" aria-hidden="true"></div>
         {#each displayObjects as o (o.id)}
           {@const thumb = thumbFor(o)}
+          {@const lbl = splitForMidTruncation(o.label)}
           <div class="plate-wrap" class:dragging={dragId === o.id} class:selected={selection.has(o.id)}>
             <button class="plate" class:over={overId === o.id} class:sel-on={selectMode}
               data-plate-id={o.id}
@@ -678,9 +712,17 @@
               <span class="frame" class:av={!thumb}>
                 {#if thumb}<span class="img" style={`background-image:url(${thumb})`}></span>{:else}<span class="glyph" aria-hidden="true">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}
               </span>
+              <!-- Caption legibility at scale (O3): WIDTH-ADAPTIVE middle truncation keeps a filename
+                   title's distinguishing SUFFIX visible (…07a vs …07b — end-truncation amputated it).
+                   Two spans, no character budget: the head shrinks under CSS end-ellipsis with the plate
+                   width (density-dependent), the tail (last 7 code points) never shrinks — a fixed-max
+                   midEllipsis string would just get RE-truncated by the CSS ellipsis at compact widths.
+                   Head/tail spans must stay ADJACENT (no whitespace) or the gap becomes a wrap point.
+                   Full title stays in the plate's title tooltip above. "0 notes" ×52 is noise — the
+                   count renders only when real. -->
               <span class="caption">
-                <span class="lbl">{o.label}</span>
-                <span class="cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
+                <span class="lbl">{#if lbl.tail}<span class="lbl-head">{lbl.head}</span><span class="lbl-tail">{lbl.tail}</span>{:else}{lbl.head}{/if}</span>
+                {#if noteCountOf(o.id) > 0}<span class="cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>{/if}
               </span>
             </button>
             <!-- Per-plate pencil (Archie-79be): edit this media item's details without opening it. A SIBLING
@@ -694,11 +736,12 @@
               onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); oneditobject(o.id); }}>✎</button>
           </div>
         {/each}
-        <button class="plate add" class:over={overId === END}
+        <button class="plate add" class:over={overId === END} class:ro={!canWrite}
+          aria-disabled={!canWrite || undefined} title={canWrite ? undefined : READ_ONLY_MSG}
           ondragover={(e) => { if (dragId) { e.preventDefault(); overId = END; } }}
           ondrop={(e) => { e.preventDefault(); commitReorder(null); }}
           ondragleave={() => { if (overId === END) overId = null; }}
-          onpointerdown={(e) => e.stopPropagation()} onclick={onaddobject}>
+          onpointerdown={(e) => e.stopPropagation()} onclick={() => { if (canWrite) onaddobject(); }}>
           <span class="frame add-frame"><span class="glyph" aria-hidden="true">{dragId ? "↧" : "+"}</span></span>
           <span class="caption"><span class="lbl">{dragId ? "Move to end" : "Add media"}</span></span>
         </button>
@@ -752,21 +795,25 @@
               onkeydown={(e) => onGripKeyDown(e, o.id)}
               aria-roledescription="Reorder handle"
               aria-pressed={moveState?.movingId === o.id}
+              aria-disabled={!reorderable || undefined}
               title={reorderable ? "Drag, or press Enter to move with the keyboard" : reorderMessage}
               aria-label={moveState?.movingId === o.id
                 ? `Moving ${o.label} — arrow keys to move, Enter to drop, Escape to cancel`
                 : `Reorder ${o.label}`}>⠿</button>
           </span>
           <span role="gridcell" class="cell-main">
+            <!-- Row legibility at scale (O3), same treatment as the grid caption: middle-ellipsis keeps a
+                 filename title's distinguishing suffix, title= carries the full name, zero counts stay quiet. -->
             <button data-plate-id={o.id} onclick={(e) => onPlateClick(e, o.id)} ondblclick={() => openPlate(o.id)}
               onfocus={() => onPlateFocus(o.id)}
               tabindex={selectMode ? (o.id === roveId ? 0 : -1) : undefined}
-              aria-pressed={selectMode ? selection.has(o.id) : undefined}>
+              aria-pressed={selectMode ? selection.has(o.id) : undefined}
+              title={o.label}>
               {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
               <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
               <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph" aria-hidden="true">{o.mediaType === "video" ? "▶" : "♪"}</span>{/if}</span>
-              <span class="li-lbl">{o.label}</span>
-              <span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>
+              <span class="li-lbl">{midEllipsis(o.label, 40)}</span>
+              {#if noteCountOf(o.id) > 0}<span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>{/if}
             </button>
           </span>
           <!-- Per-row pencil (Archie-79be): edit this media item's details without opening it. The ONE
@@ -786,7 +833,9 @@
            structure stays honest (review S3). It doubles as the END drop target for pointer reorder. -->
       <div class="end" role="row" tabindex="-1" class:over={overId === END} ondragover={(e) => { if (dragId) { e.preventDefault(); overId = END; } }} ondrop={(e) => { e.preventDefault(); commitReorder(null); }} ondragleave={() => { if (overId === END) overId = null; }}>
         <span role="gridcell" class="cell-main">
-          <button class="li-add" onclick={onaddobject}>{#if dragId}<span aria-hidden="true">↧</span> Move to end{:else}<span aria-hidden="true">+</span> Add media{/if}</button>
+          <button class="li-add" class:ro={!canWrite} aria-disabled={!canWrite || undefined}
+            title={canWrite ? undefined : READ_ONLY_MSG}
+            onclick={() => { if (canWrite) onaddobject(); }}>{#if dragId}<span aria-hidden="true">↧</span> Move to end{:else}<span aria-hidden="true">+</span> Add media{/if}</button>
         </span>
       </div>
     </div>
@@ -808,7 +857,11 @@
   {#if selectMode || selection.size > 0}
     <div class="selection-tray" role="toolbar" aria-label="Selection actions">
       <span class="tray-count" aria-live="polite">{selection.size} selected</span>
-      <button type="button" class="tray-remove" class:confirming={bulkConfirming} onclick={onbulkdelete} disabled={selection.size === 0}>
+      <!-- Read-only (O1): Remove joins the existing disabled channel (native disabled — this button already
+           used it for the empty-selection case, so the muted :disabled styling and layout hold). -->
+      <button type="button" class="tray-remove" class:confirming={bulkConfirming} onclick={onbulkdelete}
+        disabled={selection.size === 0 || !canWrite}
+        title={canWrite ? undefined : READ_ONLY_MSG}>
         {bulkConfirming ? `Confirm — remove ${selection.size} ${selection.size === 1 ? "item" : "items"} & their notes` : `Remove ${selection.size}`}
       </button>
       <button type="button" class="tray-clear" onclick={onclear} disabled={selection.size === 0}>Clear</button>
@@ -832,8 +885,10 @@
   .ns-eyebrow { margin: 0; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-canvas-muted); }
   .narrative-strip .ns-text { display: flex; flex-direction: column; gap: 2px; }
   .ns-line { margin: 0; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.5; color: var(--ink-canvas-secondary); }
-  /* "Start the narrative" — the ONE rationed signal-orange CTA at this scale (mirrors NarrativeEditor's Add). */
-  .ns-start { margin-left: auto; cursor: pointer; font-family: var(--font-body); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.01em; padding: var(--space-2) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-signal-glow); transition: background 140ms ease; }
+  /* "Start the narrative" — the ONE rationed signal-orange CTA at this scale (mirrors NarrativeEditor's Add).
+     Grouped WITH the invite text (O4: proximity) — no margin-left:auto pushing it to the far edge; the
+     strip's own gap is the separation. */
+  .ns-start { cursor: pointer; font-family: var(--font-body); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.01em; padding: var(--space-2) var(--space-4); background: var(--accent); color: var(--ink-on-accent); border: none; border-radius: var(--radius-sm); box-shadow: var(--shadow-signal-glow); transition: background 140ms ease; }
   .ns-start:hover { background: var(--accent-hover); }
   /* The ordered spine: numbered, scrollable, each row a quiet button that opens the item it's shown with. */
   .ns-spine { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-1); max-height: 22vh; overflow-y: auto; }
@@ -882,13 +937,18 @@
      they paint; the browser's scroll anchoring would otherwise nudge scrollTop by the estimate error right
      after a restore (measured ~15px), fighting the exact offset we just set. Turning it off keeps the
      restored (and user's) scrollTop stable as off-screen plates settle. */
-  .grid-scroll { position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; padding: var(--space-6); background: var(--focal-bloom); }
+  /* No --focal-bloom here (O10): the raw green radial painted through the card gaps, tinting central
+     plates as a false selection/freshness signal that also drifted with scroll — decorative gradients
+     don't pass through content cards. The .overview surface shows through instead. */
+  .grid-scroll { position: relative; flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; padding: var(--space-6); }
   /* Flex-wrap of fixed-width plates; --plate-w (density) sets the width, so a Compact column packs more per
      row. flex-start (not centre) reads as a browsable grid, not a small centred cluster. */
   .grid { display: flex; flex-wrap: wrap; gap: var(--space-6); align-content: flex-start; }
   /* Reorder guidance — a quiet standing line above the grid (mirrors .list-hint); the accurate blocked
-     reason (search/sort) or the drag instruction. Replaces the retired canvas legend + reorder-state box. */
-  .grid-hint { max-width: 100%; margin: var(--space-4) var(--space-6) 0; padding: 0; font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
+     reason (search/sort/read-only) or the drag instruction. Replaces the retired canvas legend +
+     reorder-state box. INSTRUCTION voice (O8): sentence case in body face, a step up from the caps
+     metadata-label voice (eyebrows, counts) — guidance styled as a label doesn't get read. */
+  .grid-hint { max-width: 100%; margin: var(--space-4) var(--space-6) 0; padding: 0; font-family: var(--font-body); font-size: 0.875rem; line-height: 1.5; color: var(--ink-canvas-secondary); }
 
   .plate { position: relative; display: flex; flex-direction: column; gap: var(--space-2); width: var(--plate-w, 12.5rem); cursor: pointer; text-align: left; padding: var(--space-3); background: var(--surface-canvas-raised); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); transition: transform 180ms ease, box-shadow 180ms ease; }
   .plate:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
@@ -898,7 +958,14 @@
   .frame.av { background: var(--surface-canvas-overlay); }
   .frame .glyph { font-size: 2rem; color: var(--accent-2); }
   .caption { display: flex; flex-direction: column; gap: 2px; }
-  .caption .lbl { font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Width-adaptive middle truncation (O3): the label is a nowrap flex row — the HEAD shrinks under
+     end-ellipsis, the TAIL keeps its intrinsic width (flex:none) so the suffix survives any plate
+     width. min-width:0 lets the head actually shrink below its content; overflow:hidden on .lbl is
+     the backstop for a pathological tail wider than the plate. The tail-less short-label case renders
+     as plain text under the same nowrap/ellipsis. */
+  .caption .lbl { display: flex; min-width: 0; font-family: var(--font-display); font-size: 1.2rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .caption .lbl .lbl-head { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .caption .lbl .lbl-tail { flex: none; white-space: nowrap; }
   .caption .cnt { font-family: var(--font-mono); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
   .plate.add { background: transparent; box-shadow: none; border: 1px dashed var(--border-canvas-emphasis); justify-content: center; }
   .plate.add:hover { background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low); }
@@ -932,13 +999,14 @@
   .dropstart.armed { width: 1.5rem; border: 1px dashed var(--border-canvas-emphasis); }
   .dropstart.over { border-color: var(--accent); border-style: solid; box-shadow: 4px 0 0 var(--accent); }
 
-  /* First-use "click to open" hint — a quiet line under the grid (in normal flow, always visible). */
-  .hint { margin: var(--space-3) var(--space-6) var(--space-5); font-family: var(--font-ui); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); pointer-events: none; }
+  /* First-use "click to open" hint — a quiet line under the grid (in normal flow, always visible).
+     Instruction voice (O8), same treatment as .grid-hint. */
+  .hint { margin: var(--space-3) var(--space-6) var(--space-5); font-family: var(--font-body); font-size: 0.875rem; line-height: 1.5; color: var(--ink-canvas-secondary); pointer-events: none; }
 
-  /* List mode. */
-  .list-hint { max-width: 48rem; margin: var(--space-6) auto 0; padding: 0 var(--space-6); font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
+  /* List mode. Hint in the instruction voice (O8), mirroring .grid-hint. */
+  .list-hint { max-width: 48rem; margin: var(--space-6) auto 0; padding: 0 var(--space-6); font-family: var(--font-body); font-size: 0.875rem; line-height: 1.5; color: var(--ink-canvas-secondary); }
   .list { list-style: none; margin: 0; padding: var(--space-4) var(--space-6) var(--space-6); overflow-y: auto; flex: 1; max-width: 48rem; }
-  .list > div { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+  .list > div { position: relative; display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); } /* relative: anchors the overlaid .cell-edit (O9) */
   /* PERF (SCALE-GALLERY Phase 1.3): skip layout/paint/decode of off-screen rows in a large list — the
      same treatment the Viewer's ObjectGrid uses (ObjectGrid.svelte). `auto` remembers each row's real
      height after first render so the scrollbar never jumps; the fixed estimate covers never-seen rows.
@@ -1007,6 +1075,10 @@
   .tb-select { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 160ms ease, border-color 160ms ease, background 160ms ease; }
   .tb-select:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
   .tb-select.on { background: var(--accent-muted); color: var(--ink-canvas-primary); border-color: var(--accent); box-shadow: inset 0 -2px 0 var(--accent); }
+  /* Persistent toolbar add (O7) — same quiet chip family as .tb-select; the saturated CTA stays rationed
+     to "Start the narrative". */
+  .tb-add { font-family: var(--font-ui); font-size: var(--text-ui-sm); text-transform: uppercase; letter-spacing: 0.14em; cursor: pointer; padding: var(--space-2) var(--space-3); background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary); border: 1px solid var(--border-canvas); border-radius: var(--radius-sm); transition: color 160ms ease, border-color 160ms ease; }
+  .tb-add:hover { color: var(--ink-canvas-primary); border-color: var(--border-canvas-emphasis); }
 
   /* Selection tray (Archie-315e / audit W10) — a DISTINCT bottom-centre surface, deliberately NOT part of
      the toolbar's flex flow (the toolbar never morphs — see the .toolbar rule above, unchanged by this
@@ -1041,6 +1113,30 @@
   .list > div button { position: relative; } /* anchor the row checkbox */
   .plate.sel-on { cursor: default; } /* in select-mode a click toggles, not opens — signal it's not the open gesture */
   .grip.off { opacity: 0.3; cursor: default; }
+
+  /* --- ≥44px effective hit targets (O9, extends the W24 a11y cross-cut): grow the HIT area with an
+     ::after overlay, never the visual glyph. Pencils: 1.85rem + 2×0.45rem = 2.75rem = 44px. The grip's
+     row is already 3.3rem tall, so its overlay only widens. All three anchors are already positioned
+     (.plate-edit absolute; list buttons via the `.list > div button` position:relative rule). --- */
+  .plate-edit::after, .list > div .row-edit::after { content: ""; position: absolute; inset: -0.45rem; }
+  .list .grip::after { content: ""; position: absolute; inset: 0 -0.35rem; }
+
+  /* O9, list pencil association: the pencil overlays INSIDE the row capsule, right-aligned, instead of
+     floating orphaned outside it. Visual-only — the gridcell remains a DOM child of its role="row", so
+     the APG Grid structure and tab order are untouched. The open button reserves right padding so the
+     note count never underlaps the pencil. */
+  .list > div .cell-edit { position: absolute; right: var(--space-2); top: 50%; transform: translateY(-50%); }
+  .list > div:not(.end) .cell-main button { padding-right: 3.25rem; }
+
+  /* --- Read-only (O1, writer lock): mutating affordances stay VISIBLE but inert — muted, unresponsive to
+     hover, layout unchanged (never hidden: the user should still see what taking over editing restores).
+     Click handlers guard on canWrite; aria-disabled carries the state to AT; the per-control cancels
+     below out-specify each live hover rule so an inert control doesn't beckon. --- */
+  .ro, .ro:hover { opacity: 0.45; cursor: default; }
+  .plate.add.ro:hover { background: transparent; box-shadow: none; transform: none; }
+  .ns-start.ro:hover { background: var(--accent); }
+  .li-add.ro:hover { color: var(--ink-canvas-secondary); border-color: var(--border-canvas-emphasis); transform: none; box-shadow: var(--shadow-lift-low); }
+  .tb-add.ro:hover, .tb-select.ro:hover { color: var(--ink-canvas-secondary); border-color: var(--border-canvas); }
 
   /* Marquee rubber-band — a faint accent-tinted rectangle over the canvas while background-dragging in select-mode. */
   .marquee { position: absolute; z-index: 5; pointer-events: none; border: 1px solid var(--accent); background: var(--accent-muted); border-radius: 2px; }
