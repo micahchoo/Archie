@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { toCollection } from "./collection.js";
 import { toExhibitsJson, toReadingCollection, shouldRenderGallery, shouldRenderGalleryFromJson } from "./exhibits.js";
-import type { Library } from "../model/model.js";
-import { asExhibitId, asLibraryId } from "../wadm/brand.js";
+import type { AObject, Exhibit, Library } from "../model/model.js";
+import { asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
 
 const base = "https://u.gh.io/lib/";
 const lib: Library = {
@@ -39,6 +39,48 @@ describe("toExhibitsJson (the Gallery source — UX-Q7 schema-forward)", () => {
       { slug: "b", title: "Exhibit B", order: 1 },
     ]);
     expect(j.presentation).toEqual({}); // reserved for v1.1 curation (additive, not a migration)
+  });
+});
+
+describe("toExhibitsJson cover fallback (thumbnail-mitigations gap 5 — derive from the first image object)", () => {
+  const obj = (id: string, over: Partial<AObject> = {}): AObject => ({ id: asObjectId(id), source: `https://img/${id}.jpg`, label: id, ...over });
+  const exOf = (slug: string, objects: AObject[], cover?: string): Exhibit =>
+    ({ id: asExhibitId(slug), slug, title: slug, objects, ...(cover !== undefined ? { cover } : {}) });
+  const cardOf = (e: Exhibit) => toExhibitsJson({ id: asLibraryId("x"), exhibits: [e] }).exhibits[0]!;
+
+  it("an authored cover always wins over derivation", () => {
+    const e = exOf("a", [obj("o1")], "https://img/authored.jpg");
+    expect(cardOf(e).cover).toBe("https://img/authored.jpg");
+  });
+  it("derives from the FIRST image object, skipping earlier AV (the AV-first exhibit gets a picture card)", () => {
+    const e = exOf("a", [obj("wave", { source: "https://x/wave.mp3", mediaType: "sound" }), obj("photo", { mediaType: "image" })]);
+    expect(cardOf(e).cover).toBe("https://img/photo.jpg");
+  });
+  it("skips an xyz-map basemap (thumbKind parity: a map is not an image, even with mediaType unset)", () => {
+    const e = exOf("a", [
+      obj("map", { tileSource: { kind: "xyz", template: "https://t/{z}/{x}/{y}.png", maxZoom: 4 } }),
+      obj("photo"),
+    ]);
+    expect(cardOf(e).cover).toBe("https://img/photo.jpg");
+  });
+  it("prefers the baked thumbnail, rewritten tree-relative under the slug (the published layout)", () => {
+    const e = exOf("voy", [obj("o1", { source: "/assets/folio.png", thumbnail: "/assets-thumb/folio.png" })]);
+    expect(cardOf(e).cover).toBe("voy/assets-thumb/folio.png");
+  });
+  it("rewrites an unbaked working /assets/ source tree-relative under the slug too", () => {
+    const e = exOf("voy", [obj("o1", { source: "/assets/folio.png" })]);
+    expect(cardOf(e).cover).toBe("voy/assets/folio.png");
+  });
+  it("derives a sized JPEG from a IIIF service-base source (a bare base is not an <img> src)", () => {
+    const e = exOf("a", [obj("o1", { source: "https://iiif.example/im/f1" })]);
+    expect(cardOf(e).cover).toBe("https://iiif.example/im/f1/full/480,/0/default.jpg");
+  });
+  it("an all-AV exhibit stays coverless (an <img> can't render audio — the title card is honest)", () => {
+    const e = exOf("a", [obj("wave", { source: "https://x/wave.mp3", mediaType: "sound" }), obj("clip", { source: "https://x/clip.mp4", mediaType: "video" })]);
+    expect("cover" in cardOf(e)).toBe(false);
+  });
+  it("an empty exhibit stays coverless", () => {
+    expect("cover" in cardOf(exOf("a", []))).toBe(false);
   });
 });
 

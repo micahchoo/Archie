@@ -29,9 +29,19 @@ describe("flattenLibraryImages", () => {
   });
 });
 
-describe("coverOf", () => {
-  it("picks the first object", () => {
+describe("coverOf (thumbnail-mitigations gap 5 — first IMAGE object, else first object)", () => {
+  it("picks the first object when it is an image", () => {
     expect(coverOf(lib()[0]!)).toEqual({ slug: "coast", objectId: "o1", source: "/assets/o1-cliff.png" });
+  });
+  it("skips leading AV / xyz-map objects to reach the first image (the AV-first exhibit gets a picture card)", () => {
+    const ex: ExhibitMeta = { id: "e4", slug: "mix", title: "Mixed", objects: [
+      { id: "a", source: "/assets/a-intro.mp3", label: "Intro", mediaType: "sound" },
+      { id: "m", source: "https://t/{z}/{x}/{y}.png", label: "Map", tileSource: { kind: "xyz", template: "https://t/{z}/{x}/{y}.png", maxZoom: 4 } },
+      { id: "p", source: "/assets/p-photo.png", label: "Photo" },
+    ] };
+    expect(coverOf(ex)).toEqual({ slug: "mix", objectId: "p", source: "/assets/p-photo.png" });
+  });
+  it("falls back to the first object when no image exists (all-AV keeps its honest motif cover)", () => {
     expect(coverOf(lib()[1]!)).toEqual({ slug: "sound", objectId: "o1", source: "/assets/o1-wave.mp3", mediaType: "sound" });
   });
   it("returns null for an empty exhibit", () => {

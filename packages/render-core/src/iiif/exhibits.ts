@@ -6,9 +6,10 @@
 // migration: a top-level `library` object (not a flat array), explicit ordering, first-class
 // cover/title/description, and a reserved `presentation` namespace.
 
-import type { Library, Reading, RightsFields } from "../model/model.js";
+import type { Exhibit, Library, Reading, RightsFields } from "../model/model.js";
 import type { W3CAnnotationCollection } from "../wadm/types.js";
 import { WADM_CONTEXT } from "../wadm/types.js";
+import { thumbnailUrl } from "./resolve.js";
 
 export interface ExhibitCard {
   slug: string;
@@ -29,6 +30,31 @@ export interface ExhibitsJson {
   presentation: Record<string, never>;
 }
 
+/** Derived-cover width — matches the viewer MediaThumbnail plate width (media-thumb.ts thumbSrc). */
+const COVER_WIDTH = 480;
+
+/**
+ * Cover fallback (thumbnail-mitigations gap 5): when no cover is authored, derive one from the first
+ * IMAGE object — the same discriminator the viewer's `thumbKind` uses (an `xyz` tileSource is a map,
+ * not an image; otherwise `mediaType ?? "image"` decides) — preferring its baked `thumbnail`, else a
+ * renderable URL for its source via `thumbnailUrl` (IIIF service base → sized JPEG; plain image URL →
+ * passthrough). All-AV and empty exhibits stay coverless: an `<img>` can't render an audio source, and
+ * the Gallery's title-text card is the honest fallback there.
+ *
+ * Working `/assets/…` and `/assets-thumb/…` refs are emitted TREE-RELATIVE under the exhibit's slug
+ * (`{slug}/assets-thumb/{name}` — the layout publishLibrary's asset pass writes): this projection runs
+ * BEFORE that pass and deliberately takes no baseUrl (self-contained — one derivation site for hosted,
+ * portable, and live galleries alike). A consumer that serves the tree from its own root resolves them
+ * directly; one that can't (e.g. the hosted viewer's separate data base) degrades to the Gallery's
+ * broken-cover title fallback (#10) — never worse than the pre-derivation text card.
+ */
+function deriveCover(e: Exhibit): string | undefined {
+  const img = e.objects.find((o) => o.tileSource?.kind !== "xyz" && (o.mediaType ?? "image") === "image");
+  if (!img) return undefined;
+  const ref = img.thumbnail ?? thumbnailUrl(img.tileSource ?? img.source, COVER_WIDTH);
+  return /^\/assets(-thumb)?\//.test(ref) ? `${e.slug}${ref}` : ref;
+}
+
 export function toExhibitsJson(library: Library): ExhibitsJson {
   return {
     library: {
@@ -42,13 +68,16 @@ export function toExhibitsJson(library: Library): ExhibitsJson {
       // live on collection.json via rightsProps; THIS is the lossless model-shape mirror).
       ...(library.metadata && library.metadata.length ? { metadata: library.metadata } : {}),
     },
-    exhibits: library.exhibits.map((e, order) => ({
-      slug: e.slug,
-      title: e.title,
-      ...(e.cover !== undefined ? { cover: e.cover } : {}),
-      ...(e.summary !== undefined ? { description: e.summary } : {}),
-      order,
-    })),
+    exhibits: library.exhibits.map((e, order) => {
+      const cover = e.cover ?? deriveCover(e); // authored cover always wins; derivation is the gap-5 fallback
+      return {
+        slug: e.slug,
+        title: e.title,
+        ...(cover !== undefined ? { cover } : {}),
+        ...(e.summary !== undefined ? { description: e.summary } : {}),
+        order,
+      };
+    }),
     presentation: {},
   };
 }
