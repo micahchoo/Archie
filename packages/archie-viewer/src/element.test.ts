@@ -336,13 +336,32 @@ describe("object-grid thumbnail fallback chain (apps/viewer MediaThumbnail/Galle
     expect(dzi?.tagName).toBe("IMG");
   });
 
-  it("a 404'd thumb degrades to the label-text cover (never a broken-image icon)", async () => {
+  it("a 404'd IIIF sized thumb STEPS DOWN the candidate chain (level-0 static full) before the label cover", async () => {
+    // Mitigation for thumbnail-mitigations gap 2: a level-0 host 404s `/full/480,/` but serves the
+    // pre-generated `/full/full/0/default.jpg` — the first error must try that, not give up.
     const el = await loadMixedGrid();
     const img = coverIn(el, "iiif1") as HTMLImageElement;
+    expect(img.dataset["srcs"]).toBeDefined(); // the remaining chain rides the element
     img.dispatchEvent(new Event("error"));
+    const stepped = coverIn(el, "iiif1") as HTMLImageElement;
+    expect(stepped.tagName).toBe("IMG"); // same element, next candidate — not yet the label
+    expect(stepped.getAttribute("src")).toBe("https://example.org/iiif/o1/full/full/0/default.jpg");
+    // The source was an explicit info.json (genuinely IIIF) — no raw-source rung; the NEXT error is
+    // the end of the chain → the label-text cover (never a broken-image icon).
+    stepped.dispatchEvent(new Event("error"));
     const cover = coverIn(el, "iiif1");
     expect(cover?.tagName).toBe("SPAN");
     expect(cover?.textContent).toBe("IIIF plate");
+  });
+
+  it("a plain raster has a single-candidate chain — one error goes straight to the label cover", async () => {
+    const el = await loadMixedGrid();
+    const img = coverIn(el, "raster1") as HTMLImageElement;
+    expect(img.dataset["srcs"]).toBeUndefined(); // nothing IIIF-shaped to fall back through
+    img.dispatchEvent(new Event("error"));
+    const cover = coverIn(el, "raster1");
+    expect(cover?.tagName).toBe("SPAN");
+    expect(cover?.textContent).toBe("Plain raster");
   });
 
   it("a 404'd gallery COVER degrades to the title-text cover the no-cover path renders", async () => {

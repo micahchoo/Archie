@@ -22,7 +22,7 @@
 //                   is absent. Foreign/unknown → gallery; malformed → gallery (never an error).
 //   offline       — BOOLEAN attr (presence = on): block remote tile/media fetch (passed to the reader).
 
-import { parseRoute, thumbnailUrl, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit } from "@render/core";
+import { parseRoute, thumbnailCandidates, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit } from "@render/core";
 import type { ReadOnlyMountSurface } from "@render/mount";
 import {
   openLibraryFromFile,
@@ -529,17 +529,27 @@ export class ArchieViewerElement extends HTMLElement {
     this.#wireCoverFallbacks();
   }
 
-  /** A 404'd cover/thumb degrades to the SAME label-text cover the no-thumbnail path renders — never a
-   *  raw broken-image icon (apps/viewer Gallery.svelte parity: onerror → markFailed → title-text). The
-   *  fallback text rides `data-fallback` because these cards are built as an innerHTML string. */
+  /** A 404'd cover/thumb steps down its CANDIDATE CHAIN (thumbnail-mitigations gap 2: `data-srcs`
+   *  carries the remaining derived URLs — level-0 static full, possibly the raw source) before
+   *  degrading to the SAME label-text cover the no-thumbnail path renders — never a raw broken-image
+   *  icon (apps/viewer Gallery.svelte / MediaThumbnail parity). The fallback text rides
+   *  `data-fallback` because these cards are built as an innerHTML string. */
   #wireCoverFallbacks(): void {
     for (const img of this.#root.querySelectorAll<HTMLImageElement>("img.cover[data-fallback]")) {
       img.addEventListener("error", () => {
+        const rest: string[] = img.dataset["srcs"] ? (JSON.parse(img.dataset["srcs"]) as string[]) : [];
+        const next = rest.shift();
+        if (next) {
+          if (rest.length) img.dataset["srcs"] = JSON.stringify(rest);
+          else delete img.dataset["srcs"];
+          img.src = next;
+          return;
+        }
         const span = document.createElement("span");
         span.className = "cover";
         span.textContent = img.dataset["fallback"] ?? "";
         img.replaceWith(span);
-      }, { once: true });
+      });
     }
   }
 
@@ -587,18 +597,21 @@ export class ArchieViewerElement extends HTMLElement {
 
 /**
  * The object-card cover cell (apps/viewer MediaThumbnail.svelte parity). An IMAGE-kind object gets a
- * real picture: the baked `thumbnail` where one exists, else a sized thumbnail DERIVED from the source
- * (`thumbnailUrl` — a bare IIIF service base is not itself an `<img src>`; remote-IIIF / external-raster
- * objects have NO baked thumbnail by design, see model.ts AObject.thumbnail). AV and map objects get a
- * lightweight glyph+kind cue instead of a fake picture. Kind discriminator matches MediaThumbnail /
- * the model: only an `xyz` tileSource is a MAP — a `dzi` descriptor is a tiled IMAGE. `data-fallback`
- * carries the label the onerror degrade renders (#wireCoverFallbacks).
+ * real picture: the shared render-core CANDIDATE CHAIN (`thumbnailCandidates`, thumbnail-mitigations
+ * gap 2) — baked `thumbnail` first, then the derived forms (a bare IIIF service base is not itself an
+ * `<img src>`; a level-0 host 404s the sized derive, so the remaining candidates ride `data-srcs` for
+ * #wireCoverFallbacks to step through on error; remote-IIIF / external-raster objects have NO baked
+ * thumbnail by design, see model.ts AObject.thumbnail). AV and map objects get a lightweight
+ * glyph+kind cue instead of a fake picture. Kind discriminator matches MediaThumbnail / the model:
+ * only an `xyz` tileSource is a MAP — a `dzi` descriptor is a tiled IMAGE. `data-fallback` carries
+ * the label the final onerror degrade renders (#wireCoverFallbacks).
  */
 function objectCoverHtml(o: AObject): string {
   const kind = o.tileSource?.kind === "xyz" ? "map" : (o.mediaType ?? "image");
   if (kind === "image") {
-    const src = o.thumbnail ?? thumbnailUrl(o.source, 480);
-    return `<img class="cover" src="${escapeAttr(src)}" alt="" loading="lazy" data-fallback="${escapeAttr(o.label)}" />`;
+    const [first, ...rest] = thumbnailCandidates(o, 480);
+    const srcsAttr = rest.length ? ` data-srcs="${escapeAttr(JSON.stringify(rest))}"` : "";
+    return `<img class="cover" src="${escapeAttr(first!)}"${srcsAttr} alt="" loading="lazy" data-fallback="${escapeAttr(o.label)}" />`;
   }
   const glyph = kind === "video" ? "▶" : kind === "sound" ? "♪" : "⌖";
   const word = kind === "video" ? "Video" : kind === "sound" ? "Audio" : "Map";

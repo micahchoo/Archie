@@ -8,26 +8,31 @@
   // xyz tileSource ⇒ map, else mediaType — a `dzi` tileSource is a baked pyramid of an ordinary IMAGE
   // (publish-time tiling stamps it on photos), so it stays on the image path and shows its raster.
   import type { AObject } from "@render/core";
-  import { thumbKind, thumbSrc } from "../lib/media-thumb.js";
+  import { thumbKind, thumbSrcChain } from "../lib/media-thumb.js";
 
   let { object }: { object: AObject } = $props();
 
   const kind = $derived(thumbKind(object));
-  const imgSrc = $derived(thumbSrc(object, 480));
+  // The ordered candidate chain (thumbnail-mitigations gap 2): a remote/IIIF derive can 404 (level-0
+  // hosts, misclassified extensionless URLs), so each onerror steps to the next candidate; only past
+  // the end does the plate show the honest "couldn't load" card. Zero extra requests when the first
+  // candidate renders.
+  const candidates = $derived(thumbSrcChain(object, 480));
 
   // Deterministic waveform bar heights (NoteMedia's av-cover motif, widened for the bigger plate) — a
   // drawn sound signature, not a real decode.
   const bars = Array.from({ length: 17 }, (_, b) => 22 + ((b * 53) % 72));
 
-  let failed = $state(false); // an actual file failed to load (image/video) — show the honest fallback
+  let attempt = $state(0); // image: index into the candidate chain; past the end ⇒ the honest fallback
+  let failed = $state(false); // an actual video file failed to load — show the honest fallback
 </script>
 
 <div class="thumb {kind}">
   {#if kind === "image"}
-    {#if failed}
+    {#if attempt >= candidates.length}
       <span class="broken">Couldn’t load this image</span>
     {:else}
-      <img class="picture" src={imgSrc} alt="" loading="lazy" decoding="async" onerror={() => (failed = true)} />
+      <img class="picture" src={candidates[attempt]} alt="" loading="lazy" decoding="async" onerror={() => (attempt += 1)} />
     {/if}
   {:else if kind === "video"}
     {#if failed}
