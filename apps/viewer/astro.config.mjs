@@ -23,8 +23,10 @@ export default defineConfig({
     // These are declared as direct viewer deps (so pnpm symlinks them into the app
     // root and Vite can resolve the bare specifiers) and pre-bundled here under their
     // bare names — so the optimized chunk is "fflate.js", matching the bare import.
+    // minisearch is imported directly by src/lib/search-index.ts; pre-bundling it
+    // at startup avoids a mid-session re-optimization (which 504s already-open tabs).
     optimizeDeps: {
-      include: ["fflate", "isomorphic-dompurify", "snarkdown"],
+      include: ["fflate", "isomorphic-dompurify", "snarkdown", "minisearch"],
     },
   },
 });
