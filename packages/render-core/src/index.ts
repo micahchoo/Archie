@@ -40,7 +40,7 @@ export * from "./publish/merge.js";
 // The library landing page builder (ADR-0014) — the merge regen rebuilds it over the merged card set.
 export { libraryPageHtml } from "./publish/static-pages.js";
 
-// AV transcript adapter (CONTEXT AV): WebVTT/SRT -> supplementing time-range Notes (import-only v1).
+// AV transcript adapter (CONTEXT AV): WebVTT/SRT <-> supplementing time-range Notes (import + the Archie-bd0a export inverse).
 export * from "./av/transcript.js";
 export * from "./av/time.js";
 
