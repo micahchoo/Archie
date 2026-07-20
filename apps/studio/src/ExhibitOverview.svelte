@@ -32,6 +32,14 @@
   const typeGlyph = (mediaType?: OverviewObject["mediaType"]): string =>
     mediaType === "video" ? "▶" : mediaType === "sound" ? "♪" : "▣";
 
+  /** Broken-thumb fallback (thumbnail-mitigations gap 8; port of the viewer's Gallery.svelte pattern):
+   *  a CSS background-image can't fire onerror, so a dead thumb URL painted a silent blank box. The
+   *  plates render a real <img> instead; on error the object joins `failed` and the plate falls back
+   *  to the same typeGlyph a thumb-less object wears. Keyed by object id — one miss covers both the
+   *  grid plate and the list row (same URL feeds both). */
+  let failed = $state(new Set<string>());
+  const markFailed = (id: string) => { failed.add(id); failed = new Set(failed); };
+
   let {
     title,
     layout,
@@ -719,8 +727,8 @@
               title={o.label}>
               {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
               <span class="order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
-              <span class="frame" class:av={!thumb}>
-                {#if thumb}<span class="img" style={`background-image:url(${thumb})`}></span>{:else}<span class="glyph" aria-hidden="true">{typeGlyph(o.mediaType)}</span>{/if}
+              <span class="frame" class:av={!thumb || failed.has(o.id)}>
+                {#if thumb && !failed.has(o.id)}<img class="img" src={thumb} alt="" loading="lazy" decoding="async" draggable="false" onerror={() => markFailed(o.id)} />{:else}<span class="glyph" aria-hidden="true">{typeGlyph(o.mediaType)}</span>{/if}
               </span>
               <!-- Caption legibility at scale (O3): WIDTH-ADAPTIVE middle truncation keeps a filename
                    title's distinguishing SUFFIX visible (…07a vs …07b — end-truncation amputated it).
@@ -821,7 +829,7 @@
               title={o.label}>
               {#if selectMode}<span class="checkbox" class:checked={selection.has(o.id)} aria-hidden="true"></span>{/if}
               <span class="li-order">{(orderIndexOf.get(o.id) ?? 0) + 1}</span>
-              <span class="li-thumb" class:av={!thumbFor(o)} style={thumbFor(o) ? `background-image:url(${thumbFor(o)})` : ""}>{#if !thumbFor(o)}<span class="glyph" aria-hidden="true">{typeGlyph(o.mediaType)}</span>{/if}</span>
+              <span class="li-thumb" class:av={!thumbFor(o) || failed.has(o.id)}>{#if thumbFor(o) && !failed.has(o.id)}<img src={thumbFor(o)} alt="" loading="lazy" decoding="async" draggable="false" onerror={() => markFailed(o.id)} />{:else}<span class="glyph" aria-hidden="true">{typeGlyph(o.mediaType)}</span>{/if}</span>
               <span class="li-lbl">{midEllipsis(o.label, 40)}</span>
               {#if noteCountOf(o.id) > 0}<span class="li-cnt">{noteCountOf(o.id)} {noteCountOf(o.id) === 1 ? "note" : "notes"}</span>{/if}
             </button>
@@ -964,7 +972,10 @@
   .plate:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
   .plate .order { font-family: var(--font-mono); font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-canvas-muted); }
   .frame { position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-canvas-overlay); display: flex; align-items: center; justify-content: center; }
-  .frame .img { position: absolute; inset: 0; background-size: cover; background-position: center; }
+  /* A real <img> (gap 8, was a background-image span): absolute inset + explicit 100% fill because an
+     absolutely-positioned replaced element keeps its intrinsic size; object-fit replaces the old
+     background-size/position cover so the crop is pixel-identical. */
+  .frame .img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
   .frame.av { background: var(--surface-canvas-overlay); }
   .frame .glyph { font-size: 2rem; color: var(--accent-2); }
   .caption { display: flex; flex-direction: column; gap: 2px; }
@@ -1051,7 +1062,10 @@
   .list > div button:hover { transform: translateY(-2px); box-shadow: var(--shadow-lift-mid); }
   .list > div.end.over button { border: 1px solid var(--accent); color: var(--accent); }
   .li-order { font-family: var(--font-mono); font-size: var(--text-ui-xs); letter-spacing: 0.14em; color: var(--ink-canvas-muted); min-width: 1.5rem; }
-  .li-thumb { width: 3rem; height: 2.25rem; border-radius: var(--radius-sm); background: var(--surface-canvas-overlay) center/cover; display: flex; align-items: center; justify-content: center; }
+  /* A real <img> child now (gap 8) — overflow:hidden clips it to the radius (a background clipped to
+     the border-box for free; a child element doesn't), object-fit keeps the old center/cover crop. */
+  .li-thumb { width: 3rem; height: 2.25rem; border-radius: var(--radius-sm); overflow: hidden; background: var(--surface-canvas-overlay); display: flex; align-items: center; justify-content: center; }
+  .li-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
   .li-thumb .glyph { color: var(--accent-2); }
   .li-lbl { flex: 1; font-family: var(--font-display); font-size: 1.25rem; font-weight: 400; color: var(--ink-canvas-primary); }
   .li-cnt { font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-canvas-muted); }
