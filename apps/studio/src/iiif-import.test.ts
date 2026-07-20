@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { classifyIiifDocument, labelToString, manifestToExhibit, ManifestImportError } from "./iiif-import.js";
+import { classifyIiifDocument, labelToString, manifestToExhibit, metadataEntriesFromPairs, ManifestImportError } from "./iiif-import.js";
 
 const P3 = {
   "@context": "https://iiif.io/api/presentation/3/context.json",
@@ -135,5 +135,100 @@ describe("classifyIiifDocument — the shared type sniff", () => {
     expect(classifyIiifDocument(null)).toBe("unknown");
     expect(classifyIiifDocument("nope")).toBe("unknown");
     expect(classifyIiifDocument({ hello: 1 })).toBe("unknown");
+  });
+});
+
+describe("metadataEntriesFromPairs — Dublin Core import mapping (Archie-c6bf)", () => {
+  it("maps a preferred-label match to its dcterms property, no label override needed", () => {
+    expect(metadataEntriesFromPairs([{ label: { none: ["Creator"] }, value: { none: ["Ada"] } }]))
+      .toEqual([{ property: "dcterms:creator", value: "Ada" }]);
+  });
+  it("maps an alias (Author → dcterms:creator) and keeps the original label", () => {
+    expect(metadataEntriesFromPairs([{ label: { en: ["Author"] }, value: { en: ["Babbage"] } }]))
+      .toEqual([{ property: "dcterms:creator", label: "Author", value: "Babbage" }]);
+  });
+  it("keeps the original label when it differs from the preferred label (case counts as different)", () => {
+    expect(metadataEntriesFromPairs([{ label: "date created", value: "1843" }]))
+      .toEqual([{ property: "dcterms:created", label: "date created", value: "1843" }]);
+  });
+  it("imports an EXCLUDED-property label VERBATIM (never double-authors a native field)", () => {
+    expect(metadataEntriesFromPairs([{ label: { none: ["Title"] }, value: { none: ["The Real Title"] } }]))
+      .toEqual([{ label: "Title", value: "The Real Title" }]);
+    expect(metadataEntriesFromPairs([{ label: "Rights", value: "All rights reserved" }]))
+      .toEqual([{ label: "Rights", value: "All rights reserved" }]);
+  });
+  it("imports an unmatched label verbatim", () => {
+    expect(metadataEntriesFromPairs([{ label: { none: ["Shelfmark"] }, value: { none: ["MS 408"] } }]))
+      .toEqual([{ label: "Shelfmark", value: "MS 408" }]);
+  });
+  it("flattens a multi-valued language map into one repeated entry per value (first language wins)", () => {
+    expect(metadataEntriesFromPairs([{ label: { none: ["Subject"] }, value: { none: ["Botany", "Cryptography"], de: ["Botanik"] } }]))
+      .toEqual([
+        { property: "dcterms:subject", value: "Botany" },
+        { property: "dcterms:subject", value: "Cryptography" },
+      ]);
+  });
+  it("reads P2 forms (@value / plain strings / arrays) and skips label-less or valueless pairs", () => {
+    expect(metadataEntriesFromPairs([
+      { label: "Author", value: { "@value": "Ada" } },
+      { label: "Keywords", value: ["ciphers", { "@value": "herbals" }] },
+      { value: "no label — skipped" },
+      { label: "Empty", value: "   " },
+    ])).toEqual([
+      { property: "dcterms:creator", label: "Author", value: "Ada" },
+      { property: "dcterms:subject", label: "Keywords", value: "ciphers" },
+      { property: "dcterms:subject", label: "Keywords", value: "herbals" },
+    ]);
+  });
+  it("returns [] for absent/garbage metadata", () => {
+    expect(metadataEntriesFromPairs(undefined)).toEqual([]);
+    expect(metadataEntriesFromPairs("nope")).toEqual([]);
+  });
+});
+
+describe("manifestToExhibit — manifest-level descriptive data lands on the plan (Archie-c6bf)", () => {
+  const p3 = {
+    ...P3,
+    summary: { none: ["A famous cipher manuscript."] },
+    rights: "http://creativecommons.org/publicdomain/mark/1.0/",
+    requiredStatement: { label: { none: ["Held by"] }, value: { none: ["Beinecke Library"] } },
+    metadata: [
+      { label: { none: ["Author"] }, value: { none: ["Unknown"] } },
+      { label: { none: ["Shelfmark"] }, value: { none: ["MS 408"] } },
+    ],
+    items: [
+      { ...P3.items[0]!, metadata: [{ label: { none: ["Date"] }, value: { none: ["15th century"] } }] },
+      ...P3.items.slice(1),
+    ],
+  };
+  const plan = manifestToExhibit(p3, "https://x.org/manifest.json");
+  it("maps summary / rights / requiredStatement to the NATIVE fields", () => {
+    expect(plan.summary).toBe("A famous cipher manuscript.");
+    expect(plan.rights).toBe("http://creativecommons.org/publicdomain/mark/1.0/");
+    expect(plan.requiredStatement).toEqual({ label: "Held by", value: "Beinecke Library" });
+  });
+  it("maps manifest metadata pairs to the exhibit's entries", () => {
+    expect(plan.metadata).toEqual([
+      { property: "dcterms:creator", label: "Author", value: "Unknown" },
+      { label: "Shelfmark", value: "MS 408" },
+    ]);
+  });
+  it("maps per-canvas metadata to that object's entries; metadata-free canvases carry none", () => {
+    expect(plan.objects[0]!.metadata).toEqual([{ property: "dcterms:date", value: "15th century" }]);
+    expect(plan.objects[1]!.metadata).toBeUndefined();
+  });
+  it("a plain manifest still yields a field-free plan (no empty keys)", () => {
+    const bare = manifestToExhibit(P3, "https://x.org/manifest.json");
+    expect(bare.summary).toBeUndefined();
+    expect(bare.rights).toBeUndefined();
+    expect(bare.requiredStatement).toBeUndefined();
+    expect(bare.metadata).toBeUndefined();
+  });
+  it("reads the P2 forms (description / license / attribution)", () => {
+    const p2 = { ...P2, description: "A legacy description.", license: "http://rightsstatements.org/vocab/InC/1.0/", attribution: "Y University" };
+    const plan2 = manifestToExhibit(p2, "https://y.edu/manifest.json");
+    expect(plan2.summary).toBe("A legacy description.");
+    expect(plan2.rights).toBe("http://rightsstatements.org/vocab/InC/1.0/");
+    expect(plan2.requiredStatement).toEqual({ label: "Attribution", value: "Y University" });
   });
 });

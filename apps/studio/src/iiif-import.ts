@@ -4,6 +4,8 @@
 // image/label/dims subset of Presentation 3 AND legacy Presentation 2 directly instead of pulling
 // @iiif/parser for full normalization. DOM-free + fetch-free: callers fetch, this module plans.
 
+import { matchDctermsProperty, dctermsLabel, METADATA_EXCLUDED_PROPERTIES, DEFAULT_ATTRIBUTION_LABEL, type MetadataEntry, type RightsFields } from "@render/core";
+
 /** One planned object from a manifest canvas — mirrors ExhibitMeta's object fields. */
 export interface PlannedObject {
   source: string;
@@ -12,10 +14,20 @@ export interface PlannedObject {
   height?: number;
   mediaType?: "sound" | "video";
   duration?: number;
+  /** Descriptive entries mapped from the canvas's `metadata` pairs (Archie-c6bf). */
+  metadata?: MetadataEntry[];
 }
 
 export interface ManifestPlan {
   title: string;
+  /** Manifest-level `summary` (P3) / `description` (P2) → the exhibit's NATIVE summary. */
+  summary?: string;
+  /** Manifest-level `rights` (P3) / `license` (P2) → the exhibit's NATIVE license URI. */
+  rights?: string;
+  /** Manifest-level `requiredStatement` (P3) / `attribution` (P2) → the exhibit's NATIVE credit. */
+  requiredStatement?: RightsFields["requiredStatement"];
+  /** Manifest-level `metadata` pairs → the exhibit's descriptive entries (Archie-c6bf). */
+  metadata?: MetadataEntry[];
   objects: PlannedObject[];
 }
 
@@ -34,6 +46,54 @@ export function labelToString(label: unknown, fallback: string): string {
     }
   }
   return fallback;
+}
+
+/** IIIF value → ALL its display strings, one per repeated entry (Archie-c6bf import mapping).
+ *  P3 language map: the FIRST language's values ("none", then "en", then first key) — each array
+ *  element becomes one repeated entry. P2 forms: plain string, `{"@value"}`, or arrays of either.
+ *  Blank strings are dropped. */
+export function valuesToStrings(value: unknown): string[] {
+  if (typeof value === "string") return value.trim() ? [value.trim()] : [];
+  if (Array.isArray(value)) return value.flatMap(valuesToStrings);
+  if (value && typeof value === "object") {
+    const o = value as Record<string, unknown>;
+    if (typeof o["@value"] === "string") return valuesToStrings(o["@value"]);
+    for (const k of ["none", "en", ...Object.keys(o)]) {
+      const v = o[k];
+      if (Array.isArray(v) && v.some((x) => typeof x === "string" && x.trim())) return valuesToStrings(v);
+    }
+  }
+  return [];
+}
+
+/**
+ * Map a IIIF `metadata` pair list (P3 or P2) → Archie MetadataEntry[] (Archie-c6bf, fixed mapping):
+ *  • label matches a dcterms preferred label / import alias (case-insensitive) → `{ property,
+ *    label: original-when-it-differs-from-the-preferred-label, value }`;
+ *  • label maps to an EXCLUDED property (title/description/abstract/rights/license — the native-field
+ *    collision set) → VERBATIM `{ label, value }`: never double-author, never clobber a native field;
+ *  • no match → verbatim `{ label, value }`.
+ * A multi-valued pair (language-map array / repeated P2 values) yields one entry PER value.
+ */
+export function metadataEntriesFromPairs(raw: unknown): MetadataEntry[] {
+  const out: MetadataEntry[] = [];
+  for (const pair of asArray(raw)) {
+    const label = labelToString(pair["label"] ?? pair["@label"], "").trim();
+    if (!label) continue; // a pair with no legible label can't be displayed or matched — skip it
+    const values = valuesToStrings(pair["value"] ?? pair["@value"]);
+    const property = matchDctermsProperty(label);
+    const mapped = property !== undefined && !METADATA_EXCLUDED_PROPERTIES.has(property) ? property : undefined;
+    for (const value of values) {
+      if (mapped !== undefined) {
+        // Keep the third party's own wording when it differs from the vocabulary's preferred label
+        // (an alias like "Author" → dcterms:creator by definition differs) — lossless display.
+        out.push({ property: mapped, ...(label !== dctermsLabel(mapped) ? { label } : {}), value });
+      } else {
+        out.push({ label, value });
+      }
+    }
+  }
+  return out;
 }
 
 export type Json = Record<string, unknown>;
@@ -124,10 +184,13 @@ export function manifestToExhibit(json: unknown, url: string): ManifestPlan {
     const dimsOf = (o: Json) => (Number(o["width"]) && Number(o["height"]) ? { width: Number(o["width"]), height: Number(o["height"]) } : null);
     const dims = dimsOf(canvas) ?? dimsOf(body);
     const duration = Number(canvas["duration"] ?? body["duration"]) || undefined;
+    // Per-canvas descriptive metadata → this object's entries (Archie-c6bf).
+    const canvasMeta = metadataEntriesFromPairs(canvas["metadata"]);
     objects.push({
       source,
       label: labelToString(canvas["label"], `Canvas ${i + 1}`),
       ...(mediaType ? { mediaType, ...(duration ? { duration } : {}) } : dims ?? {}),
+      ...(canvasMeta.length ? { metadata: canvasMeta } : {}),
     });
   }
   if (objects.length === 0) throw new ManifestImportError("That IIIF link has no images or media Archie can add.");
@@ -135,5 +198,31 @@ export function manifestToExhibit(json: unknown, url: string): ManifestPlan {
   const fallbackTitle = (() => {
     try { return new URL(url).hostname; } catch { return "Untitled exhibit"; }
   })();
-  return { title: labelToString(m["label"], fallbackTitle), objects };
+
+  // Manifest-level descriptive data (Archie-c6bf): stop dropping what institutions author.
+  // The IIIF TYPED slots land on the NATIVE fields (they ARE those fields — research asset §4):
+  // summary/description → summary, rights/license → rights, requiredStatement/attribution → credit.
+  // The free-form `metadata` pairs map to the exhibit's entries.
+  const summary = labelToString(m["summary"] ?? m["description"], "").trim();
+  const rightsRaw = m["rights"] ?? m["license"];
+  const rights = typeof rightsRaw === "string" ? rightsRaw.trim() : idOf(asArray(rightsRaw)[0]);
+  const requiredStatement = (() => {
+    const rs = m["requiredStatement"] as Json | undefined;
+    if (rs && typeof rs === "object") {
+      const value = labelToString(rs["value"], "").trim();
+      if (value) return { label: labelToString(rs["label"], DEFAULT_ATTRIBUTION_LABEL), value };
+    }
+    const attribution = labelToString(m["attribution"], "").trim(); // P2
+    return attribution ? { label: DEFAULT_ATTRIBUTION_LABEL, value: attribution } : undefined;
+  })();
+  const manifestMeta = metadataEntriesFromPairs(m["metadata"]);
+
+  return {
+    title: labelToString(m["label"], fallbackTitle),
+    ...(summary ? { summary } : {}),
+    ...(rights ? { rights } : {}),
+    ...(requiredStatement ? { requiredStatement } : {}),
+    ...(manifestMeta.length ? { metadata: manifestMeta } : {}),
+    objects,
+  };
 }

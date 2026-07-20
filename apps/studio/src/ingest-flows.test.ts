@@ -669,3 +669,38 @@ describe("newExhibitFromManifest — failure containment", () => {
     expect(alerts.at(-1)).toMatch(/Couldn't finish importing/); // surfaced through the existing alert channel
   });
 });
+
+describe("newExhibitFromManifest — descriptive metadata lands on the exhibit + objects (Archie-c6bf)", () => {
+  it("stamps summary/rights/credit on the minted exhibit and carries per-canvas entries onto objects", async () => {
+    const { ctx, exhibits } = makeCtx();
+    const flows = createIngestFlows(ctx);
+    const manifest = {
+      type: "Manifest",
+      label: { none: ["Described"] },
+      summary: { none: ["An institutional description."] },
+      rights: "http://creativecommons.org/publicdomain/mark/1.0/",
+      requiredStatement: { label: { none: ["Held by"] }, value: { none: ["Y Library"] } },
+      metadata: [{ label: { none: ["Author"] }, value: { none: ["Ada"] } }],
+      items: [
+        { type: "Canvas", metadata: [{ label: { none: ["Date"] }, value: { none: ["1843"] } }], items: [{ items: [{ body: { id: "https://x/1.jpg", type: "Image" } }] }] },
+        { type: "Canvas", items: [{ items: [{ body: { id: "https://x/2.jpg", type: "Image" } }] }] },
+      ],
+    };
+    const body = new TextEncoder().encode(JSON.stringify(manifest));
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true,
+      headers: new Headers({ "content-length": String(body.byteLength) }),
+      arrayBuffer: async () => body.buffer,
+    })));
+
+    await flows.newExhibitFromManifest("https://x/manifest.json");
+
+    const ex = exhibits.find((e) => e.slug === "described")! as any;
+    expect(ex.summary).toBe("An institutional description.");
+    expect(ex.rights).toBe("http://creativecommons.org/publicdomain/mark/1.0/");
+    expect(ex.requiredStatement).toEqual({ label: "Held by", value: "Y Library" });
+    expect(ex.metadata).toEqual([{ property: "dcterms:creator", label: "Author", value: "Ada" }]);
+    expect(ex.objects[0]!.metadata).toEqual([{ property: "dcterms:date", value: "1843" }]);
+    expect(ex.objects[1]!.metadata).toBeUndefined();
+  });
+});
