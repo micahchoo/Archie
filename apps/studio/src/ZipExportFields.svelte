@@ -3,38 +3,16 @@
      the Save dialog (SaveZipDialog) — so the fields, their notes, and the opts composition live
      here ONCE. The parent owns the bindables (name/selected), the action buttons, and the phase
      machine; `exportOpts` composes what the flows' download/save seams take. -->
-<script lang="ts" module>
-  /** Every exhibit checked — the opening state of each save surface (no remembered subset: a
-   *  partial copy is an explicit, per-save choice, never hidden state). */
-  export function allSelected(exhibits: { slug: string }[]): Record<string, boolean> {
-    return Object.fromEntries(exhibits.map((e) => [e.slug, true]));
-  }
-  /** The suggested name with the suffix stripped for editing (the field shows it as a fixed adornment). */
-  export function baseNameOf(suggested: string): string {
-    return (suggested || "library").replace(/\.archie\.zip$/, "").replace(/\.zip$/, "");
-  }
-  /** Compose the flows' export opts from the fields: the name always carries the `.archie.zip`
-   *  suffix; `slugs` is present only for a strict subset (absent = the whole library — the
-   *  pre-chooser contract every opts-less caller keeps). */
-  export function exportOpts(name: string, selected: Record<string, boolean>, exhibits: { slug: string }[]): { name?: string; slugs?: string[] } {
-    const base = baseNameOf(name.trim());
-    const slugs = exhibits.filter((e) => selected[e.slug]).map((e) => e.slug);
-    return { ...(base ? { name: `${base}.archie.zip` } : {}), ...(slugs.length === exhibits.length ? {} : { slugs }) };
-  }
-  /** How many exhibits are checked — parents disable their save action at 0. */
-  export function selectedCount(selected: Record<string, boolean>, exhibits: { slug: string }[]): number {
-    return exhibits.filter((e) => selected[e.slug]).length;
-  }
-</script>
-
 <script lang="ts">
+  import { selectedCount, type ExportExhibit } from "./zip-export-opts.js";
+
   let {
     exhibits,
     name = $bindable(""),
     selected = $bindable({}),
     subsetWarning = "",
   }: {
-    exhibits: { slug: string; title: string }[];
+    exhibits: ExportExhibit[];
     /** File name WITHOUT the .archie.zip suffix (shown as a fixed adornment). */
     name?: string;
     selected?: Record<string, boolean>;
@@ -51,16 +29,20 @@
       <span class="zip-ext">.archie.zip</span>
     </span>
   </label>
-  <fieldset class="ex-list">
-    <legend>Exhibits to include</legend>
-    {#each exhibits as ex (ex.slug)}
-      <label class="cb"><input type="checkbox" bind:checked={selected[ex.slug]} /><span class="cb-text">{ex.title}</span></label>
-    {/each}
-  </fieldset>
-  {#if count === 0}
-    <p class="note">Pick at least one exhibit — an empty copy has nothing to open.</p>
-  {:else if count < exhibits.length && subsetWarning}
-    <p class="note">{subsetWarning}</p>
+  <!-- Nothing to pick = nothing to choose between: the whole library goes, so the list is skipped
+       rather than shown empty above a note the reader can't act on. -->
+  {#if exhibits.length > 0}
+    <fieldset class="ex-list">
+      <legend>Exhibits to include</legend>
+      {#each exhibits as ex (ex.slug)}
+        <label class="cb"><input type="checkbox" bind:checked={selected[ex.slug]} /><span class="cb-text">{ex.title}</span></label>
+      {/each}
+    </fieldset>
+    {#if count === 0}
+      <p class="note">Pick at least one exhibit — an empty copy has nothing to open.</p>
+    {:else if count < exhibits.length && subsetWarning}
+      <p class="note">{subsetWarning}</p>
+    {/if}
   {/if}
 </div>
 

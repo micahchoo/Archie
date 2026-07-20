@@ -39,7 +39,8 @@
   // anywhere public, share one link into the canonical Viewer instance (ADR-0009). ONE config source
   // (ADR-0013 amendment): archie.config.json — build-gh-pages.sh reads the same file via node -p.
   import archieConfig from "../../../archie.config.json";
-  import ZipExportFields, { allSelected, baseNameOf, exportOpts, selectedCount } from "./ZipExportFields.svelte";
+  import ZipExportFields from "./ZipExportFields.svelte";
+  import { allSelected, baseNameOf, canExport, exportOpts } from "./zip-export-opts.js";
 
   let {
     open = false,
@@ -265,7 +266,7 @@
   let exportBase = $state(""); // file name without the .archie.zip suffix (shown as a fixed adornment)
   let exportSel = $state<Record<string, boolean>>({});
   let exporting = $state(false);
-  const exportCount = $derived(selectedCount(exportSel, exhibits));
+  const canExportNow = $derived(canExport(exportSel, exhibits));
   function armExportFields() {
     exportBase = baseNameOf(suggestedZipName);
     exportSel = allSelected(exhibits);
@@ -436,7 +437,7 @@
           <button type="button" class="ghost" onclick={backToChooser}>← Back</button>
           <!-- Stay here until the save actually happens (the OS picker is modal anyway) — done-download
                must never claim a save the user cancelled. -->
-          <button class="primary" disabled={exporting || exportCount === 0} onclick={saveWorkingCopy}>{exporting ? "Saving…" : "Save copy"}</button>
+          <button class="primary" disabled={exporting || !canExportNow} onclick={saveWorkingCopy}>{exporting ? "Saving…" : "Save copy"}</button>
         </div>
       </div>
 
@@ -919,7 +920,7 @@
           {#if canFolder}
             <button class="primary" disabled={menuPhase === "working"} onclick={chooseFolder}>{menuPhase === "working" ? "Writing…" : "Choose folder…"}</button>
           {:else}
-            <button class="primary" disabled={menuPhase === "working" || exportCount === 0} onclick={saveZip}>{menuPhase === "working" ? "Downloading…" : "Download .archie.zip"}</button>
+            <button class="primary" disabled={menuPhase === "working" || !canExportNow} onclick={saveZip}>{menuPhase === "working" ? "Downloading…" : "Download .archie.zip"}</button>
           {/if}
         </div>
       </div>

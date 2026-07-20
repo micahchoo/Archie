@@ -6,7 +6,8 @@
      here — they save the whole library directly. -->
 <script lang="ts">
   import { scrimmed, trapFocus, modality } from "./modality.svelte";
-  import ZipExportFields, { allSelected, baseNameOf, exportOpts, selectedCount } from "./ZipExportFields.svelte";
+  import ZipExportFields from "./ZipExportFields.svelte";
+  import { allSelected, baseNameOf, canExport, exportOpts } from "./zip-export-opts.js";
 
   let {
     open = false,
@@ -34,7 +35,7 @@
       selected = allSelected(exhibits);
     }
   });
-  const count = $derived(selectedCount(selected, exhibits));
+  const canSave = $derived(canExport(selected, exhibits));
 </script>
 
 {#if open}
@@ -50,7 +51,7 @@
       subsetWarning="This file will hold ONLY the exhibits you pick — opening it later replaces your library with just those. For a partial copy to share, use Publish → Share a working copy instead." />
     <div class="actions">
       <button type="button" class="ghost" onclick={oncancel}>Cancel</button>
-      <button type="button" class="primary" disabled={busy || count === 0} onclick={() => onsave(exportOpts(name, selected, exhibits))}>{busy ? "Saving…" : "Save"}</button>
+      <button type="button" class="primary" disabled={busy || !canSave} onclick={() => onsave(exportOpts(name, selected, exhibits))}>{busy ? "Saving…" : "Save"}</button>
     </div>
   </div>
 {/if}
