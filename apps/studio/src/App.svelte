@@ -85,8 +85,9 @@
   import { buildCsvTemplate, type CsvPendingNote } from "./csv-import.js";
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
-  // Structure rev-log behind archie.structureRevlog (Archie-42f3) — default OFF; the session module
-  // is inert when the flag is off (no reads, no writes, no structure/ dir).
+  // Structure rev-log (Archie-42f3; DEFAULT ON since Archie-b0b1). archie.structureRevlog survives as
+  // an emergency kill-switch ("0" → OFF), which makes the session module inert (no reads, no writes,
+  // no structure/ dir).
   import { createStructureSession } from "./structure-session.svelte.js";
   import { structureRevlogEnabled } from "./feature-flags.js";
   import { createAssetUrls } from "./asset-urls.svelte.js";

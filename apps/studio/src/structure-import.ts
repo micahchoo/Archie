@@ -6,10 +6,11 @@
 // edits become plural heads, which the existing conflicted gating (42f3, NarrativeEditor
 // conflictedIds) surfaces — they are deliberately NOT auto-resolved here.
 //
-// Called from ingest-flows' replaceProjectFrom, flag-ON only (archie.structureRevlog); with the
-// flag off the import path never touches a structure dir (today's byte-identical behavior).
-// Absent incoming pages → no write at all, so the seed-from-array path on next exhibit open
-// (structure-session ensureLoaded) stays exactly today's behavior.
+// Called from ingest-flows' replaceProjectFrom, UNGATED (Archie-b0b1): the merge fires on incoming
+// structure-page EXISTENCE, NOT on archie.structureRevlog — the mirror of the publish/export leg, so a
+// published library's section history round-trips on a default reopen regardless of the kill-switch.
+// Absent incoming pages → no write at all (no structure dir touched), so the seed-from-array path on
+// next exhibit open (structure-session ensureLoaded) stays byte-identical to a no-history import.
 import {
   asExhibitId,
   composeLegacyObjectId,
