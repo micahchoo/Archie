@@ -97,6 +97,12 @@ export interface WorkingExhibitMeta extends RightsFields {
    *  exhibits.json/loadLibrary, so `libraryToWorking` must keep it or a covered `.archie.zip` import +
    *  republish makes the covers the viewer renders (`Gallery.svelte`) VANISH. */
   cover?: string;
+  /** UNLISTED lever (Archie-77b2 / Archie-bdc0): when `true`, the exhibit stays reachable by direct URL but
+   *  drops out of the public hall + sitemap (see `Exhibit.unlisted`). The Studio's unlist toggle writes it
+   *  HERE, so `workingToLibrary` projects it onto the published card AND `libraryToWorking` carries it back
+   *  on import — before Archie-bdc0 the library→working side NAMED-DROPPED it, so a Studio import→republish
+   *  silently RE-LISTED a hidden exhibit. Absent = LISTED (the default; zero change for existing exhibits). */
+  unlisted?: boolean;
   /** @deprecated (ADR-0016) The leading surface is now a pure function of content — `resolveLayout`
    *  always DERIVES the type and IGNORES this field. Kept OPTIONAL only for read-tolerance of legacy
    *  stored data (harmless when present); the Studio MUST NOT write it. Remove once no stored exhibit
@@ -152,7 +158,7 @@ export interface WorkingToLibraryOptions {
 // is a template marker (not a Library field); `provenance` is Studio-local except `originalName`, which
 // carries as `Library.originalName`. A new working field fails the build here until classified.
 const _workingExhibitCarry = {
-  id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry",
+  id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry", unlisted: "carry",
   layout: "carry", mode: "carry", objects: "carry", sections: "carry", readings: "carry",
   rights: "carry", requiredStatement: "carry", metadata: "carry",
   seedVersion: { drop: "template marker (Playground example); not a Library field — see includeTemplates filter" },
@@ -179,6 +185,7 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
       id: asExhibitId(ex.id), slug: ex.slug, title: ex.title,
       ...(ex.summary ? { summary: ex.summary } : {}),
       ...(ex.cover ? { cover: ex.cover } : {}), // round-trip the Gallery cover (Issue 21)
+      ...(ex.unlisted ? { unlisted: true } : {}), // project the UNLISTED lever onto the card (Archie-bdc0); absent = LISTED
       ...(ex.layout ? { layout: ex.layout } : {}),
       ...(ex.mode ? { mode: ex.mode } : {}),
       ...(ex.sections && ex.sections.length ? { sections: ex.sections } : {}),
@@ -207,10 +214,9 @@ export function workingToLibrary(meta: WorkingLibraryMeta, opts: WorkingToLibrar
 // (the LIVE bug: `cover`/`format`/`originalName` recovered then dropped → covers vanish on republish).
 // `bakeTiles` is the one named exclusion (a publish-time opt-in never present on a reconstructed Library).
 const _libraryExhibitCarry = {
-  id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry",
+  id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry", unlisted: "carry",
   objects: "carry", sections: "carry", readings: "carry", layout: "carry", mode: "carry",
   rights: "carry", requiredStatement: "carry", metadata: "carry",
-  unlisted: { drop: "publish-listing lever (Archie-77b2); the Studio has no unlist UI, so a working-store round-trip does NOT carry it — an exhibit imported into Studio republishes LISTED (the default). The lever lives on the producer's fixture/carried exhibits.json card, and loadLibrary (not this working path) round-trips it for a dropped-zip regen." },
 } satisfies Record<keyof Exhibit, CarryDisposition>;
 const _libraryObjectCarry = {
   id: "carry", source: "carry", label: "carry", summary: "carry", mediaType: "carry",
@@ -237,6 +243,7 @@ export function libraryToWorking(library: Library): WorkingLibraryMeta {
       id: ex.id, slug: ex.slug, title: ex.title,
       ...(ex.summary !== undefined ? { summary: ex.summary } : {}),
       ...(ex.cover !== undefined ? { cover: ex.cover } : {}), // carry the Gallery cover (Issue 21 live drop)
+      ...(ex.unlisted ? { unlisted: true } : {}), // carry the UNLISTED lever (Archie-bdc0): import→republish keeps a hidden exhibit hidden
       ...(ex.layout !== undefined ? { layout: ex.layout } : {}),
       ...(ex.mode !== undefined ? { mode: ex.mode } : {}),
       ...(ex.sections && ex.sections.length ? { sections: ex.sections } : {}),

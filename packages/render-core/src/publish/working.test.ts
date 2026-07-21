@@ -120,6 +120,26 @@ describe("libraryToWorking (inverse of workingToLibrary)", () => {
       kind: "xyz", template: "https://t/{z}/{x}/{y}.png", maxZoom: 5, attribution: "© OSM",
     });
   });
+
+  // Archie-bdc0: the UNLISTED lever must round-trip through the working store. Before this ticket
+  // libraryToWorking NAMED-DROPPED it, so a Studio import→republish silently RE-LISTED a hidden exhibit.
+  // Now it carries libraryToWorking→workingToLibrary; default (absent) stays LISTED for both directions.
+  it("carries the UNLISTED lever both ways; absent stays listed (Archie-bdc0)", () => {
+    const lib: Library = {
+      id: asLibraryId("demo"),
+      exhibits: [
+        { id: asExhibitId("shown"), slug: "shown", title: "Shown", objects: [] },
+        { id: asExhibitId("hidden"), slug: "hidden", title: "Hidden", unlisted: true, objects: [] },
+      ],
+    };
+    const working = libraryToWorking(lib);
+    expect("unlisted" in working.exhibits[0]!).toBe(false); // listed exhibit carries no flag
+    expect(working.exhibits[1]!.unlisted).toBe(true); // hidden exhibit survives the import into the working store
+
+    const back = workingToLibrary(working, { id: "demo" });
+    expect("unlisted" in back.exhibits[0]!).toBe(false); // still listed on republish
+    expect(back.exhibits[1]!.unlisted).toBe(true); // still hidden on republish — the re-list bug is closed
+  });
 });
 
 describe("loadWorkingLibrary", () => {
