@@ -225,6 +225,11 @@ export interface Exhibit extends RightsFields {
   summary?: string;
   /** Cover image URL for the Gallery card (UX-Q7). */
   cover?: string;
+  /** UNLISTED lever (Archie-77b2): when `true`, the exhibit stays reachable by direct URL (its `/{slug}/`
+   *  page is still built) but drops out of the public hall (Gallery cards + all-images wall) AND the
+   *  sitemap. Default (absent) = LISTED — zero behavior change for existing exhibits. The flag flows from
+   *  the PRODUCER (a fixture/seed `Library`, or a carried published card), never a Studio author edit. */
+  unlisted?: boolean;
   objects: AObject[];
   /** Ordered narrative sections (IIIF Ranges). Present only for Narrative-layout exhibits. */
   sections?: Section[];

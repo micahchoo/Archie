@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { hasWall, filterExhibits, filterImages, wallHref, mergeImageIndex } from "./gallery-view.js";
+import { hasWall, filterExhibits, filterImages, wallHref, mergeImageIndex, listedExhibits, unlistedSlugSet } from "./gallery-view.js";
 import { loadImageIndex } from "./published.js";
 import type { ImageIndex } from "@render/core";
 
@@ -34,6 +34,25 @@ describe("gallery-view — title filtering (shared matchesTitle)", () => {
   });
   it("wallHref points at the object in its exhibit (existing route grammar)", () => {
     expect(wallHref(idx.images[0]!)).toBe("#/a/o/o1");
+  });
+});
+
+describe("gallery-view — the UNLISTED lever (Archie-77b2): default LISTED, hall drops unlisted", () => {
+  const cards = [
+    { slug: "a", title: "Shown A" },
+    { slug: "b", title: "Hidden B", unlisted: true },
+    { slug: "c", title: "Shown C", unlisted: false },
+  ];
+  it("listedExhibits keeps cards without the flag; a card without `unlisted` is listed", () => {
+    expect(listedExhibits(cards).map((c) => c.slug)).toEqual(["a", "c"]);
+    const noFlag: { slug: string; title: string }[] = [{ slug: "x", title: "X" }];
+    expect(listedExhibits(noFlag).map((c) => c.slug)).toEqual(["x"]); // default LISTED
+  });
+  it("unlistedSlugSet collects exactly the hidden slugs (for dropping wall tiles too)", () => {
+    const hidden = unlistedSlugSet(cards);
+    expect(hidden.has("b")).toBe(true);
+    expect(hidden.has("a")).toBe(false);
+    expect(hidden.size).toBe(1);
   });
 });
 

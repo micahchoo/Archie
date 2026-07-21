@@ -210,6 +210,7 @@ const _libraryExhibitCarry = {
   id: "carry", slug: "carry", title: "carry", summary: "carry", cover: "carry",
   objects: "carry", sections: "carry", readings: "carry", layout: "carry", mode: "carry",
   rights: "carry", requiredStatement: "carry", metadata: "carry",
+  unlisted: { drop: "publish-listing lever (Archie-77b2); the Studio has no unlist UI, so a working-store round-trip does NOT carry it — an exhibit imported into Studio republishes LISTED (the default). The lever lives on the producer's fixture/carried exhibits.json card, and loadLibrary (not this working path) round-trips it for a dropped-zip regen." },
 } satisfies Record<keyof Exhibit, CarryDisposition>;
 const _libraryObjectCarry = {
   id: "carry", source: "carry", label: "carry", summary: "carry", mediaType: "carry",

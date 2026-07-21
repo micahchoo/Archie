@@ -8,7 +8,8 @@
       "slug": "screenshots",
       "title": "Archie, Annotated",
       "description": "Archie annotates Archie: 21 screenshots of the app itself, read four ways — as a Studio how-to, a Viewer tour, an embed guide, and a power-user's list of invisible behavior.",
-      "order": 0
+      "order": 0,
+      "unlisted": true
     },
     {
       "slug": "voynich-rosettes",
@@ -50,7 +51,8 @@
       "title": "Showroom Sampler",
       "cover": "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg",
       "description": "A tiny demo exhibit: a video to annotate frame-by-frame, an audio recording with a transcript, and a note that carries its own picture.",
-      "order": 6
+      "order": 6,
+      "unlisted": true
     }
   ],
   "presentation": {},

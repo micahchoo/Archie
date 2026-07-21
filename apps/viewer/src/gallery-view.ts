@@ -19,6 +19,22 @@ export function filterExhibits<T extends { title: string }>(cards: readonly T[],
   return cards.filter((c) => matchesTitle(c.title, query));
 }
 
+/**
+ * The LISTED enumeration (Archie-77b2): the public hall shows only cards the producer did NOT mark
+ * `unlisted`. Default LISTED — a card without the flag stays in the hall (zero change for existing
+ * exhibits). An unlisted exhibit is still reachable by direct URL (its `/{slug}/` page is built); this
+ * only drops it from the hall's cards. Pure — the component composes it with title-search + sort.
+ */
+export function listedExhibits<T extends { slug: string; unlisted?: boolean }>(cards: readonly T[]): T[] {
+  return cards.filter((c) => !c.unlisted);
+}
+
+/** Slugs the hall HIDES (unlisted) — so their tiles also drop from the all-images wall, keeping an
+ *  unlisted exhibit out of the WHOLE hall surface, not just the cards. Empty set = nothing hidden. */
+export function unlistedSlugSet(cards: readonly { slug: string; unlisted?: boolean }[]): Set<string> {
+  return new Set(cards.filter((c) => c.unlisted).map((c) => c.slug));
+}
+
 /** Image-index entries filtered by object title (empty/whitespace query → all). */
 export function filterImages(images: readonly ImageIndexEntry[], query: string): ImageIndexEntry[] {
   return images.filter((e) => matchesTitle(e.title, query));

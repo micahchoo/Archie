@@ -50,4 +50,15 @@ describe("mergePublishedIndexes", () => {
     const m = mergePublishedIndexes(g, indexes(["language-atlas"], "theirs"));
     expect(m.exhibits.library.id).toBe("mine");
   });
+
+  it("carries the UNLISTED lever verbatim on a preserved (non-owned) card (Archie-77b2)", () => {
+    const existing = indexes(["voynich", "screenshots"]);
+    // mark the carried 'screenshots' card unlisted — the merge must preserve the flag as it re-numbers.
+    existing.exhibits.exhibits.find((c) => c.slug === "screenshots")!.unlisted = true;
+    const m = mergePublishedIndexes(indexes(["voynich"]), existing);
+    const carried = m.exhibits.exhibits.find((c) => c.slug === "screenshots")!;
+    expect(m.preservedSlugs).toEqual(["screenshots"]);
+    expect(carried.unlisted).toBe(true); // survived the {...c, order} re-numbering
+    expect(carried.order).toBe(1); // appended after the generated block
+  });
 });

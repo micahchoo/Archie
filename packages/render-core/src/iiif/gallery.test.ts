@@ -40,6 +40,20 @@ describe("toExhibitsJson (the Gallery source — UX-Q7 schema-forward)", () => {
     ]);
     expect(j.presentation).toEqual({}); // reserved for v1.1 curation (additive, not a migration)
   });
+
+  it("carries the UNLISTED lever onto the card only when set — default LISTED (Archie-77b2)", () => {
+    const withFlag: Library = {
+      id: asLibraryId("lib2"),
+      exhibits: [
+        { id: asExhibitId("e1"), slug: "shown", title: "Shown", objects: [] },
+        { id: asExhibitId("e2"), slug: "hidden", title: "Hidden", objects: [], unlisted: true },
+      ],
+    };
+    const j = toExhibitsJson(withFlag);
+    expect(j.exhibits[0]).toEqual({ slug: "shown", title: "Shown", order: 0 }); // no `unlisted` key when absent
+    expect("unlisted" in j.exhibits[0]!).toBe(false);
+    expect(j.exhibits[1]).toEqual({ slug: "hidden", title: "Hidden", order: 1, unlisted: true });
+  });
 });
 
 describe("toExhibitsJson cover fallback (thumbnail-mitigations gap 5 — derive from the first image object)", () => {

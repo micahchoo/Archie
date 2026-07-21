@@ -18,6 +18,12 @@ export interface ExhibitCard {
   description?: string;
   /** Explicit display order (array index at emit time). */
   order: number;
+  /** UNLISTED lever (Archie-77b2): `true` marks an exhibit reachable by direct URL but ABSENT from the
+   *  public hall (Gallery cards + wall) and the sitemap. Default (omitted) = LISTED. Consumers split on
+   *  this: the `/{slug}/` page + og:image + cite card read EVERY card (reachability), while the hall and
+   *  `exhibitSlugs`/sitemap read only the LISTED subset. `mergePublishedIndexes` carries it verbatim for
+   *  a preserved (non-owned) card, and `loadLibrary` round-trips it back onto `Exhibit`. */
+  unlisted?: boolean;
 }
 
 export interface ExhibitsJson {
@@ -76,6 +82,7 @@ export function toExhibitsJson(library: Library): ExhibitsJson {
         ...(cover !== undefined ? { cover } : {}),
         ...(e.summary !== undefined ? { description: e.summary } : {}),
         order,
+        ...(e.unlisted ? { unlisted: true } : {}), // default LISTED — only tag the card when the producer opts out
       };
     }),
     presentation: {},
