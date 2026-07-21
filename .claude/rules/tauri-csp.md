@@ -31,3 +31,20 @@ fine; remote **code** is not).
 The CSP is compiled into the binary by `tauri::generate_context!`, so any change requires a
 `tauri build` + Flatpak rebuild to take effect. Don't tighten `script-src` without testing the
 annotation canvas in the packaged app.
+
+## `https:` is the FALLBACK; the native-http bridge is the escape hatch (Archie-fada)
+
+Webview `fetch`/`<img>`/XHR under this CSP still enforce **CORS** and the webview's redirect rules, so
+a CORS-restricted / 302-redirecting host fails even with `https:` present. For that class, remote
+**images** and a IIIF **info.json** now route through Tauri's native http (`apps/studio/src/tauri-fs.ts`
+→ `fetchRemoteAsBlobUrl` / `fetchRemoteJson`), injected `isTauri()`-gated into the ingest dimension
+probe and the `@render/mount` `resolveOsdTileSources` seam. This does **not** relax the CSP — the
+webview path is still the default and the only path on hosts that already work — so keep `https:` on
+`img-src`/`media-src`/`connect-src`; the bridge is additive, not a replacement.
+
+One CSP fact the bridge is shaped around: `connect-src` allows `https:` but **not** `blob:`, so a
+webview `fetch()` of a `blob:` URL is refused. That's why `info.json` is fetched as **parsed JSON**
+(`fetchRemoteJson`, handed to OSD as a data tile source) rather than the image trick of
+`fetchRemoteAsBlobUrl` + `fetch(blobUrl)`. IIIF **tiles** deliberately stay on the webview `<img>`
+loader (per-tile native fetch = one IPC per tile, disproportionate) — see
+`ledgers/TEND-EXPLORE-tauri-2026-07-20.md` for the full reasoning.
