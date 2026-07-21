@@ -61,8 +61,8 @@ describe("registration", () => {
   it("defineArchieViewer is idempotent (a second define is a no-op, not a throw)", () => {
     expect(() => defineArchieViewer()).not.toThrow();
   });
-  it("observes src / target / iiif-content / offline", () => {
-    expect(ArchieViewerElement.observedAttributes).toEqual(["src", "target", "iiif-content", "offline"]);
+  it("observes src / target / iiif-content / offline / show-unlisted", () => {
+    expect(ArchieViewerElement.observedAttributes).toEqual(["src", "target", "iiif-content", "offline", "show-unlisted"]);
   });
 });
 
@@ -93,6 +93,17 @@ describe("attribute ⇄ property reactivity", () => {
     expect(el.offline).toBe(true);
     el.offline = false;
     expect(el.hasAttribute("offline")).toBe(false);
+  });
+
+  it("show-unlisted is a boolean attribute (presence = on)", () => {
+    const el = mount();
+    expect(el.showUnlisted).toBe(false);
+    el.showUnlisted = true;
+    expect(el.hasAttribute("show-unlisted")).toBe(true);
+    el.setAttribute("show-unlisted", "");
+    expect(el.showUnlisted).toBe(true);
+    el.showUnlisted = false;
+    expect(el.hasAttribute("show-unlisted")).toBe(false);
   });
 
   it("setting src after connect kicks off a load (leaves the empty zone for 'loading')", async () => {
@@ -217,6 +228,102 @@ describe("target ladder degrade-upward (ADR-0021, integration through a real lib
     await settle();
     expect(el.shadowRoot!.querySelector('[data-obj="o1"]')).not.toBeNull();
     expect(el.shadowRoot!.querySelector(".intro h1")?.textContent).toBe("Alpha Exhibit");
+  });
+});
+
+describe("gallery listing honors the UNLISTED lever (Archie-f735)", () => {
+  // Two exhibits: "alpha" carries no `unlisted` key (the absent/default case); "hidden" is marked
+  // unlisted: true. Mirrors apps/viewer gallery-view.ts's `listedExhibits` filter (Archie-77b2), applied
+  // here to the embed's OWN gallery grid (render-core iiif/exhibits.ts ExhibitCard.unlisted).
+  async function buildTwoExhibitBytes(): Promise<Uint8Array> {
+    const library: Library = {
+      id: asLibraryId("L"),
+      title: "Lib",
+      exhibits: [
+        {
+          id: asExhibitId("e1"),
+          slug: "alpha",
+          title: "Alpha Exhibit",
+          objects: [{ id: asObjectId("o1"), source: "https://example.org/iiif/o1/info.json", label: "Plate I" }],
+        },
+        {
+          id: asExhibitId("e2"),
+          slug: "hidden",
+          title: "Hidden Exhibit",
+          unlisted: true,
+          objects: [{ id: asObjectId("o2"), source: "https://example.org/iiif/o2/info.json", label: "Plate II" }],
+        },
+      ],
+    };
+    const fs = new ZipFilesystem();
+    await publishLibrary(fs, library, () => [], { baseUrl: "https://u.gh.io/lib/" });
+    return fs.toZip();
+  }
+
+  it("an unlisted card is hidden from the gallery grid by default", async () => {
+    const bytes = await buildTwoExhibitBytes();
+    const el = mount();
+    await el.openFile(new Blob([bytes as BlobPart]));
+    await settle();
+    expect(el.shadowRoot!.querySelector('[data-slug="hidden"]')).toBeNull();
+  });
+
+  it("absent `unlisted` ≡ listed — the un-flagged card renders exactly as before", async () => {
+    const bytes = await buildTwoExhibitBytes();
+    const el = mount();
+    await el.openFile(new Blob([bytes as BlobPart]));
+    await settle();
+    const card = el.shadowRoot!.querySelector('[data-slug="alpha"]');
+    expect(card).not.toBeNull();
+    expect(card?.textContent).toContain("Alpha Exhibit");
+  });
+
+  it("show-unlisted includes the unlisted card in the gallery grid", async () => {
+    const bytes = await buildTwoExhibitBytes();
+    const el = mount();
+    el.showUnlisted = true;
+    await el.openFile(new Blob([bytes as BlobPart]));
+    await settle();
+    expect(el.shadowRoot!.querySelector('[data-slug="alpha"]')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector('[data-slug="hidden"]')).not.toBeNull();
+  });
+
+  it("toggling show-unlisted AFTER the gallery has rendered re-filters in place (no reload)", async () => {
+    const bytes = await buildTwoExhibitBytes();
+    const el = mount();
+    await el.openFile(new Blob([bytes as BlobPart]));
+    await settle();
+    expect(el.shadowRoot!.querySelector('[data-slug="hidden"]')).toBeNull();
+    el.showUnlisted = true;
+    expect(el.shadowRoot!.querySelector('[data-slug="hidden"]')).not.toBeNull();
+    el.showUnlisted = false;
+    expect(el.shadowRoot!.querySelector('[data-slug="hidden"]')).toBeNull();
+  });
+
+  it("a `target` pointing directly at an unlisted exhibit still opens it — reachability is unaffected", async () => {
+    const bytes = await buildTwoExhibitBytes();
+    const el = mount();
+    el.setAttribute("target", "#/hidden");
+    await el.openFile(new Blob([bytes as BlobPart]));
+    // #applyTarget fires #openExhibit un-awaited; the two-exhibit archive's readExhibit chain is deeper
+    // than the single-exhibit fixtures elsewhere in this file, so `settle()`'s fixed microtask budget
+    // isn't reliably enough. A macrotask tick always runs after every currently-queued microtask (and
+    // whatever they enqueue) has drained, so it settles regardless of chain depth.
+    await new Promise((r) => setTimeout(r, 0));
+    // Lands on the hidden exhibit's own grid — not degraded to the gallery, not blocked by the default hide.
+    expect(el.shadowRoot!.querySelector('[data-obj="o2"]')).not.toBeNull();
+    expect(el.shadowRoot!.querySelector(".intro h1")?.textContent).toBe("Hidden Exhibit");
+  });
+
+  it("navigating back to the gallery from an opened unlisted exhibit still hides its card", async () => {
+    const bytes = await buildTwoExhibitBytes();
+    const el = mount();
+    el.setAttribute("target", "#/hidden");
+    await el.openFile(new Blob([bytes as BlobPart]));
+    await new Promise((r) => setTimeout(r, 0));
+    el.shadowRoot!.querySelector<HTMLButtonElement>('[data-act="back"]')!.click();
+    expect(el.shadowRoot!.querySelector('[data-slug="hidden"]')).toBeNull();
+    expect(el.shadowRoot!.querySelector('[data-slug="alpha"]')).not.toBeNull();
   });
 });
 

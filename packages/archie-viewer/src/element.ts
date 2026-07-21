@@ -21,6 +21,12 @@
 //                   `target` WINS — `iiif-content` is the interop fallback, only consulted when `target`
 //                   is absent. Foreign/unknown → gallery; malformed → gallery (never an error).
 //   offline       — BOOLEAN attr (presence = on): block remote tile/media fetch (passed to the reader).
+//   show-unlisted — BOOLEAN attr (presence = on): include `unlisted` exhibit cards in the GALLERY LISTING
+//                   (Archie-f735). Default (absent) hides them — the same UNLISTED lever the viewer hall
+//                   honors (render-core iiif/exhibits.ts `ExhibitCard.unlisted`), applied to the embed's
+//                   own gallery grid. Only the listing filters: direct opening of an unlisted exhibit via
+//                   `target`/`iiif-content` (or a card click once shown) is UNAFFECTED — reachability is
+//                   unchanged either way.
 
 import { parseRoute, thumbnailCandidates, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit } from "@render/core";
 import type { ReadOnlyMountSurface } from "@render/mount";
@@ -74,7 +80,7 @@ const TEMPLATE_STYLES = `
 
 export class ArchieViewerElement extends HTMLElement {
   static get observedAttributes(): string[] {
-    return ["src", "target", "iiif-content", "offline"];
+    return ["src", "target", "iiif-content", "offline", "show-unlisted"];
   }
 
   // --- INSTANCE state (the per-element seam — no module globals) -------------------------------
@@ -114,6 +120,11 @@ export class ArchieViewerElement extends HTMLElement {
   /** Boolean attribute: presence = offline on. */
   get offline(): boolean { return this.hasAttribute("offline"); }
   set offline(v: boolean) { v ? this.setAttribute("offline", "") : this.removeAttribute("offline"); }
+
+  /** Boolean attribute: presence = include `unlisted` exhibit cards in the gallery listing (Archie-f735).
+   *  Default (absent) hides them; reachability by direct target/iiif-content is never gated by this. */
+  get showUnlisted(): boolean { return this.hasAttribute("show-unlisted"); }
+  set showUnlisted(v: boolean) { v ? this.setAttribute("show-unlisted", "") : this.removeAttribute("show-unlisted"); }
 
   connectedCallback(): void {
     this.#connected = true;
@@ -167,6 +178,7 @@ export class ArchieViewerElement extends HTMLElement {
     if (name === "src") void this.#load(); // a new src re-opens from scratch
     else if (name === "target") this.#applyAddress(); // re-route within the loaded library
     else if (name === "iiif-content") this.#applyAddress(); // interop deep-link change → re-route
+    else if (name === "show-unlisted" && this.#view.kind === "gallery") this.#render(); // re-filter the listing in place
     // offline takes effect on the NEXT object open; nothing to re-render eagerly.
   }
 
@@ -519,7 +531,13 @@ export class ArchieViewerElement extends HTMLElement {
 
   #renderGallery(style: string, cold?: boolean): void {
     const gallery: ExhibitsJson | undefined = this.#library?.gallery;
-    const cards = gallery ? [...gallery.exhibits].sort((a, b) => a.order - b.order) : [];
+    const sorted = gallery ? [...gallery.exhibits].sort((a, b) => a.order - b.order) : [];
+    // The UNLISTED lever (Archie-77b2), honored in the embed's own gallery listing (Archie-f735): default
+    // hides a card the producer marked `unlisted` — the same filter apps/viewer's gallery-view.ts
+    // `listedExhibits` applies to the public hall. `show-unlisted` is an explicit host opt-in to include
+    // them (e.g. an internal/staging embed). Direct exhibit opening (#openExhibit, reached via a gallery
+    // click OR a target/iiif-content address) never consults this flag — only the listing filters.
+    const cards = this.showUnlisted ? sorted : sorted.filter((c) => !c.unlisted);
     const title = gallery?.library.title ?? "Gallery";
     this.#root.innerHTML = `${style}
       <div class="wrap">
