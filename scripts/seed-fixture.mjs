@@ -126,7 +126,13 @@ async function ingestAll(page) {
   const input = page.locator('input[type="file"][webkitdirectory]').first();
   if (!(await input.count())) throw new Error("folder-ingest input (webkitdirectory) not found in the create dialog's folder path");
   await input.setInputFiles(SRC_DIR); // → onDirChange → applyFolderFiles (summary + per-subfolder grouping)
-  const submit = page.locator(".dialog button.btn-primary").first();
+  // Archie-5478: `.dialog button.btn-primary` alone is DOM-order-reliant — every other studio dialog
+  // (IdentityPrompt, MergeReview, Publish, SaveZipDialog, BulkRightsDialog, ReadingsModal) is also a
+  // `.dialog` with its own `.btn-primary`, so `.first()` silently picks the wrong button if any of
+  // those happen to be mounted at the same time. `.path-actions` is CreateExhibitDialog's own wrapper
+  // around each path's Cancel/Submit pair (unique to this component — grep confirms no other .svelte
+  // uses the class), so scoping through it can only ever match THIS dialog's submit button.
+  const submit = page.locator(".dialog .path-actions button.btn-primary").first();
   await submit.waitFor({ state: "visible", timeout: 8000 });
   for (let i = 0; i < 40 && !(await submit.isEnabled()); i++) await sleep(250); // summary lands async
   await submit.click(); // → submitFolder → oncreatefromfolder → newExhibitFromFolder (all 3 groups)

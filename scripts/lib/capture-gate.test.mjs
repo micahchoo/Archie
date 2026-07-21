@@ -1,5 +1,9 @@
 // Unit proof for the capture gate (Archie-b975) — node's built-in runner, no deps:
-//   node --test scripts/lib/
+//   node --test scripts/lib/*.test.mjs
+// (Archie-5478: the bare-dir form `node --test scripts/lib/` FAILS on Node 24 with
+// MODULE_NOT_FOUND — Node's directory-based test discovery doesn't resolve this dir the way an
+// older assumption here implied. The glob form is what CI runs — see checks.yml's `unit-scripts`
+// job.)
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCaptureGate, MIN_SHOT_BYTES } from "./capture-gate.mjs";
