@@ -255,6 +255,10 @@ export interface IngestContext {
   /** The archie.structureRevlog flag, read ONCE at boot by the App (feature-flags.ts contract) and
    *  passed down — injectable for tests. Absent = read the flag directly at flows creation. */
   structureRevlog?: boolean;
+  /** Desktop-only (Tauri) native image fetch (plugin-http → a same-origin blob: URL): the webview's own
+   *  <img> dimension probe fails on CORS-restricted / redirecting hosts. Injected only under isTauri();
+   *  absent on web → imageDims uses the plain <img> probe, byte-identical to before (Archie-fada). */
+  fetchRemoteAsBlobUrl?: (url: string) => Promise<string>;
 }
 
 export function createIngestFlows(ctx: IngestContext) {
@@ -266,14 +270,32 @@ export function createIngestFlows(ctx: IngestContext) {
   // slot their ticks alternated in the band and the first `finally` to fire blanked the survivor
   // mid-run. The tracker (ingest-activity.ts) keys each run and lets the oldest reported one lead.
   const importRuns = createImportRunTracker(ctx.setImportStatus);
-  // Best-effort natural dimensions (IIIF wants them); resolves null if the URL can't be loaded.
-  function imageDims(src: string): Promise<{ w: number; h: number } | null> {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-      img.onerror = () => resolve(null);
-      img.src = src;
-    });
+  // Best-effort natural dimensions (IIIF wants them); resolves null if the URL can't be loaded. On desktop
+  // a CORS-restricted / cross-origin-redirecting host fails the plain <img> probe (onerror → null), so when
+  // a native fetcher is injected (ctx.fetchRemoteAsBlobUrl — Tauri only) pull the bytes through native http
+  // to a same-origin blob: URL and probe THAT. Local / blob: / data: sources and the web build (no fetcher)
+  // take the plain <img> path unchanged; a native-fetch throw also falls back to it, so it's never worse.
+  async function imageDims(src: string): Promise<{ w: number; h: number } | null> {
+    let probeSrc = src;
+    let blobUrl: string | null = null;
+    if (ctx.fetchRemoteAsBlobUrl && /^https?:\/\//i.test(src)) {
+      try {
+        blobUrl = await ctx.fetchRemoteAsBlobUrl(src);
+        probeSrc = blobUrl;
+      } catch (e) {
+        console.warn("[ingest] native image fetch failed; probing via the webview loader", e);
+      }
+    }
+    try {
+      return await new Promise<{ w: number; h: number } | null>((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = () => resolve(null);
+        img.src = probeSrc;
+      });
+    } finally {
+      if (blobUrl) URL.revokeObjectURL(blobUrl); // release the native-fetched probe bytes (dims already read)
+    }
   }
   const exhibitBySlug = (slug: string): ExhibitMeta | undefined => ctx.lib.meta.exhibits.find((e) => e.slug === slug);
 
