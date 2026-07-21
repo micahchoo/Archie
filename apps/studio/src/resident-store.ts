@@ -88,3 +88,23 @@ export async function residentProjectDir(create = true): Promise<FsDirectory | n
   const root = await fs.root();
   return residentProjectAtRoot() ? root : root.getDirectory(PROJECT, { create });
 }
+
+/**
+ * The waveform-peaks CACHE dir for one exhibit (Archie-623e Phase 4, answer #3). Peaks are REGENERABLE,
+ * Studio-only, never published — so on the DESKTOP folder they live in a HIDDEN `.archie-cache/peaks/{slug}`
+ * dotdir, keeping the user-visible library folder clean; on WEB they stay in the exhibit's `assets-peaks/`
+ * (OPFS is already hidden, so the pre-flip location is preserved byte-identically). Null where no store
+ * exists. The platform branch lives HERE (resident-store owns platform selection), not in asset-store.
+ */
+export async function residentPeaksDir(slug: string, create: boolean): Promise<FsDirectory | null> {
+  const project = await residentProjectDir(create);
+  if (!project) return null;
+  if (isTauri()) {
+    const cache = await project.getDirectory(".archie-cache", { create });
+    const peaks = await cache.getDirectory("peaks", { create });
+    return peaks.getDirectory(slug, { create });
+  }
+  const exhibits = await project.getDirectory("exhibits", { create });
+  const ex = await exhibits.getDirectory(slug, { create });
+  return ex.getDirectory("assets-peaks", { create });
+}

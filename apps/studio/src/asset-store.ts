@@ -18,7 +18,7 @@
 // revoked after (Phase-4: "tens of MB materialized once is fine"); the publish/size/original readers stay
 // lazy (getFile()/size()) so a multi-GB asset is never pulled into heap.
 import { isNotFound, type FsDirectory, type FsFile } from "@render/core";
-import { residentProjectDir } from "./resident-store.js";
+import { residentProjectDir, residentPeaksDir } from "./resident-store.js";
 
 /** The source prefix marking an object as an imported asset (vs an external URL). */
 export const ASSET_PREFIX = "/assets/";
@@ -77,21 +77,23 @@ export interface PeakCache {
   peaks: number[][];
 }
 
-/** Read an asset's cached waveform peaks. Null when absent, corrupt, failed, or unsupported (→ decode) —
- *  a peaks CACHE is self-healing, so even a real read failure just re-decodes. */
+/** Read an asset's cached waveform peaks (from the hidden cache dir — residentPeaksDir). Null when absent,
+ *  corrupt, failed, or unsupported (→ decode) — a peaks CACHE is self-healing, so even a real read failure
+ *  just re-decodes, and the whole read is tolerant (no absent-vs-failed ceremony a cache doesn't need). */
 export async function readPeaks(slug: string, name: string): Promise<PeakCache | null> {
-  const h = await openAssetFileForDisplay(slug, `${name}.json`, "assets-peaks");
-  if (!h) return null;
   try {
-    const c = JSON.parse(new TextDecoder().decode(await h.readable())) as PeakCache;
+    const dir = await residentPeaksDir(slug, false);
+    if (!dir) return null;
+    const c = JSON.parse(new TextDecoder().decode(await (await dir.getFile(`${name}.json`)).readable())) as PeakCache;
     if (c?.v === 1 && typeof c.duration === "number" && Array.isArray(c.peaks) && c.peaks.length > 0) return c;
-  } catch { /* corrupt sidecar → fall through and re-decode */ }
+  } catch { /* absent / corrupt / read fault → re-decode */ }
   return null;
 }
 
-/** Persist an asset's waveform peaks (written once, after the first decode). No-op if unsupported. */
+/** Persist an asset's waveform peaks (written once, after the first decode) to the hidden cache dir. No-op
+ *  if unsupported. */
 export async function savePeaks(slug: string, name: string, cache: PeakCache): Promise<void> {
-  await writeInto(await assetsDir(slug, true, "assets-peaks"), `${name}.json`, new Blob([JSON.stringify(cache)], { type: "application/json" }));
+  await writeInto(await residentPeaksDir(slug, true), `${name}.json`, new Blob([JSON.stringify(cache)], { type: "application/json" }));
 }
 
 // Neither OPFS nor the native folder persist a file's MIME type — reads come back typeless. Images sniff
@@ -169,6 +171,18 @@ export async function assetSize(slug: string, name: string): Promise<number> {
 export async function readAssetUrl(slug: string, name: string): Promise<string | null> {
   const h = await openAssetFileForDisplay(slug, name, "assets");
   return h ? blobUrlFrom(h, name) : null;
+}
+
+/** A backend-native URL the webview loads an asset DIRECTLY (Tauri convertFileSrc → `asset://…`),
+ *  bypassing a blob: URL — Phase 4, for AV: a multi-GB recording streams from disk with native
+ *  byte-range seeking instead of materializing into heap (a blob: URL for it would read the whole file).
+ *  Null where the backend has no such capability (web/OPFS — resolveUrl absent) or the asset is absent;
+ *  the caller then FALLS BACK to a blob: URL (readAssetUrl). NOT a blob: URL, so it needs no revoke.
+ *  Images deliberately do NOT use this — they stay on blob: URLs (Phase 4: the assetProtocol + OSD +
+ *  WebKitGTK combo is the highest-risk item; keep it off the load-bearing image path). */
+export async function residentAssetUrl(slug: string, name: string): Promise<string | null> {
+  const h = await openAssetFileForDisplay(slug, name, "assets");
+  return h?.resolveUrl ? (await h.resolveUrl()) ?? null : null;
 }
 
 /** Resolve a stored asset to its seam File — a LAZY File, NOT read into the JS heap (the publish getAsset

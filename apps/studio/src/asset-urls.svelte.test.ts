@@ -160,6 +160,35 @@ describe("asset-urls — an in-flight mint never clobbers a settled slot", () =>
   });
 });
 
+describe("asset-urls — AV native URL (Phase 4, Archie-623e)", () => {
+  it("an AV master prefers resolveNativeAv (asset://) over the blob: readMaster; an image ignores it", async () => {
+    const { deps, live } = makeDeps();
+    let nativeCalls = 0;
+    const a = createAssetUrls({
+      ...deps,
+      resolveNativeAv: async (slug, name) => { nativeCalls++; return `asset://localhost/${slug}/${name}`; },
+    });
+
+    // AV: streams via the native asset:// URL, and mints NO blob master.
+    await a.ensureMaster("s", asset("v1", "clip.mp4", "video"));
+    expect(a.canvasSource("s", asset("v1", "clip.mp4", "video"))).toBe("asset://localhost/s/clip.mp4");
+    expect(nativeCalls).toBe(1);
+    expect([...live].some((u) => u.startsWith("m:"))).toBe(false); // no blob master read for AV
+
+    // Image: ignores resolveNativeAv, mints a blob: master (the OSD path stays blob:).
+    await a.ensureMaster("s", asset("i1", "plate.png", "image"));
+    expect(a.canvasSource("s", asset("i1", "plate.png", "image"))).toMatch(/^m:s\/plate\.png/);
+    expect(nativeCalls).toBe(1); // unchanged — the image never called the native resolver
+  });
+
+  it("falls back to the blob: master when resolveNativeAv returns null (web AV)", async () => {
+    const { deps } = makeDeps();
+    const a = createAssetUrls({ ...deps, resolveNativeAv: async () => null }); // web: no native URL
+    await a.ensureMaster("s", asset("v1", "clip.mp4", "video"));
+    expect(a.canvasSource("s", asset("v1", "clip.mp4", "video"))).toMatch(/^m:s\/clip\.mp4/); // blob fallback
+  });
+});
+
 describe("asset-urls — ingest seams (seedMaster / setPlate) and teardown (revokeAll)", () => {
   it("seedMaster fills the slot so a just-imported object mounts against the blob", () => {
     const { deps } = makeDeps();

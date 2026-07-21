@@ -264,6 +264,7 @@ export {
   AssetReadFailedError,
   assetSize,
   readAssetUrl,
+  residentAssetUrl,
   readAssetBlob,
   readOriginalBytes,
   readThumbBytes,
