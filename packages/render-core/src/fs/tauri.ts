@@ -21,6 +21,17 @@ export interface TauriDirEntry {
 }
 
 /**
+ * A streaming write handle — the slice of a plugin-fs `FileHandle` the large-write path needs
+ * (`open()` below). Its `write` follows the POSIX contract: it may commit FEWER bytes than given
+ * and returns how many, so callers must loop (see `writeAllToHandle`). Structural sibling of
+ * apps/studio/src/tauri-fs.ts `TauriFileHandleLike`.
+ */
+export interface TauriWriteHandle {
+  write(data: Uint8Array): Promise<number>;
+  close(): Promise<void>;
+}
+
+/**
  * The minimal path-based filesystem surface this backend needs. A structural subset of
  * @tauri-apps/plugin-fs; also implementable over node:fs (the conformance binding). Paths are
  * absolute and use "/" separators (Rust std::path and node accept these on every OS we target).
@@ -28,6 +39,15 @@ export interface TauriDirEntry {
 export interface TauriFsBridge {
   readFile(path: string): Promise<Uint8Array>;
   writeFile(path: string, data: Uint8Array): Promise<void>;
+  /**
+   * Open a path for STREAMING writes (create + truncate), returning a handle whose `write` is
+   * driven chunk-by-chunk. The large-asset write path (TauriFile.writable given a Blob) uses this
+   * so a multi-GB asset never fully buffers in heap. Small JSON writes stay on `writeFile`.
+   * Adding this method means BOTH implementers move in lockstep (the real plugin-fs adapter in
+   * apps/studio/src/tauri-fs.ts and the node:fs conformance bridge in tauri.test.ts) — tsc is the
+   * gate that catches a missed one (.claude/rules/tauri-fs-seam.md).
+   */
+  open(path: string): Promise<TauriWriteHandle>;
   /** Atomically replace `newPath` with `oldPath` (both absolute, same directory — see TauriFile.close). */
   rename(oldPath: string, newPath: string): Promise<void>;
   mkdir(path: string): Promise<void>;
@@ -35,6 +55,17 @@ export interface TauriFsBridge {
   /** Recursive remove of a file or directory. Must reject if the path is missing. */
   remove(path: string): Promise<void>;
   exists(path: string): Promise<boolean>;
+}
+
+/** Drain ONE chunk fully into a streaming handle, looping over POSIX short writes (a bare call can
+ *  silently truncate). The in-core sibling of apps/studio/src/tauri-fs.ts `writeAllToTauriHandle`. */
+async function writeAllToHandle(handle: TauriWriteHandle, chunk: Uint8Array): Promise<void> {
+  let off = 0;
+  while (off < chunk.byteLength) {
+    const n = await handle.write(off === 0 ? chunk : chunk.subarray(off));
+    if (n <= 0) throw new Error(`tauri write made no progress at byte ${off}/${chunk.byteLength}`);
+    off += n;
+  }
 }
 
 /** Join a directory path and a child name with a single "/" — no Node `path` dep (render-core is headless). */
@@ -65,37 +96,72 @@ class TauriFile implements FsFile {
   }
 
   async writable(): Promise<FsWritable> {
-    // Accumulate then flush once on close — mirrors FSA's createWritable() stream (append, not
-    // replace) and keeps a half-written file off disk if close() never runs.
+    // Both modes commit the SAME way — write a same-directory `{path}.tmp-{seq}`, then rename it
+    // over the destination. plugin-fs writeFile/open truncates-then-writes, so a crash mid-flush
+    // straight to the destination would leave `library.json`/`manifest.json` truncated and
+    // unparseable — a durability guarantee the FSA/OPFS backends give for free. Same-dir temp keeps
+    // the rename atomic (one filesystem). The mode is chosen by the FIRST chunk:
+    //   - string / ArrayBuffer (authored JSON): buffer in heap, flush once via writeFile. The
+    //     proven durable-JSON path — kept deliberately unchanged (small, atomicity is what matters).
+    //   - Blob (an imported asset, potentially a multi-GB AV file): STREAM it into a plugin-fs
+    //     `open()` handle, so it never fully materializes. The buffered path would concatenate the
+    //     whole file (~2× in heap) and OOM (fs/tauri.ts header / Archie-623e Phase 1).
+    const tmp = `${this.path}.tmp-${tmpSeq++}`;
     const chunks: Uint8Array[] = [];
+    let handle: TauriWriteHandle | null = null;
+    const discardTemp = async (): Promise<void> => {
+      try {
+        if (handle) await handle.close();
+      } catch {
+        /* handle may already be closed by a failed close() */
+      }
+      try {
+        await this.bridge.remove(tmp);
+      } catch {
+        /* best-effort: temp may not exist if the first write itself failed */
+      }
+    };
     return {
       write: async (data) => {
-        if (typeof data === "string") chunks.push(new TextEncoder().encode(data));
-        else if (data instanceof ArrayBuffer) chunks.push(new Uint8Array(data.slice(0)));
-        else chunks.push(new Uint8Array(await data.arrayBuffer()));
+        if (data instanceof Blob) {
+          handle ??= await this.bridge.open(tmp);
+          const reader = data.stream().getReader();
+          try {
+            for (;;) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              await writeAllToHandle(handle, value);
+            }
+          } catch (e) {
+            await discardTemp();
+            throw e;
+          }
+        } else if (typeof data === "string") {
+          chunks.push(new TextEncoder().encode(data));
+        } else {
+          chunks.push(new Uint8Array(data.slice(0)));
+        }
       },
       close: async () => {
-        const total = chunks.reduce((n, c) => n + c.byteLength, 0);
-        const buf = new Uint8Array(total);
-        let off = 0;
-        for (const c of chunks) {
-          buf.set(c, off);
-          off += c.byteLength;
-        }
-        // Atomic replace: write a same-directory temp, then rename over the destination. plugin-fs
-        // writeFile truncates-then-writes, so a crash mid-flush would otherwise leave `library.json`
-        // / `manifest.json` truncated and unparseable — a durability guarantee the FSA/OPFS backends
-        // get for free. Same-dir temp keeps the rename atomic (one filesystem). Clean up on failure.
-        const tmp = `${this.path}.tmp-${tmpSeq++}`;
         try {
-          await this.bridge.writeFile(tmp, buf);
+          if (handle) {
+            // Streamed path — the bytes are already in the temp; just close the handle.
+            await handle.close();
+          } else {
+            // Buffered path (also the empty-write case: an eager getFile{create} touch that never
+            // wrote produces a 0-byte file, matching the prior close()-always-writes behaviour).
+            const total = chunks.reduce((n, c) => n + c.byteLength, 0);
+            const buf = new Uint8Array(total);
+            let off = 0;
+            for (const c of chunks) {
+              buf.set(c, off);
+              off += c.byteLength;
+            }
+            await this.bridge.writeFile(tmp, buf);
+          }
           await this.bridge.rename(tmp, this.path);
         } catch (e) {
-          try {
-            await this.bridge.remove(tmp);
-          } catch {
-            /* best-effort: temp may not exist if writeFile itself failed */
-          }
+          await discardTemp();
           throw e;
         }
       },

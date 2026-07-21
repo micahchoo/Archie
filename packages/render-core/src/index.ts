@@ -127,6 +127,9 @@ export * from "./fs/fsa.js";
 // tauri (TauriFilesystem, desktop folder backend). Pure over a path-based TauriFsBridge; the real
 // @tauri-apps/plugin-fs binding lives in apps/studio/src/tauri-fs.ts (headless-core / app-glue split).
 export * from "./fs/tauri.js";
+// copy-tree (backend-agnostic recursive Filesystem→Filesystem copy). Content-first, bounded-memory;
+// the primitive under the OPFS→folder desktop migration (Archie-623e).
+export * from "./fs/copy-tree.js";
 // http (HttpFilesystem, READ-ONLY published-tree-over-HTTP backend — the fourth backend). Absent
 // vs failed per data-integrity contract #2; capped by SRC_MAX_BYTES; name-contained URL joins.
 export * from "./fs/http.js";

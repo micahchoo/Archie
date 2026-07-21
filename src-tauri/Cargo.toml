@@ -21,6 +21,11 @@ tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-http = "2"
+# Single-instance guard (Archie-623e Phase 5): a second launch focuses the existing window instead
+# of opening a second writer over the same native library folder. Pinned via Cargo.lock to 2.4.3
+# (the current stable at add time); `"2"` tracks the same semver-major as the sibling tauri plugins.
+# No JS commands → no capability entry needed. See lib.rs (must be registered FIRST).
+tauri-plugin-single-instance = "2"
 # Hands the device-code URL off to the system browser (the "Open GitHub to enter it" button).
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }

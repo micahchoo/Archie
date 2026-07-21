@@ -13,6 +13,19 @@ mod github;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // Single-instance FIRST (the plugin requires it): a second launch of the app fires this
+        // callback in the ALREADY-RUNNING process instead of standing up a second webview. We focus
+        // the existing "main" window rather than open a second writer over the native library folder
+        // (Archie-623e Phase 5 — the desktop analogue of OPFS's cross-tab navigator.locks serialization,
+        // which does NOT cross OS processes). The on-disk generation-token guard is the defence-in-depth
+        // sibling of this and rides the Phase-2 resident-store mount (deferred).
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(win) = app.get_webview_window("main") {
+                let _ = win.unminimize();
+                let _ = win.show();
+                let _ = win.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())

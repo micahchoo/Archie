@@ -23,6 +23,20 @@ const nodeBridge: TauriFsBridge = {
   async writeFile(path, data) {
     await fsp.writeFile(path, data);
   },
+  async open(path) {
+    // Mirrors plugin-fs `open(path, { write, create, truncate })` → a FileHandle. node:fs's "w"
+    // flag is create+truncate. `write` returns bytesWritten (POSIX short-write contract).
+    const fh = await fsp.open(path, "w");
+    return {
+      async write(data) {
+        const { bytesWritten } = await fh.write(data);
+        return bytesWritten;
+      },
+      async close() {
+        await fh.close();
+      },
+    };
+  },
   async rename(oldPath, newPath) {
     await fsp.rename(oldPath, newPath);
   },
@@ -72,6 +86,44 @@ describe("TauriFilesystem hardening", () => {
     expect(names).toContain("m.json");
     expect(names.some((n) => n.includes(".tmp-"))).toBe(false);
     expect(new TextDecoder().decode(await (await root.getFile("m.json")).readable())).toBe('{"ok":true}');
+  });
+
+  it("streams a Blob write through open() (never buffered) and commits atomically via temp+rename", async () => {
+    // A large-ish multi-chunk blob: prove it round-trips byte-exact AND that it went through the
+    // streaming open() handle, not the buffered writeFile path. We spy by wrapping the node bridge.
+    let opens = 0;
+    let writeFiles = 0;
+    const spyBridge: TauriFsBridge = {
+      ...nodeBridge,
+      async open(path) {
+        opens++;
+        return nodeBridge.open(path);
+      },
+      async writeFile(path, data) {
+        writeFiles++;
+        return nodeBridge.writeFile(path, data);
+      },
+    };
+    const root = mkdtempSync(nodeJoin(tmpdir(), "archie-tauri-blob-"));
+    roots.push(root);
+    const rootDir = await new TauriFilesystem(spyBridge, root).root();
+    const bytes = new Uint8Array(300_000).map((_, i) => i % 251);
+    const f = await rootDir.getFile("big.bin", { create: true });
+    // getFile{create} eager-touches an empty file via writeFile — reset the counter so we only
+    // measure the writable() path below.
+    writeFiles = 0;
+    const w = await f.writable();
+    await w.write(new Blob([bytes]));
+    await w.close();
+    expect(opens).toBe(1); // streamed via open(), not buffered
+    expect(writeFiles).toBe(0); // the buffered writeFile path was NOT taken for the Blob
+    const names: string[] = [];
+    for await (const e of rootDir.entries()) names.push(e.name);
+    expect(names.some((n) => n.includes(".tmp-"))).toBe(false); // committed, no temp left behind
+    const round = new Uint8Array(await (await rootDir.getFile("big.bin")).readable());
+    expect(round.byteLength).toBe(bytes.byteLength);
+    expect(round[0]).toBe(bytes[0]);
+    expect(round[299_999]).toBe(bytes[299_999]);
   });
 
   it("rejects a traversal / separator segment before it reaches the bridge", async () => {
