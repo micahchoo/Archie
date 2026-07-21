@@ -23,6 +23,13 @@ export async function tauriFsBridge(): Promise<TauriFsBridge> {
   return {
     readFile: (path) => fs.readFile(path),
     writeFile: (path, data) => fs.writeFile(path, data),
+    // Streaming write handle for the large-asset path (TauriFile.writable given a Blob). Same
+    // create+truncate open() the streaming-zip sink uses; FileHandle.write is POSIX (returns bytes
+    // written), so render-core's writeAllToHandle loops it. See .claude/rules/tauri-fs-seam.md.
+    async open(path) {
+      const fh = await fs.open(path, { write: true, create: true, truncate: true });
+      return { write: (data) => fh.write(data), close: () => fh.close() };
+    },
     rename: (oldPath, newPath) => fs.rename(oldPath, newPath),
     mkdir: (path) => fs.mkdir(path, { recursive: true }),
     async readDir(path): Promise<TauriDirEntry[]> {
