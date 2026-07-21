@@ -9,6 +9,43 @@
 
 import type { FrameOverlay } from "./surface.js";
 
+/** Explicit `:focus-visible` ring (Archie-09a0), duplicated from read-overlay.ts's copy — the two
+ * overlay modules are deliberately decoupled (no cross-import), same as their duplicated
+ * `*ViewerLike` surfaces and NS constant. The UA default focus outline isn't enough: this overlay
+ * sits on a dark deep-zoom surface, and a host embed page may reset outlines globally (`* {
+ * outline: none }` and similar are common resets). An inline style on the element beats any
+ * selector-based host rule lacking `!important`. A bright ring on a dark halo (same technique as
+ * this file's halo-plus-colour-line border below) stays legible over any underlying tile. Gated on
+ * `:focus-visible` via `matches()`, fail-OPEN on an environment that can't evaluate the selector —
+ * a stray ring for a mouse user is a smaller harm than a keyboard user losing the indicator. */
+const FOCUS_RING_STYLE: Partial<CSSStyleDeclaration> = {
+  outline: "2px solid #fff",
+  outlineOffset: "2px",
+  boxShadow: "0 0 0 4px rgba(0,0,0,0.55)",
+};
+const NO_FOCUS_RING_STYLE: Partial<CSSStyleDeclaration> = {
+  outline: "",
+  outlineOffset: "",
+  boxShadow: "",
+};
+
+const isFocusVisible = (el: Element): boolean => {
+  try {
+    return el.matches(":focus-visible");
+  } catch {
+    return true; // selector unsupported here → fail open, keep the ring for keyboard users
+  }
+};
+
+const addFocusRing = (el: SVGSVGElement): void => {
+  el.addEventListener("focus", () => {
+    if (isFocusVisible(el)) Object.assign(el.style, FOCUS_RING_STYLE);
+  });
+  el.addEventListener("blur", () => {
+    Object.assign(el.style, NO_FOCUS_RING_STYLE);
+  });
+};
+
 /** The minimal OSD viewer surface this overlay needs — keeps the module decoupled from the full OSD type. */
 export interface FrameViewerLike {
   // OSD's own OverlayOptions.element type is HTMLElement-only (@types/openseadragon), even though
@@ -73,6 +110,7 @@ export function createFrameOverlay(viewer: FrameViewerLike): FrameOverlayControl
       e.stopPropagation();
       frame.onActivate();
     });
+    addFocusRing(svg);
 
     // A QUIET thin border tracing the object — the whole-object indicator. A soft dark halo under the
     // colour line keeps it legible over any media; non-scaling-stroke holds the line weight constant at any

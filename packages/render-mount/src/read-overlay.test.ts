@@ -246,4 +246,47 @@ describe("createReadOnlyOverlay — a11y marker-label (P0-6)", () => {
     expect(label).toBe("annotation p");
     expect(label).not.toContain("<");
   });
+
+  it("an emoji at the truncation boundary is kept whole, not split into a lone surrogate (Archie-09a0)", () => {
+    const v = fakeViewer();
+    // 159 'a's + one outside-BMP emoji (a surrogate PAIR — 2 UTF-16 units, 1 code point) + a
+    // trailing 'b': 161 code points total, so the 160-cap's cut lands exactly at the emoji. A
+    // UTF-16-unit `slice` (the old bug) would cut BETWEEN the emoji's two surrogate halves.
+    const label = `${"a".repeat(159)}🎉b`;
+    createReadOnlyOverlay(v, { labelFor: () => label }).setAnnotations([rectAnn("r")]);
+    const aria = (v.overlays[0]!.element as SVGSVGElement).getAttribute("aria-label")!;
+    expect(aria.endsWith("🎉…")).toBe(true); // whole emoji retained, immediately followed by the ellipsis
+    expect(Array.from(aria)).toHaveLength(161); // 159 a's + the emoji + the ellipsis, each ONE code point
+  });
+});
+
+describe("createReadOnlyOverlay — explicit focus-visible ring (Archie-09a0)", () => {
+  it("keyboard-focusing a shape paints an explicit ring beyond the UA default outline", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v).setAnnotations([rectAnn("r")]);
+    const svg = v.overlays[0]!.element as SVGSVGElement;
+    document.body.appendChild(svg); // happy-dom only flips real focus state for an attached node
+    try {
+      svg.focus();
+      expect(svg.style.outline).not.toBe("");
+      expect(svg.style.boxShadow).not.toBe("");
+    } finally {
+      svg.remove();
+    }
+  });
+
+  it("blur clears the explicit ring", () => {
+    const v = fakeViewer();
+    createReadOnlyOverlay(v).setAnnotations([rectAnn("r")]);
+    const svg = v.overlays[0]!.element as SVGSVGElement;
+    document.body.appendChild(svg);
+    try {
+      svg.focus();
+      svg.blur();
+      expect(svg.style.outline).toBe("");
+      expect(svg.style.boxShadow).toBe("");
+    } finally {
+      svg.remove();
+    }
+  });
 });
