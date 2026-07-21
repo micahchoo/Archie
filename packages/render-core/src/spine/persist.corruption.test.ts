@@ -31,6 +31,7 @@ class RecordingDir implements FsDirectory {
     return {
       readable: () => f.readable(),
       getFile: () => f.getFile(),
+      size: () => f.size(),
       writable: async (): Promise<FsWritable> => { log.push(name); return f.writable(); },
     };
   }

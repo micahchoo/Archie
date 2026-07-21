@@ -11,7 +11,6 @@
 // source reads the same format via loadWorkingLibrary). Re-exported under their original Studio
 // names so import sites stay stable; this module remains the WRITER of the layout.
 import {
-  FsaFilesystem,
   migrateLibraryObjectIds,
   ID_SCHEME_MARKER_FILE,
   PRE_MIGRATION_DIR,
@@ -24,7 +23,10 @@ import {
   type WorkingLibraryMeta as LibraryMeta,
 } from "@render/core";
 export type { ObjectProvenance, ObjectMeta, ExhibitMeta, LibraryMeta };
-import { PROJECT, type OpfsRoot } from "./opfs-project.js";
+import { PROJECT } from "./opfs-project.js";
+// Archie-623e Phase 2 — the flip. The resident store is a native folder on desktop, OPFS on web; every
+// opener below routes through this ONE accessor instead of opening OPFS directly (web byte-identical).
+import { residentRootFs, residentProjectDir, residentProjectAtRoot, residentExternallyChanged, restampResident } from "./resident-store.js";
 
 const SAMPLE_SLUG = "sample";
 
@@ -32,19 +34,10 @@ const SAMPLE_SLUG = "sample";
  *  share. Used as the cross-tab single-writer lock name (ISSUES.md Issue 22 / ledgers/TABS.md). */
 export const WORKING_STORE_ID = PROJECT;
 
-/** The OPFS root as a Filesystem, or null where OPFS is unavailable (non-browser/headless). The
- *  object-id migration engine needs the ROOT fs (it opens `{WORKING_PROJECT}` itself), not the
- *  project dir — WORKING_PROJECT and this module's PROJECT are the same fixed name. */
-async function openRootFs(): Promise<Filesystem | null> {
-  const storage = (navigator as Navigator & { storage?: { getDirectory?: () => Promise<FileSystemDirectoryHandle> } }).storage;
-  if (!storage?.getDirectory) return null;
-  return new FsaFilesystem(await storage.getDirectory());
-}
-
+/** The project-level directory the metadata openers author into — the resident folder root on desktop,
+ *  the OPFS `{PROJECT}` subdir on web (resident-store.ts). Null where no store exists. */
 async function openProjectDir(): Promise<FsDirectory | null> {
-  const fs = await openRootFs();
-  if (!fs) return null;
-  return (await fs.root()).getDirectory(PROJECT, { create: true });
+  return residentProjectDir(true);
 }
 
 /**
@@ -58,13 +51,17 @@ async function openProjectDir(): Promise<FsDirectory | null> {
  * and is left to PROPAGATE — a half-migrated store must not boot a session, and a torn run leaves the
  * marker absent (reads as legacy) so the next boot re-runs it idempotently.
  *
- * `fs` defaults to the OPFS root; it is injectable ONLY so the studio-open trigger can be tested over a
- * MemoryFilesystem (there is no OPFS in the headless test env). Production always uses the default.
+ * `fs` defaults to the resident root; it is injectable ONLY so the studio-open trigger can be tested over
+ * a MemoryFilesystem (there is no OPFS/folder in the headless test env). Production always uses the default.
+ *
+ * Rooting (Archie-623e Phase 2): on the desktop folder-canonical store the folder root IS the project, so
+ * the engine descends NO `{PROJECT}` subdir (`projectAtRoot`); web/OPFS keeps the subdir. An INJECTED fs
+ * (tests) is always project-subdir-shaped, so it takes the default rooting.
  */
 export async function migrateResidentStoreIds(fs?: Filesystem): Promise<MigrateIdsResult | null> {
-  const rootFs = fs ?? (await openRootFs());
+  const rootFs = fs ?? (await residentRootFs());
   if (!rootFs) return null;
-  const result = await migrateLibraryObjectIds(rootFs);
+  const result = await migrateLibraryObjectIds(rootFs, !fs && residentProjectAtRoot() ? { projectAtRoot: true } : {});
   if (result.migrated) {
     const r = result.rewrites;
     console.info(
@@ -196,15 +193,32 @@ export async function loadLibraryMeta(): Promise<LibraryMeta | null> {
   }
 }
 
+/**
+ * An out-of-band writer (a sync tool over $APPDATA, or a process the single-instance plugin didn't
+ * catch) changed the resident folder this session — refusing to blind-overwrite it (Phase 5b). Reload
+ * to re-adopt the folder's version as the session baseline, then saves resume.
+ */
+export class ResidentExternalChangeError extends Error {
+  override name = "ResidentExternalChangeError";
+  constructor() {
+    super("The library folder was changed outside Archie (a sync tool or another process). Reload to load its version — your work is safe. Saving was paused to avoid mixing versions.");
+  }
+}
+
 /** Persist the authored library structure. No-op if OPFS unsupported. */
 export async function saveLibraryMeta(meta: LibraryMeta): Promise<void> {
   const project = await openProjectDir();
   if (!project) return;
+  // Phase 5b (desktop defense-in-depth): library.json is the working-store commit point. If the resident
+  // folder's generation token no longer matches ours, an out-of-band writer touched it — THROW rather
+  // than blind-overwrite (surfaces via the normal save-error chrome; a reload re-baselines). Web: no-op.
+  if (await residentExternallyChanged()) throw new ResidentExternalChangeError();
   await snapshotIfUnparseable(project, "library.json");
   const file = await project.getFile("library.json", { create: true });
   const w = await file.writable();
   await w.write(JSON.stringify(meta, null, 2));
   await w.close();
+  await restampResident(); // Archie reclaimed the folder — re-stamp so the next commit's check passes
 }
 
 // --- pending notes (coordinate-free imports awaiting "Set area" placement; Archie-79c0 sub-cycle B) ---
@@ -267,6 +281,7 @@ export {
   AssetReadFailedError,
   assetSize,
   readAssetUrl,
+  residentAssetUrl,
   readAssetBlob,
   readOriginalBytes,
   readThumbBytes,
@@ -274,23 +289,30 @@ export {
 } from "./asset-store.js";
 
 /**
+ * Remove an exhibit's `{sub}` dir through the resident seam (folder on desktop, OPFS on web). The
+ * "sample" exhibit keeps its dir at the project root; every other under `exhibits/{slug}/`. No-op if
+ * nothing is stored (absent dir chain / no store). Behaviour is byte-identical on web — FsaFilesystem
+ * wraps the same OPFS handles the raw path used; the change is that it now also reaches the folder.
+ */
+async function removeExhibitSubdir(slug: string, sub: string): Promise<void> {
+  try {
+    const project = await residentProjectDir(false);
+    if (!project) return;
+    if (slug === SAMPLE_SLUG) { await project.remove(sub); return; }
+    const ex = await (await project.getDirectory("exhibits")).getDirectory(slug);
+    await ex.remove(sub);
+  } catch {
+    // no store / absent dir chain — nothing to clear
+  }
+}
+
+/**
  * Remove an exhibit's annotations dir so it reseeds from code on next open. Used when a bundled
  * default exhibit's definition changed (e.g. a fixture was re-imported) and its stale persisted
  * notes must be discarded. No-op if nothing is stored.
  */
 export async function clearExhibitAnnotations(slug: string): Promise<void> {
-  const storage = (navigator as Navigator & { storage?: OpfsRoot }).storage;
-  if (!storage?.getDirectory) return;
-  try {
-    const root = await storage.getDirectory();
-    const project = await root.getDirectoryHandle(PROJECT, { create: false });
-    if (slug === SAMPLE_SLUG) { await project.removeEntry("annotations", { recursive: true }); return; }
-    const exhibits = await project.getDirectoryHandle("exhibits", { create: false });
-    const ex = await exhibits.getDirectoryHandle(slug, { create: false });
-    await ex.removeEntry("annotations", { recursive: true });
-  } catch {
-    // nothing stored for this exhibit — fine
-  }
+  await removeExhibitSubdir(slug, "annotations");
 }
 
 /**
@@ -299,40 +321,26 @@ export async function clearExhibitAnnotations(slug: string): Promise<void> {
  * 2). Deliberately FLAG-INDEPENDENT: the dir may exist from a previous archie.structureRevlog
  * session even when the flag is now off, and exhibit ids are deterministic (`ex-${slug}`), so a
  * lingering log would be inherited wholesale by the next exhibit created under the same slug.
- * No-op if nothing is stored (absent dir / no OPFS).
+ * No-op if nothing is stored (absent dir / no store).
  */
 export async function clearExhibitStructure(slug: string): Promise<void> {
-  const storage = (navigator as Navigator & { storage?: OpfsRoot }).storage;
-  if (!storage?.getDirectory) return;
-  try {
-    const root = await storage.getDirectory();
-    const project = await root.getDirectoryHandle(PROJECT, { create: false });
-    if (slug === SAMPLE_SLUG) { await project.removeEntry("structure", { recursive: true }); return; }
-    const exhibits = await project.getDirectoryHandle("exhibits", { create: false });
-    const ex = await exhibits.getDirectoryHandle(slug, { create: false });
-    await ex.removeEntry("structure", { recursive: true });
-  } catch {
-    // nothing stored for this exhibit — fine
-  }
+  await removeExhibitSubdir(slug, "structure");
 }
 
 /**
- * Does an exhibit's OPFS annotations dir hold anything? Templates never save (the isTemplate gate
- * in save()), so stored annotations mean a USER worked here — the boot reconcile must not clear
- * them when a bundled-default slug is reclaimed (a sunset slug can spend time as a user exhibit).
+ * Does an exhibit's annotations dir hold anything? Templates never save (the isTemplate gate in
+ * save()), so stored annotations mean a USER worked here — the boot reconcile must not clear them
+ * when a bundled-default slug is reclaimed (a sunset slug can spend time as a user exhibit). Reads
+ * through the resident seam (folder on desktop, OPFS on web); absent chain / no store → false.
  */
 export async function exhibitHasAnnotations(slug: string): Promise<boolean> {
-  const storage = (navigator as Navigator & { storage?: OpfsRoot }).storage;
-  if (!storage?.getDirectory) return false;
   try {
-    const root = await storage.getDirectory();
-    const project = await root.getDirectoryHandle(PROJECT, { create: false });
+    const project = await residentProjectDir(false);
+    if (!project) return false;
     const ann = slug === SAMPLE_SLUG
-      ? await project.getDirectoryHandle("annotations", { create: false })
-      : await (await (await project.getDirectoryHandle("exhibits", { create: false }))
-          .getDirectoryHandle(slug, { create: false }))
-          .getDirectoryHandle("annotations", { create: false });
-    for await (const _ of (ann as unknown as { keys(): AsyncIterableIterator<string> }).keys()) return true;
+      ? await project.getDirectory("annotations")
+      : await (await (await project.getDirectory("exhibits")).getDirectory(slug)).getDirectory("annotations");
+    for await (const _ of ann.entries()) return true;
     return false;
   } catch {
     return false; // nothing stored for this exhibit

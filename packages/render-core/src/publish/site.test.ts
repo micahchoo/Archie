@@ -566,6 +566,7 @@ function recordingFs(): { fs: Filesystem; order: string[] } {
   const wrapFile = (f: FsFile, path: string): FsFile => ({
     readable: () => f.readable(),
     getFile: () => f.getFile(),
+    size: () => f.size(),
     writable: async () => wrapWritable(await f.writable(), path),
   });
   const wrapDir = (d: FsDirectory, prefix: string): FsDirectory => ({

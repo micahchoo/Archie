@@ -48,7 +48,7 @@
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import { formatZoomRatio, zoomBand, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
-  import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, migrateResidentStoreIds, readAssetUrl, readThumbUrl, clearExhibitAnnotations, clearExhibitStructure, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
+  import { openExhibitAnnotationsDir, openExhibitStructureDir, loadLibraryMeta, migrateResidentStoreIds, readAssetUrl, residentAssetUrl, readThumbUrl, clearExhibitAnnotations, clearExhibitStructure, exhibitHasAnnotations, isAsset, ASSET_PREFIX, loadPendingNotes, savePendingNotes, WORKING_STORE_ID, type ExhibitMeta, type ObjectMeta, type PendingNote } from "./store.js";
   import { createLibraryStore } from "./library-meta.svelte.js";
   import { enqueueSave, saveStatus, setWriterGate, setWriterOtherName } from "./save-queue.svelte.js";
   import StorageBar from "./StorageBar.svelte";
@@ -264,6 +264,9 @@
     readThumb: readThumbUrl,
     revoke: (u) => URL.revokeObjectURL(u),
     assetName: (src) => (isAsset(src) ? src.slice(ASSET_PREFIX.length) : null),
+    // Phase 4: AV masters stream via a native asset:// URL on desktop (convertFileSrc) — no multi-GB
+    // blob in heap; returns null on web, so AV falls back to the blob: master. Images never use it.
+    resolveNativeAv: residentAssetUrl,
   });
 
   // --- per-exhibit annotation SESSION state machine (the DOMINO cut — exhibit-session.svelte.ts).
@@ -362,7 +365,7 @@
       await migrateResidentStoreIds();
     } catch (e) {
       console.error("[migrate] object-id migration failed — refusing to boot the session", e);
-      window.alert("Couldn't prepare your library for this version of Archie. Your work is safe and untouched — reload to try again. If this keeps happening, restore from the pre-migration/ backup folder inside your library.");
+      window.alert("Couldn't prepare your library for this version of Archie. Your work is safe and untouched — reload to try again. Your previous version is preserved either way (a pre-migration snapshot, or the retained desktop copy).");
       return; // abort boot: no loadLibraryMeta, no session — nothing writes over a partially-migrated store
     }
     const meta = await loadLibraryMeta();

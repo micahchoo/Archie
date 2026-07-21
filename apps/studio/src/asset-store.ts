@@ -1,46 +1,50 @@
 // Imported-asset blob I/O — extracted from store.ts (Archie-cf93) so the asset-blob cluster (binary
-// masters/originals/thumbnails + the audio peak cache, all raw OPFS handles, NOT the JSON-oriented
-// Filesystem seam) is its own module instead of one concern among four store.ts used to mix. Behavior
-// unchanged; store.ts re-exports every name below so existing importers need no change.
+// masters/originals/thumbnails + the audio peak cache) is its own module. Behavior unchanged for callers;
+// store.ts re-exports every name below so existing importers need no change.
 //
-// Imported files persist at {PROJECT}/exhibits/{slug}/assets/{name}; an object stores
-// source "/assets/{name}" and resolves to a blob: URL at load time (see asset-urls.svelte.ts).
+// Imported files persist at {PROJECT}/exhibits/{slug}/assets/{name}; an object stores source
+// "/assets/{name}" and resolves to a blob: URL at load time (see asset-urls.svelte.ts).
 //
-// Backend-agnostic note (Phase-3 Archie-623e, native canonical desktop store): this module still talks
-// to `navigator.storage.getDirectory()` directly rather than through a Filesystem handle it's given —
-// that mirrors store.ts's existing OPFS-only asset layer (see the comment above ASSET_PREFIX in the
-// pre-split store.ts) and is NOT a new assumption introduced by this split. A future backend swap
-// replaces `assetsDir`'s root-open, not the public functions' signatures.
+// RESIDENT SEAM (Archie-623e Phase 2): this module now talks to the RESIDENT working store through the
+// `Filesystem` seam (resident-store.ts `residentProjectDir`) — the native folder on desktop, OPFS on web —
+// instead of raw `navigator.storage.getDirectory()` handles. ONE code path, no `isTauri()` fork here: the
+// seam's lazy `getFile()` / `size()` / `readable()` serve both backends. The extension the flip needed
+// (lazy getFile that never pre-materializes, a stat-only size, an optional resolveUrl) lives in the seam,
+// not in a branch here (the Phase-2 design decision).
 //
-// PROJECT/OpfsRoot come from the leaf module opfs-project.ts, shared with store.ts, rather than each
-// declaring its own copy — PROJECT is also WORKING_STORE_ID (the cross-tab single-writer lock name),
-// so a drifted duplicate would silently partition assets and library.json into different OPFS trees.
-import { PROJECT, type OpfsRoot } from "./opfs-project.js";
+// Web behaviour note: the image blob-URL readers below now materialize the bytes (readable() → a real
+// in-memory Blob) rather than the pre-flip zero-copy `opfsFile.slice()` — the desktop backend can't back a
+// lazy blob: URL over a native path, so one code path materializes on both. Images are display-once and
+// revoked after (Phase-4: "tens of MB materialized once is fine"); the publish/size/original readers stay
+// lazy (getFile()/size()) so a multi-GB asset is never pulled into heap.
+import { isNotFound, type FsDirectory, type FsFile } from "@render/core";
+import { residentProjectDir, residentPeaksDir } from "./resident-store.js";
 
-/** The source prefix marking an object as an OPFS-imported asset (vs an external URL). */
+/** The source prefix marking an object as an imported asset (vs an external URL). */
 export const ASSET_PREFIX = "/assets/";
-/** Is this object source an imported OPFS asset? (One definition — App + publish flows share it.) */
+/** Is this object source an imported asset? (One definition — App + publish flows share it.) */
 export const isAsset = (src: string | undefined): boolean => !!src && src.startsWith(ASSET_PREFIX);
 
-async function assetsDir(slug: string, create: boolean, sub = "assets"): Promise<FileSystemDirectoryHandle | null> {
-  const storage = (navigator as Navigator & { storage?: OpfsRoot }).storage;
-  if (!storage?.getDirectory) return null;
-  const root = await storage.getDirectory();
-  const project = await root.getDirectoryHandle(PROJECT, { create });
-  const exhibits = await project.getDirectoryHandle("exhibits", { create });
-  const ex = await exhibits.getDirectoryHandle(slug, { create });
-  return ex.getDirectoryHandle(sub, { create });
+/** The exhibit's `{sub}` asset dir through the resident seam. `create` threads the whole chain (project →
+ *  exhibits → slug → sub). With create:false a missing segment throws the seam's canonical `no such …`,
+ *  which callers classify absent-vs-failed via `isNotFound`. Null only where there is no store at all. */
+async function assetsDir(slug: string, create: boolean, sub = "assets"): Promise<FsDirectory | null> {
+  const project = await residentProjectDir(create);
+  if (!project) return null;
+  const exhibits = await project.getDirectory("exhibits", { create });
+  const ex = await exhibits.getDirectory(slug, { create });
+  return ex.getDirectory(sub, { create });
 }
 
-async function writeInto(dir: FileSystemDirectoryHandle | null, name: string, file: Blob): Promise<void> {
+async function writeInto(dir: FsDirectory | null, name: string, file: Blob): Promise<void> {
   if (!dir) return;
-  const fh = await dir.getFileHandle(name, { create: true });
-  const w = await fh.createWritable();
-  await w.write(file);
+  const fh = await dir.getFile(name, { create: true });
+  const w = await fh.writable();
+  await w.write(file); // Blob → the streaming write path on Tauri; createWritable on OPFS
   await w.close();
 }
 
-/** Store an imported image (the DISPLAY MASTER) in the exhibit's OPFS assets dir. No-op if unsupported. */
+/** Store an imported image (the DISPLAY MASTER) in the exhibit's assets dir. No-op if unsupported. */
 export async function saveAssetFile(slug: string, name: string, file: Blob): Promise<void> {
   await writeInto(await assetsDir(slug, true), name, file);
 }
@@ -73,26 +77,28 @@ export interface PeakCache {
   peaks: number[][];
 }
 
-/** Read an asset's cached waveform peaks. Null when absent, corrupt, failed, or OPFS is unsupported
- *  (→ decode) — a peaks CACHE is self-healing, so even a real read failure just re-decodes. */
+/** Read an asset's cached waveform peaks (from the hidden cache dir — residentPeaksDir). Null when absent,
+ *  corrupt, failed, or unsupported (→ decode) — a peaks CACHE is self-healing, so even a real read failure
+ *  just re-decodes, and the whole read is tolerant (no absent-vs-failed ceremony a cache doesn't need). */
 export async function readPeaks(slug: string, name: string): Promise<PeakCache | null> {
-  const f = await readAssetFileForDisplay(slug, `${name}.json`, "assets-peaks");
-  if (!f) return null;
   try {
-    const c = JSON.parse(await f.text()) as PeakCache;
+    const dir = await residentPeaksDir(slug, false);
+    if (!dir) return null;
+    const c = JSON.parse(new TextDecoder().decode(await (await dir.getFile(`${name}.json`)).readable())) as PeakCache;
     if (c?.v === 1 && typeof c.duration === "number" && Array.isArray(c.peaks) && c.peaks.length > 0) return c;
-  } catch { /* corrupt sidecar → fall through and re-decode */ }
+  } catch { /* absent / corrupt / read fault → re-decode */ }
   return null;
 }
 
-/** Persist an asset's waveform peaks (written once, after the first decode). No-op if unsupported. */
+/** Persist an asset's waveform peaks (written once, after the first decode) to the hidden cache dir. No-op
+ *  if unsupported. */
 export async function savePeaks(slug: string, name: string, cache: PeakCache): Promise<void> {
-  await writeInto(await assetsDir(slug, true, "assets-peaks"), `${name}.json`, new Blob([JSON.stringify(cache)], { type: "application/json" }));
+  await writeInto(await residentPeaksDir(slug, true), `${name}.json`, new Blob([JSON.stringify(cache)], { type: "application/json" }));
 }
 
-// OPFS does NOT persist a file's MIME type — `getFile()` returns `type: ""`. Images sniff fine, but
-// `<video>`/`<audio>` (and WaveSurfer) can refuse a typeless blob: URL, so restore the type from the
-// extension on read. Zero-copy via `slice(…, type)` (no in-memory duplication of large media).
+// Neither OPFS nor the native folder persist a file's MIME type — reads come back typeless. Images sniff
+// fine, but `<video>`/`<audio>` (and WaveSurfer) can refuse a typeless blob: URL, so restore the type from
+// the extension when building a blob: URL.
 const EXT_MIME: Record<string, string> = {
   mp4: "video/mp4", m4v: "video/mp4", webm: "video/webm", mov: "video/quicktime", ogv: "video/ogg",
   mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4", aac: "audio/aac", flac: "audio/flac",
@@ -102,7 +108,7 @@ function mimeFromName(name: string): string {
   return EXT_MIME[name.toLowerCase().split(".").pop() ?? ""] ?? "";
 }
 
-/** A real OPFS read failure (quota, permission, wrong-kind entry, backend corruption) — NOT "absent".
+/** A real store read failure (quota, permission, wrong-kind entry, backend corruption) — NOT "absent".
  *  Kept distinct so no caller converts an outage into "nothing stored" (the corrupt≠empty rule,
  *  .claude/rules/render-core-data-integrity.md §2): the publish readers let this propagate so a failed
  *  read fails the publish loudly instead of silently shipping without the asset/thumbnail. */
@@ -113,19 +119,17 @@ export class AssetReadFailedError extends Error {
   }
 }
 
-/** Resolve a stored asset (in the given `sub` dir) to its OPFS File — a LAZY Blob, NOT read into the
- *  JS heap. The shared path-resolution both the blob-URL and raw-blob readers below use. Null ONLY when
- *  genuinely absent (no dir chain / no file / OPFS unsupported — NotFoundError is how `assetsDir` with
- *  create:false reports a missing chain); any other error throws AssetReadFailedError. */
-async function readAssetFile(slug: string, name: string, sub: string): Promise<File | null> {
+/** Resolve a stored asset (in the given `sub` dir) to its seam handle — a LAZY File, NOT read into the JS
+ *  heap. The shared navigation both the blob-URL and raw-blob readers below use. Null ONLY when genuinely
+ *  absent (no dir chain / no file / no store — the seam's canonical `no such …`, classified by isNotFound);
+ *  any other error throws AssetReadFailedError (absent-vs-failed, render-core-data-integrity §2). */
+async function openAssetFile(slug: string, name: string, sub: string): Promise<FsFile | null> {
   try {
     const dir = await assetsDir(slug, false, sub);
     if (!dir) return null;
-    return await (await dir.getFileHandle(name)).getFile();
+    return await dir.getFile(name); // seam handle — throws the canonical `no such file:` if absent
   } catch (e) {
-    if (e instanceof DOMException && e.name === "NotFoundError") {
-      return null; // not stored (a non-asset source, no baked derivative, or never imported)
-    }
+    if (isNotFound(e)) return null; // not stored (a non-asset source, no baked derivative, or never imported)
     throw new AssetReadFailedError(slug, `${sub}/${name}`, e);
   }
 }
@@ -133,71 +137,81 @@ async function readAssetFile(slug: string, name: string, sub: string): Promise<F
 /** The DISPLAY-path tolerance policy: a real read failure degrades to the caller's placeholder/fallback
  *  (a grid plate is not worth crashing a render wave) but leaves a loud console trace — deliberately
  *  unlike the publish readers (readAssetBlob/readThumbBytes), which propagate AssetReadFailedError. */
-async function readAssetFileForDisplay(slug: string, name: string, sub: string): Promise<File | null> {
+async function openAssetFileForDisplay(slug: string, name: string, sub: string): Promise<FsFile | null> {
   try {
-    return await readAssetFile(slug, name, sub);
+    return await openAssetFile(slug, name, sub);
   } catch (e) {
     console.error(e);
     return null;
   }
 }
 
-/** Wrap an OPFS File in a fresh blob: URL, restoring the MIME the extension implies (OPFS drops a
- *  file's type → `<video>`/`<audio>`/WaveSurfer can refuse a typeless blob: URL). Zero-copy via
- *  `slice(…, type)` so large media is never duplicated in memory. Caller revokes the URL. */
-function fileToObjectUrl(f: File, name: string): string {
-  const mime = f.type || mimeFromName(name);
-  return URL.createObjectURL(f.type ? f : mime ? f.slice(0, f.size, mime) : f);
+/** Read a stored asset's bytes into a fresh blob: URL, restoring the MIME the extension implies (the store
+ *  drops a file's type → `<video>`/`<audio>`/WaveSurfer can refuse a typeless blob: URL). Materializes the
+ *  bytes once (see the module note); caller revokes the URL. */
+async function blobUrlFrom(h: FsFile, name: string): Promise<string> {
+  const bytes = await h.readable();
+  const type = mimeFromName(name);
+  return URL.createObjectURL(type ? new Blob([bytes], { type }) : new Blob([bytes]));
 }
 
-/** Byte size of a stored asset — METADATA ONLY (File.size needs no arrayBuffer read). 0 if absent.
- *  Used by the pre-zip size estimate (LARGE-MEDIA-MEMORY-CEILING #1) — never reads the bytes. */
+/** Byte size of a stored asset — METADATA ONLY (a stat; never reads the bytes). 0 if absent or unreadable.
+ *  Used by the pre-zip size estimate (LARGE-MEDIA-MEMORY-CEILING #1). */
 export async function assetSize(slug: string, name: string): Promise<number> {
   try {
-    const dir = await assetsDir(slug, false);
-    if (!dir) return 0;
-    return (await (await dir.getFileHandle(name)).getFile()).size;
+    const h = await openAssetFile(slug, name, "assets");
+    return h ? await h.size() : 0;
   } catch {
-    return 0;
+    return 0; // tolerant: the estimate is advisory, not a hard read
   }
 }
 
 /** Resolve a stored asset to a fresh blob: URL (caller must revokeObjectURL). Null if absent — or on a
  *  real read failure (display path: logged, degraded to the caller's fallback). */
 export async function readAssetUrl(slug: string, name: string): Promise<string | null> {
-  const f = await readAssetFileForDisplay(slug, name, "assets");
-  return f ? fileToObjectUrl(f, name) : null;
+  const h = await openAssetFileForDisplay(slug, name, "assets");
+  return h ? blobUrlFrom(h, name) : null;
 }
 
-/** Resolve a stored asset to its OPFS File — a LAZY Blob, NOT read into the JS heap (the publish
- *  getAsset reader, LARGE-MEDIA-MEMORY-CEILING #5). Returning the File (not an ArrayBuffer) lets the
- *  FSA folder backend stream it straight to disk via `createWritable().write(blob)` so even one huge
- *  asset never fully materializes; the zip/memory backends still read it (they need the bytes). Null ONLY
- *  if absent; a real read failure propagates AssetReadFailedError (fail the publish, don't ship a hole). */
-export async function readAssetBlob(slug: string, name: string): Promise<Blob | null> {
-  return readAssetFile(slug, name, "assets"); // the OPFS File — lazy; not read into memory here
+/** A backend-native URL the webview loads an asset DIRECTLY (Tauri convertFileSrc → `asset://…`),
+ *  bypassing a blob: URL — Phase 4, for AV: a multi-GB recording streams from disk with native
+ *  byte-range seeking instead of materializing into heap (a blob: URL for it would read the whole file).
+ *  Null where the backend has no such capability (web/OPFS — resolveUrl absent) or the asset is absent;
+ *  the caller then FALLS BACK to a blob: URL (readAssetUrl). NOT a blob: URL, so it needs no revoke.
+ *  Images deliberately do NOT use this — they stay on blob: URLs (Phase 4: the assetProtocol + OSD +
+ *  WebKitGTK combo is the highest-risk item; keep it off the load-bearing image path). */
+export async function residentAssetUrl(slug: string, name: string): Promise<string | null> {
+  const h = await openAssetFileForDisplay(slug, name, "assets");
+  return h?.resolveUrl ? (await h.resolveUrl()) ?? null : null;
 }
-// (readAssetBytes removed 2026-05-27 — A.3 routed publishing through the lazy `readAssetBlob`; it had no
-//  other caller. `readOriginalBytes` below still reads eagerly for the GH-publish originals opt-in.)
+
+/** Resolve a stored asset to its seam File — a LAZY File, NOT read into the JS heap (the publish getAsset
+ *  reader, LARGE-MEDIA-MEMORY-CEILING #5). Returning the File (not an ArrayBuffer) lets a streaming target
+ *  (FSA folder createWritable / Tauri streaming write / zip sink) consume it without the whole asset
+ *  materializing here. Null ONLY if absent; a real read failure propagates AssetReadFailedError (fail the
+ *  publish, don't ship a hole). */
+export async function readAssetBlob(slug: string, name: string): Promise<Blob | null> {
+  const h = await openAssetFile(slug, name, "assets");
+  return h ? h.getFile() : null; // the seam File — lazy; not read into memory here
+}
 
 /** Read a preserved ORIGINAL's bytes (from `assets-original/`) for opt-in citation publish. Null if absent. */
 export async function readOriginalBytes(slug: string, name: string): Promise<ArrayBuffer | null> {
   try {
-    const dir = await assetsDir(slug, false, "assets-original");
-    if (!dir) return null;
-    const fh = await dir.getFileHandle(name);
-    return await (await fh.getFile()).arrayBuffer();
+    const h = await openAssetFile(slug, name, "assets-original");
+    return h ? await h.readable() : null;
   } catch {
     return null;
   }
 }
 
-/** Resolve a stored baked thumbnail (`assets-thumb/`) to its OPFS File — lazy, mirroring readAssetBlob
- *  (the publish getThumbnail reader). Null ONLY if absent (publishLibrary then drops the thumbnail ref);
- *  a real read failure propagates AssetReadFailedError so the publish fails loudly instead of silently
- *  shipping a tree without its thumbnails. */
+/** Resolve a stored baked thumbnail (`assets-thumb/`) to its seam File — lazy, mirroring readAssetBlob (the
+ *  publish getThumbnail reader). Null ONLY if absent (publishLibrary then drops the thumbnail ref); a real
+ *  read failure propagates AssetReadFailedError so the publish fails loudly instead of silently shipping a
+ *  tree without its thumbnails. */
 export async function readThumbBytes(slug: string, name: string): Promise<Blob | null> {
-  return readAssetFile(slug, name, "assets-thumb");
+  const h = await openAssetFile(slug, name, "assets-thumb");
+  return h ? h.getFile() : null;
 }
 
 /** Resolve a stored baked thumbnail to a fresh blob: URL (caller revokes) — the small gallery/overview
@@ -205,6 +219,6 @@ export async function readThumbBytes(slug: string, name: string): Promise<Blob |
  *  Null when no thumbnail was baked (pre-existing import, or an image already small enough) — or on a
  *  real read failure (display path: logged, degraded to the master fallback). */
 export async function readThumbUrl(slug: string, name: string): Promise<string | null> {
-  const f = await readAssetFileForDisplay(slug, name, "assets-thumb"); // no baked thumbnail → caller falls back to the master blob
-  return f ? fileToObjectUrl(f, name) : null;
+  const h = await openAssetFileForDisplay(slug, name, "assets-thumb"); // no baked thumbnail → caller falls back to the master blob
+  return h ? blobUrlFrom(h, name) : null;
 }

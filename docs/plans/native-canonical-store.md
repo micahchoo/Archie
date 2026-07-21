@@ -317,15 +317,63 @@ checklist — a reviewer/runner ticks each box against the packaged app.
 |---|---|---|---|
 | P1-a | 1 | A multi-GB AV asset streams to the folder via `TauriFile.writable()` → plugin-fs `open()` in **bounded memory** (no ~2× heap spike); byte-exact on read-back. Node-bridge streaming is proven headless (`tauri.test.ts`), but WebKitGTK plugin-fs `open()`/`write()` short-write behaviour is not. | ☐ pending build |
 | P1-b | 1 | `copyTree` over a REAL OPFS `FsaFilesystem` source → `TauriFilesystem` folder target round-trips a real library (the migration's read leg over OPFS). | ☐ pending build |
-| P2-a | 2 | A desktop session authors `library.json` + annotations + assets directly to `{appDataDir}/library` and the tree **survives relaunch**. | ☐ blocked — Phase 2 not implemented (see stop report) |
-| P2-b | 2 | Migration of a REAL pre-existing OPFS library (a shipped OPFS-canonical desktop user) copies into the folder, marker written LAST, OPFS retained. | ☐ blocked |
-| P3-a | 3 | The storage chip is **hidden** on desktop and `persist()` is skipped (native fs has no quota/eviction). | ☐ blocked |
-| P4-a | 4 | Folder-resident **AV** plays via `convertFileSrc()` (`asset://`) under WebKitGTK with native byte-range seeking; **images** still render via blob: URL; OpenSeadragon unaffected (highest-risk item, `src-tauri/README.md`). | ☐ blocked |
+| P2-a | 2 | A desktop session authors `library.json` + annotations + assets directly to `{appDataDir}/library` and the tree **survives relaunch**. | ☐ pending build — Phase 2 IMPLEMENTED (`wf/native-store-p2`): resident folder mounted at `defaultLibraryRoot()` via `resident-store.ts`; store.ts + asset-store.ts route through `residentProjectDir` (one code path). Author-to-`{appDataDir}` + survive-relaunch are packaged-only. |
+| P2-b | 2 | Migration of a REAL pre-existing OPFS library (a shipped OPFS-canonical desktop user) copies into the folder, marker written LAST, OPFS retained. | ☐ pending build — migration wired (`migrateOpfsToFolder` runs once per process inside `desktopResidentFs`, marker LAST, OPFS retained). Copy of a REAL OPFS library over WebKitGTK is packaged-only (headless proof: opfs-to-folder.test.ts + copy-tree.test.ts). |
+| P3-a | 3 | The storage chip is **hidden** on desktop and `persist()` is skipped (native fs has no quota/eviction). | ☐ pending build — `storage-quota.svelte.ts` gated inert on `isTauri()` (usage null → chip hides; persist() skipped; failure not raised as the "storage full" chip). Headless-proven (window Tauri-marker stub); chip-hidden-in-the-packaged-webview is packaged-only. |
+| P4-a | 4 | Folder-resident **AV** plays via `convertFileSrc()` (`asset://`) under WebKitGTK with native byte-range seeking; **images** still render via blob: URL; OpenSeadragon unaffected (highest-risk item, `src-tauri/README.md`). | ☐ pending build — AV master resolves via `residentAssetUrl` (seam `resolveUrl` → `convertFileSrc`) wired into `ensureMaster` (`resolveNativeAv`); images stay blob:. Headless-proven (AV prefers asset://, images ignore it, web null-fallback). `convertFileSrc`+WebKitGTK AV playback + wavesurfer decode over `asset://` (connect-src) + OSD-unaffected are packaged-only. **Review fix (`ff79829`):** `tileObject` now MATERIALIZES the lazy Tauri File (`new Blob([await src.arrayBuffer()])`) before `createImageBitmap` — the raw lazy File's internal byte sequence is empty, so oversized-image DZI tiling would have silently shipped untiled on desktop publish; confirm packaged deep-zoom on a >4096px imported master. |
 | P5-a | 5 | A **second launch focuses** the existing window and does NOT open a second webview/writer. Plugin + wiring compile-verified (`cargo check`, this branch); the focus behaviour + Flatpak single-instance lock (app-id match) are packaged-only. | ☐ pending build (plugin landed) |
-| P5-b | 5 | The on-disk generation-token guard pauses+warns when an out-of-band writer (sync tool) touched the folder. | ☐ blocked — token guard deferred with Phase 2 |
-| P6-a | 6 | Author-in-place + export-elsewhere (`.archie.zip` to a picked path) + reopen round-trip; no path both authors-in-place AND mirrors the same bytes to the resident root. | ☐ blocked |
+| P5-b | 5 | The on-disk generation-token guard pauses+warns when an out-of-band writer (sync tool) touched the folder. | ☐ pending build — token guard IMPLEMENTED (`resident-store.ts` baseline/`residentExternallyChanged`/`restampResident`, reusing mirror-stamp.ts; `saveLibraryMeta` throws `ResidentExternalChangeError` rather than blind-overwrite). Packaged detection + the richer overwrite/reopen banner UX are packaged-only. Today the refusal surfaces via the GENERIC save-error chrome ("try again" — which won't clear a token mismatch; only a reload re-baselines): the tailored "reload to load its version" banner (matching binding-store's) is the a09d UX refinement. Enforcement (never-blind-overwrite) is in place regardless. |
+| P6-a | 6 | Author-in-place + export-elsewhere (`.archie.zip` to a picked path) + reopen round-trip; no path both authors-in-place AND mirrors the same bytes to the resident root. | ☐ pending build — reconcile verified BY CONSTRUCTION: the incremental folder mirror (`binding-store.mirrorToFolder`) fires only when `binding.kind === "folder"` (an explicit user-bound folder), never the resident working store — the two are separate mechanisms, so nothing double-writes the resident root. Packaged author-in-place + export-elsewhere round-trip only. |
 
 ---
+
+### Migration posture caveat — ABORT, not skip (Phase 2, noted not built)
+
+The one-time OPFS→folder copy (`desktopResidentFs` → `migrateOpfsToFolder`) is **abort-not-skip**: a copy
+throw PROPAGATES out of `residentRootFs()` rather than being swallowed to "continue on OPFS / on a partial
+folder." Boot already enforces the abort — `App.svelte`'s first call is `migrateResidentStoreIds()` inside
+a try/catch that, on any throw, alerts the user ("your work is safe — reload") and RETURNS before
+`loadLibraryMeta` or any write, so nothing authors onto a half-migrated tree. The memoized `desktopReady`
+promise caches the REJECTED promise too, so a failed migration does not silently retry mid-session as
+"ok"; a fresh process (a reload/relaunch) re-runs it idempotently (marker absent → partials overwritten).
+The a09d packaged run must confirm this posture end-to-end: a deliberately-interrupted copy leaves
+`migrated.json` absent AND the session refuses to boot against the partial folder (no silent skip-to-OPFS).
+
+## Execution status — branch `wf/native-store-p2` (2026-07-20, lane native-store-p2)
+
+**Base:** `dbd44379` (per Step 0). Continues the prior lane's Phase-1 primitives (merged) per the binding
+**Phase-2 design decision** (extend the Filesystem seam). Landed this pass, per-phase commits:
+
+- **Seam extension — DONE.** Three capabilities exactly (the decision): (1) LAZY `getFile()` that never
+  pre-materializes (TauriFile reworked to a stat-sized lazy File; read-spy proof: getFile() triggers ZERO
+  content reads), (2) `size()` stat on all 5 backends (conformance both suites), (3) OPTIONAL `resolveUrl?()`
+  — Tauri-only (`convertFileSrc`), others undefined. `TauriFsBridge` gained `stat` + `resolveUrl` (both
+  implementers moved, tauri-fs-seam). `isNotFound` lifted to the seam so asset-store shares the one absent-
+  vs-failed classifier. Also folded the P1-review comment fix (`TauriFile.writable()` dispatches per-write,
+  not "by the first chunk"). Gates: render-core **1107** vitest + tsc 0; studio **909** + tsc 0.
+  - *Fidelity note (for the reviewer):* a Tauri PATH cannot back a chunk-lazy web File, so `getFile()` is
+    lazy at the CALL boundary; the actual consume reads whole. This costs nothing on the desktop publish
+    path — the zip sink materializes each entry whole regardless, and true chunk-streaming only occurs
+    OPFS-source→folder-target (the web/migration leg), never Tauri-source. `slice()` on the lazy Tauri File
+    throws (no sync sub-Blob); no seam consumer slices getFile() — blob: URLs read `readable()`.
+- **Phase 2 (the flip) — DONE.** `resident-store.ts` (`residentRootFs`/`residentProjectDir`, migration
+  once per process); store.ts + asset-store.ts re-pointed through it (ONE code path, no isTauri fork in the
+  asset module). Rooting = **Approach B** (the folder root IS the project; id-migration engine gained an
+  additive `projectAtRoot` option). Boot wiring needed NO App.svelte change (the memoized migration runs
+  before any resident access; the existing boot try/catch is the abort). Gates: studio **909** vitest +
+  tsc 0 + svelte-check 0/0; **WEB browser-drive GREEN** (loop.spec OPFS autosave+reload+publish;
+  navigation.spec 6/6).
+- **Phase 3 — DONE.** storage-quota inert on `isTauri()` (chip hides, persist() skipped, native failure via
+  the save-error path). Studio **910** vitest.
+- **Phase 4 — DONE.** AV via `resolveUrl→convertFileSrc` (asset://) behind `resolveNativeAv`; images stay
+  blob:; peaks/derived cache to a HIDDEN `.archie-cache/peaks/{slug}` dotdir on desktop (answer #3), web
+  keeps `assets-peaks`. Studio **912** vitest.
+- **Phase 5b — DONE.** Resident-folder generation-token guard (reuses mirror-stamp.ts): baseline at mount,
+  `saveLibraryMeta` refuses to blind-overwrite on a token mismatch. isTauri-gated (web no-op). Studio **912**.
+- **Phase 6 — VERIFIED (no code).** The folder-mirror machinery fires only on an explicit `binding.kind ===
+  "folder"`, never the resident root — no double-write by construction (see P6-a).
+
+Every "only the packaged app proves" row above rides **Archie-a09d** — none are claimed done on vitest alone.
 
 ## Execution status — branch `wf/native-store` (2026-07-20, agent a09d-lane native-store)
 

@@ -35,6 +35,14 @@ export interface AssetUrlDeps {
   revoke: (url: string) => void;
   /** The OPFS asset name for a source, or null for a non-asset (remote/IIIF) source. (store.isAsset slice) */
   assetName: (source: string) => string | null;
+  /**
+   * OPTIONAL (Phase 4) — a backend-native asset URL the webview loads DIRECTLY (Tauri convertFileSrc →
+   * `asset://…`), used ONLY for AV masters so a multi-GB recording streams from disk with native
+   * byte-range seeking instead of materializing into a blob: (store.residentAssetUrl). Returns null when
+   * the backend has no such capability (web/OPFS) — AV then falls back to `readMaster` (a blob: URL). NOT a
+   * blob: URL, so it is never revoked. Absent in the web wiring; images never use it (they stay blob:).
+   */
+  resolveNativeAv?: (slug: string, name: string) => Promise<string | null>;
 }
 
 export function createAssetUrls(deps: AssetUrlDeps) {
@@ -138,7 +146,14 @@ export function createAssetUrls(deps: AssetUrlDeps) {
       const seq = ++mintSeq;
       s.masterReady = false;
       let url: string | null = null;
-      try { url = await deps.readMaster(slug, name); } catch { url = null; } // an unexpected reject must not stick "Loading"
+      try {
+        // AV masters (sound/video): prefer a backend-native `asset://` URL (streams from disk, native
+        // byte-range seeking — no heap) when the backend offers one (Tauri, Phase 4). Images ALWAYS take
+        // the blob: path (readMaster); AV falls back to it on web (resolveNativeAv absent / returns null).
+        const isAv = obj.mediaType === "sound" || obj.mediaType === "video";
+        if (isAv && deps.resolveNativeAv) url = await deps.resolveNativeAv(slug, name);
+        url ??= await deps.readMaster(slug, name);
+      } catch { url = null; } // an unexpected reject must not stick "Loading"
       if (seq !== mintSeq) { if (url) deps.revoke(url); return; } // superseded by a newer switch / seed
       revokeMaster(); // free the outgoing object's master before installing this one
       s.masterUrl = url; // null → canvasSource falls back to the raw source (a broken read fails visibly, not forever)

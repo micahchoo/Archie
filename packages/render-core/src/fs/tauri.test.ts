@@ -59,6 +59,14 @@ const nodeBridge: TauriFsBridge = {
       return false;
     }
   },
+  async stat(path) {
+    return { size: (await fsp.stat(path)).size };
+  },
+  resolveUrl(path) {
+    // Stand-in for plugin `convertFileSrc` — the real adapter (apps/studio/src/tauri-fs.ts) returns the
+    // webview asset URL; the node double just proves the capability threads through the seam.
+    return `asset://localhost/${path.replace(/^\/+/, "")}`;
+  },
 };
 
 // Each conformance test wants an isolated root; mint a fresh temp dir per factory call.
@@ -124,6 +132,65 @@ describe("TauriFilesystem hardening", () => {
     expect(round.byteLength).toBe(bytes.byteLength);
     expect(round[0]).toBe(bytes[0]);
     expect(round[299_999]).toBe(bytes[299_999]);
+  });
+
+  it("getFile() is LAZY — a stat for the size, ZERO content reads until the bytes are consumed", async () => {
+    // The Archie-623e no-materialize proof: getFile() must not readFile() the whole asset (an OOM on a
+    // multi-GB AV file). Spy the bridge — getFile() may stat but must NOT readFile; the read defers to
+    // arrayBuffer()/stream()/text().
+    let readFiles = 0;
+    let stats = 0;
+    const spyBridge: TauriFsBridge = {
+      ...nodeBridge,
+      async readFile(path) { readFiles++; return nodeBridge.readFile(path); },
+      async stat(path) { stats++; return nodeBridge.stat(path); },
+    };
+    const root = mkdtempSync(nodeJoin(tmpdir(), "archie-tauri-lazy-"));
+    roots.push(root);
+    const rootDir = await new TauriFilesystem(spyBridge, root).root();
+    const w = await (await rootDir.getFile("big.bin", { create: true })).writable();
+    await w.write(new Blob([new Uint8Array(50_000).map((_, i) => i % 251)]));
+    await w.close();
+
+    readFiles = 0; stats = 0;
+    const f = await (await rootDir.getFile("big.bin")).getFile();
+    expect(f).toBeInstanceOf(File);
+    expect(f.name).toBe("big.bin");
+    expect(f.size).toBe(50_000); // size came from stat, not a read
+    expect(readFiles).toBe(0);   // NEVER pre-materialized
+    expect(stats).toBeGreaterThan(0);
+
+    // Consuming the bytes now (and only now) reads from disk, byte-exact.
+    const round = new Uint8Array(await f.arrayBuffer());
+    expect(readFiles).toBeGreaterThan(0);
+    expect(round.byteLength).toBe(50_000);
+    expect(round[49_999]).toBe(49_999 % 251);
+    // stream() round-trips the same bytes.
+    const chunks: Uint8Array[] = [];
+    for await (const c of (f.stream() as unknown as AsyncIterable<Uint8Array>)) chunks.push(c);
+    expect(chunks.reduce((n, c) => n + c.byteLength, 0)).toBe(50_000);
+  });
+
+  it("size() stats without reading; resolveUrl() threads convertFileSrc through the seam", async () => {
+    let readFiles = 0;
+    const spyBridge: TauriFsBridge = {
+      ...nodeBridge,
+      async readFile(path) { readFiles++; return nodeBridge.readFile(path); },
+    };
+    const root = mkdtempSync(nodeJoin(tmpdir(), "archie-tauri-stat-"));
+    roots.push(root);
+    const rootDir = await new TauriFilesystem(spyBridge, root).root();
+    const w = await (await rootDir.getFile("m.json", { create: true })).writable();
+    await w.write("hello");
+    await w.close();
+    const file = await rootDir.getFile("m.json");
+    readFiles = 0;
+    expect(await file.size()).toBe(5);
+    expect(readFiles).toBe(0); // size() is a stat, never a read
+    // resolveUrl() is present on the Tauri backend and returns the bridge's asset URL (capability 3).
+    expect(typeof file.resolveUrl).toBe("function");
+    const url = await file.resolveUrl!();
+    expect(url).toMatch(/^asset:\/\/localhost\//);
   });
 
   it("rejects a traversal / separator segment before it reaches the bridge", async () => {

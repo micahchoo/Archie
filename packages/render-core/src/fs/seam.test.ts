@@ -25,6 +25,9 @@ class MemFile implements FsFile {
   async getFile(): Promise<File> {
     return new File([this.bytes], this.name);
   }
+  async size(): Promise<number> {
+    return this.bytes.byteLength;
+  }
 }
 
 class MemDir implements FsDirectory {
