@@ -15,6 +15,7 @@
 // contract holds without touching this file again.
 import type { AnnotationLog, ClientId } from "@render/core";
 import { collabBreakdown } from "./collab.js";
+import { readJson, writeJson } from "./persisted.js";
 
 export interface ImportFreshness {
   /** Others' live-note count observed at THIS import — the new baseline the next import compares against. */
@@ -50,24 +51,19 @@ export function freshnessBadgeText(freshness: ImportFreshness | null | undefined
 
 // --- localStorage persistence (app-local watermark; same try/catch idiom as App.svelte's
 // IDENTITY_KEY / FIRST_ADD_KEY — private mode / disabled storage degrades to "no watermark", never
-// throws) ---
+// throws) — now via persisted.ts's readJson/writeJson (Archie-3148) ---
 const KEY = (slug: string) => `archie.importFreshness.v1.${slug}`;
 
 export function loadImportFreshness(slug: string): ImportFreshness | null {
-  try {
-    const raw = localStorage.getItem(KEY(slug));
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<ImportFreshness>;
-    if (typeof parsed.baseline === "number" && typeof parsed.delta === "number") {
-      return { baseline: parsed.baseline, delta: parsed.delta };
-    }
-    return null;
-  } catch { return null; }
+  const parsed = readJson<Partial<ImportFreshness>>(KEY(slug));
+  if (parsed && typeof parsed.baseline === "number" && typeof parsed.delta === "number") {
+    return { baseline: parsed.baseline, delta: parsed.delta };
+  }
+  return null;
 }
 
 export function saveImportFreshness(slug: string, freshness: ImportFreshness): void {
-  try { localStorage.setItem(KEY(slug), JSON.stringify(freshness)); }
-  catch { /* private mode — the badge just won't persist across reload, harmless */ }
+  writeJson(KEY(slug), freshness);
 }
 
 /** The one production call site (ingest-flows.ts's openZip, via App.svelte's openZipFile) calls this
