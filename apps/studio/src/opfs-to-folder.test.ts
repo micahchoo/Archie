@@ -50,6 +50,7 @@ function faultyFs(inner: MemoryFilesystem, failOn: Set<string>): Filesystem {
   const wrapFile = (name: string, f: FsFile): FsFile => ({
     readable: () => f.readable(),
     getFile: () => f.getFile(),
+    size: () => f.size(),
     async writable(): Promise<FsWritable> {
       const w = await f.writable();
       return {

@@ -99,6 +99,13 @@ class HttpFile implements FsFile {
   async getFile(): Promise<File> {
     return new File([await this.fetchBytes()], this.name);
   }
+
+  /** Plain HTTP has no cheap size probe (HEAD is 405 on many static hosts), so pay one capped GET and
+   *  measure the body — the seam's documented "a read-only backend may pay a read" case. Absent-vs-failed
+   *  is classified identically to a read (404 → the canonical `no such file:`; a fault → FailedReadError). */
+  async size(): Promise<number> {
+    return (await this.fetchBytes()).byteLength;
+  }
 }
 
 class HttpDir implements FsDirectory {

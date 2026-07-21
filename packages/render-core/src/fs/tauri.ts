@@ -55,6 +55,22 @@ export interface TauriFsBridge {
   /** Recursive remove of a file or directory. Must reject if the path is missing. */
   remove(path: string): Promise<void>;
   exists(path: string): Promise<boolean>;
+  /**
+   * File metadata WITHOUT reading content — plugin-fs `stat(path)`. Backs the seam's `FsFile.size()`
+   * (Archie-623e capability 2) and the stat-sized lazy `getFile()`, so metadata never pulls a multi-GB
+   * asset into heap. node:fs `stat` is the conformance double. Adding this method moves BOTH
+   * implementers in lockstep (real plugin-fs adapter + node bridge) — tsc is the gate (tauri-fs-seam).
+   */
+  stat(path: string): Promise<{ size: number }>;
+  /**
+   * Turn an absolute path into a URL a webview element can load DIRECTLY — plugin `convertFileSrc`
+   * (an `asset://…` / `http://asset.localhost/…` URL the webview streams from disk with native
+   * byte-range seeking). This is where the app's `convertFileSrc` threads into the seam's OPTIONAL
+   * `FsFile.resolveUrl?()` (Archie-623e capability 3, Tauri-only). Synchronous (convertFileSrc is).
+   * BOTH implementers move in lockstep (real adapter in apps/studio/src/tauri-fs.ts, node conformance
+   * double in tauri.test.ts) — tsc is the gate (tauri-fs-seam).
+   */
+  resolveUrl(path: string): string;
 }
 
 /** Drain ONE chunk fully into a streaming handle, looping over POSIX short writes (a bare call can
@@ -100,12 +116,16 @@ class TauriFile implements FsFile {
     // over the destination. plugin-fs writeFile/open truncates-then-writes, so a crash mid-flush
     // straight to the destination would leave `library.json`/`manifest.json` truncated and
     // unparseable — a durability guarantee the FSA/OPFS backends give for free. Same-dir temp keeps
-    // the rename atomic (one filesystem). The mode is chosen by the FIRST chunk:
-    //   - string / ArrayBuffer (authored JSON): buffer in heap, flush once via writeFile. The
+    // the rename atomic (one filesystem). Each `write(data)` DISPATCHES BY ITS OWN TYPE (not a mode
+    // fixed by the first chunk) — the first Blob write lazily `open()`s the streaming handle and every
+    // later Blob write streams into it; string/ArrayBuffer writes buffer into `chunks`:
+    //   - string / ArrayBuffer (authored JSON): buffer in heap, flush once via writeFile on close(). The
     //     proven durable-JSON path — kept deliberately unchanged (small, atomicity is what matters).
     //   - Blob (an imported asset, potentially a multi-GB AV file): STREAM it into a plugin-fs
     //     `open()` handle, so it never fully materializes. The buffered path would concatenate the
     //     whole file (~2× in heap) and OOM (fs/tauri.ts header / Archie-623e Phase 1).
+    // In practice one writable() sees a single kind (the seam's callers never mix); close() then
+    // commits whichever leg ran — a live handle (streamed) or the buffered `chunks` (JSON / 0-byte).
     const tmp = `${this.path}.tmp-${tmpSeq++}`;
     const chunks: Uint8Array[] = [];
     let handle: TauriWriteHandle | null = null;
@@ -169,9 +189,59 @@ class TauriFile implements FsFile {
   }
 
   async getFile(): Promise<File> {
-    const bytes = (await this.bridge.readFile(this.path)).slice();
-    return new File([bytes], this.name);
+    // LAZY (Archie-623e seam contract): stat for the size, defer the byte read. NEVER readFile() here —
+    // the no-materialize proof (tauri.test.ts) spies that getFile() triggers zero content reads.
+    const { size } = await this.bridge.stat(this.path);
+    return lazyTauriFile(this.bridge, this.path, this.name, size);
   }
+
+  async size(): Promise<number> {
+    return (await this.bridge.stat(this.path)).size;
+  }
+
+  async resolveUrl(): Promise<string | undefined> {
+    // convertFileSrc (via the bridge) → an asset:// URL the webview streams natively (Phase 4 AV).
+    return this.bridge.resolveUrl(this.path);
+  }
+}
+
+/**
+ * A lazily-read `File` for the Tauri backend — the seam's "getFile() never pre-materializes" contract
+ * (Archie-623e). `new File([], name)` is a real, `instanceof File` handle; `size` is redefined from a
+ * stat (no read) and the READ methods (`arrayBuffer`/`stream`/`text`) pull the bytes on demand via the
+ * bridge. `slice()` throws — a lazy backend can't produce a synchronous sub-Blob and no seam consumer
+ * slices getFile() (they read arrayBuffer()/stream(); a blob: URL uses `readable()`). Do NOT pass this
+ * to `URL.createObjectURL` / `createWritable().write` either: those read the (empty) internal byte
+ * sequence, not these methods — see the seam.ts getFile() contract.
+ *
+ * Fidelity note: `stream()` reads the whole file in one pull — a Tauri PATH cannot back a chunk-lazy
+ * web File, so this is lazy at the CALL boundary, not bounded-memory on consume. The desktop publish
+ * path is unaffected: the zip sink materializes each entry whole regardless, and true chunk-streaming
+ * only occurs OPFS-source→folder-target (the web / migration leg), never Tauri-source.
+ */
+function lazyTauriFile(bridge: TauriFsBridge, path: string, name: string, size: number): File {
+  const read = async (): Promise<Uint8Array> => (await bridge.readFile(path)).slice();
+  const file = new File([], name);
+  const def = (key: string, value: unknown): void => {
+    Object.defineProperty(file, key, { value, configurable: true });
+  };
+  def("size", size);
+  def("arrayBuffer", async (): Promise<ArrayBuffer> => (await read()).buffer as ArrayBuffer);
+  def("text", async (): Promise<string> => new TextDecoder().decode(await read()));
+  def("stream", (): ReadableStream<Uint8Array> =>
+    new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        controller.enqueue(await read());
+        controller.close();
+      },
+    }),
+  );
+  def("slice", () => {
+    throw new Error(
+      "lazy Tauri File does not support slice(); read via arrayBuffer()/stream() or the seam's readable()",
+    );
+  });
+  return file;
 }
 
 class TauriDir implements FsDirectory {

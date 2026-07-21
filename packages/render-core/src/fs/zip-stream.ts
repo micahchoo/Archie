@@ -149,6 +149,11 @@ class StreamFile implements FsFile {
     const bytes = this.state.structural.get(this.path) ?? new Uint8Array(0);
     return new File([bytes.slice()], this.name);
   }
+  async size(): Promise<number> {
+    // Only structural (read-back) files have a retained size; released media reads as absent → 0,
+    // matching this sink's read-back-only contract.
+    return this.state.structural.get(this.path)?.byteLength ?? 0;
+  }
 }
 
 class StreamDir implements FsDirectory {

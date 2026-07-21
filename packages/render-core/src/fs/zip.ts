@@ -155,6 +155,9 @@ class ZipFile implements FsFile {
     const bytes = this.store.files.get(this.path) ?? new Uint8Array(0);
     return new File([bytes.slice()], this.name);
   }
+  async size(): Promise<number> {
+    return this.store.files.get(this.path)?.byteLength ?? 0;
+  }
 }
 
 class ZipDir implements FsDirectory {

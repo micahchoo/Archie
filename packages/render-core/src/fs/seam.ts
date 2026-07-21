@@ -30,8 +30,35 @@ export interface FsDirectory {
 export interface FsFile {
   readable(): Promise<ArrayBuffer>;
   writable(): Promise<FsWritable>;
-  /** Mirrors FSA's FileSystemFileHandle.getFile() so callers can read name/size/lastModified. */
+  /**
+   * A `File` handle mirroring FSA's `FileSystemFileHandle.getFile()`. CONTRACT (sharpened Archie-623e
+   * Phase-2 seam extension): this NEVER pre-materializes the file's bytes into the JS heap — the read
+   * is deferred until the returned File's content is consumed. FSA/OPFS give this for free (a live
+   * disk-backed File); the Tauri backend reworks its old readFile()-whole implementation to a
+   * stat-sized lazy File (fs/tauri.ts). The large-media publish path (readAssetBlob) depends on this.
+   *
+   * READ the returned File via `arrayBuffer()` / `stream()` / `text()` (or the seam's `readable()`).
+   * Do NOT hand it to `URL.createObjectURL` / `FileSystemWritableFileStream.write` / `slice()`: a lazy
+   * backend's File has no materialized byte storage, so those (which read the internal byte sequence,
+   * not the JS methods) see nothing. For a blob: URL, read `readable()` and build a real Blob (see
+   * asset-store.ts `readAssetUrl`); for native AV playback use `resolveUrl?.()` instead.
+   */
   getFile(): Promise<File>;
+  /**
+   * Byte size WITHOUT reading the content (a stat) — Archie-623e capability (2). The pre-zip size
+   * estimate (LARGE-MEDIA-MEMORY-CEILING) and `asset-store.ts` `assetSize` use this so metadata never
+   * pulls a multi-GB asset into heap. Every backend implements it; a read-only backend with no cheap
+   * probe (HTTP) may pay a read to answer.
+   */
+  size(): Promise<number>;
+  /**
+   * OPTIONAL — a backend-native URL a webview element can load DIRECTLY, bypassing a blob: URL.
+   * Archie-623e capability (3): ONLY the Tauri backend implements it (`convertFileSrc` → an
+   * `asset://…` URL the webview streams from disk with native byte-range seeking, so multi-GB AV
+   * plays without reading into heap). Every other backend leaves it undefined; callers MUST fall back
+   * to a blob: URL (`readable()`) when `file.resolveUrl` is absent or resolves to `undefined`.
+   */
+  resolveUrl?(): Promise<string | undefined>;
 }
 
 export interface FsWritable {

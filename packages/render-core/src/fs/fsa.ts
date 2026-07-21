@@ -21,6 +21,10 @@ class FsaFile implements FsFile {
   getFile(): Promise<File> {
     return this.handle.getFile();
   }
+  async size(): Promise<number> {
+    // FSA's File is disk-backed and lazy, so `.size` is a stat — no bytes read into heap.
+    return (await this.handle.getFile()).size;
+  }
 }
 
 class FsaDir implements FsDirectory {

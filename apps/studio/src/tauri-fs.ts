@@ -20,6 +20,8 @@ export function isTauri(): boolean {
 /** Build the TauriFsBridge over @tauri-apps/plugin-fs — the 1:1 adapter the conformance test stands in for. */
 export async function tauriFsBridge(): Promise<TauriFsBridge> {
   const fs = await import("@tauri-apps/plugin-fs");
+  // convertFileSrc is captured here (the bridge build is async) so the SYNC resolveUrl below can call it.
+  const { convertFileSrc } = await import("@tauri-apps/api/core");
   return {
     readFile: (path) => fs.readFile(path),
     writeFile: (path, data) => fs.writeFile(path, data),
@@ -37,6 +39,12 @@ export async function tauriFsBridge(): Promise<TauriFsBridge> {
     },
     remove: (path) => fs.remove(path, { recursive: true }),
     exists: (path) => fs.exists(path),
+    // stat WITHOUT reading — backs FsFile.size() + the stat-sized lazy getFile() (Archie-623e cap 2).
+    stat: async (path) => ({ size: (await fs.stat(path)).size }),
+    // convertFileSrc → an asset:// URL the webview streams from disk with native byte-range seeking
+    // (Archie-623e cap 3 — Phase-4 AV). Sync, per convertFileSrc; the assetProtocol scope + CSP already
+    // permit it (.claude/rules/tauri-csp.md), so this spends the unused capability with no CSP change.
+    resolveUrl: (path) => convertFileSrc(path),
   };
 }
 

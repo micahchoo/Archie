@@ -80,6 +80,17 @@ export function runReadConformance(
       expect(new TextDecoder().decode(await readAt(fs, "x/y/z.json"))).toBe('{"ok":true}');
     });
 
+    it("size() reports the seeded byte length (Archie-623e capability 2)", async () => {
+      const fs = await makeFs({ "sz.bin": new Uint8Array([1, 2, 3, 4, 5]) });
+      expect(await (await (await fs.root()).getFile("sz.bin")).size()).toBe(5);
+    });
+
+    it("resolveUrl is absent on this read-only backend (callers fall back to a blob: URL)", async () => {
+      const fs = await makeFs({ "r.txt": "x" });
+      const f = await (await fs.root()).getFile("r.txt");
+      expect(f.resolveUrl).toBeUndefined();
+    });
+
     it("a missing file is observably absent (the read chain fails; it never reads as empty)", async () => {
       const fs = await makeFs({ "present.txt": "here" });
       await expectFailure(() => readAt(fs, "missing.txt"));
@@ -117,6 +128,25 @@ export function runConformance(name: string, makeFs: () => Filesystem): void {
       expect(f).toBeInstanceOf(File);
       expect(f.name).toBe("named.txt");
       expect(f.size).toBe(4);
+    });
+
+    it("size() reports byte length without materializing content (Archie-623e capability 2)", async () => {
+      const root = await (makeFs()).root();
+      const w = await (await root.getFile("sz.bin", { create: true })).writable();
+      await w.write(new Uint8Array([1, 2, 3, 4, 5]).buffer);
+      await w.close();
+      expect(await (await root.getFile("sz.bin")).size()).toBe(5);
+    });
+
+    it("resolveUrl is OPTIONAL — absent, or resolves to a URL string (Archie-623e capability 3)", async () => {
+      const root = await (makeFs()).root();
+      await (await (await root.getFile("r.txt", { create: true })).writable()).close();
+      const f = await root.getFile("r.txt");
+      if (f.resolveUrl === undefined) {
+        expect(f.resolveUrl).toBeUndefined(); // memory/zip: callers fall back to a blob: URL
+      } else {
+        expect(typeof (await f.resolveUrl())).toBe("string"); // tauri: a convertFileSrc asset:// URL
+      }
     });
 
     it("creates nested directories and reads a file back", async () => {
