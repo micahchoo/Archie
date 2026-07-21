@@ -738,6 +738,7 @@ export async function loadLibrary(fs: Filesystem): Promise<LoadedLibrary> {
       ...(readings.length > 0 ? { readings } : {}),
       ...(card.description !== undefined ? { summary: card.description } : {}),
       ...(card.cover !== undefined ? { cover: card.cover } : {}),
+      ...(card.unlisted ? { unlisted: true } : {}), // the UNLISTED lever round-trips via the card (Archie-77b2)
       ...rightsFromIIIF(manifest), // exhibit-level credit/license round-trips via the manifest
     });
   }
