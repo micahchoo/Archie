@@ -22,6 +22,7 @@ import { FsaFilesystem, type Filesystem, type FsDirectory } from "@render/core";
 import { isTauri, defaultLibraryRoot, makeTauriFilesystem } from "./tauri-fs.js";
 import { PROJECT, type OpfsRoot } from "./opfs-project.js";
 import { migrateOpfsToFolder } from "./opfs-to-folder.js";
+import { readMirrorToken, writeMirrorToken, newMirrorToken } from "./mirror-stamp.js";
 
 /** The OPFS root as a Filesystem, or null where OPFS is unavailable (non-browser/headless). */
 async function opfsRootFs(): Promise<Filesystem | null> {
@@ -58,8 +59,50 @@ async function desktopResidentFs(): Promise<Filesystem> {
     // torn tree. The memo caches the REJECTED promise too, so a failed migration doesn't silently retry
     // mid-session as "ok"; a fresh process (relaunch) re-runs it idempotently (partials overwritten).
     await migrateOpfsToFolder(await opfsProjectSource(), folder);
+    await baselineResidentToken(folder); // Phase 5b: adopt/stamp the generation baseline for this session
     return folder;
   })());
+}
+
+// --- Phase 5b: resident-folder generation-token guard (defense-in-depth, ISSUES.md Issue 25 row c) ---
+// The single-instance plugin (merged) already stops a SECOND Archie window. This is the belt-and-braces
+// for the OTHER out-of-band writer: a sync tool (Dropbox/Syncthing over $APPDATA/$HOME) that touches the
+// resident folder DURING a session. Reuses mirror-stamp.ts's opaque token: Archie stamps the folder, and
+// before a working-store commit re-reads it — a mismatch means something else wrote, so refuse rather
+// than blind-overwrite Archie's (now stale) copy over the external change. isTauri-gated; on WEB it is a
+// pure no-op (OPFS is serialized across tabs by navigator.locks — there is no cross-process writer).
+
+/** The generation token Archie last wrote/adopted for the resident folder this session. */
+let residentToken: string | null = null;
+
+/** After mounting, ADOPT the on-disk token as the session baseline (or stamp a fresh one if absent). */
+async function baselineResidentToken(fs: Filesystem): Promise<void> {
+  const onDisk = await readMirrorToken(fs);
+  if (onDisk) { residentToken = onDisk; return; }
+  const token = newMirrorToken();
+  await writeMirrorToken(fs, token);
+  residentToken = token;
+}
+
+/** True iff the resident folder's on-disk token no longer matches the one Archie last wrote — an
+ *  out-of-band writer touched the folder this session. Web / no baseline / no store → false (opts out). */
+export async function residentExternallyChanged(): Promise<boolean> {
+  if (!isTauri() || residentToken === null) return false;
+  const fs = await residentRootFs();
+  if (!fs) return false;
+  const onDisk = await readMirrorToken(fs);
+  return onDisk !== null && onDisk !== residentToken;
+}
+
+/** Re-stamp the resident folder with a fresh token after a SUCCESSFUL write + adopt it (Archie has
+ *  reclaimed the folder), so the next commit's check passes. Web: no-op. */
+export async function restampResident(): Promise<void> {
+  if (!isTauri()) return;
+  const fs = await residentRootFs();
+  if (!fs) return;
+  const token = newMirrorToken();
+  await writeMirrorToken(fs, token);
+  residentToken = token;
 }
 
 /**

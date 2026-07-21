@@ -26,7 +26,7 @@ export type { ObjectProvenance, ObjectMeta, ExhibitMeta, LibraryMeta };
 import { PROJECT } from "./opfs-project.js";
 // Archie-623e Phase 2 — the flip. The resident store is a native folder on desktop, OPFS on web; every
 // opener below routes through this ONE accessor instead of opening OPFS directly (web byte-identical).
-import { residentRootFs, residentProjectDir, residentProjectAtRoot } from "./resident-store.js";
+import { residentRootFs, residentProjectDir, residentProjectAtRoot, residentExternallyChanged, restampResident } from "./resident-store.js";
 
 const SAMPLE_SLUG = "sample";
 
@@ -193,15 +193,32 @@ export async function loadLibraryMeta(): Promise<LibraryMeta | null> {
   }
 }
 
+/**
+ * An out-of-band writer (a sync tool over $APPDATA, or a process the single-instance plugin didn't
+ * catch) changed the resident folder this session — refusing to blind-overwrite it (Phase 5b). Reload
+ * to re-adopt the folder's version as the session baseline, then saves resume.
+ */
+export class ResidentExternalChangeError extends Error {
+  override name = "ResidentExternalChangeError";
+  constructor() {
+    super("The library folder was changed outside Archie (a sync tool or another process). Reload to load its version — your work is safe. Saving was paused to avoid mixing versions.");
+  }
+}
+
 /** Persist the authored library structure. No-op if OPFS unsupported. */
 export async function saveLibraryMeta(meta: LibraryMeta): Promise<void> {
   const project = await openProjectDir();
   if (!project) return;
+  // Phase 5b (desktop defense-in-depth): library.json is the working-store commit point. If the resident
+  // folder's generation token no longer matches ours, an out-of-band writer touched it — THROW rather
+  // than blind-overwrite (surfaces via the normal save-error chrome; a reload re-baselines). Web: no-op.
+  if (await residentExternallyChanged()) throw new ResidentExternalChangeError();
   await snapshotIfUnparseable(project, "library.json");
   const file = await project.getFile("library.json", { create: true });
   const w = await file.writable();
   await w.write(JSON.stringify(meta, null, 2));
   await w.close();
+  await restampResident(); // Archie reclaimed the folder — re-stamp so the next commit's check passes
 }
 
 // --- pending notes (coordinate-free imports awaiting "Set area" placement; Archie-79c0 sub-cycle B) ---
