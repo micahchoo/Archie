@@ -292,12 +292,13 @@
   const save = () => sess.save(vs.currentSlug);
   const scheduleSave = () => sess.scheduleSave(vs.currentSlug);
 
-  // --- Structure rev-log (Archie-42f3), behind archie.structureRevlog — read ONCE at boot. OFF (the
-  // default): everything below is inert — no structure/ dir, no reads/writes, setSections behaves
-  // byte-identically to the pre-revlog build. ON: section mutations reconcile into the append-only
-  // structure log (spine/structure.ts), persist beside the annotation history, and library.json's
-  // `sections` becomes the log's projection snapshot. Conflict RESOLUTION UI is Studio-UX map
-  // territory (Archie-d71c/90f1) — here plural heads only GATE editing (NarrativeEditor conflictedIds).
+  // --- Structure rev-log (Archie-42f3; DEFAULT ON since Archie-b0b1) — read ONCE at boot. ON (the
+  // default): section mutations reconcile into the append-only structure log (spine/structure.ts),
+  // persist beside the annotation history, and library.json's `sections` becomes the log's projection
+  // snapshot. The archie.structureRevlog flag now survives only as an emergency KILL-SWITCH ("0" →
+  // OFF): OFF makes everything below inert — no structure/ dir, no reads/writes, setSections behaves
+  // byte-identically to the pre-revlog build. Conflict RESOLUTION UI is Studio-UX map territory
+  // (Archie-d71c/90f1) — here plural heads only GATE editing (NarrativeEditor conflictedIds).
   const STRUCTURE_REVLOG = structureRevlogEnabled();
   const structure = createStructureSession({
     author: () => author,

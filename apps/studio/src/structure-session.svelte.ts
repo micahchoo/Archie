@@ -1,18 +1,17 @@
-// The per-exhibit STRUCTURE-log session (Archie-42f3) — the reactive owner of the section rev-log
-// behind the archie.structureRevlog flag. A `.svelte.ts` rune module in the house pattern
-// (exhibit-session.svelte.ts / library-meta.svelte.ts): the $state container is never reassigned,
-// so getters stay live across the module boundary; the pure logic lives framework-free in
-// structure-reconcile.ts (tested headless) and spine/structure*(-persist).ts.
+// The per-exhibit STRUCTURE-log session (Archie-42f3) — the reactive owner of the section rev-log.
+// A `.svelte.ts` rune module in the house pattern (exhibit-session.svelte.ts / library-meta.svelte.ts):
+// the $state container is never reassigned, so getters stay live across the module boundary; the pure
+// logic lives framework-free in structure-reconcile.ts (tested headless) and spine/structure*(-persist).ts.
 //
-// FLAG OFF (the default) this module is INERT: every entry point returns before touching state,
-// storage, or the fs seam — no `structure/` directory is ever created, nothing is read or written,
-// and callers fall through to today's array-only behavior byte-identically (pinned in
-// structure-session.svelte.test.ts).
-//
-// FLAG ON: section mutations reconcile into the log (appends), the log persists via
-// writeStructure beside the annotation history (`{exhibit}/structure/history/*`), and the working
-// Section[] the App patches into library.json becomes the log's projection — library.json keeps
+// ENABLED (the DEFAULT since Archie-b0b1): section mutations reconcile into the log (appends), the log
+// persists via writeStructure beside the annotation history (`{exhibit}/structure/history/*`), and the
+// working Section[] the App patches into library.json becomes the log's projection — library.json keeps
 // being written exactly as today (it is the projection's SNAPSHOT; the log is the source).
+//
+// KILL-SWITCH (archie.structureRevlog = "0") this module is INERT: every entry point returns before
+// touching state, storage, or the fs seam — no `structure/` directory is ever created, nothing is read
+// or written, and callers fall through to the array-only behavior byte-identically (pinned via the
+// injected `enabled: () => false` in structure-session.svelte.test.ts).
 import {
   asExhibitId,
   hiddenNoteIds,
