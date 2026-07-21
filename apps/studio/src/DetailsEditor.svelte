@@ -23,6 +23,8 @@
     onsummary,
     onrights,
     onmetadata,
+    unlisted = false,
+    onunlisted,
     onremove,
     readonly = false,
   }: {
@@ -42,6 +44,12 @@
      *  (Archie-5a9b audit) and widening them to a whole-RightsFields replace is exactly the clobber that
      *  audit forbids. */
     onmetadata?: (next: MetadataEntry[]) => void;
+    /** Whether this exhibit is hidden from the public gallery (Archie-bdc0, the Exhibit.unlisted lever). */
+    unlisted?: boolean;
+    /** Toggle the gallery-visibility lever (Archie-bdc0). PRESENCE renders the checkbox — an exhibit-only
+     *  control, so only the exhibit-scope mounts wire it; the library/object mounts render exactly as before.
+     *  Writes back to the working-store `unlisted` field, which publish projects onto the exhibits.json card. */
+    onunlisted?: (next: boolean) => void;
     /** Destructive remove (Archie-3f4c). Absent → no remove button (e.g. library is not removable). */
     onremove?: () => void;
     /** Read-only (writer lock, UX-CRITIQUE O1/B3): every field goes disabled (one <fieldset disabled>
@@ -135,6 +143,18 @@
       <textarea rows="3" value={summary} placeholder="A short description of this {scope}" oninput={(e) => onsummary((e.currentTarget as HTMLTextAreaElement).value)}></textarea>
     </label>
     <RightsEditor value={rights} {scope} onchange={onrights} />
+    {#if onunlisted}
+      <!-- Gallery visibility (Archie-bdc0): an exhibit-only lever, so it renders only where a host wires
+           onunlisted. Copy leads with what it does for the curator; the mechanic (still reachable by link)
+           is the demoted second line. Inside the fieldset, so the writer lock disables it with everything else. -->
+      <label class="field visibility">
+        <span class="cb-row">
+          <input type="checkbox" checked={unlisted} onchange={(e) => onunlisted((e.currentTarget as HTMLInputElement).checked)} />
+          <span class="cb-text">Hide this {scope} from the public gallery</span>
+        </span>
+        <span class="hint">People with the direct link can still open it — it just won’t appear in the gallery, the all-images wall, or the sitemap.</span>
+      </label>
+    {/if}
     {#if onremove}
       <div class="danger">
         <button type="button" class="remove" class:confirming onclick={onRemoveClick} onblur={() => (confirming = false)}>
@@ -197,6 +217,16 @@
   }
   textarea { resize: vertical; }
   input:focus, textarea:focus { outline: none; border-color: var(--accent); }
+
+  /* Gallery-visibility lever (Archie-bdc0): a checkbox row + a demoted mechanic line. The checkbox opts out
+     of the full-width text-input rule above (it's not a text field) and sits inline with its label. */
+  .visibility { gap: var(--space-1); }
+  .cb-row { display: flex; flex-direction: row; align-items: flex-start; gap: var(--space-2); }
+  .cb-row input[type="checkbox"] {
+    width: auto; margin: 2px 0 0; padding: 0; flex: none; accent-color: var(--accent);
+  }
+  .cb-text { font-family: var(--font-body), serif; font-size: 0.85rem; color: var(--ink-paper-primary); }
+  .visibility .hint { margin: 0; font-family: var(--font-body), serif; font-size: 0.75rem; color: var(--ink-paper-secondary); }
 
   /* Destructive remove (3f4c): a quiet soft button that warms into a semantic-error fill on the armed second-click guard. */
   .danger { margin-top: var(--space-1); }

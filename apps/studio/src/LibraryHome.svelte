@@ -509,6 +509,8 @@
           onsummary={(v) => onpatchexhibit(editingExhibit!.slug, { summary: v })}
           onrights={(next) => onpatchexhibit(editingExhibit!.slug, { rights: next.rights, requiredStatement: next.requiredStatement })}
           onmetadata={(metadata) => onpatchexhibit(editingExhibit!.slug, { metadata })}
+          unlisted={editingExhibit.unlisted ?? false}
+          onunlisted={(v) => onpatchexhibit(editingExhibit!.slug, { unlisted: v })}
           onremove={isTemplate(editingExhibit.slug)
             ? undefined
             : () => { const s = editingExhibit!.slug; editingSlug = null; onremoveexhibit(s); }}

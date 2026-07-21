@@ -61,6 +61,8 @@
     onrights,
     onmetadata,
     summary,
+    unlisted = false,
+    onunlisted,
     ontitle,
     onsummary,
     onremove,
@@ -116,6 +118,10 @@
     onmetadata: (next: MetadataEntry[]) => void;
     /** Exhibit identity (Phase 4): description + the title (the existing `title` prop), edited in the drawer. */
     summary?: string;
+    /** Gallery-visibility lever (Archie-bdc0): whether this exhibit is hidden from the public gallery, and
+     *  the toggle that writes it back to the working store. Wired through the "Exhibit details" drawer. */
+    unlisted?: boolean;
+    onunlisted: (v: boolean) => void;
     ontitle: (v: string) => void;
     onsummary: (v: string) => void;
     /** Remove this exhibit from the library (Archie-3f4c) — threaded to the DetailsEditor's remove guard. */
@@ -585,7 +591,7 @@
        disabled (readonly → DetailsEditor's fieldset + reason line) and the destructive remove is
        withheld — DetailsEditor renders no remove guard without an onremove. -->
   <PropsDrawer open={rightsOpen} title="Exhibit details" onclose={() => (rightsOpen = false)}>
-    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onmetadata} onremove={canWrite ? onremove : undefined} readonly={!canWrite} />
+    <DetailsEditor title={title} summary={summary ?? ""} rights={rights} scope="exhibit" ontitle={ontitle} onsummary={onsummary} onrights={onrights} {onmetadata} {unlisted} {onunlisted} onremove={canWrite ? onremove : undefined} readonly={!canWrite} />
   </PropsDrawer>
 
   <!-- Organizing toolbar (Phase 2): find (search titles) · sort (a VIEW, never a reorder) · density (grid
