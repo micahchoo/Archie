@@ -11,18 +11,17 @@
 // that mirrors store.ts's existing OPFS-only asset layer (see the comment above ASSET_PREFIX in the
 // pre-split store.ts) and is NOT a new assumption introduced by this split. A future backend swap
 // replaces `assetsDir`'s root-open, not the public functions' signatures.
-
-// PROJECT is duplicated from store.ts (a one-line literal) rather than imported, so this module has no
-// import edge back to store.ts — store.ts imports FROM here for its re-export, so the reverse edge
-// would be circular.
-const PROJECT = "archie-demo-project";
+//
+// PROJECT/OpfsRoot come from the leaf module opfs-project.ts, shared with store.ts, rather than each
+// declaring its own copy — PROJECT is also WORKING_STORE_ID (the cross-tab single-writer lock name),
+// so a drifted duplicate would silently partition assets and library.json into different OPFS trees.
+import { PROJECT, type OpfsRoot } from "./opfs-project.js";
 
 /** The source prefix marking an object as an OPFS-imported asset (vs an external URL). */
 export const ASSET_PREFIX = "/assets/";
 /** Is this object source an imported OPFS asset? (One definition — App + publish flows share it.) */
 export const isAsset = (src: string | undefined): boolean => !!src && src.startsWith(ASSET_PREFIX);
 
-type OpfsRoot = { getDirectory?: () => Promise<FileSystemDirectoryHandle> };
 async function assetsDir(slug: string, create: boolean, sub = "assets"): Promise<FileSystemDirectoryHandle | null> {
   const storage = (navigator as Navigator & { storage?: OpfsRoot }).storage;
   if (!storage?.getDirectory) return null;

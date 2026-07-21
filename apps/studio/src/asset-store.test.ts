@@ -14,6 +14,7 @@ import {
   readPeaks, savePeaks, type PeakCache,
   assetSize,
 } from "./asset-store.js";
+import { PROJECT } from "./opfs-project.js";
 
 type FileEntry = { blob: Blob };
 type DirNode = { dirs: Map<string, DirNode>; files: Map<string, FileEntry> };
@@ -71,7 +72,7 @@ async function blobText(b: Blob): Promise<string> {
 /** Directly seed a file into the fake tree at {PROJECT}/exhibits/{slug}/{sub}/{name}, bypassing the
  *  handle layer — for planting corrupt/malformed content that no real save* function would write. */
 function seedFile(slug: string, sub: string, name: string, content: string): void {
-  const project = root.dirs.get("archie-demo-project") ?? (root.dirs.set("archie-demo-project", newDir()), root.dirs.get("archie-demo-project")!);
+  const project = root.dirs.get(PROJECT) ?? (root.dirs.set(PROJECT, newDir()), root.dirs.get(PROJECT)!);
   const exhibits = project.dirs.get("exhibits") ?? (project.dirs.set("exhibits", newDir()), project.dirs.get("exhibits")!);
   const ex = exhibits.dirs.get(slug) ?? (exhibits.dirs.set(slug, newDir()), exhibits.dirs.get(slug)!);
   const dir = ex.dirs.get(sub) ?? (ex.dirs.set(sub, newDir()), ex.dirs.get(sub)!);

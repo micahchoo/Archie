@@ -24,14 +24,9 @@ import {
   type WorkingLibraryMeta as LibraryMeta,
 } from "@render/core";
 export type { ObjectProvenance, ObjectMeta, ExhibitMeta, LibraryMeta };
+import { PROJECT, type OpfsRoot } from "./opfs-project.js";
 
-const PROJECT = "archie-demo-project";
 const SAMPLE_SLUG = "sample";
-
-// Duplicated in asset-store.ts (a one-line structural type) rather than shared — asset-store.ts must
-// not import from here (store.ts imports FROM asset-store.ts for its re-export block below; the
-// reverse edge would be circular). Used by the clearExhibit*/exhibitHasAnnotations dir-removers here.
-type OpfsRoot = { getDirectory?: () => Promise<FileSystemDirectoryHandle> };
 
 /** The stable identity of Studio's single OPFS working library — the fixed path all tabs of this origin
  *  share. Used as the cross-tab single-writer lock name (ISSUES.md Issue 22 / ledgers/TABS.md). */
