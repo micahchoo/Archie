@@ -23,6 +23,7 @@
 
 import { collectFiles, ensureRepo, enablePagesFor, pagesUrlFor, GitHubPublishError, type FileContent, type Filesystem } from "@render/core";
 import { isTauri } from "../tauri-fs.js";
+import { readJson, writeJson } from "../persisted.js";
 import type { DeploySession, DeployTarget, DeployProgress, DeployError, DeviceStart, DevicePollResult } from "./types.js";
 import archieConfig from "../../../../archie.config.json";
 
@@ -116,24 +117,17 @@ async function pushTree(dir: string, target: DeployTarget, token: string): Promi
 }
 
 /** Remember where this library last deployed, for the update-confirm return visit. Stores `{ target, url }`
- *  ONLY — never the token/session. */
+ *  ONLY — never the token/session. A persist failure is not worth failing a landed deploy over (writeJson
+ *  swallows it); the remembered target is a convenience. */
 function rememberTarget(libraryId: string, target: DeployTarget, url: string): void {
-  try {
-    localStorage.setItem(rememberKey(libraryId), JSON.stringify({ target, url }));
-  } catch {
-    // a persist failure is not worth failing a landed deploy over; the remembered target is a convenience.
-  }
+  writeJson(rememberKey(libraryId), { target, url });
 }
 
 /** The remembered target for a library, or null if it has never deployed (or the store is unreadable).
- *  Task 12 (update-confirm) reads this to pre-fill the return visit. */
+ *  Task 12 (update-confirm) reads this to pre-fill the return visit. No shape validation (trust-the-parse,
+ *  matching the original behavior) — only absence/corruption collapse to null. */
 export function rememberedTarget(libraryId: string): { target: DeployTarget; url: string } | null {
-  try {
-    const raw = localStorage.getItem(rememberKey(libraryId));
-    return raw ? (JSON.parse(raw) as { target: DeployTarget; url: string }) : null;
-  } catch {
-    return null;
-  }
+  return readJson<{ target: DeployTarget; url: string }>(rememberKey(libraryId));
 }
 
 /**
