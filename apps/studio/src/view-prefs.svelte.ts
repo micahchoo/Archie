@@ -9,12 +9,15 @@
 // A `.svelte.ts` rune module (cf. library-meta.svelte.ts, save-queue.svelte.ts): the $state container
 // is never reassigned, so reads stay live across modules/components. Same localStorage
 // try/catch idiom as App.svelte's FIRST_ADD_KEY — private mode / disabled storage just means the
-// preference resets to default next load, never an error.
+// preference resets to default next load, never an error — now via persisted.ts's persistedFlag /
+// persistedString / safeGet / safeSet / safeRemove (Archie-3148). The rune $state SHAPE stays exactly
+// as it was: persisted.ts is wrapped INSIDE this singleton, not used to replace the reactivity.
+import { persistedFlag, persistedString, safeGet, safeSet, safeRemove } from "./persisted.js";
 
 // Overview mode: the exhibit overview's Grid/List switch. The old spatial-canvas mode (pan/zoom over a
 // transformed tableau) was retired (SCALE-GALLERY: it persisted NO spatial data and deterred use above
 // ~100 objects) and replaced by a plain scrollable, virtualized GRID. A value of "canvas" persisted from
-// before the retirement migrates to "grid" on read — see loadOverviewMode.
+// before the retirement migrates to "grid" on read — see overviewModePref below.
 export type OverviewMode = "grid" | "list";
 export type GalleryView = "exhibits" | "wall";
 // Grid density (SCALE-GALLERY): a 2-step per-device preference (Comfortable / Compact) for the overview
@@ -41,15 +44,13 @@ const RAIL_COLLAPSED_KEY = "archie.editorRailCollapsed.v1";
 const INSPECTOR_WIDTH_KEY = "archie.editorInspectorWidth.v1";
 const LEGACY_DOCK_WIDTH_KEY = "archie.editorDockWidth.v1";
 
-function loadOverviewMode(): OverviewMode {
-  // "list" stays list; EVERYTHING else — a fresh install, garbage, OR a legacy "canvas" left in storage
-  // from before the spatial canvas was retired — resolves to the new default "grid". That collapse IS the
-  // canvas→grid migration: no explicit rewrite needed, the read simply never yields "canvas" again.
-  try { return localStorage.getItem(OVERVIEW_MODE_KEY) === "list" ? "list" : "grid"; } catch { return "grid"; }
-}
-function loadOverviewDensity(): OverviewDensity {
-  try { return localStorage.getItem(OVERVIEW_DENSITY_KEY) === "compact" ? "compact" : "comfortable"; } catch { return "comfortable"; }
-}
+// "list" stays list; EVERYTHING else — a fresh install, garbage, OR a legacy "canvas" left in storage
+// from before the spatial canvas was retired — resolves to the new default "grid". That collapse IS the
+// canvas→grid migration: no explicit rewrite needed, the read simply never yields "canvas" again.
+const overviewModePref = persistedString<OverviewMode>(OVERVIEW_MODE_KEY, ["list"], "grid");
+const overviewDensityPref = persistedString<OverviewDensity>(OVERVIEW_DENSITY_KEY, ["compact"], "comfortable");
+const galleryViewPref = persistedString<GalleryView>(GALLERY_VIEW_KEY, ["wall"], "exhibits");
+const railCollapsedPref = persistedFlag(RAIL_COLLAPSED_KEY);
 
 /** The overview grid metrics for a density: `minCol` feeds `minmax(<minCol>, 1fr)` (the flex-wrap plate
  *  width), `intrinsic` feeds `contain-intrinsic-size: auto <intrinsic>` (the off-screen height estimate the
@@ -61,21 +62,16 @@ export function overviewDensityMetrics(d: OverviewDensity): { minCol: string; in
     ? { minCol: "9rem", intrinsic: "12rem" }
     : { minCol: "12.5rem", intrinsic: "15.5rem" };
 }
-function loadGalleryView(): GalleryView {
-  try { return localStorage.getItem(GALLERY_VIEW_KEY) === "wall" ? "wall" : "exhibits"; } catch { return "exhibits"; }
-}
-function loadRailCollapsed(): boolean {
-  try { return localStorage.getItem(RAIL_COLLAPSED_KEY) === "1"; } catch { return false; }
-}
 function loadInspectorWidth(): number | null {
-  try { const v = localStorage.getItem(INSPECTOR_WIDTH_KEY) ?? localStorage.getItem(LEGACY_DOCK_WIDTH_KEY); return v ? (Number(v) || null) : null; } catch { return null; }
+  const v = safeGet(INSPECTOR_WIDTH_KEY) ?? safeGet(LEGACY_DOCK_WIDTH_KEY);
+  return v ? (Number(v) || null) : null;
 }
 
 const s = $state<{ overviewMode: OverviewMode; overviewDensity: OverviewDensity; galleryView: GalleryView; railCollapsed: boolean; inspectorWidth: number | null }>({
-  overviewMode: loadOverviewMode(),
-  overviewDensity: loadOverviewDensity(),
-  galleryView: loadGalleryView(),
-  railCollapsed: loadRailCollapsed(),
+  overviewMode: overviewModePref.get(),
+  overviewDensity: overviewDensityPref.get(),
+  galleryView: galleryViewPref.get(),
+  railCollapsed: railCollapsedPref.get(),
   inspectorWidth: loadInspectorWidth(),
 });
 
@@ -86,49 +82,47 @@ export const viewPrefs = {
   get overviewMode(): OverviewMode { return s.overviewMode; },
   setOverviewMode(v: OverviewMode) {
     s.overviewMode = v;
-    try { localStorage.setItem(OVERVIEW_MODE_KEY, v); } catch { /* private mode — resets next load, harmless */ }
+    overviewModePref.set(v);
   },
 
   get overviewDensity(): OverviewDensity { return s.overviewDensity; },
   setOverviewDensity(v: OverviewDensity) {
     s.overviewDensity = v;
-    try { localStorage.setItem(OVERVIEW_DENSITY_KEY, v); } catch { /* private mode — resets next load, harmless */ }
+    overviewDensityPref.set(v);
   },
 
   get galleryView(): GalleryView { return s.galleryView; },
   setGalleryView(v: GalleryView) {
     s.galleryView = v;
-    try { localStorage.setItem(GALLERY_VIEW_KEY, v); } catch { /* private mode — resets next load, harmless */ }
+    galleryViewPref.set(v);
   },
 
   get railCollapsed(): boolean { return s.railCollapsed; },
   setRailCollapsed(v: boolean) {
     s.railCollapsed = v;
-    try { localStorage.setItem(RAIL_COLLAPSED_KEY, v ? "1" : "0"); } catch { /* private mode — resets next load, harmless */ }
+    railCollapsedPref.set(v);
   },
 
   get inspectorWidth(): number | null { return s.inspectorWidth; },
   setInspectorWidth(v: number | null) {
     s.inspectorWidth = v;
-    try {
-      if (v == null) {
-        // Reset (ResizeDivider double-click) clears BOTH keys — otherwise loadInspectorWidth's legacy
-        // fallback would resurrect a stale archie.editorDockWidth.v1 on the next load.
-        localStorage.removeItem(INSPECTOR_WIDTH_KEY);
-        localStorage.removeItem(LEGACY_DOCK_WIDTH_KEY);
-      } else {
-        localStorage.setItem(INSPECTOR_WIDTH_KEY, String(Math.round(v)));
-      }
-    } catch { /* private mode — resets next load, harmless */ }
+    if (v == null) {
+      // Reset (ResizeDivider double-click) clears BOTH keys — otherwise loadInspectorWidth's legacy
+      // fallback would resurrect a stale archie.editorDockWidth.v1 on the next load.
+      safeRemove(INSPECTOR_WIDTH_KEY);
+      safeRemove(LEGACY_DOCK_WIDTH_KEY);
+    } else {
+      safeSet(INSPECTOR_WIDTH_KEY, String(Math.round(v)));
+    }
   },
 };
 
 /** Test seam: re-read from localStorage (module-singleton pattern mirrors save-queue's
  *  resetSaveQueueForTests) — a test can stub localStorage, call this, and observe a fresh default/restore. */
 export function reloadViewPrefsForTests(): void {
-  s.overviewMode = loadOverviewMode();
-  s.overviewDensity = loadOverviewDensity();
-  s.galleryView = loadGalleryView();
-  s.railCollapsed = loadRailCollapsed();
+  s.overviewMode = overviewModePref.get();
+  s.overviewDensity = overviewDensityPref.get();
+  s.galleryView = galleryViewPref.get();
+  s.railCollapsed = railCollapsedPref.get();
   s.inspectorWidth = loadInspectorWidth();
 }
