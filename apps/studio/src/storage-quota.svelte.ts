@@ -10,6 +10,16 @@
 //
 // A `.svelte.ts` rune module like save-queue.svelte.ts: the $state container is never reassigned,
 // so reads stay live across modules.
+//
+// NATIVE (Archie-623e Phase 3): under isTauri() the whole chip subsystem is INERT. The desktop working
+// store is a native folder with no quota and no eviction, and `navigator.storage.estimate().usage` would
+// report only OPFS CACHE residue (not the real folder library) — worse than nothing. So refreshQuota
+// leaves usage null (the chip's `unknown` branch renders nothing), requestPersistence skips persist()
+// (no eviction to exempt from), and a write failure does NOT raise the "storage full" chip: on native fs
+// the throw is ENOSPC/EACCES, not QuotaExceededError, and it surfaces through the normal save-error path
+// (enqueueSave → saveStatus), not this predictor.
+
+import { isTauri } from "./tauri-fs.js";
 
 const s = $state<{
   /** Bytes this origin currently uses, per estimate(). Null = not yet read / engine can't estimate. */
@@ -37,6 +47,7 @@ export function formatBytes(n: number): string {
  *  refuses it in a private window) leaves usage null and the chip hides — never a fabricated zero.
  *  NOTE: only `usage` is read; `quota` is deliberately ignored (it's the privacy constant). */
 export async function refreshQuota(): Promise<void> {
+  if (isTauri()) { s.usage = null; return; } // native folder: no quota — estimate() would show only OPFS cache
   try {
     const storage = (globalThis.navigator as Navigator & {
       storage?: { estimate?: () => Promise<{ quota?: number; usage?: number }> };
@@ -58,6 +69,7 @@ export async function refreshQuota(): Promise<void> {
 // waits for the FIRST asset write (a user actively keeping bytes) instead of firing at boot.
 let persistRequested = false;
 export function requestPersistence(): void {
+  if (isTauri()) return; // native folder has no eviction to be exempted from — persist() is meaningless
   if (persistRequested) return;
   persistRequested = true;
   try {
@@ -69,6 +81,7 @@ export function requestPersistence(): void {
 /** An asset write failed for space (persistAsset → false). The chip goes critical until a write
  *  succeeds or usage is observed to drop. */
 export function reportStorageFailure(): void {
+  if (isTauri()) return; // native fs failure (ENOSPC/EACCES) surfaces via the save-error path, not this chip
   s.storageFull = true;
   s.usageAtFailure = s.usage ?? 0;
 }
