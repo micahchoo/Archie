@@ -163,6 +163,24 @@ describe("loadLibrary — inverse of publishLibrary (publish↔load symmetry)", 
     expect(logs["a"]!.map((r) => r.rev)).toEqual(log2.map((r) => r.rev)); // log round-trips
   });
 
+  // Archie-bdc0: the UNLISTED lever must survive publish→loadLibrary. publishLibrary emits it onto the
+  // exhibits.json card (toExhibitsJson), and loadLibrary reads it back onto the recovered `Exhibit` — so a
+  // dropped-zip regen (or a Studio import) keeps a hidden exhibit hidden. Default (absent) recovers LISTED.
+  it("round-trips the UNLISTED lever onto the recovered Exhibit (absent = listed)", async () => {
+    const libU: Library = {
+      id: asLibraryId("U"),
+      exhibits: [
+        { id: asExhibitId("shown"), slug: "shown", title: "Shown", objects: [] },
+        { id: asExhibitId("hidden"), slug: "hidden", title: "Hidden", unlisted: true, objects: [] },
+      ],
+    };
+    const { zip } = await libraryToZip(libU, () => [], { baseUrl: base });
+    const { library } = await loadLibrary(ZipFilesystem.fromZip(zip));
+    const byslug = Object.fromEntries(library.exhibits.map((e) => [e.slug, e]));
+    expect("unlisted" in byslug["shown"]!).toBe(false); // listed exhibit recovers no flag
+    expect(byslug["hidden"]!.unlisted).toBe(true); // hidden exhibit stays hidden across the round trip
+  });
+
   // tend ISSUES.md Issue 9 (showroom assembly): loadLibrary silently dropped BOTH sections and
   // readings on every round trip — a narrative exhibit's Ranges vanished, and every reading-scoped
   // note's per-reading annotation page went with it (toCanvas gates that split on the reading-id

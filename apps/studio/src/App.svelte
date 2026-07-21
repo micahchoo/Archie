@@ -1285,6 +1285,13 @@
   function setExhibitSummary(v: string) {
     lib.patchExhibit(vs.currentSlug, { summary: v });
   }
+  // Gallery-visibility lever (Archie-bdc0): the "Hide from the public gallery" toggle writes straight to the
+  // working-store `unlisted` field, which buildFullLibrary → workingToLibrary projects onto the published
+  // exhibits.json card. Storing `false` (not clearing) is fine — workingToLibrary drops any falsy value, so a
+  // re-listed exhibit publishes with no card flag.
+  function setExhibitUnlisted(v: boolean) {
+    lib.patchExhibit(vs.currentSlug, { unlisted: v });
+  }
   function setObjectSummary(v: string) {
     const objId = vs.currentObjectId;
     lib.patchObject(vs.currentSlug, objId, { summary: v });
@@ -2093,6 +2100,8 @@
       onrights={setExhibitRights}
       onmetadata={(metadata) => lib.patchExhibit(vs.currentSlug, { metadata })}
       summary={vs.currentExhibit.summary}
+      unlisted={vs.currentExhibit.unlisted ?? false}
+      onunlisted={setExhibitUnlisted}
       ontitle={setExhibitTitle}
       onsummary={setExhibitSummary}
       onremove={removeCurrentExhibit}
