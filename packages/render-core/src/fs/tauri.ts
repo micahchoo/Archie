@@ -211,8 +211,9 @@ class TauriFile implements FsFile {
  * stat (no read) and the READ methods (`arrayBuffer`/`stream`/`text`) pull the bytes on demand via the
  * bridge. `slice()` throws — a lazy backend can't produce a synchronous sub-Blob and no seam consumer
  * slices getFile() (they read arrayBuffer()/stream(); a blob: URL uses `readable()`). Do NOT pass this
- * to `URL.createObjectURL` / `createWritable().write` either: those read the (empty) internal byte
- * sequence, not these methods — see the seam.ts getFile() contract.
+ * to `URL.createObjectURL` / `createImageBitmap` / `createWritable().write` either: those read the
+ * (empty) internal byte sequence, not these methods — MATERIALIZE via `new Blob([await f.arrayBuffer()])`
+ * first (see the seam.ts getFile() contract and publish-flows.svelte.ts `tileObject`).
  *
  * Fidelity note: `stream()` reads the whole file in one pull — a Tauri PATH cannot back a chunk-lazy
  * web File, so this is lazy at the CALL boundary, not bounded-memory on consume. The desktop publish

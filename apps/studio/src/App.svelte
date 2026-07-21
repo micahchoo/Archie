@@ -365,7 +365,7 @@
       await migrateResidentStoreIds();
     } catch (e) {
       console.error("[migrate] object-id migration failed — refusing to boot the session", e);
-      window.alert("Couldn't prepare your library for this version of Archie. Your work is safe and untouched — reload to try again. If this keeps happening, restore from the pre-migration/ backup folder inside your library.");
+      window.alert("Couldn't prepare your library for this version of Archie. Your work is safe and untouched — reload to try again. Your previous version is preserved either way (a pre-migration snapshot, or the retained desktop copy).");
       return; // abort boot: no loadLibraryMeta, no session — nothing writes over a partially-migrated store
     }
     const meta = await loadLibraryMeta();

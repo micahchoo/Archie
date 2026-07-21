@@ -52,10 +52,13 @@ export interface FsFile {
    * stat-sized lazy File (fs/tauri.ts). The large-media publish path (readAssetBlob) depends on this.
    *
    * READ the returned File via `arrayBuffer()` / `stream()` / `text()` (or the seam's `readable()`).
-   * Do NOT hand it to `URL.createObjectURL` / `FileSystemWritableFileStream.write` / `slice()`: a lazy
-   * backend's File has no materialized byte storage, so those (which read the internal byte sequence,
-   * not the JS methods) see nothing. For a blob: URL, read `readable()` and build a real Blob (see
-   * asset-store.ts `readAssetUrl`); for native AV playback use `resolveUrl?.()` instead.
+   * Do NOT hand it to any consumer that reads a Blob's INTERNAL byte sequence rather than these JS
+   * methods — `URL.createObjectURL`, `createImageBitmap`, `FileSystemWritableFileStream.write`, `slice()`
+   * — a lazy backend's File has no materialized byte storage, so they see NOTHING (silently: an empty
+   * blob: URL, a rejected decode, a truncated write — only `slice()` throws loud). To feed such a
+   * consumer, MATERIALIZE first: `new Blob([await file.arrayBuffer()])` (the override yields real bytes on
+   * every backend — see publish-flows.svelte.ts `tileObject`). For a blob: URL, read `readable()` and
+   * build a real Blob (asset-store.ts `readAssetUrl`); for native AV playback use `resolveUrl?.()`.
    */
   getFile(): Promise<File>;
   /**

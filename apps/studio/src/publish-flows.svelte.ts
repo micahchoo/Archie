@@ -133,16 +133,26 @@ export function createPublishFlows(deps: PublishDeps) {
   // Returns null (→ single image, unchanged) for small images or an undecodable blob.
   const TILE_MIN_EDGE = 4096; // longer edge over this → deep-zoom pays off; smaller stays a single master
   const tileObject = async (_slug: string, name: string, bytes: ArrayBuffer | Blob) => {
-    const blob = bytes instanceof Blob ? bytes : new Blob([bytes]);
     let bmp: ImageBitmap;
+    let mime = "image/jpeg";
     try {
+      // MATERIALIZE before decode (Archie-623e): on desktop `bytes` is the lazy Tauri File whose bytes
+      // live behind an OVERRIDDEN arrayBuffer() — createImageBitmap (like URL.createObjectURL /
+      // createWritable().write) reads the Blob's INTERNAL byte sequence, which is EMPTY on that File, NOT
+      // the override. So copy into a real in-memory Blob first (`src.arrayBuffer()` hits the override →
+      // real bytes on every backend). A tile candidate is decoded whole here anyway (materialize-once,
+      // seam.ts). A read/decode failure degrades to null (untiled) — never a failed publish, since the
+      // master already shipped via getAsset (site.ts writes it before calling this).
+      const src = bytes instanceof Blob ? bytes : new Blob([bytes]);
+      const blob = new Blob([await src.arrayBuffer()], src.type ? { type: src.type } : {});
+      if (blob.type) mime = blob.type;
       bmp = await createImageBitmap(blob);
     } catch {
-      return null; // not a decodable raster (e.g. an svg/odd mime) — leave it a single source
+      return null; // unreadable, or not a decodable raster (svg/odd mime) — leave it a single source
     }
     try {
       if (Math.max(bmp.width, bmp.height) <= TILE_MIN_EDGE) return null;
-      return await sliceToDzi(bmp, `${name}_files`, blob.type || "image/jpeg");
+      return await sliceToDzi(bmp, `${name}_files`, mime);
     } finally {
       bmp.close();
     }
