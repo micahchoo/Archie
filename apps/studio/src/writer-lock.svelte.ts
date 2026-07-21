@@ -18,6 +18,7 @@
 // its gate is injected by App): becoming the writer must clear a lingering read-only refusal, or the
 // header shows a stale "⚠ Retry save" until the next write (UX-CRITIQUE O2 follow-up).
 import { clearReadOnlyRefusal } from "./save-queue.svelte.js";
+import { safeGet } from "./persisted.js";
 
 /** The subset of the Web Locks API this module uses (injected so tests can supply a fake or the real one). */
 export interface LocksLike {
@@ -57,9 +58,7 @@ const MAX_NAME_LEN = 60;
 
 /** The current tab's display name, or null for anonymous (absent/blank/unreadable — private mode etc). */
 function readDisplayName(): string | null {
-  let raw: string | null;
-  try { raw = localStorage.getItem(DISPLAY_NAME_KEY); } catch { return null; }
-  const trimmed = raw?.trim();
+  const trimmed = safeGet(DISPLAY_NAME_KEY)?.trim();
   return trimmed ? trimmed.slice(0, MAX_NAME_LEN) : null;
 }
 
