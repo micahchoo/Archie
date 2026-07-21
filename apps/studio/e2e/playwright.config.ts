@@ -11,7 +11,8 @@ import { defineConfig, devices } from "@playwright/test";
 // Chromium webview (Tauri) anyway, so cross-browser coverage would buy nothing here.
 
 // Dedicated port so a running `pnpm dev` (:5174, strictPort) never collides with the gate.
-const PORT = 5198;
+// Env-overridable (STUDIO_E2E_PORT) so concurrent sessions/agents can each pick a free port.
+const PORT = Number(process.env.STUDIO_E2E_PORT) || 5198;
 // vite serves the SPA under `base: "/studio/"` (single-origin dev contract); a bare-root hit 302s here.
 const BASE_URL = `http://localhost:${PORT}/studio/`;
 // apps/studio — where vite.config.ts lives, so the dev server reads the studio base/config.

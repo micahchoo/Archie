@@ -76,6 +76,19 @@ const decode = (b: ArrayBuffer): string => new TextDecoder().decode(b);
 export interface MigrateIdsOptions {
   /** Working-store root directory name. Default `WORKING_PROJECT`. */
   project?: string;
+  /**
+   * When true, the working store IS the filesystem root — there is NO `project` subdir to descend into
+   * (`project` is ignored). This is the Tauri folder-canonical layout where the library folder itself is
+   * the project (Archie-623e Phase 2); OPFS/web keeps the `{PROJECT}` subdir (default false).
+   */
+  projectAtRoot?: boolean;
+}
+
+/** Resolve the project directory per the rooting mode — the folder root itself (projectAtRoot), else the
+ *  `{project}` subdir. One helper so readIdScheme and migrateLibraryObjectIds root identically. */
+async function openProjectDir(fs: Filesystem, opts: MigrateIdsOptions): Promise<FsDirectory> {
+  const root = await fs.root();
+  return opts.projectAtRoot === true ? root : root.getDirectory(opts.project ?? WORKING_PROJECT);
 }
 
 /** A JSON file the index/tree referenced but that could not be parsed — skipped and reported, never
@@ -125,8 +138,7 @@ async function writeJson(dir: FsDirectory, name: string, data: unknown): Promise
  *  Archie-8439 trigger points to gate on (`< CURRENT_ID_SCHEME` ⇒ run the engine). */
 export async function readIdScheme(fs: Filesystem, opts: MigrateIdsOptions = {}): Promise<number> {
   try {
-    const projectDir = await (await fs.root()).getDirectory(opts.project ?? WORKING_PROJECT);
-    return await readSchemeFrom(projectDir);
+    return await readSchemeFrom(await openProjectDir(fs, opts));
   } catch {
     return LEGACY_ID_SCHEME; // no project dir at all
   }
@@ -149,14 +161,13 @@ async function readSchemeFrom(projectDir: FsDirectory): Promise<number> {
  * page — it is skipped, reported, and left byte-identical.
  */
 export async function migrateLibraryObjectIds(fs: Filesystem, opts: MigrateIdsOptions = {}): Promise<MigrateIdsResult> {
-  const projectName = opts.project ?? WORKING_PROJECT;
   const passThrough = (fromScheme: number): MigrateIdsResult => ({
     migrated: false, fromScheme, toScheme: fromScheme, snapshotCreated: false, rewrites: zeroCounts(), corrupt: [],
   });
 
   let projectDir: FsDirectory;
   try {
-    projectDir = await (await fs.root()).getDirectory(projectName);
+    projectDir = await openProjectDir(fs, opts);
   } catch {
     return passThrough(LEGACY_ID_SCHEME); // no working store here — nothing to migrate
   }

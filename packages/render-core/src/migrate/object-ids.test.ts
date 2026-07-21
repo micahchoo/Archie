@@ -170,6 +170,30 @@ describe("migrateLibraryObjectIds — exhaustiveness across all five id classes"
     expect(ids.filter(isLegacyObjectId)).toEqual([]);
   });
 
+  it("projectAtRoot roots at the fs root itself — same result as the {project} subdir (Archie-623e Phase 2)", async () => {
+    // The desktop folder-canonical layout: the library folder IS the project (no subdir). Migrating a
+    // store seeded at the ROOT with projectAtRoot must match migrating the SAME store under a {project}
+    // subdir with default rooting — proving the option only relocates the project's home, nothing else.
+    const seed = { exhibits: [{ id: "ex-sample", slug: "sample", title: "S", objects: [{ id: "o1", source: "s1", label: "A" }] }] };
+
+    const subFs = new MemoryFilesystem();
+    await writeJson(await (await subFs.root()).getDirectory("proj", { create: true }), "library.json", seed);
+    const rSub = await migrateLibraryObjectIds(subFs, { project: "proj" });
+
+    const rootFs = new MemoryFilesystem();
+    await writeJson(await rootFs.root(), "library.json", seed);
+    const rRoot = await migrateLibraryObjectIds(rootFs, { projectAtRoot: true });
+
+    expect(rRoot.migrated).toBe(true);
+    expect(rSub.migrated).toBe(true);
+    const libSub = JSON.parse(new TextDecoder().decode(await (await (await (await subFs.root()).getDirectory("proj")).getFile("library.json")).readable())) as { exhibits: { objects: { id: string }[] }[] };
+    const libRoot = JSON.parse(new TextDecoder().decode(await (await (await rootFs.root()).getFile("library.json")).readable())) as { exhibits: { objects: { id: string }[] }[] };
+    expect(libRoot.exhibits[0]!.objects[0]!.id).toBe("ex-sample.o1"); // legacy `o1` composed
+    expect(libRoot.exhibits[0]!.objects[0]!.id).toBe(libSub.exhibits[0]!.objects[0]!.id); // identical under both rootings
+    // projectAtRoot also writes the scheme marker + snapshot at the ROOT (not a subdir).
+    expect(await readIdScheme(rootFs, { projectAtRoot: true })).toBe(CURRENT_ID_SCHEME);
+  });
+
   it("composes the disambiguated ids and preserves the DAG shape (revs/parents/tombstones)", async () => {
     const fs = new MemoryFilesystem();
     const { voynichLog } = await buildLegacyStore(fs);

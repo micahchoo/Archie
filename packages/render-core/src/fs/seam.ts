@@ -15,6 +15,20 @@ export interface Filesystem {
   root(): Promise<FsDirectory>;
 }
 
+/**
+ * ABSENT vs FAILED across every backend (render-core-data-integrity rule 2). A missing file/dir is
+ * signalled by the seam's canonical `no such (file|directory)` error (Memory/Zip/Tauri/HTTP-404) OR a
+ * `DOMException` named `NotFoundError` (FSA/OPFS). Anything else — a read fault (ENOSPC/EACCES on the
+ * Tauri backend, a torn body, a decode error) — is a FAILURE, never absence. The ONE definition (was a
+ * private helper in publish/read.ts; asset-store.ts needs the same classification once it re-points off
+ * raw OPFS DOMExceptions onto the seam — Archie-623e Phase 2), so a new backend's absence phrasing is
+ * matched in exactly one place.
+ */
+export function isNotFound(e: unknown): boolean {
+  if (typeof DOMException !== "undefined" && e instanceof DOMException) return e.name === "NotFoundError";
+  return e instanceof Error && /no such (file|directory)/i.test(e.message);
+}
+
 export interface FsDirectory {
   getDirectory(name: string, opts?: { create?: boolean }): Promise<FsDirectory>;
   getFile(name: string, opts?: { create?: boolean }): Promise<FsFile>;

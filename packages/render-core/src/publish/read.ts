@@ -36,14 +36,9 @@ export interface NoteTransform {
 // reader is its documented surface.
 import { FailedReadError } from "../errors.js";
 export { FailedReadError };
-
-/** Did an fs walk throw because the file/dir is genuinely MISSING (→ absent), vs an actual read error
- *  (→ failed)? Memory/Zip backends throw `Error("no such file/directory")`; FSA/OPFS throw a
- *  `DOMException` named `NotFoundError`. Anything else (a decode/read fault) is a failure, not absence. */
-function isNotFound(e: unknown): boolean {
-  if (typeof DOMException !== "undefined" && e instanceof DOMException) return e.name === "NotFoundError";
-  return e instanceof Error && /no such (file|directory)/i.test(e.message);
-}
+// Absent-vs-failed classification — ONE definition, in the seam layer (Archie-623e Phase 2 lifted it
+// there so asset-store.ts can share it once it re-points off raw OPFS DOMExceptions onto the seam).
+import { isNotFound } from "../fs/seam.js";
 
 /** A JsonSource that walks an opened `Filesystem` (Memory/Zip/FSA). Folds the per-reader `readJson`
  *  copies (site/portable). `getOptional` distinguishes absent (missing file → null) from failed (a
