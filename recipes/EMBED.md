@@ -28,6 +28,10 @@ For production integrity (optional), add `integrity="sha384-2kT6KuVJkm08Btoug0L+
   that opens to a specific place; an unresolvable target degrades upward, never errors.
 - **`offline`** — boolean; present blocks all remote tile/media fetch (kiosk / air-gapped /
   privacy). Pair with a `src` whose tiles are bundled locally.
+- **`show-unlisted`** — boolean; present includes `unlisted` exhibits in the gallery grid too. By
+  default an exhibit the producer marked unlisted is hidden from the gallery listing (same lever
+  the full viewer's hall honors) but stays reachable by a direct `target`/`iiif-content` link either
+  way — this attribute only affects what the gallery *lists*.
 
 ### Deep-link to a specific place (the cite ladder)
 
