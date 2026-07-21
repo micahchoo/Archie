@@ -40,8 +40,9 @@ export function safeRemove(key: string): void {
 
 /**
  * A boolean flag stored as the literal string `"1"` (true) / anything else (false) — the idiom shared
- * by canvas-first-use's hint-seen cue, feature-flags' structureRevlogEnabled, and view-prefs'
- * railCollapsed. `set` always writes an explicit `"1"`/`"0"` (never removes the key), matching
+ * by canvas-first-use's hint-seen cue and view-prefs' railCollapsed. (feature-flags'
+ * structureRevlogEnabled no longer uses this idiom: since Archie-b0b1 it defaults ON and reads the raw
+ * key via `safeGet !== "0"` — a kill-switch, not an opt-in flag.) `set` always writes an explicit `"1"`/`"0"` (never removes the key), matching
  * railCollapsed's existing write shape — a caller that only ever marks `true` (canvas-first-use) simply
  * never calls `set(false)`.
  */
