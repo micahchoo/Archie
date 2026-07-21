@@ -7,13 +7,16 @@
   import { onMount } from "svelte";
   import type { ExhibitsJson, ImageIndex } from "@render/core";
   import { isLiveSlug } from "../published.js";
-  import { hasWall, filterExhibits, filterImages, wallHref, type GalleryView } from "../gallery-view.js";
+  import { hasWall, filterExhibits, filterImages, wallHref, listedExhibits, unlistedSlugSet, type GalleryView } from "../gallery-view.js";
   import { type Density, loadGridDensity, saveGridDensity, densityMetrics } from "../grid-density.js";
   import Credit from "./Credit.svelte";
 
   let { gallery, imageIndex = null }: { gallery: ExhibitsJson; imageIndex?: ImageIndex | null } = $props();
 
-  const cards = $derived([...gallery.exhibits].sort((a, b) => a.order - b.order));
+  // The public hall lists only LISTED exhibits (Archie-77b2) — an unlisted card is reachable by direct
+  // URL but absent here. `hidden` also drops unlisted exhibits' tiles from the all-images wall below.
+  const cards = $derived(listedExhibits([...gallery.exhibits].sort((a, b) => a.order - b.order)));
+  const hidden = $derived(unlistedSlugSet(gallery.exhibits));
   const title = $derived(gallery.library.title ?? "Gallery");
   const wall = $derived(hasWall(imageIndex));
 
@@ -23,7 +26,7 @@
   $effect(() => { if (!wall && view === "wall") view = "exhibits"; });
 
   const shownCards = $derived(filterExhibits(cards, query));
-  const shownImages = $derived(imageIndex ? filterImages(imageIndex.images, query) : []);
+  const shownImages = $derived(imageIndex ? filterImages(imageIndex.images.filter((e) => !hidden.has(e.exhibitSlug)), query) : []);
 
   // Wall density (Phase 4, reused): a 2-step per-device preference; metrics drive the min column width AND
   // the contain-intrinsic-size estimate together, so the content-visibility virtualization can't jank.

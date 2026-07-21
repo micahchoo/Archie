@@ -1,8 +1,11 @@
 ---
 // DYNAMIC exhibit reader page (the published read-only exhibit). Reached from the Gallery (index).
-// ONE template for every per-exhibit page — getStaticPaths enumerates every card in
-// public/published/exhibits.json (the SAME source sitemap.xml.ts routes from, via og-image's
-// exhibitSlugs) and renders ExhibitView, the layout orchestrator (Grid overview ⇄ object Reader).
+// ONE template for every per-exhibit page — getStaticPaths enumerates EVERY card in
+// public/published/exhibits.json and renders ExhibitView, the layout orchestrator (Grid overview ⇄
+// object Reader). This is the ALL-cards enumeration (Archie-77b2): an `unlisted` exhibit STILL gets its
+// page built (reachable by direct URL) even though it drops out of the hall + og-image's `exhibitSlugs`
+// (the LISTED enumeration sitemap.xml.ts routes from). So the two sources deliberately DIFFER: every
+// slug builds a page; only the listed subset is advertised in the hall and sitemap.
 // Replaces the four near-identical voynich*.astro / language-atlas.astro pages: every OG/meta/JSON-LD
 // change now happens HERE, once. Per-slug copy (title / og / JSON-LD type+about+license) is carried
 // as props from getStaticPaths; slugs without authored copy default it from their exhibits.json card.
@@ -33,9 +36,10 @@ type ExhibitMeta = {
 };
 
 export const getStaticPaths = (() => {
-  // The route set is EVERY card in exhibits.json — the same source sitemap.xml.ts derives its routes
-  // from (og-image's exhibitSlugs is `exhibitsJson.exhibits.map(slug)`), so every URL the sitemap
-  // advertises builds, and a third-party dropped-zip exhibit gets a static/OG page with no edit here.
+  // The route set is EVERY card in exhibits.json (ALL enumeration, Archie-77b2) — a SUPERSET of the
+  // sitemap's routes (og-image's `exhibitSlugs` filters out `unlisted` cards). So every URL the sitemap
+  // advertises builds AND every unlisted exhibit still gets a reachable static/OG page; a third-party
+  // dropped-zip exhibit gets a page with no edit here.
   // META is the per-slug authored-copy override table (the old hand-written page set plus sampler);
   // a slug without an entry defaults title/og/description from its card, with a generic JSON-LD
   // CreativeWork and no about/license claim (we can't assert a license we weren't told).

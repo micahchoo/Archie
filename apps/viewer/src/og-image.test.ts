@@ -7,6 +7,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import exhibitsJson from "../public/published/exhibits.json";
 
 const iiifExhibit = exhibitsJson.exhibits.find((e) => /^https?:\/\/.+\/full\/[^/]+\/0\//.test(e.cover ?? ""));
+const isUnlisted = (e: { unlisted?: boolean }) => !!e.unlisted;
 
 async function freshOgImage() {
   vi.resetModules();
@@ -55,4 +56,32 @@ describe("Archie-80c5 — ogImageFor probes the upsize instead of assuming level
     await ogImageFor(iiifExhibit!.slug);
     expect(f).toHaveBeenCalledOnce();
   });
+});
+
+describe("Archie-77b2 — exhibitSlugs is the LISTED enumeration; ogImageFor still resolves unlisted", () => {
+  const unlisted = exhibitsJson.exhibits.filter(isUnlisted);
+  const listed = exhibitsJson.exhibits.filter((e) => !isUnlisted(e));
+
+  it("the checked-in fixture proves the case (has both listed and unlisted cards)", () => {
+    expect(unlisted.length).toBeGreaterThan(0); // screenshots + sampler
+    expect(listed.length).toBeGreaterThan(0);
+  });
+
+  it("exhibitSlugs (the sitemap source) EXCLUDES every unlisted card, keeps exactly the listed ones", async () => {
+    const { exhibitSlugs } = await freshOgImage();
+    for (const e of unlisted) expect(exhibitSlugs).not.toContain(e.slug);
+    expect(exhibitSlugs).toEqual(listed.map((e) => e.slug));
+  });
+
+  it.skipIf(!unlisted.some((e) => /^https?:\/\/.+\/full\/[^/]+\/0\//.test(e.cover ?? "")))(
+    "an unlisted exhibit STILL resolves a real og:image (its page is built + reachable, not the brand card)",
+    async () => {
+      const withCover = unlisted.find((e) => /^https?:\/\/.+\/full\/[^/]+\/0\//.test(e.cover ?? ""))!;
+      stubHead(200);
+      const { ogImageFor, CANONICAL_BASE } = await freshOgImage();
+      const url = await ogImageFor(withCover.slug);
+      expect(url).not.toBe(`${CANONICAL_BASE}og-card.png`); // resolved the cover, not the fallback
+      expect(url).toMatch(/\/full\/1200,\/0\//);
+    },
+  );
 });
