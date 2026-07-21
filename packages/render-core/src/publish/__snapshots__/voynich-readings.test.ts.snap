@@ -73,6 +73,7 @@ exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibi
                 "type": "Person",
                 "name": "scholar-a"
               },
+              "archie:logicalId": "0000000004XXXXXXXXXXXXXXXX",
               "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000004XXXXXXXXXXXXXXXX.json"
             },
             {
@@ -102,6 +103,7 @@ exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibi
                 "type": "Person",
                 "name": "scholar-a"
               },
+              "archie:logicalId": "0000000005XXXXXXXXXXXXXXXX",
               "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000005XXXXXXXXXXXXXXXX.json"
             }
           ],
@@ -137,6 +139,7 @@ exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibi
                 "type": "Person",
                 "name": "scholar-a"
               },
+              "archie:logicalId": "0000000001XXXXXXXXXXXXXXXX",
               "archie:reading": "cipher",
               "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000001XXXXXXXXXXXXXXXX.json"
             }
@@ -184,6 +187,7 @@ exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibi
                 "type": "Person",
                 "name": "scholar-a"
               },
+              "archie:logicalId": "0000000002XXXXXXXXXXXXXXXX",
               "archie:reading": "hoax",
               "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000002XXXXXXXXXXXXXXXX.json"
             }
@@ -231,6 +235,7 @@ exports[`Phase 5 — the Voynich publishes as a genuinely-plural Readings exhibi
                 "type": "Person",
                 "name": "scholar-a"
               },
+              "archie:logicalId": "0000000003XXXXXXXXXXXXXXXX",
               "archie:reading": "abjad",
               "archie:hasHistory": "https://u.gh.io/voynich-lib/voynich/annotations/history/0000000003XXXXXXXXXXXXXXXX.json"
             }

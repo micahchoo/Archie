@@ -4,7 +4,7 @@ import { toHeadsPage, toHistory, recordToAnnotation } from "./serialize.js";
 import { fromHistory } from "./deserialize.js";
 import { asClientId, mintRevId } from "../wadm/brand.js";
 import { emphasisOf } from "../query/published.js";
-import { ARCHIE_HAS_HISTORY, ARCHIE_EMPHASIS, PROV_WAS_REVISION_OF, WADM_CONTEXT, type AnnotationRecord, type W3CSpecificResource } from "../wadm/types.js";
+import { ARCHIE_HAS_HISTORY, ARCHIE_EMPHASIS, ARCHIE_LOGICAL_ID, PROV_WAS_REVISION_OF, WADM_CONTEXT, type AnnotationRecord, type W3CSpecificResource } from "../wadm/types.js";
 
 // History-sidecar serialization (ADR-0003 / Q-3): heads page (only current versions, with
 // the archie:hasHistory + prov:wasRevisionOf link-outs) + per-logicalId history pages +
@@ -59,6 +59,20 @@ describe("toHeadsPage (Q-3)", () => {
     const item = toHeadsPage(l2, "page", opts).items[0]!;
     expect(item.id).toBe(`${base}${v2.logicalId}/v2`);
     expect((item as unknown as Record<string, unknown>)[PROV_WAS_REVISION_OF]).toBe(`${base}${v1.logicalId}/v1`);
+  });
+
+  // Archie-b9f4: the head's `id` is a versioned citation IRI ({logicalId}/v{n}), but the documented
+  // deep-link grammar #/{slug}/a/{logicalId} addresses the LOGICAL id — so the head must ALSO carry
+  // archie:logicalId (as history pages do) or the embed resolver degrades every real cite to
+  // note-not-found. The field is the STABLE id: unchanged across an edit, distinct from the versioned id.
+  it("carries archie:logicalId (deep-link identity) — the stable id, NOT the versioned citation id", () => {
+    const { log: l1, record: v1 } = appendNew([], { target: rectTarget, lastEditor: alice, modifiedAt: t, now: 1 });
+    const v1Item = toHeadsPage(l1, "page", opts).items[0] as unknown as Record<string, unknown>;
+    expect(v1Item[ARCHIE_LOGICAL_ID]).toBe(v1.logicalId);
+    expect(v1Item[ARCHIE_LOGICAL_ID]).not.toBe(v1Item.id); // id is {logicalId}/v1; the field is the bare logicalId
+    const { log: l2 } = appendEdit(l1, v1.logicalId, { body: { type: "TextualBody", value: "v2" }, lastEditor: bob, modifiedAt: t, now: 2 });
+    const v2Item = toHeadsPage(l2, "page", opts).items[0] as unknown as Record<string, unknown>;
+    expect(v2Item[ARCHIE_LOGICAL_ID]).toBe(v1.logicalId); // stable across the edit, though id is now .../v2
   });
 
   it("shows only HEADS — a pure consumer never sees history versions as live overlays (the interop contract)", () => {

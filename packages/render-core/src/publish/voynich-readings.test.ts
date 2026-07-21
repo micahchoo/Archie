@@ -116,10 +116,11 @@ describe("Phase 5 — the Voynich publishes as a genuinely-plural Readings exhib
     await publishLibrary(fs, library, (id) => (id === "voynich" ? buildLog() : []), { baseUrl: BASE });
     const manifest = await readJson(fs, "voynich", "manifest.json");
     // /annotations/{10-digit counter}{16 random chars}(.json|/v1) → mask the 16 random chars only.
-    const masked = JSON.stringify(manifest, null, 2).replace(
-      /(\/annotations\/(?:history\/)?\d{10})[0-9A-Z]{16}/g,
-      "$1XXXXXXXXXXXXXXXX",
-    );
+    // Archie-b9f4 adds a BARE `archie:logicalId` value (no /annotations/ prefix) carrying the same
+    // random tail — mask it too, else the snapshot drifts every run on the per-run random ULID.
+    const masked = JSON.stringify(manifest, null, 2)
+      .replace(/(\/annotations\/(?:history\/)?\d{10})[0-9A-Z]{16}/g, "$1XXXXXXXXXXXXXXXX")
+      .replace(/("archie:logicalId": "\d{10})[0-9A-Z]{16}/g, "$1XXXXXXXXXXXXXXXX");
     expect(masked).toMatchSnapshot();
   });
 });
