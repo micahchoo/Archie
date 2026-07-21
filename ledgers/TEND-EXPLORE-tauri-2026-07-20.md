@@ -31,8 +31,11 @@ every seam activates ONLY under the existing `isTauri()` idiom. Web builds are b
    `createMount`. The web viewer never sets the prop.
    - **image** (a plain remote `http(s)` image, incl. IIIF full-image URLs and most manifest imports):
      native-fetch the bytes → a `blob:` URL → OSD `{type:"image"}`. OSD `<img>`-loads same-origin bytes
-     — no webview CORS, no WebGL taint. `createMount` revokes the minted URL on `destroy()`. The
-     annotation target IRI stays the ORIGINAL remote URL, not the ephemeral blob.
+     — no webview CORS, no WebGL taint. The minted URL is revoked on EVERY teardown path — normal
+     `surface.destroy()`, OSD open-failed (createMount rejects before returning a surface), and the
+     Canvas `{#key canvasId}` remount race (unmounted before createMount resolves) — so the fetched
+     bytes never orphan (rev-native-fetch finding). The annotation target IRI stays the ORIGINAL remote
+     URL, not the ephemeral blob.
    - **iiif** (an info.json service base, e.g. the default Voynich seed): native-fetch + parse the
      `info.json`, hand OSD the parsed object as a DATA tile source (OSD `determineType` →
      `IIIFTileSource`, no second webview fetch). Restores the OPEN of an info.json a webview XHR can't

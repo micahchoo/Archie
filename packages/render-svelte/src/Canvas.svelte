@@ -144,12 +144,19 @@
   let surface: MountSurface | undefined;
   let controller: CanvasController | undefined;
   let offViewport: (() => void) | undefined; // unsubscribe from OSD pan/zoom (popover re-anchor)
+  // Set in onDestroy. The mount is async, so a {#key canvasId} remount can unmount THIS instance before
+  // createMount resolves — at which point `controller` (the normal teardown, controller.destroy() →
+  // surface.destroy()) is still undefined, so onDestroy's controller?.destroy() no-ops and the
+  // eventually-resolved surface (its OSD viewer AND any native-fetched image blob) would orphan. The
+  // onMount continuation checks this flag and tears the surface down itself.
+  let destroyed = false;
   let status = $state<"loading" | "ready" | "error">("loading");
   let errorMsg = $state("");
 
   onMount(async () => {
     try {
       surface = await createMount(el, { source, ...(tileSource ? { tileSource } : {}), ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}), ...(locator ? { locator } : {}), ...(nativeFetch ? { nativeFetch } : {}) });
+      if (destroyed) { surface.destroy(); surface = undefined; return; } // unmounted mid-mount (remount race) — tear down here; onDestroy's controller was still undefined
       surface.setAnnotations(annotations);
       if (styleOf) surface.setStyle(styleOf);
       if (frame !== undefined) surface.setFrame(frame);
@@ -203,7 +210,7 @@
   // A Section's camera target (not an annotation) → fit the region. Read `focus` first (dep-tracking gotcha).
   $effect(() => { const f = focus; if (f && surface) surface.fitRegion(f); });
 
-  onDestroy(() => { if (rectsRaf) cancelAnimationFrame(rectsRaf); if (dotsRaf) cancelAnimationFrame(dotsRaf); offViewport?.(); controller?.destroy(); });
+  onDestroy(() => { destroyed = true; if (rectsRaf) cancelAnimationFrame(rectsRaf); if (dotsRaf) cancelAnimationFrame(dotsRaf); offViewport?.(); controller?.destroy(); });
 </script>
 
 <div class="archie-canvas-wrap">

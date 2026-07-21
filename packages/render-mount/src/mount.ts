@@ -180,13 +180,22 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     ...(opts.locator ? { showNavigator: true, navigatorPosition: "BOTTOM_RIGHT", navigatorSizeRatio: 0.15, navigatorAutoFade: true } : {}),
   });
 
-  await new Promise<void>((resolve, reject) => {
-    viewer.addOnceHandler("open", () => resolve());
-    viewer.addOnceHandler("open-failed", (e: { message?: string }) => {
-      console.error("[@render/mount] OpenSeadragon open-failed:", e.message ?? "unknown");
-      reject(new Error("Couldn't load this media item."));
+  try {
+    await new Promise<void>((resolve, reject) => {
+      viewer.addOnceHandler("open", () => resolve());
+      viewer.addOnceHandler("open-failed", (e: { message?: string }) => {
+        console.error("[@render/mount] OpenSeadragon open-failed:", e.message ?? "unknown");
+        reject(new Error("Couldn't load this media item."));
+      });
     });
-  });
+  } catch (e) {
+    // Open failed: createMount rejects and the caller never gets a surface to destroy(), so release the
+    // resources minted BEFORE the open here — the native-fetched image blob (else it orphans the full
+    // remote bytes) and the viewer itself (pre-existing leak on open-fail, closed in the same breath).
+    if (ownedBlobUrl) URL.revokeObjectURL(ownedBlobUrl);
+    viewer.destroy();
+    throw e;
+  }
 
   // Bounded Map extent (ADR-0015, Option A): the tile source is the whole world; constrain the VIEWPORT to
   // the authored region so the reader opens framed and can't pan/zoom out past `bounds`. World pixels are

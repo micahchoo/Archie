@@ -38,9 +38,10 @@ Webview `fetch`/`<img>`/XHR under this CSP still enforce **CORS** and the webvie
 a CORS-restricted / 302-redirecting host fails even with `https:` present. For that class, remote
 **images** and a IIIF **info.json** now route through Tauri's native http (`apps/studio/src/tauri-fs.ts`
 → `fetchRemoteAsBlobUrl` / `fetchRemoteJson`), injected `isTauri()`-gated into the ingest dimension
-probe and the `@render/mount` `resolveOsdTileSources` seam. This does **not** relax the CSP — the
-webview path is still the default and the only path on hosts that already work — so keep `https:` on
-`img-src`/`media-src`/`connect-src`; the bridge is additive, not a replacement.
+probe and the `@render/mount` `resolveOsdTileSources` seam. This does **not** relax the CSP: on
+desktop every http(s) image/info.json is now routed through native fetch (the webview path is the
+*fallback*, taken only when the native fetch throws), and on web the webview path is the sole path —
+so keep `https:` on `img-src`/`media-src`/`connect-src`; the bridge is additive, not a replacement.
 
 One CSP fact the bridge is shaped around: `connect-src` allows `https:` but **not** `blob:`, so a
 webview `fetch()` of a `blob:` URL is refused. That's why `info.json` is fetched as **parsed JSON**
