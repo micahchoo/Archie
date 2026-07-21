@@ -85,8 +85,9 @@
   import { buildCsvTemplate, type CsvPendingNote } from "./csv-import.js";
   // The per-exhibit session state machine (session lifecycle + atomic open) — the DOMINO cut.
   import { createExhibitSession } from "./exhibit-session.svelte.js";
-  // Structure rev-log behind archie.structureRevlog (Archie-42f3) — default OFF; the session module
-  // is inert when the flag is off (no reads, no writes, no structure/ dir).
+  // Structure rev-log (Archie-42f3; DEFAULT ON since Archie-b0b1). archie.structureRevlog survives as
+  // an emergency kill-switch ("0" → OFF), which makes the session module inert (no reads, no writes,
+  // no structure/ dir).
   import { createStructureSession } from "./structure-session.svelte.js";
   import { structureRevlogEnabled } from "./feature-flags.js";
   import { createAssetUrls } from "./asset-urls.svelte.js";
@@ -292,12 +293,13 @@
   const save = () => sess.save(vs.currentSlug);
   const scheduleSave = () => sess.scheduleSave(vs.currentSlug);
 
-  // --- Structure rev-log (Archie-42f3), behind archie.structureRevlog — read ONCE at boot. OFF (the
-  // default): everything below is inert — no structure/ dir, no reads/writes, setSections behaves
-  // byte-identically to the pre-revlog build. ON: section mutations reconcile into the append-only
-  // structure log (spine/structure.ts), persist beside the annotation history, and library.json's
-  // `sections` becomes the log's projection snapshot. Conflict RESOLUTION UI is Studio-UX map
-  // territory (Archie-d71c/90f1) — here plural heads only GATE editing (NarrativeEditor conflictedIds).
+  // --- Structure rev-log (Archie-42f3; DEFAULT ON since Archie-b0b1) — read ONCE at boot. ON (the
+  // default): section mutations reconcile into the append-only structure log (spine/structure.ts),
+  // persist beside the annotation history, and library.json's `sections` becomes the log's projection
+  // snapshot. The archie.structureRevlog flag now survives only as an emergency KILL-SWITCH ("0" →
+  // OFF): OFF makes everything below inert — no structure/ dir, no reads/writes, setSections behaves
+  // byte-identically to the pre-revlog build. Conflict RESOLUTION UI is Studio-UX map territory
+  // (Archie-d71c/90f1) — here plural heads only GATE editing (NarrativeEditor conflictedIds).
   const STRUCTURE_REVLOG = structureRevlogEnabled();
   const structure = createStructureSession({
     author: () => author,
@@ -1870,7 +1872,6 @@
     finishReplace: () => { structure.reset(); vs.currentSlug = lib.meta.exhibits[0]!.slug; vs.view = "library"; pendingNotes = []; void enqueueSave("pending-notes", "Pending notes", () => savePendingNotes({})); }, // destructive replace wipes the old project's pending sidecar + the structure session's cached logs (the merged/imported logs are on disk — Archie-2a9a)
     confirmReplace: (msg) => window.confirm(msg),
     alert: (msg) => window.alert(msg),
-    structureRevlog: STRUCTURE_REVLOG, // the boot-cached flag read (feature-flags.ts contract) — gates the import-side structure merge (Archie-2a9a)
     // Desktop only (Archie-fada): the dimension probe pulls remote image bytes through Tauri's native http
     // so a CORS-restricted / redirecting host still yields width/height. Absent on web → the plain <img> probe.
     ...(nativeFetch ? { fetchRemoteAsBlobUrl: nativeFetch.toBlobUrl } : {}),

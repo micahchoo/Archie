@@ -103,7 +103,9 @@ describe("two-author round trip: publish → .archie.zip → import merge (Archi
     //   wired mergeImportedStructure into.
     const srcFs = await openArchieLibrary(zip);
     const loaded = await loadLibrary(srcFs);
-    const flows = createIngestFlows(makeCtx({ structureRevlog: true }));
+    // NON-flag path (Archie-b0b1): no structureRevlog is set — the import merge is ungated, driven by
+    // the incoming pages that the export leg wrote, so the round trip holds regardless of the flag.
+    const flows = createIngestFlows(makeCtx());
     await flows.replaceProjectFrom(loaded, srcFs);
 
     // — The merge landed: shared base deduped by rev, both concurrent edits kept as PLURAL heads.
@@ -130,7 +132,7 @@ describe("two-author round trip: publish → .archie.zip → import merge (Archi
     h.openStruct = async () => (dir ??= await (await localFs.root()).getDirectory("structure", { create: true }));
 
     const srcFs = await openArchieLibrary(zip);
-    const flows = createIngestFlows(makeCtx({ structureRevlog: true }));
+    const flows = createIngestFlows(makeCtx()); // ungated — no flag set (Archie-b0b1)
     await flows.replaceProjectFrom(await loadLibrary(srcFs), srcFs);
 
     const landed = await readStructureReport(dir!, exId);

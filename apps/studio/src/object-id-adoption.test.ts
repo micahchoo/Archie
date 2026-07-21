@@ -85,7 +85,7 @@ beforeEach(() => { h.resident = new MemoryFilesystem(); h.order = []; });
 
 describe("replaceProjectFrom — object-id adoption (ADR-0026 trigger 2)", () => {
   it("adopting a legacy library migrates the resident store — zero legacy ids on disk AND in memory", async () => {
-    const { ctx, meta } = makeCtx({ structureRevlog: false });
+    const { ctx, meta } = makeCtx();
     await createIngestFlows(ctx).replaceProjectFrom(legacyLoaded());
 
     // Resident store flipped to the composed scheme…
@@ -100,7 +100,7 @@ describe("replaceProjectFrom — object-id adoption (ADR-0026 trigger 2)", () =>
   it("crash-window ordering: the outgoing marker is cleared BEFORE any incoming write lands", async () => {
     // Review of f344114: resetIdSchemeState must run first so that a crash anywhere mid-replace leaves a
     // MARKERLESS store (re-migrated on next boot), never legacy content under a stale scheme-2 marker.
-    const { ctx } = makeCtx({ structureRevlog: false });
+    const { ctx } = makeCtx();
     await createIngestFlows(ctx).replaceProjectFrom(legacyLoaded());
 
     expect(h.order[0]).toBe("reset"); // the reset is the very first store op
@@ -114,7 +114,7 @@ describe("replaceProjectFrom — object-id adoption (ADR-0026 trigger 2)", () =>
         logs: { "ex-voynich": [] },
       }) as never;
 
-    const { ctx, meta } = makeCtx({ structureRevlog: false });
+    const { ctx, meta } = makeCtx();
     await createIngestFlows(ctx).replaceProjectFrom(composedLoaded());
 
     expect(await readIdScheme(h.resident)).toBe(2);

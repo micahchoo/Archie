@@ -1,6 +1,7 @@
-// structure-session (Archie-42f3): the flag-gated reactive owner of the section rev-log.
-// The FIRST describe is the ticket's off-path PIN: with archie.structureRevlog OFF, the module is
-// inert — it never opens the structure dir, never reads or writes the fs seam, and every read
+// structure-session (Archie-42f3): the reactive owner of the section rev-log. Default ON since the
+// Archie-b0b1 enact; the flag survives as an emergency kill-switch ("0" → OFF).
+// The FIRST describe is the kill-switch PIN (injected `enabled: () => false`): with the rev-log OFF the
+// module is inert — it never opens the structure dir, never reads or writes the fs seam, and every read
 // surface returns the do-nothing value, so the App's array-only behavior is untouched.
 import { describe, it, expect } from "vitest";
 import { createStructureSession, type StructureSessionDeps } from "./structure-session.svelte.js";
