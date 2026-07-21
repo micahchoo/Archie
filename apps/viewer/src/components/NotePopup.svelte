@@ -79,7 +79,14 @@
      the card, the note body scrolls if tall, and a footer stepper sits beneath a hairline rule. Green
      (--accent) left edge = the note signal. Positioned absolute against the host's relative container. */
   .note-pop {
-    position: absolute; left: var(--space-5); bottom: var(--space-5); z-index: 5;
+    /* z-index 30 (Archie-b42d), not the original 5: the popup is anchored near the viewport BOTTOM and,
+       for a short note, its trailing NoteMedia tile row commonly lands inside the Filmstrip's fixed
+       bottom band (.filmstrip, z-index 25, full-width) — at z:5 the filmstrip painted over the tile AND
+       ate its clicks (measured: elementFromPoint at the tile's center returned the filmstrip's <ul>, and
+       a real click there never opened the lightbox). 30 matches the existing "floats above the ambient
+       Filmstrip" tier ExhibitView already uses for .finder-trigger/.arrival/.to-read/.partial-note — the
+       popup is the user-opened foreground card, filmstrip is passive chrome; it should win the same way. */
+    position: absolute; left: var(--space-5); bottom: var(--space-5); z-index: 30;
     max-width: min(46ch, 46%);
     min-width: min(320px, calc(100vw - 2 * var(--space-5)));
     display: flex; flex-direction: column; gap: var(--space-3);
