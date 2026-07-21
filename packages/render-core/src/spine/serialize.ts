@@ -49,7 +49,7 @@ const _historyCarry = {
   modifiedAt: "carry", // recordToAnnotation → `modified`; heads pages ALSO surface the DAG root's value as WADM `created` (Archie-3452)
   body: "carry", // recordToAnnotation
   motivation: "carry", // recordToAnnotation
-  logicalId: "carry", // withDagMeta ↓
+  logicalId: "carry", // withDagMeta → archie:logicalId; heads pages ALSO carry it (withLogicalId) so the documented deep-link grammar #/{slug}/a/{logicalId} resolves against the head's multi-segment citation id (Archie-b9f4)
   rev: "carry",
   version: "carry",
   lastEditor: "carry", // withDagMeta → archie:lastEditor; heads pages ALSO project it as WADM `creator` unless synthetic (Archie-3452)
@@ -185,6 +185,19 @@ function withAuthorship(ann: ArchieAnnotation, record: AnnotationRecord, created
   return ann;
 }
 
+/** Stamp the note's stable `archie:logicalId` on a HEAD annotation (Archie-b9f4). A head's `id` is a
+ *  multi-segment citation IRI (`{baseUrl}{logicalId}/v{n}`), so the documented deep-link grammar
+ *  `#/{slug}/a/{logicalId}` — which addresses the LOGICAL id — cannot match `id`; the embed resolver's
+ *  `matchesNote` (archie-viewer target-resolve.ts) reads THIS field first (`logicalIdOf`) and falls back
+ *  to `id` only for pure-WADM imports that carry no logicalId. History pages already emit it via
+ *  `withDagMeta`; before this the heads page (the projection viewers load) did not, so every real
+ *  published tree degraded such a cite to note-not-found. Same cast style as withDagMeta; pure
+ *  consumers ignore the `archie:` key. */
+function withLogicalId(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
+  (ann as ArchieAnnotation & Record<string, unknown>)[ARCHIE_LOGICAL_ID] = record.logicalId;
+  return ann;
+}
+
 /** Embed the archie DAG metadata as extension fields (history annotations only — Archie reads
  *  these to reconstruct the log; pure consumers ignore them). */
 function withDagMeta(ann: ArchieAnnotation, record: AnnotationRecord): ArchieAnnotation {
@@ -237,7 +250,7 @@ export function targetSource(record: AnnotationRecord): string {
 export function headsPageFromRecords(heads: AnnotationRecord[], pageId: string, cite: CitationContext, opts: SerializeOptions = {}): W3CAnnotationPage {
   const historyBase = opts.historyBase ?? "annotations/history/";
   const items: W3CAnnotation[] = heads.map((head) => {
-    const ann = withExtensions(withAuthorship(withProvLink(recordToAnnotation(head, cite.ids.get(head.rev)!), head.parent, cite.ids), head, cite.createdAt), head);
+    const ann = withExtensions(withLogicalId(withAuthorship(withProvLink(recordToAnnotation(head, cite.ids.get(head.rev)!), head.parent, cite.ids), head, cite.createdAt), head), head);
     ann[ARCHIE_HAS_HISTORY] = `${historyBase}${head.logicalId}.json`;
     return ann;
   });
