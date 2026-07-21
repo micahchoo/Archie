@@ -65,3 +65,51 @@ riskiest (A1) with the contract suite green and untouched.
 
 Gates (verbatim): render-core `Test Files  78 passed (78)` / `Tests  860 passed (860)`
 (= 847 existing + 13 probe, no existing test modified); `pnpm -r typecheck` exit 0.
+
+## ENACT (Archie-b0b1, 2026-07-20) — grill verdict ENACT
+
+The ~1,400 lines the PURSUE verdict green-lit (studio `structure-session.svelte.ts` /
+`structure-reconcile.ts` / `structure-import.ts` over render-core `spine/structure*`) shipped dark
+behind `structureRevlogEnabled()` — default-off, activated only by a console `localStorage` flip. Two
+changes turned it on for real:
+
+1. **Asymmetry closed FIRST.** The publish/export leg (`publish/site.ts` `getStructure`) wrote
+   `{slug}/structure/history/` driven by log EXISTENCE, but the import leg
+   (`ingest-flows.ts` `replaceProjectFrom`) required the flag. A library published carrying section
+   history was therefore silently DROPPED on a default reopen — the export wrote history the import
+   refused to read. The import merge is now UNGATED (existence-driven, mirroring export); the dead
+   `structureRevlog` field is off `IngestContext`. `structure-export-roundtrip.test.ts` /
+   `replace-structure.test.ts` now prove the round trip over a NON-flag path.
+2. **Flag defaulted ON, retired as an opt-in.** `structureRevlogEnabled()` reads default-true via
+   `persisted.ts` `safeGet` (`!== "0"`); `archie.structureRevlog = "0"` is the emergency KILL-SWITCH
+   (forces the pre-revlog array-only path). Failure (absent / storage-denied / garbage) falls toward ON.
+
+### Author-facing surface: NO read/restore capability exists yet — UI is the follow-up
+
+The enact scope asked for the minimal honest author-facing surface, exposing restore/view **only where
+`structure-session` already supports it**. It does not. Its entire public API is:
+
+| Method | Shape | Purpose |
+|--------|-------|---------|
+| `ensureLoaded` / `apply` | load / commit | the write path (seed-from-array, reconcile appends) |
+| `conflictedLocalIds` | `Set<localId>` | plural-head EDIT GATE — already surfaced (NarrativeEditor `conflictedIds`) |
+| `tombstonedKeys` / `hiddenIds` | `Set` | internal hide-by-ancestry note filtering |
+| `isCorrupt` | `boolean` | torn-store status — marked "future surfacing", NOT yet rendered |
+
+None of these is a user-facing **history view** (enumerate a section's revisions — who/what/when) or a
+**restore** (revert a section to a prior revision). The raw `SectionLog` carries the full history and
+`spine/structure` has the DAG primitives (`headsOf`, `lineage`/`ancestors` per probe A4), but
+`structure-session` surfaces none of them for that, and there is **no restore-to-prior-rev append helper
+at all** — annotation `appendEdit` even hard-refuses tombstoned heads (probe sharp-edge #2). Building
+view/restore therefore means adding new methods to `structure-session` AND to render-core `spine/structure*`
+— inventing features across two packages, which the enact scope explicitly forbids.
+
+So the honest minimum shipped is exactly: **flag-on + asymmetry-closed**, with the section history now
+kept (append-only) and round-tripping through publish/import for every exhibit by default. The
+**author-facing history view/restore UI is the follow-up.** A next ticket needs, in order: (a) a
+`structure-session` read method projecting a section's rev timeline over the existing `spine/structure`
+lineage primitives; (b) a first-class restore op (`appendUndeleteSection` exists for un-delete; a
+"restore to rev N" append does not — design it against the merge contract, same as resolve-conflict is
+d71c/90f1 territory); (c) the NarrativeEditor surface itself (existing studio idioms, WWWWH-first copy).
+The already-built, unrendered `isCorrupt` torn-store status is the one non-inventing signal a minimal
+UI could surface first.
