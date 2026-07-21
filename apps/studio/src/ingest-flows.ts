@@ -22,7 +22,6 @@ import {
   ASSET_PREFIX, type ExhibitMeta, type ObjectProvenance,
 } from "./store.js";
 import { mergeImportedStructure, migrateSectionLogIds } from "./structure-import.js";
-import { structureRevlogEnabled } from "./feature-flags.js";
 import { inferredMime, planFolderImportGroups } from "./folder-import.js";
 import { manifestToExhibit, ManifestImportError, classifyIiifDocument, labelToString, type ManifestPlan } from "./iiif-import.js";
 import { traverseCollection, urlSegment, type DiscoveredManifest, type TraverseResult } from "./collection-import.js";
@@ -252,9 +251,6 @@ export interface IngestContext {
   /** Confirmation gate for the destructive open (window.confirm wrapper). */
   confirmReplace: (msg: string) => boolean;
   alert: (msg: string) => void;
-  /** The archie.structureRevlog flag, read ONCE at boot by the App (feature-flags.ts contract) and
-   *  passed down — injectable for tests. Absent = read the flag directly at flows creation. */
-  structureRevlog?: boolean;
   /** Desktop-only (Tauri) native image fetch (plugin-http → a same-origin blob: URL): the webview's own
    *  <img> dimension probe fails on CORS-restricted / redirecting hosts. Injected only under isTauri();
    *  absent on web → imageDims uses the plain <img> probe, byte-identical to before (Archie-fada). */
@@ -262,9 +258,6 @@ export interface IngestContext {
 }
 
 export function createIngestFlows(ctx: IngestContext) {
-  // Boot-cached flag read (feature-flags.ts contract: callers read once, never mid-session). The
-  // App passes its own boot-cached STRUCTURE_REVLOG const; the fallback covers direct construction.
-  const STRUCTURE_REVLOG = ctx.structureRevlog ?? structureRevlogEnabled();
   // ALL ticking flows go through this tracker, never ctx.setImportStatus directly: every ingest call
   // site is fire-and-forget, so two runs can overlap, and with four flows writing the one unkeyed
   // slot their ticks alternated in the band and the first `finally` to fire blanked the survivor
@@ -1194,12 +1187,16 @@ export function createIngestFlows(ctx: IngestContext) {
         }
       }
     }
-    // Flag-ON structure-log merge (Archie-2a9a): an incoming exhibit that carries structure/history/
-    // pages MERGES them into the local exhibit's log — the same mergeLogs contract annotations use —
-    // so exchanged copies keep section history and concurrent section edits surface as plural heads
-    // (gated by 42f3's conflicted set, resolved by d71c/90f1 territory, never auto-resolved here).
-    // Absent incoming pages → nothing is written and the next open seeds from the array as today.
-    if (STRUCTURE_REVLOG && srcFs) {
+    // Structure-log merge (Archie-2a9a; ungated Archie-b0b1): an incoming exhibit that carries
+    // structure/history/ pages MERGES them into the local exhibit's log — the same mergeLogs contract
+    // annotations use — so exchanged copies keep section history and concurrent section edits surface
+    // as plural heads (gated by 42f3's conflicted set, resolved by d71c/90f1 territory, never
+    // auto-resolved here). Absent incoming pages → nothing is written and the next open seeds from the
+    // array as today. Driven by incoming-page EXISTENCE, deliberately NOT by archie.structureRevlog —
+    // the mirror of the publish/export leg (site.ts getStructure): a library published carrying
+    // structure history must round-trip on a DEFAULT reopen regardless of the flag, or the kill-switch
+    // (or a pre-enact build) would silently drop the history the export leg wrote.
+    if (srcFs) {
       const srcRoot = await srcFs.root();
       // ADR-0026 trigger 3: the local store is already on the composed scheme (trigger 1 ran at boot),
       // so an incoming legacy-scheme section log must be composed BEFORE it merges. Cross-links in

@@ -1,8 +1,10 @@
 // replaceProjectFrom × the structure rev-log (Archie-2a9a deliverable 1, the wiring layer): the
 // open-zip/open-folder replace merges an incoming exhibit's structure/history/ pages into the local
-// store — flag-ON only, source-fs only. The OFF path (the archie.structureRevlog default) is pinned
-// here the way structure-session pins its own inertness: the replace never opens (so never creates)
-// a local structure dir. OPFS store primitives are mocked onto a MemoryFilesystem.
+// store. UNGATED (Archie-b0b1): the merge is driven by incoming-page EXISTENCE, source-fs only, NOT
+// by archie.structureRevlog — the mirror of the publish/export leg, so a published library's section
+// history round-trips on a default reopen regardless of the flag. The no-merge path (no incoming
+// pages, or no source fs) is pinned the way structure-session pins its own inertness: the replace
+// never opens (so never creates) a local structure dir. OPFS store primitives mocked onto a MemoryFilesystem.
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   MemoryFilesystem,
@@ -80,15 +82,15 @@ beforeEach(() => {
   h.structOpens = 0;
 });
 
-describe("replaceProjectFrom — structure-log merge wiring (Archie-2a9a)", () => {
-  it("flag ON: merges the incoming exhibit's structure log into the local store (plural heads kept)", async () => {
+describe("replaceProjectFrom — structure-log merge wiring (Archie-2a9a, ungated Archie-b0b1)", () => {
+  it("merges the incoming exhibit's structure log into the local store (plural heads kept)", async () => {
     const { local, incoming } = divergedLogs();
     const localFs = new MemoryFilesystem();
     const dir = await (await localFs.root()).getDirectory("structure", { create: true });
     await writeStructure(dir, local);
     h.openStruct = async () => dir;
 
-    const flows = createIngestFlows(makeCtx({ structureRevlog: true }));
+    const flows = createIngestFlows(makeCtx());
     await flows.replaceProjectFrom(loadedLib(), await makeSrcFs(incoming));
 
     const merged = (await readStructureReport(dir, exId)).log;
@@ -96,32 +98,45 @@ describe("replaceProjectFrom — structure-log merge wiring (Archie-2a9a)", () =
     expect(headsOf(merged, k1).length).toBe(2); // concurrent edits from the two copies — gated, not auto-resolved
   });
 
-  it("flag OFF (the default): the replace never opens a local structure dir — byte-identical off path", async () => {
-    const { incoming } = divergedLogs();
-    const flows = createIngestFlows(makeCtx({ structureRevlog: false }));
+  it("UNGATED (Archie-b0b1): incoming structure pages merge with NO flag set — the round-trip does not depend on archie.structureRevlog", async () => {
+    // The asymmetry Archie-b0b1 closes: the publish/export leg wrote structure/history/ driven by log
+    // existence, but the import leg used to require the flag — so a default (kill-switch / pre-enact)
+    // reopen silently dropped the history the export wrote. Here NO flag is passed and the merge still
+    // lands, mirroring the export leg's existence-driven posture.
+    const { local, incoming } = divergedLogs();
+    const localFs = new MemoryFilesystem();
+    const dir = await (await localFs.root()).getDirectory("structure", { create: true });
+    await writeStructure(dir, local);
+    h.openStruct = async () => dir;
+
+    const flows = createIngestFlows(makeCtx()); // no structureRevlog — the flag field is gone
     await flows.replaceProjectFrom(loadedLib(), await makeSrcFs(incoming));
-    expect(h.structOpens).toBe(0);
+
+    expect(h.structOpens).toBeGreaterThan(0); // the local structure dir WAS opened, flag or no flag
+    const merged = (await readStructureReport(dir, exId)).log;
+    expect(merged.length).toBe(3); // shared base deduped by rev — the incoming history landed
+    expect(headsOf(merged, k1).length).toBe(2);
   });
 
-  it("flag ON, incoming tree WITHOUT structure pages: local structure store never opened (seed-from-array stays)", async () => {
-    const flows = createIngestFlows(makeCtx({ structureRevlog: true }));
+  it("incoming tree WITHOUT structure pages: local structure store never opened (seed-from-array stays)", async () => {
+    const flows = createIngestFlows(makeCtx());
     await flows.replaceProjectFrom(loadedLib(), await makeSrcFs());
     expect(h.structOpens).toBe(0);
   });
 
-  it("flag ON, no source fs (a caller without the tree in hand): structure untouched", async () => {
-    const flows = createIngestFlows(makeCtx({ structureRevlog: true }));
+  it("no source fs (a caller without the tree in hand): structure untouched", async () => {
+    const flows = createIngestFlows(makeCtx());
     await flows.replaceProjectFrom(loadedLib());
     expect(h.structOpens).toBe(0);
   });
 
-  it("flag ON, exhibit with NO local log: the incoming section history lands whole", async () => {
+  it("exhibit with NO local log: the incoming section history lands whole", async () => {
     const { incoming } = divergedLogs();
     const localFs = new MemoryFilesystem();
     let dir: FsDirectory | null = null;
     h.openStruct = async () => (dir ??= await (await localFs.root()).getDirectory("structure", { create: true }));
 
-    const flows = createIngestFlows(makeCtx({ structureRevlog: true }));
+    const flows = createIngestFlows(makeCtx());
     await flows.replaceProjectFrom(loadedLib(), await makeSrcFs(incoming));
 
     const landed = (await readStructureReport(dir!, exId)).log;

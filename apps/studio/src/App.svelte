@@ -1870,7 +1870,6 @@
     finishReplace: () => { structure.reset(); vs.currentSlug = lib.meta.exhibits[0]!.slug; vs.view = "library"; pendingNotes = []; void enqueueSave("pending-notes", "Pending notes", () => savePendingNotes({})); }, // destructive replace wipes the old project's pending sidecar + the structure session's cached logs (the merged/imported logs are on disk — Archie-2a9a)
     confirmReplace: (msg) => window.confirm(msg),
     alert: (msg) => window.alert(msg),
-    structureRevlog: STRUCTURE_REVLOG, // the boot-cached flag read (feature-flags.ts contract) — gates the import-side structure merge (Archie-2a9a)
     // Desktop only (Archie-fada): the dimension probe pulls remote image bytes through Tauri's native http
     // so a CORS-restricted / redirecting host still yields width/height. Absent on web → the plain <img> probe.
     ...(nativeFetch ? { fetchRemoteAsBlobUrl: nativeFetch.toBlobUrl } : {}),
