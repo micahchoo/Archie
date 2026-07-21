@@ -115,14 +115,18 @@ describe("mode-detect classifier (ADR-0008) — modeFromProbe", () => {
 });
 
 describe("probeViewerMode (fetch + classify the four+ outcomes)", () => {
-  const stubFetch = (r: { status?: number; json?: unknown; throws?: boolean }) =>
+  const stubFetch = (r: { status?: number; json?: unknown; throws?: boolean; bodyReadError?: unknown }) =>
     vi.stubGlobal("fetch", vi.fn(async () => {
       if (r.throws) throw new Error("network down");
       const status = r.status ?? 200;
       return {
         ok: status >= 200 && status < 300,
         status,
-        json: async () => { if (r.json === undefined) throw new SyntaxError("bad json"); return r.json; },
+        json: async () => {
+          if (r.bodyReadError !== undefined) throw r.bodyReadError;
+          if (r.json === undefined) throw new SyntaxError("bad json");
+          return r.json;
+        },
       } as unknown as Response;
     }));
 
@@ -136,7 +140,14 @@ describe("probeViewerMode (fetch + classify the four+ outcomes)", () => {
   it("404 → portable (no baked tree)", async () => { stubFetch({ status: 404 }); expect(await probeViewerMode()).toBe("portable"); });
   it("500 → broken (deploy problem, not the reader's connection)", async () => { stubFetch({ status: 500 }); expect(await probeViewerMode()).toBe("broken"); });
   it("network throw → offline", async () => { stubFetch({ throws: true }); expect(await probeViewerMode()).toBe("offline"); });
-  it("200 + malformed body → broken (corrupt deployment)", async () => { stubFetch({ status: 200 }); expect(await probeViewerMode()).toBe("broken"); });
+  it("200 + malformed body (SyntaxError from JSON.parse) → broken (corrupt deployment)", async () => { stubFetch({ status: 200 }); expect(await probeViewerMode()).toBe("broken"); });
+  // Optional classifier split (Archie-569d): a TypeError from the body read (the connection dropped
+  // mid-transfer, after a 200/headers already arrived) is a READER connectivity failure, not a corrupt
+  // deploy — distinct from the SyntaxError case above, which is a fully-received-but-invalid body.
+  it("200 + body-read TypeError (connection dropped mid-read) → offline, not broken", async () => {
+    stubFetch({ status: 200, bodyReadError: new TypeError("Failed to fetch") });
+    expect(await probeViewerMode()).toBe("offline");
+  });
 });
 
 // Archie-a2b9 done-when: an offline boot and a corrupt-JSON boot show DIFFERENT, accurate messages.

@@ -212,9 +212,18 @@ export function modeFromProbe(p: ModeProbe): ViewerMode {
  *    republish-to-fix situation, not a connectivity one.
  */
 export function bootErrorMessage(mode: Exclude<ViewerMode, "portable">): string {
-  return mode === "offline"
-    ? "Couldn’t reach the library. Check your connection and reload."
-    : "This library’s data couldn’t be read — the site looks broken, not your connection. Reload to try again; if it keeps failing, whoever published this site needs to publish it again.";
+  // Default-less switch (review suggestion): a future ViewerMode member that isn't handled here falls
+  // through with no return, which TS2366 flags at compile time (strictNullChecks, no noImplicitReturns
+  // needed — proven by hand: adding a member without a case here fails `tsc --noEmit`). The old ternary
+  // silently routed any non-"offline" mode to the republish copy — including a mode nobody had reasoned
+  // about yet.
+  switch (mode) {
+    case "offline":
+      return "Couldn’t reach the library. Check your connection and reload.";
+    case "hosted":
+    case "broken":
+      return "This library’s data couldn’t be read — the site looks broken, not your connection. Reload to try again; if it keeps failing, whoever published this site needs to publish it again.";
+  }
 }
 
 /** Probe the deployment for a baked tree and classify the mode. Short-circuits to "portable" when a
@@ -231,8 +240,21 @@ export async function probeViewerMode(): Promise<ViewerMode> {
         await res.json();
         probe = { kind: "ok" };
       } catch (e) {
-        console.warn("Archie: exhibits.json returned 200 but wasn't valid JSON (corrupt deployment or an HTML error page) —", e);
-        probe = { kind: "malformed" };
+        // `res.json()` fails two distinguishable ways (WHATWG Fetch): a SyntaxError from `JSON.parse`
+        // once the body is fully in hand but isn't valid JSON (a corrupt artifact or a host's HTML
+        // error/SPA-fallback page — a deploy problem); a TypeError when the underlying stream read
+        // itself fails (the connection dropped mid-transfer, headers already received — a READER
+        // connectivity problem, same as the outer fetch-throw below). Route the TypeError case through
+        // the existing "network" kind instead of "malformed" so it gets the offline copy, not the
+        // "site looks broken" one — this refines the existing offline-vs-broken split, it doesn't add a
+        // new outcome.
+        if (e instanceof SyntaxError) {
+          console.warn("Archie: exhibits.json returned 200 but wasn't valid JSON (corrupt deployment or an HTML error page) —", e);
+          probe = { kind: "malformed" };
+        } else {
+          console.warn("Archie: exhibits.json fetch succeeded but the body read failed (connection likely dropped mid-read) —", e);
+          probe = { kind: "network" };
+        }
       }
     }
   } catch {

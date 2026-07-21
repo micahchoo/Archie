@@ -135,8 +135,11 @@
     openError = "";
     try {
       await openLibraryFromFile(file);
-    } catch {
-      openError = "That file isn’t an Archie library.";
+    } catch (e) {
+      // The open seam (untrusted-archive-open-seam) re-throws its zip-bomb-cap / torn-zip /
+      // NotAnArchieLibraryError failures as Errors with a user-appropriate message — surface it, same
+      // as the ?src= path below, instead of collapsing every reason into one generic line.
+      openError = e instanceof Error ? e.message : "That file isn’t an Archie library.";
       return;
     }
     if (!(await loadAndShow())) {
