@@ -1,7 +1,7 @@
 // Ingest-flow tests (tend Issue 7, ledgers/NEGSPACE.md). This path had zero direct coverage before —
 // each test below reproduces one of the negative-space matrix's real findings against the actual
 // createIngestFlows factory (not a reimplementation), with a minimal in-memory IngestContext mock.
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createIngestFlows, type IngestContext } from "./ingest-flows.js";
 import type { ExhibitMeta } from "./store.js";
 import type { ManifestPlan } from "./iiif-import.js";
@@ -835,5 +835,79 @@ describe("TIFF ingest routes through the transcode (docs/research/browser-storag
 
     expect(exhibits.find((e) => e.slug === "scans")!.objects.length).toBe(0);
     expect(notes.at(-1)!).toContain("“damaged.tif” isn't a readable image");
+  });
+});
+
+// ── imageDims: desktop native-fetch dimension probe (Archie-fada) ────────────────────────────────
+// On desktop a CORS-restricted / redirecting host fails the plain <img> probe; when a native fetcher is
+// injected (ctx.fetchRemoteAsBlobUrl, Tauri-only) imageDims pulls the bytes to a same-origin blob: URL
+// and probes THAT. The desktop RUNTIME (packaged webview) is OWED to the a09d smoke; these pin the wiring.
+describe("imageDims — remote dimension probe routes through the injected native fetcher (Archie-fada)", () => {
+  let probedSrc: string | null = null;
+  let revokeSpy: ReturnType<typeof vi.fn>;
+  const origImage = (globalThis as { Image?: unknown }).Image;
+  const origRevoke = (globalThis.URL as { revokeObjectURL?: unknown }).revokeObjectURL;
+  // A minimal <img> that resolves its dimensions off `src` on the next microtask (a "unreadable" src errors).
+  class FakeImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    naturalWidth = 0;
+    naturalHeight = 0;
+    set src(v: string) {
+      probedSrc = v;
+      queueMicrotask(() => {
+        if (v.includes("unreadable")) { this.onerror?.(); return; }
+        this.naturalWidth = 640; this.naturalHeight = 480; this.onload?.();
+      });
+    }
+  }
+  beforeEach(() => {
+    probedSrc = null;
+    revokeSpy = vi.fn();
+    (globalThis as { Image?: unknown }).Image = FakeImage;
+    (globalThis.URL as { revokeObjectURL?: unknown }).revokeObjectURL = revokeSpy;
+  });
+  afterEach(() => {
+    (globalThis as { Image?: unknown }).Image = origImage;
+    (globalThis.URL as { revokeObjectURL?: unknown }).revokeObjectURL = origRevoke;
+  });
+
+  it("desktop: pulls remote bytes natively → probes the blob: URL → revokes it", async () => {
+    const fetchRemoteAsBlobUrl = vi.fn(async (_u: string) => "blob:probe-xyz");
+    const { ctx } = makeCtx({ fetchRemoteAsBlobUrl });
+    const flows = createIngestFlows(ctx);
+    const dims = await flows.imageDims("https://host/pic.jpg");
+    expect(fetchRemoteAsBlobUrl).toHaveBeenCalledWith("https://host/pic.jpg");
+    expect(probedSrc).toBe("blob:probe-xyz"); // probed the native blob, not the remote URL
+    expect(dims).toEqual({ w: 640, h: 480 });
+    expect(revokeSpy).toHaveBeenCalledWith("blob:probe-xyz");
+  });
+
+  it("web: no fetcher → probes the raw URL directly (byte-identical to before)", async () => {
+    const { ctx } = makeCtx(); // no fetchRemoteAsBlobUrl
+    const flows = createIngestFlows(ctx);
+    const dims = await flows.imageDims("https://host/pic.jpg");
+    expect(probedSrc).toBe("https://host/pic.jpg");
+    expect(dims).toEqual({ w: 640, h: 480 });
+  });
+
+  it("desktop: a blob:/data: source is NOT re-fetched (the probe guard is http(s)-only)", async () => {
+    const fetchRemoteAsBlobUrl = vi.fn(async () => "blob:should-not-happen");
+    const { ctx } = makeCtx({ fetchRemoteAsBlobUrl });
+    const flows = createIngestFlows(ctx);
+    await flows.imageDims("blob:local-master");
+    expect(fetchRemoteAsBlobUrl).not.toHaveBeenCalled();
+    expect(probedSrc).toBe("blob:local-master");
+  });
+
+  it("desktop: a native-fetch throw falls back to probing the raw URL (never worse than web)", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fetchRemoteAsBlobUrl = vi.fn(async () => { throw new Error("host down"); });
+    const { ctx } = makeCtx({ fetchRemoteAsBlobUrl });
+    const flows = createIngestFlows(ctx);
+    const dims = await flows.imageDims("https://host/pic.jpg");
+    expect(probedSrc).toBe("https://host/pic.jpg"); // fell back to the raw URL
+    expect(dims).toEqual({ w: 640, h: 480 });
+    warn.mockRestore();
   });
 });

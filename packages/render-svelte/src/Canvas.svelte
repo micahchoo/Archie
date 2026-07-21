@@ -4,7 +4,7 @@
   // component only wires the surface to $state, drawing props, and lifecycle callbacks.
   // NOT in the tsc/test gate (real OSD render = browser verification).
   import { onMount, onDestroy } from "svelte";
-  import { createMount, zoomBand, dotsVisibleForBand, rectCenter, type ZoomBand, type ScreenRect, type FitOptions, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
+  import { createMount, zoomBand, dotsVisibleForBand, rectCenter, type ZoomBand, type ScreenRect, type FitOptions, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay, type NativeFetch } from "@render/mount";
   import { type W3CAnnotation, type TileSourceDescriptor } from "@render/core";
   import { createCanvasController, type CanvasController } from "./controller.js";
 
@@ -30,6 +30,7 @@
     frame,
     onzoom,
     dots,
+    nativeFetch,
   }: {
     /** Reader UX: clicking a marker on the canvas zooms to it (controller option). */
     zoomOnSelect?: boolean;
@@ -77,6 +78,10 @@
      *  (locator) as note-position dots. `colour` = the note's Reading hue; `label` = its accessible name
      *  (the note's prose snippet). Undefined/empty = no dot layer. Clicking a dot selects (bind:selected). */
     dots?: { id: string; colour: string; label: string }[];
+    /** Desktop-only (Tauri) native-fetch escape hatch, threaded to the mount so a remote image / IIIF
+     *  info.json opens on CORS-restricted / redirecting hosts. The studio passes it only when isTauri();
+     *  the web viewer never sets it, so behavior there is byte-identical (see @render/mount NativeFetch). */
+    nativeFetch?: NativeFetch;
   } = $props();
 
   // Emit the selected marker's current screen rect (OSD re-anchors natively, so this just re-reads).
@@ -139,12 +144,19 @@
   let surface: MountSurface | undefined;
   let controller: CanvasController | undefined;
   let offViewport: (() => void) | undefined; // unsubscribe from OSD pan/zoom (popover re-anchor)
+  // Set in onDestroy. The mount is async, so a {#key canvasId} remount can unmount THIS instance before
+  // createMount resolves — at which point `controller` (the normal teardown, controller.destroy() →
+  // surface.destroy()) is still undefined, so onDestroy's controller?.destroy() no-ops and the
+  // eventually-resolved surface (its OSD viewer AND any native-fetched image blob) would orphan. The
+  // onMount continuation checks this flag and tears the surface down itself.
+  let destroyed = false;
   let status = $state<"loading" | "ready" | "error">("loading");
   let errorMsg = $state("");
 
   onMount(async () => {
     try {
-      surface = await createMount(el, { source, ...(tileSource ? { tileSource } : {}), ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}), ...(locator ? { locator } : {}) });
+      surface = await createMount(el, { source, ...(tileSource ? { tileSource } : {}), ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}), ...(locator ? { locator } : {}), ...(nativeFetch ? { nativeFetch } : {}) });
+      if (destroyed) { surface.destroy(); surface = undefined; return; } // unmounted mid-mount (remount race) — tear down here; onDestroy's controller was still undefined
       surface.setAnnotations(annotations);
       if (styleOf) surface.setStyle(styleOf);
       if (frame !== undefined) surface.setFrame(frame);
@@ -198,7 +210,7 @@
   // A Section's camera target (not an annotation) → fit the region. Read `focus` first (dep-tracking gotcha).
   $effect(() => { const f = focus; if (f && surface) surface.fitRegion(f); });
 
-  onDestroy(() => { if (rectsRaf) cancelAnimationFrame(rectsRaf); if (dotsRaf) cancelAnimationFrame(dotsRaf); offViewport?.(); controller?.destroy(); });
+  onDestroy(() => { destroyed = true; if (rectsRaf) cancelAnimationFrame(rectsRaf); if (dotsRaf) cancelAnimationFrame(dotsRaf); offViewport?.(); controller?.destroy(); });
 </script>
 
 <div class="archie-canvas-wrap">

@@ -13,6 +13,11 @@ export { fitBoundsRect, applyFitBounds, type FitOptions, type ViewportLike } fro
 // Real OSD + Annotorious wiring (P1-2).
 export { createMount, type MountOptions } from "./mount.js";
 
+// Native-fetch escape hatch (Archie-fada): the desktop app injects a Tauri-native fetcher so a remote
+// image / IIIF info.json opens on CORS-restricted / redirecting hosts. resolveOsdTileSources is the
+// pure, unit-tested seam createMount uses; NativeFetch is the injected contract the studio implements.
+export { resolveOsdTileSources, type NativeFetch, type ResolvedTileSources } from "./mount.js";
+
 // Read-only OSD mount (ADR-0019 keystone): OSD kept, NO Annotorious/PixiJS, DOM-SVG overlay, no
 // unsafe-eval. Additive — the editor `createMount` seam above is untouched (Phase 0 boundary).
 export { createReadOnlyMount, wireReadOnlySurface, type ReadOnlyMountSurface, type ReadOnlyMountOptions } from "./read-mount.js";

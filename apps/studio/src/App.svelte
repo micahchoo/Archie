@@ -92,7 +92,13 @@
   import { createAssetUrls } from "./asset-urls.svelte.js";
   // Place-addressable navigation (ADR-0024): the pure place model (parse/serialize/resolve) + Tauri detection.
   import { parsePlace, serializePlace, resolvePlace, librarySnapshot, LIBRARY, type Place, type Missing } from "./place.js";
-  import { isTauri } from "./tauri-fs.js";
+  import { isTauri, fetchRemoteAsBlobUrl, fetchRemoteJson } from "./tauri-fs.js";
+  // Native-fetch escape hatch for the packaged desktop app (Archie-fada): the webview's own fetch fails
+  // on CORS-restricted / cross-origin-redirecting hosts, so on Tauri we route remote image bytes + IIIF
+  // info.json through Tauri's native http. Set ONLY under isTauri() — undefined on web, where the mount /
+  // dimension-probe then use the plain webview loader, byte-identical to before. Threaded to the Canvas
+  // (mount) and passed as the ingest ctx's dimension-probe fetcher.
+  const nativeFetch = isTauri() ? { toBlobUrl: fetchRemoteAsBlobUrl, json: fetchRemoteJson } : undefined;
 
   // Local display name → the clientId stamped as lastEditor in the merge DAG (CONTEXT invention #6).
   // Persisted in localStorage (metadata, not content). null = never prompted (ask on first Import);
@@ -1862,6 +1868,9 @@
     confirmReplace: (msg) => window.confirm(msg),
     alert: (msg) => window.alert(msg),
     structureRevlog: STRUCTURE_REVLOG, // the boot-cached flag read (feature-flags.ts contract) — gates the import-side structure merge (Archie-2a9a)
+    // Desktop only (Archie-fada): the dimension probe pulls remote image bytes through Tauri's native http
+    // so a CORS-restricted / redirecting host still yields width/height. Absent on web → the plain <img> probe.
+    ...(nativeFetch ? { fetchRemoteAsBlobUrl: nativeFetch.toBlobUrl } : {}),
   });
 
   // The publish flows (worklist 0.3 cut 2): every Library→world path — the unified Publish menu's
@@ -2476,7 +2485,7 @@
                    an editing canvas needs the surrounding context and the shape's resize handles on
                    screen, and a full-bleed fit shoved the marker under the viewport edges. Section
                    camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
-              <CanvasComp source={currentSource} tileSource={currentTileSource} canvasId={vs.canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator dots={dotItems} bind:selected={vs.selected} getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} />
+              <CanvasComp source={currentSource} tileSource={currentTileSource} canvasId={vs.canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator dots={dotItems} bind:selected={vs.selected} getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} nativeFetch={nativeFetch} />
             {:else}
               <div class="no-canvas">Loading…</div>
             {/if}

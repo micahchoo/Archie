@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ZipFilesystem } from "@render/core";
-import { writeAllToTauriHandle, openTauriStreamingZipSave, type TauriFileHandleLike } from "./tauri-fs.js";
+import { writeAllToTauriHandle, openTauriStreamingZipSave, fetchRemoteAsBlobUrl, fetchRemoteJson, type TauriFileHandleLike } from "./tauri-fs.js";
 
 // The desktop streaming zip sink (the Tauri analogue of openStreamingZipSave). The @tauri-apps
 // plugins only exist inside the webview, so they're mocked at the module seam; these pin the
@@ -29,6 +29,15 @@ vi.mock("@tauri-apps/plugin-fs", () => ({
     close: async () => void h.closed++,
   }),
   remove: async (p: string) => void h.removed.push(p),
+}));
+
+// The native http bridge (Archie-fada). plugin-http only exists inside the webview, so it's mocked at the
+// module seam; `http.resp` is the response the next `fetch` resolves to (set per test).
+const http = vi.hoisted(() => ({
+  resp: null as null | { ok: boolean; status: number; headers: Headers; json: () => Promise<unknown>; arrayBuffer: () => Promise<ArrayBuffer> },
+}));
+vi.mock("@tauri-apps/plugin-http", () => ({
+  fetch: vi.fn(async (_url: string) => http.resp),
 }));
 
 beforeEach(() => {
@@ -109,5 +118,47 @@ describe("tauri streaming zip — openTauriStreamingZipSave", () => {
     await target.abort();
     expect(h.closed).toBe(1);
     expect(h.removed).toEqual(["/home/u/exports/partial.archie.zip"]);
+  });
+});
+
+// The native http bridge — the CORS/redirect escape hatch (Archie-fada). The plugin adapter is verified in
+// the packaged app; these pin the ok/!ok contract and (for JSON) that the parsed value is returned as-is,
+// which is what @render/mount hands OSD as a data tile source.
+describe("tauri native http — fetchRemoteJson", () => {
+  beforeEach(() => { http.resp = null; });
+  afterEach(() => { http.resp = null; });
+
+  it("returns the parsed JSON document on a 2xx (an IIIF info.json)", async () => {
+    const info = { "@context": "http://iiif.io/api/image/2/context.json", "@id": "https://host/iiif/x", width: 4000, height: 3000 };
+    http.resp = { ok: true, status: 200, headers: new Headers(), json: async () => info, arrayBuffer: async () => new ArrayBuffer(0) };
+    expect(await fetchRemoteJson("https://host/iiif/x/info.json")).toEqual(info);
+  });
+
+  it("throws HTTP <status> on a non-ok response (no silent empty)", async () => {
+    http.resp = { ok: false, status: 404, headers: new Headers(), json: async () => ({}), arrayBuffer: async () => new ArrayBuffer(0) };
+    await expect(fetchRemoteJson("https://host/gone/info.json")).rejects.toThrow(/HTTP 404/);
+  });
+});
+
+describe("tauri native http — fetchRemoteAsBlobUrl", () => {
+  const origCreate = (globalThis.URL as { createObjectURL?: unknown }).createObjectURL;
+  beforeEach(() => {
+    http.resp = null;
+    // Capture the Blob's declared type so we can assert the response content-type is carried onto it.
+    (globalThis.URL as { createObjectURL?: unknown }).createObjectURL = vi.fn((b: Blob) => `blob:type=${b.type}`);
+  });
+  afterEach(() => {
+    http.resp = null;
+    (globalThis.URL as { createObjectURL?: unknown }).createObjectURL = origCreate;
+  });
+
+  it("wraps the fetched bytes in a same-origin blob: URL carrying the response content-type", async () => {
+    http.resp = { ok: true, status: 200, headers: new Headers({ "content-type": "image/png" }), json: async () => ({}), arrayBuffer: async () => new Uint8Array([1, 2, 3]).buffer };
+    expect(await fetchRemoteAsBlobUrl("https://host/pic.png")).toBe("blob:type=image/png");
+  });
+
+  it("throws HTTP <status> on a non-ok response", async () => {
+    http.resp = { ok: false, status: 502, headers: new Headers(), json: async () => ({}), arrayBuffer: async () => new ArrayBuffer(0) };
+    await expect(fetchRemoteAsBlobUrl("https://host/x")).rejects.toThrow(/HTTP 502/);
   });
 });

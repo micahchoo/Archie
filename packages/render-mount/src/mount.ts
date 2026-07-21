@@ -22,11 +22,80 @@ import { zoomBand } from "./zoom-band.js";
 import { imageToNavigatorPixel, type NavigatorDot } from "./marker-dots.js";
 import { xyzTileSource } from "./xyz.js";
 import { dziOsdSource } from "./dzi.js";
-import type { W3CSelector, TileSourceDescriptor } from "@render/core";
+import type { W3CSelector, TileSourceDescriptor, TileSource } from "@render/core";
 import type { MountSurface, SelectionId, FrameOverlay } from "./surface.js";
 
 /** Plain fit (no sidebar reservation) — used when the adapter supplies no fit options. */
 const PLAIN_FIT: FitOptions = { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
+
+/** The tileSources shape OpenSeadragon accepts (string URL, a `{type}`/custom config, or a parsed
+ *  info.json object). Captured from OSD's own option type so the resolver stays byte-compatible. */
+type OsdTileSourceInput = NonNullable<Parameters<typeof OpenSeadragon>[0]["tileSources"]>;
+
+/**
+ * The native-fetch escape hatch the packaged desktop app (Tauri) injects. The webview's own fetch fails
+ * on CORS-restricted / cross-origin-redirecting hosts; these two calls route through Tauri's native http
+ * instead. Absent on the web (and in every unit test) — the mount then uses the plain webview loader,
+ * byte-identical to before. The mount NEVER imports `@tauri-apps/*`; the studio supplies the concrete
+ * implementation (apps/studio/src/tauri-fs.ts) and passes it down as an option.
+ */
+export interface NativeFetch {
+  /** Pull remote image bytes natively → a same-origin `blob:` URL (caller owns revoking it). */
+  toBlobUrl(url: string): Promise<string>;
+  /** Fetch + parse a remote JSON document natively (a IIIF `info.json`). */
+  json(url: string): Promise<unknown>;
+}
+
+/** What resolveOsdTileSources hands back: the OSD input, plus any `blob:` URL it minted (so the caller
+ *  revokes it on destroy — null when nothing was minted). */
+export interface ResolvedTileSources {
+  tileSources: OsdTileSourceInput;
+  ownedBlobUrl: string | null;
+}
+
+/**
+ * Resolve the OSD `tileSources` input for a classified source, routing remote images + IIIF info.json
+ * through the injected native fetcher when present (desktop). Extracted from createMount so it's unit
+ * testable without a real OSD/DOM (mount-fetch.test.ts).
+ *
+ * - `image` (a plain remote http(s) image): fetch the bytes natively → a same-origin `blob:` URL, so OSD
+ *   `<img>`-loads same-origin bytes — no webview CORS, no WebGL taint. The minted URL is returned to revoke.
+ * - `iiif`: fetch + parse `info.json` natively and hand OSD the parsed object as a DATA tile source
+ *   (OSD's determineType → IIIFTileSource). This restores the OPEN of an info.json a webview XHR can't
+ *   reach (302 / CORS). IIIF **tiles** deliberately stay on the webview `<img>` loader: a native per-tile
+ *   fetch would cost one Tauri IPC round-trip per tile — dozens per deep-zoom viewport — for bytes the
+ *   webview already fetches from any CORS-open tile host. A host that also blocks tile `<img>` CORS is a
+ *   documented gap, not a regression (the pre-existing crossOriginPolicy behavior is unchanged).
+ * - `xyz` / `dzi`: unchanged — a template slippy-map / a local baked pyramid, neither has the webview-CORS
+ *   problem the native fetcher solves.
+ *
+ * A native-fetch throw is swallowed to the webview path, so the desktop result is never WORSE than web.
+ */
+export async function resolveOsdTileSources(
+  ts: TileSource,
+  nativeFetch?: NativeFetch,
+): Promise<ResolvedTileSources> {
+  if (nativeFetch) {
+    try {
+      if (ts.kind === "image" && /^https?:\/\//i.test(ts.url)) {
+        const blob = await nativeFetch.toBlobUrl(ts.url);
+        return { tileSources: { type: "image", url: blob }, ownedBlobUrl: blob };
+      }
+      if (ts.kind === "iiif" && /^https?:\/\//i.test(ts.infoUrl)) {
+        const info = (await nativeFetch.json(ts.infoUrl)) as OsdTileSourceInput;
+        return { tileSources: info, ownedBlobUrl: null };
+      }
+    } catch (e) {
+      console.warn("[@render/mount] native fetch failed; falling back to the webview loader", e);
+    }
+  }
+  const tileSources: OsdTileSourceInput =
+    ts.kind === "image" ? { type: "image", url: ts.url }
+    : ts.kind === "xyz" ? xyzTileSource(ts)
+    : ts.kind === "dzi" ? dziOsdSource(ts) // a baked Deep Zoom pyramid (Q-9) — OSD reads it natively
+    : ts.infoUrl;
+  return { tileSources, ownedBlobUrl: null };
+}
 
 export interface MountOptions {
   /** Image URL or IIIF source to LOAD into the viewer (classified by resolveTileSource — ADR-0004). */
@@ -50,6 +119,10 @@ export interface MountOptions {
   /** Worklist 1.1: show the locator mini-map (OSD navigator, bottom-right, auto-fading) — the
    *  viewport-within-image answer to "where am I at 8×?". Off by default (opt-in per surface). */
   locator?: boolean;
+  /** Desktop-only (Tauri) native-fetch escape hatch — see NativeFetch. When present, a remote image is
+   *  pulled to a same-origin `blob:` URL and a IIIF info.json is fetched + parsed natively, so a
+   *  CORS-restricted / redirecting host still opens. Absent on web → the plain webview loader, unchanged. */
+  nativeFetch?: NativeFetch;
 }
 
 /**
@@ -75,11 +148,9 @@ export function selectorValue(a: unknown): string | undefined {
 export async function createMount(container: HTMLElement, opts: MountOptions): Promise<MountSurface> {
   // A structured tileSource descriptor (a map) classifies the surface; else the source string (ADR-0004).
   const ts = resolveTileSource(opts.tileSource ?? opts.source);
-  const tileSources =
-    ts.kind === "image" ? { type: "image", url: ts.url }
-    : ts.kind === "xyz" ? xyzTileSource(ts)
-    : ts.kind === "dzi" ? dziOsdSource(ts) // a baked Deep Zoom pyramid (Q-9) — OSD reads it natively
-    : ts.infoUrl;
+  // On desktop a remote image / IIIF info.json is pulled through the native fetcher (webview-CORS bypass);
+  // `ownedBlobUrl` is any blob: URL minted for a remote image, revoked on destroy. Web/tests: webview path.
+  const { tileSources, ownedBlobUrl } = await resolveOsdTileSources(ts, opts.nativeFetch);
   // Annotation target identity: the canvas IRI if given, else the loaded image url (a map MUST set canvasId
   // — its tile template is not a canvas IRI; DESIGN.md canvas-identity note — so fall back to the source).
   // A dzi pyramid has no single image url either (its bytes are tiles), so it also falls back to the source.
@@ -109,13 +180,22 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     ...(opts.locator ? { showNavigator: true, navigatorPosition: "BOTTOM_RIGHT", navigatorSizeRatio: 0.15, navigatorAutoFade: true } : {}),
   });
 
-  await new Promise<void>((resolve, reject) => {
-    viewer.addOnceHandler("open", () => resolve());
-    viewer.addOnceHandler("open-failed", (e: { message?: string }) => {
-      console.error("[@render/mount] OpenSeadragon open-failed:", e.message ?? "unknown");
-      reject(new Error("Couldn't load this media item."));
+  try {
+    await new Promise<void>((resolve, reject) => {
+      viewer.addOnceHandler("open", () => resolve());
+      viewer.addOnceHandler("open-failed", (e: { message?: string }) => {
+        console.error("[@render/mount] OpenSeadragon open-failed:", e.message ?? "unknown");
+        reject(new Error("Couldn't load this media item."));
+      });
     });
-  });
+  } catch (e) {
+    // Open failed: createMount rejects and the caller never gets a surface to destroy(), so release the
+    // resources minted BEFORE the open here — the native-fetched image blob (else it orphans the full
+    // remote bytes) and the viewer itself (pre-existing leak on open-fail, closed in the same breath).
+    if (ownedBlobUrl) URL.revokeObjectURL(ownedBlobUrl);
+    viewer.destroy();
+    throw e;
+  }
 
   // Bounded Map extent (ADR-0015, Option A): the tile source is the whole world; constrain the VIEWPORT to
   // the authored region so the reader opens framed and can't pan/zoom out past `bounds`. World pixels are
@@ -439,6 +519,7 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     destroy() {
       if (disposed) return;
       disposed = true;
+      if (ownedBlobUrl) URL.revokeObjectURL(ownedBlobUrl); // release the native-fetched remote image
       frameOverlay.clear();
       for (const el of navDotEls.values()) el.remove();
       navDotEls.clear();

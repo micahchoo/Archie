@@ -74,6 +74,25 @@ export async function fetchRemoteAsBlobUrl(url: string): Promise<string> {
   return URL.createObjectURL(new Blob([buf], { type }));
 }
 
+/**
+ * Fetch + parse a remote JSON document through Tauri's NATIVE http — the JSON sibling of
+ * fetchRemoteAsBlobUrl for a IIIF `info.json`. OSD's own info.json load is a webview XHR, which a
+ * CORS-restricted / cross-origin-redirecting IIIF host blocks (the surface then open-fails); the native
+ * fetch bypasses webview CORS, and the parsed object is handed to OSD as a data tile source so the
+ * surface opens without a second webview fetch. Returned as `unknown` — the caller (the @render/mount
+ * native-fetch seam) passes it straight to OpenSeadragon, which classifies it via determineType.
+ *
+ * NB: this can't route through fetchRemoteAsBlobUrl + `fetch(blobUrl)` — the CSP's `connect-src` allows
+ * `https:` but NOT `blob:`, so a webview fetch of a blob: URL is refused (see .claude/rules/tauri-csp.md).
+ * A native fetch that returns the parsed value directly sidesteps that entirely.
+ */
+export async function fetchRemoteJson(url: string): Promise<unknown> {
+  const { fetch: tauriFetch } = await import("@tauri-apps/plugin-http");
+  const resp = await tauriFetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return resp.json();
+}
+
 export async function saveTauriFile(suggestedName: string, bytes: Uint8Array): Promise<string | null> {
   const { save } = await import("@tauri-apps/plugin-dialog");
   const path = await save({
