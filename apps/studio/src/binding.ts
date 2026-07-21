@@ -6,6 +6,7 @@
 
 import { parseRecents, serializeRecents, ZipStreamFilesystem, type Binding, type RecentProject, type ZipFilesystem, type Filesystem } from "@render/core";
 import { isTauri, saveTauriFile, openTauriStreamingZipSave } from "./tauri-fs.js";
+import { safeGet, safeSet, safeRemove, readJson, writeJson } from "./persisted.js";
 
 const RECENTS_KEY = "archie.recentProjects.v1";
 const BINDING_KEY = "archie.activeBinding.v1";
@@ -269,16 +270,19 @@ export function zipNameFor(title: string): string {
   return `${base}.archie.zip`;
 }
 
-/** Load the recent-projects list from localStorage (tolerant; [] if disabled/empty/corrupt). */
+/** Load the recent-projects list from localStorage (tolerant; [] if disabled/empty/corrupt).
+ *  `parseRecents` itself is the tolerant-parse (it takes the raw string, not JSON.parse output), so this
+ *  uses the persisted.ts CORE (safeGet) rather than the JSON helpers — the outer try/catch stays as a
+ *  defensive wrapper in case `parseRecents` itself ever throws, mirroring the original behavior. */
 export function loadRecents(): RecentProject[] {
-  try { return parseRecents(localStorage.getItem(RECENTS_KEY)); }
+  try { return parseRecents(safeGet(RECENTS_KEY)); }
   catch { return []; }
 }
 
 /** Persist the recent-projects list. No-op if storage is disabled (private mode). */
 export function saveRecents(list: RecentProject[]): void {
-  try { localStorage.setItem(RECENTS_KEY, serializeRecents(list)); }
-  catch { /* storage unavailable */ }
+  try { safeSet(RECENTS_KEY, serializeRecents(list)); }
+  catch { /* storage unavailable, or serializeRecents itself threw */ }
 }
 
 /**
@@ -303,23 +307,20 @@ export function subscribeRecents(onChange: (list: RecentProject[]) => void): () 
 
 /** Restore the active binding DESCRIPTOR across reloads so the UI shows continuity ("bound to X").
  *  The folder handle itself lives in IndexedDB (handleKey); permission is re-granted lazily on the
- *  next write (a user gesture). Returns unbound if nothing was stored or the record is malformed. */
+ *  next write (a user gesture). Returns unbound if nothing was stored or the record is malformed.
+ *  `readJson` (no validator — trust-the-parse) collapses absent/denied/malformed-JSON to null exactly
+ *  like the original's `!raw` check + catch-all; the shape check + field-picking reshape below is
+ *  unchanged. */
 export function loadLastBinding(): Binding {
-  try {
-    const raw = localStorage.getItem(BINDING_KEY);
-    if (!raw) return { kind: "unbound" };
-    const b = JSON.parse(raw) as Binding;
-    if (b && (b.kind === "folder" || b.kind === "file") && typeof b.name === "string") {
-      return { kind: b.kind, name: b.name, ...(typeof b.handleKey === "string" ? { handleKey: b.handleKey } : {}) };
-    }
-  } catch { /* fall through */ }
+  const b = readJson<Binding>(BINDING_KEY);
+  if (b && (b.kind === "folder" || b.kind === "file") && typeof b.name === "string") {
+    return { kind: b.kind, name: b.name, ...(typeof b.handleKey === "string" ? { handleKey: b.handleKey } : {}) };
+  }
   return { kind: "unbound" };
 }
 
 /** Persist (or clear, when unbound) the active binding descriptor. */
 export function saveLastBinding(b: Binding): void {
-  try {
-    if (b.kind === "unbound") localStorage.removeItem(BINDING_KEY);
-    else localStorage.setItem(BINDING_KEY, JSON.stringify(b));
-  } catch { /* storage unavailable */ }
+  if (b.kind === "unbound") safeRemove(BINDING_KEY);
+  else writeJson(BINDING_KEY, b);
 }
