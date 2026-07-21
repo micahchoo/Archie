@@ -246,7 +246,9 @@ export const library: Library = {
     // SAMPLER — "Showroom Sampler": a small AV + note-media demo (a video to frame-annotate, an audio
     // recording with a transcript, a note that carries a picture). >1 object, no sections → grid.
     // Additive: a NEW slug, so no existing exhibit's object/note counts change.
-    { id: asExhibitId("ex-sampler"), slug: "sampler", title: samplerTitle, summary: samplerSummary, cover: "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg", objects: samplerObjects, requiredStatement: { label: "Source", value: samplerCredits } },
+    // UNLISTED (Archie-77b2): a demo, not real gallery content — reachable by direct URL (#/sampler) but
+    // kept OUT of the public hall + sitemap, so it doesn't front the real exhibits.
+    { id: asExhibitId("ex-sampler"), slug: "sampler", title: samplerTitle, summary: samplerSummary, cover: "https://collections.library.yale.edu/iiif/2/1006076/full/400,/0/default.jpg", objects: samplerObjects, requiredStatement: { label: "Source", value: samplerCredits }, unlisted: true },
   ],
 };
 
