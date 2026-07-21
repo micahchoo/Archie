@@ -28,11 +28,59 @@ const NS = "http://www.w3.org/2000/svg";
 /** Cap for a shape's accessible name (Archie-9413 review): a hostile `.archie.zip` can carry a
  * multi-hundred-KB comment line (bounded only by SRC_MAX_BYTES) or an arbitrarily long id, and an
  * AT reads aria-label IN FULL on every focus. ONE chokepoint — whatever labelFor OR the
- * `annotation <id>` fallback produced is truncated where setAttribute happens. */
+ * `annotation <id>` fallback produced is truncated where setAttribute happens. Counted in CODE
+ * POINTS (Archie-09a0 review), not UTF-16 units — see capLabel. */
 const MAX_LABEL_CHARS = 160;
 
-const capLabel = (s: string): string =>
-  s.length > MAX_LABEL_CHARS ? `${s.slice(0, MAX_LABEL_CHARS)}…` : s;
+const capLabel = (s: string): string => {
+  // `Array.from` iterates a string by CODE POINT (surrogate-pair aware); `String#slice` counts
+  // UTF-16 units. A plain `s.slice(0, 160)` can land mid-surrogate-pair — an emoji or other
+  // outside-BMP character straddling the cut — and emit a lone surrogate right before the "…",
+  // which serializes as U+FFFD / reads as mangled to an AT. Slicing the code-point array instead
+  // keeps every character whole; ASCII/BMP-only strings (the common case) are unaffected.
+  const codePoints = Array.from(s);
+  return codePoints.length > MAX_LABEL_CHARS ? `${codePoints.slice(0, MAX_LABEL_CHARS).join("")}…` : s;
+};
+
+/** Explicit `:focus-visible` ring (Archie-09a0): the UA default focus outline is not enough here —
+ * the overlay sits on a dark deep-zoom surface, and a host embed page may reset outlines globally
+ * (`* { outline: none }` and similar are common resets). An inline style on the element beats any
+ * selector-based host rule that lacks `!important`, so painting the ring THIS way survives resets
+ * that would defeat a stylesheet rule keyed on `.the-overlay-class:focus-visible`. A bright ring on
+ * a dark halo (donor: frame-overlay.ts's halo-plus-colour-line technique, drawShape below) stays
+ * legible over any underlying tile, not just dark ones. Keyboard-only: gated on `:focus-visible`,
+ * tested via `matches()` with a fail-OPEN catch — an environment that can't evaluate the selector
+ * gets the ring on every focus (a stray ring for a mouse user is a smaller harm than a keyboard
+ * user silently losing the indicator). */
+const FOCUS_RING_STYLE: Partial<CSSStyleDeclaration> = {
+  outline: "2px solid #fff",
+  outlineOffset: "2px",
+  boxShadow: "0 0 0 4px rgba(0,0,0,0.55)",
+};
+const NO_FOCUS_RING_STYLE: Partial<CSSStyleDeclaration> = {
+  outline: "",
+  outlineOffset: "",
+  boxShadow: "",
+};
+
+const isFocusVisible = (el: Element): boolean => {
+  try {
+    return el.matches(":focus-visible");
+  } catch {
+    return true; // selector unsupported here → fail open, keep the ring for keyboard users
+  }
+};
+
+/** Wire the explicit focus ring onto a focusable overlay element (the pattern both overlay modules
+ * share — read-overlay's per-shape `svg` and frame-overlay's whole-object `svg`). */
+const addFocusRing = (el: SVGSVGElement): void => {
+  el.addEventListener("focus", () => {
+    if (isFocusVisible(el)) Object.assign(el.style, FOCUS_RING_STYLE);
+  });
+  el.addEventListener("blur", () => {
+    Object.assign(el.style, NO_FOCUS_RING_STYLE);
+  });
+};
 
 /** The geometry-only descriptor the SVG layer draws (NO DOM). */
 export type OverlayShape =
@@ -146,6 +194,7 @@ export function createReadOnlyOverlay(
       e.stopPropagation();
       emitSelect(id);
     });
+    addFocusRing(svg);
     svg.append(geom);
     return svg;
   };

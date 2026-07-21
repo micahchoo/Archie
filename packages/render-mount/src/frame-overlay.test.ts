@@ -119,6 +119,37 @@ describe("createFrameOverlay — keyboard/screen-reader access (Archie-9413)", (
   });
 });
 
+describe("createFrameOverlay — explicit focus-visible ring (Archie-09a0)", () => {
+  it("keyboard-focusing the frame paints an explicit ring beyond the UA default outline", () => {
+    const v = fakeViewer();
+    createFrameOverlay(v).draw(frame());
+    const svg = v.overlays[0]!.element as SVGSVGElement;
+    document.body.appendChild(svg); // happy-dom only flips real focus state for an attached node
+    try {
+      svg.focus();
+      expect(svg.style.outline).not.toBe("");
+      expect(svg.style.boxShadow).not.toBe("");
+    } finally {
+      svg.remove();
+    }
+  });
+
+  it("blur clears the explicit ring", () => {
+    const v = fakeViewer();
+    createFrameOverlay(v).draw(frame());
+    const svg = v.overlays[0]!.element as SVGSVGElement;
+    document.body.appendChild(svg);
+    try {
+      svg.focus();
+      svg.blur();
+      expect(svg.style.outline).toBe("");
+      expect(svg.style.boxShadow).toBe("");
+    } finally {
+      svg.remove();
+    }
+  });
+});
+
 describe("createFrameOverlay.clear", () => {
   it("removes the current frame and is a no-op when nothing is drawn", () => {
     const v = fakeViewer();

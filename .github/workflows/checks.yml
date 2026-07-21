@@ -33,6 +33,23 @@ jobs:
       - name: Typecheck every package
         run: pnpm typecheck
 
+  # scripts/lib's unit suite (Archie-b975 capture gate: evaluateCaptureGate) — node's built-in test
+  # runner over plain node:test/node:assert, no third-party deps. It existed since Archie-b975 but
+  # no workflow ever invoked it (Archie-5478); it's its own job, not folded into `test` (which is
+  # `pnpm -r test`, workspace packages only — scripts/ isn't a workspace package), and skips
+  # pnpm/install entirely (no deps to install) so it stays the fastest job in this file.
+  unit-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: scripts/lib unit suite
+        run: node --test scripts/lib/*.test.mjs
+
   test:
     runs-on: ubuntu-latest
     steps:
