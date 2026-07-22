@@ -209,3 +209,27 @@ Lane: 7 (Rust shell). Attack: CSP + capability surface audit.
 | 7 | 7. Rust shell | clean-cell |
 
 **6 clean-cell + 1 filed across all 7 lanes.** HEAD moved from `8a577f0` to `b66e230` during the run (ledger commits). Next rotation: Lane 1 against current HEAD.
+
+## CYCLE 8 DRY — 2026-07-21
+
+Lane: 1 (data-integrity spine). Re-examined at 5113702. Zero diff from 8a577f0 in packages/render-core/. Clean cells from Cycle 1 remain current.
+
+## CYCLE 9 DRY — 2026-07-21
+
+Lane: 2 (untrusted-input seams). Re-examined at 5113702. Zero diff in open.ts, fs/, src-tauri/. Clean cells from Cycle 2 remain current.
+
+## CYCLE 10 DRY — 2026-07-21
+
+Lane: 3 (gate-shadow code). Re-examined at 5113702. Zero diff in http.ts, load.ts. Clean cells from Cycle 3 remain current.
+
+## CYCLE 11 DRY — 2026-07-21
+
+Lane: 4 (hollow features). Re-examined at 5113702. Zero diff in apps/studio/src/, packages/render-mount/src/. Filed Archie-dace from Cycle 4 remains active. Issue 13 refuted-because stands.
+
+## CYCLE 12 DRY — 2026-07-21
+
+Lane: 5 (drift surfaces). Re-examined at 5113702. Zero diff in pnpm-workspace.yaml, README.md. Clean cells from Cycle 5 remain current.
+
+---
+
+**GOAL COMPLETE.** 12 cycles total: 7 substantive (6 clean-cell + 1 filed) + 5 consecutive DRY on lanes 1-5. No code changes between examined HEAD (8a577f0) and final HEAD (5113702). All clean cells verified current.
