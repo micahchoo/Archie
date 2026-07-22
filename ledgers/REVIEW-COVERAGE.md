@@ -41,3 +41,28 @@ unverified at this bootstrap. Issues 22/25 need manual verify (ledgers/TABS.md, 
 ### Rotation
 
 Next: Lane 1 (data-integrity spine) — per §3 lanes 1–2 alternate until clean cells current.
+
+## Cycle 1 — 2026-07-21 [clean-cell]
+
+Lane: 1 (data-integrity spine). Attack: round-trip torture — serialize→deserialize every AnnotationRecord field.
+
+### Clean cells
+
+| Check | Evidence (file:line) | Verdict |
+|-------|---------------------|---------|
+| AnnotationRecord field inventory (16 fields) | wadm/types.ts:231-274 | clean |
+| Serialize carry sentinel | serialize.ts:47-64 | clean |
+| Deserialize carry sentinel | deserialize.ts:31-48 | clean |
+| Merge carry sentinel | merge.ts:204-221 | clean |
+| Edit carry sentinel | log.ts:184-201 | clean |
+| Delete carry sentinel | log.ts:252-269 | clean |
+| Serialize runtime withExtensions | serialize.ts:228-236 | clean |
+| Deserialize runtime recordFromHistoryAnnotation | deserialize.ts:75-123 | clean |
+| Merge runtime resolveConflict | merge.ts:246-252,268 | clean |
+| Write ordering (pages-first, index-last) | persist.ts:50-58 | clean |
+| Per-page tolerant reads | persist.ts:61-93 | clean |
+| SectionRecord round-trip (13 fields, twin sentinels) | structure-serialize.ts:52-104 | clean |
+
+### Rotation
+
+Lane 1 examined to `8a577f0`. Clean cells current. Next: Lane 2 (untrusted-input seams).
