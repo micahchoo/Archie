@@ -159,3 +159,23 @@ Lane: 5 (drift surfaces). Attack: override rationale audit — pnpm-workspace.ya
 ### Rotation
 
 Lane 5 examined to `8a577f0`. Lanes 1-5 clean cells current. Next: Lane 6 (dead weight).
+
+## Cycle 6 — 2026-07-21 [clean-cell]
+
+Lane: 6 (dead weight). Attack: dead-code sweep — localStorage keys, orphan CSS, unimported exports.
+
+### Clean cells
+
+| Check | Evidence | Verdict |
+|-------|----------|---------|
+| archie.displayName.v1 reader+writer | App.svelte:114,158 | clean |
+| archie.narrativeFirstAddShown.v1 reader+writer | App.svelte:124-125 | clean |
+| archie.lastPlace.v1 reader+writer | App.svelte:217,687 | clean |
+| archie.notesAsideWidth.v1 reader+writer | App.svelte:808,814 | clean |
+| archie.notesAsideCollapsed.v1 reader+writer | App.svelte:809,815 | clean |
+| .note-popover CSS rule live | NoteEditor.svelte:198 | clean |
+| MarginColumn.svelte dead export | ISSUES.md Direction 7 — tracked | noted |
+
+### Rotation
+
+Lane 6 examined. All 7 lanes examined at least once. Rotation restarts at Lane 1 (data-integrity spine, now stale — `8a577f0` vs HEAD `ce8b577`).
