@@ -381,3 +381,34 @@ trio covers .ts, .svelte (both apps), and .astro. Plants removed; no code change
 | Build | SKIP — red gates precede it |
 
 **no merge: clean-cell** — probe only, no code changes land.
+
+## Cycle 28 — 2026-07-22 [clean-cell]
+
+Lane: 1 (data-integrity spine). Attack: error-path forcing (playbook #7) — trace every catch
+block in persist.ts, structure-persist.ts, and read.ts; verify absent-vs-failed distinction
+holds in every error path.
+
+### Clean cells
+
+| Catch | File:line | Behavior | Verdict |
+|-------|-----------|----------|---------|
+| No history dir → empty | persist.ts:105-106 | return {log:[], corrupt:[]} | clean |
+| Index absent → empty | persist.ts:112-115 | isNotFound → return empty | clean (Cycle 13 fix) |
+| Index corrupt → throw | persist.ts:117-124 | AnnotationsCorruptError | clean (Cycle 13 fix) |
+| Per-page read failure → reported | persist.ts:124-126 | push to corrupt[], return null | clean |
+| Structure: no dir → empty | structure-persist.ts:96-98 | return {log:[], corrupt:[]} | clean |
+| Structure: index absent → empty | structure-persist.ts:104-107 | isNotFound → return empty | clean (Cycle 13 fix) |
+| Structure: index corrupt → throw | structure-persist.ts:109-112 | StructureCorruptError | clean (Cycle 13 fix) |
+| Structure: per-page → reported | structure-persist.ts:114-116 | push to corrupt[], return null | clean |
+| getOptional absent → null | read.ts:62-64 | isNotFound → null | clean |
+| getOptional present-but-torn → throw | read.ts:69-70 | FailedReadError | clean |
+| Marker absent/wrong-schema → null | read.ts:100-103 | FailedReadError → warn, null | clean |
+| readings.json 5xx → incomplete flag | read.ts:150-151 | onOptionalFail, incomplete:true | clean |
+| base-annotations 5xx → incomplete | read.ts:177-179 | onOptionalFail, incomplete:true | clean |
+| per-reading annotations 5xx → incomplete | read.ts:193-195 | onOptionalFail, incomplete:true | clean |
+
+**All 14 catch blocks verified.** None collapse absent into failed, none map corruption to
+"no data," none silently swallow. Test coverage: probe-readpolicy.test.ts (8 tests, 712 instances
+across 94 worktrees) exercises every path.
+
+**no merge: clean-cell** — verification only.
