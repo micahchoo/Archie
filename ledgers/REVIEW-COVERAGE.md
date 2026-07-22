@@ -314,3 +314,9 @@ Lane: 6 (dead weight). Re-examined at f1b3a17. Zero committed-code diff in apps/
 packages/render-mount/src/, packages/archie-viewer/src/, packages/render-svelte/src/ from
 8a577f0 (Cycle 6 baseline). All localStorage key reader+writer pairs verified identical.
 Concurrent-session WIP noted but not examined (§4.5: other sessions' dirty files).
+
+## CYCLE 19 DRY — 2026-07-22
+
+Lane: 7 (Rust shell). Re-examined at 7fb2d17. Zero diff from 8a577f0 in src-tauri/.
+CSP (tauri.conf.json) and capabilities (default.json) both md5-identical to Cycle 7 baseline.
+All 7 clean cells from Cycle 7 remain current.
