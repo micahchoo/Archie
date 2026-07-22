@@ -295,3 +295,9 @@ read.ts, limits.ts, tauri.conf.json, capabilities/default.json, src-tauri/src/, 
 Lane: 3 (gate-shadow code). Re-examined at 515f3da. Zero diff from 5113702 in http.ts,
 open.ts, load.ts, http.test.ts, load.test.ts, and all Svelte/Astro check configs. All 9
 clean cells from Cycle 3 remain current.
+
+## CYCLE 16 DRY — 2026-07-22
+
+Lane: 4 (hollow features). Re-examined at a9900ce. Zero diff from 5113702 in apps/studio/src/
+and packages/render-mount/src/. Issue 13 refuted-because stands (setIdentity + IdentityPrompt
+mounted). Issue 17 (wholeObjects[0]) still open as filed Archie-dace.
