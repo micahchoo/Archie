@@ -289,3 +289,9 @@ Lane: 2 (untrusted-input seams). Re-examined at 68368d4. Zero diff from 8a577f0 
 fs/tauri.ts, fs/http.ts, fs/names.ts, fs/zip.ts, fs/zip-stream.ts, text/sanitize.ts, link/link.ts,
 read.ts, limits.ts, tauri.conf.json, capabilities/default.json, src-tauri/src/, and
 .claude/rules/untrusted-archive-open-seam.md. All 14 clean cells from Cycle 2 remain current.
+
+## CYCLE 15 DRY — 2026-07-22
+
+Lane: 3 (gate-shadow code). Re-examined at 515f3da. Zero diff from 5113702 in http.ts,
+open.ts, load.ts, http.test.ts, load.test.ts, and all Svelte/Astro check configs. All 9
+clean cells from Cycle 3 remain current.
