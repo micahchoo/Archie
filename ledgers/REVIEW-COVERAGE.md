@@ -307,3 +307,10 @@ mounted). Issue 17 (wholeObjects[0]) still open as filed Archie-dace.
 Lane: 5 (drift surfaces). Re-examined at cda5f45. Zero diff from 5113702 in pnpm-workspace.yaml,
 README.md, .claude/rules/deps-index.md, ledgers/DEPS.md, docs/adr/, docs/plans/, docs/research/,
 docs/guide/, docs/learn/, docs/screenshots/. All 9 clean cells from Cycle 5 remain current.
+
+## CYCLE 18 DRY — 2026-07-22
+
+Lane: 6 (dead weight). Re-examined at f1b3a17. Zero committed-code diff in apps/studio/src/,
+packages/render-mount/src/, packages/archie-viewer/src/, packages/render-svelte/src/ from
+8a577f0 (Cycle 6 baseline). All localStorage key reader+writer pairs verified identical.
+Concurrent-session WIP noted but not examined (§4.5: other sessions' dirty files).
