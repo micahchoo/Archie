@@ -66,3 +66,32 @@ Lane: 1 (data-integrity spine). Attack: round-trip torture — serialize→deser
 ### Rotation
 
 Lane 1 examined to `8a577f0`. Clean cells current. Next: Lane 2 (untrusted-input seams).
+
+## Cycle 2 — 2026-07-21 [clean-cell]
+
+Lane: 2 (untrusted-input seams). Attack: hostile-ingest surface audit — verify every .archie.zip open, assertSafeName, DOMPurify, CSP, URL params.
+
+### Clean cells
+
+| Check | Evidence (file:line) | Verdict |
+|-------|---------------------|---------|
+| fromZip + validateArchieMarker composed in ONE place | open.ts:70-71 | clean |
+| Studio import uses sanctioned seam | ingest-flows.ts:1261 | clean |
+| Viewer published uses sanctioned seam | published.ts:282 | clean |
+| Embed load uses sanctioned seam | load.ts:96,110 | clean |
+| load.ts sniff exception documented | .claude/rules/untrusted-archive-open-seam.md | clean |
+| SRC_MAX_BYTES ONE definition | limits.ts:19 | clean |
+| Double-cap-check (header + actual) | open.ts:99-102 | clean |
+| fetch bound default — .bind(globalThis) | open.ts:92, http.ts:161 | clean |
+| assertSafeName on Tauri | tauri.ts:255,266,278 | clean |
+| assertSafeName on HTTP | http.ts:121 | clean |
+| sectionKey parity with assertSafeName | structure.ts:39-43, test at structure.test.ts:85-92 | clean |
+| DOMPurify html profile + dead-anchor hook | sanitize.ts:16-23 | clean |
+| WADM import whitelist-based selector rebuild | wadm-import.ts:82-101 | clean |
+| Slug hardening defence-in-depth | link.ts:207-209 | clean |
+| Tauri CSP matches documented rule | tauri.conf.json:24 | clean |
+| No URLSearchParams in any app | grep zero matches | clean |
+
+### Rotation
+
+Lane 2 examined to `8a577f0`. Lanes 1-2 clean cells current. Next: Lane 3 (gate-shadow code).
