@@ -320,3 +320,9 @@ Concurrent-session WIP noted but not examined (§4.5: other sessions' dirty file
 Lane: 7 (Rust shell). Re-examined at 7fb2d17. Zero diff from 8a577f0 in src-tauri/.
 CSP (tauri.conf.json) and capabilities (default.json) both md5-identical to Cycle 7 baseline.
 All 7 clean cells from Cycle 7 remain current.
+
+## CYCLE 20 DRY — 2026-07-22
+
+Lane: 1 (data-integrity spine). Re-examined at 6ce7a74. Zero diff from 68368d4 (Cycle 13 fix)
+in packages/render-core/src/spine/ and publish/. Carry sentinels, write ordering, corrupt-vs-empty
+all intact. Cycle 13 fix (isNotFound guard) verified present.
