@@ -232,4 +232,54 @@ Lane: 5 (drift surfaces). Re-examined at 5113702. Zero diff in pnpm-workspace.ya
 
 ---
 
-**GOAL COMPLETE.** 12 cycles total: 7 substantive (6 clean-cell + 1 filed) + 5 consecutive DRY on lanes 1-5. No code changes between examined HEAD (8a577f0) and final HEAD (5113702). All clean cells verified current.
+## Cycle 13 — 2026-07-22 [fixed@<hash>]
+
+Lane: 1 (data-integrity spine). Attack: claim audit — verify every carry sentinel, write-ordering contract, and corrupt-vs-empty rule against the code.
+
+### Findings
+
+| id | sev | evidence | bucket | catchable |
+|----|-----|----------|--------|-----------|
+| corrupt-index-silent-empty | S2 | persist.ts:109-116, structure-persist.ts:100-107 | fixed@<hash> | yes — test 19c |
+
+**Root cause:** `readAnnotationsReport` (persist.ts) and `readStructureReport` (structure-persist.ts) caught ALL exceptions from reading `index.json` and returned `{log:[], corrupt:[]}` — treating both "file not found" (absent) and "JSON parse error" (corrupt) identically. The comment at persist.ts:112 claimed the distinction was intentional, but `isNotFound()` from the seam was available and unused. A corrupt-but-present index was silently presented as "nothing authored," and the next write would overwrite it blind, orphaning valid history pages.
+
+**Why no gate caught it:** The corruption test suite (persist.corruption.test.ts) covered missing pages (19a), corrupt pages (19b), and absent stores — but never a corrupt INDEX. The index was treated as the commit point (written last), so the assumed failure mode was "absent or valid," not "present and corrupt."
+
+**Fix:** distinguish `isNotFound(e)` → absent (return empty) from other errors → corrupt (throw `AnnotationsCorruptError` / `StructureCorruptError`). Same fix in both persist.ts and structure-persist.ts. Test 19c added as permanent guard.
+
+### Clean cells
+
+| Check | Evidence (file:line) | Verdict |
+|-------|---------------------|---------|
+| 5 carry sentinels all 16/16 AnnotationRecord fields | serialize.ts:47-64, deserialize.ts:31-48, merge.ts:204-221, log.ts:184-201, log.ts:252-269 | clean |
+| 4 carry sentinels all WorkingExhibitMeta/WorkingObjectMeta fields | working.ts:160-171 | clean |
+| 2 carry sentinels all Exhibit/AObject fields | working.ts:216-226 | clean |
+| persist.ts write order: heads → pages → index | persist.ts:35,50,59 | clean (heads-first is safe: consumer projection, not authoritative) |
+| structure-persist.ts write order: pages → index | structure-persist.ts:44,47 | clean |
+| site.ts write order: content → archie.json LAST | site.ts:636 | clean |
+| readAnnotationsReport per-page tolerant | persist.ts:120-131 | clean |
+| readStructureReport per-page tolerant | structure-persist.ts:110-119 | clean |
+| read.ts getOptional absent-vs-failed | read.ts:62-71 | clean |
+| session.ts surfaces loadCorruption from readAnnotationsReport | session.ts:124-126 | clean |
+| working.ts throws AnnotationsCorruptError on corrupt pages | working.ts:305-306 | clean |
+
+### Rotation
+
+Lane 1 re-examined to current HEAD. Finding fixed. Next: Lane 2 (untrusted-input seams) — lanes 1-2 alternate until clean cells current.
+
+### Gate summary
+
+| Gate | Result |
+|------|--------|
+| Typecheck | GREEN — 0 errors (6 packages) |
+| Tests | GREEN — rc 1111 / rm 159 / rs 7 / av 138 / viewer 136 / studio 919 |
+| Studio svelte-check | GREEN — 0/0 (1143 files) |
+| Viewer astro check | GREEN — 0/0/0 (46 files) |
+| Viewer islands | GREEN — 0/0 (1464 files) |
+| Build | GREEN |
+| dist mirror | GREEN |
+| Embed ratchet | GREEN — 261.7KB gz, budget 262KB |
+| Embed smoke | GREEN — 4/4 PASS |
+| Studio e2e | SKIP — no nav/chrome touched |
+| Rust | SKIP — no src-tauri touched |

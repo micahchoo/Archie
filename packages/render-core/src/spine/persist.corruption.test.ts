@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { appendNew } from "./log.js";
-import { writeAnnotations, readAnnotations, readAnnotationsReport } from "./persist.js";
+import { writeAnnotations, readAnnotations, readAnnotationsReport, AnnotationsCorruptError } from "./persist.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import type { FsDirectory, FsFile, FsWritable } from "../fs/seam.js";
 import { asClientId } from "../wadm/brand.js";
@@ -21,7 +21,7 @@ function twoNoteLog(): { log: AnnotationLog; ids: string[] } {
 
 /** A directory wrapper that records the order in which files are OPENED for writing. */
 class RecordingDir implements FsDirectory {
-  constructor(private readonly inner: FsDirectory, private readonly log: string[]) {}
+  constructor(private readonly inner: FsDirectory, private readonly log: string[]) { }
   async getDirectory(name: string, opts?: { create?: boolean }): Promise<FsDirectory> {
     return new RecordingDir(await this.inner.getDirectory(name, opts), this.log);
   }
@@ -111,5 +111,21 @@ describe("Issue 19 — per-page tolerant read (corrupt ≠ empty)", () => {
     await writeAnnotations(root, log);
     const { corrupt } = await readAnnotationsReport(root);
     expect(corrupt).toEqual([]);
+  });
+
+  it("19c: a CORRUPT index (present but unparseable) THROWS AnnotationsCorruptError, not silent empty", async () => {
+    const { log } = twoNoteLog();
+    const fs = new MemoryFilesystem();
+    const root = await fs.root();
+    // Write a valid log first (creates history dir + pages + index.json)
+    await writeAnnotations(root, log);
+    // Now corrupt the index file: write garbage into it
+    const histDir = await root.getDirectory("history");
+    const idxFile = await histDir.getFile("index.json");
+    const w = await idxFile.writable();
+    await w.write("this is not valid JSON {{{");
+    await w.close();
+    // readAnnotationsReport should THROW for a corrupt index — never silently return empty
+    await expect(readAnnotationsReport(root)).rejects.toThrow(AnnotationsCorruptError);
   });
 });
