@@ -119,3 +119,21 @@ Lane: 3 (gate-shadow code). Attack: browser-or-it-didn't-happen — verify bound
 ### Rotation
 
 Lane 3 examined to `8a577f0`. Lanes 1-3 clean cells current. Next: Lane 4 (hollow features).
+
+## Cycle 4 — 2026-07-21 [filed Archie-dace]
+
+Lane: 4 (hollow features). Attack: hollow-feature trace — verify Issue 13 (collab identity writer) and Issue 17 (embed whole-object notes).
+
+### Findings
+
+| Check | Evidence (file:line) | Verdict |
+|-------|---------------------|---------|
+| Issue 13: identity writer `setIdentity` exists | App.svelte:156-159 | refuted-because |
+| Issue 13: IdentityPrompt imported + mounted | App.svelte:37,2726 | refuted-because |
+| Issue 13: LibraryHome permanent identity field | LibraryHome.svelte:494-498 | refuted-because |
+| Issue 17: wholeObjects[0] only, drops 1..n | read-mount.ts:282 | filed Archie-dace |
+| Issue 14: exhibit-note rung zero authoring UI | App.svelte createNote sites | noted (queued) |
+
+### Rotation
+
+Lane 4 examined to `8a577f0`. Next: Lane 5 (drift surfaces).
