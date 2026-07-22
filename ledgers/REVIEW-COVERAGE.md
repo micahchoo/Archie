@@ -137,3 +137,25 @@ Lane: 4 (hollow features). Attack: hollow-feature trace — verify Issue 13 (col
 ### Rotation
 
 Lane 4 examined to `8a577f0`. Next: Lane 5 (drift surfaces).
+
+## Cycle 5 — 2026-07-21 [clean-cell]
+
+Lane: 5 (drift surfaces). Attack: override rationale audit — pnpm-workspace.yaml overrides vs DEPS.md.
+
+### Clean cells
+
+| Check | Evidence (file:line) | Verdict |
+|-------|---------------------|---------|
+| yaml override rationale | pnpm-workspace.yaml:7 | clean |
+| esbuild override (may be stale) | pnpm-workspace.yaml:8 | clean |
+| dompurify override (may be stale) | pnpm-workspace.yaml:10 | clean |
+| vite 8.x override + bound | pnpm-workspace.yaml:12 | clean |
+| undici override + bound | pnpm-workspace.yaml:14 | clean |
+| js-yaml override + bound | pnpm-workspace.yaml:21 | clean |
+| vite 7.x override + bound | pnpm-workspace.yaml:28 | clean |
+| stale astro exclusion removed | pnpm-workspace.yaml:34 | clean |
+| DEPS.md every advisory reasoned-in-row | DEPS.md:96-134 | clean |
+
+### Rotation
+
+Lane 5 examined to `8a577f0`. Lanes 1-5 clean cells current. Next: Lane 6 (dead weight).
