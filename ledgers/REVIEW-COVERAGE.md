@@ -350,3 +350,34 @@ Lane: 6 (dead weight). Re-examined at b608544. Zero diff from 68368d4.
 ## CYCLE 26 DRY — 2026-07-22
 
 Lane: 7 (Rust shell). Re-examined at b608544. Zero diff from 68368d4.
+
+## Cycle 27 — 2026-07-22 [clean-cell]
+
+Lane: 3 (gate-shadow code). Attack: gate-evasion probe (playbook #3) — plant `THIS_DOES_NOT_EXIST`
+in 5 file classes, run every gate, verify each class is caught.
+
+### Clean cells
+
+| Plant | File:line | Gate | Caught? |
+|-------|-----------|------|---------|
+| Studio .svelte | Spinner.svelte:19 | studio svelte-check | YES — "Cannot find name 'THIS_DOES_NOT_EXIST'" |
+| Viewer .svelte island | NotePopup.svelte:8 | viewer check:svelte | YES — "Cannot find name 'THIS_DOES_NOT_EXIST'" |
+| .astro page | index.astro:9 | viewer astro check | YES — error ts(2304) |
+| render-core .ts | concurrency.ts:7 | tsc (typecheck) | YES — TS2304 |
+| render-mount .ts | index.ts:10 | tsc (typecheck) | YES — TS2304 |
+
+**All 5 file classes caught.** No gate shadow detected — the typecheck + svelte-check + astro check
+trio covers .ts, .svelte (both apps), and .astro. Plants removed; no code changes committed.
+
+### Gate summary (probe gates only — no merge)
+
+| Gate | Result |
+|------|--------|
+| Typecheck | RED — render-core concurrency.ts:7 TS2304 (expected) |
+| Render-mount typecheck | RED — index.ts:10 TS2304 (expected) |
+| Studio svelte-check | RED — Spinner.svelte:19 + cross-package errors (expected) |
+| Viewer astro check | RED — 1 error, index.astro:9 (expected) |
+| Viewer islands | RED — 3 errors, NotePopup.svelte:8 + cross-package (expected) |
+| Build | SKIP — red gates precede it |
+
+**no merge: clean-cell** — probe only, no code changes land.
