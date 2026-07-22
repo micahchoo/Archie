@@ -179,3 +179,33 @@ Lane: 6 (dead weight). Attack: dead-code sweep — localStorage keys, orphan CSS
 ### Rotation
 
 Lane 6 examined. All 7 lanes examined at least once. Rotation restarts at Lane 1 (data-integrity spine, now stale — `8a577f0` vs HEAD `ce8b577`).
+
+## Cycle 7 — 2026-07-21 [clean-cell]
+
+Lane: 7 (Rust shell). Attack: CSP + capability surface audit.
+
+### Clean cells
+
+| Check | Evidence | Verdict |
+|-------|----------|---------|
+| CSP script-src 'unsafe-eval' for PixiJS | tauri.conf.json:24 | clean |
+| CSP img/media/connect-src https: for IIIF | tauri.conf.json:24 | clean |
+| fs scope: \$APPDATA/\*\* + \$HOME/\*\* | capabilities/default.json:24 | clean |
+| opener scoped github.com/github.io only | capabilities/default.json:27-32 | clean |
+| Single-instance plugin | lib.rs:22-28 | clean |
+| GitHub token in Rust (not webview) | lib.rs:33-40 | clean |
+| Menu nav same-origin location.replace | lib.rs:53-65 | clean |
+
+### Rotation summary (7 cycles, all 7 lanes)
+
+| Cycle | Lane | Bucket |
+|-------|------|--------|
+| 1 | 1. Data-integrity spine | clean-cell |
+| 2 | 2. Untrusted-input seams | clean-cell |
+| 3 | 3. Gate-shadow code | clean-cell |
+| 4 | 4. Hollow features | filed Archie-dace |
+| 5 | 5. Drift surfaces | clean-cell |
+| 6 | 6. Dead weight | clean-cell |
+| 7 | 7. Rust shell | clean-cell |
+
+**6 clean-cell + 1 filed across all 7 lanes.** HEAD moved from `8a577f0` to `b66e230` during the run (ledger commits). Next rotation: Lane 1 against current HEAD.
