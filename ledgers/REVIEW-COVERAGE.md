@@ -95,3 +95,27 @@ Lane: 2 (untrusted-input seams). Attack: hostile-ingest surface audit — verify
 ### Rotation
 
 Lane 2 examined to `8a577f0`. Lanes 1-2 clean cells current. Next: Lane 3 (gate-shadow code).
+
+## Cycle 3 — 2026-07-21 [clean-cell]
+
+Lane: 3 (gate-shadow code). Attack: browser-or-it-didn't-happen — verify bound-fetch-defaults at all four canonical sites + Svelte island gate coverage.
+
+### Clean cells
+
+| Check | Evidence (file:line) | Verdict |
+|-------|---------------------|---------|
+| HttpFilesystem fetch default bound | http.ts:161 | clean |
+| fetchArchieLibraryBytes fetch default bound | open.ts:92 | clean |
+| openLibraryFromSrc fetch default bound | load.ts:116 | clean |
+| openLibraryFromTree fetch default bound | load.ts:214 | clean |
+| http.ts brand-check test | http.test.ts:228-232 | clean |
+| load.ts brand-check tests (2 entry points) | load.test.ts:265-275 | clean |
+| Studio svelte-check gate | 0/0 at bootstrap | clean |
+| Viewer svelte-check gate | 0/0 at bootstrap | clean |
+| Viewer astro check | 0/0/0 at bootstrap | clean |
+| Embed smoke (real Chromium) | smoke.mjs 4/4 PASS | clean |
+| $effect runtime gap documented | Publish.svelte:240-242 | clean |
+
+### Rotation
+
+Lane 3 examined to `8a577f0`. Lanes 1-3 clean cells current. Next: Lane 4 (hollow features).
