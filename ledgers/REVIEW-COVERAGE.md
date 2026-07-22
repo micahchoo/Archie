@@ -232,8 +232,7 @@ Lane: 5 (drift surfaces). Re-examined at 5113702. Zero diff in pnpm-workspace.ya
 
 ---
 
-## Cycle 13 — 2026-07-22 [fixed@<hash>]
-
+## Cycle 13 — 2026-07-22 [fixed@68368d4]
 Lane: 1 (data-integrity spine). Attack: claim audit — verify every carry sentinel, write-ordering contract, and corrupt-vs-empty rule against the code.
 
 ### Findings
@@ -283,3 +282,10 @@ Lane 1 re-examined to current HEAD. Finding fixed. Next: Lane 2 (untrusted-input
 | Embed smoke | GREEN — 4/4 PASS |
 | Studio e2e | SKIP — no nav/chrome touched |
 | Rust | SKIP — no src-tauri touched |
+
+## CYCLE 14 DRY — 2026-07-22
+
+Lane: 2 (untrusted-input seams). Re-examined at 68368d4. Zero diff from 8a577f0 in open.ts,
+fs/tauri.ts, fs/http.ts, fs/names.ts, fs/zip.ts, fs/zip-stream.ts, text/sanitize.ts, link/link.ts,
+read.ts, limits.ts, tauri.conf.json, capabilities/default.json, src-tauri/src/, and
+.claude/rules/untrusted-archive-open-seam.md. All 14 clean cells from Cycle 2 remain current.
