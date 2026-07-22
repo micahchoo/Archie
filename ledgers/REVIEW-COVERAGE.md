@@ -301,3 +301,9 @@ clean cells from Cycle 3 remain current.
 Lane: 4 (hollow features). Re-examined at a9900ce. Zero diff from 5113702 in apps/studio/src/
 and packages/render-mount/src/. Issue 13 refuted-because stands (setIdentity + IdentityPrompt
 mounted). Issue 17 (wholeObjects[0]) still open as filed Archie-dace.
+
+## CYCLE 17 DRY — 2026-07-22
+
+Lane: 5 (drift surfaces). Re-examined at cda5f45. Zero diff from 5113702 in pnpm-workspace.yaml,
+README.md, .claude/rules/deps-index.md, ledgers/DEPS.md, docs/adr/, docs/plans/, docs/research/,
+docs/guide/, docs/learn/, docs/screenshots/. All 9 clean cells from Cycle 5 remain current.
