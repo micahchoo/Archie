@@ -326,3 +326,27 @@ All 7 clean cells from Cycle 7 remain current.
 Lane: 1 (data-integrity spine). Re-examined at 6ce7a74. Zero diff from 68368d4 (Cycle 13 fix)
 in packages/render-core/src/spine/ and publish/. Carry sentinels, write ordering, corrupt-vs-empty
 all intact. Cycle 13 fix (isNotFound guard) verified present.
+
+## CYCLE 21 DRY — 2026-07-22
+
+Lane: 2 (untrusted-input seams). Re-examined at b608544. Zero diff from 68368d4.
+
+## CYCLE 22 DRY — 2026-07-22
+
+Lane: 3 (gate-shadow code). Re-examined at b608544. Zero diff from 68368d4.
+
+## CYCLE 23 DRY — 2026-07-22
+
+Lane: 4 (hollow features). Re-examined at b608544. Zero diff from 68368d4.
+
+## CYCLE 24 DRY — 2026-07-22
+
+Lane: 5 (drift surfaces). Re-examined at b608544. Zero diff from 68368d4.
+
+## CYCLE 25 DRY — 2026-07-22
+
+Lane: 6 (dead weight). Re-examined at b608544. Zero diff from 68368d4.
+
+## CYCLE 26 DRY — 2026-07-22
+
+Lane: 7 (Rust shell). Re-examined at b608544. Zero diff from 68368d4.
