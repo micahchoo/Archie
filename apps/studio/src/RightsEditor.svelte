@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface {paper}
+ * @composes {hosted at Library/Exhibit/Object levels; reads/writes RightsFields}
+ * @variants {collapsed (credit + license only), expanded (+ provider, metadata, contributors)}
+ * @constraint {host-agnostic — fields only, chrome belongs to host; curator voice copy}
+ */
   // The shared rights/credit form (CONTEXT "Exhibit / Library rights & metadata"; rights grill Q6).
   // ONE component, rendered at THREE levels (Library / Exhibit / Object) — host-agnostic: it renders
   // only the FIELDS; the host supplies the chrome (a slide-in drawer for Library + Exhibit, an inline

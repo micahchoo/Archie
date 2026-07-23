@@ -4,6 +4,12 @@
 </script>
 
 <script lang="ts">
+/**
+ * @surface {paper}
+ * @composes {Metadata row editor}
+ * @variants {empty (seeded from level defaults), populated; single-row, multi-row}
+ * @constraint {paper surface: warm tokens (--surface-paper, --ink-paper-*); values are free text everywhere}
+ */
   // The pick-from-vocab descriptive-metadata editor (Archie-458e) — the real build of the
   // prototypes/metadata-editor probe (Archie-e100), at every level DetailsEditor renders.
   //

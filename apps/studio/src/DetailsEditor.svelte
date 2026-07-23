@@ -4,6 +4,12 @@
 </script>
 
 <script lang="ts">
+/**
+ * @surface paper
+ * @composes details-form
+ * @variants default, readonly
+ * @constraint paper surface: warm tokens (--surface-paper, --ink-paper-*); title/description/rights/MetadataEditor — the Object level hides title (label is inline-editable in rail)
+ */
   // Per-level "details" form: title + description (identity) + the shared RightsEditor (credit/license).
   // The Library and Exhibit drawers + the Object disclosure all render this, so title/description/rights
   // are editable wherever the level is edited (user ask: nothing was editable once set). The OBJECT hides

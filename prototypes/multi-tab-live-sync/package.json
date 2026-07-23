@@ -1,0 +1,13 @@
+{
+  "name": "multi-tab-live-sync",
+  "version": "0.0.0",
+  "private": true,
+  "description": "THROWAWAY PROTOTYPE (ticket Archie-a66d / D1). Proves two browser tabs can live-edit one exhibit's annotations client-side (no server) over a Yjs rev-log transport (Model B), with Archie's REAL render-core DAG merge (heads/resolveConflict) doing all reconciliation. Delete once the D1 ledger is written. Isolated deps via bun; never touches the pnpm workspace.",
+  "type": "module",
+  "scripts": {
+    "dev": "bun index.html"
+  },
+  "dependencies": {
+    "yjs": "^13.6.0"
+  }
+}

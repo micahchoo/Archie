@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archie Studio — new-exhibit create/import surface prototype</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="proto-controls" aria-label="Prototype-only controls (not part of the proposed surface)">
+  <span class="proto-label">Archie-8482 prototype</span>
+  <div class="proto-group">
+    <span class="proto-label">variant</span>
+    <div class="variant-toggle" role="group" aria-label="Surface variant">
+      <button class="active" data-variant="a" type="button">A · dialog</button>
+      <button data-variant="b" type="button">B · inline</button>
+    </div>
+  </div>
+  <div class="proto-group">
+    <span class="proto-label">jump to state</span>
+    <button class="demo-btn" data-demo="folder">folder picked</button>
+    <button class="demo-btn" data-demo="iiif-valid">IIIF valid</button>
+    <button class="demo-btn" data-demo="iiif-invalid">IIIF bad link</button>
+    <button class="demo-btn" data-demo="iiif-unreachable">IIIF unreachable</button>
+    <button class="demo-btn" data-demo="reset">reset</button>
+  </div>
+  <span class="note">Esc / scrim-click dismiss in A · click outside or Esc collapses B</span>
+</header>
+
+<main class="library">
+  <p class="eyebrow">Library · 3 exhibits</p>
+  <h1 class="libtitle">Library</h1>
+  <p class="lede">An exhibit is a collection of annotated media — images, audio, video, or maps you mark up with notes. Create one any time; your work saves as you go.</p>
+
+  <ul class="grid" id="grid">
+    <li class="card"><span class="cover"></span><span class="title">Herbal quires</span><span class="meta">6 media items · /herbal-quires</span></li>
+    <li class="card"><span class="cover"></span><span class="title">Cairo Genizah fragments</span><span class="meta">14 media items · /cairo-genizah</span></li>
+    <li class="card"><span class="cover"></span><span class="title">Field recordings, 1987</span><span class="meta">3 media items · /field-recordings-87</span></li>
+    <li id="newTile" class="new-tile">
+      <!-- Variant A: this trigger opens the scrimmed dialog. Variant B: this trigger expands the tile in place. -->
+      <button class="new-tile-trigger" id="newTileTrigger" type="button">
+        <span class="plus">+</span>
+        <span class="label">New exhibit</span>
+      </button>
+      <!-- Variant B mounts the chooser/path content directly here (no scrim). -->
+      <div class="tile-expand" id="tileExpand" hidden></div>
+    </li>
+  </ul>
+</main>
+
+<!-- Variant A mounts the same chooser/path content inside this scrimmed dialog. -->
+<div class="scrim" id="scrim" hidden></div>
+<div class="dialog" id="dialog" role="dialog" aria-modal="true" aria-label="New exhibit" hidden></div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

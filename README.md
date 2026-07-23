@@ -2,7 +2,7 @@
 
 **Annotate deep-zoom images, maps, audio, and video in your browser — then publish a self-contained static site. No server, no database, no lock-in.**
 
-![A published Archie library: "The Archie Library", a gallery of three exhibits](docs/screenshots/auto/gallery-after-sunset.png)
+![A published Archie library: "Archie Library", a gallery of the bundled exhibits](docs/screenshots/auto/viewer-home.desktop.png)
 
 *A published Archie library. You author in the browser; visitors get plain HTML, JSON, and media files that work offline and never phone home.*
 
@@ -95,13 +95,13 @@ Archie began as a tool for digital-humanities scholars and has broadened to anyo
 
 **Viewer — competing Readings.** A **Reading** is one interpretive pass over an object. The legend is a radio: the reader picks one and the canvas re-frames. Pure IIIF viewers see each Reading as a real, toggleable annotation layer.
 
-![Archie Viewer: a Voynich folio with the Readings legend (Base · Cipher · Grille · Natural-language) and the Cipher reading selected](docs/screenshots/auto/voynich-readings-cipher.png)
+![Archie Viewer: the Rosettes foldout with the Readings legend (General notes · Cipher · Hoax · Natural-language) and the Cipher reading selected](docs/screenshots/auto/viewer-readings.desktop.png)
 
-*The reader arrives on the neutral **Base** notes, then enters a Reading — Cipher, Grille, or Natural-language — and watches the same marks get read a different way.*
+*The reader arrives on the neutral **General notes**, then enters a Reading — Cipher, Hoax, or Natural-language — and watches the same marks get read a different way. Picking one shows its description and narrows the notes to that interpretation.*
 
 **Audio, video, and credits.** Audio and video objects play inline with a transcript spine; a quiet credit line carries the IIIF attribution, with full license details behind an ⓘ disclosure.
 
-![Archie Viewer: an audio object playing, with a transcript spine and an attribution credit line](docs/screenshots/auto/voynich-av-credit.png)
+![Archie Viewer: an audio object playing, with a transcript spine and an attribution credit line](docs/screenshots/auto/viewer-av.desktop.png)
 
 *A sounded folio: play the recording, read down the transcript, each line seeking the audio. The credit line ("Kryptogramm — Elias Schwerdtfeger, CC BY-NC-SA 3.0") is published as a IIIF `requiredStatement`.*
 

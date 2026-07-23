@@ -5,6 +5,12 @@
      with just that subset. The automatic safety flushes (recovery, close-time flush) never come
      here — they save the whole library directly. -->
 <script lang="ts">
+/**
+ * @surface scrim
+ * @composes dialog
+ * @variants {open, busy}
+ * @constraint {dialog: single-scrim invariant}
+ */
   import { scrimmed, trapFocus, modality } from "./modality.svelte";
   import ZipExportFields from "./ZipExportFields.svelte";
   import { allSelected, baseNameOf, canExport, exportOpts } from "./zip-export-opts.js";

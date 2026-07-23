@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface chrome
+ * @composes standalone
+ * @variants {ambient, critical}
+ * @constraint {corner chip: position fixed out of flow, never a full-width strip}
+ */
   // The storage chip — REFRAMED (docs/research/browser-storage-quota.md): no gauge, no percentage.
   // The browser's reported quota is a privacy constant (`usage + 10 GiB`), so a fraction of it is
   // structurally unable to warn before imports fail. What the chip shows instead is the truth we

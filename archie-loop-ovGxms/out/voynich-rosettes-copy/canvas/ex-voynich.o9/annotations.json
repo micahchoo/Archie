@@ -1,0 +1,44 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://archie.demo/voynich-rosettes-copy/canvas/ex-voynich.o9/annotations.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-rosettes-copy/annotations/01KY0N3TERZE7NJFVSTMQ13XGB/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://archie.demo/voynich-rosettes-copy/canvas/ex-voynich.o9",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:600,600,6700,6100"
+        }
+      },
+      "modified": "2026-07-20T20:57:36.984Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The Rosettes — nine medallions joined by causeways and castle-like forms, the largest spread in the manuscript. A six-panel foldout that opens far beyond a single leaf.",
+          "purpose": "commenting"
+        }
+      ],
+      "archie:hasHistory": "https://archie.demo/voynich-rosettes-copy/annotations/history/01KY0N3TERZE7NJFVSTMQ13XGB.json"
+    },
+    {
+      "id": "https://archie.demo/voynich-rosettes-copy/annotations/01KY0N3V6ZAKQRXYZGJS38Y4JT/v2",
+      "type": "Annotation",
+      "target": "https://archie.demo/voynich-rosettes-copy/canvas/ex-voynich.o9",
+      "modified": "2026-07-20T20:57:37.813Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "E2E publish note 0e2017f4-3c29-4e4e-b73f-1a8b99e36871",
+          "purpose": "commenting"
+        }
+      ],
+      "prov:wasRevisionOf": "https://archie.demo/voynich-rosettes-copy/annotations/01KY0N3V6ZAKQRXYZGJS38Y4JT/v1",
+      "archie:hasHistory": "https://archie.demo/voynich-rosettes-copy/annotations/history/01KY0N3V6ZAKQRXYZGJS38Y4JT.json"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "cipher",
+    "name": "Cipher reading",
+    "description": "The glyphs encode a real language through a cipher or steganographic scheme — the working assumption of the professional cryptanalysts (Currier, the Friedmans, Tiltman) who studied the manuscript.",
+    "colour": "#3a6b4c"
+  },
+  {
+    "id": "hoax",
+    "name": "Hoax reading",
+    "description": "The glyphs carry no content: Voynich-like text can be generated mechanically from prefix/stem/suffix tables drawn through a Cardan grille (Rugg 2004; Gaskell & Bowern 2022).",
+    "colour": "#a3553a"
+  },
+  {
+    "id": "abjad",
+    "name": "Natural-language reading",
+    "description": "The glyphs are a real natural language written plaintext in an invented alphabet — statistically compatible with natural language (Amancio et al. 2013), the basis of Bax's 2014 partial abjad-style reading.",
+    "colour": "#4c5d8a"
+  }
+]

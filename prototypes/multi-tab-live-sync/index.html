@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- THROWAWAY PROTOTYPE (ticket Archie-a66d / D1). Delete once the D1 ledger is written. -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Archie D1 — multi-tab live sync (THROWAWAY prototype)</title>
+    <style>
+      body { font: 14px/1.5 ui-monospace, monospace; margin: 24px; max-width: 760px; color: #222; }
+      h1 { font-size: 18px; }
+      .sub { color: #666; font-size: 12px; margin-bottom: 16px; }
+      #logstate { background: #111; color: #0f0; padding: 8px 10px; border-radius: 4px; font-size: 12px; }
+      #status { margin: 10px 0; min-height: 18px; font-size: 12px; }
+      .addrow { display: flex; gap: 8px; margin: 14px 0; }
+      .addrow input { flex: 1; padding: 6px; }
+      .card { border: 1px solid #ccc; border-radius: 6px; padding: 10px 12px; margin: 10px 0; }
+      .card.conflict { border-color: #d33; background: #fff5f5; }
+      .meta { color: #888; font-size: 11px; word-break: break-all; }
+      .body { margin: 6px 0; font-size: 14px; }
+      .editrow { display: flex; gap: 6px; }
+      .editbox { flex: 1; padding: 4px; }
+      .banner { color: #b00; font-weight: bold; margin: 6px 0; }
+      .branch { border-left: 3px solid #d33; padding: 4px 8px; margin: 6px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+      .branch-body { flex: 1; }
+      .branch-meta { color: #888; font-size: 11px; }
+      button { cursor: pointer; padding: 4px 8px; }
+    </style>
+  </head>
+  <body>
+    <h1>Archie D1 — local multi-tab live sync</h1>
+    <div class="sub">
+      THROWAWAY prototype. Model B: Yjs transports a grow-only rev-log; Archie's REAL render-core
+      DAG merge (heads / resolveConflict) reconciles. No server, no network — BroadcastChannel only.
+      <br />Open this page in <b>two tabs</b>, then edit the same annotation in both.
+    </div>
+
+    <div id="logstate"></div>
+    <div id="status"></div>
+
+    <div class="addrow">
+      <input id="new-body" placeholder="new annotation body text…" />
+      <button id="add-btn">add annotation</button>
+    </div>
+
+    <div id="annotations"></div>
+
+    <script type="module" src="./src/app.ts"></script>
+  </body>
+</html>

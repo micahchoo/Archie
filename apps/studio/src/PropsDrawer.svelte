@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface {drawer}
+ * @composes {RightsEditor via children slot, modality helper}
+ * @variants {open, closed}
+ * @constraint {scrim-dismiss + Esc + focus trap/return; not a dialog despite aria-modal — presentational distinction per CONTEXT.md}
+ */
   // A right-side slide-in panel for transient editing where there's no sidebar to spend — the Library
   // (LibraryHome) and Exhibit (ExhibitOverview) rights surfaces (rights grill Q6, the "header-button →
   // drawer" pattern). Paper-surfaced so it hosts the RightsEditor's paper-toned fields. Scrim-dismiss.

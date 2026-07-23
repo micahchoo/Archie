@@ -15,6 +15,10 @@ rm -rf "$OUT"
 mkdir -p "$OUT/viewer"
 
 echo "[tauri-frontend] building Studio → /  (relative base for the Tauri origin root)"
+# Raw vite (not `pnpm build`) for the --base flag — so run the tutorial-deck sync the package
+# build script would have run; public/learn is gitignored, and without it the Help → Tutorial
+# iframe 404s onto the SPA fallback (the app embeds itself). Same trap as build-gh-pages.sh.
+node "$ROOT/apps/studio/scripts/sync-learn.mjs"
 pnpm --filter @archie/studio exec vite build --base ./ --outDir "$OUT" --emptyOutDir
 
 echo "[tauri-frontend] building Viewer → /viewer/"

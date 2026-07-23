@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface popover
+ * @composes standalone
+ * @variants open, closed
+ * @constraint popover is NOT a modal — dismiss on click-away, no focus trap
+ */
   // The ? help affordance — a round button that drops a small menu (Tutorial / Shortcuts).
   // Moored in a header; used in BOTH the editor chrome and the library home so they never drift.
   // Owns only its own open state; the actions are delegated to the parent.

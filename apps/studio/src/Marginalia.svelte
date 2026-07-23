@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface {canvas}
+ * @composes {Marginalia tick rail}
+ * @variants {default — tick-only at every density; no density gate}
+ * @constraint {not a second edit surface — reading a note is the inspector's job; rail signals WHERE + HOW MUCH only}
+ */
   // Marginalia rail — direction B, collapsed tick rail (Archie-dff3, superseding direction C's
   // density clusters per user verdict). A near-invisible spatial index of this object's notes,
   // sitting BESIDE the canvas (a layout column, never floating over the artefact — standing rule

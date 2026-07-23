@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface dialog
+ * @composes standalone
+ * @variants {open}
+ * @constraint {generated from shortcut registry — never hand-maintained}
+ */
   // The `?` cheat-sheet — a read-only overlay GENERATED from the shortcut registry (never hand-maintained,
   // so it can't drift from the wired handlers). Curator voice; "curator's study" paper card over a dark scrim.
   import { SHORTCUTS, SHORTCUT_GROUPS, type Shortcut } from "./shortcuts.js";

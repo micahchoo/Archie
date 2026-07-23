@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface root
+ * @composes all
+ * @variants library, exhibit
+ * @constraint root mount — owns global keydown, modality escalation, and session lifecycle
+ */
   // Studio editor (Phase-2 UI, browser-verified later). Real annotate loop over the headless-
   // tested @render/core AnnotationSession: draw on the canvas → create note → edit body/tags/
   // layers in the WADM form → publish to .archie.zip. Logic lives in core; this is the thin shell.
@@ -1609,7 +1615,7 @@
   }
   // Geometry edit on canvas → re-derive geo-truth on a Map (null clears it if the new shape is unparseable).
   const onUpdate = (a: W3CAnnotation) => { sess.session.editNote(a.id as LogicalId, { target: oneTarget(a.target), ...(isMapCurrent ? { geo: geoForTarget(oneTarget(a.target), currentTileSource?.kind === "xyz" ? currentTileSource : undefined) ?? null } : {}) }); bump(); };
-  const onDelete = (id: string) => { sess.session.deleteNote(id as LogicalId); bump(); if (vs.selected === id) vs.selected = null; if (vs.editing === id) vs.editing = null; };
+  const ondelete = (id: string) => { sess.session.deleteNote(id as LogicalId); bump(); if (vs.selected === id) vs.selected = null; if (vs.editing === id) vs.editing = null; };
   // Hand-annotate AV: AvEditor marked a [start,end] region → create a supplementing time note, then
   // select it so the WADM form opens to type the note (the temporal analogue of onCreate for OSD draws).
   function onCreateTime(start: number, end: number, box?: { x: number; y: number; w: number; h: number }) {
@@ -1798,7 +1804,7 @@
     }
     // Image-canvas shortcuts — bare letters, so skip while typing / on AV / while framing.
     if (typingInField(e) || vs.view !== "editor" || isAvCurrent || framingSectionId) return;
-    if (matches(e, "⌫") && vs.editing) { e.preventDefault(); onDelete(vs.editing); }
+    if (matches(e, "⌫") && vs.editing) { e.preventDefault(); ondelete(vs.editing); }
     else if (matches(e, "[")) { e.preventDefault(); stepObject(-1); }
     else if (matches(e, "]")) { e.preventDefault(); stepObject(1); }
   }
@@ -2242,7 +2248,7 @@
       <NoteEditor sel={sel!} editing={vs.editing!} {currentReadings} bind:commentEl
         {showAttribution} you={author}
         {commentOf} {tagsOf} {timeOf}
-        {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {setNoteScope} {requestCite} {citeIntoComment} {closeNote} {onDelete}
+        {applyForm} {applyTime} {setNoteReading} {setNoteEmphasis} {setNoteScope} {requestCite} {citeIntoComment} {closeNote} {ondelete}
         {coLocatedIndex} coLocatedCount={coLocated.length} {cycleCoLocated} />
     {/snippet}
     <!-- Two-zone sidebar (Archie-5e96): a labeled "Exhibit" scope zone (the narrative spine — ADR-0016
@@ -2498,7 +2504,7 @@
                    an editing canvas needs the surrounding context and the shape's resize handles on
                    screen, and a full-bleed fit shoved the marker under the viewport edges. Section
                    camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
-              <CanvasComp source={currentSource} tileSource={currentTileSource} canvasId={vs.canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator dots={dotItems} bind:selected={vs.selected} getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={onDelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} nativeFetch={nativeFetch} />
+              <CanvasComp source={currentSource} tileSource={currentTileSource} canvasId={vs.canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator dots={dotItems} bind:selected={vs.selected} getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={ondelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} nativeFetch={nativeFetch} />
             {:else}
               <div class="no-canvas">Loading…</div>
             {/if}

@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface {chrome}
+ * @composes {standalone — mounts in editor header or library project bar}
+ * @variants {read-only, saved, saving, failed, action-needed}
+ * @constraint {mounts in header (not project bar); one end-to-end save indicator; ⌘S universal save handler owned here}
+ */
   // The Safety State indicator (CONTEXT.md → Persistence; ticket Archie-0b7b "One save vocabulary").
   // ONE component, mounted in the SAME header slot at every place (editor header / library project bar)
   // — the only save UI. It is inert text in Saved/Saving; in Failed/Action-needed it IS the control that

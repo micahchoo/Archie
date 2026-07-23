@@ -1,0 +1,21 @@
+{
+  "@context": "https://iiif.io/api/presentation/3/context.json",
+  "id": "https://archie.demo/collection.json",
+  "type": "Collection",
+  "label": {
+    "none": [
+      "Archie Library"
+    ]
+  },
+  "items": [
+    {
+      "id": "https://archie.demo/voynich-rosettes-copy/manifest.json",
+      "type": "Manifest",
+      "label": {
+        "none": [
+          "The Rosettes (copy)"
+        ]
+      }
+    }
+  ]
+}

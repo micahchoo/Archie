@@ -1,0 +1,42 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = void 0;
+var _test = require("@playwright/test");
+// Throwaway one-run config: the studio loop spec against REAL Firefox, to verify the OPFS-staged
+// streaming zip save on the engine it was built for. Not part of the repo's gate (see the base
+// config's chromium-only rationale) — delete after use.
+
+const PORT = 5198;
+const BASE_URL = `http://localhost:${PORT}/studio/`;
+const STUDIO_DIR = "/mnt/Ghar/2TA/DevStuff/Annotators/Image/Archie/apps/studio/";
+var _default = exports.default = (0, _test.defineConfig)({
+  testDir: `${STUDIO_DIR}e2e`,
+  fullyParallel: false,
+  workers: 1,
+  reporter: [["list"]],
+  timeout: 60000,
+  expect: {
+    timeout: 15000
+  },
+  use: {
+    baseURL: BASE_URL,
+    trace: "off"
+  },
+  projects: [{
+    name: "firefox",
+    use: {
+      ..._test.devices["Desktop Firefox"]
+    }
+  }],
+  webServer: {
+    command: `pnpm exec vite --port ${PORT} --strictPort`,
+    cwd: STUDIO_DIR,
+    url: BASE_URL,
+    reuseExistingServer: true,
+    timeout: 120000
+  }
+});
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJfdGVzdCIsInJlcXVpcmUiLCJQT1JUIiwiQkFTRV9VUkwiLCJTVFVESU9fRElSIiwiX2RlZmF1bHQiLCJleHBvcnRzIiwiZGVmYXVsdCIsImRlZmluZUNvbmZpZyIsInRlc3REaXIiLCJmdWxseVBhcmFsbGVsIiwid29ya2VycyIsInJlcG9ydGVyIiwidGltZW91dCIsImV4cGVjdCIsInVzZSIsImJhc2VVUkwiLCJ0cmFjZSIsInByb2plY3RzIiwibmFtZSIsImRldmljZXMiLCJ3ZWJTZXJ2ZXIiLCJjb21tYW5kIiwiY3dkIiwidXJsIiwicmV1c2VFeGlzdGluZ1NlcnZlciJdLCJzb3VyY2VzIjpbInBsYXl3cmlnaHQuZmlyZWZveC5jb25maWcudHMiXSwic291cmNlc0NvbnRlbnQiOlsiLy8gVGhyb3dhd2F5IG9uZS1ydW4gY29uZmlnOiB0aGUgc3R1ZGlvIGxvb3Agc3BlYyBhZ2FpbnN0IFJFQUwgRmlyZWZveCwgdG8gdmVyaWZ5IHRoZSBPUEZTLXN0YWdlZFxuLy8gc3RyZWFtaW5nIHppcCBzYXZlIG9uIHRoZSBlbmdpbmUgaXQgd2FzIGJ1aWx0IGZvci4gTm90IHBhcnQgb2YgdGhlIHJlcG8ncyBnYXRlIChzZWUgdGhlIGJhc2Vcbi8vIGNvbmZpZydzIGNocm9taXVtLW9ubHkgcmF0aW9uYWxlKSDigJQgZGVsZXRlIGFmdGVyIHVzZS5cbmltcG9ydCB7IGZpbGVVUkxUb1BhdGggfSBmcm9tIFwibm9kZTp1cmxcIjtcbmltcG9ydCB7IGRlZmluZUNvbmZpZywgZGV2aWNlcyB9IGZyb20gXCJAcGxheXdyaWdodC90ZXN0XCI7XG5cbmNvbnN0IFBPUlQgPSA1MTk4O1xuY29uc3QgQkFTRV9VUkwgPSBgaHR0cDovL2xvY2FsaG9zdDoke1BPUlR9L3N0dWRpby9gO1xuY29uc3QgU1RVRElPX0RJUiA9IFwiL21udC9HaGFyLzJUQS9EZXZTdHVmZi9Bbm5vdGF0b3JzL0ltYWdlL0FyY2hpZS9hcHBzL3N0dWRpby9cIjtcblxuZXhwb3J0IGRlZmF1bHQgZGVmaW5lQ29uZmlnKHtcbiAgdGVzdERpcjogYCR7U1RVRElPX0RJUn1lMmVgLFxuICBmdWxseVBhcmFsbGVsOiBmYWxzZSxcbiAgd29ya2VyczogMSxcbiAgcmVwb3J0ZXI6IFtbXCJsaXN0XCJdXSxcbiAgdGltZW91dDogNjBfMDAwLFxuICBleHBlY3Q6IHsgdGltZW91dDogMTVfMDAwIH0sXG4gIHVzZTogeyBiYXNlVVJMOiBCQVNFX1VSTCwgdHJhY2U6IFwib2ZmXCIgfSxcbiAgcHJvamVjdHM6IFt7IG5hbWU6IFwiZmlyZWZveFwiLCB1c2U6IHsgLi4uZGV2aWNlc1tcIkRlc2t0b3AgRmlyZWZveFwiXSB9IH1dLFxuICB3ZWJTZXJ2ZXI6IHtcbiAgICBjb21tYW5kOiBgcG5wbSBleGVjIHZpdGUgLS1wb3J0ICR7UE9SVH0gLS1zdHJpY3RQb3J0YCxcbiAgICBjd2Q6IFNUVURJT19ESVIsXG4gICAgdXJsOiBCQVNFX1VSTCxcbiAgICByZXVzZUV4aXN0aW5nU2VydmVyOiB0cnVlLFxuICAgIHRpbWVvdXQ6IDEyMF8wMDAsXG4gIH0sXG59KTtcbiJdLCJtYXBwaW5ncyI6Ijs7Ozs7O0FBSUEsSUFBQUEsS0FBQSxHQUFBQyxPQUFBO0FBSkE7QUFDQTtBQUNBOztBQUlBLE1BQU1DLElBQUksR0FBRyxJQUFJO0FBQ2pCLE1BQU1DLFFBQVEsR0FBRyxvQkFBb0JELElBQUksVUFBVTtBQUNuRCxNQUFNRSxVQUFVLEdBQUcsNkRBQTZEO0FBQUMsSUFBQUMsUUFBQSxHQUFBQyxPQUFBLENBQUFDLE9BQUEsR0FFbEUsSUFBQUMsa0JBQVksRUFBQztFQUMxQkMsT0FBTyxFQUFFLEdBQUdMLFVBQVUsS0FBSztFQUMzQk0sYUFBYSxFQUFFLEtBQUs7RUFDcEJDLE9BQU8sRUFBRSxDQUFDO0VBQ1ZDLFFBQVEsRUFBRSxDQUFDLENBQUMsTUFBTSxDQUFDLENBQUM7RUFDcEJDLE9BQU8sRUFBRSxLQUFNO0VBQ2ZDLE1BQU0sRUFBRTtJQUFFRCxPQUFPLEVBQUU7RUFBTyxDQUFDO0VBQzNCRSxHQUFHLEVBQUU7SUFBRUMsT0FBTyxFQUFFYixRQUFRO0lBQUVjLEtBQUssRUFBRTtFQUFNLENBQUM7RUFDeENDLFFBQVEsRUFBRSxDQUFDO0lBQUVDLElBQUksRUFBRSxTQUFTO0lBQUVKLEdBQUcsRUFBRTtNQUFFLEdBQUdLLGFBQU8sQ0FBQyxpQkFBaUI7SUFBRTtFQUFFLENBQUMsQ0FBQztFQUN2RUMsU0FBUyxFQUFFO0lBQ1RDLE9BQU8sRUFBRSx5QkFBeUJwQixJQUFJLGVBQWU7SUFDckRxQixHQUFHLEVBQUVuQixVQUFVO0lBQ2ZvQixHQUFHLEVBQUVyQixRQUFRO0lBQ2JzQixtQkFBbUIsRUFBRSxJQUFJO0lBQ3pCWixPQUFPLEVBQUU7RUFDWDtBQUNGLENBQUMsQ0FBQyIsImlnbm9yZUxpc3QiOltdfQ==

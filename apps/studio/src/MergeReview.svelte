@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface {dialog}
+ * @composes {Conflict resolution dialog}
+ * @variants {open, closed; varying conflict count}
+ * @constraint {modal: single-scrim invariant — opening one REPLACES another}
+ */
   // Merge-review UI (CONTEXT collaboration UX — the #1 validation-priority invention; decision
   // Archie-d71c: MergeReview NON-BLOCKING). Drives the headless-tested AnnotationSession.conflicts/
   // conflictHeads/resolve. The "am I done? what happened?" summary now lives in App's status strip

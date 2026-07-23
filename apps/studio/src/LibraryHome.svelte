@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface gallery
+ * @composes SafetyState, GalleryWall, GalleryThumb, HelpMenu, CreateExhibitDialog, BulkRightsDialog, DetailsEditor, PropsDrawer
+ * @variants populated, empty; bound, unbound; binding states (idle/busy/error)
+ * @constraint SafetyState mounts in header (one end-to-end indicator)
+ */
   // Studio Library home (Q-7 "Library" — the authoring index). The curator's table of works in
   // progress: each exhibit is a plate on the dark light table; a dashed tile starts a new one.
   // Authoring counterpart to the Viewer's Gallery (which is the published, visitor-facing wall).

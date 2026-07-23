@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface dialog
+ * @composes bulk-rights
+ * @variants open, closed
+ * @constraint single-scrim invariant: opening REPLACES any prior scrimmed surface; no close-confirmation (autosave makes dismissal lossless)
+ */
   // Bulk rights edit (collection-import Phase 2, plan §9 / Archie-d2cc): set ONE license + credit across
   // the SELECTED exhibits at once — the field an institutional bulk import needs to stamp uniformly. Only
   // license + credit are bulk-editable; title/description stay per-exhibit (bulk title is nonsense; bulk

@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface canvas
+ * @composes overview-selection, view-prefs, reorder-state
+ * @variants grid, list
+ * @constraint plates virtualized with content-visibility; spatial-canvas mode retired (SCALE-GALLERY)
+ */
   // Exhibit overview — the exhibit's OTHER scale: its Objects laid out as plates in reading order, arranged
   // and browsed. Two modes: a plain scrollable GRID (default) and an explicit LIST, toggled in the header.
   // Click a plate → open that Object. The spatial-canvas mode (a pan/zoom viewport over a CSS-transformed

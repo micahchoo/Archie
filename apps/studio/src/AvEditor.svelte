@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface canvas
+ * @composes av-annotation
+ * @variants audio, video
+ * @constraint canvas surface: dark tokens (--surface-canvas, --ink-canvas-*); Wavesurfer waveform for audio, <video> + frame-draw overlay for video
+ */
   // Studio AV authoring surface (CONTEXT §81 + archie-av Q-1; ADR-0006). Annotate audio/video BY HAND — the
   // temporal analogue of the OSD draw tool. AUDIO: a WaveSurfer WAVEFORM (drag = a `t=` cue; donor field-studio).
   // VIDEO: a plain <video> + a frame-draw OVERLAY — draw a box on a frame (the `xywh`, in PERCENT, donor

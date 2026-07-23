@@ -17,8 +17,38 @@
 // lazy blob: URL over a native path, so one code path materializes on both. Images are display-once and
 // revoked after (Phase-4: "tens of MB materialized once is fine"); the publish/size/original readers stay
 // lazy (getFile()/size()) so a multi-GB asset is never pulled into heap.
-import { isNotFound, type FsDirectory, type FsFile } from "@render/core";
+import { BAKE_SCHEMA_VERSION, isNotFound, type FsDirectory, type FsFile } from "@render/core";
 import { residentProjectDir, residentPeaksDir } from "./resident-store.js";
+
+/** Schema-version marker written into regenerable asset directories. Bump BAKE_SCHEMA_VERSION
+ *  in migrate.ts when the bake format changes → all cached masters/thumbnails are silently
+ *  invalidated and regenerated on next load (freecut refinement: delete-and-regen on mismatch). */
+const SCHEMA_MARKER = ".bake-schema";
+
+/** Write the current bake-schema version into `dir`. No-op if dir is null. */
+async function writeBakeSchema(dir: FsDirectory | null): Promise<void> {
+ if (!dir) return;
+ const fh = await dir.getFile(SCHEMA_MARKER, { create: true });
+ const w = await fh.writable();
+ await w.write(new Blob([JSON.stringify({ version: BAKE_SCHEMA_VERSION })], { type: "application/json" }));
+ await w.close();
+}
+
+/** True if `dir`'s bake-schema marker matches the current version, or dir is null (no assets to
+ *  invalidate), or the marker is absent (pre-schema assets — fine, current format). False ONLY
+ *  when the marker EXISTS but has a DIFFERENT version → cached assets are stale → regenerate. */
+async function bakeSchemaMatches(dir: FsDirectory | null): Promise<boolean> {
+ if (!dir) return true;
+ try {
+  const fh = await dir.getFile(SCHEMA_MARKER);
+  const raw = new TextDecoder().decode(await fh.readable());
+  return (JSON.parse(raw) as { version?: unknown }).version === BAKE_SCHEMA_VERSION;
+ } catch (e) {
+  // NotFoundError → pre-schema assets (no marker yet) → OK, not stale
+  if (isNotFound(e)) return true;
+  return false; // corrupt marker → stale
+ }
+}
 
 /** The source prefix marking an object as an imported asset (vs an external URL). */
 export const ASSET_PREFIX = "/assets/";
@@ -29,37 +59,42 @@ export const isAsset = (src: string | undefined): boolean => !!src && src.starts
  *  exhibits → slug → sub). With create:false a missing segment throws the seam's canonical `no such …`,
  *  which callers classify absent-vs-failed via `isNotFound`. Null only where there is no store at all. */
 async function assetsDir(slug: string, create: boolean, sub = "assets"): Promise<FsDirectory | null> {
-  const project = await residentProjectDir(create);
-  if (!project) return null;
-  const exhibits = await project.getDirectory("exhibits", { create });
-  const ex = await exhibits.getDirectory(slug, { create });
-  return ex.getDirectory(sub, { create });
+ const project = await residentProjectDir(create);
+ if (!project) return null;
+ const exhibits = await project.getDirectory("exhibits", { create });
+ const ex = await exhibits.getDirectory(slug, { create });
+ return ex.getDirectory(sub, { create });
 }
 
 async function writeInto(dir: FsDirectory | null, name: string, file: Blob): Promise<void> {
-  if (!dir) return;
-  const fh = await dir.getFile(name, { create: true });
-  const w = await fh.writable();
-  await w.write(file); // Blob → the streaming write path on Tauri; createWritable on OPFS
-  await w.close();
+ if (!dir) return;
+ const fh = await dir.getFile(name, { create: true });
+ const w = await fh.writable();
+ await w.write(file); // Blob → the streaming write path on Tauri; createWritable on OPFS
+ await w.close();
 }
 
 /** Store an imported image (the DISPLAY MASTER) in the exhibit's assets dir. No-op if unsupported. */
 export async function saveAssetFile(slug: string, name: string, file: Blob): Promise<void> {
-  await writeInto(await assetsDir(slug, true), name, file);
+ const dir = await assetsDir(slug, true);
+ await writeInto(dir, name, file);
+ await writeBakeSchema(dir); // stamp after the asset lands — torn write leaves stale schema → regenerate
 }
 
 /** Preserve the UNTOUCHED original beside the master (CONTEXT §89.1 provenance), in `assets-original/`.
- *  Not published unless "include source for citation" is opted in (follow-up). No-op if unsupported. */
+ *  Not published unless "include source for citation" is opted in (follow-up). No-op if unsupported.
+ *  Does NOT stamp a bake-schema marker — originals are NOT regenerable. */
 export async function saveOriginalFile(slug: string, name: string, file: Blob): Promise<void> {
-  await writeInto(await assetsDir(slug, true, "assets-original"), name, file);
+ await writeInto(await assetsDir(slug, true, "assets-original"), name, file);
 }
 
 /** Store a BAKED THUMBNAIL beside the master in `assets-thumb/` — a small gallery/overview derivative so
  *  the viewer's grid loads a shrunk plate, not the full-resolution master (the multi-object load win).
  *  Same name as the master. Published via publishLibrary's getThumbnail. No-op if unsupported. */
 export async function saveThumbFile(slug: string, name: string, file: Blob): Promise<void> {
-  await writeInto(await assetsDir(slug, true, "assets-thumb"), name, file);
+ const dir = await assetsDir(slug, true, "assets-thumb");
+ await writeInto(dir, name, file);
+ await writeBakeSchema(dir);
 }
 
 // --- audio waveform peak cache (Studio-only; NOT published — the viewer uses a native <audio>) ---
@@ -70,42 +105,42 @@ export async function saveThumbFile(slug: string, name: string, file: Blob): Pro
 
 /** A decoded waveform's peaks + duration — all WaveSurfer needs to render without touching the audio. */
 export interface PeakCache {
-  v: 1;
-  /** Audio duration in seconds (WaveSurfer's `duration` option). */
-  duration: number;
-  /** Per-channel peak arrays (WaveSurfer's `peaks` option / `exportPeaks()` output). */
-  peaks: number[][];
+ v: 1;
+ /** Audio duration in seconds (WaveSurfer's `duration` option). */
+ duration: number;
+ /** Per-channel peak arrays (WaveSurfer's `peaks` option / `exportPeaks()` output). */
+ peaks: number[][];
 }
 
 /** Read an asset's cached waveform peaks (from the hidden cache dir — residentPeaksDir). Null when absent,
  *  corrupt, failed, or unsupported (→ decode) — a peaks CACHE is self-healing, so even a real read failure
  *  just re-decodes, and the whole read is tolerant (no absent-vs-failed ceremony a cache doesn't need). */
 export async function readPeaks(slug: string, name: string): Promise<PeakCache | null> {
-  try {
-    const dir = await residentPeaksDir(slug, false);
-    if (!dir) return null;
-    const c = JSON.parse(new TextDecoder().decode(await (await dir.getFile(`${name}.json`)).readable())) as PeakCache;
-    if (c?.v === 1 && typeof c.duration === "number" && Array.isArray(c.peaks) && c.peaks.length > 0) return c;
-  } catch { /* absent / corrupt / read fault → re-decode */ }
-  return null;
+ try {
+  const dir = await residentPeaksDir(slug, false);
+  if (!dir) return null;
+  const c = JSON.parse(new TextDecoder().decode(await (await dir.getFile(`${name}.json`)).readable())) as PeakCache;
+  if (c?.v === 1 && typeof c.duration === "number" && Array.isArray(c.peaks) && c.peaks.length > 0) return c;
+ } catch { /* absent / corrupt / read fault → re-decode */ }
+ return null;
 }
 
 /** Persist an asset's waveform peaks (written once, after the first decode) to the hidden cache dir. No-op
  *  if unsupported. */
 export async function savePeaks(slug: string, name: string, cache: PeakCache): Promise<void> {
-  await writeInto(await residentPeaksDir(slug, true), `${name}.json`, new Blob([JSON.stringify(cache)], { type: "application/json" }));
+ await writeInto(await residentPeaksDir(slug, true), `${name}.json`, new Blob([JSON.stringify(cache)], { type: "application/json" }));
 }
 
 // Neither OPFS nor the native folder persist a file's MIME type — reads come back typeless. Images sniff
 // fine, but `<video>`/`<audio>` (and WaveSurfer) can refuse a typeless blob: URL, so restore the type from
 // the extension when building a blob: URL.
 const EXT_MIME: Record<string, string> = {
-  mp4: "video/mp4", m4v: "video/mp4", webm: "video/webm", mov: "video/quicktime", ogv: "video/ogg",
-  mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4", aac: "audio/aac", flac: "audio/flac",
-  png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", avif: "image/avif",
+ mp4: "video/mp4", m4v: "video/mp4", webm: "video/webm", mov: "video/quicktime", ogv: "video/ogg",
+ mp3: "audio/mpeg", wav: "audio/wav", ogg: "audio/ogg", m4a: "audio/mp4", aac: "audio/aac", flac: "audio/flac",
+ png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", gif: "image/gif", avif: "image/avif",
 };
 function mimeFromName(name: string): string {
-  return EXT_MIME[name.toLowerCase().split(".").pop() ?? ""] ?? "";
+ return EXT_MIME[name.toLowerCase().split(".").pop() ?? ""] ?? "";
 }
 
 /** A real store read failure (quota, permission, wrong-kind entry, backend corruption) — NOT "absent".
@@ -113,10 +148,10 @@ function mimeFromName(name: string): string {
  *  .claude/rules/render-core-data-integrity.md §2): the publish readers let this propagate so a failed
  *  read fails the publish loudly instead of silently shipping without the asset/thumbnail. */
 export class AssetReadFailedError extends Error {
-  override name = "AssetReadFailedError";
-  constructor(slug: string, path: string, cause: unknown) {
-    super(`Failed to read stored asset "${path}" (exhibit "${slug}"): ${cause instanceof Error ? cause.message : String(cause)}`, { cause });
-  }
+ override name = "AssetReadFailedError";
+ constructor(slug: string, path: string, cause: unknown) {
+  super(`Failed to read stored asset "${path}" (exhibit "${slug}"): ${cause instanceof Error ? cause.message : String(cause)}`, { cause });
+ }
 }
 
 /** Resolve a stored asset (in the given `sub` dir) to its seam handle — a LAZY File, NOT read into the JS
@@ -124,53 +159,54 @@ export class AssetReadFailedError extends Error {
  *  absent (no dir chain / no file / no store — the seam's canonical `no such …`, classified by isNotFound);
  *  any other error throws AssetReadFailedError (absent-vs-failed, render-core-data-integrity §2). */
 async function openAssetFile(slug: string, name: string, sub: string): Promise<FsFile | null> {
-  try {
-    const dir = await assetsDir(slug, false, sub);
-    if (!dir) return null;
-    return await dir.getFile(name); // seam handle — throws the canonical `no such file:` if absent
-  } catch (e) {
-    if (isNotFound(e)) return null; // not stored (a non-asset source, no baked derivative, or never imported)
-    throw new AssetReadFailedError(slug, `${sub}/${name}`, e);
-  }
+ try {
+  const dir = await assetsDir(slug, false, sub);
+  if (!dir) return null;
+  if (!(await bakeSchemaMatches(dir))) return null; // schema mismatch → stale cache, regenerate
+  return await dir.getFile(name); // seam handle — throws the canonical `no such file:` if absent
+ } catch (e) {
+  if (isNotFound(e)) return null; // not stored (a non-asset source, no baked derivative, or never imported)
+  throw new AssetReadFailedError(slug, `${sub}/${name}`, e);
+ }
 }
 
 /** The DISPLAY-path tolerance policy: a real read failure degrades to the caller's placeholder/fallback
  *  (a grid plate is not worth crashing a render wave) but leaves a loud console trace — deliberately
  *  unlike the publish readers (readAssetBlob/readThumbBytes), which propagate AssetReadFailedError. */
 async function openAssetFileForDisplay(slug: string, name: string, sub: string): Promise<FsFile | null> {
-  try {
-    return await openAssetFile(slug, name, sub);
-  } catch (e) {
-    console.error(e);
-    return null;
-  }
+ try {
+  return await openAssetFile(slug, name, sub);
+ } catch (e) {
+  console.error(e);
+  return null;
+ }
 }
 
 /** Read a stored asset's bytes into a fresh blob: URL, restoring the MIME the extension implies (the store
  *  drops a file's type → `<video>`/`<audio>`/WaveSurfer can refuse a typeless blob: URL). Materializes the
  *  bytes once (see the module note); caller revokes the URL. */
 async function blobUrlFrom(h: FsFile, name: string): Promise<string> {
-  const bytes = await h.readable();
-  const type = mimeFromName(name);
-  return URL.createObjectURL(type ? new Blob([bytes], { type }) : new Blob([bytes]));
+ const bytes = await h.readable();
+ const type = mimeFromName(name);
+ return URL.createObjectURL(type ? new Blob([bytes], { type }) : new Blob([bytes]));
 }
 
 /** Byte size of a stored asset — METADATA ONLY (a stat; never reads the bytes). 0 if absent or unreadable.
  *  Used by the pre-zip size estimate (LARGE-MEDIA-MEMORY-CEILING #1). */
 export async function assetSize(slug: string, name: string): Promise<number> {
-  try {
-    const h = await openAssetFile(slug, name, "assets");
-    return h ? await h.size() : 0;
-  } catch {
-    return 0; // tolerant: the estimate is advisory, not a hard read
-  }
+ try {
+  const h = await openAssetFile(slug, name, "assets");
+  return h ? await h.size() : 0;
+ } catch {
+  return 0; // tolerant: the estimate is advisory, not a hard read
+ }
 }
 
 /** Resolve a stored asset to a fresh blob: URL (caller must revokeObjectURL). Null if absent — or on a
  *  real read failure (display path: logged, degraded to the caller's fallback). */
 export async function readAssetUrl(slug: string, name: string): Promise<string | null> {
-  const h = await openAssetFileForDisplay(slug, name, "assets");
-  return h ? blobUrlFrom(h, name) : null;
+ const h = await openAssetFileForDisplay(slug, name, "assets");
+ return h ? blobUrlFrom(h, name) : null;
 }
 
 /** A backend-native URL the webview loads an asset DIRECTLY (Tauri convertFileSrc → `asset://…`),
@@ -181,8 +217,8 @@ export async function readAssetUrl(slug: string, name: string): Promise<string |
  *  Images deliberately do NOT use this — they stay on blob: URLs (Phase 4: the assetProtocol + OSD +
  *  WebKitGTK combo is the highest-risk item; keep it off the load-bearing image path). */
 export async function residentAssetUrl(slug: string, name: string): Promise<string | null> {
-  const h = await openAssetFileForDisplay(slug, name, "assets");
-  return h?.resolveUrl ? (await h.resolveUrl()) ?? null : null;
+ const h = await openAssetFileForDisplay(slug, name, "assets");
+ return h?.resolveUrl ? (await h.resolveUrl()) ?? null : null;
 }
 
 /** Resolve a stored asset to its seam File — a LAZY File, NOT read into the JS heap (the publish getAsset
@@ -191,18 +227,18 @@ export async function residentAssetUrl(slug: string, name: string): Promise<stri
  *  materializing here. Null ONLY if absent; a real read failure propagates AssetReadFailedError (fail the
  *  publish, don't ship a hole). */
 export async function readAssetBlob(slug: string, name: string): Promise<Blob | null> {
-  const h = await openAssetFile(slug, name, "assets");
-  return h ? h.getFile() : null; // the seam File — lazy; not read into memory here
+ const h = await openAssetFile(slug, name, "assets");
+ return h ? h.getFile() : null; // the seam File — lazy; not read into memory here
 }
 
 /** Read a preserved ORIGINAL's bytes (from `assets-original/`) for opt-in citation publish. Null if absent. */
 export async function readOriginalBytes(slug: string, name: string): Promise<ArrayBuffer | null> {
-  try {
-    const h = await openAssetFile(slug, name, "assets-original");
-    return h ? await h.readable() : null;
-  } catch {
-    return null;
-  }
+ try {
+  const h = await openAssetFile(slug, name, "assets-original");
+  return h ? await h.readable() : null;
+ } catch {
+  return null;
+ }
 }
 
 /** Resolve a stored baked thumbnail (`assets-thumb/`) to its seam File — lazy, mirroring readAssetBlob (the
@@ -210,8 +246,8 @@ export async function readOriginalBytes(slug: string, name: string): Promise<Arr
  *  read failure propagates AssetReadFailedError so the publish fails loudly instead of silently shipping a
  *  tree without its thumbnails. */
 export async function readThumbBytes(slug: string, name: string): Promise<Blob | null> {
-  const h = await openAssetFile(slug, name, "assets-thumb");
-  return h ? h.getFile() : null;
+ const h = await openAssetFile(slug, name, "assets-thumb");
+ return h ? h.getFile() : null;
 }
 
 /** Resolve a stored baked thumbnail to a fresh blob: URL (caller revokes) — the small gallery/overview
@@ -219,6 +255,6 @@ export async function readThumbBytes(slug: string, name: string): Promise<Blob |
  *  Null when no thumbnail was baked (pre-existing import, or an image already small enough) — or on a
  *  real read failure (display path: logged, degraded to the master fallback). */
 export async function readThumbUrl(slug: string, name: string): Promise<string | null> {
-  const h = await openAssetFileForDisplay(slug, name, "assets-thumb"); // no baked thumbnail → caller falls back to the master blob
-  return h ? blobUrlFrom(h, name) : null;
+ const h = await openAssetFileForDisplay(slug, name, "assets-thumb"); // no baked thumbnail → caller falls back to the master blob
+ return h ? blobUrlFrom(h, name) : null;
 }

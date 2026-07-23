@@ -7,9 +7,9 @@
     {
       "slug": "screenshots",
       "title": "Archie, Annotated",
+      "cover": "screenshots/assets/o1-e1-embed.png",
       "description": "Archie annotates Archie: 21 screenshots of the app itself, read four ways — as a Studio how-to, a Viewer tour, an embed guide, and a power-user's list of invisible behavior.",
-      "order": 0,
-      "unlisted": true
+      "order": 0
     },
     {
       "slug": "voynich-rosettes",

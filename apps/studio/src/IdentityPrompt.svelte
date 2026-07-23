@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface dialog
+ * @composes standalone
+ * @variants open, closed
+ * @constraint dialog obeys single-scrim invariant (shared scrim contract via modality.svelte)
+ */
   // Identity prompt (CONTEXT invention #6 + UX principle #2 "surface decisions at the moment they
   // acquire meaning"). A local display name, asked lazily — the first time a colleague's copy lands with
   // OTHERS' notes in it, or the first share/publish action — never at launch. Skip → Anonymous (gentle

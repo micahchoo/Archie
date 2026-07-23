@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface dialog
+ * @composes cmd-k
+ * @variants search, browse
+ * @constraint scrimmed surface via shared modality helper — scrim-click + Esc + focus trap/return; list-navigation keys (↑↓/↵) stay local
+ */
   // ⌘K — the "catalog drawer" for intra-Library linking (CONTEXT §95 linkability). While writing a
   // note, the curator CITES another note/exhibit in the same Library: this picker finds the target by
   // its text and the parent (App.svelte) splices an `archie:` ref into the Comment at the cursor.

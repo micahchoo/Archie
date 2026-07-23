@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface gallery
+ * @composes GalleryThumb
+ * @variants populated, empty (with query, without query)
+ * @constraint content-visibility: auto for virtualized off-screen tiles
+ */
   // The all-images wall (SCALE-GALLERY Phase 3.2) — every Object across the Library on one virtualized
   // grid, the Studio twin of the Viewer Gallery wall (congruent shape, but Studio feeds OPFS thumbs, not
   // baked refs — and reads live, never the published index). Studio-LOCAL by design: a truly shared

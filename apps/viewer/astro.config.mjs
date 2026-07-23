@@ -25,8 +25,24 @@ export default defineConfig({
     // bare names — so the optimized chunk is "fflate.js", matching the bare import.
     // minisearch is imported directly by src/lib/search-index.ts; pre-bundling it
     // at startup avoids a mid-session re-optimization (which 504s already-open tabs).
+    // The canvas trio (openseadragon + @annotorious/*, reached only through the lazy
+    // ExhibitView import via @render/mount) must be pre-bundled for the same reason,
+    // plus a worse one: unlike plain Vite (studio), Astro has no index.html crawl, so
+    // a dep absent from this list is optimized only on the FIRST exhibit visit of a
+    // server run — and any sibling instance booting against the shared
+    // node_modules/.vite/deps then rewrites the cache WITHOUT the trio, wedging the
+    // running server into serving transforms whose ?v= hash it 504s (surfaces in
+    // Firefox as NS_ERROR_CORRUPTED_CONTENT on the three dep URLs, dead canvas).
     optimizeDeps: {
-      include: ["fflate", "isomorphic-dompurify", "snarkdown", "minisearch"],
+      include: [
+        "fflate",
+        "isomorphic-dompurify",
+        "snarkdown",
+        "minisearch",
+        "openseadragon",
+        "@annotorious/openseadragon",
+        "@annotorious/plugin-tools",
+      ],
     },
   },
 });

@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface dialog
+ * @composes standalone
+ * @variants {open}
+ * @constraint {dialog: single-scrim invariant}
+ */
   // Onboarding tutorial — embeds the docs/learn slide decks (synced to public/learn) in an
   // iframe. The decks own their own slide nav + cross-step flow; this is just the framed shell.
   let { open, onclose }: { open: boolean; onclose: () => void } = $props();

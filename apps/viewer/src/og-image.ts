@@ -30,7 +30,10 @@ const probeCache = new Map<string, Promise<string>>();
 function probeUpsize(cover: string, upsized: string): Promise<string> {
   let p = probeCache.get(upsized);
   if (!p) {
-    p = fetch(upsized, { method: "HEAD" })
+    // The timeout matters: a stalled host (iiif.archive.org has been observed hanging HEADs
+    // indefinitely) never rejects, which would hang every page render awaiting this probe —
+    // abort turns a stall into the same optimistic "upsized unprobed" path as a throw.
+    p = fetch(upsized, { method: "HEAD", signal: AbortSignal.timeout(10_000) })
       .then((r) => (r.status === 404 || r.status === 501 ? cover : upsized))
       .catch(() => upsized);
     probeCache.set(upsized, p);

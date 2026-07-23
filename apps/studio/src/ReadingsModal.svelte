@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface {dialog}
+ * @composes {ReadingsEditor, modality helper}
+ * @variants {open, closed}
+ * @constraint {single-scrim invariant; scrim-click + Esc + focus trap/return via shared modality helper}
+ */
   // The Readings surface: a centered modal that EXPLAINS the concept where it's edited (user: the
   // side-drawer felt fragmented and under-explained). Replaces the two-step gate (ReadingHelp teaching
   // modal → drawer, ADR-0007's first-add flow) — the copy that taught the concept once now lives

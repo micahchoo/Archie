@@ -5,14 +5,23 @@
 // The DISCIPLINE this establishes: the runner exists from day one, so the first real schema
 // change just appends a Migration entry — never a retrofit. (rev / layers / archie: metadata
 // were the schema edits that triggered owing this — strategy §39 "the first schema edit is the trigger".)
-
 import type { AnnotationRecord, W3CBody, W3CTextualBody } from "../wadm/types.js";
 
 /** Current on-disk schema version. v1 docs are stamped so a future runner can migrate them. */
 export const SCHEMA_VERSION = 1;
 
 /**
- * ADR-0007 record migration: fold a legacy multi-valued `layers` value into Tags (purpose:tagging
+ * Schema version for regenerable baked artifacts (display masters, thumbnails, DZI tiles — freecut
+ * refinement). Stamped as a `.bake-schema` marker in each asset directory. On a version mismatch at
+ * load time, the asset reader returns null → the caller regenerates (delete + re-bake on next use).
+ * Bump when the bake format changes (e.g. mime, dimensions, compression) so stale cached artifacts
+ * are silently invalidated instead of served as corrupt.
+ */
+export const BAKE_SCHEMA_VERSION = 1;
+
+/**
+ * Per-record normalizer — runs on EVERY load, not only on version bumps (freecut refinement).
+ * ADR-0007: fold a legacy multi-valued `layers` value into Tags (purpose:tagging
  * bodies), losslessly, and drop `layers`. A Reading is single/exclusive so it CANNOT absorb a
  * multi-value `layers` without data-loss; Tags are additive and absorb `string[]` cleanly — so the
  * old undifferentiated "layer" maps onto the additive side of the Frame-C split. Idempotent: no
@@ -24,29 +33,33 @@ export const SCHEMA_VERSION = 1;
  * remaining consumer of legacy `archie:layers` data. It reads/strips `layers` via cast since the field
  * is no longer typed. See docs/plans/data-standardisation-plan.md item A3.
  */
-export function foldLayersIntoTags(record: AnnotationRecord): AnnotationRecord {
-  const layers = (record as { layers?: string[] }).layers;
-  if (layers === undefined || layers.length === 0) return record;
-  const bodies: W3CBody[] =
-    record.body === undefined ? [] : Array.isArray(record.body) ? [...record.body] : [record.body];
-  const existingTags = new Set(
-    bodies
-      .filter((b): b is W3CTextualBody => (b as W3CTextualBody).purpose === "tagging")
-      .map((b) => b.value),
-  );
-  for (const layer of layers) {
-    if (!existingTags.has(layer)) bodies.push({ type: "TextualBody", value: layer, purpose: "tagging" });
-  }
-  const rest = { ...record };
-  delete (rest as { layers?: string[] }).layers;
-  return { ...rest, body: bodies };
+export function normalizeRecord(record: AnnotationRecord): AnnotationRecord {
+ const layers = (record as { layers?: string[] }).layers;
+ if (layers === undefined || layers.length === 0) return record;
+ const bodies: W3CBody[] =
+  record.body === undefined ? [] : Array.isArray(record.body) ? [...record.body] : [record.body];
+ const existingTags = new Set(
+  bodies
+   .filter((b): b is W3CTextualBody => (b as W3CTextualBody).purpose === "tagging")
+   .map((b) => b.value),
+ );
+ for (const layer of layers) {
+  if (!existingTags.has(layer)) bodies.push({ type: "TextualBody", value: layer, purpose: "tagging" });
+ }
+ const rest = { ...record };
+ delete (rest as { layers?: string[] }).layers;
+ return { ...rest, body: bodies };
 }
+
+
+/** Legacy name for `normalizeRecord` — same function; kept for existing call sites (deserialize.ts, reading.test.ts). */
+export const foldLayersIntoTags = normalizeRecord;
 
 /** A named, ordered schema migration. `up` transforms a doc from version `to-1`-shape to `to`-shape. */
 export interface Migration {
-  to: number;
-  description: string;
-  up: (doc: Record<string, unknown>) => Record<string, unknown>;
+ to: number;
+ description: string;
+ up: (doc: Record<string, unknown>) => Record<string, unknown>;
 }
 
 /**
@@ -56,34 +69,41 @@ export interface Migration {
 export const MIGRATIONS: Migration[] = [];
 
 function versionOf(doc: Record<string, unknown>): number {
-  const v = doc["schemaVersion"];
-  return typeof v === "number" ? v : 0;
+ const v = doc["schemaVersion"];
+ return typeof v === "number" ? v : 0;
 }
 
 /** Stamp the current schema version onto a document (call when writing). */
 export function stamp<T extends object>(doc: T): T & { schemaVersion: number } {
-  return { ...doc, schemaVersion: SCHEMA_VERSION };
+ return { ...doc, schemaVersion: SCHEMA_VERSION };
 }
 
 /**
  * Bring `doc` forward by applying every migration whose `to` exceeds the doc's current version,
  * in ascending order, then stamp it to at least SCHEMA_VERSION. Idempotent past the current
  * version. Pass an explicit `migrations` list in tests; defaults to the live registry.
+ *
+ * Returns the migrated doc AND a `migrated` flag (freecut refinement) — true when at least
+ * one migration ran or the version stamp was applied. Callers can use the flag to force an
+ * immediate re-save, so old-format data does not persist until the next edit.
  */
-export function migrate(doc: Record<string, unknown>, migrations: Migration[] = MIGRATIONS): Record<string, unknown> {
-  const from = versionOf(doc);
-  let data: Record<string, unknown> = doc;
-  let applied = false;
-  for (const m of [...migrations].sort((a, b) => a.to - b.to)) {
-    if (m.to > versionOf(data)) {
-      data = { ...m.up(data), schemaVersion: m.to };
-      applied = true;
-    }
+export function migrate(
+ doc: Record<string, unknown>,
+ migrations: Migration[] = MIGRATIONS,
+): { doc: Record<string, unknown>; migrated: boolean } {
+ const from = versionOf(doc);
+ let data: Record<string, unknown> = doc;
+ let migrated = false;
+ for (const m of [...migrations].sort((a, b) => a.to - b.to)) {
+  if (m.to > versionOf(data)) {
+   data = { ...m.up(data), schemaVersion: m.to };
+   migrated = true;
   }
-  const targetVersion = Math.max(SCHEMA_VERSION, ...migrations.map((m) => m.to), from);
-  if (versionOf(data) < targetVersion) {
-    data = { ...data, schemaVersion: targetVersion };
-    applied = true;
-  }
-  return applied ? data : doc;
+ }
+ const targetVersion = Math.max(SCHEMA_VERSION, ...migrations.map((m) => m.to), from);
+ if (versionOf(data) < targetVersion) {
+  data = { ...data, schemaVersion: targetVersion };
+  migrated = true;
+ }
+ return { doc: data, migrated };
 }

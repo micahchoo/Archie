@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface {dialog}
+ * @composes {Spinner, ZipExportFields, publish-machine, modality helper}
+ * @variants {step 1 chooser (choose/zip-options/local/working/done-folder/done-zip/done-download/error), wizard}
+ * @constraint {single-scrim invariant; surface is mounted for app lifetime, machine state survives close; in-surface "← Back" for nested flow}
+ */
   // Publish & Share — the ONE merged surface (Archie-1921, decision Archie-7d9b) for every "Library → the
   // world" path. Formerly two dialogs that opened one behind the other (PublishDialog.svelte → Publish.svelte);
   // now a single scrimmed surface with an in-surface step sequence:

@@ -7,27 +7,32 @@
    NOTE: duplicated in apps/viewer/src/markers.css — keep the two in sync.
    MUST load AFTER the Annotorious CSS (same specificity → source order wins). */
 .a9s-annotationlayer .a9s-outer {
-  display: block;
-  stroke: rgba(251, 246, 243, 0.75);   /* warm paper halo — the soft "light" */
-  stroke-width: 3px;
-  stroke-opacity: 0.55;
-  filter: drop-shadow(0 1px 3px rgba(59, 49, 56, 0.30));  /* soft warm-charcoal lift, no hard edge */
+ display: block;
+ stroke: var(--annotation-halo-stroke);
+ /* warm paper halo — the soft "light" */
+ stroke-width: 3px;
+ stroke-opacity: 0.55;
+ /* Drop-shadow filter removed — elevation is built from blur + light per system.md Depth */
 }
+
 .a9s-annotationlayer .a9s-inner {
-  fill: transparent;
-  stroke: var(--clay-line, #B86450);   /* warm clay — the resting mark, sits in the haze */
-  stroke-width: 1.5px;
-  stroke-opacity: 0.85;
+ fill: transparent;
+ stroke: var(--annotation-inner-stroke);
+ /* resting mark, sits in the haze */
+ stroke-width: 1.5px;
+ stroke-opacity: 0.85;
 }
+
 /* Full styling on selection — the marker becomes the one signal (saturated orange). */
 .a9s-annotationlayer .a9s-inner.selected,
 .a9s-annotationlayer .selected .a9s-inner {
-  stroke: var(--signal-orange, #F0631C);
-  stroke-opacity: 1;
-  stroke-width: 2.5px;
-  fill: rgba(240, 99, 28, 0.12);
+ stroke: var(--annotation-selected-stroke);
+ stroke-opacity: 1;
+ stroke-width: 2.5px;
+ fill: var(--annotation-selected-fill);
 }
+
 .a9s-annotationlayer .a9s-outer.selected,
 .a9s-annotationlayer .selected .a9s-outer {
-  stroke-opacity: 0.85;
+ stroke-opacity: 0.85;
 }

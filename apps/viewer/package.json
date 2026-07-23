@@ -27,6 +27,7 @@
     "fflate": "^0.8.2",
     "isomorphic-dompurify": "^3.18.0",
     "minisearch": "^7.2.0",
+    "openseadragon": "^5.0.1",
     "snarkdown": "^2.0.0"
   },
   "devDependencies": {

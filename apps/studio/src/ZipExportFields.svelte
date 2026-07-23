@@ -4,6 +4,12 @@
      here ONCE. The parent owns the bindables (name/selected), the action buttons, and the phase
      machine; `exportOpts` composes what the flows' download/save seams take. -->
 <script lang="ts">
+/**
+ * @surface paper
+ * @composes SaveZipDialog
+ * @variants {compact, full}
+ * @constraint {paper surface: warm tokens (--surface-paper, --ink-paper-*)}
+ */
   import { selectedCount, type ExportExhibit } from "./zip-export-opts.js";
 
   let {

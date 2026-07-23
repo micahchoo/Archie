@@ -1,0 +1,55 @@
+import { fileURLToPath } from "node:url";
+import { defineConfig, devices } from "@playwright/test";
+
+// Studio e2e gate (Archie-d80f). The one place we mount the REAL App + a real browser history —
+// the popstate/hashchange re-entrancy bug class (App.svelte `applyPlace`/`onLocationChange`, ADR-0024)
+// is invisible to the repo's pure-module vitest posture, which never has a `history` to traverse.
+//
+// Scoped to apps/studio only: this config lives under apps/studio/e2e and its webServer boots the
+// STUDIO vite dev server alone (no front-door proxy, no viewer). Chromium-only — the annotation
+// stack (Annotorious/PixiJS) is the app's only browser-engine concern and it ships to a single
+// Chromium webview (Tauri) anyway, so cross-browser coverage would buy nothing here.
+
+// Dedicated port so a running `pnpm dev` (:5174, strictPort) never collides with the gate.
+const PORT = 5198;
+// vite serves the SPA under `base: "/studio/"` (single-origin dev contract); a bare-root hit 302s here.
+const BASE_URL = `http://localhost:${PORT}/studio/`;
+// apps/studio — where vite.config.ts lives, so the dev server reads the studio base/config.
+const STUDIO_DIR = fileURLToPath(new URL("..", import.meta.url));
+export default defineConfig({
+  testDir: ".",
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  // One retry in CI so `trace: on-first-retry` captures a failing traversal; none locally (fail fast).
+  retries: process.env.CI ? 1 : 0,
+  // Serial: the specs share one dev server and drive global browser history; parallel workers would
+  // only add nondeterminism without isolating anything the per-test browser context doesn't already.
+  workers: 1,
+  reporter: process.env.CI ? [["list"], ["html", {
+    open: "never"
+  }]] : [["list"]],
+  timeout: 30000,
+  expect: {
+    timeout: 10000
+  },
+  use: {
+    baseURL: BASE_URL,
+    trace: "on-first-retry"
+  },
+  projects: [{
+    name: "chromium",
+    use: {
+      ...devices["Desktop Chrome"]
+    }
+  }],
+  webServer: {
+    // `vite` (not the `dev` script) — sync-learn only stages tutorial assets, irrelevant to navigation,
+    // and skipping it keeps startup lean. --strictPort makes a port clash fail loudly, not silently drift.
+    command: `pnpm exec vite --port ${PORT} --strictPort`,
+    cwd: STUDIO_DIR,
+    url: BASE_URL,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000
+  }
+});
+//# sourceMappingURL=data:application/json;charset=utf-8;base64,eyJ2ZXJzaW9uIjozLCJuYW1lcyI6WyJmaWxlVVJMVG9QYXRoIiwiZGVmaW5lQ29uZmlnIiwiZGV2aWNlcyIsIlBPUlQiLCJCQVNFX1VSTCIsIlNUVURJT19ESVIiLCJVUkwiLCJpbXBvcnQiLCJtZXRhIiwidXJsIiwidGVzdERpciIsImZ1bGx5UGFyYWxsZWwiLCJmb3JiaWRPbmx5IiwicHJvY2VzcyIsImVudiIsIkNJIiwicmV0cmllcyIsIndvcmtlcnMiLCJyZXBvcnRlciIsIm9wZW4iLCJ0aW1lb3V0IiwiZXhwZWN0IiwidXNlIiwiYmFzZVVSTCIsInRyYWNlIiwicHJvamVjdHMiLCJuYW1lIiwid2ViU2VydmVyIiwiY29tbWFuZCIsImN3ZCIsInJldXNlRXhpc3RpbmdTZXJ2ZXIiXSwic291cmNlcyI6WyJwbGF5d3JpZ2h0LmNvbmZpZy50cyJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBmaWxlVVJMVG9QYXRoIH0gZnJvbSBcIm5vZGU6dXJsXCI7XG5pbXBvcnQgeyBkZWZpbmVDb25maWcsIGRldmljZXMgfSBmcm9tIFwiQHBsYXl3cmlnaHQvdGVzdFwiO1xuXG4vLyBTdHVkaW8gZTJlIGdhdGUgKEFyY2hpZS1kODBmKS4gVGhlIG9uZSBwbGFjZSB3ZSBtb3VudCB0aGUgUkVBTCBBcHAgKyBhIHJlYWwgYnJvd3NlciBoaXN0b3J5IOKAlFxuLy8gdGhlIHBvcHN0YXRlL2hhc2hjaGFuZ2UgcmUtZW50cmFuY3kgYnVnIGNsYXNzIChBcHAuc3ZlbHRlIGBhcHBseVBsYWNlYC9gb25Mb2NhdGlvbkNoYW5nZWAsIEFEUi0wMDI0KVxuLy8gaXMgaW52aXNpYmxlIHRvIHRoZSByZXBvJ3MgcHVyZS1tb2R1bGUgdml0ZXN0IHBvc3R1cmUsIHdoaWNoIG5ldmVyIGhhcyBhIGBoaXN0b3J5YCB0byB0cmF2ZXJzZS5cbi8vXG4vLyBTY29wZWQgdG8gYXBwcy9zdHVkaW8gb25seTogdGhpcyBjb25maWcgbGl2ZXMgdW5kZXIgYXBwcy9zdHVkaW8vZTJlIGFuZCBpdHMgd2ViU2VydmVyIGJvb3RzIHRoZVxuLy8gU1RVRElPIHZpdGUgZGV2IHNlcnZlciBhbG9uZSAobm8gZnJvbnQtZG9vciBwcm94eSwgbm8gdmlld2VyKS4gQ2hyb21pdW0tb25seSDigJQgdGhlIGFubm90YXRpb25cbi8vIHN0YWNrIChBbm5vdG9yaW91cy9QaXhpSlMpIGlzIHRoZSBhcHAncyBvbmx5IGJyb3dzZXItZW5naW5lIGNvbmNlcm4gYW5kIGl0IHNoaXBzIHRvIGEgc2luZ2xlXG4vLyBDaHJvbWl1bSB3ZWJ2aWV3IChUYXVyaSkgYW55d2F5LCBzbyBjcm9zcy1icm93c2VyIGNvdmVyYWdlIHdvdWxkIGJ1eSBub3RoaW5nIGhlcmUuXG5cbi8vIERlZGljYXRlZCBwb3J0IHNvIGEgcnVubmluZyBgcG5wbSBkZXZgICg6NTE3NCwgc3RyaWN0UG9ydCkgbmV2ZXIgY29sbGlkZXMgd2l0aCB0aGUgZ2F0ZS5cbmNvbnN0IFBPUlQgPSA1MTk4O1xuLy8gdml0ZSBzZXJ2ZXMgdGhlIFNQQSB1bmRlciBgYmFzZTogXCIvc3R1ZGlvL1wiYCAoc2luZ2xlLW9yaWdpbiBkZXYgY29udHJhY3QpOyBhIGJhcmUtcm9vdCBoaXQgMzAycyBoZXJlLlxuY29uc3QgQkFTRV9VUkwgPSBgaHR0cDovL2xvY2FsaG9zdDoke1BPUlR9L3N0dWRpby9gO1xuLy8gYXBwcy9zdHVkaW8g4oCUIHdoZXJlIHZpdGUuY29uZmlnLnRzIGxpdmVzLCBzbyB0aGUgZGV2IHNlcnZlciByZWFkcyB0aGUgc3R1ZGlvIGJhc2UvY29uZmlnLlxuY29uc3QgU1RVRElPX0RJUiA9IGZpbGVVUkxUb1BhdGgobmV3IFVSTChcIi4uXCIsIGltcG9ydC5tZXRhLnVybCkpO1xuXG5leHBvcnQgZGVmYXVsdCBkZWZpbmVDb25maWcoe1xuICB0ZXN0RGlyOiBcIi5cIixcbiAgZnVsbHlQYXJhbGxlbDogZmFsc2UsXG4gIGZvcmJpZE9ubHk6ICEhcHJvY2Vzcy5lbnYuQ0ksXG4gIC8vIE9uZSByZXRyeSBpbiBDSSBzbyBgdHJhY2U6IG9uLWZpcnN0LXJldHJ5YCBjYXB0dXJlcyBhIGZhaWxpbmcgdHJhdmVyc2FsOyBub25lIGxvY2FsbHkgKGZhaWwgZmFzdCkuXG4gIHJldHJpZXM6IHByb2Nlc3MuZW52LkNJID8gMSA6IDAsXG4gIC8vIFNlcmlhbDogdGhlIHNwZWNzIHNoYXJlIG9uZSBkZXYgc2VydmVyIGFuZCBkcml2ZSBnbG9iYWwgYnJvd3NlciBoaXN0b3J5OyBwYXJhbGxlbCB3b3JrZXJzIHdvdWxkXG4gIC8vIG9ubHkgYWRkIG5vbmRldGVybWluaXNtIHdpdGhvdXQgaXNvbGF0aW5nIGFueXRoaW5nIHRoZSBwZXItdGVzdCBicm93c2VyIGNvbnRleHQgZG9lc24ndCBhbHJlYWR5LlxuICB3b3JrZXJzOiAxLFxuICByZXBvcnRlcjogcHJvY2Vzcy5lbnYuQ0kgPyBbW1wibGlzdFwiXSwgW1wiaHRtbFwiLCB7IG9wZW46IFwibmV2ZXJcIiB9XV0gOiBbW1wibGlzdFwiXV0sXG4gIHRpbWVvdXQ6IDMwXzAwMCxcbiAgZXhwZWN0OiB7IHRpbWVvdXQ6IDEwXzAwMCB9LFxuICB1c2U6IHtcbiAgICBiYXNlVVJMOiBCQVNFX1VSTCxcbiAgICB0cmFjZTogXCJvbi1maXJzdC1yZXRyeVwiLFxuICB9LFxuICBwcm9qZWN0czogW3sgbmFtZTogXCJjaHJvbWl1bVwiLCB1c2U6IHsgLi4uZGV2aWNlc1tcIkRlc2t0b3AgQ2hyb21lXCJdIH0gfV0sXG4gIHdlYlNlcnZlcjoge1xuICAgIC8vIGB2aXRlYCAobm90IHRoZSBgZGV2YCBzY3JpcHQpIOKAlCBzeW5jLWxlYXJuIG9ubHkgc3RhZ2VzIHR1dG9yaWFsIGFzc2V0cywgaXJyZWxldmFudCB0byBuYXZpZ2F0aW9uLFxuICAgIC8vIGFuZCBza2lwcGluZyBpdCBrZWVwcyBzdGFydHVwIGxlYW4uIC0tc3RyaWN0UG9ydCBtYWtlcyBhIHBvcnQgY2xhc2ggZmFpbCBsb3VkbHksIG5vdCBzaWxlbnRseSBkcmlmdC5cbiAgICBjb21tYW5kOiBgcG5wbSBleGVjIHZpdGUgLS1wb3J0ICR7UE9SVH0gLS1zdHJpY3RQb3J0YCxcbiAgICBjd2Q6IFNUVURJT19ESVIsXG4gICAgdXJsOiBCQVNFX1VSTCxcbiAgICByZXVzZUV4aXN0aW5nU2VydmVyOiAhcHJvY2Vzcy5lbnYuQ0ksXG4gICAgdGltZW91dDogMTIwXzAwMCxcbiAgfSxcbn0pO1xuIl0sIm1hcHBpbmdzIjoiQUFBQSxTQUFTQSxhQUFhLFFBQVEsVUFBVTtBQUN4QyxTQUFTQyxZQUFZLEVBQUVDLE9BQU8sUUFBUSxrQkFBa0I7O0FBRXhEO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7QUFDQTtBQUNBO0FBQ0E7O0FBRUE7QUFDQSxNQUFNQyxJQUFJLEdBQUcsSUFBSTtBQUNqQjtBQUNBLE1BQU1DLFFBQVEsR0FBRyxvQkFBb0JELElBQUksVUFBVTtBQUNuRDtBQUNBLE1BQU1FLFVBQVUsR0FBR0wsYUFBYSxDQUFDLElBQUlNLEdBQUcsQ0FBQyxJQUFJLEVBQUVDLE1BQU0sQ0FBQ0MsSUFBSSxDQUFDQyxHQUFHLENBQUMsQ0FBQztBQUVoRSxlQUFlUixZQUFZLENBQUM7RUFDMUJTLE9BQU8sRUFBRSxHQUFHO0VBQ1pDLGFBQWEsRUFBRSxLQUFLO0VBQ3BCQyxVQUFVLEVBQUUsQ0FBQyxDQUFDQyxPQUFPLENBQUNDLEdBQUcsQ0FBQ0MsRUFBRTtFQUM1QjtFQUNBQyxPQUFPLEVBQUVILE9BQU8sQ0FBQ0MsR0FBRyxDQUFDQyxFQUFFLEdBQUcsQ0FBQyxHQUFHLENBQUM7RUFDL0I7RUFDQTtFQUNBRSxPQUFPLEVBQUUsQ0FBQztFQUNWQyxRQUFRLEVBQUVMLE9BQU8sQ0FBQ0MsR0FBRyxDQUFDQyxFQUFFLEdBQUcsQ0FBQyxDQUFDLE1BQU0sQ0FBQyxFQUFFLENBQUMsTUFBTSxFQUFFO0lBQUVJLElBQUksRUFBRTtFQUFRLENBQUMsQ0FBQyxDQUFDLEdBQUcsQ0FBQyxDQUFDLE1BQU0sQ0FBQyxDQUFDO0VBQy9FQyxPQUFPLEVBQUUsS0FBTTtFQUNmQyxNQUFNLEVBQUU7SUFBRUQsT0FBTyxFQUFFO0VBQU8sQ0FBQztFQUMzQkUsR0FBRyxFQUFFO0lBQ0hDLE9BQU8sRUFBRW5CLFFBQVE7SUFDakJvQixLQUFLLEVBQUU7RUFDVCxDQUFDO0VBQ0RDLFFBQVEsRUFBRSxDQUFDO0lBQUVDLElBQUksRUFBRSxVQUFVO0lBQUVKLEdBQUcsRUFBRTtNQUFFLEdBQUdwQixPQUFPLENBQUMsZ0JBQWdCO0lBQUU7RUFBRSxDQUFDLENBQUM7RUFDdkV5QixTQUFTLEVBQUU7SUFDVDtJQUNBO0lBQ0FDLE9BQU8sRUFBRSx5QkFBeUJ6QixJQUFJLGVBQWU7SUFDckQwQixHQUFHLEVBQUV4QixVQUFVO0lBQ2ZJLEdBQUcsRUFBRUwsUUFBUTtJQUNiMEIsbUJBQW1CLEVBQUUsQ0FBQ2pCLE9BQU8sQ0FBQ0MsR0FBRyxDQUFDQyxFQUFFO0lBQ3BDSyxPQUFPLEVBQUU7RUFDWDtBQUNGLENBQUMsQ0FBQyIsImlnbm9yZUxpc3QiOltdfQ==

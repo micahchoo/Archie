@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface gallery
+ * @composes standalone
+ * @variants image, sound, video; loaded, failed, av-glyph
+ * @constraint lazy IntersectionObserver mint; revokes blob URL on destroy
+ */
   // A single Library-Gallery thumbnail (SCALE-GALLERY Phase 3.2) — shared by the exhibit-card cover AND
   // the all-images wall tiles. LAZY by design (the 50+-object surface this phase exists for): it mints its
   // blob URL only when it scrolls near the viewport (IntersectionObserver), so opening the Library never

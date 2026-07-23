@@ -2644,6 +2644,12 @@
                   "purpose": "tagging"
                 }
               ],
+              "created": "2026-07-05T20:51:10.130Z",
+              "creator": {
+                "type": "Person",
+                "name": "showroom-curator"
+              },
+              "archie:logicalId": "01KWT0S7NJ8SWVMNNV8P8405H7",
               "archie:reading": "viewer",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KWT0S7NJ8SWVMNNV8P8405H7.json"
             },
@@ -2677,6 +2683,12 @@
                   "purpose": "tagging"
                 }
               ],
+              "created": "2026-07-05T20:51:10.131Z",
+              "creator": {
+                "type": "Person",
+                "name": "showroom-curator"
+              },
+              "archie:logicalId": "01KWT0S7NKZ5MW0S19FR7VQ7Y8",
               "archie:reading": "viewer",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KWT0S7NKZ5MW0S19FR7VQ7Y8.json"
             },
@@ -2705,6 +2717,12 @@
                   "purpose": "tagging"
                 }
               ],
+              "created": "2026-07-05T20:51:10.132Z",
+              "creator": {
+                "type": "Person",
+                "name": "showroom-curator"
+              },
+              "archie:logicalId": "01KWT0S7NMDM6P7JD8E24PZVWW",
               "archie:reading": "viewer",
               "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KWT0S7NMDM6P7JD8E24PZVWW.json"
             }

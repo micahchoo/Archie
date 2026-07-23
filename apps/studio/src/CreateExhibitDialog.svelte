@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface dialog
+ * @composes create-exhibit
+ * @variants new-exhibit, add-media
+ * @constraint single-scrim invariant: opening REPLACES any prior scrimmed surface; three in-surface expanding paths (folder/IIIF/Map) with <code>‹ Back</code> return
+ */
   // The create/import dialog (Archie-51cc, decided by Archie-8482 "Variant A — one scrimmed dialog,
   // three in-surface expanding paths"). Replaces the old New-exhibit grid cell's cramped trio (a
   // title field + a hidden folder input + `window.prompt` for IIIF) with ONE entry point: a

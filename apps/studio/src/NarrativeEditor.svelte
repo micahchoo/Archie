@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface {paper}
+ * @composes {Narrative spine editor}
+ * @variants {empty (recessed), populated, framing, conflicted (plural rev-log heads)}
+ * @constraint {paper surface: warm tokens (--surface-paper, --ink-paper-*); section is bound to its object at creation}
+ */
   // The narrative SPINE, authored in the EDITOR sidebar beside the object-local notes — NOT a separate
   // overview screen (placement correction 2026-05-25: a section's camera must be framed on the object's
   // canvas, and the rail already gives multi-object movement, so the spine belongs where the canvas is).

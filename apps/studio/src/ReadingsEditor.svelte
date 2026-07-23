@@ -1,4 +1,10 @@
 <script lang="ts">
+/**
+ * @surface {paper}
+ * @composes {hosted by ReadingsModal; reads/writes Reading[]}
+ * @variants {empty (no readings yet), populated}
+ * @constraint {host-agnostic — fields only, chrome belongs to host; renaming never changes reading id}
+ */
   // ONE place to author Readings (user: the inline-input + create-time-swatches + describe-prompt
   // trio was fragmented). Hosted by ReadingsModal, whose header carries the explanatory copy —
   // this component is just the rows. Renaming NEVER changes a reading's id — notes reference

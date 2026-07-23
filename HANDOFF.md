@@ -1,213 +1,94 @@
 # HANDOFF — Archie
 
-## COMPLETE — IIIF Collection ingest (2026-07-19, wayfinder map `Archie-b290`) — 10/10 CLOSED, MAP CLOSED ~18:35
+(Previous handoffs — collection-import map; the Wave-plan version of this file — in git history.)
 
-Verify ticket Archie-9422 passed ALL browser checks (round-trip e2e, cancel/partial paths,
-real remote collection, 500-exhibit smoke: NO chokepoints). Final gates: studio 646/646,
-tsc 0, svelte-check 0/0, viewer astro 0/0, e2e 5/5. Committed through `7ed7345`;
-LATER WORK UNCOMMITTED (cbf6 review fixes, bulk delete + exhibit-teardown.ts seam,
-gallery-data search, plan amendment) — pending user ask. Remaining fog lives on the
-closed map: import-batch durability across reload; bulk-edit growth; viewer-side
-published-gallery provenance search. Stale detail below kept for archaeology:
+## Session 2026-07-19→20 (overnight): fleet drove map Archie-c548 to the human-gate line
 
-Feature: pasting a IIIF Collection URL unpacks into N exhibits (ADR-0025). Session runs
-implementer+reviewer subagent waves (spend-limit outage 09:41–16:48; recovered). As of
-~17:40: **7/10 tickets CLOSED** (ADR 06a3 · reducer 0dfe · pure layer cc77 · multi-select
-d366 · ingest glue 656a · bulk rights d2cc · picker a9e2 — each implemented, reviewed,
-fix rounds landed, orchestrator-verified; latest gates 603/603 vitest, typecheck 0,
-svelte-check 0/0). RUNNING: imp-progress on Archie-cbf6 (wire dormant picker props in
-App/LibraryHome, in-dialog progress+cancel, 4 summary shapes each w/ Undo import →
-removeExhibits, fold-ins: visible skip-detail, manifest-arm payload kills double fetch,
-library-refresh check). THEN: Archie-ddaa bulk delete (unblocks on cbf6) → Archie-9422
-verify (round-trip e2e + 500-exhibit smoke) closes the map. Notable new seams: CollectionPreview
-contract in ingest-flows.ts; ExhibitMetaPatch clear-typing (type-test excluded from
-svelte-check, see tsconfig comment); .claude/rules/studio-ts-typecheck-gate.md (NEW —
-pnpm typecheck for .ts edits). All work UNCOMMITTED on `main` in the shared checkout.
-Authority chain:
-`ledgers/PLAN-collection-import.md` (spec, 9 locked decisions) ·
-`docs/adr/0025-collection-unpacks-into-exhibits.md` · `CONTEXT.md` §Ingest (new terms) ·
-seeds map `Archie-b290` (`sd list --label map:collection-import`).
+### State at handoff
+- **main is green** at `4a61da4` (wf/nav-flake merged — 2e2f closed): render-core 981 / render-mount 130 / render-svelte 7 / studio 728 / viewer 99; all tsc clean; studio svelte-check 0/0 (635 files); astro check 0/0.
+- **Uncommitted**: `.seeds/issues.jsonl` (all bookkeeping below — `sd sync`), this file, `.claude/.skill-invocation-log`. Untracked strays not mine: DIVERGENCES.md, PRFAQ.md, NotePicker.svelte, snippet.ts(+test), IIIF ledgers, prototypes/*.
+- **Merged, deletable branches** (~13): Wave-1's five plus `wf/folder-drop`, `wf/session-test`, `wf/object-id`, `wf/object-id-reint`, `wf/marginalia`, `wf/objectid-adr`, `wf/migration-engine`, `wf/migration-triggers`, `wf/style-channel`, `wf/lod-navigator`, `wf/view-state`, `wf/whole-image-rects`.
+- A **concurrent session** shares HEAD and landed big work all night (ingest batching + reservation registry [superseded by ULIDs], overview grid, publish-parallel). ALWAYS `git branch --show-current` + `git log --oneline -3` before committing; expect App.svelte/ingest-flows.ts conflicts when merging stale-based branches — resolve semantically (one design, not two interleaved; see 9ea8's re-integration in the map gists).
 
-**CLOSED (implemented + reviewed + orchestrator-verified, studio 530/530, check 0/0):**
-- `Archie-06a3` ADR written.
-- `Archie-0dfe` plural reducer `removeExhibitsIn` + store `removeExhibits` (ONE
-  patch/persist/signal; per-slug onDirty verified vs sole consumer). Review: APPROVE.
-- `Archie-cc77` pure layer: `classifyIiifDocument` (refusal strings pinned exact in tests);
-  `collection-import.ts` `collectionToRefs` + `traverseCollection` (DFS, injected fetch,
-  visited-before-fetch, depth 3 / 25-doc ATTEMPT budget `docsAttempted` / 1000-manifest
-  cap → `status:"over-manifest-cap"` w/ exact total, counted skips, label trails).
-  Review: APPROVE + 2 fixes landed.
+### Closed this session (all merged with opus review + gates on merged tree; evidence in each close reason)
+`bf5b` folder-drop skipped-count · `94b6` exhibit-session characterization (mutation-verified) · **the whole object-id chain from the 8a45 grilling: `9ea8` module (ULID mint; killed BOTH nextObjectId and the concurrent registry) → `8c10` migration engine (landed as SIX classes — review caught the library.json-sections default-store miss + torn-snapshot sentinel) → `5826` ADR-0026 (amended for the sixth class) → `8439` triggers (reset-first crash-self-healing; completeness hunt clean)** · `dff3` marginalia (user-steered C→strip→B: tick rail, rail=where/inspector=what; user screenshot sign-off) · `a6fb` style-channel SNAG (probe confirmed WebGL-only; withZoomBand/withArrivalPulse on the ONE DrawingStyleExpression; browser-verify caught the arrival-decays-before-OSD-open bug) · `c1d9` pin/dot LOD + navigator note-dots + viewer zoom-band · `3e12` dead labelMarkers (a11y moved onto real dot buttons) · `6a16` view-state store (0.3 cuts COMPLETE; zero test changes) · `e913` whole-image rail slot (no fake geometry in the shared rect stream) · `c03a` closed OBSOLETED by the direction-B verdict (premise was the killed card column).
 
-**IMPLEMENTED, REVIEW LOST — resume here:** `Archie-d366` LibraryHome multi-select
-(new `library-selection.ts` + 10 tests reusing overview-selection grammar; LibraryHome.svelte
-+154/-2; select-all respects search; templates excluded; empty `.sel-actions` slot for later
-bulk buttons). Reviewer died at spend limit with NO verdict. Unverified review points:
-(a) is `pruneSelection` called anywhere or dead code; (b) Esc/⌘A deferral to App.svelte's
-onGlobalKey — mount-order claim; (c) implementer says the 11 standing a11y warnings now
-report 0 — reconcile with a fresh `pnpm --filter @archie/studio run check`.
+### What remains on map Archie-c548 (the endgame)
+- **`2e2f`** nav-e2e flake — CLOSED (merged 4a61da4: test race, expect.poll fix, 10/10 proof; add `wf/nav-flake` to the deletable-branches list).
+- **`e640`** surfaces-follow-attention — OPEN but annotated: premise predates direction B; re-judge during the 79be walk before building. Do NOT fleet it blind.
+- **Human gates (need Micah, not agents):** `79be` checklist walk (screenshots per item, user verdicts — includes 5 scale-cue visual checks + judging edit-in-inspector distance, per c03a's close) · `87ba` real-exhibit validation with outside readers · `eec7` a11y pass + `cf4a` touch pass (agents may draft findings ledgers; verdicts human) · `a09d` tauri-build smoke (native env).
+- When the last child closes → close map `c548` with a gist trail; Fog either graduates or dies with it.
+- Other maps: `21b1` studio-UX (child `7e5b` gated on future merge-wiring — note `importChanges` is confirmed ORPHANED, which is 7e5b's whole subject).
 
-**NOT STARTED (dep order):** `Archie-656a` ingest glue (UNBLOCKED — consumes
-traverseCollection; spec in ticket) → `Archie-a9e2` dialog preview+picker → `Archie-cbf6`
-progress/cancel/Undo → `Archie-9422` verify (round-trip e2e + 500-exhibit smoke);
-`Archie-ddaa` bulk delete (needs d366+cbf6) · `Archie-d2cc` bulk rights (needs d366).
+### Design decisions installed this session (do not relitigate)
+- **ADR-0026** library-unique object ids: composed `<exhibitId>.<ordinal>` for migrated, ULID for new mints, isLegacyObjectId the ONLY parser, six-class in-place migration, sentinel-guarded snapshot + idScheme:2 marker LAST, exactly three triggers, viewer zero-code, citation-break + localStorage loss accepted (revisit-conditions stated in the ADR).
+- **Marginalia = direction B tick rail**: rail says where/how-much, inspector says what; NO text/cards/heat in the rail; whole-image notes get the dedicated slot; the card column stays dead.
+- **Marker styling rides ONE DrawingStyleExpression** (single-writer setStyle): base readingMarkerStyle → withZoomBand (both apps) → withArrivalPulse (viewer). New effects compose onto the spec; never a second setStyle owner, never CSS on `.a9s-annotation` (WebGL — zero SVG nodes, see ledgers/PROBE-annotorious-dom-2026-07-19.md).
 
-**This effort's uncommitted files:** apps/studio/src/{collection-import.ts,.test.ts (new),
-iiif-import.ts,.test.ts, library-meta-reducers.ts,.test.ts, library-meta.svelte.ts,.test.ts,
-library-selection.ts,.test.ts (new), LibraryHome.svelte} · CONTEXT.md · docs/adr/0025 ·
-ledgers/PLAN-collection-import.md · .seeds/. Other dirty files belong to other streams
-(see below) — don't touch.
+### The fleet recipe (proven across ~12 branches; reuse verbatim)
+1. **Batch from `sd ready`**: code-shaped, unblocked only; group by disjoint FILE territory (same file → one agent); claim first (`sd update <id> --assignee micah --status in_progress`).
+2. **One worktree agent per territory** (opus multi-seam / sonnet contained). Brief must bake in: Step-0 base pin to an EXPLICIT current sha (`git checkout -B wf/<t> <sha>` — worktrees spawn stale) + `pnpm install --prefer-offline`; self-contained ticket text; never touch `.seeds/`/HANDOFF; `grep -a` (NUL history); per-app vitest; the full gate list (studio adds `pnpm typecheck` — svelte-check relaxes exactOptionalPropertyTypes); browser-verify anything visual (run-app skill, spare port, Playwright-from-/tmp createRequire) — it caught real bugs twice; deliver branch+sha+EXACT gate counts, no merge.
+3. **Opus code-reviewer per code branch**, read-only, own detached worktree (`git worktree add --detach /tmp/review-x <sha>`), re-runs gates itself, hunts same-class misses + adversarial crash-window walks. Artifact/docs branches: main session reviews directly. REQUEST-CHANGES → SendMessage the impl agent (they resume from transcript; watch-it-fail-first for fixture gaps) → reviewer verifies the fix delta. Nits: fix trivially on the branch (in the agent's worktree — but MERGE FROM THE MAIN CHECKOUT, a merge run inside the worktree self-merges "Already up to date").
+4. **Merge protocol** (main checkout, sequential): `git branch --show-current` first; `--no-ff` with the verdict in the message; re-run affected gates on the MERGED tree; `sd close` with an evidence-rich reason; one-line gist appended to the map's Decisions-so-far (jq sub on "\n\n## Fog"); fork discovered bugs as new tickets immediately (3e12, e913, 2e2f all born this way).
+5. **Comms quirks**: idle notifications precede reports — nudge via SendMessage naming the SPECIFIC asks. Worktree LSP diagnostics flood the main session (ERR_MODULE_NOT_FOUND, phantom errors on worktree paths, stale App.svelte buffers after big merges) — gates are authoritative, ignore the noise. Test counts vary a few units between environments (proven repeatedly); the reviewer's relative before/after accounting is what matters.
 
-**Loose ends:** `Archie-e51e` NUL byte in render-core publish/site.ts (plain grep silently
-fails there — grep -a / fff; memory note updated to "recurring hazard") · rev-reducer
-non-blocking nit: widen removeExhibits param to match removeObjects · map Fog: import-batch
-durability, 500+ LibraryHome perf, bulk-edit growth.
+### Next session start
+`sd prime` → `sd ready`. If 2e2f merged: the ONLY fleet-shaped work left is drafting findings ledgers for eec7/cf4a; everything else is the human walk. Suggest starting 79be with the run-app skill and walking the 7-item checklist with Micah live.
 
----
+## Fleet session 2026-07-20→21 (tend maps → three-phase fleet) — appended by the fleet session; the section above belongs to the concurrent session
 
-**Updated:** 2026-07-19 late (Studio UX overhaul session, post-compaction 2). **Branch:** `main`
-(pushed through `585d23b`). Map **Studio UX overhaul** `Archie-21b1` (seeds).
+State is canonical in seeds (`sd prime`; six `tend:` maps) + docs/plans/TEND-FLEET-2026-07-20.md + docs/plans/native-canonical-store.md (Micah's three answers appended). Ledgers: ledgers/TEND-EXPLORE-*-2026-07-20.md with verification appendices.
 
-## UX OVERHAUL — COMPLETE: all 23 implementation tickets MERGED+PUSHED (through f520e42)
+- **Done & merged (all reviewed, gates on merged tree):** Phase 1 all 10 lanes / 20 tickets; Phase 2 all 4 lanes (3148 persisted.ts, cf93 asset-store split + opfs-project leaf, 77b2 unlisted lever, fada NativeFetch seam); follow-ups b9f4-adjacent: small-polish (09a0+5478) merged. Grill verdicts recorded on maps: rev-log ENACT→b0b1; native store PURSUE→623e (plan answered: single-instance, keep-OPFS-until-manual-clear, hidden cache dir); embed honors unlisted (32a9→f735).
+- **UPDATE (later checkpoint):** heads-logicalid (b9f4), viewer-fixes (569d+b42d), embed-unlisted (f735, dist rebuilt), small-polish (09a0+5478), and native-store P1 (migration engine + streaming writes + single-instance, deliberate stop at the flip) are ALL merged & closed. Micah's Phase-2 decision: EXTEND THE FILESYSTEM SEAM (3 capabilities, resolveUrl? optional — recorded in plan doc + 623e). Plan doc was clobbered once by a doubled Bash run and RESTORED (dbd4437); guard merges with merge-base --is-ancestor, keep state-mutating commands stepwise.
+- **FINAL UPDATE (pre-compaction):** native-store-p2 MERGED (seam extension + flip + phases 3-6; review caught the lazy-File/createImageBitmap silent tiling bug — fixed; 623e stays OPEN as the a09d packaged-smoke release gate, status open). revlog-enact MERGED (b0b1 closed: import ungated, flag default-ON with '0' kill-switch, no view/restore primitive exists so history UI is a documented follow-up in ledgers/PROBE-structure-revlog.md; persisted.ts docstring fast-follow 71f8a3f). Maps 04ba/cc98/098f/13e8 CLOSED with gist trails + fog in close reasons. Merge protocol: guarded (`git merge-base --is-ancestor` first), stepwise commands (double-execution hazard is real — see memory), gates on merged tree, sd close with evidence, gist to map.
+- **PROGRAM DRAINED (2026-07-21):** bdc0 (unlisted carry + Studio hide-from-gallery toggle) MERGED at `2d77ded` after opus APPROVE on all six review axes; gates on merged tree rc 1110 / studio 919 + tsc 0 + svelte-check 0/0 / viewer 136. bdc0 CLOSED, viewer map 27c5 CLOSED with trail (fog preserved in map body). **Five of six tend maps closed; the desktop map 51ff stays open solely as the a09d packaged-smoke release gate (checklist in docs/plans/native-canonical-store.md — human/native-env only).** Merge required a stash-dance around the concurrent session's NEW docblock WIP (@surface annotations on 4 studio components) — popped clean, their WIP intact in working tree; their two older stashes ("hold concurrent WIP during toolchain merge", "modality merge") still parked — hand back, don't drop. Housekeeping open: delete merged wf/* branches (several pinned by agent worktrees under .claude/worktrees/), `.seeds/` uncommitted as always. Seeds CLI gotcha (bit once, map body was clobbered + restored): `sd show <id> --json` wraps the issue — the body is `.issue.description`, NOT `.description`.
+- **Merge protocol** (unchanged): main checkout only, --no-ff with verdict, gates on merged tree, sd close with evidence, gist to map. Stash-dance any dirty-file overlap (concurrent session WIP); their capture-screenshots WIP is parked in `git stash` ("hold concurrent WIP during toolchain merge") — hand back, don't drop.
+- **Agent policy:** spawn on opus (reviews/multi-seam) or sonnet (contained) — never inherit session model (Micah 2026-07-20).
+- Branch cleanup pending for merged wf/* still pinned by agent worktrees.
 
-Decision phase done (14/14). ALL implementation waves merged: library home 2c47bdb ·
-chrome/editor-redesign (c7ef+c76d) · create dialog 564f975 (51cc) · beats d226a4f (696d) ·
-modality 5e7899b (5968; MediaPicker deleted, a11y 11->3) · legend split (adae) · publish
-one-surface (1921; browser-drive verified) · selection tray (3b03) · scoped chooser (56cf;
-AddMapModal deleted, 0 WARNINGS) · editable titles (46bf) · details (ebf4) · glyph labels
-(d7ab) + AvEditor (ba74) · a11y epic (f260; APG grid/move-mode/listbox/numbers/roving) ·
-publish Save-vocab (363e) · From-a-link (32e8) · deck refresh (6595; 5 screenshots need
-human re-shoot, flagged in-file) · Playwright gate + nav e2e (d80f; 5/5) · **collab pair
-a2a67eb** (2bf1+90f1; reviewer verdict SHOULD-FIX/no-blockers, S1+S2 fixed pre-merge
-a1ee49b: keep() carries chosen head's C14 fields, close only at zero conflicts; follow-ups
-filed: wiring rider Archie-7e5b dep-on 697c carries S3 gate-bypasses/S4 identity-lag/
-synced-count/dup-ids, writer-lock name Archie-198c) · **save-verbs 2318 merged**
-(copy/save-verbs; 'Done' on NoteEditor, kept/stored elsewhere + 4 sweep-found sites).
-Suite: 0 errors / 0 WARNINGS (612 files), 603 unit + 5 e2e, tsc clean, build clean.
-Pushed through dc18eca.
+## Wayfinder session 2026-07-20→21: map:studio-ux-overhaul fog-graduation audit (Archie-21b1)
 
-**FINAL MERGE:** round-trip package abf9 landed 71cdb07 (share/round-trip 2ab487d+580a4a7):
-'Share a working copy' reframe in Publish + import-freshness.ts app-local watermark badge
-('+N since your last import'; review caught first-import-must-be-silent, fixed 580a4a7;
-counting delegates to collabBreakdown; dormant until an incremental-import caller — wired
-through the same recordImportFreshness seam by 7e5b). Final suite: check 0/0 (614 files),
-vitest 617/617, tsc clean, build clean, e2e 5/5. Duplicate save-verbs tickets 9c01/bb5d
-(sd create triple-fire) closed as dupes of 2318.
+Task: the map was revived with its Fog broken out into 8 seeds tickets; assess what prior/new
+knowledge each needs. Answer: most prior knowledge was already in-repo — the blocker was that the
+tickets themselves were unreliable. Two ledgers written (both committed):
+`ledgers/MAP-READINESS-studio-ux-overhaul-2026-07-20.md` (47KB, per-ticket + tiered reading list +
+its own unverified-claims section at :616) and `ledgers/PROVENANCE-astryx-tickets-2026-07-20.md`.
 
-**Writer-lock display-name 198c MERGED** (user said "do it"; collab/writer-lock-name
-ba10fd2+573b5d1): held/beat/takeover carry name, Web Locks path gets a name-only presence
-channel (never drives coordination); banners say "{Name} is editing…" w/ impersonal
-fallback. Post-merge: check 0/0 (614), vitest 636/636, tsc clean, build clean, e2e 5/5.
-Pushed 9419417. **REMAINING OPEN on the map:** ONLY `Archie-7e5b` wiring rider
-(dep-blocked on collab-readiness 697c; carries S3 gate-bypasses, S4 identity-lag,
-synced-count toast, dup-ids-to-Annotorious, noteConflicts memoization) — nothing actionable
-until 697c wires zip-merge. Human action item: re-shoot 5 tutorial screenshots (flagged
-in-file in docs/learn/). User UX note: Your-name field discoverability (it's inside
-Library details ✎ drawer; user didn't find it unaided — candidate future ticket).
-
-**USER RATIFICATIONS (all recorded in map):** From-a-link restored; collab collision call =
-this map's single-scrim/MediaPicker-deletion stands (concurrent session's NotePicker WIP
-preserved in stash 'concurrent-session WIP (App/LibraryHome) — modality merge'; must come
-through modality contract); Playwright gate stood up.
-
-**HAZARD:** opus agent died at MONTHLY SPEND LIMIT ~09:41 (outage till ~16:48); sonnet
-continuation worked. If agents die with that error, finish work inline in the main session.
-Worktrees always stale — reset-to-current-sha Step 0 in every brief. Shared checkout: other
-sessions' WIP dirty files — stash-around for merges, commit via pathspec only.
-
----
-
-## COLLAB-READINESS SESSION (2026-07-18/19) — map complete; structure-DAG probe IN FLIGHT
-
-Map **`Archie-f849`** "Archie full-stack/real-time graduation readiness (static-first)": **8/8
-closed** + bug `Archie-cfc1` fixed. North star (user-set): Archie graduates to full-stack
-real-time IN THIS REPO, monorepo-native (Archie+ sibling-repo concept RETIRED). Invariant:
-every step ships standalone static value. All work via worktree agent → two-axis review → merge.
-
-**Delivered (committed through `2c47bdb`+):** `ledgers/AUDIT-stable-ids.md` (ids audit) ·
-`ledgers/PROBE-collab-crdt-mapping.md` (**Model B decided**: Yjs transports the rev-log,
-DAG merge unchanged; Model A/field-mapping REJECTED — silent LWW loss) · D1 multi-tab live
-sync 12/12 verified (`prototypes/multi-tab-live-sync/`, throwaway, uncommitted) ·
-`fs/http.ts` read-only fourth backend · C2 API hygiene (sideEffects array, root barrel
-121.99KB→0.57KB; `limits.ts`/`errors.ts` layer-zero; exports-map-as-contract) ·
-`spine/MERGE-CONTRACT.md` 18 clauses + 50 pinned tests · OQ-1 fix (`parentsOf` shared in
-log.ts; linearHead⟺headsOf structurally agree; resolved notes editable; suite **847/847**).
-
-**Spine gate `Archie-494c` DECIDED (six fixed decisions):** structure fully collaborative ·
-same DAG machinery · order = child-carried fractional key (content field, id tiebreak) ·
-identity = composed branded `{exhibitId}/{localId}` (IRIs preserved; cross-exhibit move =
-copy+tombstone) · referential TOLERANCE (write-time enforcement unsound under merge;
-per-type read degrades + advisory MergeReview items) · deletes hide-by-ancestry (one
-tombstone, atomic un-delete; explicit bulk-delete verb; write-cascade retired).
-
-**PROBE LANDED — verdict PURSUE** (ticket `Archie-b766`, branch `probe/structure-revlog` in
-worktree `agent-a4620b9ff7368be6e`, base `2c47bdb`, commits 55cb040/26d342c/d50fd01/099f622,
-NOT yet merged). All four assumptions HOLD: A1 DAG primitives generalized over `DagRecord<Id>`
-(AnnotationLog overloads-first + NoInfer preserve inference; 847 existing tests green
-UNTOUCHED, suite 860/860); A2 seed round-trip working→publish→open deep-equal; A3 per-edit
-projection ~0.1ms seed / 8–12ms synthetic-2000 (O(records×keys) scan flagged, fix in build);
-A4 fractional order key + id tiebreak converges both replicas. Ledger (in worktree):
-`ledgers/PROBE-structure-revlog.md` — 7 sharp edges for the build plan (tombstone carries
-content vs annotation drop; un-delete first-class; persist shape NOT probed; SectionKey strip
-at boundaries; note→section attribution field trips every carry sentinel).
-
-**Two-axis review of probe: BOTH AXES DONE, CLEAN.** Spec: PURSUE honestly earned; all six
-gate decisions demonstrated in tests; no existing test modified; A2 genuinely publish→open.
-Standards: production changes (log/merge/heads generics) ship-worthy, zero violations, carry
-sentinels intact, refactor type-only, gates re-verified independently (tsc 0, 860/860).
-**Build-plan debts from review (must not inherit blind):** (1) SectionRecord mappers
-(append*/resolveSectionConflict/contentOf) need rule-3 carry sentinels when promoted;
-(2) NoInfer/foreign-record rejection + R=never hazard need @ts-expect-error negative pins;
-(3) sectionKey containment needs a negative test; (4) replace per-key headsOf scan
-(single-pass group-by) before logs grow.
-
-**BOTH CHECKPOINTS PASSED (user: pursue; dispatch serial waves, no asking between waves).**
-Build plan charted + committed (`9bdc4cd`): f1c6 generics → 08af SectionRecord → {c16d
-projection, a911 persist, 6b8e attribution} → 42f3 studio flag. Probe ledger landed on main.
-**Waves 1+2 MERGED.** Wave 1 `7728b08` (f1c6: DagRecord generics + 5 type pins). Wave 2:
-`build/section-record` merged (fe6d06e impl + 3840a3f review fixes; 08af closed) —
-`spine/structure.ts` SectionRecord family, six carry sentinels, C13/C14 resolve,
-containment+parity tests, tolerant projection. Post-merge 886/886, tsc 0, root 0. Review
-PASS both axes; 3 gaps closed test-only. **Wave 3 COMPLETE — c16d + a911 + 6b8e all MERGED + closed** (6b8e merge `22809e6`;
-final gates 925/925, tsc 0, root 0, studio check 0 errors). Reviews clean both axes on
-all three. MERGE-CONTRACT/CARRY six→seven content-fields prose fixed. session.ts
-`section` threading folded into 42f3's ticket (spec-review follow-up: NewNote/NoteEdit/
-resolve choice/workingAnnotations re-emit; record layer already carries losslessly).
-**Wave 4 MERGED — BUILD PLAN COMPLETE.** `build/studio-revlog-flag` (b7097a8 + 2d77368)
-merged after the UX session's checkout settled (auto-merged cleanly with their App.svelte
-work). 42f3 closed: archie.structureRevlog flag (default OFF, off-path pinned
-byte-identical), structure-reconcile array-diff → minimal appends, plural-head gating,
-hidden-note filtering, session.ts section threading + new _workingAnnotationCarry
-sentinel. Final gates: render-core 928/928, studio 413/413, svelte-check 0 err/3 warn,
-build ok, root 0. All six build tickets (f1c6/08af/c16d/a911/6b8e/42f3) landed with
-two-axis reviews clean. `Archie-2a9a` MERGED + closed (56a0332; reviews clean both axes; post-merge 928/928 +
-studio 439/439, check 0/3, build ok): zip-import merges structure logs via the one
-mergeLogs contract (plural heads gate in studio), exhibit delete cleans structure/
-flag-independently with a race-safe forget-generation. `Archie-aef4` MERGED + closed
-(cb4cd4e + d642c1f review fix; reviews clean both axes; post-merge 933/933 rc + 640/640
-studio, check 0/0, build ok): publishLibrary emits structure pages via getStructure (one
-hook, all sinks; existence-driven not flag-driven; archie.json-last preserved). Two-author
-round-trip proven end-to-end — **conflict-safe structure exchange is LIVE, not latent.**
-All-corrupt-at-publish = annotation-parity ship-what-reads but louder (both cases pinned);
-annotation side's total publish-time silence filed as `Archie-a690` (open, unclaimed).
-Collab-readiness map f849: enactment fully done; open children = a690 only; fog =
-graduation-tier items. Map `Archie-f849`:
-enactment done; remaining fog = graduation-tier items (sync server, Yjs-vs-Automerge,
-writable HTTP backend, identity/presence) — unspecifiable until graduation is bet on.
-
-**Ops (verified this session):** worktrees ALWAYS stale (5/5) — Step 0 reset + file-existence
-check in every brief. Review agents must END with SendMessage to main (plain text lost).
-Concurrent sessions share this checkout: merges may no-op "Already up to date" (verify via
-gates+log, don't re-merge); `sd create` can triple-fire (dedupe, keep earliest). OQ-2..6
-recorded unfixed in MERGE-CONTRACT.md. Cross-map: collab identity SoT = `Archie-d71c`;
-MergeReview `90f1` inherits cfc1's close-reason notes.
-
----
-
-## OLDER STREAM (2026-07-05, different session) — publish-to-web BUILD
-
-Preserved from the prior handoff; may be stale — verify against `worktree-publish-to-web`
-worktree and `docs/plans/PUBLISH-TO-WEB-PLAN.md` before resuming. Waves 0–2 were nearly
-done (Tasks 1–9 committed: types `106dd23`, git2 spike `eec8768`, Tauri commands
-`75a5620`/`7b034fd`/`681e3f0` + review fixes `c6ba97f`, ensureRepo `70a831e`, gh_push_tree
-`f72f0ba`, deployToPages `7d71882`, sign-in `a646760`). `ledgers/PROBE-publish-to-web.md`,
-`DIVERGENCES.md`, `PRFAQ.md` in the tree belong to that stream.
+- **PROVENANCE — the "Astryx component audit 2026-07-20" is not an artifact.** Astryx is Meta's
+  React+StyleX library (astryx.atmeta.com). The "audit" was a deepseek-v4-pro OMP session
+  (`~/.omp/agent/sessions/--mnt-…-Archie--/2026-07-21T03-40-06*`) that wrote ZERO files, read only
+  NoteEditor + SafetyState (both truncated), then published an event-dialect table covering CmdK and
+  dialogs it never opened — that table became Archie-07a7 verbatim. Six code claims false. Pattern:
+  **correctly smelled, falsely evidenced.** Don't dismiss the smells; don't trust the citations.
+- **Commit 09ace42** — 86 uncommitted seeds issues committed (HEAD was 187, worktree 273; they were
+  on no branch/stash/reflog). Also RESTORED Archie-21b1's body, which the graduation session had cut
+  21,963→4,746 chars: 26 entries back (MERGE WAVE 1, six decision tickets incl. Add-grammar's 14/14,
+  twelve merge records, USER RATIFICATIONS, TAIL MERGES). Deduped an append bug — 9 entries had been
+  written 3× each; 58 raw → 36 unique.
+- **Commit 8a577f0** — map rebuilt from measurement. 15 of 16 proposed edits applied.
+- **DECISION (Micah, this session): callback props are LOWERCASE `on*`.** Measured by parsing
+  `$props()` destructures + `export let`: Archie **33 lowercase / 1 camelCase** (`onDelete`,
+  NoteEditor.svelte:55) vs ADR-0002 donors anvil **38:1** and annomea **17:13** camelCase. Real fork
+  (those components were adopted as running code) — resolved for in-repo incumbency + Svelte 5's
+  native `onclick` idiom. ADR-0002 adopted donor *logic*, not donor style. The `~140:1` figure in the
+  MAP-READINESS ledger is superseded by this narrower prop-only parse.
+- **Frontier now:** 7e5b (strongest — its blocker 697c closed 2026-07-19, the "coordinate with 697c"
+  gate was phantom), 07a7 (rescoped to NoteEditor + its ONE App.svelte call site), 7aef (retyped
+  grilling; parity has FOUR consumers incl. packages/render-mount), 1244 (absorbed 5c1d's ~65-selector
+  Option C list; 5c1d-impl was never filed so 5c1d closed), 99db prose, 05e4 (palette/type grilling
+  split). Blocked: cdfe (screenshot re-shoots) behind 1244 + c59a.
+- **Closed:** 3547 (fragmentation — 199-line NoteEditor fails the repo's own three-consumer bar set by
+  ZipExportFields), 6be3 (speculative generality — ONE consumer, "never forked (ADR-0006)"). Real
+  residue carried in each close reason (dead .note-popover rule, duplicated fmtMMSS, stale
+  e2e/loop.spec.ts line ref; and `commentEl = $bindable()` letting App reach into NoteEditor's textarea).
+- **NOT applied, deliberately:** retargeting 33bf as a bug. `sitemap.xml.ts:1-2` states hash-routed
+  deep links are excluded BY DESIGN (crawlers ignore fragments — Archie-b4f2/ADR-0013) and the
+  listed/unlisted enumeration split is deliberate (Archie-77b2). 33bf stays grilling, body corrected.
+- **Deck path correction that recurs:** decks are `docs/learn/`, NOT `apps/studio/decks/` (does not
+  exist). Archie-6595 already refreshed all 7 against the shipped UI on 2026-07-19.
+- **NOT pushed.** Working tree still holds the concurrent session's `@surface` docblock + markers.css
+  tokenization WIP (per §45 above) — left untouched; it silently implements open c1e0/c59a and was
+  reportedly verified against the wrong svelte-check config. Not mine to commit.
+- **Method note:** tracker writes are a single JSONL — never parallelize `sd` mutations. Script used:
+  /tmp/apply_map_edits.py (idempotent-guarded creates).
