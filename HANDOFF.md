@@ -1,3 +1,27 @@
+## Session 2026-07-22: 10-ticket wayfinder sweep + concurrent @surface docblocks
+
+### State at handoff
+- **main** at `a8e228a`: 188 files, +11844/-2286. All gates green: render-core 92/92 files 1112/1112, render-mount 18/18 159/159, studio tsc 0 + svelte-check 0/0/1143 + 68/68 test files 919/919, viewer astro check 0/0/46.
+- **Uncommitted**: none (full sweep committed and pushed).
+- **Concurrent session**: @surface docblock annotations on all 30+ Studio components committed. Their markers.css/tokens.css work also landed. prototypes/ directory added (crdt-annotation-merge, create-surface, editor-chrome, multi-tab-live-sync).
+- **10 tickets closed this session**: dace (embed multi-whole-object), 07a7 (lowercase ondelete), 893f (rights write-back scoped rule), c59a (markers tokenization ledger), 45ac (migrate refinements), 72d1 (bake schema version), 1cfe (re-baked demo tree), cf54 (freecut storage findings), 04e9 (blob URL audit), ffa5 (Tauri nav audit). Close reasons in seeds.
+- **6 new tickets created from map Fog**: 7e2e/be3a/e47d/ffa5 (tend-desktop), 0f72/5fb5 (freecut-optimization).
+- **New files created**: .claude/rules/metadata-rights-keyed-writebacks.md, ledgers/CANON-markers.md.
+
+### Design decisions installed
+- **render-mount read-mount.ts**: frame draw iterates all whole-object notes (last wins visually per frame-overlay single-SVG contract). All remain in annotations list for sidebar + fitBounds.
+- **migrate.ts**: normalizeRecord (canonical name for foldLayersIntoTags), migrate() returns {doc, migrated} flag for force-re-save, BAKE_SCHEMA_VERSION=1 for regenerable artifacts.
+- **asset-store.ts**: .bake-schema marker written on saveAssetFile/saveThumbFile, checked on every openAssetFile read. Absent marker = OK (pre-schema), version mismatch = null → caller regenerates. saveOriginalFile excluded.
+- **NoteEditor.svelte**: onDelete → ondelete (last camelCase callback gone; 33/0 lowercase/camelCase).
+
+### Open maps summary (6 open of 14 total)
+- Archie-298d (tldraw): 6 children — 3 research/prototype ready, 2 blocked, 1 grilling
+- Archie-21b1 (studio-ux): 8 children — 2 implementation ready, 4 grilling, 1 blocked, 1 gated
+- Archie-c548 (open-backlog): 15 children — all human gates or parked
+- Archie-5b06 (freecut): 11 children — mixed research/task
+- Archie-51ff (tend-desktop): 4 new research tickets
+- Archie-c6bf (DC metadata): 0 children
+
 # HANDOFF — Archie
 
 (Previous handoffs — collection-import map; the Wave-plan version of this file — in git history.)
