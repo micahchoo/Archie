@@ -6,14 +6,14 @@
 
 import { appendNew, appendEdit, appendDelete } from "../spine/log.js";
 import { isDegenerateTarget } from "../geometry/selector.js";
-import { projectHeads, headsByLogicalId } from "../spine/heads.js";
+import { HeadIndex } from "../spine/head-index.js";
 import { recordToAnnotation } from "../spine/serialize.js";
 import { writeAnnotations, readAnnotationsReport, type CorruptAnnotationPage } from "../spine/persist.js";
 import type { SerializeOptions } from "../spine/serialize.js";
 import type { FsDirectory } from "../fs/seam.js";
 import { ARCHIE_READING, ARCHIE_SECTION, ARCHIE_EMPHASIS, ARCHIE_WHOLE_OBJECT, ARCHIE_GEO } from "../wadm/types.js";
 import type { Emphasis, GeoAnchor } from "../wadm/types.js";
-import { mergeLogs, headsOf, resolveConflict } from "../spine/merge.js";
+import { mergeLogs, resolveConflict } from "../spine/merge.js";
 import type { AnnotationLog, AnnotationRecord, W3CAnnotation, W3CBody, W3CTarget } from "../wadm/types.js";
 import type { ClientId, LogicalId } from "../wadm/brand.js";
 import type { CarryDisposition } from "../model/carry.js";
@@ -78,11 +78,16 @@ void _workingAnnotationCarry; // zero-runtime: exists only to break the build on
 
 export class AnnotationSession {
   private log: AnnotationLog;
-  /** Memoized heads projection, keyed by log IDENTITY. Every mutation REPLACES `this.log` with a new
-   *  array (appendNew/appendEdit/appendDelete/merge/resolve), so a reference match proves the projection
-   *  is unchanged. notes() and workingAnnotations() both read it, so the Studio's per-edit `rev` bump
-   *  (which re-derives BOTH) projects the log ONCE, not twice. */
-  private headsCache: { log: AnnotationLog; heads: AnnotationRecord[] } | null = null;
+  /** The heads/conflicts projection, maintained INCREMENTALLY (spine/head-index.ts) rather than
+   *  recomputed per mutation. It replaced a pair of identity-keyed memos that were correct but rebuilt
+   *  from the whole log on every edit — and rebuilt it TWICE, since heads() and conflicts() each ran
+   *  their own `headsByLogicalId`. That made an edit O(log) and every bulk loop over notes O(log²):
+   *  ~14.7 ms per edit at 20k records, against a 16 ms interactivity bar.
+   *
+   *  The invariant this class must hold: `index` always reflects `log`. The three append methods fold
+   *  their new record in with `index.append`; EVERY OTHER path that assigns `this.log` must rebuild via
+   *  `setLog`. Adding a mutation that assigns `this.log` directly is the way to break this. */
+  private index: HeadIndex<AnnotationRecord>;
   /** Logical ids changed since the last save — the incremental-persist dirty set (the session is the ONE
    *  writer, so this is authoritative). Each mutation adds its id; save() writes just these pages. */
   private dirty = new Set<LogicalId>();
@@ -100,6 +105,7 @@ export class AnnotationSession {
   ) {
     this.editorSource = editor;
     this.log = log;
+    this.index = HeadIndex.from(log);
   }
 
   /** The identity every append stamps as `lastEditor`. A plain ClientId is captured for the session's
@@ -111,12 +117,24 @@ export class AnnotationSession {
     return typeof this.editorSource === "function" ? this.editorSource() : this.editorSource;
   }
 
-  /** The head records, memoized by `this.log` identity (recomputed only when the log actually changed). */
+  /** The head records — `projectHeads(this.log)` by contract, served from the incremental index.
+   *  Array identity is stable until the next mutation (see HeadIndex.heads). */
   private heads(): AnnotationRecord[] {
-    if (this.headsCache === null || this.headsCache.log !== this.log) {
-      this.headsCache = { log: this.log, heads: projectHeads(this.log) };
-    }
-    return this.headsCache.heads;
+    return this.index.heads();
+  }
+
+  /** Replace the log wholesale and rebuild the projection. For every mutation that is NOT a single
+   *  append — merge, conflict resolution — where folding one record in isn't possible. */
+  private setLog(log: AnnotationLog): void {
+    this.log = log;
+    this.index = HeadIndex.from(log);
+  }
+
+  /** Append one freshly-minted record: adopt the new log and fold the record into the projection. */
+  private advance(log: AnnotationLog, record: AnnotationRecord): void {
+    this.log = log;
+    this.index.append(record);
+    this.dirty.add(record.logicalId);
   }
 
   /** Load a session from a persisted annotations directory (the reload/open path). */
@@ -154,8 +172,7 @@ export class AnnotationSession {
       ...(input.geo !== undefined ? { geo: input.geo } : {}),
       ...(input.motivation !== undefined ? { motivation: input.motivation } : {}),
     });
-    this.log = log;
-    this.dirty.add(record.logicalId);
+    this.advance(log, record);
     return record.logicalId;
   }
 
@@ -163,7 +180,9 @@ export class AnnotationSession {
    *  Throws on a degenerate replacement target — same log-boundary invariant as createNote. */
   editNote(logicalId: LogicalId, changes: NoteEdit): void {
     if (changes.target !== undefined && isDegenerateTarget(changes.target)) throw new Error("editNote: degenerate target selector (empty/NaN geometry) must not enter the log");
-    const { log } = appendEdit(this.log, logicalId, {
+    // The head comes from the index (O(1)); appendEdit would otherwise re-derive it with a whole-log
+    // scan on every keystroke-scale edit. Same guards either way — see log.ts `linearHeadOf`.
+    const { log, record } = appendEdit(this.log, logicalId, {
       lastEditor: this.stamp(),
       ...(changes.target !== undefined ? { target: changes.target } : {}),
       ...(changes.body !== undefined ? { body: changes.body } : {}),
@@ -173,16 +192,14 @@ export class AnnotationSession {
       ...(changes.wholeObject !== undefined ? { wholeObject: changes.wholeObject } : {}),
       ...(changes.geo !== undefined ? { geo: changes.geo } : {}),
       ...(changes.motivation !== undefined ? { motivation: changes.motivation } : {}),
-    });
-    this.log = log;
-    this.dirty.add(logicalId);
+    }, this.index.linearHead(logicalId));
+    this.advance(log, record);
   }
 
   /** Append a tombstone (append-only delete). */
   deleteNote(logicalId: LogicalId): void {
-    const { log } = appendDelete(this.log, logicalId, { lastEditor: this.stamp() });
-    this.log = log;
-    this.dirty.add(logicalId);
+    const { log, record } = appendDelete(this.log, logicalId, { lastEditor: this.stamp() }, this.index.linearHead(logicalId));
+    this.advance(log, record);
   }
 
   /** The current live notes (head records) — for the sidebar list. Memoized by log identity. */
@@ -197,33 +214,24 @@ export class AnnotationSession {
    * genuinely concurrent edits become plural heads. Returns the logicalIds that need a decision.
    */
   importChanges(incoming: AnnotationLog): LogicalId[] {
-    this.log = mergeLogs(this.log, incoming);
+    this.setLog(mergeLogs(this.log, incoming) as AnnotationLog);
     // A merge can add/rewrite MANY pages (fast-forwards, new logicalIds) the dirty set didn't track —
     // force the next save to be a full write rather than risk a stale page on disk.
     this.persistedFully = false;
     return this.conflicts();
   }
 
-  /** Memoized conflicts, keyed by log identity like headsCache — the Studio re-derives conflicts on
-   *  every `rev` bump, most of which don't touch the log (Archie-7e5b: was an unmemoized O(ids × log)
-   *  scan per bump). NOTE deliberately not derived from heads(): projectHeads drops tombstone heads,
-   *  but a delete concurrent with an edit IS a conflict — headsByLogicalId keeps the raw per-id heads
-   *  (identical semantics to per-key headsOf, in one O(records) pass). */
-  private conflictsCache: { log: AnnotationLog; ids: LogicalId[] } | null = null;
-
-  /** LogicalIds with an unresolved concurrent conflict (plural heads). */
+  /** LogicalIds with an unresolved concurrent conflict (plural heads).
+   *  NOTE deliberately not derived from heads(): the heads projection drops tombstone heads, but a
+   *  delete concurrent with an edit IS a conflict — the index keeps the raw per-id heads. */
   conflicts(): LogicalId[] {
-    if (this.conflictsCache === null || this.conflictsCache.log !== this.log) {
-      const ids: LogicalId[] = [];
-      for (const [id, heads] of headsByLogicalId(this.log)) if (heads.length > 1) ids.push(id);
-      this.conflictsCache = { log: this.log, ids };
-    }
-    return this.conflictsCache.ids;
+    return this.index.conflicts();
   }
 
-  /** The competing heads of a conflicted note (for the conflict card to show both sides). */
+  /** The competing heads of a conflicted note (for the conflict card to show both sides).
+   *  Equivalent to `headsOf(this.log, logicalId)`, pinned by head-index.test.ts. */
   conflictHeads(logicalId: LogicalId): AnnotationRecord[] {
-    return headsOf(this.log, logicalId);
+    return this.index.headsOf(logicalId);
   }
 
   /**
@@ -237,7 +245,7 @@ export class AnnotationSession {
     logicalId: LogicalId,
     choice: { body?: W3CBody | W3CBody[]; target?: W3CTarget; motivation?: string | string[]; reading?: string; section?: string; emphasis?: Emphasis; wholeObject?: boolean; geo?: GeoAnchor } = {},
   ): void {
-    this.log = resolveConflict(this.log, logicalId, {
+    this.setLog(resolveConflict(this.log, logicalId, {
       lastEditor: this.stamp(),
       ...(choice.body !== undefined ? { body: choice.body } : {}),
       ...(choice.target !== undefined ? { target: choice.target } : {}),
@@ -247,7 +255,7 @@ export class AnnotationSession {
       ...(choice.emphasis !== undefined ? { emphasis: choice.emphasis } : {}),
       ...(choice.wholeObject !== undefined ? { wholeObject: choice.wholeObject } : {}),
       ...(choice.geo !== undefined ? { geo: choice.geo } : {}),
-    });
+    }));
     this.dirty.add(logicalId);
   }
 

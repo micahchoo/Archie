@@ -88,11 +88,27 @@ export function linearHead(log: AnnotationLog, logicalId: LogicalId): Annotation
 export function linearHead<R extends DagRecord<string>>(log: readonly R[], logicalId: R["logicalId"]): R;
 export function linearHead<R extends DagRecord<string>>(log: readonly R[], logicalId: R["logicalId"]): R {
   const versions = versionsOf(log, logicalId);
+  const referencedAsParent = new Set<RevId>(versions.flatMap(parentsOf));
+  return linearHeadOf(logicalId, versions, versions.filter((r) => !referencedAsParent.has(r.rev)));
+}
+
+/**
+ * The linear-head GUARDS, over an already-computed (versions, heads) pair for one logicalId.
+ *
+ * Exists so the incremental projection (spine/head-index.ts) can reach the same decision WITHOUT the
+ * whole-log `filter` that `linearHead` above performs — that scan is O(log) per edit, and `appendEdit`
+ * / `appendDelete` call it on every mutation, which made bulk note operations quadratic. Both routes
+ * share this function, so the "no such note" / plural / cyclic rules have exactly ONE definition and
+ * the fast path cannot silently accept something the slow path refuses.
+ */
+export function linearHeadOf<R extends DagRecord<string>>(
+  logicalId: R["logicalId"],
+  versions: readonly R[],
+  heads: readonly R[],
+): R {
   if (versions.length === 0) {
     throw new Error(`no such note: ${logicalId}`);
   }
-  const referencedAsParent = new Set<RevId>(versions.flatMap(parentsOf));
-  const heads = versions.filter((r) => !referencedAsParent.has(r.rev));
   if (heads.length > 1) {
     throw new Error(`plural heads for ${logicalId} — resolve the concurrent merge first (Q-6)`);
   }
@@ -205,8 +221,7 @@ const _editCarry = {
  * the head's version id. Unchanged fields carry forward from the head. Throws if the
  * note is absent, has plural heads (resolve merge first), or is tombstoned.
  */
-export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: EditInput): AppendResult {
-  const head = linearHead(log, logicalId);
+export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: EditInput, head: AnnotationRecord = linearHead(log, logicalId)): AppendResult {
   if (head.deleted) {
     throw new Error(`cannot edit a tombstoned note (resurrection undefined in v1): ${logicalId}`);
   }
@@ -269,8 +284,7 @@ const _deleteCarry = {
 } satisfies Record<keyof AnnotationRecord, CarryDisposition>;
 
 /** Append a tombstone version (a delete is append-only, never a removal). */
-export function appendDelete(log: AnnotationLog, logicalId: LogicalId, input: DeleteInput): AppendResult {
-  const head = linearHead(log, logicalId);
+export function appendDelete(log: AnnotationLog, logicalId: LogicalId, input: DeleteInput, head: AnnotationRecord = linearHead(log, logicalId)): AppendResult {
   if (head.deleted) {
     throw new Error(`note already deleted: ${logicalId}`);
   }
