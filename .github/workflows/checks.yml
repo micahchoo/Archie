@@ -289,9 +289,21 @@ jobs:
         run: node scripts/perf/readerrun.mjs --check
 
   e2e:
-    # Studio back/forward navigation gate (Archie-d80f). Separate job so the unit gates above stay fast;
-    # this one pays the browser-download + dev-server cost the others don't need. Playwright's own
-    # webServer boots the studio vite dev server on :5198 (see apps/studio/e2e/playwright.config.ts).
+    # Browser gates for both apps. Separate job so the unit gates above stay fast; this one pays the
+    # browser-download and server-boot cost the others don't need. Both suites bring their own server
+    # via Playwright's `webServer`, on dedicated ports, so neither collides with a running `pnpm dev`.
+    #
+    #  - Studio (Archie-d80f): back/forward navigation over a REAL history — the popstate/hashchange
+    #    re-entrancy class is invisible to the repo's pure-module vitest posture. Vite dev on :5198.
+    #
+    #  - Viewer: the app had no browser gate at all, and three defects shipped past the static ones in
+    #    a single session. The sharpest: a prop typed on `$props()` but omitted from the destructuring
+    #    beside it, so the arrival chooser's only way back never rendered — measured at 1493 files,
+    #    0 errors, 0 warnings from svelte-check with the button broken. Static analysis cannot see
+    #    prop WIRING; only driving the app can. Serves BUILT output on :4326, because the static
+    #    exhibit shell is emitted at build time and an earlier version silently produced empty object
+    #    lists while the build stayed green. All specs run with non-localhost requests aborted, so the
+    #    seed's remote IIIF sources can never flake the gate.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -317,10 +329,18 @@ jobs:
       - name: Studio navigation e2e
         run: pnpm --filter @archie/studio run e2e
 
-      - name: Upload Playwright report on failure
+      # `if: always()` so a studio failure doesn't hide the viewer's result — they guard unrelated
+      # surfaces and one red should never mask the other's signal.
+      - name: Viewer e2e
+        if: always()
+        run: pnpm --filter @archie/viewer run e2e
+
+      - name: Upload Playwright reports on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: apps/studio/playwright-report
+          path: |
+            apps/studio/playwright-report
+            apps/viewer/playwright-report
           retention-days: 7
