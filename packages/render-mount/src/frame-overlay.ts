@@ -8,6 +8,7 @@
 // at the 4 corner hit-targets, leaving the centre free for pan/zoom (donor: stroke-over-stroke halo).
 
 import type { FrameOverlay } from "./surface.js";
+import { neutraliseOverlayWrapper } from "./overlay-wrapper.js";
 
 /** Explicit `:focus-visible` ring (Archie-09a0), duplicated from read-overlay.ts's copy — the two
  * overlay modules are deliberately decoupled (no cross-import), same as their duplicated
@@ -89,6 +90,9 @@ export function createFrameOverlay(viewer: FrameViewerLike): FrameOverlayControl
     }
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
+    // Named so OSD's wrapper becomes `overlay-wrapper-archie-object-frame` rather than the bare
+    // literal every unnamed overlay shares (openseadragon.js:19051).
+    svg.id = "archie-object-frame";
     svg.setAttribute("viewBox", "0 0 100 100");
     svg.setAttribute("preserveAspectRatio", "none"); // stretch the 100×100 box to the object's rect
     Object.assign(svg.style, {
@@ -140,6 +144,10 @@ export function createFrameOverlay(viewer: FrameViewerLike): FrameOverlayControl
     // Anchor to the OBJECT: OSD positions + sizes the SVG to the image's viewport Rect every render frame,
     // so the border tracks the object through pan/zoom instead of sticking to the viewport edges.
     viewer.addOverlay({ element: svg as unknown as HTMLElement, location: item.getBounds() });
+    // The frame is sized to the WHOLE object, so OSD's injected wrapper is an opaque div over the
+    // entire image — it defeated this overlay's own `pointer-events: stroke` intent AND shielded
+    // every region overlay beneath it (V68). See overlay-wrapper.ts.
+    neutraliseOverlayWrapper(svg);
     frameEl = svg;
   };
 
