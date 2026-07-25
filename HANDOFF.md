@@ -1,69 +1,127 @@
-# HANDOFF — perf sweeps (2026-07-24)
+# HANDOFF — Viewer UX audit, implementation wave (2026-07-25)
 
-Branch **`perf/spine-and-image-pipeline`** (off `main` @ `f0cacbf`). All work committed; tree clean
-except unrelated pre-existing artifacts (`.hm` files, `Prior Art/`, `ledgers/UX-AUDIT-viewer-*.md`,
-`.seeds/issues.jsonl`, `.claude/.skill-invocation-log`) which are NOT mine — do not sweep them in.
+Branch **`test/viewer-e2e`** in worktree `.claude/worktrees/chrome-occlusion`, cut from `main` by
+name. Merged to `main` and pushed through `d34e640`.
+
+**The previous handoff (perf sweeps, `perf/spine-and-image-pipeline`) is DONE and merged** — its
+ledgers stay authoritative for that work: `ledgers/PERF-image-pipeline-2026-07-24.md` (+ ADDENDUM),
+`ledgers/PERF-annotation-spine-2026-07-24.md`, `ledgers/PERF-reader-2026-07-24.md`.
 
 ## Where things stand
 
-Started from "I am looking for 10x perf runtime gains", target chosen by measurement. Three sweeps,
-each with its own ledger:
+`main` is **pushed** and CI is green. That mattered: 29 commits had never seen CI, and the first run
+immediately caught a real failure (`archie-viewer-artifact` — the root `dist/` mirror left
+un-resynced by a dist rebuild; fixed in `65a9175`).
 
-- `ledgers/PERF-image-pipeline-2026-07-24.md` (+ ADDENDUM) — DZI tiling, ingest bake
-- `ledgers/PERF-annotation-spine-2026-07-24.md` — the editing spine, zip serialize, Open-path probe
-- `ledgers/PERF-reader-2026-07-24.md` — the viewer's reader path
+The Viewer UX audit (`ledgers/UX-AUDIT-viewer*.md`, 76 findings over six reader journeys) has seven
+fix tickets merged. This session added the gate that was missing under all of them, decided the
+canvas-selection question 18 findings were parked behind, and fixed the embed's dead pointer path.
 
-**Measured end-to-end** (not primitives): publish tiling 1.9–4.7x · Save (`toZip`) 9.0x · per-edit
-130x · bulk create 10.4x · reader arrival JS 7.8x.
+## What landed
 
-## Gates (all green as of the last commit)
+| commit | what |
+| --- | --- |
+| `65a9175` | resync root `dist/` — the red CI job |
+| `716cf39` | regenerate the seed's archival page so **V110 is actually in it** |
+| `00b80a4` | **`apps/viewer/e2e`** — 17 specs, wired into CI's `e2e` job |
+| `d973f42` | **V68** — the embed's regions were unclickable; OSD's overlay wrapper ate every click |
+| `0cc79ca` | **V51/V29** — the AV plate stops lying about what is playing and what is there |
 
-render-core **1143/1143** · studio **925/925** · viewer **136/136** · svelte-check 0/0 both apps ·
-`pnpm typecheck` clean everywhere · `pnpm build` clean · `worker-smoke.mjs` both workers boot ·
-`archie-viewer build.mjs --check` within budget · `readerrun.mjs --check` within budget.
+### The viewer e2e suite is the important one
 
-Run tests PER APP (`pnpm exec vitest` inside the package) — the root binary fails rune tests.
-Typecheck is `node ../../node_modules/typescript-native/bin/tsc --noEmit` (TS7); never bare `tsc`.
+`apps/viewer` had **no browser gate at all**, while `apps/studio/e2e` had one with its own CI job.
+Every behavioural assertion from seven fix tickets had been an ad-hoc script, written and thrown away.
 
-## Perf harnesses (scripts/perf/)
+17 specs over four journeys, each carrying its finding id. **Proven red-green**: reverting the
+`oncancel` destructuring, the grid-density default, and the static shell's object list failed exactly
+the 6 specs that guard them and no others. With the Cancel button broken, `svelte-check` still
+reported **1496 files, 0 errors, 0 warnings**.
 
-| script | what |
-|---|---|
-| `run.mjs` + `bench.ts` | tile encode variants, byte-compared against the serial baseline |
-| `fsrun.mjs` + `fsbench.ts` | publish WRITE path over real OPFS / zip-stream / memory |
-| `publishrun.mjs` + `publishbench.ts` | END-TO-END publish; the one that found the pool bug |
-| `readerrun.mjs` (+ `--check`) | built-viewer reader path; **ratchet** vs `reader-budget.json` |
-| `worker-smoke.mjs` | the built workers actually boot (they fall back SILENTLY otherwise) |
+Two choices that must not be "simplified" later:
 
-## THE NEXT THING (measured, not speculative)
+- **It serves BUILT output** (`astro preview`, :4326), because the static exhibit shell is emitted by
+  a build-time `import.meta.glob`. A dev-server gate cannot see it. `astro preview` also has no dep
+  optimizer, so the wedge in `viewer-optimizedeps-bare-includes.md` can't flake it.
+- **Every spec aborts non-localhost requests.** All seed exhibits are remote-sourced (Yale IIIF,
+  archive.org, OSM). This keeps CI off third-party uptime *and* proves the grid, filmstrip and canvas
+  chrome all render from the local manifest.
 
-**The read-only viewer ships the editing annotation stack.** `packages/render-svelte/Canvas.svelte`
-calls `createMount` (`mount.ts` → `@annotorious/openseadragon` → PixiJS). `read-mount.ts`
-(`createReadOnlyMount`) exists for exactly this case and its header states pixi is ABSENT from its
-graph — it is what the `<archie-viewer>` embed uses.
+`apps/viewer/vitest.config.ts` is required, not incidental: vitest's default `**/*.spec.*` sweeps up
+Playwright specs and fails all four at collection.
 
-Measured with esbuild, same aliases, minified+gz:
+## Two artifacts were stale, and no test could tell
 
-    createMount          932 KB raw / 268 KB gz
-    createReadOnlyMount  284 KB raw /  70 KB gz     -> 3.8x, ~198 KB gz saved on object open
+Now a rule (`svelte-no-typecheck-net.md`, "a gate proves the code COMPILED, never that the output
+CARRIES anything"):
 
-**The blocker to check first:** `Canvas.svelte` is shared with STUDIO, which genuinely edits, so it
-cannot simply switch. Options are (a) a read-only canvas component for the viewer, or (b) Canvas
-picks its mount behind a dynamic `import()` on a `readOnly` prop — (b) is cleaner and `createMount`
-is already called inside `onMount`. ALSO verify the surface gap: `ReadOnlyMountSurface` may lack
-methods Reader uses (ISSUES.md "Direction 5's four missing surface methods") — that gap, not the
-bundling, is the real risk.
+- **V110's fix shipped in `3c82bfc` with a passing unit test, and the published tree had none of it.**
+  `grep -c "The narrative"` over `dist/published/screenshots/index.html` returned **0** until the tree
+  was regenerated. The function was proven; the output was not.
+- Only `screenshots` changed on regeneration — it is the one exhibit the seed's source zip **owns**.
+  Every other exhibit dir is *carried* untouched by `gen-published.mts`, so their archival pages are
+  stale committed output from `e45f38b` and their manifests carry no sections at all.
 
-Other open items, all recorded in the ledgers: `tileObject`/`tileRemote` still decode on the main
-thread just to read dimensions; the 22.4 s ingest figure is arithmetic, never a measured 70-file
-import; `toZip`'s remaining 635 ms is the largest synchronous main-thread block left.
+## Decisions recorded
 
-## Hard-won lessons now encoded in `.claude/rules/perf-measure-the-flow.md`
+**`Archie-ed50` — how the canvas shows what is selected. CLOSED.** A contrasting **halo** (reading
+colour keeps "which reading", the halo answers "which one"), distinct from hover, plus a 0.15
+breathing-room margin in `fitBoundsRect`. Rejected spotlight/dim-the-rest (fights the COMPARING
+outline-only regime) and reusing `highlighted` (collapses hover and selection).
 
-1. A primitive benchmark here is not evidence about a flow. Tiling measured 19–37x per image and is
-   1.9x end-to-end, because the caller was already concurrent.
-2. Worker pools must be process-wide. Per-call pools + `publishLibrary`'s uncapped fan-out = ~336
-   workers, every pool dying, all 70 objects silently falling back, publish looking healthy.
-3. Inject the bug before trusting a test. The first HeadIndex equivalence suite passed with THREE
-   deliberate bugs; the first perf gate passed with a reverted whole-log scan; the first reader
-   ratchet passed a broken page. Every gate here has been verified by injection.
+The mechanism finding is load-bearing: **neither consumer's style channel can express two strokes** —
+`MarkerStyle` is a single fill/stroke and Annotorious 3 has no per-shape SVG node — so the halo is an
+OSD **overlay element** in `@render/mount`, modelled on the existing `FrameOverlay`. That satisfies
+"expressible in the poorer renderer" by construction. The embed already sets `data-selected`
+(`read-overlay.ts:253`) and **nothing in the repo styles it**.
+
+The 18 findings parked behind that ticket were four unrelated clusters, now filed:
+`Archie-52a0` paint the selected mark · `Archie-40fe` floating-chrome occlusion ·
+`Archie-3d55` canvas keyboard · `Archie-c982` where a note lives (grilling).
+
+## Next, in order
+
+1. **`Archie-52a0`** — implement the halo + fit margin. Decision made, mechanism pinned; this is
+   execution. Do it in `@render/mount` so both consumers get it once.
+2. **`Archie-7b86`** — the AV surface's remaining three (V50 empty audio plate, V49 the temporal map
+   covered by the item strip, V53 four dropped affordances). **Read the prior art first** —
+   `osd-audio-video`, `hyperaudio-lite`, `videojs-annotation` sit beside the repo and none has been
+   read; `wavesurfer.js` is already a dependency. V49 may want `Archie-40fe`'s reservation fix rather
+   than a local one.
+3. **The three remaining grillings** — `Archie-d5cd` (address grammar; V100 proves an
+   ADR-0021-frozen contract is unsatisfiable and V102 says there is nothing to copy anyway),
+   `Archie-c982`, `Archie-52a9` (embed fidelity). `Archie-33bf` on the Studio map waits on `d5cd`.
+4. **`Archie-84e0`** — V11, measured this session: the embed resolves a tree-relative asset ref
+   against the HOST PAGE's directory (`HTTP 404 /recipes/screenshots/assets/o1-e1-embed.png`). The
+   portable twin of V7, and worse in the embed, where the host's path is never the library base.
+
+## Territory and hazards
+
+- **A concurrent session shares this checkout.** The primary tree is on `perf/spine-and-image-pipeline`,
+  not main. Cut worktrees from **`main` by name**, never `HEAD` — a branch cut from local HEAD once
+  captured three of their commits. Do merges in the dedicated `merge-main` worktree so their working
+  tree is never touched.
+- I edited `recipes/smoke.mjs` in the **primary tree** by mistake this session and had to rescue it.
+  Check `pwd` before editing; the shell's cwd persists across calls.
+- `.seeds/issues.jsonl` is written by `sd` wherever it runs — it drifts between the primary tree and
+  worktrees. Carry it deliberately.
+- `Prior Art/` (52MB, a nested `freecut` clone) is now **git-ignored**. Reference material for the
+  `Freecut-informed optimization program` map, not repo content.
+
+## Gates
+
+Per app, always — the root vitest binary fails rune tests:
+
+```
+pnpm --filter @archie/viewer run check:svelte     # 1497 files, 0/0 — warnings gate too
+pnpm --filter @archie/viewer run typecheck        # TS7; never bare `tsc`
+cd apps/viewer  && pnpm exec vitest run           # 144
+cd apps/studio  && pnpm exec vitest run && pnpm typecheck
+cd packages/render-mount && pnpm exec vitest run  # 159
+cd packages/archie-viewer && pnpm exec vitest run # 138
+node recipes/smoke.mjs                            # 7/7 — the ONLY gate that hit-tests a real pointer
+pnpm --filter @archie/viewer run e2e              # 17
+```
+
+`recipes/smoke.mjs` and `apps/viewer/e2e` are not redundant with the unit suites and cannot be
+replaced by them — see `.claude/rules/osd-overlay-wrapper.md` for the case where keyboard Enter and a
+synthetic `click()` both succeed against code whose real mouse click does nothing.

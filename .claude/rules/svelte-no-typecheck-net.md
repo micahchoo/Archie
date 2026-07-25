@@ -52,6 +52,29 @@ The only thing that caught it was driving the running app and asserting the cont
   reactivity. Dump the rendered DOM: an `{#if}` that emitted a bare `<!---->` placeholder while the
   parent's value was truthy is this bug exactly.
 
+**The general form: a gate proves the code COMPILED, never that the output CARRIES anything
+(added 2026-07-25).** The unbound prop is one instance of a wider pattern that bit four times in two
+sessions, each time with every gate green:
+
+| what was green | what was actually shipping |
+| --- | --- |
+| svelte-check 1464 files, 0/0 | `oncancel` typed, not destructured — the Cancel button never rendered |
+| `astro build` exit 0 | `getStaticPaths` read the fs at runtime → **empty** object lists in every static page |
+| `static-pages.test.ts` passing | `exhibitPageHtml` emits sections when handed them; the published tree had **zero** — nobody regenerated it |
+| render-mount unit suite 159 pass | every embed annotation region was **unclickable** — OSD's injected overlay wrapper ate the click |
+
+Each gate answered a real question correctly, and none of them was the question that mattered. So:
+
+- **After a fix, measure the ARTIFACT, not the exit code.** `grep -c` the built HTML for the string
+  the fix adds; count the elements the list should contain; diff the shipped bundle. "The test
+  passes" and "the output contains it" are different claims, and only the second is the deliverable.
+- **A generated/committed artifact does not update itself.** If a fix changes a generator, the
+  checked-in output is stale until someone regenerates it — and every unit test still passes.
+- **Prefer a gate that drives the real thing.** `recipes/smoke.mjs` and `apps/viewer/e2e` exist
+  because hit-testing, prop wiring, and build-time output are all invisible to jsdom and to `tsc`.
+  See [[osd-overlay-wrapper]] for the sharpest case: keyboard Enter and a synthetic `click()` BOTH
+  succeed against code where a real mouse click does nothing.
+
 **How to apply now:**
 - After editing any `.svelte` file, run the app's check locally — `pnpm --filter @archie/studio run
   check` for studio, the svelte-check command above for viewer. `astro check` is still worth running
