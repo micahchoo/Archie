@@ -304,19 +304,20 @@
     {#key object.canvasId}
       <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={onCanvasZoom} />
     {/key}
+    <!-- Scale cue (Archie-93fd): the locator answers WHERE the viewport sits in the image; this answers
+         HOW FAR IN. Top-right of the CANVAS — V40: it used to sit inside `.reader`, the flex row holding
+         the canvas AND the notes aside, so `right:` measured from the aside's right edge and painted the
+         readout 264px inside the sidebar, on top of the object title. Its own comment already claimed the
+         canvas's top-right corner; it just wasn't in a container that could give it one. `main` is
+         already `position: relative`, so moving it in is the whole fix.
+         Quiet by design: small, muted, no button chrome — a readout, not an action. aria-live so a
+         screen-reader user hears it change without it stealing focus. -->
+    <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
   </main>
 
   {#if onreading && readings.length > 0}
     <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
   {/if}
-
-  <!-- Scale cue (Archie-93fd): the locator (the OSD navigator this canvas mounts with `locator`)
-       answers WHERE the viewport sits in the image; this answers HOW FAR IN. Top-right — the one
-       corner this reader's canvas overlays don't already use (legend is top-left; the note popup is
-       bottom-left; the locator's own minimap owns bottom-right). Quiet: small, muted, no button
-       chrome — it's a readout, not an action. aria-live so a screen-reader user can hear it change
-       without it stealing focus (mirrors NarrativeReader's identical cue). -->
-  <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
 
   <!-- min/max match the aside's responsive clamp(320px … 560px) so a resize can't escape the designed
        reading-measure (#14) — the floor and ceiling are the same numbers the CSS clamp uses. -->
