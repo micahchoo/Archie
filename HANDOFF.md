@@ -4,6 +4,11 @@ Branch **`perf/spine-and-image-pipeline`** (off `main` @ `f0cacbf`). All work co
 except unrelated pre-existing artifacts (`.hm` files, `Prior Art/`, `ledgers/UX-AUDIT-viewer-*.md`,
 `.seeds/issues.jsonl`, `.claude/.skill-invocation-log`) which are NOT mine — do not sweep them in.
 
+> **Concurrent workstream, same repo.** The Viewer UX audit's implementation wave has its own
+> handoff at `ledgers/HANDOFF-viewer-ux-2026-07-25.md` — viewer e2e gate, the canvas-selection
+> decision, the embed pointer fix. This file remains the perf/read-only-mount handoff. Neither
+> supersedes the other; check both before picking up work.
+
 ## Where things stand
 
 Started from "I am looking for 10x perf runtime gains", target chosen by measurement. Three sweeps,

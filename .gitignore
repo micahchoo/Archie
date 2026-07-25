@@ -100,3 +100,9 @@ design/_*
 apps/studio/src/bidar.ts
 scripts/import-bidar.mjs
 docs/screenshots/auto/viewer-bidar.desktop.png
+
+# Prior-art reference clones. CLAUDE.md sanctions `Archie/Prior Art` as a location for them
+# (alongside the siblings at Annotators/Image/), and they are NESTED GIT REPOS — `freecut` alone is
+# 52MB with its own .git. Committing one would add a broken half-submodule, not a directory.
+# Reference material, cloned per machine; never repo content.
+Prior Art/

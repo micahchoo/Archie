@@ -70,7 +70,20 @@
     }
     return out.sort((x, y) => x.range.start - y.range.start);
   });
-  const activeIdx = $derived(activeNoteIndex(cues.map((c) => c.range), currentTime));
+  // V51 — nothing is "being spoken" until the recording has actually started.
+  //
+  // `activeNoteIndex` answers a pure question: which range contains time t. At t=0, paused, never
+  // played, a cue starting at 0:00 legitimately contains 0 — so the first transcript line rendered
+  // already lit, claiming to be the line currently being spoken while nothing was playing. The
+  // predicate was right and the question was wrong.
+  //
+  // `started` is the missing precondition: the playhead has moved, or playback has begun. It is
+  // deliberately NOT `!paused` — a deep-link landing (`t=`) sets currentTime while staying paused,
+  // and there the reader WAS sent to that moment, so lighting the line is correct. Only the untouched
+  // head is silent.
+  let playing = $state(false);
+  const started = $derived(playing || currentTime > 0);
+  const activeIdx = $derived(started ? activeNoteIndex(cues.map((c) => c.range), currentTime) : -1);
   // Whole-object (Object-level) Notes on this recording (ADR-0018): a bare-IRI / selectorless target
   // carries NO time fragment, so `cues` drops it — yet it applies to the WHOLE recording. Render it as a
   // persistent band (the AV analogue of the image frame-border) so an authored whole-track note is never
@@ -118,9 +131,22 @@
     const at = clampSeekStart(initialSeek, mediaDuration);
     if (at > 0) { mediaEl.currentTime = at; currentTime = at; } // paused — no play() (section-142)
   }
+  // V29 — a video that loads fine and shows nothing.
+  //
+  // `<video onerror>` is the only guard this plate had, and for this failure it CANNOT fire: the
+  // resource loads, metadata arrives, no `error` event is raised — there simply is no decodable
+  // video track (an audio-only file served into a <video>, or a container whose video codec this
+  // browser won't render). The reader gets a black rectangle with working controls and no
+  // explanation, which is the one outcome worse than an honest failure.
+  //
+  // `videoWidth` is the signal `error` can't give: 0 before metadata, the true width after it for
+  // any real video track, and still 0 afterwards for a file that has none. Checked only once
+  // metadata is in, so it can't false-positive on the loading state.
+  let noVideoTrack = $state(false);
   function onMeta() {
     mediaDuration = mediaEl?.duration ?? 0;
     mediaReady = true;
+    if (isVideo) noVideoTrack = (mediaEl as HTMLVideoElement | undefined)?.videoWidth === 0;
     landSeek(); // after mediaDuration is set, so the clamp uses the real length
   }
   // Click the bare strip (not a mark) → travel to that point in the recording (scrub the time axis).
@@ -154,8 +180,14 @@
         <p class="media-failed">This recording couldn’t be loaded. The file may be missing, or its format isn’t supported by this browser.</p>
       {:else if isVideo}
         <div class="video-wrap">
+          <!-- V29: the recording plays but has no picture — say so, instead of leaving a black plate
+               that is indistinguishable from a broken one. The audio still works, so this is a notice
+               beside the media, not the `media-failed` replacement. -->
+          {#if noVideoTrack}
+            <p class="media-notice">This recording has no picture — only sound. The controls below still play it.</p>
+          {/if}
           <!-- svelte-ignore a11y_media_has_caption -->
-          <video bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={onMeta} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
+          <video bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={onMeta} onplay={() => (playing = true)} onpause={() => (playing = false)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></video>
           <!-- Spatiotemporal note regions (ADR-0006): the box appears on the frame during its time window. -->
           <div class="box-overlay" aria-hidden="true">
             {#each videoBoxes as b (b.id)}<div class="rbox" class:active={b.active} style={`left:${b.box.x}%;top:${b.box.y}%;width:${b.box.w}%;height:${b.box.h}%`}></div>{/each}
@@ -165,7 +197,7 @@
         <div class="audio-stage">
           <span class="now">Now playing</span>
           <h1>{object.label}</h1>
-          <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={onMeta} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
+          <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={onMeta} onplay={() => (playing = true)} onpause={() => (playing = false)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
         </div>
       {/if}
     </div>
@@ -278,6 +310,9 @@
   .audio-stage audio { width: 100%; margin-top: var(--space-2); }
   /* Broken-media fallback (empty/error gate): a missing/undecodable recording, on warm paper. */
   .media-failed { max-width: 32rem; font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-canvas-secondary); text-align: center; padding: var(--space-6); background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); }
+  /* V29: a notice, not a failure — the recording still plays, it just has no picture. Sits above the
+     plate rather than replacing it, so the controls stay exactly where the reader expects them. */
+  .media-notice { margin: 0 0 var(--space-3); max-width: 32rem; font-family: var(--font-body); font-size: 0.9375rem; line-height: 1.5; color: var(--ink-canvas-secondary); text-align: center; }
   /* The wrap hugs the rendered video so the overlay aligns with the frame (boxes are % of the frame). */
   .video-wrap { position: relative; display: inline-block; max-width: 100%; max-height: 100%; line-height: 0; }
   .video-wrap video { display: block; max-width: 100%; max-height: 84vh; border-radius: var(--radius-md); }
