@@ -35,7 +35,17 @@ Typecheck is `node ../../node_modules/typescript-native/bin/tsc --noEmit` (TS7);
 | `readerrun.mjs` (+ `--check`) | built-viewer reader path; **ratchet** vs `reader-budget.json` |
 | `worker-smoke.mjs` | the built workers actually boot (they fall back SILENTLY otherwise) |
 
-## THE NEXT THING (measured, not speculative)
+## Read-only mount — SPIKED, and it is a project (do not start it casually)
+
+`ReadOnlyMountSurface` exposes **6** methods (`setAnnotations`, `setSelected`, `fitBounds`,
+`fitRegion`, `onSelect`, `destroy`). `Canvas.svelte` calls **18**, and the viewer genuinely needs
+~12 — missing are `setStyle` (per-reading marker styling), `setFrame` (whole-object frames),
+`setNavigatorDots`, `getZoomRatio` + `onViewportChange` (the zoom cue/band), and
+`markerScreenRect`/`markerScreenRects` (the floating note card's positioning). Porting those onto the
+DOM-SVG overlay is the work; the bundling is the easy half. Some groundwork exists (`read-mount.ts`
+already imports `createFrameOverlay`; `marker-dots.ts` exists).
+
+The prize is unchanged and still worth it eventually:
 
 **The read-only viewer ships the editing annotation stack.** `packages/render-svelte/Canvas.svelte`
 calls `createMount` (`mount.ts` → `@annotorious/openseadragon` → PixiJS). `read-mount.ts`
@@ -47,16 +57,21 @@ Measured with esbuild, same aliases, minified+gz:
     createMount          932 KB raw / 268 KB gz
     createReadOnlyMount  284 KB raw /  70 KB gz     -> 3.8x, ~198 KB gz saved on object open
 
-**The blocker to check first:** `Canvas.svelte` is shared with STUDIO, which genuinely edits, so it
-cannot simply switch. Options are (a) a read-only canvas component for the viewer, or (b) Canvas
-picks its mount behind a dynamic `import()` on a `readOnly` prop — (b) is cleaner and `createMount`
-is already called inside `onMount`. ALSO verify the surface gap: `ReadOnlyMountSurface` may lack
-methods Reader uses (ISSUES.md "Direction 5's four missing surface methods") — that gap, not the
-bundling, is the real risk.
+`Canvas.svelte` is shared with STUDIO, which genuinely edits, so it cannot simply switch: either a
+read-only canvas component for the viewer, or Canvas picks its mount behind a dynamic `import()` on a
+`readOnly` prop (cleaner — `createMount` is already called inside `onMount`).
 
-Other open items, all recorded in the ledgers: `tileObject`/`tileRemote` still decode on the main
-thread just to read dimensions; the 22.4 s ingest figure is arithmetic, never a measured 70-file
-import; `toZip`'s remaining 635 ms is the largest synchronous main-thread block left.
+## Other open items
+
+- **Concurrent `addFiles` — 3.8x on a 70-file import** (20.05 s → 5.60 s), measured, using the worker
+  pool that already ships. Blocked by three real things (terminal storage-refusal `break` assumes
+  sequential order; `run.tick` reports a sequential index; `AppendBatch` appends in file order, so
+  concurrency reorders objects in the exhibit) and capped at ~x4 — x6 crashed under memory pressure.
+  See ADDENDUM 2 in the image-pipeline ledger.
+- `toZip`'s remaining 635 ms is the largest synchronous main-thread block left (worker or streaming).
+- `tileObject`/`tileRemote` still decode on the main thread purely to read dimensions.
+- The `/sampler` route still 404s `readings.json` on every load (absent-optional, by design, but a
+  wasted round trip), and `/` 404s a screenshots PNG — a content bug, not perf.
 
 ## Hard-won lessons now encoded in `.claude/rules/perf-measure-the-flow.md`
 
