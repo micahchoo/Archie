@@ -17,7 +17,8 @@
     "precheck:svelte": "astro sync",
     "check:svelte": "svelte-check --workspace . --fail-on-warnings",
     "pretypecheck": "astro sync",
-    "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit"
+    "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit",
+    "e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "dependencies": {
     "@annotorious/openseadragon": "^3.8.2",
@@ -33,6 +34,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.4",
     "@astrojs/svelte": "^8.1.2",
+    "@playwright/test": "1.60.0",
     "astro": "^6.4.6",
     "happy-dom": "^20.9.0",
     "svelte": "^5.15.0",
