@@ -49,12 +49,28 @@ function propsOf(rel: string, filename: string): string[] {
   return props;
 }
 
+/**
+ * The component a tag refers to, seeing through the lazy-import holder.
+ *
+ * ExhibitView renders `<MediaPlayerLazy.current …/>` rather than `<MediaPlayer …/>` — the heavy
+ * islands are behind dynamic imports so an exhibit page does not download the canvas engine to show
+ * a grid (lib/lazy.svelte.ts). That is a LOADING change, not an escape-wiring change, so this
+ * contract must still see through it. Matching only the bare name would let the anti-trap guard go
+ * quietly green-by-absence: zero instances found, zero instances missing `onback`.
+ */
+function componentName(n: Record<string, unknown>): string | null {
+  if (n.type !== "Component") return null;
+  const raw = n.name as string | undefined;
+  if (!raw) return null;
+  return raw.replace(/Lazy\.current$/, "");
+}
+
 // Each `<MediaPlayer …/>` instance in a component, as the set of static attribute names it's given.
 function mediaPlayerInstances(rel: string, filename: string): string[][] {
   const ast = astOf(rel, filename);
   const found: string[][] = [];
   walk((ast as unknown as { fragment?: unknown }).fragment, (n) => {
-    if (n.type === "Component" && n.name === "MediaPlayer") {
+    if (componentName(n) === "MediaPlayer") {
       const attrs = ((n.attributes as Array<Record<string, unknown>>) ?? [])
         .filter((a) => a.type === "Attribute")
         .map((a) => a.name as string);
@@ -74,6 +90,7 @@ describe("narrative index escape contract (S-2 / MF-1 — ADR-0016 §137/§223)"
     const instances = mediaPlayerInstances("./ExhibitView.svelte", "ExhibitView.svelte");
     // Exactly one MediaPlayer instance carries onback — the index-AV branch. (The top-level single-AV
     // branch carries no onback by design: it is the leading surface, not a side-trip off the index.)
+    expect(instances.length).toBeGreaterThan(0); // a matcher that finds nothing must fail, not pass
     const withBack = instances.filter((attrs) => attrs.includes("onback"));
     expect(withBack).toHaveLength(1);
     // That instance is a real AV player (object/annotations), not a stub — guards against a wiring typo.
@@ -85,7 +102,7 @@ describe("narrative index escape contract (S-2 / MF-1 — ADR-0016 §137/§223)"
     const ast = astOf("./ExhibitView.svelte", "ExhibitView.svelte");
     let imageBackWired = false;
     walk((ast as unknown as { fragment?: unknown }).fragment, (n) => {
-      if (n.type === "Component" && n.name === "Reader") {
+      if (componentName(n) === "Reader") {
         const attrs = ((n.attributes as Array<Record<string, unknown>>) ?? [])
           .filter((a) => a.type === "Attribute")
           .map((a) => a.name as string);
