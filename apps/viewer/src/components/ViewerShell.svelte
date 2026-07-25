@@ -26,6 +26,20 @@
   let phase = $state<"probing" | "empty" | "ready" | "error">("probing");
   let errorMsg = $state("");
   let openError = $state(""); // shown in the empty hall when an open attempt fails
+  // The library chooser is a DISMISSIBLE SURFACE, not a place (Archie-4635 / audit V1+V2). It used to be
+  // expressed as `phase = "empty"` with the current library torn down first, which made "Open another
+  // library" a one-way door: the hall's only control was "Open a library…", Esc did nothing, and browser
+  // Back restored the ADDRESS while leaving the hall on screen. Keeping it separate from `phase` means the
+  // library being read survives underneath, so Cancel/Esc/navigation can return to it. CONTEXT's rule that
+  // scrimmed surfaces aren't places is why the address deliberately stays put while it's open.
+  let choosing = $state(false);
+  // Something to go back TO — false in genuine empty state (no baked tree, or portable before first open),
+  // where the hall is the whole app and there is nothing to cancel.
+  const canCancelChoosing = $derived(choosing && phase === "ready");
+  // The slug rung's degrade notice (audit V3). The object/note/section rungs announce themselves from
+  // inside ExhibitView (`arrivalMessage`), but a bad SLUG degrades to the Gallery — which ExhibitView never
+  // renders — so the notice for that rung has to live up here, or it can't be shown at all.
+  let degradeNotice = $state("");
 
   // Object-nav carousel snapshot lifted up from ExhibitView (dba2): the center zone of the persistent top
   // bar. `selectedObjectId` stays owned by ExhibitView; this only reflects it + calls back to navigate.
@@ -39,6 +53,12 @@
 
   function sync() {
     route = parseRoute(location.hash);
+    // V2: any navigation — including browser Back — dismisses the chooser. Without this the hash changed
+    // underneath a hall that stayed mounted, so the address said "#/{slug}" while the pixels said "no
+    // library open", and only a reload reconciled them. Guarded on `ready` so a genuine empty state (no
+    // library at all) still shows the hall after a hashchange.
+    if (phase === "ready") choosing = false;
+    degradeNotice = ""; // a fresh navigation supersedes any previous degrade announcement
   }
 
   // Cold-arrival (§96): a deep-link to an exhibit/note landed, but no library is open here.
@@ -73,10 +93,20 @@
     if (exhibits.length === 1 && exhibits[0]) {
       // One-exhibit library: a bad slug can only have meant the single real exhibit — land in it.
       route = { view: "exhibit", slug: exhibits[0].slug };
+      degradeNotice = "That exhibit isn’t in this library — showing the one it holds instead";
     } else {
       route = { view: "gallery" };
+      degradeNotice = "That exhibit isn’t in this library — showing the library instead";
     }
-    if (location.hash !== "#/" && route.view === "gallery") location.hash = "#/";
+    // V3: SAY SO. This rung degraded silently, while the object/note/section rungs each announced
+    // themselves — a reader who followed a link to one exhibit landed on a gallery of six and was told
+    // nothing. The notice component existed and worked; this rung just wasn't using it.
+    // V4: normalize the address with replaceState, NOT `location.hash =`. Two reasons: assigning the hash
+    // fires `hashchange` → `sync()`, which would immediately wipe the notice we just set; and replaceState
+    // doesn't add a history entry, so Back still goes where the reader came from rather than bouncing off
+    // the dead target. Same policy now applies on the note/object/section rungs inside ExhibitView.
+    const want = route.view === "gallery" ? "#/" : `#/${route.slug}`;
+    if (location.hash !== want) history.replaceState(null, "", want);
   }
 
   // Live refresh (no reload): re-probe the working store + reload the gallery IN PLACE so a newly-
@@ -145,22 +175,48 @@
     if (!(await loadAndShow())) {
       closePortableLibrary();
       openError = "That library couldn’t be opened. Make sure it’s an Archie .archie.zip file.";
+      return;
     }
+    // A replacement actually arrived — leave the chooser. On failure we deliberately stay, so the error
+    // sits beside the control that produced it (the embed's failed-`src` pattern, audit V10).
+    choosing = false;
+    degradeNotice = "";
   }
 
-  /** Leave the current library and return to the empty hall (portable swap-to-change, CONTEXT §223). */
+  /**
+   * Offer the chooser (portable swap-to-change, CONTEXT §223) WITHOUT discarding what's being read.
+   *
+   * This used to tear down first — `closePortableLibrary()`, `gallery = null`, `phase = "empty"` — which
+   * is what made it a one-way door (audit V1): after the teardown there was nothing to return to, so no
+   * Cancel could exist even in principle. ADR-0008 put this affordance in both data modes so a
+   * single-exhibit collapse "can't trap the reader"; the mitigation had become the trap.
+   *
+   * Deferring the close is leak-free: `openPortableLibrary()` calls `closePortableLibrary()` itself before
+   * adopting a new fs, so the old zip's blob URLs are revoked exactly when a replacement actually arrives.
+   * Abandoning the chooser now costs nothing.
+   */
   function openAnother() {
-    closePortableLibrary();
-    gallery = null;
-    route = { view: "gallery" };
-    if (location.hash !== "#/" && location.hash !== "") location.hash = "#/";
     openError = "";
-    phase = "empty";
+    choosing = true;
+  }
+
+  /** Abandon the chooser and return to the library that was open (no-op in a genuine empty state). */
+  function cancelChoosing() {
+    if (!canCancelChoosing) return;
+    choosing = false;
+    openError = "";
   }
 
   onMount(() => {
     void boot();
     window.addEventListener("hashchange", sync);
+    // V1: Escape dismisses the chooser — the ratified dismissal contract (Archie-389f: Esc ladder, focus
+    // return, no close-confirms). Registered at window level because the hall replaces the view rather
+    // than layering over it, so there's no scrim element to own the key.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && canCancelChoosing) { e.preventDefault(); cancelChoosing(); }
+    };
+    window.addEventListener("keydown", onKey);
     // Live refresh triggers: tab regains focus (separate-tab flow) OR Studio broadcasts a structural
     // change (side-by-side / instant). Same-origin, so the channel reaches a backgrounded Viewer too.
     const onVisible = () => { if (document.visibilityState === "visible") void refreshLive(); };
@@ -172,6 +228,7 @@
     }
     return () => {
       window.removeEventListener("hashchange", sync);
+      window.removeEventListener("keydown", onKey);
       document.removeEventListener("visibilitychange", onVisible);
       bc?.close();
     };
@@ -213,7 +270,9 @@
   });
 
   // The three-zone bar shows whenever a library is loaded (same gate as the old open-another chrome).
-  const showBar = $derived(phase === "ready");
+  // Hidden while the chooser is up: its "Open another library" button is the thing that opened it, and the
+  // breadcrumb would offer navigation into a view the chooser is covering.
+  const showBar = $derived(phase === "ready" && !choosing);
   // Center-zone carousel geometry (was the in-Reader carousel's derived idx/prev/next, lifted up).
   const cIdx = $derived(carousel ? carousel.siblings.findIndex((s) => s.id === carousel!.currentId) : -1);
   const cPrev = $derived(carousel && cIdx > 0 ? carousel.siblings[cIdx - 1] : undefined);
@@ -274,10 +333,23 @@
   </div>
 {/if}
 
+<!-- The slug rung's honest arrival line (V3). Mirrors ExhibitView's `arrivalMessage` chrome in wording and
+     dismissibility, but lives here because this rung lands on the Gallery, which ExhibitView never renders. -->
+{#if degradeNotice && phase === "ready" && !choosing}
+  <div class="degrade" class:on-paper={route.view === "gallery"} role="status">
+    <span class="seal" aria-hidden="true">⚐</span>
+    <span>{degradeNotice}</span>
+    <button type="button" class="text-link dismiss" onclick={() => (degradeNotice = "")}>Dismiss</button>
+  </div>
+{/if}
+
 {#if phase === "probing"}
   <div class="state"><span class="dot"></span><span>Opening the library…</span></div>
-{:else if phase === "empty"}
-  <EmptyHall onfile={handleFile} cold={coldArrival} error={openError} />
+{:else if phase === "empty" || choosing}
+  <!-- `choosing` renders the hall OVER a still-loaded library (V1): gallery, portable fs and route are all
+       intact behind it, so oncancel simply stops showing it. -->
+  <EmptyHall onfile={handleFile} cold={coldArrival} error={openError}
+             oncancel={canCancelChoosing ? cancelChoosing : undefined} />
 {:else if phase === "error"}
   <div class="state error"><span class="warn" aria-hidden="true">⚠</span><span>{errorMsg}</span></div>
 {:else if route.view === "exhibit"}
@@ -376,6 +448,36 @@
   /* Origin-drift badge — a broken-config alert. Warm-paper chip lifted by a soft shadow, rounded;
      the alert reads through semantic-error ink + a hairline error border and the quiet uppercase mono
      tracking (a found warning label, not a loud arcade panel) (CONTEXT §134). */
+  /* The slug rung's arrival line (V3) — deliberately the SAME object as ExhibitView's `.arrival` chrome
+     (:608): top-center under the bar, warm raised paper, accent-2 left rule. One degrade, one appearance,
+     whichever rung produced it. It sits on paper here (the Gallery) rather than over a canvas, so it takes
+     the paper ink token instead of the canvas one. */
+  .degrade {
+    /* Was fixed top-CENTER, borrowed from ExhibitView's `.arrival`. On the Gallery — where the slug rung
+       actually lands — its bottom edge grazed the "Archie Library" title, which is the same
+       covering-other-things class this sweep exists to fix (Archie-4635 flagged it here on purpose).
+       Right-aligned under the bar instead: clear of the left-aligned title block at every width, still
+       under the reader's eye on arrival, and it never overlaps the search field below it. */
+    position: fixed; z-index: 30; top: calc(var(--topbar-h) + var(--space-2)); right: var(--space-5);
+    max-width: min(32rem, calc(100vw - var(--space-8)));
+    box-sizing: border-box;
+    display: flex; align-items: center; gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-paper-card); color: var(--ink-paper-primary);
+    border: none; border-left: 3px solid var(--accent-2);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
+    font-family: var(--font-body), sans-serif; font-size: 0.8125rem;
+  }
+  /* On the GALLERY the page is a paper column with a wide display title at the top, so no top anchor is
+     safe at every library-title length — right-aligning only moved the collision. The gallery's
+     bottom-right is genuinely empty (the drift badge owns bottom-CENTRE), so the notice lands there and
+     the title keeps the whole top band. In an exhibit the top band is the right home: the canvas fills
+     the viewport and bottom-right is the locator minimap. */
+  .degrade.on-paper { top: auto; bottom: var(--space-5); }
+  .degrade .seal { color: var(--accent-2); }
+  .degrade .dismiss { font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.08em; }
+
   .drift {
     /* Bottom-CENTER. Top-right is the bar's "Open another library" zone (this z-60 badge stole its click);
        bottom-right is now the sidebar object-nav's stepper (SidebarObjectNav, flush to the aside corner) —

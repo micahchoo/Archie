@@ -41,6 +41,41 @@ export function filterImages(images: readonly ImageIndexEntry[], query: string):
 }
 
 /**
+ * Is a search live? (audit V6 — the read-side twin of Studio's W7.)
+ *
+ * The lens used to govern what the box searched, signalled ONLY by a placeholder swap
+ * ("Search exhibits…" → "Search images…"), so a reader who typed before noticing searched the wrong
+ * corpus and read an empty result as "this library doesn't have it". Studio settled this in
+ * `Archie-2308`: **the lens browses, the search finds everything.** A live query filters BOTH corpora
+ * and renders both result groups regardless of lens, and the lens toggle hides while it's live —
+ * there is nothing left for it to govern. This predicate is that mode switch, kept here so the rule is
+ * headless-testable and stated once.
+ */
+export function searchActive(query: string): boolean {
+  return query.trim().length > 0;
+}
+
+/**
+ * Cover fallback per exhibit slug (audit V7): the FIRST image-index entry for a slug, which is emitted
+ * in library→reading order (ADR-0023), so "first" is the exhibit's opening object.
+ *
+ * Studio's `LibraryHome` has always done "explicit cover ELSE first object's thumbnail"
+ * (`gallery-data.ts` `coverOf`, decision `Archie-2308`, spec SCALE-GALLERY-PLAN P3b); the viewer had no
+ * fallback at all, so an exhibit without an explicit cover rendered as its title on a blank wash — in
+ * the seeded library, the FIRST card, top-left, where the eye lands.
+ *
+ * Returns an empty map when no index loaded, which is the honest degradation: without `images.json`
+ * there is no thumbnail to borrow and the title-on-a-wash placeholder remains the only option.
+ */
+export function coverFallbacks(index: ImageIndex | null | undefined): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const e of index?.images ?? []) {
+    if (e.thumbnail && !out.has(e.exhibitSlug)) out.set(e.exhibitSlug, e.thumbnail);
+  }
+  return out;
+}
+
+/**
  * Merge the LIVE working-store wall over the HOSTED one (STALENESS st3) — the image-index twin of
  * `mergeGalleries`. Live images front; hosted entries for a slug the live source FRONTS (`liveSlugs`) are
  * DROPPED. Without this, `loadImageIndex` returned the hosted index alone while `mergeGalleries` fronted

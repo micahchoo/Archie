@@ -422,6 +422,30 @@ async function fetchJsonOptional<T>(path: string): Promise<T | null> {
   }
 }
 
+/**
+ * Resolve a published-tree asset reference for use as a live `src` (audit V7).
+ *
+ * `exhibits.json` covers and `images.json` thumbnails are EITHER an absolute URL (a remote IIIF
+ * derivative — how most seeded exhibits get their cover) OR a path relative to the published root
+ * (`screenshots/assets/o1-e1-embed.png` — how a baked local asset is referenced). The gallery rendered
+ * both raw, so the relative ones resolved against the PAGE and 404'd: the file was on disk the whole
+ * time, the URL just never carried `${PUBLISHED}/`. The symptom was an exhibit that looked like it had
+ * no cover at all.
+ *
+ * Absolute URLs (any scheme, protocol-relative, `blob:`, `data:`) and root-absolute paths pass through
+ * untouched — a live/OPFS-fronted exhibit already hands us a usable URL. Empty/undefined → undefined,
+ * so the caller's own fallback still fires.
+ *
+ * NOT applied in portable mode, where assets are blob URLs minted by `loadPortableExhibit` (ADR-0010).
+ * Whether covers are inside that rewrite set is the open half of audit V11 — see Archie-a897.
+ */
+export function publishedAssetUrl(ref: string | undefined | null): string | undefined {
+  const r = (ref ?? "").trim();
+  if (!r) return undefined;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(r) || r.startsWith("//") || r.startsWith("/")) return r;
+  return `${PUBLISHED}/${r}`;
+}
+
 /** HTTP byte source for the shared reader — GETs tree-relative paths under `${PUBLISHED}`. */
 const httpSource: JsonSource = { get: fetchJson, getOptional: fetchJsonOptional };
 

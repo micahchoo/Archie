@@ -121,6 +121,7 @@
           // SAY SO (the note path's honest "couldn't find that" chrome), never silently.
           objectMissing = true;
           chromeVisible = true;
+          normalizeAddressToExhibit(); // V4 — don't leave the dead object id in the address bar
           setTimeout(() => (chromeVisible = false), 8000);
         }
       }
@@ -133,6 +134,7 @@
         else {
           sectionMissing = true;
           chromeVisible = true;
+          normalizeAddressToExhibit(); // V4 — same for a dead section id
           setTimeout(() => (chromeVisible = false), 8000);
         }
       }
@@ -157,6 +159,22 @@
   // (active reading · selected object · arrived note · arrival chrome). Called from onMount for a deep
   // link AND exposed for imperative use — the search overlay (Q-4) and keyboard index (Q-5) jump to a
   // note by calling this, so every "go to this note" path lands identically. No-ops before load (no data).
+  /**
+   * V4 (Archie-4635): a missed target degraded the VIEW but left the dead address in the bar — so a reader
+   * who copied the URL propagated the broken link they'd just been rescued from, and every reload re-fired
+   * the notice. Normalize to the exhibit actually landed on.
+   *
+   * `replaceState`, NOT `location.hash =`, for two reasons: assigning the hash fires `hashchange`, which
+   * remounts this component through the shell's `{#key}` and would wipe the very notice being raised; and
+   * replaceState leaves no history entry, so Back returns where the reader came from instead of bouncing
+   * off the dead target. The shell's slug rung (`degradeToGallery`) now uses the same policy — before this,
+   * that rung rewrote the address while these three did not, which is the inconsistency V4 names.
+   */
+  function normalizeAddressToExhibit() {
+    const want = `#/${slug}`;
+    if (location.hash !== want) history.replaceState(null, "", want);
+  }
+
   function arriveAtNote(targetNote: string) {
     if (!data || !layout) return;
     const arrival = resolveNoteArrival(targetNote, layout.objects, data);
@@ -176,6 +194,7 @@
       // chrome, honestly, and land them on the exhibit instead of somewhere generic with no word.
       linkMissing = true;
       chromeVisible = true;
+      normalizeAddressToExhibit(); // V4 — and for a dead note id
       setTimeout(() => (chromeVisible = false), 8000);
     }
   }
@@ -345,7 +364,10 @@
   // landed instead (4.4 / 4.6 surface the same honest chrome the note path (#8) established).
   const arrivalMessage = $derived(
     linkMissing
-      ? "That note isn’t here anymore — showing the exhibit instead"
+      // V5: was "That note isn’t here anymore", which asserts a DELETION the system cannot know. A miss is
+      // equally consistent with a typo, a link to a different library, or a note that never existed. The
+      // object and section rungs below already word the same failure class accurately; match them.
+      ? "That note isn’t in this exhibit — showing the exhibit instead"
       : objectMissing
         ? "That item isn’t in this exhibit — showing the exhibit instead"
         : sectionMissing

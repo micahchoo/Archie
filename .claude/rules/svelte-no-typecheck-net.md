@@ -32,6 +32,26 @@ with a WHY on each, plus one dead CSS selector. `--fail-on-warnings` means the v
 `state_referenced_locally`, never paste a bare ignore: the comment must say why initial-capture is
 the contract at that site (see the five components for the idiom).
 
+**Necessary, and NOT sufficient — svelte-check is blind to prop WIRING (added 2026-07-25, Archie-4635).**
+Two real defects passed this gate at 0 errors / 0 warnings in one session:
+
+1. **An unbound identifier in a template.** `oncancel` was added to `EmptyHall`'s `$props()` TYPE
+   annotation but omitted from the destructuring pattern beside it. `{#if oncancel}` then referenced a
+   name that didn't exist, so the Cancel button silently never rendered — svelte-check: 1464 files,
+   0/0. It looked fine because the sibling Escape handler (shell code) worked.
+2. **A `{@const}` in an invalid position** (inside `<a>` rather than as the immediate child of a
+   block). This one svelte-check DOES catch — but only when you actually run it; it sat undetected
+   through several edits because the language server's noise in a fresh worktree was being ignored.
+
+The first is the load-bearing case: **a prop can be typed and not bound, and nothing static complains.**
+The only thing that caught it was driving the running app and asserting the control existed. So:
+
+- After wiring a NEW prop through a component boundary, assert it in a browser drive — that the control
+  renders, that the handler fires — not just that the gate is green.
+- When a control "should be there" and isn't, suspect the destructuring pattern before suspecting
+  reactivity. Dump the rendered DOM: an `{#if}` that emitted a bare `<!---->` placeholder while the
+  parent's value was truthy is this bug exactly.
+
 **How to apply now:**
 - After editing any `.svelte` file, run the app's check locally — `pnpm --filter @archie/studio run
   check` for studio, the svelte-check command above for viewer. `astro check` is still worth running

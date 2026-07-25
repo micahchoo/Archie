@@ -109,8 +109,16 @@
     letter-spacing: 0.1em; text-transform: uppercase; transition: color 160ms ease, background 160ms ease;
   }
   .density button:hover { color: var(--accent-2); }
-  .density button.on { background: var(--accent); color: var(--ink-on-accent, #fff); }
-  .density button.on:hover { color: var(--ink-on-accent, #fff); }
+  /* V21: this was `background: var(--accent)` + white — the only accent-filled element on an exhibit's
+     front page, so the loudest mark on the page was a per-device DISPLAY SETTING, reading before the
+     3rem display title. system.md rations the accent for the focal signal; a segmented control's
+     selected state is not that. Selection now reads through ink weight and an emphasis hairline, which
+     is enough to say "this one" without competing for the first glance. */
+  .density button.on {
+    background: var(--surface-canvas); color: var(--ink-canvas-primary); font-weight: 600;
+    box-shadow: inset 0 0 0 1px var(--border-canvas-emphasis);
+  }
+  .density button.on:hover { color: var(--ink-canvas-primary); }
 
   .object {
     display: flex; flex-direction: column; width: 100%; padding: 0; cursor: pointer; text-align: left;

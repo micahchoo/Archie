@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { hasWall, filterExhibits, filterImages, wallHref, mergeImageIndex, listedExhibits, unlistedSlugSet } from "./gallery-view.js";
+import { hasWall, filterExhibits, filterImages, wallHref, mergeImageIndex, listedExhibits, unlistedSlugSet, searchActive, coverFallbacks } from "./gallery-view.js";
 import { loadImageIndex } from "./published.js";
 import type { ImageIndex } from "@render/core";
 
@@ -98,5 +98,55 @@ describe("mergeImageIndex (live over hosted, drop live-fronted slugs) — STALEN
     expect(mergeImageIndex(null, null, new Set())).toBeNull();
     expect(mergeImageIndex(null, hosted, new Set())).toEqual(hosted);
     expect(mergeImageIndex(live, null, liveSlugs)).toEqual(live);
+  });
+});
+
+// The read-side twin of Studio's W7 (audit V6): the lens browses, the search finds everything. The rule
+// lives here so "is a search live" has ONE definition, and so the component can't drift back to a
+// lens-scoped search by accident.
+describe("searchActive — the lens/search mode switch (V6)", () => {
+  it("is false for an empty or whitespace-only query", () => {
+    expect(searchActive("")).toBe(false);
+    expect(searchActive("   ")).toBe(false);
+    expect(searchActive("\t\n")).toBe(false);
+  });
+  it("is true as soon as the reader has typed something", () => {
+    expect(searchActive("a")).toBe(true);
+    expect(searchActive("  folio  ")).toBe(true);
+  });
+});
+
+// V7: an exhibit with no explicit cover borrowed nothing and rendered as its title on a blank wash —
+// in the seeded library that was the FIRST card. Studio has always fallen back to the first object's
+// thumbnail (gallery-data.ts coverOf); this is the viewer's equivalent, off the baked index.
+describe("coverFallbacks — borrow the first object's thumbnail (V7)", () => {
+  const withThumbs = {
+    images: [
+      { objectId: "o1", exhibitSlug: "a", title: "First of A", thumbnail: "a1.jpg" },
+      { objectId: "o2", exhibitSlug: "a", title: "Second of A", thumbnail: "a2.jpg" },
+      { objectId: "o3", exhibitSlug: "b", title: "First of B", thumbnail: "b1.jpg" },
+    ],
+  } as ImageIndex;
+
+  it("takes the FIRST entry per slug — the index is in library→reading order", () => {
+    const m = coverFallbacks(withThumbs);
+    expect(m.get("a")).toBe("a1.jpg");
+    expect(m.get("b")).toBe("b1.jpg");
+  });
+
+  it("skips entries with no thumbnail rather than caching an empty cover", () => {
+    const m = coverFallbacks({
+      images: [
+        { objectId: "o1", exhibitSlug: "a", title: "No thumb" },
+        { objectId: "o2", exhibitSlug: "a", title: "Has one", thumbnail: "a2.jpg" },
+      ],
+    } as ImageIndex);
+    expect(m.get("a")).toBe("a2.jpg");
+  });
+
+  it("degrades to an empty map with no index — without images.json there is nothing to borrow", () => {
+    expect(coverFallbacks(null).size).toBe(0);
+    expect(coverFallbacks(undefined).size).toBe(0);
+    expect(coverFallbacks({ images: [] } as ImageIndex).size).toBe(0);
   });
 });
