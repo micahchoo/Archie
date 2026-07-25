@@ -1,0 +1,36 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2/annotations.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/0000000003EB0YAESVXD6MKPY6/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o2",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:740,470,280,280"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.003Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The Andes–Amazon corridor is the densest stretch of dots in the whole atlas — dozens of small languages between the mountains and the river basin.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "created": "1970-01-01T00:00:00.003Z",
+      "creator": {
+        "type": "Person",
+        "name": "curator"
+      },
+      "archie:logicalId": "0000000003EB0YAESVXD6MKPY6",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/0000000003EB0YAESVXD6MKPY6.json"
+    }
+  ]
+}

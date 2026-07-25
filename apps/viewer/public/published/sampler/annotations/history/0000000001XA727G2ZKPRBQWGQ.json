@@ -8,7 +8,7 @@
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/sv1",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.sv1",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",

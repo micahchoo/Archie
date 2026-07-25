@@ -1,0 +1,12 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/canvas/ex-voynich.o12/annotations-abjad.json",
+  "type": "AnnotationPage",
+  "items": [],
+  "partOf": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich-reading/annotations/readings/abjad.json",
+      "type": "AnnotationCollection"
+    }
+  ]
+}

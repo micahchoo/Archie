@@ -1,0 +1,36 @@
+{
+  "@context": "https://www.w3.org/ns/anno.jsonld",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4/annotations.json",
+  "type": "AnnotationPage",
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/00000000093KM2FAXA5WQDQ82Q/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/canvas/ex-atlas.o4",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:300,540,280,250"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.009Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "On the West African coast, languages rarely die into silence — they dissolve into bigger neighbours, market tongue by market tongue.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "created": "1970-01-01T00:00:00.009Z",
+      "creator": {
+        "type": "Person",
+        "name": "curator"
+      },
+      "archie:logicalId": "00000000093KM2FAXA5WQDQ82Q",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/language-atlas/annotations/history/00000000093KM2FAXA5WQDQ82Q.json"
+    }
+  ]
+}

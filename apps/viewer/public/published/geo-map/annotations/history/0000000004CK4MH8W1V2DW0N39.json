@@ -8,7 +8,7 @@
       "type": "Annotation",
       "target": {
         "type": "SpecificResource",
-        "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/m1",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/geo-map/canvas/ex-geo.m1",
         "selector": {
           "type": "FragmentSelector",
           "conformsTo": "http://www.w3.org/TR/media-frags/",
