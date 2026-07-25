@@ -29,6 +29,24 @@ export function thumbSrcChain(object: Pick<AObject, "thumbnail" | "tileSource" |
 }
 
 /**
+ * A poster image for a VIDEO object, or null if none was baked.
+ *
+ * Exists because `<video preload="metadata">` is not a byte guarantee. Measured on the built viewer
+ * (scripts/perf/readerrun.mjs): one video card pulled **1648 KB for a file advertised as 1 MB**,
+ * making video 82% of the page's arrival bytes on `/sampler` — against 148 KB of JS. The cost is per
+ * card, so a twenty-video exhibit pays it twenty times before the reader clicks anything.
+ *
+ * Only an AUTHORED/baked thumbnail counts. `thumbnailCandidates` also derives image-ish URLs from
+ * `source` and `tileSource`, which for a video object would point `<img>` at the .mp4 itself — a
+ * guaranteed broken image AND the very download this avoids. `source` is in the parameter type only
+ * to document that it is deliberately IGNORED. A video with no baked poster gets the
+ * designed plate + ▶ badge instead, which is already what the audio and error branches render.
+ */
+export function videoPosterSrc(object: Pick<AObject, "thumbnail" | "source">): string | null {
+  return object.thumbnail ?? null;
+}
+
+/**
  * The single best renderable `<img src>` (the chain's head) — for call sites with no error-driven
  * stepping (the plate itself uses thumbSrcChain).
  */

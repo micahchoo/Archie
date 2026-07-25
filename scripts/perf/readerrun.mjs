@@ -77,8 +77,16 @@ for (const { path: route, ready } of ROUTES) {
   const page = await ctx.newPage();
   let jsBytes = 0;
   let jsRequests = 0;
+  // Media fetched BEFORE the reader opens anything. Counted as REQUESTS, not bytes, on purpose: the
+  // byte total depends on the network (a fixture may reference a remote file) and would read as a
+  // pass if CI simply could not reach it. A request is emitted the instant an element decides to
+  // preload, so it is network-independent evidence of the behaviour.
+  const mediaRequests = [];
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
+  page.on("request", (r) => {
+    if (/\.(mp4|webm|mov|m4a|mp3|ogg|opus|wav)(\?|$)/i.test(new URL(r.url()).pathname)) mediaRequests.push(new URL(r.url()).pathname);
+  });
   page.on("response", async (r) => {
     if (!/\.(js|mjs)$/.test(new URL(r.url()).pathname)) return;
     jsRequests++;
@@ -100,9 +108,9 @@ for (const { path: route, ready } of ROUTES) {
     cards = await page.evaluate((sel) => document.querySelectorAll(sel).length, ready);
   } catch { /* left null — reported as a MISS, never silently as 0 */ }
 
-  console.log(`  ${route.padEnd(20)} DCL ${String(dcl).padStart(4)} ms   load ${String(load).padStart(4)} ms   cards ${hydrated === null ? "MISS" : String(cards).padStart(2) + " @" + String(hydrated).padStart(4) + "ms"}   JS ${(jsBytes / 1024).toFixed(0).padStart(4)} KB in ${jsRequests}${errors.length ? `   [${errors.length} pageerror]` : ""}`);
+  console.log(`  ${route.padEnd(20)} DCL ${String(dcl).padStart(4)} ms   load ${String(load).padStart(4)} ms   cards ${hydrated === null ? "MISS" : String(cards).padStart(2) + " @" + String(hydrated).padStart(4) + "ms"}   JS ${(jsBytes / 1024).toFixed(0).padStart(4)} KB in ${jsRequests}   media-req ${String(mediaRequests.length).padStart(2)}${errors.length ? `   [${errors.length} pageerror]` : ""}`);
   if (errors.length) for (const e of errors.slice(0, 2)) console.log(`      ! ${e}`);
-  results[route] = { dcl, load, hydrated, cards, jsKB: +(jsBytes / 1024).toFixed(1), jsRequests, errors };
+  results[route] = { dcl, load, hydrated, cards, mediaRequests: mediaRequests.length, mediaPaths: [...new Set(mediaRequests)], jsKB: +(jsBytes / 1024).toFixed(1), jsRequests, errors };
   await ctx.close();
 }
 
@@ -148,9 +156,13 @@ for (const [route, limitKB] of Object.entries(budget.routes)) {
   // A route whose island never hydrated has a meaninglessly small payload; treat it as a failure
   // rather than a pass, or a broken page reads as the best possible score.
   if (got.cards === 0 || got.hydrated === null) { console.log(`  FAIL ${route.padEnd(20)} island never hydrated (cards=${got.cards})`); failed = true; continue; }
-  const ok = got.jsKB <= limitKB;
-  if (!ok) failed = true;
-  console.log(`  ${ok ? "ok  " : "FAIL"} ${route.padEnd(20)} ${got.jsKB.toFixed(0).padStart(5)} KB / ${String(limitKB).padStart(5)} KB budget`);
+  const jsOk = got.jsKB <= limitKB;
+  // Zero media fetches before an object is opened. A single <video preload="metadata"> card was
+  // measured pulling 1648 KB for a 1 MB file — 82% of the page — so this is the biggest single
+  // arrival cost the JS budget above cannot see.
+  const mediaOk = got.mediaRequests === 0;
+  if (!jsOk || !mediaOk) failed = true;
+  console.log(`  ${jsOk && mediaOk ? "ok  " : "FAIL"} ${route.padEnd(20)} ${got.jsKB.toFixed(0).padStart(5)} KB / ${String(limitKB).padStart(5)} KB budget   media-req ${got.mediaRequests}/0${mediaOk ? "" : `   <- ${got.mediaPaths.slice(0, 2).join(", ")}`}`);
 }
 const openLimit = budget.objectOpenExtraKB;
 if (openLimit !== undefined) {

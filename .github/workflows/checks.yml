@@ -237,6 +237,57 @@ jobs:
           pnpm sync-dist
           node recipes/smoke.mjs
 
+  # PERF RATCHETS. Both drive BUILT output in a real browser, because both guard failures that are
+  # invisible to every unit suite:
+  #
+  #  - worker-smoke: the DZI and bake workers fall back SILENTLY (sliceToDziAuto catches, bake-async
+  #    catches and counts). A worker that dies on import does not break the app — it quietly reverts
+  #    to the slow main-thread path while looking healthy, so the measured win simply stops existing.
+  #    vitest cannot see this: it has no Worker, and the bench aliases @render/core to a shim, so it
+  #    never loads the workers' real import graph (the full barrel calls DOMPurify.addHook() at module
+  #    load, in a scope with no document).
+  #
+  #  - reader payload: the viewer had no equivalent of the embed's bundle:check ratchet, which is
+  #    exactly how an exhibit route drifted to 1149 KB (302 KB gz) of eager canvas engine unnoticed
+  #    while the embed's own regression was caught. Budgets live in scripts/perf/reader-budget.json.
+  #    Raise one only in the commit that legitimately grows the payload; widening it to turn a red run
+  #    green is the regression, not the fix.
+  perf-ratchets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium (+ OS deps)
+        run: pnpm exec playwright install --with-deps chromium
+
+      # Both gates read dist/, so build first. Studio's dist carries the workers; the viewer's carries
+      # the reader payload.
+      - name: Build studio + viewer
+        run: |
+          pnpm --filter @archie/studio run build
+          pnpm --filter @archie/viewer run build
+
+      - name: Shipped workers boot in a browser
+        run: node scripts/perf/worker-smoke.mjs
+
+      - name: Reader arrival payload within budget
+        run: node scripts/perf/readerrun.mjs --check
+
   e2e:
     # Studio back/forward navigation gate (Archie-d80f). Separate job so the unit gates above stay fast;
     # this one pays the browser-download + dev-server cost the others don't need. Playwright's own

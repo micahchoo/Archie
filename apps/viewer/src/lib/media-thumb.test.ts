@@ -6,7 +6,7 @@
 // source image, not a world projection" (iiif/resolve.ts).
 import { describe, it, expect } from "vitest";
 import type { DziTileSource, XyzTileSource } from "@render/core";
-import { thumbKind, thumbSrc, thumbSrcChain } from "./media-thumb.js";
+import { thumbKind, thumbSrc, thumbSrcChain, videoPosterSrc } from "./media-thumb.js";
 
 const dzi: DziTileSource = {
   kind: "dzi",
@@ -102,5 +102,24 @@ describe("thumbSrcChain", () => {
   it("thumbSrc is the chain's head (single-src call sites stay consistent with the plate)", () => {
     const o = { source: "https://iiif.example.org/img" };
     expect(thumbSrc(o)).toBe(thumbSrcChain(o)[0]);
+  });
+});
+
+// `<video preload="metadata">` is not a byte guarantee: measured on the built viewer, one video card
+// pulled 1648 KB for a 1 MB file — 82% of /sampler's arrival bytes, and the cost is PER CARD. The
+// plate now prefers a baked poster and otherwise fetches nothing.
+describe("videoPosterSrc — a poster, never the recording", () => {
+  it("returns the baked thumbnail when the object has one", () => {
+    expect(videoPosterSrc({ source: "https://h/clip.mp4", thumbnail: "https://h/x/assets-thumb/clip.jpg" })).toBe("https://h/x/assets-thumb/clip.jpg");
+  });
+
+  it("returns null when there is none — the plate must NOT fall back to a derived src", () => {
+    // The guard that matters. thumbSrcChain derives candidates from `source`/`tileSource`, which for
+    // a video object is the .mp4 — pointing <img> at it would be a broken image AND would re-download
+    // the very bytes this avoids. Only an authored/baked thumbnail counts.
+    expect(videoPosterSrc({ source: "https://h/clip.mp4" })).toBeNull();
+    const videoObject = { source: "https://h/clip.mp4", mediaType: "video" as const };
+    expect(videoPosterSrc(videoObject)).toBeNull();
+    expect(thumbSrcChain(videoObject)).toContain("https://h/clip.mp4"); // the chain WOULD hand back the mp4
   });
 });

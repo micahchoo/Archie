@@ -297,3 +297,132 @@ product decision, not a scheduling one.
 A primitive benchmarked in isolation can be both correct and irrelevant. Two things only the
 end-to-end run could show: that the caller's concurrency had already claimed most of the win, and
 that the optimization actively broke itself at real scale while reporting success.
+
+
+---
+
+# ADDENDUM 2 — the ingest claim was wrong (2026-07-24, later still)
+
+The last unvalidated figure from this ledger ("the 22.4 s ingest number is arithmetic, not a measured
+70-file import") was measured. `scripts/perf/ingestbench.ts`, 70 real 6000x4000 files, 67 MB:
+
+| | 70-file import |
+|---|---|
+| SERIAL, DOM canvas (pre-change) | 21.27 s |
+| SERIAL, worker pool (**what ships**) | **20.05 s — 1.06x** |
+| concurrent x2, same worker pool | 10.28 s (2.1x) |
+| concurrent x4, same worker pool | **5.60 s (3.8x)** |
+| concurrent x6 | **crashed** — `InvalidStateError: The source image could not be decoded` |
+
+**The "7.9x" in the section above is wrong, and the error is instructive.** It came from a fleet of 24
+concurrent bakes — but `ingest-flows.ts#addFiles` is a strictly SERIAL `for` loop
+(`await addObjectFromFile` per file). I measured a shape the caller does not have. Same mistake as the
+tiling headline, one sweep later, in the same ledger.
+
+What the worker pool actually buys on ingest is **1.06x of throughput and a responsive UI** — per image
+the worker was never faster (315 ms vs 319 ms, measured in the original sweep); the work is relocated,
+not reduced. A 70-file import still takes ~20 s. It is no longer 20 s of frozen browser, which is a
+real and worthwhile improvement — it is just not a throughput win, and this ledger claimed one.
+
+## The 3.8x that IS available, and what blocks it
+
+Bounded concurrency in `addFiles` reaches 5.60 s at x4 with the pool that already ships. Three things
+block it, none of them incidental:
+
+1. **The terminal storage refusal.** `if (r.reason === "storage") { notAttempted = …; break; }` assumes
+   sequential order — the device is full, so every later write is doomed. Under concurrency, in-flight
+   files still land (the residue `mapLimit`'s own contract warns about).
+2. **Progress reporting.** `run.tick({ index: i + 1, total })` is sequential by construction.
+3. **Object order.** `AppendBatch` appends in file order; concurrent completion would reorder objects
+   inside the exhibit, which the author sees.
+
+And a hard ceiling: **x6 crashed**, decoding failures under memory pressure — the same failure mode as
+the per-call DZI pools (ADDENDUM 1). `bake-async`'s pool is `POOL_MAX = 6`, so six concurrent callers
+put six 96 MB decodes in flight at once. Any concurrency here is bounded at ~4 AND wants the byte
+budget the DZI pool now has, not a core count.
+
+
+---
+
+# ADDENDUM 2 — the ingest claim was wrong (2026-07-24, later still)
+
+The last unvalidated figure from this ledger ("the 22.4 s ingest number is arithmetic, not a measured
+70-file import") was measured. `scripts/perf/ingestbench.ts`, 70 real 6000x4000 files, 67 MB:
+
+| | 70-file import |
+|---|---|
+| SERIAL, DOM canvas (pre-change) | 21.27 s |
+| SERIAL, worker pool (**what ships**) | **20.05 s — 1.06x** |
+| concurrent x2, same worker pool | 10.28 s (2.1x) |
+| concurrent x4, same worker pool | **5.60 s (3.8x)** |
+| concurrent x6 | **crashed** — `InvalidStateError: The source image could not be decoded` |
+
+**The "7.9x" in the section above is wrong, and the error is instructive.** It came from a fleet of 24
+concurrent bakes — but `ingest-flows.ts#addFiles` is a strictly SERIAL `for` loop
+(`await addObjectFromFile` per file). I measured a shape the caller does not have. Same mistake as the
+tiling headline, one sweep later, in the same ledger.
+
+What the worker pool actually buys on ingest is **1.06x of throughput and a responsive UI** — per image
+the worker was never faster (315 ms vs 319 ms, measured in the original sweep); the work is relocated,
+not reduced. A 70-file import still takes ~20 s. It is no longer 20 s of frozen browser, which is a
+real and worthwhile improvement — it is just not a throughput win, and this ledger claimed one.
+
+## The 3.8x that IS available, and what blocks it
+
+Bounded concurrency in `addFiles` reaches 5.60 s at x4 with the pool that already ships. Three things
+block it, none of them incidental:
+
+1. **The terminal storage refusal.** `if (r.reason === "storage") { notAttempted = …; break; }` assumes
+   sequential order — the device is full, so every later write is doomed. Under concurrency, in-flight
+   files still land (the residue `mapLimit`'s own contract warns about).
+2. **Progress reporting.** `run.tick({ index: i + 1, total })` is sequential by construction.
+3. **Object order.** `AppendBatch` appends in file order; concurrent completion would reorder objects
+   inside the exhibit, which the author sees.
+
+And a hard ceiling: **x6 crashed**, decoding failures under memory pressure — the same failure mode as
+the per-call DZI pools (ADDENDUM 1). `bake-async`'s pool is `POOL_MAX = 6`, so six concurrent callers
+put six 96 MB decodes in flight at once. Any concurrency here is bounded at ~4 AND wants the byte
+budget the DZI pool now has, not a core count.
+
+
+---
+
+# ADDENDUM 2 — the ingest claim was wrong (2026-07-24, later still)
+
+The last unvalidated figure from this ledger ("the 22.4 s ingest number is arithmetic, not a measured
+70-file import") was measured. `scripts/perf/ingestbench.ts`, 70 real 6000x4000 files, 67 MB:
+
+| | 70-file import |
+|---|---|
+| SERIAL, DOM canvas (pre-change) | 21.27 s |
+| SERIAL, worker pool (**what ships**) | **20.05 s — 1.06x** |
+| concurrent x2, same worker pool | 10.28 s (2.1x) |
+| concurrent x4, same worker pool | **5.60 s (3.8x)** |
+| concurrent x6 | **crashed** — `InvalidStateError: The source image could not be decoded` |
+
+**The "7.9x" in the section above is wrong, and the error is instructive.** It came from a fleet of 24
+concurrent bakes — but `ingest-flows.ts#addFiles` is a strictly SERIAL `for` loop
+(`await addObjectFromFile` per file). I measured a shape the caller does not have. Same mistake as the
+tiling headline, one sweep later, in the same ledger.
+
+What the worker pool actually buys on ingest is **1.06x of throughput and a responsive UI** — per image
+the worker was never faster (315 ms vs 319 ms, measured in the original sweep); the work is relocated,
+not reduced. A 70-file import still takes ~20 s. It is no longer 20 s of frozen browser, which is a
+real and worthwhile improvement — it is just not a throughput win, and this ledger claimed one.
+
+## The 3.8x that IS available, and what blocks it
+
+Bounded concurrency in `addFiles` reaches 5.60 s at x4 with the pool that already ships. Three things
+block it, none of them incidental:
+
+1. **The terminal storage refusal.** `if (r.reason === "storage") { notAttempted = …; break; }` assumes
+   sequential order — the device is full, so every later write is doomed. Under concurrency, in-flight
+   files still land (the residue `mapLimit`'s own contract warns about).
+2. **Progress reporting.** `run.tick({ index: i + 1, total })` is sequential by construction.
+3. **Object order.** `AppendBatch` appends in file order; concurrent completion would reorder objects
+   inside the exhibit, which the author sees.
+
+And a hard ceiling: **x6 crashed**, decoding failures under memory pressure — the same failure mode as
+the per-call DZI pools (ADDENDUM 1). `bake-async`'s pool is `POOL_MAX = 6`, so six concurrent callers
+put six 96 MB decodes in flight at once. Any concurrency here is bounded at ~4 AND wants the byte
+budget the DZI pool now has, not a core count.
