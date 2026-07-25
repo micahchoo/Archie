@@ -13,6 +13,17 @@
 //   transferred JS      — bytes of script actually pulled for that route
 // and for an object open: click → `.openseadragon-canvas` present.
 //
+// RATCHET MODE:  node scripts/perf/readerrun.mjs --check
+//
+// Fails if a route's arrival payload exceeds its budget in reader-budget.json. This exists because
+// the viewer drifted to 302 KB gz of eager canvas engine with nothing watching — the app had no
+// equivalent of the embed's `eagerGzKB` gate (build.mjs --check), which is precisely why the
+// regression survived. Measured in a real browser rather than from a manifest: what the reader
+// actually downloads is the number that matters, and it already needs Chromium here.
+//
+// Budgets are RAW transferred JS bytes on arrival, per route. Update reader-budget.json deliberately
+// when a payload legitimately grows; do not widen it to make a red run pass.
+//
 // Run:  node scripts/perf/readerrun.mjs        (HEADED=1 to watch)
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
@@ -51,7 +62,17 @@ console.log(`• serving apps/viewer/dist at ${BASE}\n`);
 const browser = await launchBrowser({ headless: !process.env.HEADED });
 const results = {};
 
-for (const route of ["/", "/sampler", "/language-atlas", "/published/sampler"]) {
+// Hydration means different markup per route: the gallery index paints exhibit cards (`a.card`),
+// an exhibit route paints object cards (`button.object`). One shared selector cannot express both,
+// and a generic "some clickables exist" heuristic is worse than useless here — the SSR shell already
+// ships nav links, so it went green at 100 ms whether or not the island had run.
+const ROUTES = [
+  { path: "/", ready: "a.card" },
+  { path: "/sampler", ready: "button.object" },
+  { path: "/language-atlas", ready: "button.object" },
+];
+
+for (const { path: route, ready } of ROUTES) {
   const ctx = await browser.newContext();
   const page = await ctx.newPage();
   let jsBytes = 0;
@@ -71,15 +92,12 @@ for (const route of ["/", "/sampler", "/language-atlas", "/published/sampler"]) 
   await page.waitForLoadState("load").catch(() => {});
   const load = Date.now() - t0;
 
-  // Hydrated = the gallery island has painted its object cards. A generic "some clickables exist"
-  // heuristic is worthless here: the SSR shell already ships nav links and the layout toggle, so it
-  // went green at 100 ms on every route whether or not the island had run.
   let hydrated = null;
   let cards = 0;
   try {
-    await page.waitForFunction(() => document.querySelectorAll("button.object").length > 0, null, { timeout: 15_000 });
+    await page.waitForFunction((sel) => document.querySelectorAll(sel).length > 0, ready, { timeout: 15_000 });
     hydrated = Date.now() - t0;
-    cards = await page.evaluate(() => document.querySelectorAll("button.object").length);
+    cards = await page.evaluate((sel) => document.querySelectorAll(sel).length, ready);
   } catch { /* left null — reported as a MISS, never silently as 0 */ }
 
   console.log(`  ${route.padEnd(20)} DCL ${String(dcl).padStart(4)} ms   load ${String(load).padStart(4)} ms   cards ${hydrated === null ? "MISS" : String(cards).padStart(2) + " @" + String(hydrated).padStart(4) + "ms"}   JS ${(jsBytes / 1024).toFixed(0).padStart(4)} KB in ${jsRequests}${errors.length ? `   [${errors.length} pageerror]` : ""}`);
@@ -114,4 +132,32 @@ for (const route of ["/", "/sampler", "/language-atlas", "/published/sampler"]) 
 
 await browser.close();
 server.close();
-console.log(`\n--- JSON ---\n${JSON.stringify(results, null, 2)}`);
+
+if (!process.argv.includes("--check")) {
+  console.log(`\n--- JSON ---\n${JSON.stringify(results, null, 2)}`);
+  process.exit(0);
+}
+
+const budgetPath = path.join(REPO, "scripts/perf/reader-budget.json");
+const budget = JSON.parse(await readFile(budgetPath, "utf8"));
+let failed = false;
+console.log("\n--- ratchet ---");
+for (const [route, limitKB] of Object.entries(budget.routes)) {
+  const got = results[route];
+  if (!got) { console.log(`  ??  ${route.padEnd(20)} not measured — route missing from the build?`); failed = true; continue; }
+  // A route whose island never hydrated has a meaninglessly small payload; treat it as a failure
+  // rather than a pass, or a broken page reads as the best possible score.
+  if (got.cards === 0 || got.hydrated === null) { console.log(`  FAIL ${route.padEnd(20)} island never hydrated (cards=${got.cards})`); failed = true; continue; }
+  const ok = got.jsKB <= limitKB;
+  if (!ok) failed = true;
+  console.log(`  ${ok ? "ok  " : "FAIL"} ${route.padEnd(20)} ${got.jsKB.toFixed(0).padStart(5)} KB / ${String(limitKB).padStart(5)} KB budget`);
+}
+const openLimit = budget.objectOpenExtraKB;
+if (openLimit !== undefined) {
+  const got = results.objectOpen;
+  const ok = got?.canvasMs !== null && got.extraKB <= openLimit;
+  if (!ok) failed = true;
+  console.log(`  ${ok ? "ok  " : "FAIL"} ${"object open".padEnd(20)} ${(got?.extraKB ?? 0).toFixed(0).padStart(5)} KB / ${String(openLimit).padStart(5)} KB budget${got?.canvasMs === null ? "   (canvas never appeared)" : ""}`);
+}
+console.log(failed ? "\n\u2717 reader payload over budget — see scripts/perf/reader-budget.json" : "\n\u2713 reader payload within budget");
+process.exit(failed ? 1 : 0);
