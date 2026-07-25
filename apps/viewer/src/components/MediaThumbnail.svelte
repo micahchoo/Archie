@@ -8,7 +8,7 @@
   // xyz tileSource ⇒ map, else mediaType — a `dzi` tileSource is a baked pyramid of an ordinary IMAGE
   // (publish-time tiling stamps it on photos), so it stays on the image path and shows its raster.
   import type { AObject } from "@render/core";
-  import { thumbKind, thumbSrcChain } from "../lib/media-thumb.js";
+  import { thumbKind, thumbSrcChain, videoPosterSrc } from "../lib/media-thumb.js";
 
   let { object }: { object: AObject } = $props();
 
@@ -18,6 +18,8 @@
   // the end does the plate show the honest "couldn't load" card. Zero extra requests when the first
   // candidate renders.
   const candidates = $derived(thumbSrcChain(object, 480));
+  // A baked poster if the object has one; otherwise nothing is fetched for this card (see below).
+  const poster = $derived(videoPosterSrc(object));
 
   // Deterministic waveform bar heights (NoteMedia's av-cover motif, widened for the bigger plate) — a
   // drawn sound signature, not a real decode.
@@ -37,9 +39,14 @@
   {:else if kind === "video"}
     {#if failed}
       <span class="broken">Couldn’t load this recording</span>
+    {:else if poster}
+      <!-- A baked poster: the first-frame look at ~5 KB instead of fetching the recording. -->
+      <img class="picture" src={poster} alt="" loading="lazy" decoding="async" onerror={() => (failed = true)} />
     {:else}
-      <!-- preload metadata → the first frame is the poster (the NoteMedia idiom); muted, no controls. -->
-      <video class="picture" src={object.source} muted preload="metadata" tabindex="-1" onerror={() => (failed = true)}></video>
+      <!-- NO poster ⇒ preload="none". `preload="metadata"` was measured pulling 1648 KB for a 1 MB
+           file — 82% of this page's arrival bytes, per card. The element stays so the plate keeps its
+           shape and an unplayable file still trips onerror; it just fetches nothing until opened. -->
+      <video class="picture" src={object.source} muted preload="none" tabindex="-1" onerror={() => (failed = true)}></video>
     {/if}
     <span class="badge"><span class="glyph" aria-hidden="true">▶</span>Video</span>
   {:else if kind === "sound"}
