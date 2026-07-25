@@ -38,7 +38,9 @@
 <div class="lb-scrim" role="presentation" onclick={onclose}></div>
 <!-- Dialog a11y (Q-5): `use:dialog` traps Tab inside the lightbox, focuses the close button on open,
      binds ESC, and returns focus to the trigger (the tile that opened it) on close. -->
-<div class="lb" role="dialog" aria-modal="true" aria-label="Note" use:dialog={{ onclose }}>
+<!-- The dialog names itself after what it is SHOWING when the author described it (V66) — "Note" alone
+     told a screen-reader user nothing about which of the note's images they had just opened. -->
+<div class="lb" role="dialog" aria-modal="true" aria-label={cur?.alt ? `Note: ${cur.alt}` : "Note"} use:dialog={{ onclose }}>
   <button class="lb-close" onclick={onclose} aria-label="Close">×</button>
 
   {#if cur}
@@ -46,7 +48,9 @@
       {#if many}<button class="nav prev" onclick={prev} aria-label="Previous">‹</button>{/if}
 
       {#if cur.kind === "image"}
-        <img src={cur.url} alt="" />
+        <!-- The author's description, on the element it describes. alt="" here would assert "decorative",
+             which is false for an image the author chose to embed and then wrote a caption for. -->
+        <img src={cur.url} alt={cur.alt ?? ""} />
       {:else if cur.kind === "video"}
         <!-- svelte-ignore a11y_media_has_caption -->
         <video src={cur.url} controls autoplay></video>

@@ -6,7 +6,20 @@
 // (web pages) stay in the prose.
 
 export type NoteMediaKind = "image" | "audio" | "video";
-export interface NoteMediaItem { kind: NoteMediaKind; url: string; }
+export interface NoteMediaItem {
+  kind: NoteMediaKind;
+  url: string;
+  /**
+   * The author's own description — markdown `![alt](url)`, a media link's `[label](url)`, or an HTML
+   * `alt=` attribute. ABSENT when the author wrote none; never `""` (audit V66).
+   *
+   * The distinction is load-bearing: `alt=""` is a positive claim that an image is decorative and should
+   * be skipped by assistive tech, which is the opposite of "we don't know". Absence lets each consumer
+   * choose its own fallback. This is the only accessible name a note's media can ever have — the tile is
+   * a button wrapping a decorative-by-default `<img>` — so dropping it here is unrecoverable downstream.
+   */
+  alt?: string;
+}
 export interface NoteContent {
   /** Media items in (roughly) document order. */
   media: NoteMediaItem[];
@@ -41,31 +54,45 @@ function isSafeMediaUrl(url: string): boolean {
 }
 
 const HTML_MEDIA = /<(?:img|audio|video|source)\b[^>]*?\ssrc=["']([^"']+)["'][^>]*>/gi;
-const MD_IMAGE = /!\[[^\]]*\]\(\s*([^)\s]+)(?:\s+"[^"]*")?\s*\)/g;
-const MD_LINK = /\[[^\]]*\]\(\s*([^)\s]+)(?:\s+"[^"]*")?\s*\)/g;
+// Group 1 = the author's description, group 2 = the url. The description used to be matched and thrown
+// away (`!\[[^\]]*\]`), which is the whole of V66 — capture it instead.
+const MD_IMAGE = /!\[([^\]]*)\]\(\s*([^)\s]+)(?:\s+"[^"]*")?\s*\)/g;
+const MD_LINK = /\[([^\]]*)\]\(\s*([^)\s]+)(?:\s+"[^"]*")?\s*\)/g;
+/** An HTML `alt=` attribute, read off the whole matched tag so attribute ORDER doesn't matter. */
+const HTML_ALT = /\salt=["']([^"']*)["']/i;
+
+/**
+ * `{ alt }` when the author wrote something, `{}` when they didn't — spread into the item so the key is
+ * absent rather than empty. Whitespace-only counts as nothing written.
+ */
+function altOf(raw: string | undefined): { alt?: string } {
+  const a = (raw ?? "").trim();
+  return a ? { alt: a } : {};
+}
 
 export function splitNoteMedia(markdown: string): NoteContent {
   const src = markdown ?? "";
   const media: NoteMediaItem[] = [];
 
   // HTML media tags first (they'd otherwise be left as raw text).
-  let text = src.replace(HTML_MEDIA, (m, url: string) => {
+  let text = src.replace(HTML_MEDIA, (m: string, url: string) => {
     const k = kindOf(url);
     if (!k || !isSafeMediaUrl(url)) return m;
-    media.push({ kind: k, url });
+    media.push({ kind: k, url, ...altOf(HTML_ALT.exec(m)?.[1]) });
     return "";
   });
   // Markdown image embeds — media (default to image when the extension is unknown), unless an unsafe scheme.
-  text = text.replace(MD_IMAGE, (_m, url: string) => {
+  text = text.replace(MD_IMAGE, (_m, alt: string, url: string) => {
     if (!isSafeMediaUrl(url)) return _m;
-    media.push({ kind: kindOf(url) ?? "image", url });
+    media.push({ kind: kindOf(url) ?? "image", url, ...altOf(alt) });
     return "";
   });
   // Markdown links — only those pointing at a (safe) media file (others, e.g. web pages, stay as prose).
-  text = text.replace(MD_LINK, (m, url: string) => {
+  // A media link's LABEL is the author describing it, same as an image's alt.
+  text = text.replace(MD_LINK, (m, label: string, url: string) => {
     const k = kindOf(url);
     if (!k || !isSafeMediaUrl(url)) return m;
-    media.push({ kind: k, url });
+    media.push({ kind: k, url, ...altOf(label) });
     return "";
   });
 
