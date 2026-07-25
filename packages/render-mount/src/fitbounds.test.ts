@@ -14,9 +14,14 @@ import type { W3CFragmentSelector, W3CSvgSelector } from "@render/core";
 const rect: W3CFragmentSelector = { type: "FragmentSelector", value: "xywh=pixel:100,50,200,80" };
 const poly: W3CSvgSelector = { type: "SvgSelector", value: "<svg><polygon points='10,10 110,10 60,90'/></svg>" };
 
-const sidebarOpen: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: false, detailOpen: true };
-const sheet: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: true, detailOpen: true };
-const closed: FitOptions = { containerW: 1000, sidebarW: 0, sidebarIsSheet: false, detailOpen: false };
+// `margin: 0` on all three fixtures ON PURPOSE. These pin the ANVIL characterization — the sidebar
+// reservation math and nothing else — so they must keep asserting the region's own bounds. Archie's
+// breathing-room margin (Archie-52a0 / V44) is a deliberate addition ON TOP of that oracle and has
+// its own describe block below; folding it into these fixtures would quietly restate the anvil spec
+// as something anvil never did, and leave the margin itself unpinned.
+const sidebarOpen: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: false, detailOpen: true, margin: 0 };
+const sheet: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: true, detailOpen: true, margin: 0 };
+const closed: FitOptions = { containerW: 1000, sidebarW: 0, sidebarIsSheet: false, detailOpen: false, margin: 0 };
 
 describe("fitBoundsRect — anvil fitForSidebar characterization (the gate oracle)", () => {
   it("plain fit (sidebar is a sheet) returns the annotation's own bounds", () => {
@@ -38,7 +43,7 @@ describe("fitBoundsRect — anvil fitForSidebar characterization (the gate oracl
 
   it("caps the sidebar fraction at 0.85 (anvil's Math.min guard)", () => {
     // sidebarW 950 of 1000 would be f=0.95; capped to 0.85 -> expandedW = 200/0.15
-    const r = fitBoundsRect(rect, { containerW: 1000, sidebarW: 950, sidebarIsSheet: false, detailOpen: true })!;
+    const r = fitBoundsRect(rect, { containerW: 1000, sidebarW: 950, sidebarIsSheet: false, detailOpen: true, margin: 0 })!;
     expect(r.w).toBeCloseTo(200 / 0.15, 6);
   });
 
@@ -52,7 +57,61 @@ describe("fitBoundsRect — anvil fitForSidebar characterization (the gate oracl
   });
 
   it("falls back to plain bounds when containerW is unknown (0), even if detail is open", () => {
-    expect(fitBoundsRect(rect, { containerW: 0, sidebarW: 300, sidebarIsSheet: false, detailOpen: true })).toEqual({ x: 100, y: 50, w: 200, h: 80 });
+    expect(fitBoundsRect(rect, { containerW: 0, sidebarW: 300, sidebarIsSheet: false, detailOpen: true, margin: 0 })).toEqual({ x: 100, y: 50, w: 200, h: 80 });
+  });
+});
+
+// The breathing-room margin (Archie-52a0 / V44) — Archie's addition on top of the anvil oracle
+// above. Before it, arriving at a note pinned the region's edges to the viewport's: the reader saw
+// the region and nothing it sits in, and the selection ring (drawn OUTSIDE the geometry) was itself
+// half off-screen at the exact moment of closest looking.
+describe("fitBoundsRect — breathing-room margin (V44)", () => {
+  const plain: Omit<FitOptions, "margin"> = { containerW: 1000, sidebarW: 300, sidebarIsSheet: true, detailOpen: true };
+
+  it("DEFAULTS to a 15%-larger rect — an omitted margin is not a zero margin", () => {
+    // 200×80 grown by 0.15 → 230×92, centred on the same point (100,50 → 85,44).
+    expect(fitBoundsRect(rect, plain)).toEqual({ x: 85, y: 44, w: 230, h: 92 });
+  });
+
+  it("keeps the region's CENTRE fixed while growing it (the fit still lands on the note)", () => {
+    const r = fitBoundsRect(rect, plain)!;
+    expect(r.x + r.w / 2).toBeCloseTo(100 + 200 / 2, 6);
+    expect(r.y + r.h / 2).toBeCloseTo(50 + 80 / 2, 6);
+  });
+
+  it("is a FRACTION, so a tiny region and a huge one get the same proportional room", () => {
+    const tiny: W3CFragmentSelector = { type: "FragmentSelector", value: "xywh=pixel:0,0,10,10" };
+    const huge: W3CFragmentSelector = { type: "FragmentSelector", value: "xywh=pixel:0,0,1000,1000" };
+    expect(fitBoundsRect(tiny, plain)!.w / 10).toBeCloseTo(1.15, 6);
+    expect(fitBoundsRect(huge, plain)!.w / 1000).toBeCloseTo(1.15, 6);
+  });
+
+  it("applies to a polygon via its bbox, like every other fit path", () => {
+    // polygon bbox = 10,10,100,80 → grown 15% about its centre.
+    expect(fitBoundsRect(poly, plain)).toEqual({ x: 2.5, y: 4, w: 115, h: 92 });
+  });
+
+  it("runs BEFORE the sidebar reservation, so the panel reserves room around a breathing region", () => {
+    const r = fitBoundsRect(rect, { ...plain, sidebarIsSheet: false })!;
+    expect(r.w).toBeCloseTo(230 / 0.7, 6); // the INFLATED width widened, not the raw 200
+  });
+
+  it("an explicit margin of 0 restores the historical edge-to-edge fit", () => {
+    expect(fitBoundsRect(rect, { ...plain, margin: 0 })).toEqual({ x: 100, y: 50, w: 200, h: 80 });
+  });
+
+  it("a negative or non-finite margin degrades to no margin rather than inverting the rect", () => {
+    expect(fitBoundsRect(rect, { ...plain, margin: -0.5 })).toEqual({ x: 100, y: 50, w: 200, h: 80 });
+    expect(fitBoundsRect(rect, { ...plain, margin: Number.NaN })).toEqual({ x: 100, y: 50, w: 200, h: 80 });
+  });
+
+  it("margin overshoot off the image is the CONTENT clamp's job, not the margin's", () => {
+    // A region flush to the origin grows to negative x/y; clampToContentBounds owns that, and the
+    // fit path runs it after. The margin must not silently pre-clamp, or the two would disagree.
+    const flush: W3CFragmentSelector = { type: "FragmentSelector", value: "xywh=pixel:0,0,100,100" };
+    const r = fitBoundsRect(flush, plain)!;
+    expect(r.x).toBeLessThan(0);
+    expect(clampToContentBounds(r, { width: 1000, height: 800 })).toEqual({ x: 0, y: 0, w: 107.5, h: 107.5 });
   });
 });
 

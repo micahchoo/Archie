@@ -267,8 +267,12 @@
   // 7e1f: the canvas-wide frame overlay — its corners activate (select) the framed note, reusing the
   // same `selected` path a marker click uses. The framed mark's own overlay rect is suppressed below
   // (filtered out of the canvas annotations) so the whole-object border isn't double-drawn.
+  // V46 (Archie-52a0): the frame SURVIVES Hide-all, deliberately. It is the canvas's only named tab
+  // stop ("View whole object", frame-overlay.ts) — hiding it left a keyboard reader with no way onto
+  // the canvas at all. Declutter means "hide the REGION marks", not "remove the keyboard
+  // infrastructure"; the dashed border is a hairline and costs the decluttered view almost nothing.
   const canvasFrame = $derived<FrameOverlay | null>(
-    frame && !notesHidden ? { colour: frame.colour, onActivate: () => (selected = frame.markId) } : null,
+    frame ? { colour: frame.colour, onActivate: () => (selected = frame.markId) } : null,
   );
   // The notes list + detail (`current`) keep the FULL array — only the canvas drops the framed rect.
   // Hide-all: the canvas shows ONLY the selected note's mark (or nothing), decluttering the basemap

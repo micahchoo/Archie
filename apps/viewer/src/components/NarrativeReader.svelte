@@ -163,8 +163,10 @@
   // geometry to draw) AND no sidebar entry (the aside here is the section spine, not a note list) — so it
   // was unreachable in the narrative. The frame's corners activate the same `selected` path a marker does.
   const activeFrame = $derived(activeObject && frameFor ? frameFor(activeObject.id) : null);
+  // V46 (Archie-52a0): survives Hide-all — same reasoning as Reader.svelte's canvasFrame. The frame
+  // is the canvas's only named tab stop; declutter hides REGION marks, not keyboard infrastructure.
   const canvasFrame = $derived<FrameOverlay | null>(
-    activeFrame && !notesHidden ? { colour: activeFrame.colour, onActivate: () => (selected = activeFrame.markId) } : null,
+    activeFrame ? { colour: activeFrame.colour, onActivate: () => (selected = activeFrame.markId) } : null,
   );
   const multiObject = $derived(new Set(sections.map((s) => s.objectId)).size > 1);
   // Per-layer note count on the ACTIVE object for the legend (id=null → base / General notes). Re-mints

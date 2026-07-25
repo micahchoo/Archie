@@ -22,6 +22,7 @@ export { resolveOsdTileSources, type NativeFetch, type ResolvedTileSources } fro
 // unsafe-eval. Additive — the editor `createMount` seam above is untouched (Phase 0 boundary).
 export { createReadOnlyMount, wireReadOnlySurface, type ReadOnlyMountSurface, type ReadOnlyMountOptions } from "./read-mount.js";
 export { createReadOnlyOverlay, overlayShapeFor, type OverlayShape, type ReadOnlyOverlayController, type OverlayViewerLike } from "./read-overlay.js";
+export { createSelectionHalo, contrastInk, type SelectionHaloController, type HaloViewerLike } from "./selection-halo.js";
 
 // Viewer-side image-decode dimension cap (EMBED 5.5): rejects an oversized NON-TILED bitmap before
 // OSD decodes it. The mount wires it via guardOpenedImageSource (read-mount.ts) at the open seam.

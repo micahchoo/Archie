@@ -11,15 +11,11 @@
 // selector.ts:124) is applied HERE in `overlayShapeFor`: a non-rect/polygon selector → null.
 
 import { neutraliseOverlayWrapper, isOverlayWrapper } from "./overlay-wrapper.js";
+import { overlayShapeFor, type OverlayShape } from "./overlay-shape.js";
 import {
-  parseFragmentXYWH,
-  parsePolygonPoints,
   polygonBBox,
   selectorOf,
-  isV1Shape,
   type Box,
-  type Point,
-  type W3CSelector,
   type W3CAnnotation,
   type AnnotationLike,
 } from "@render/core";
@@ -83,26 +79,10 @@ const addFocusRing = (el: SVGSVGElement): void => {
   });
 };
 
-/** The geometry-only descriptor the SVG layer draws (NO DOM). */
-export type OverlayShape =
-  | { kind: "rect"; box: Box }
-  | { kind: "polygon"; points: Point[] };
-
-/**
- * Pure selector → overlay-geometry descriptor. Applies the v1-shape vocab gate ITSELF (rect+polygon
- * only — `isV1Shape`, selector.ts:124) and returns null for anything else, for a degenerate polygon
- * (NaN/empty), or for an unparseable rect. The SVG layer never has to re-check the vocabulary.
- */
-export function overlayShapeFor(selector: W3CSelector): OverlayShape | null {
-  if (!isV1Shape(selector)) return null; // ellipse/path/circle/line → not v1 → skip
-  if (selector.type === "FragmentSelector") {
-    const box = parseFragmentXYWH(selector.value);
-    return box ? { kind: "rect", box } : null;
-  }
-  // SvgSelector → polygon (isV1Shape already restricted to Polygon among SVG shapes).
-  const points = parsePolygonPoints(selector.value);
-  return points ? { kind: "polygon", points } : null;
-}
+// The pure selector → geometry descriptor now lives in overlay-shape.ts (selection-halo.ts draws
+// the same vocabulary and must not import a renderer to get it). Re-exported here so every existing
+// importer of "./read-overlay.js" — index.ts, read-overlay-geometry.test.ts — keeps resolving.
+export { overlayShapeFor, type OverlayShape } from "./overlay-shape.js";
 
 /**
  * The minimal OSD viewer surface this overlay needs — keeps the module decoupled from the full OSD

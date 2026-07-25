@@ -202,7 +202,34 @@ async function main() {
           const c = document.querySelector("archie-viewer").shadowRoot.querySelector(".archie-note-card");
           return c ? !c.hasAttribute("hidden") : false;
         });
-        return { visible, wrappers, hit, centre };
+
+        // ---- V43 (Archie-52a0): the selection halo, measured where it can actually be seen ----
+        //
+        // The unit suite can prove the ring's ATTRIBUTES; only a browser can prove it was painted
+        // with real extent and did not become a click shield. Three things, in order of how they
+        // failed in development: the ring exists at all; it has non-zero size (a clipped or
+        // zero-box overlay is the silent-degrade mode); and the region under it is STILL the
+        // topmost hit target, because the ring is drawn directly over the mark it points at and
+        // `pointer-events: none` on the svg is defeated by OSD's wrapper exactly as in V68.
+        const halo = await page.evaluate(([x, y]) => {
+          const sr = document.querySelector("archie-viewer").shadowRoot;
+          const el = sr.querySelector("#archie-selection-halo");
+          if (!el) return { present: false };
+          const r = el.getBoundingClientRect();
+          const wrapper = el.parentElement;
+          const top = sr.elementFromPoint(x, y);
+          return {
+            present: true,
+            w: Math.round(r.width),
+            h: Math.round(r.height),
+            rings: el.children.length,
+            selfPE: getComputedStyle(el).pointerEvents,
+            wrapperPE: wrapper ? getComputedStyle(wrapper).pointerEvents : "none",
+            topTag: top ? top.tagName.toLowerCase() : "null",
+          };
+        }, centre);
+
+        return { visible, wrappers, hit, centre, halo };
       })();
 
       if (clicked.skipped) {
@@ -217,6 +244,19 @@ async function main() {
         record(clicked.visible,
           "a real mouse click on a region opens its note",
           `clicked ${clicked.centre}; note card ${clicked.visible ? "opened" : "did NOT open"}`);
+
+        const h = clicked.halo ?? { present: false };
+        record(h.present && h.rings === 3,
+          "the selected region gains a halo (V43)",
+          h.present ? `#archie-selection-halo with ${h.rings} rings` : "no #archie-selection-halo in the shadow DOM");
+        record(h.present && h.w > 4 && h.h > 4,
+          "the halo has real extent (not clipped to nothing)",
+          h.present ? `${h.w}×${h.h}px` : "absent");
+        record(h.present && h.selfPE === "none" && h.wrapperPE === "none" && h.topTag !== "div",
+          "the halo does not shield the mark it points at",
+          h.present
+            ? `svg pointer-events: ${h.selfPE}, wrapper: ${h.wrapperPE}, topmost at centre: <${h.topTag}>`
+            : "absent");
       }
     }
   } catch (e) {
