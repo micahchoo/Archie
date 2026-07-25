@@ -38,9 +38,38 @@
     onopenfinder?: (tag: string) => void;
     onmedia?: (idx: number) => void;
   } = $props();
+
+  // V61/V62 — the card had no role, no accessible name, and no focus behaviour at all. Measured on the
+  // MARKER path, `document.activeElement` stayed `.openseadragon-canvas` after the card appeared, so a
+  // screen-reader user got no announcement and no focus change: the sidebar's own instruction ("Select a
+  // note, or a marker on the image") led to silence. And dismissing via `×` dropped focus on
+  // `document.body`, while Escape correctly returned it.
+  //
+  // This is deliberately NOT a modal: the card floats beside a still-usable canvas, so `aria-modal` and a
+  // focus trap would be a lie in the other direction. A named region that can take programmatic focus is
+  // the honest shape.
+  let root = $state<HTMLElement | null>(null);
+  $effect(() => {
+    const el = root;
+    if (!el) return;
+    const trigger = document.activeElement as HTMLElement | null;
+    // Only pull focus when it is sitting on the CANVAS — i.e. the card was opened by activating a marker,
+    // the path that announced nothing. Opening from a sidebar card leaves focus where the reader put it,
+    // so the existing keyboard flow through the notes list is untouched.
+    const fromMarker = !!trigger?.closest?.(".openseadragon-canvas, .openseadragon-container");
+    if (fromMarker) el.focus({ preventScroll: true });
+    return () => {
+      // Return focus on ANY dismissal (× or Escape or selection change), not just the one that happened to
+      // work. Guarded so we never yank focus the reader has since moved somewhere else deliberately.
+      const active = document.activeElement;
+      const strandedOrInside = active === document.body || active === null || el.contains(active);
+      if (trigger?.isConnected && strandedOrInside) trigger.focus({ preventScroll: true });
+    };
+  });
 </script>
 
-<div class="note-pop">
+<!-- `tabindex="-1"` = programmatically focusable, never a tab stop of its own. -->
+<div class="note-pop" bind:this={root} tabindex="-1" role="region" aria-label={eyebrow ? `Note — ${eyebrow}` : "Note"}>
   <header class="np-head">
     <p class="np-eyebrow">{eyebrow}</p>
     <div class="np-actions">
