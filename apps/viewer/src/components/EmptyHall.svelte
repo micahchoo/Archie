@@ -9,6 +9,7 @@
     onfile,
     cold = false,
     error = "",
+    oncancel,
   }: {
     /** The user chose/dropped a library — the shell opens it (openLibraryFromFile) + transitions. */
     onfile: (file: File) => void;
@@ -16,6 +17,12 @@
     cold?: boolean;
     /** An open attempt failed — shown beneath the action. */
     error?: string;
+    /**
+     * Abandon the chooser and go back to the library already open (Archie-4635 / audit V1). Present ONLY
+     * when there is something behind the hall: in the genuine empty state (no baked tree, or portable
+     * before a first open) the hall IS the app and offering "never mind" would be a lie.
+     */
+    oncancel?: () => void;
   } = $props();
 
   let dragging = $state(false);
@@ -58,6 +65,11 @@
     <p class="lede">Drop a library file here, or choose one with the button, to start reading its exhibits. Library files end in <code>.archie.zip</code>.</p>
     <button class="primary signal-tile" onclick={pick}>Open a library…</button>
     {#if error}<p class="err" role="alert">{error}</p>{/if}
+    <!-- The way out. Without it this screen was a one-way door: its only control was the one above, Escape
+         did nothing, and browser Back left the address and the view disagreeing. -->
+    {#if oncancel}
+      <button type="button" class="cancel" onclick={oncancel}>Never mind — keep reading this library</button>
+    {/if}
     <input bind:this={fileInput} type="file" accept=".zip" onchange={onChange} hidden />
   </div>
 
@@ -142,6 +154,21 @@
     letter-spacing: 0.14em;
     color: var(--semantic-error);
   }
+  /* The exit reads as a quiet text link, not a second button: opening a library is the act this screen
+     exists for, and the way back should be findable without competing with it. */
+  .cancel {
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-ui), sans-serif;
+    font-size: 0.8125rem;
+    color: var(--ink-gallery-secondary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .cancel:hover { color: var(--ink-gallery-primary); }
   /* Drag anywhere: the whole window is the drop target — the wall lifts with a soft warm wash. */
   .wash {
     position: fixed;
