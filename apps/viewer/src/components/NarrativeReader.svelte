@@ -272,7 +272,7 @@
     <div class="canvas-chrome-right">
       {#if onindex && objects.length > 1}
         <button type="button" class="to-index" onclick={onindex}>
-          <span class="grid-mark" aria-hidden="true">▦</span>All objects
+          <span class="grid-mark" aria-hidden="true">▦</span>All items
         </button>
       {/if}
       {#if !isAV}
@@ -312,7 +312,13 @@
       {#each sections as s, i (s.id)}
         <li>
           <button class:active={i === activeIndex} onclick={() => activate(i)}>
-            <span class="num">{s.title}{#if multiObject && objects.length > 1}<span class="obj"> · {objects.find((o) => o.id === s.objectId)?.label ?? ""}</span>{/if}</span>
+            <!-- V86: rendered as `HERBAL· F1R — HERBAL (OPENING PAGE)` — the leading space inside <span
+                 class="obj"> is trimmed at compile time, so at letter-spacing 0.16em the separator sat
+                 flush against the section title; and the section title and the object label both carry
+                 the division name, so the reader was told "Herbal" twice in one line. The separator now
+                 owns its own spacing in CSS, and the object label is shown only when it says something
+                 the section title hasn't. -->
+            <span class="num">{s.title}{#if multiObject && objects.length > 1}{@const objLabel = objects.find((o) => o.id === s.objectId)?.label ?? ""}{#if objLabel && !objLabel.toLowerCase().includes(s.title.toLowerCase())}<span class="obj">{objLabel}</span>{/if}{/if}</span>
             <div class="prose"><ProseCites text={s.prose ?? ""} /></div>
           </button>
         </li>
@@ -427,6 +433,8 @@
   .sections button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
   .sections button.active { border-left-color: var(--accent); background: var(--accent-muted); box-shadow: var(--shadow-lift-mid); }
   .num { display: inline-block; font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-secondary); margin-bottom: var(--space-2); }
+  /* The separator lives here, not in the markup, so compile-time whitespace trimming can't eat it (V86). */
+  .num .obj::before { content: " · "; }
   .num .obj { color: var(--ink-paper-muted); letter-spacing: 0.14em; }
   .prose { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.65; color: var(--ink-paper-primary); }
   .prose :global(p) { margin: 0 0 var(--space-2); }
