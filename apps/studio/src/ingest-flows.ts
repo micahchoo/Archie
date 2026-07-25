@@ -14,7 +14,10 @@ import {
   type Library, type ClientId, type XyzTileSource, type W3CTextualBody,
   type WorkingObjectMeta as ObjectMeta,
 } from "@render/core";
-import { bakeDisplayMaster, downscaleIfNeeded, bakeThumbnail } from "./bake.js";
+// Worker-backed bakes (perf 2026-07-24): identical semantics to bake.ts, off the UI thread. In an
+// environment without Worker/OffscreenCanvas (the vitest run) each one delegates straight back to
+// bake.ts, so `vi.mock("./bake.js")` still intercepts the image path transitively.
+import { bakeDisplayMasterAsync, downscaleIfNeededAsync, bakeThumbnailAsync } from "./bake-async.js";
 import { isTiffMime, transcodeTiff } from "./tiff-transcode.js";
 import {
   openExhibitAnnotationsDir, openExhibitStructureDir, saveAssetFile, saveOriginalFile, saveThumbFile, clearExhibitAnnotations,
@@ -509,7 +512,7 @@ export function createIngestFlows(ctx: IngestContext) {
     } else if (!isOrientationNoop(orientation)) {
       // EXIF path: upright PNG master, capped to the §80 display size; the untouched original is
       // preserved for citation (the master differs by rotation — provenance records the transform).
-      const baked = await bakeDisplayMaster(file, { maxDim: MAX_MASTER_DIM }); // upright PNG; capped
+      const baked = await bakeDisplayMasterAsync(file, { maxDim: MAX_MASTER_DIM }); // upright PNG; capped
       master = baked.blob;
       masterMime = "image/png"; // bakeDisplayMaster's default output is PNG
       dims = { w: baked.width, h: baked.height };
@@ -522,7 +525,7 @@ export function createIngestFlows(ctx: IngestContext) {
       // No rotation needed. If the image exceeds the §80 cap, downscale to a display master PRESERVING
       // the source format (LARGE-MEDIA-MEMORY-CEILING #4) — a big JPEG stays JPEG. Under the cap → keep
       // the raw file untouched. Decode ONCE to read dims; downscale only if over the cap (POLISH P6).
-      const prepared = await downscaleIfNeeded(file, MAX_MASTER_DIM, file.type || "image/jpeg");
+      const prepared = await downscaleIfNeededAsync(file, MAX_MASTER_DIM, file.type || "image/jpeg");
       master = prepared.blob;
       dims = { w: prepared.width, h: prepared.height };
     }
@@ -542,7 +545,7 @@ export function createIngestFlows(ctx: IngestContext) {
     let thumbnail: string | undefined;
     let plateBlob: Blob = master; // the rail/overview plate: the baked thumb when we get one, else the master
     try {
-      const thumb = await bakeThumbnail(master, THUMB_DIM, masterMime);
+      const thumb = await bakeThumbnailAsync(master, THUMB_DIM, masterMime);
       // Through the queue for VISIBILITY, but NON-blocking: a thumbnail is a pure optimization, so a
       // failed thumb write is recorded in saveStatus yet never aborts the import — the object is added
       // without a `thumbnail` ref (the grid falls back to the master), so there is no dangling reference.

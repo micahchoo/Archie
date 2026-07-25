@@ -11,9 +11,13 @@
 //    exercise it. Run in a Worker for large sources (~180–200MB transient peak, per the feasibility spike).
 import {
   dziPyramid, tileRect, tilePath, dziTileSource,
-  DZI_TILE_SIZE, DZI_OVERLAP,
+  DZI_TILE_SIZE, DZI_OVERLAP, mapLimit,
   type DziTileSource,
 } from "@render/core";
+
+/** How many tile encodes may be in flight at once (see sliceToDzi's ENCODE SCHEDULING note).
+ *  48 measured as the plateau — see ledgers/PERF-image-pipeline-2026-07-24.md. */
+export const DZI_ENCODE_CONCURRENCY = 48;
 
 export interface TilePlanEntry {
   /** Pyramid-relative tile path: `{level}/{col}_{row}.{ext}`. */
@@ -60,7 +64,20 @@ export interface SlicedDzi {
 /** BROWSER-VERIFICATION-PENDING: slice a decoded image into a DZI pyramid via OffscreenCanvas. One
  *  downscale per level (drawImage into a level canvas), then crop each tile and convertToBlob. Returns
  *  the tiles keyed by their pyramid path plus the DziTileSource descriptor to stamp on the AObject.
- *  NOT exercised by the headless test suite — enable in the bake flow only after browser verification. */
+ *  NOT exercised by the headless test suite — enable in the bake flow only after browser verification.
+ *
+ *  ENCODE SCHEDULING (measured 2026-07-24, ledgers/PERF-image-pipeline-2026-07-24.md): this loop used to
+ *  `await` each tile's convertToBlob before building the next one. Chromium encodes off-thread, so that
+ *  serialized the whole pyramid on encode round-trip latency and left the CPU idle — 17.3 s for one
+ *  8000x6000 (1033 tiles). Overlapping the encodes is ~19x faster for a change of a few lines.
+ *
+ *  It is bounded, not a bare Promise.all over the level: a tile canvas stays alive until its encode
+ *  resolves, so an unbounded level would hold every tile of the top level at once (768 x 254px canvases
+ *  ~= 198 MB for that same image, on top of the ~180-200 MB transient this file already costs). mapLimit
+ *  caps live tile canvases at DZI_ENCODE_CONCURRENCY by construction — the crop allocation happens INSIDE
+ *  the pooled callback. Pixel output is unchanged: identical canvases, identical draw calls, only the
+ *  await scheduling differs. Insertion order is preserved (mapLimit returns in input order), so the tile
+ *  Map still iterates deterministically. */
 export async function sliceToDzi(
   bitmap: ImageBitmap,
   filesPath: string,
@@ -68,6 +85,7 @@ export async function sliceToDzi(
   tileSize = DZI_TILE_SIZE,
   overlap = DZI_OVERLAP,
   quality = 0.82,
+  encodeConcurrency = DZI_ENCODE_CONCURRENCY,
 ): Promise<SlicedDzi> {
   const { width, height } = bitmap;
   const descriptor = dziTileSource({ width, height, tileSize, overlap }, format, filesPath);
@@ -79,16 +97,21 @@ export async function sliceToDzi(
     const lctx = levelCanvas.getContext("2d");
     if (!lctx) throw new Error("dzi-slicer: no 2d context for the level canvas");
     lctx.drawImage(bitmap, 0, 0, lvl.scaledW, lvl.scaledH);
+
+    const coords: { col: number; row: number }[] = [];
     for (let col = 0; col < lvl.cols; col++) {
-      for (let row = 0; row < lvl.rows; row++) {
-        const r = tileRect(lvl, col, row, tileSize, overlap);
-        const tileCanvas = new OffscreenCanvas(r.sw, r.sh);
-        const tctx = tileCanvas.getContext("2d");
-        if (!tctx) throw new Error("dzi-slicer: no 2d context for the tile canvas");
-        tctx.drawImage(levelCanvas, r.sx, r.sy, r.sw, r.sh, 0, 0, r.sw, r.sh);
-        tiles.set(tilePath(lvl.level, col, row, format), await tileCanvas.convertToBlob({ type: format, quality }));
-      }
+      for (let row = 0; row < lvl.rows; row++) coords.push({ col, row });
     }
+    const encoded = await mapLimit(coords, encodeConcurrency, async ({ col, row }) => {
+      const r = tileRect(lvl, col, row, tileSize, overlap);
+      const tileCanvas = new OffscreenCanvas(r.sw, r.sh);
+      const tctx = tileCanvas.getContext("2d");
+      if (!tctx) throw new Error("dzi-slicer: no 2d context for the tile canvas");
+      tctx.drawImage(levelCanvas, r.sx, r.sy, r.sw, r.sh, 0, 0, r.sw, r.sh);
+      const blob = await tileCanvas.convertToBlob({ type: format, quality });
+      return [tilePath(lvl.level, col, row, format), blob] as const;
+    });
+    for (const [path, blob] of encoded) tiles.set(path, blob);
   }
   return { descriptor, tiles };
 }

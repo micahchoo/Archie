@@ -12,7 +12,7 @@ import {
 import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk } from "./binding.js";
 import type { CorruptLogFinding } from "./publish-warnings.js";
 import { pickFolderBinding } from "./folder-backend.js";
-import { sliceToDzi } from "./dzi-slicer.js";
+import { sliceToDziAuto } from "./dzi-slice-pool.js";
 import { resolveTileSource, type AObject } from "@render/core";
 import { readAssetBlob, readOriginalBytes, readThumbBytes, assetSize, isAsset, ASSET_PREFIX, openExhibitStructureDirIfExists, type ExhibitMeta } from "./store.js";
 // ADR-0014 (static archival pages): note bodies render through the SAME sanitize pipeline the
@@ -134,6 +134,7 @@ export function createPublishFlows(deps: PublishDeps) {
   const TILE_MIN_EDGE = 4096; // longer edge over this → deep-zoom pays off; smaller stays a single master
   const tileObject = async (_slug: string, name: string, bytes: ArrayBuffer | Blob) => {
     let bmp: ImageBitmap;
+    let blob: Blob;
     let mime = "image/jpeg";
     try {
       // MATERIALIZE before decode (Archie-623e): on desktop `bytes` is the lazy Tauri File whose bytes
@@ -144,18 +145,21 @@ export function createPublishFlows(deps: PublishDeps) {
       // seam.ts). A read/decode failure degrades to null (untiled) — never a failed publish, since the
       // master already shipped via getAsset (site.ts writes it before calling this).
       const src = bytes instanceof Blob ? bytes : new Blob([bytes]);
-      const blob = new Blob([await src.arrayBuffer()], src.type ? { type: src.type } : {});
+      blob = new Blob([await src.arrayBuffer()], src.type ? { type: src.type } : {});
       if (blob.type) mime = blob.type;
       bmp = await createImageBitmap(blob);
     } catch {
       return null; // unreadable, or not a decodable raster (svg/odd mime) — leave it a single source
     }
-    try {
-      if (Math.max(bmp.width, bmp.height) <= TILE_MIN_EDGE) return null;
-      return await sliceToDzi(bmp, `${name}_files`, mime);
-    } finally {
-      bmp.close();
-    }
+    // Dimensions were the only reason to decode here, and the pooled slicer decodes its own copies —
+    // so release this one (96-192 MB for a tile candidate) BEFORE handing the blob over, rather than
+    // holding it alive across the whole slice as the pre-pool version did.
+    const { width, height } = bmp;
+    bmp.close();
+    if (Math.max(width, height) <= TILE_MIN_EDGE) return null;
+    // Throws propagate exactly as before (sliceToDziAuto has already tried the inline slicer) — a
+    // decode failure degrades to null above, a slice failure is still a failed publish.
+    return await sliceToDziAuto(blob, width, height, `${name}_files`, mime);
   };
   // The full-resolution image URL for a remote source: a IIIF service → `{base}/full/max/0/default.jpg`
   // (Image API 3.0); a direct image URL → itself; structured xyz/dzi → null (not a remote raster).
@@ -186,12 +190,12 @@ export function createPublishFlows(deps: PublishDeps) {
     } catch {
       return null;
     }
-    try {
-      if (Math.max(bmp.width, bmp.height) <= TILE_MIN_EDGE) return null;
-      return await sliceToDzi(bmp, `${obj.id}_files`, blob.type || "image/jpeg");
-    } finally {
-      bmp.close();
-    }
+    // Same release-before-slice as tileObject — remote masters are the UNCAPPED case (no
+    // MAX_MASTER_DIM on a IIIF /full/max fetch), so holding the decode across the slice hurts most here.
+    const { width, height } = bmp;
+    bmp.close();
+    if (Math.max(width, height) <= TILE_MIN_EDGE) return null;
+    return await sliceToDziAuto(blob, width, height, `${obj.id}_files`, blob.type || "image/jpeg");
   };
 
   // Metadata-only imported-asset byte estimate (File.size — never reads bytes). `slugs` = only these
