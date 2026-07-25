@@ -3,8 +3,32 @@
 // (fflate). On non-Chromium the zip IS the canonical file: explicit Save = download the zip,
 // Open = pick it (the "Word-doc 2003" model). Directories are implicit (zip path prefixes).
 
-import { zipSync, unzipSync, strToU8 } from "fflate";
+import { zipSync, unzipSync, strToU8, type Zippable, type ZipOptions } from "fflate";
 import type { Filesystem, FsDirectory, FsFile, FsWritable } from "./seam.js";
+
+/** Store (no deflate). */
+const STORED: ZipOptions = { level: 0 };
+
+/**
+ * Is this entry ALREADY compressed, so deflating it is pure cost?
+ *
+ * A published library is overwhelmingly JPEG DZI tiles, baked thumbnails and masters — all
+ * entropy-coded already. Measured on a 1073-entry / 9.4 MB tree shaped like one pyramid: deflate at
+ * fflate's default level took **150 ms and saved 0.7%**; storing took **19 ms** (~8x) and cost 0.7%
+ * in the other direction. `toZip` is synchronous and on the main thread, so that time is a hard UI
+ * freeze that scales with library size.
+ *
+ * Text (manifest.json, the HTML pages, sitemaps) still deflates — it compresses several-fold and is
+ * a small share of the bytes, so it is worth the milliseconds. Extension-based on purpose: the store
+ * is a flat path→bytes map with no recorded MIME.
+ *
+ * NOTE the streaming sink (`ZipStreamFilesystem`) uses `ZipPassThrough`, i.e. STORED for *everything*
+ * including text. The two sinks therefore emit different bytes for the same tree; both are valid
+ * zips and both round-trip through `fromZip`, so nothing depends on them agreeing.
+ */
+function isPrecompressed(path: string): boolean {
+  return /\.(jpe?g|png|gif|webp|avif|heic|mp3|m4a|aac|ogg|opus|mp4|webm|mov|zip|gz|br|woff2?)$/i.test(path);
+}
 
 /**
  * Decompression caps for `fromZip` — zip-bomb defense on the file-drop path (strategy 5.1). The
@@ -231,8 +255,10 @@ export class ZipFilesystem implements Filesystem {
    *  production always serializes under the canonical default. */
   toZip(limits: ZipFormatLimits = ZIP_FORMAT_LIMITS): Uint8Array {
     if (this.store.files.size > limits.maxEntries) throw zipFormatError("entries", limits);
-    const data: Record<string, Uint8Array> = {};
-    for (const [k, v] of this.store.files) data[k] = v;
+    const data: Zippable = {};
+    for (const [k, v] of this.store.files) {
+      data[k] = isPrecompressed(k) ? [v, STORED] : v;
+    }
     return zipSync(data);
   }
 

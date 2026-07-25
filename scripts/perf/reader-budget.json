@@ -1,0 +1,11 @@
+{
+  "_why": "Arrival payload ceilings for the built viewer, in RAW transferred JS KB. The app has no equivalent of the embed's eagerGzKB gate, and that is exactly how an exhibit route drifted to 1149 KB (302 KB gz) of eager canvas engine unnoticed. Enforced by `node scripts/perf/readerrun.mjs --check` after `pnpm build`.",
+  "_howToUpdate": "Raise a number only when the growth is intended, in the same commit that causes it, with the reason in the commit message. Widening this to turn a red run green is the regression, not the fix.",
+  "_measured2026-07-24": { "/": 138, "/sampler": 148, "/language-atlas": 148, "objectOpenExtra": 1115 },
+  "routes": {
+    "/": 200,
+    "/sampler": 220,
+    "/language-atlas": 220
+  },
+  "objectOpenExtraKB": 1250
+}

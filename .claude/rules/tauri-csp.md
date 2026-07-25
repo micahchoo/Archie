@@ -16,7 +16,19 @@ the webview then throws *"current environment does not allow unsafe-eval"* and t
 canvas fails to render. Archie never instantiates PixiJS itself (Annotorious does, internally),
 so the `@pixi/unsafe-eval` module is **not** a usable fix here — allowing eval in the CSP is.
 
-Also keep `worker-src 'self' blob:` (PixiJS asset loader workers).
+Also keep `worker-src 'self' blob:` — now load-bearing for **two independent** reasons:
+
+1. PixiJS asset-loader workers (Annotorious, as above).
+2. **Archie's own author-side workers (perf 2026-07-24):** `apps/studio/src/dzi-tile-worker.ts` (publish
+   DZI tiling) and `apps/studio/src/bake-worker.ts` (ingest bake), spawned by `dzi-slice-pool.ts` and
+   `bake-async.ts`. Vite emits these as real chunks under `dist/assets/` (`'self'` covers them).
+
+The second one is the dangerous one to break, because **both call sites fall back silently** —
+`sliceToDziAuto` catches pool failures and `bake-async` catches per-call failures (counting them in
+`bakeFallbackCount()`). A CSP that refuses workers therefore does NOT produce an error the user sees;
+it silently reverts publish tiling from ~0.46 s to ~17 s per large image and re-freezes the UI during
+import, with the app looking entirely healthy. If you tighten this directive, verify with
+`node scripts/perf/worker-smoke.mjs` (boots the built workers in a browser) — not by clicking around.
 
 ## `img-src` / `media-src` / `connect-src` must allow `https:`
 

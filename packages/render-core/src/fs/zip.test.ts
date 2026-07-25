@@ -101,6 +101,53 @@ describe("ZipFilesystem.fromZip — decompression cap (strategy 5.1, zip-bomb de
     expect(() => ZipFilesystem.fromZip(bytes, tinyTotal)).toThrow(/too large|exceed|uncompress|total|MB/i);
   });
 
+  it("stores already-compressed media instead of deflating it, and still round-trips", async () => {
+    // toZip picks a per-entry compression level: media is entropy-coded already, so deflating it burns
+    // main-thread time (measured 150ms vs 19ms on a 1073-entry pyramid) to save ~0.7%. Text still
+    // deflates. This pins BOTH halves — a regression to a single global level would break one of them.
+    const fs = new ZipFilesystem();
+    const root = await fs.root();
+    // Incompressible bytes standing in for a JPEG tile, and highly compressible text.
+    const media = new Uint8Array(20_000);
+    for (let i = 0; i < media.length; i++) media[i] = (i * 2654435761) % 251;
+    // Varied, JSON-ish text — realistic for manifest.json. (A single repeated phrase compresses ~230x
+    // and trips fromZip's own 100x zip-bomb ratio guard, which would be testing the wrong thing.)
+    const prose = JSON.stringify(
+      Array.from({ length: 300 }, (_, i) => ({ id: `canvas-${i}`, label: `Folio ${i} recto`, width: 2000 + i, height: 3000 - i })),
+    );
+
+    const write = async (name: string, data: Uint8Array | string) => {
+      const f = await root.getFile(name, { create: true });
+      const w = await f.writable();
+      await w.write(typeof data === "string" ? data : data.buffer as ArrayBuffer);
+      await w.close();
+    };
+    await write("tile.jpg", media);
+    await write("manifest.json", prose);
+
+    const bytes = fs.toZip();
+    // fflate records the method per entry: 0 = stored, 8 = deflated. Read it off the local headers so
+    // this asserts the ARCHIVE, not our intent.
+    const methodOf = (name: string): number => {
+      const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      for (let i = 0; i + 30 < bytes.length; i++) {
+        if (dv.getUint32(i, true) !== 0x04034b50) continue; // local file header signature
+        const nameLen = dv.getUint16(i + 26, true);
+        const entry = new TextDecoder().decode(bytes.subarray(i + 30, i + 30 + nameLen));
+        if (entry === name) return dv.getUint16(i + 8, true);
+      }
+      throw new Error(`no local header for ${name}`);
+    };
+    expect(methodOf("tile.jpg")).toBe(0);       // stored — no deflate attempt on entropy-coded bytes
+    expect(methodOf("manifest.json")).toBe(8);  // deflated — text still pays off
+
+    // The whole point is that this is invisible downstream: the tree reopens byte-identically.
+    const reopened = ZipFilesystem.fromZip(bytes);
+    const rroot = await reopened.root();
+    expect(new Uint8Array(await (await rroot.getFile("tile.jpg")).readable())).toEqual(media);
+    expect(new TextDecoder().decode(await (await rroot.getFile("manifest.json")).readable())).toBe(prose);
+  });
+
   it("rejects an archive with too many entries, with a clear error", () => {
     const tree: Zippable = {};
     for (let i = 0; i <= 5; i++) tree[`f/${i}.b`] = [enc("x"), STORED]; // 6 tiny entries — over the injected cap of 5

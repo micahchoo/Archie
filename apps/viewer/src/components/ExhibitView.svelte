@@ -16,11 +16,18 @@
   import { resolveNoteArrival } from "../note-arrival.js";
   import { resolveSectionIndex } from "../section-landing.js";
   import ObjectGrid from "./ObjectGrid.svelte";
-  import Reader from "./Reader.svelte";
-  import NarrativeReader from "./NarrativeReader.svelte";
-  import MediaPlayer from "./MediaPlayer.svelte";
-  import SearchOverlay from "./SearchOverlay.svelte";
   import Filmstrip from "./Filmstrip.svelte";
+  import { lazyComponent } from "../lib/lazy.svelte.js";
+
+  // LAZY, not static — see lib/lazy.svelte.ts. These four are the app's whole heavy tail
+  // (OpenSeadragon + pixi in Reader, wavesurfer in MediaPlayer, minisearch in SearchOverlay), and
+  // every one of them is already behind an `{#if}`. Importing them statically put 302 KB gz of
+  // canvas engine on a page that shows a grid of cards. An `{#if}` gates rendering; only a dynamic
+  // import() gates the download.
+  const ReaderLazy = lazyComponent(() => import("./Reader.svelte"));
+  const NarrativeReaderLazy = lazyComponent(() => import("./NarrativeReader.svelte"));
+  const MediaPlayerLazy = lazyComponent(() => import("./MediaPlayer.svelte"));
+  const SearchOverlayLazy = lazyComponent(() => import("./SearchOverlay.svelte"));
   import { stepObjectId } from "../exhibit-nav.js";
   import type { MarkerStyle } from "@render/svelte";
 
@@ -425,16 +432,18 @@
          escape) — without the guard, selectedObjectId resolving to an AV object (objects[0], or a note
          deep-link) would hijack the whole exhibit into this bare player with no way back. -->
     {#key activeData.id}
-      <MediaPlayer
-        object={activeData}
-        annotations={annotationsOf(activeData.id)}
-        rights={objectRightsOf(activeData.id)}
-        initialSeek={t}
-        siblings={gridSiblings ?? undefined}
-        currentId={activeData.id}
-        onstep={(id) => (selectedObjectId = id)}
-        onoverview={() => (selectedObjectId = null)}
-      />
+      {#if MediaPlayerLazy.current}
+        <MediaPlayerLazy.current
+          object={activeData}
+          annotations={annotationsOf(activeData.id)}
+          rights={objectRightsOf(activeData.id)}
+          initialSeek={t}
+          siblings={gridSiblings ?? undefined}
+          currentId={activeData.id}
+          onstep={(id) => (selectedObjectId = id)}
+          onoverview={() => (selectedObjectId = null)}
+        />
+      {/if}
     {/key}
   {:else if layout.type === "narrative" && layout.sections && layout.objects[0]}
     <!-- The narrative LEADS (ADR-0016 keystone); the object grid stays reachable BEHIND it as an INDEX
@@ -444,27 +453,31 @@
       {#if indexIsAV && indexData}
         <!-- Keyed like the grid-AV player: stepping the carousel between AV index objects must remount. -->
         {#key indexData.id}
-          <MediaPlayer object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} initialSeek={t} onback={() => (indexObjectId = null)} />
+          {#if MediaPlayerLazy.current}
+            <MediaPlayerLazy.current object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} initialSeek={t} onback={() => (indexObjectId = null)} />
+          {/if}
         {/key}
       {:else}
-        <Reader
-          object={{ source: indexObject.source, canvasId: canvasIdOf(indexObject.id), label: indexObject.label, summary: indexData?.summary, ...(indexObject.tileSource ? { tileSource: indexObject.tileSource } : {}) }}
-          annotations={annotationsOf(indexObject.id)}
-          readings={data.readings}
-          activeReading={activeReading}
-          onreading={(id) => (activeReading = id)}
-          readingCount={readingCountOf(indexObject.id)}
-          styleOf={readingStyleOf(indexObject.id)}
-          frame={frameFor(indexObject.id, indexData?.width, indexData?.height)}
-          onback={() => (indexObjectId = null)}
-          rights={objectRightsOf(indexObject.id)}
-          initialSelected={arrivedNote}
-          initialRegion={arrivedRegion}
-          onnotehover={(id) => (hoverNote = id)}
-          notesHidden={notesHidden}
-          onhiddenchange={(v) => (notesHidden = v)}
-          onopenfinder={(tag) => openFinder(tag)}
-        />
+        {#if ReaderLazy.current}
+          <ReaderLazy.current
+            object={{ source: indexObject.source, canvasId: canvasIdOf(indexObject.id), label: indexObject.label, summary: indexData?.summary, ...(indexObject.tileSource ? { tileSource: indexObject.tileSource } : {}) }}
+            annotations={annotationsOf(indexObject.id)}
+            readings={data.readings}
+            activeReading={activeReading}
+            onreading={(id) => (activeReading = id)}
+            readingCount={readingCountOf(indexObject.id)}
+            styleOf={readingStyleOf(indexObject.id)}
+            frame={frameFor(indexObject.id, indexData?.width, indexData?.height)}
+            onback={() => (indexObjectId = null)}
+            rights={objectRightsOf(indexObject.id)}
+            initialSelected={arrivedNote}
+            initialRegion={arrivedRegion}
+            onnotehover={(id) => (hoverNote = id)}
+            notesHidden={notesHidden}
+            onhiddenchange={(v) => (notesHidden = v)}
+            onopenfinder={(tag) => openFinder(tag)}
+          />
+        {/if}
       {/if}
     {:else if narrativeIndex}
       <ObjectGrid
@@ -480,50 +493,54 @@
         <span class="back-mark" aria-hidden="true">‹</span>Back to the reading
       </button>
     {:else}
-      <NarrativeReader
-        objects={data.objects}
-        canvasIdOf={canvasIdOf}
-        annotationsByObject={data.annotationsByObject}
-        readingAnnotationsByObject={data.readingAnnotationsByObject}
-        sections={layout.sections}
-        title={data.title}
-        rights={exhibitRights}
+      {#if NarrativeReaderLazy.current}
+        <NarrativeReaderLazy.current
+          objects={data.objects}
+          canvasIdOf={canvasIdOf}
+          annotationsByObject={data.annotationsByObject}
+          readingAnnotationsByObject={data.readingAnnotationsByObject}
+          sections={layout.sections}
+          title={data.title}
+          rights={exhibitRights}
+          readings={data.readings}
+          activeReading={activeReading}
+          onreading={(id) => (activeReading = id)}
+          styleFor={readingStyleOf}
+          frameFor={(objectId) => { const o = data?.objects.find((x) => x.id === objectId); return frameFor(objectId, o?.width, o?.height); }}
+          initialSelected={arrivedNote}
+          initialSection={arrivedSection}
+          notesHidden={notesHidden}
+          onhiddenchange={(v) => (notesHidden = v)}
+          onindex={() => (narrativeIndex = true)}
+          onopenfinder={(tag) => openFinder(tag)}
+        />
+      {/if}
+    {/if}
+  {:else if activeObject}
+    {#if ReaderLazy.current}
+      <ReaderLazy.current
+        object={{ source: activeObject.source, canvasId: canvasIdOf(activeObject.id), label: activeObject.label, summary: activeData?.summary, ...(activeObject.tileSource ? { tileSource: activeObject.tileSource } : {}) }}
+        annotations={annotationsOf(activeObject.id)}
         readings={data.readings}
         activeReading={activeReading}
         onreading={(id) => (activeReading = id)}
-        styleFor={readingStyleOf}
-        frameFor={(objectId) => { const o = data?.objects.find((x) => x.id === objectId); return frameFor(objectId, o?.width, o?.height); }}
+        readingCount={readingCountOf(activeObject.id)}
+        styleOf={readingStyleOf(activeObject.id)}
+        frame={frameFor(activeObject.id, activeData?.width, activeData?.height)}
+        onback={isGrid ? () => (selectedObjectId = null) : undefined}
+        rights={objectRightsOf(activeObject.id)}
         initialSelected={arrivedNote}
-        initialSection={arrivedSection}
+        initialRegion={arrivedRegion}
+        onnotehover={(id) => (hoverNote = id)}
         notesHidden={notesHidden}
         onhiddenchange={(v) => (notesHidden = v)}
-        onindex={() => (narrativeIndex = true)}
         onopenfinder={(tag) => openFinder(tag)}
+        siblings={gridSiblings ?? undefined}
+        currentId={activeObject.id}
+        onstep={(id) => (selectedObjectId = id)}
+        onoverview={() => (selectedObjectId = null)}
       />
     {/if}
-  {:else if activeObject}
-    <Reader
-      object={{ source: activeObject.source, canvasId: canvasIdOf(activeObject.id), label: activeObject.label, summary: activeData?.summary, ...(activeObject.tileSource ? { tileSource: activeObject.tileSource } : {}) }}
-      annotations={annotationsOf(activeObject.id)}
-      readings={data.readings}
-      activeReading={activeReading}
-      onreading={(id) => (activeReading = id)}
-      readingCount={readingCountOf(activeObject.id)}
-      styleOf={readingStyleOf(activeObject.id)}
-      frame={frameFor(activeObject.id, activeData?.width, activeData?.height)}
-      onback={isGrid ? () => (selectedObjectId = null) : undefined}
-      rights={objectRightsOf(activeObject.id)}
-      initialSelected={arrivedNote}
-      initialRegion={arrivedRegion}
-      onnotehover={(id) => (hoverNote = id)}
-      notesHidden={notesHidden}
-      onhiddenchange={(v) => (notesHidden = v)}
-      onopenfinder={(tag) => openFinder(tag)}
-      siblings={gridSiblings ?? undefined}
-      currentId={activeObject.id}
-      onstep={(id) => (selectedObjectId = id)}
-      onoverview={() => (selectedObjectId = null)}
-    />
   {:else}
     <ObjectGrid
       title={data.title}
@@ -558,12 +575,14 @@
   <!-- The ONE mode-independent finder (Q-3/Q-4): a PURE finder over the flattened note tree. On select
        it routes through arriveAtNote (A0 seam) — flips reading + object + fits camera — and closes. -->
   {#if finderOpen}
-    <SearchOverlay
-      data={{ annotationsByObject: data.annotationsByObject, readingAnnotationsByObject: data.readingAnnotationsByObject }}
-      initialTag={finderTag}
-      onselect={(id) => arriveAtNote(id)}
-      onclose={() => (finderOpen = false)}
-    />
+    {#if SearchOverlayLazy.current}
+      <SearchOverlayLazy.current
+        data={{ annotationsByObject: data.annotationsByObject, readingAnnotationsByObject: data.readingAnnotationsByObject }}
+        initialTag={finderTag}
+        onselect={(id) => arriveAtNote(id)}
+        onclose={() => (finderOpen = false)}
+      />
+    {/if}
   {/if}
 
   <!-- Cold-arrival chrome (§124): orient a link-follower, then fade. Transparent, no gate. -->

@@ -87,6 +87,10 @@ export * from "./geometry/downscale.js";
 // DZI (Deep Zoom) descriptor + pyramid math (Phase B tiling; Q-9). Pure geometry/string assembly — the
 // author-side slicer worker and the viewer's OSD tile-source both build on this; no pixel encode here.
 export * from "./geometry/dzi.js";
+// Bounded-concurrency scheduler. Was internal to the publish engine; exported because the author-side
+// DZI slicer (apps/studio/src/dzi-slicer.ts) needs the same bail-fast pool to cap live tile canvases
+// while overlapping encodes, and the barrel contract above forbids deep-importing it.
+export * from "./concurrency.js";
 export * from "./url/deeplink.js";
 export * from "./url/route.js";
 export * from "./url/breadcrumb.js";
