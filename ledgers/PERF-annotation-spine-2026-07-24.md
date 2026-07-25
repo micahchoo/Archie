@@ -145,6 +145,105 @@ a memmove, O(heads) with a very small constant (0.024 ms per deletion at 20k). R
 order-statistic structure instead of an array; not worth it at these magnitudes, and stated in the
 gate rather than glossed.
 
+## Probe: the Open path (hypothesis killed) — and Save validated at 9x
+
+The Open path was the top *unmeasured* candidate: `ZipFilesystem.fromZip` runs `unzipSync` over the
+whole archive **synchronously on the main thread**, and the caps allow 4 GiB. Structurally that looks
+like a multi-second freeze on the first thing a user does.
+
+**It is not.** Measured on a real published tree serialized to a real `.archie.zip` (70 objects, 10
+exhibits, 0.4 MB master + 380 tiles each → a **272 MB** archive):
+
+| | deflate-everything (before) | per-entry STORE (shipped) |
+|---|---|---|
+| `toZip` — **Save** | **5695 ms** | **635 ms (9.0x)** |
+| `fromZip` — Open | 135 ms | 126 ms |
+| `loadLibrary` | 30 ms | 29 ms |
+
+Opening a 272 MB library costs ~155 ms end to end. Nothing to do there.
+
+**Save was the freeze**, and the per-entry compression change already removed 9x of it — 5.7 s of
+hard main-thread block down to 0.6 s. That is far larger than the 150 ms → 19 ms the 9.4 MB
+micro-bench suggested, and it is the *validated end-to-end* figure for that change rather than a
+primitive. It matters most where it lands: the eager `toZip` is the NON-Chromium save path plus Tauri
+(`binding.ts:84,88`); Chromium's picker already streams through `ZipStreamFilesystem`.
+
+Two bench-data traps worth recording, both of which produced wrong numbers first:
+- An LCG `(i * 2654435761) % 251` for "JPEG-like" bytes has a **short cycle** and deflates ~214x. It
+  understated encode cost AND tripped `fromZip`'s 100x zip-bomb ratio guard, which read at first
+  glance like a real reopen bug. Media stand-ins must be `crypto.randomBytes`.
+- A related, real consequence of the shipped change: `.jpg`/`.png`/media entries are now STORED, so
+  their ratio is 1.0 and they can never trip that guard. Text still deflates and still can.
+
+The remaining 635 ms of synchronous `toZip` is the largest known main-thread block left on the author
+side. It is a worker or a streaming-sink job; not taken here.
+
+## Probe: the Open path (hypothesis killed) — and Save validated at 9x
+
+The Open path was the top *unmeasured* candidate: `ZipFilesystem.fromZip` runs `unzipSync` over the
+whole archive **synchronously on the main thread**, and the caps allow 4 GiB. Structurally that looks
+like a multi-second freeze on the first thing a user does.
+
+**It is not.** Measured on a real published tree serialized to a real `.archie.zip` (70 objects, 10
+exhibits, 0.4 MB master + 380 tiles each → a **272 MB** archive):
+
+| | deflate-everything (before) | per-entry STORE (shipped) |
+|---|---|---|
+| `toZip` — **Save** | **5695 ms** | **635 ms (9.0x)** |
+| `fromZip` — Open | 135 ms | 126 ms |
+| `loadLibrary` | 30 ms | 29 ms |
+
+Opening a 272 MB library costs ~155 ms end to end. Nothing to do there.
+
+**Save was the freeze**, and the per-entry compression change already removed 9x of it — 5.7 s of
+hard main-thread block down to 0.6 s. That is far larger than the 150 ms → 19 ms the 9.4 MB
+micro-bench suggested, and it is the *validated end-to-end* figure for that change rather than a
+primitive. It matters most where it lands: the eager `toZip` is the NON-Chromium save path plus Tauri
+(`binding.ts:84,88`); Chromium's picker already streams through `ZipStreamFilesystem`.
+
+Two bench-data traps worth recording, both of which produced wrong numbers first:
+- An LCG `(i * 2654435761) % 251` for "JPEG-like" bytes has a **short cycle** and deflates ~214x. It
+  understated encode cost AND tripped `fromZip`'s 100x zip-bomb ratio guard, which read at first
+  glance like a real reopen bug. Media stand-ins must be `crypto.randomBytes`.
+- A related, real consequence of the shipped change: `.jpg`/`.png`/media entries are now STORED, so
+  their ratio is 1.0 and they can never trip that guard. Text still deflates and still can.
+
+The remaining 635 ms of synchronous `toZip` is the largest known main-thread block left on the author
+side. It is a worker or a streaming-sink job; not taken here.
+
+## Probe: the Open path (hypothesis killed) — and Save validated at 9x
+
+The Open path was the top *unmeasured* candidate: `ZipFilesystem.fromZip` runs `unzipSync` over the
+whole archive **synchronously on the main thread**, and the caps allow 4 GiB. Structurally that looks
+like a multi-second freeze on the first thing a user does.
+
+**It is not.** Measured on a real published tree serialized to a real `.archie.zip` (70 objects, 10
+exhibits, 0.4 MB master + 380 tiles each → a **272 MB** archive):
+
+| | deflate-everything (before) | per-entry STORE (shipped) |
+|---|---|---|
+| `toZip` — **Save** | **5695 ms** | **635 ms (9.0x)** |
+| `fromZip` — Open | 135 ms | 126 ms |
+| `loadLibrary` | 30 ms | 29 ms |
+
+Opening a 272 MB library costs ~155 ms end to end. Nothing to do there.
+
+**Save was the freeze**, and the per-entry compression change already removed 9x of it — 5.7 s of
+hard main-thread block down to 0.6 s. That is far larger than the 150 ms → 19 ms the 9.4 MB
+micro-bench suggested, and it is the *validated end-to-end* figure for that change rather than a
+primitive. It matters most where it lands: the eager `toZip` is the NON-Chromium save path plus Tauri
+(`binding.ts:84,88`); Chromium's picker already streams through `ZipStreamFilesystem`.
+
+Two bench-data traps worth recording, both of which produced wrong numbers first:
+- An LCG `(i * 2654435761) % 251` for "JPEG-like" bytes has a **short cycle** and deflates ~214x. It
+  understated encode cost AND tripped `fromZip`'s 100x zip-bomb ratio guard, which read at first
+  glance like a real reopen bug. Media stand-ins must be `crypto.randomBytes`.
+- A related, real consequence of the shipped change: `.jpg`/`.png`/media entries are now STORED, so
+  their ratio is 1.0 and they can never trip that guard. Text still deflates and still can.
+
+The remaining 635 ms of synchronous `toZip` is the largest known main-thread block left on the author
+side. It is a worker or a streaming-sink job; not taken here.
+
 ## Not done — and why
 
 `append` itself is unchanged and still copies — correctly, since it is a pure function on a value.
