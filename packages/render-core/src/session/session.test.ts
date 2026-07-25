@@ -282,3 +282,49 @@ describe("AnnotationSession — editor thunk (Archie-7e5b S4: mid-session rename
     expect(s.notes().find((r) => r.logicalId === id)!.lastEditor).toBe("alice");
   });
 });
+
+// `entries` used to be the frozen array that `append` rebuilt on every mutation. It is now a cached
+// snapshot over an array the session appends to IN PLACE — an O(log)-per-write copy traded for one
+// copy per read of a changed log. These pin the value semantics that made the old shape safe, since
+// losing them would corrupt a caller silently rather than fail anything loudly.
+describe("entries — append-in-place must keep snapshot value semantics", () => {
+  const mk = () => new AnnotationSession(asClientId("alice"));
+
+  it("a held snapshot does not grow when the session is mutated", () => {
+    const s = mk();
+    s.createNote({ target: "https://img/a.jpg", body: { type: "TextualBody", value: "one" } });
+    const held = s.entries;
+    expect(held).toHaveLength(1);
+    s.createNote({ target: "https://img/b.jpg", body: { type: "TextualBody", value: "two" } });
+    expect(held).toHaveLength(1);   // the caller's value is untouched
+    expect(s.entries).toHaveLength(2);
+  });
+
+  it("hands out a NEW array after a mutation and a stable one between mutations", () => {
+    const s = mk();
+    const id = s.createNote({ target: "https://img/a.jpg" });
+    const first = s.entries;
+    expect(s.entries).toBe(first);                       // no mutation → same snapshot, no re-copy
+    s.editNote(id, { body: { type: "TextualBody", value: "edited" } });
+    expect(s.entries).not.toBe(first);                   // mutation → fresh value
+  });
+
+  it("the snapshot is frozen, so a caller cannot mutate session state through it", () => {
+    const s = mk();
+    s.createNote({ target: "https://img/a.jpg" });
+    expect(Object.isFrozen(s.entries)).toBe(true);
+  });
+
+  it("a session constructed from another's entries is independent of it", () => {
+    // The collab flow does exactly this (collab.test.ts). If the constructor aliased the caller's
+    // array instead of copying, appending here would mutate the source session's log.
+    const a = mk();
+    a.createNote({ target: "https://img/a.jpg" });
+    const source = a.entries;
+    const b = new AnnotationSession(asClientId("bob"), source);
+    b.createNote({ target: "https://img/b.jpg" });
+    expect(source).toHaveLength(1);
+    expect(a.entries).toHaveLength(1);
+    expect(b.entries).toHaveLength(2);
+  });
+});

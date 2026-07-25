@@ -150,8 +150,17 @@ export interface AppendResult {
   record: AnnotationRecord;
 }
 
-/** Append a brand-new note as version 1 (DAG root, parent null). */
-export function appendNew(log: AnnotationLog, input: NewNoteInput): AppendResult {
+/**
+ * Build a brand-new note record (version 1, DAG root, parent null) WITHOUT appending it.
+ *
+ * Split out from `appendNew` so a caller that maintains its own log storage can obtain the record
+ * without paying `append`'s whole-array copy. That copy is O(log), which makes building or bulk-
+ * editing a log O(log²) — measured at 638 ms of the 777 ms it took to create 20 000 notes. The
+ * three `appendX` functions below are unchanged in behaviour: each is now this builder plus
+ * `append`. Keeping the builders separate also makes it STRUCTURAL, rather than an assumption a
+ * caller has to verify, that `log` is used for nothing but the append itself.
+ */
+export function newRecord(input: NewNoteInput): AnnotationRecord {
   const logicalId = input.logicalId ?? mintLogicalId(input.now, input.rng);
   const record: AnnotationRecord = {
     logicalId,
@@ -170,6 +179,12 @@ export function appendNew(log: AnnotationLog, input: NewNoteInput): AppendResult
     ...(input.wholeObject ? { wholeObject: true } : {}),
     ...(input.geo !== undefined ? { geo: input.geo } : {}),
   };
+  return record;
+}
+
+/** Append a brand-new note as version 1 (DAG root, parent null). */
+export function appendNew(log: AnnotationLog, input: NewNoteInput): AppendResult {
+  const record = newRecord(input);
   return { log: append(log, record), record };
 }
 
@@ -221,7 +236,7 @@ const _editCarry = {
  * the head's version id. Unchanged fields carry forward from the head. Throws if the
  * note is absent, has plural heads (resolve merge first), or is tombstoned.
  */
-export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: EditInput, head: AnnotationRecord = linearHead(log, logicalId)): AppendResult {
+export function editRecord(logicalId: LogicalId, input: EditInput, head: AnnotationRecord): AnnotationRecord {
   if (head.deleted) {
     throw new Error(`cannot edit a tombstoned note (resurrection undefined in v1): ${logicalId}`);
   }
@@ -251,6 +266,13 @@ export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: Edit
     ...(wholeObject ? { wholeObject: true } : {}),
     ...(geo !== undefined ? { geo } : {}),
   };
+  return record;
+}
+
+/** Append an edited version. See {@link editRecord} for the carry rules and {@link newRecord} for
+ *  why the builder is separate. */
+export function appendEdit(log: AnnotationLog, logicalId: LogicalId, input: EditInput, head: AnnotationRecord = linearHead(log, logicalId)): AppendResult {
+  const record = editRecord(logicalId, input, head);
   return { log: append(log, record), record };
 }
 
@@ -284,7 +306,7 @@ const _deleteCarry = {
 } satisfies Record<keyof AnnotationRecord, CarryDisposition>;
 
 /** Append a tombstone version (a delete is append-only, never a removal). */
-export function appendDelete(log: AnnotationLog, logicalId: LogicalId, input: DeleteInput, head: AnnotationRecord = linearHead(log, logicalId)): AppendResult {
+export function deleteRecord(logicalId: LogicalId, input: DeleteInput, head: AnnotationRecord): AnnotationRecord {
   if (head.deleted) {
     throw new Error(`note already deleted: ${logicalId}`);
   }
@@ -298,5 +320,11 @@ export function appendDelete(log: AnnotationLog, logicalId: LogicalId, input: De
     deleted: true,
     target: head.target, // keep the target for citation/dereference
   };
+  return record;
+}
+
+/** Append a tombstone version (a delete is append-only, never a removal). */
+export function appendDelete(log: AnnotationLog, logicalId: LogicalId, input: DeleteInput, head: AnnotationRecord = linearHead(log, logicalId)): AppendResult {
+  const record = deleteRecord(logicalId, input, head);
   return { log: append(log, record), record };
 }

@@ -113,21 +113,46 @@ sorted array in place, so it hands out a snapshot that is stable between mutatio
 each — without it the UI would silently strand on stale notes, a bug no assertion on contents would
 catch and which vitest (no reactivity graph) cannot see.
 
-## Not done — the next measured 10x, and why it needs a decision
+## Done in a follow-up pass (recommendations 2 and 3)
 
-**`append`'s full-log copy is now the dominant quadratic**, on the note-CREATION path. `append` is
-`Object.freeze([...log, record])`, so building a log of N notes copies O(N²) elements. Attribution at
-20 000 creates: **638 ms is the copy alone**; the new index adds 30 ms of the 777 ms total. It was
-always there — it was just hidden behind the projection cost this sweep removed (at 8000 it is 0.2%
-of an *edit*, but 66% of a *bulk create*).
+**The ratchet — `spine/head-index.perf.test.ts`.** Perf work with no gate decays silently: an
+innocuous `projectHeads(this.log)` restores the quadratic with every test still green. Bounds are
+RATIOS against a single pass over the same log, measured in the same process, so they cost nothing in
+portability. Verified by reverting each change and watching it fail: editNote scan, deleteNote scan,
+`notes()` rebuild, and the append copy are all caught. A `conflicts()` group-scan is NOT — recorded in
+the file's header rather than implied away.
 
-Not fixed here because the fix subtracts a safety property rather than adding a provable mirror:
-`append`'s "pure, returns a NEW frozen log" is relied on across the spine and the merge contract. The
-contained version — the session accumulates into a mutable array and materializes a frozen snapshot
-only when `entries` is read, the same shape as the heads snapshot above — is plausible but is a
-design decision about the log's contract, not a local optimization. **Worth ~10x on bulk create;
-needs a call.**
+Writing it also caught the loose-bound trap: a first version used "a fraction of a full projection",
+which a reverted `deleteNote` scan passed comfortably — a projection allocates a Map and Set per
+logicalId, so it is far dearer per element than a bare scan, and the bound it implies is far too
+loose. One pass over the log is the tight comparator.
 
-Also still open from the first sweep: an end-to-end publish measured over the 70-object fixture (the
-tiling numbers remain bench-measured primitives), and `tileObject`/`tileRemote`'s main-thread decode
-used only to read dimensions.
+**`append`'s copy is gone from the session path.** `log.ts` now exposes `newRecord`/`editRecord`/
+`deleteRecord`; the three `appendX` functions are those builders plus `append`, unchanged. The session
+owns `records` and pushes, with `entries` handing out a frozen snapshot cached until the next
+mutation — so the append-only VALUE semantics callers rely on are preserved (pinned by four tests in
+`session.test.ts`, both mutants killed), while the O(log) copy happens once per READ of a changed log
+instead of once per write.
+
+| | before | after |
+|---|---|---|
+| create 20 000 notes | 777 ms | **75 ms (10.4x)** |
+| create scaling 4k→16k | 14.04x (quadratic) | **4.40x (linear)** |
+| bulk delete 1000 of 20 000 | 104.5 ms | **23.7 ms (4.4x)** |
+
+Bulk delete is 4.4x rather than flat because `resplice` does an `Array#splice` on the sorted heads —
+a memmove, O(heads) with a very small constant (0.024 ms per deletion at 20k). Removing that needs an
+order-statistic structure instead of an array; not worth it at these magnitudes, and stated in the
+gate rather than glossed.
+
+## Not done — and why
+
+`append` itself is unchanged and still copies — correctly, since it is a pure function on a value.
+Only the SESSION stopped routing through it. Any other caller building a log in a loop (there are
+none today) would hit the same quadratic.
+
+The residual `Array#splice` memmove in `resplice` (above) is the last superlinear term on the spine's
+hot path, and is deliberate.
+
+Still open: `tileObject`/`tileRemote` decode once on the main thread purely to read dimensions, and
+the ingest 22.4 s figure remains arithmetic (319 ms x 70) rather than a measured 70-file import.
