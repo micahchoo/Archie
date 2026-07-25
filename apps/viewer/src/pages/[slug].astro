@@ -92,21 +92,42 @@ export const getStaticPaths = (() => {
       license: "https://creativecommons.org/licenses/by/3.0/",
     },
   };
+  // V107: the page a crawler is sent to shipped 31 characters of body text, because the reader is
+  // `client:only` (OSD touches `document` at import, so there is no SSR path for it). Meta/OG/JSON-LD were
+  // already rich — the BODY was empty. Read each exhibit's object labels from its published manifest at
+  // BUILD time so the page can carry a real, static summary of what it holds. Build-time only; a missing
+  // or torn manifest degrades to an empty list rather than failing the build (a third-party dropped-zip
+  // exhibit legitimately may not have one here).
+  // Every published manifest, pulled in at BUILD time by Vite (eager glob) rather than read from disk:
+  // Astro extracts getStaticPaths into its own prerender chunk, so a runtime fs read there resolves
+  // against the wrong root, and module-scope consts are not hoisted into it. A glob is transformed in
+  // place, so it works where those don't.
+  const manifests = import.meta.glob<{ items?: { label?: { none?: string[] } }[] }>(
+    "../../public/published/*/manifest.json",
+    { eager: true, import: "default" },
+  );
+  const objectsFor = (slug: string): string[] => {
+    const hit = manifests[`../../public/published/${slug}/manifest.json`];
+    return (hit?.items ?? []).map((it) => it.label?.none?.[0] ?? "").filter(Boolean);
+  };
   return exhibitsJson.exhibits.map((card) => ({
     params: { slug: card.slug },
-    props:
-      META[card.slug] ??
-      ({
-        title: card.title,
-        ogTitle: card.title,
-        description: card.description,
-        jsonLdType: "CreativeWork",
-      } satisfies ExhibitMeta),
+    props: {
+      ...(META[card.slug] ??
+        ({
+          title: card.title,
+          ogTitle: card.title,
+          description: card.description,
+          jsonLdType: "CreativeWork",
+        } satisfies ExhibitMeta)),
+      objectLabels: objectsFor(card.slug),
+    },
   }));
 }) satisfies GetStaticPaths;
 
 const { slug } = Astro.params;
-const meta = Astro.props as ExhibitMeta;
+const meta = Astro.props as ExhibitMeta & { objectLabels?: string[] };
+const objectLabels = meta.objectLabels ?? [];
 const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : import.meta.env.BASE_URL + "/";
 const ogImage = await ogImageFor(slug!); // exhibit cover, absolute (ADR-0013); build-time level-0 probe (Archie-80c5)
 const jsonLdDescription = meta.jsonLdDescription ?? meta.description;
@@ -144,7 +165,44 @@ const jsonLdDescription = meta.jsonLdDescription ?? meta.description;
     <link rel="stylesheet" href={base + "fonts/fonts.css"} />
   </head>
   <body style="margin: 0">
+    <!-- V107 — the crawlable/no-JS body. `client:only` means the reader renders NOTHING server-side, so
+         without this the page carried its title and nothing else: a search engine, a link preview, an
+         archive crawler and a reader with JS off all saw an empty exhibit. This is the page BEFORE
+         hydration, so it is genuine progressive enhancement rather than hidden text — the inline script
+         below removes it once the reader has actually mounted. -->
+    <div id="static-exhibit">
+      <h1>{meta.ogTitle}</h1>
+      <p>{meta.description}</p>
+      {objectLabels.length > 0 && (
+        <section>
+          <h2>{objectLabels.length} {objectLabels.length === 1 ? "item" : "items"} in this exhibit</h2>
+          <ul>{objectLabels.map((l) => <li>{l}</li>)}</ul>
+        </section>
+      )}
+      <p><a href={base + "viewer/"}>All exhibits in this library</a></p>
+      <!-- V108 — an exhibit has TWO web faces: this app page and the ADR-0014 archival page under
+           published/. The archival one already links here (static-pages.ts renders "Open this exhibit in
+           the interactive viewer"); the reverse direction was missing, so the durable, no-JS,
+           fully-crawlable copy of the same exhibit was unreachable from the face people actually land on. -->
+      <p><a href={base + "viewer/published/" + slug + "/index.html"}>Plain-text version of this exhibit (all notes on one page)</a></p>
+      <noscript><p>This exhibit's deep-zoom reader needs JavaScript. The list above is what it holds.</p></noscript>
+    </div>
     <!-- client:only — OSD touches `document` at import, so the reader is browser-only (no SSR). -->
     <ExhibitView client:only="svelte" slug={slug!} />
+    <script is:inline>
+      // Drop the static body once the island has actually put something on screen — watched rather than
+      // timed, so a slow bundle never flashes the reader over the fallback or removes it too early.
+      (function () {
+        var fallback = document.getElementById("static-exhibit");
+        var island = document.querySelector("astro-island");
+        if (!fallback || !island) return;
+        var done = function () {
+          if (island.childElementCount > 0) { fallback.remove(); obs.disconnect(); }
+        };
+        var obs = new MutationObserver(done);
+        obs.observe(island, { childList: true, subtree: true });
+        done();
+      })();
+    </script>
   </body>
 </html>

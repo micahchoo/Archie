@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { publishLibrary } from "./site.js";
-import { sitemapXml } from "./static-pages.js";
+import { sitemapXml, exhibitPageHtml } from "./static-pages.js";
 import { MemoryFilesystem } from "../fs/memory.js";
 import { appendNew, appendDelete } from "../spine/log.js";
 import { asClientId, asExhibitId, asLibraryId, asObjectId } from "../wadm/brand.js";
@@ -219,5 +219,34 @@ describe("SEO meta — og/twitter/canonical + schema.org JSON-LD (Q-8)", () => {
     const xml = sitemapXml(library, BASE, "2026-06-20T00:00:00.000Z");
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!);
     expect(locs).toEqual([`${BASE}index.html`, `${BASE}a/index.html`, `${BASE}b/index.html`]);
+  });
+});
+
+// V110: the archival page (ADR-0014) had no concept of a section, so a narrative exhibit's authored
+// prose — the argument the notes are evidence FOR — never reached the durable artifact.
+describe("exhibitPageHtml — the narrative reaches the archival page (V110)", () => {
+  const withSections = {
+    id: "ex-1", slug: "walk", title: "A walk", objects: [],
+    sections: [
+      { id: "s1", title: "First part", objectId: "o1", prose: "herbal: a plant to a page" },
+      { id: "s2", title: "Second part", objectId: "o1" },
+    ],
+  } as unknown as Parameters<typeof exhibitPageHtml>[0];
+
+  it("renders each section's title and prose", () => {
+    const html = exhibitPageHtml(withSections, [], { baseUrl: "https://x/", viewerBase: "https://v/" });
+    expect(html).toContain("First part");
+    expect(html).toContain("herbal: a plant to a page");
+    expect(html).toContain("Second part");
+  });
+
+  it("deep-links each section on the cite ladder's section rung", () => {
+    const html = exhibitPageHtml(withSections, [], { baseUrl: "https://x/", viewerBase: "https://v/" });
+    expect(html).toContain("https://v/#/walk/s/s1");
+  });
+
+  it("says nothing about a narrative when the exhibit has no sections", () => {
+    const plain = { id: "ex-2", slug: "grid", title: "Grid", objects: [] } as unknown as Parameters<typeof exhibitPageHtml>[0];
+    expect(exhibitPageHtml(plain, [], { baseUrl: "https://x/" })).not.toContain("The narrative");
   });
 });

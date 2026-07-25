@@ -201,6 +201,32 @@ export function exhibitPageHtml(exhibit: Exhibit, records: AnnotationRecord[], o
   if (exhibit.requiredStatement) parts.push(`<p class="credit">${esc(exhibit.requiredStatement.label)}: ${esc(exhibit.requiredStatement.value)}</p>`);
   if (opts.viewerBase) parts.push(`<p><a href="${esc(opts.viewerBase)}#/${esc(exhibit.slug)}">Open this exhibit in the interactive viewer</a></p>`);
 
+  // V110 — the ADR-0014 archival page had NO CONCEPT of a section (`grep -n sections` over this file
+  // returned nothing), so a narrative exhibit's authored prose — the thing the exhibit exists to say —
+  // was absent from the durable artifact entirely. Measured on the seed: 13,491 characters of body text
+  // and zero of the six sections' prose. The notes were all there; the argument tying them together
+  // wasn't.
+  //
+  // Sections lead, before the per-object notes: in a narrative exhibit the spine IS the reading, and the
+  // notes are what it cites. Each carries a deep link on the section rung of the cite ladder (ADR-0021)
+  // so a reader can cross from the archive back into the live spine at the right place.
+  const sections = exhibit.sections ?? [];
+  if (sections.length > 0) {
+    parts.push(`<h2>${esc("The narrative")}</h2>`);
+    for (const sec of sections) {
+      const live = opts.viewerBase ? `${opts.viewerBase}#/${exhibit.slug}/s/${sec.id}` : undefined;
+      parts.push(
+        [
+          `<section id="section-${esc(sec.id)}">`,
+          `<h3>${esc(sec.title)}</h3>`,
+          ...(sec.prose ? [render(sec.prose)] : []),
+          ...(live ? [`<div class="tags"><a href="${esc(live)}">Read this part in the viewer</a></div>`] : []),
+          `</section>`,
+        ].join("\n"),
+      );
+    }
+  }
+
   const used = new Set<AnnotationRecord>();
   for (const obj of exhibit.objects) {
     const mine = records.filter((r) => targetSource(r) === canvasIRI(obj.id));
