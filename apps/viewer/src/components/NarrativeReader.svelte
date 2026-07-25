@@ -259,29 +259,32 @@
         {/key}
       {/if}
     {/if}
+    <!-- V80: this group lived OUTSIDE `main`, so "top-right canvas chrome" was positioned against the
+         row holding the canvas AND the prose spine — and landed on the spine. Structurally the same bug
+         as V40's zoom readout in the grid reader. Inside `main` it anchors to the canvas it describes. -->
+    <!-- Top-right canvas chrome group (ADR-0016 keystone + Archie-93fd): the grid-index escape and the
+         scale cue share ONE anchored flex row instead of two separately-positioned absolutes, so they
+         stack deterministically (gap, not guessed offsets) instead of risking overlap when both are
+         present. Grid-index escape: the narrative leads, but the object grid stays reachable BEHIND it
+         as an index (§137 precision-in/escape-out; §223 anti-trap) — shown only when there's a grid to
+         reach (>1 object). Scale cue: the locator's missing companion, HOW FAR IN vs WHERE — hidden
+         during an AV section (no OSD zoom to report then). -->
+    <div class="canvas-chrome-right">
+      {#if onindex && objects.length > 1}
+        <button type="button" class="to-index" onclick={onindex}>
+          <span class="grid-mark" aria-hidden="true">▦</span>All objects
+        </button>
+      {/if}
+      {#if !isAV}
+        <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
+      {/if}
+    </div>
   </main>
 
   {#if onreading && readings.length > 0}
     <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
   {/if}
 
-  <!-- Top-right canvas chrome group (ADR-0016 keystone + Archie-93fd): the grid-index escape and the
-       scale cue share ONE anchored flex row instead of two separately-positioned absolutes, so they
-       stack deterministically (gap, not guessed offsets) instead of risking overlap when both are
-       present. Grid-index escape: the narrative leads, but the object grid stays reachable BEHIND it
-       as an index (§137 precision-in/escape-out; §223 anti-trap) — shown only when there's a grid to
-       reach (>1 object). Scale cue: the locator's missing companion, HOW FAR IN vs WHERE — hidden
-       during an AV section (no OSD zoom to report then). -->
-  <div class="canvas-chrome-right">
-    {#if onindex && objects.length > 1}
-      <button type="button" class="to-index" onclick={onindex}>
-        <span class="grid-mark" aria-hidden="true">▦</span>All objects
-      </button>
-    {/if}
-    {#if !isAV}
-      <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
-    {/if}
-  </div>
 
   <!-- min/max match the spine's responsive clamp(360px … 620px) so a resize can't escape the designed
        reading-measure (#14). -->
@@ -371,7 +374,9 @@
      the active section is marked by a single rationed signal-orange edge — not a loud fill. Soft serif
      headings, generous radii, wide low-opacity warm shadows. No hard pixel edge anywhere. */
   .narrative { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
-  main { flex: 1; min-width: 0; background: var(--surface-canvas); }
+  /* `position: relative` so the canvas chrome moved inside it (V80) anchors to the CANVAS rather than
+     escaping to the row that also holds the prose spine. */
+  main { position: relative; flex: 1; min-width: 0; background: var(--surface-canvas); }
   /* Broken-reference state: a section points at a deleted object. Quiet found-meta chrome over the canvas
      ground, not a loud error — the rest of the spine still reads. */
   .missing-obj { display: flex; gap: var(--space-3); align-items: center; justify-content: center; height: 100%; padding: var(--space-6); color: var(--ink-canvas-secondary); font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); }

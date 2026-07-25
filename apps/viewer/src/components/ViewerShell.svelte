@@ -336,7 +336,7 @@
 <!-- The slug rung's honest arrival line (V3). Mirrors ExhibitView's `arrivalMessage` chrome in wording and
      dismissibility, but lives here because this rung lands on the Gallery, which ExhibitView never renders. -->
 {#if degradeNotice && phase === "ready" && !choosing}
-  <div class="degrade" role="status">
+  <div class="degrade" class:on-paper={route.view === "gallery"} role="status">
     <span class="seal" aria-hidden="true">⚐</span>
     <span>{degradeNotice}</span>
     <button type="button" class="text-link dismiss" onclick={() => (degradeNotice = "")}>Dismiss</button>
@@ -453,7 +453,14 @@
      whichever rung produced it. It sits on paper here (the Gallery) rather than over a canvas, so it takes
      the paper ink token instead of the canvas one. */
   .degrade {
-    position: fixed; z-index: 30; top: calc(var(--topbar-h) + var(--space-2)); left: 50%; transform: translateX(-50%);
+    /* Was fixed top-CENTER, borrowed from ExhibitView's `.arrival`. On the Gallery — where the slug rung
+       actually lands — its bottom edge grazed the "Archie Library" title, which is the same
+       covering-other-things class this sweep exists to fix (Archie-4635 flagged it here on purpose).
+       Right-aligned under the bar instead: clear of the left-aligned title block at every width, still
+       under the reader's eye on arrival, and it never overlaps the search field below it. */
+    position: fixed; z-index: 30; top: calc(var(--topbar-h) + var(--space-2)); right: var(--space-5);
+    max-width: min(32rem, calc(100vw - var(--space-8)));
+    box-sizing: border-box;
     display: flex; align-items: center; gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
@@ -462,6 +469,12 @@
     box-shadow: var(--shadow-lift-low);
     font-family: var(--font-body), sans-serif; font-size: 0.8125rem;
   }
+  /* On the GALLERY the page is a paper column with a wide display title at the top, so no top anchor is
+     safe at every library-title length — right-aligning only moved the collision. The gallery's
+     bottom-right is genuinely empty (the drift badge owns bottom-CENTRE), so the notice lands there and
+     the title keeps the whole top band. In an exhibit the top band is the right home: the canvas fills
+     the viewport and bottom-right is the locator minimap. */
+  .degrade.on-paper { top: auto; bottom: var(--space-5); }
   .degrade .seal { color: var(--accent-2); }
   .degrade .dismiss { font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.08em; }
 
