@@ -16,6 +16,36 @@
     onjump: (id: string) => void;
     ontoggle: () => void;
   } = $props();
+
+  // V27 — the strip was N consecutive tab stops (measured: twelve), so a keyboard reader crossing an
+  // exhibit had to Tab through every thumbnail to reach whatever follows. This repo already RATIFIED the
+  // answer for this exact component: roving tabindex (docs/research/a11y-interactions.md, adopted in
+  // Studio as Archie-f260). One frame is in the page tab sequence; arrows move between frames.
+  //
+  // The rove cursor follows the CURRENT object when there is one, so tabbing in lands on where the reader
+  // actually is rather than always at the first frame.
+  let roveId = $state<string | null>(null);
+  const roveIndex = $derived.by(() => {
+    const byRove = roveId ? objects.findIndex((o) => o.id === roveId) : -1;
+    if (byRove >= 0) return byRove;
+    const byCurrent = objects.findIndex((o) => o.id === currentId);
+    return byCurrent >= 0 ? byCurrent : 0;
+  });
+
+  let frameEls: HTMLElement[] = [];
+  function focusFrame(i: number) {
+    const clamped = Math.max(0, Math.min(objects.length - 1, i));
+    roveId = objects[clamped]?.id ?? null;
+    frameEls[clamped]?.focus();
+  }
+  function onFrameKey(e: KeyboardEvent, i: number) {
+    // Home/End included per APG; ArrowUp/Down are left alone (the strip is horizontal, and the page
+    // beneath may scroll).
+    const go = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: objects.length - 1 }[e.key];
+    if (go === undefined) return;
+    e.preventDefault();
+    focusFrame(go);
+  }
 </script>
 
 <div class="filmstrip" class:collapsed>
@@ -29,10 +59,19 @@
 
   {#if !collapsed}
     <ul class="strip" aria-label="Jump to an item">
-      {#each objects as o (o.id)}
+      {#each objects as o, i (o.id)}
         <li>
+          <!-- V28: the frame carried only `title` (a tooltip — not an accessible name for AT) wrapping a
+               thumbnail. For a manuscript the thumbnails are near-identical, so an unlabelled frame was
+               indistinguishable from its neighbours by sound OR by sight. The position is included
+               because "folio 7 of 12" is what orients a reader in a long strip. -->
           <button class="frame" class:current={o.id === currentId}
+            bind:this={frameEls[i]}
+            tabindex={i === roveIndex ? 0 : -1}
+            onkeydown={(e) => onFrameKey(e, i)}
+            onfocus={() => (roveId = o.id)}
             onclick={() => onjump(o.id)} title={o.label}
+            aria-label={`${o.label ?? "Untitled"} — item ${i + 1} of ${objects.length}`}
             aria-current={o.id === currentId ? "true" : undefined}>
             <MediaThumbnail object={o} />
           </button>

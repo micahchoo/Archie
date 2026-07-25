@@ -4,20 +4,21 @@
   // warm dim + blur + Esc/backdrop close), but is TEXT-focused: warm paper, generous measure, scrolls.
   // The prose renders through ProseCites so intra-Library cites stay live inside the sheet.
   import ProseCites from "./ProseCites.svelte";
+  import { dialog } from "../lib/dialog-a11y.js";
 
   let { text = "", label = "Note", onclose }: { text?: string; label?: string; onclose: () => void } = $props();
 
-  function onkey(e: KeyboardEvent) {
-    if (e.key === "Escape") { e.preventDefault(); onclose(); }
-  }
+  // V63: this sheet declared `role="dialog" aria-modal="true"` and implemented NONE of it — no focus
+  // trap, no initial focus, no focus return — while the shared `use:dialog` action (whose own header
+  // names "the NoteLightbox and the SearchOverlay" as its users) sat one import away. A false ARIA claim
+  // is worse than an absent one: assistive tech acts on the assertion. The action owns ESC too, so the
+  // window handler that used to live here is gone — keeping it would double-close.
 </script>
-
-<svelte:window onkeydown={onkey} />
 
 <!-- Scrim + sheet as SIBLINGS (NoteLightbox pattern): clicks inside the sheet don't reach the scrim,
      so no stopPropagation; the scrim is a click-to-close backdrop and Esc closes via the window. -->
 <div class="sheet-scrim" role="presentation" onclick={onclose}></div>
-<div class="sheet" role="dialog" aria-modal="true" aria-label={label}>
+<div class="sheet" role="dialog" aria-modal="true" aria-label={label} use:dialog={{ onclose }}>
   <button class="sheet-close" onclick={onclose} aria-label="Close reading sheet">×</button>
   <div class="sheet-body"><ProseCites {text} /></div>
 </div>
