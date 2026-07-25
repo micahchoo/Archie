@@ -10,6 +10,7 @@
 // SvgSelector string never touches the DOM as markup. The v1-shape vocab gate (rect+polygon only,
 // selector.ts:124) is applied HERE in `overlayShapeFor`: a non-rect/polygon selector → null.
 
+import { neutraliseOverlayWrapper, isOverlayWrapper } from "./overlay-wrapper.js";
 import {
   parseFragmentXYWH,
   parsePolygonPoints,
@@ -153,6 +154,7 @@ export function createReadOnlyOverlay(
   const labelFor = options.labelFor;
   let shapes: DrawnShape[] = [];
   let selectedId: string | null = null;
+  let seq = 0;
   const selectSubs = new Set<(id: string | null) => void>();
 
   const emitSelect = (id: string | null): void => {
@@ -162,8 +164,13 @@ export function createReadOnlyOverlay(
 
   const clear = (): void => {
     for (const s of shapes) {
+      // Capture the wrapper BEFORE removeOverlay detaches the svg — afterwards `parentElement` is null.
+      const wrapper = s.svg.parentElement;
       try { viewer.removeOverlay(s.svg); } catch { /* overlay already gone */ }
       s.svg.remove();
+      // `s.svg.remove()` only detaches OUR element; if removeOverlay threw, OSD's injected wrapper
+      // would stay behind as an invisible empty div, once per shape, on every setAnnotations.
+      if (isOverlayWrapper(wrapper)) wrapper.remove();
     }
     shapes = [];
   };
@@ -171,6 +178,9 @@ export function createReadOnlyOverlay(
   /** Build the <svg> wrapper anchored to a shape's image-space bbox, with the geometry child appended. */
   const buildOverlaySvg = (id: string, geom: SVGElement, bbox: Box): SVGSVGElement => {
     const svg = document.createElementNS(NS, "svg");
+    // A DOM-safe unique id, so OSD's wrapper is named `overlay-wrapper-archie-region-N` instead of
+    // colliding on the bare literal. Ordinal, not the annotation id — those are full URLs here.
+    svg.id = `archie-region-${seq++}`;
     // A local 0..w / 0..h user space so the geometry's image-pixel coords map directly; OSD stretches
     // the SVG to the bbox's viewport Rect (preserveAspectRatio="none"), so 1 unit == 1 image pixel here.
     svg.setAttribute("viewBox", `0 0 ${bbox.w} ${bbox.h}`);
@@ -210,6 +220,23 @@ export function createReadOnlyOverlay(
       e.stopPropagation();
       emitSelect(id);
     });
+    // V68, HALF TWO — let the `click` above actually happen.
+    //
+    // OSD binds a MouseTracker to the canvas/container and takes POINTER CAPTURE on pointerdown.
+    // Once captured, the rest of the sequence is retargeted to the capturing element, so the browser
+    // never dispatches a `click` on this geometry — the listener above is correct and simply never
+    // runs. That is why the audit found Enter and a synthetic `click` both working while a real mouse
+    // click did nothing at all: neither of those goes through a pointer sequence.
+    //
+    // Stopping the sequence HERE (on the region, a descendant) means OSD's ancestor listener never
+    // sees it, never captures, and `click` dispatches normally. Pan/zoom is unaffected everywhere
+    // else on the canvas — this fires only on a region's own pixels.
+    //
+    // Measured: this alone is NOT sufficient (see the wrapper note in drawShape). Both halves are
+    // required, and each was verified to fail on its own.
+    for (const type of ["pointerdown", "mousedown"]) {
+      el.addEventListener(type, (e) => e.stopPropagation());
+    }
   };
 
   const drawShape = (id: string, shape: OverlayShape): void => {
@@ -243,6 +270,7 @@ export function createReadOnlyOverlay(
     styleGeometry(geom, id);
     const svg = buildOverlaySvg(id, geom, bbox);
     viewer.addOverlay({ element: svg, location: viewer.viewport.imageToViewportRectangle(bbox.x, bbox.y, bbox.w, bbox.h) });
+    neutraliseOverlayWrapper(svg);
     shapes.push({ id, svg });
     applySelectedStyle();
   };

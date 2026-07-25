@@ -152,6 +152,73 @@ async function main() {
       }
     }
     console.log(`  info  deep-zoom canvas mounted headlessly: ${canvasMounted ? "yes" : "no (best-effort; not a failure)"}`);
+
+    // ---- V68: a REAL mouse click on an annotation region opens its note ----
+    //
+    // This is the assertion no unit suite can make. The bug was pure hit-testing: OSD wraps every
+    // addOverlay element in its own <div> at the default `pointer-events: auto`, which shielded the
+    // region geometry underneath. Keyboard Enter worked, a synthetic click() worked, and a real mouse
+    // click did nothing at all — so anything dispatching events programmatically reports success.
+    // Only a driven pointer sequence, against the BUILT bundle, can catch it.
+    //
+    // Uses `voynich` explicitly: the first gallery card is an exhibit with zero notes, so it has no
+    // regions to click and would pass this vacuously.
+    if (canvasMounted) {
+      const clicked = await (async () => {
+        await page.goto(`${base}/recipes/try.html`, { waitUntil: "load", timeout: 20000 });
+        const ok = await page.waitForFunction(() => {
+          const sr = document.querySelector("archie-viewer")?.shadowRoot;
+          return !!sr?.querySelector('button[data-slug="voynich"]');
+        }, { timeout: 15000, polling: 300 }).then(() => true).catch(() => false);
+        if (!ok) return { skipped: "no voynich card in this tree" };
+
+        await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelector('button[data-slug="voynich"]').click());
+        await page.waitForFunction(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelectorAll("ul.grid li button[data-obj]").length > 0, { timeout: 15000, polling: 300 });
+        await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelector("ul.grid li button[data-obj]").click());
+
+        const centre = await page.waitForFunction(() => {
+          const sr = document.querySelector("archie-viewer").shadowRoot;
+          const svg = sr.querySelector('svg[id^="archie-region-"]');
+          if (!svg) return false;
+          const r = svg.getBoundingClientRect();
+          return r.width > 4 && r.height > 4 ? [Math.round(r.x + r.width / 2), Math.round(r.y + r.height / 2)] : false;
+        }, { timeout: 20000, polling: 300 }).then((h) => h.jsonValue()).catch(() => null);
+        if (!centre) return { skipped: "no region overlay rendered" };
+
+        // The wrappers must be out of the hit path, or the click below lands on a bare div.
+        const wrappers = await page.evaluate(() => [...document.querySelector("archie-viewer").shadowRoot
+          .querySelectorAll('[id^="overlay-wrapper"]')].map((w) => getComputedStyle(w).pointerEvents));
+        const hit = await page.evaluate(([x, y]) => {
+          const el = document.querySelector("archie-viewer").shadowRoot.elementFromPoint(x, y);
+          return el ? el.tagName.toLowerCase() : "null";
+        }, centre);
+
+        await page.mouse.click(centre[0], centre[1]);
+        await page.waitForTimeout(900);
+        const visible = await page.evaluate(() => {
+          const c = document.querySelector("archie-viewer").shadowRoot.querySelector(".archie-note-card");
+          return c ? !c.hasAttribute("hidden") : false;
+        });
+        return { visible, wrappers, hit, centre };
+      })();
+
+      if (clicked.skipped) {
+        console.log(`  info  region pointer check skipped: ${clicked.skipped}`);
+      } else {
+        record(clicked.wrappers.every((pe) => pe === "none"),
+          "OSD overlay wrappers are out of the hit path",
+          `pointer-events: [${clicked.wrappers.join(", ")}] (all must be none)`);
+        record(clicked.hit !== "div",
+          "the region geometry is the topmost hit target",
+          `elementFromPoint at the region centre → <${clicked.hit}> (a bare <div> means a wrapper is shielding it)`);
+        record(clicked.visible,
+          "a real mouse click on a region opens its note",
+          `clicked ${clicked.centre}; note card ${clicked.visible ? "opened" : "did NOT open"}`);
+      }
+    }
   } catch (e) {
     record(false, "navigation / interaction", e.message);
   } finally {
