@@ -17,7 +17,7 @@
     "precheck:svelte": "astro sync",
     "check:svelte": "svelte-check --workspace . --fail-on-warnings",
     "pretypecheck": "astro sync",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit"
   },
   "dependencies": {
     "@annotorious/openseadragon": "^3.8.2",
