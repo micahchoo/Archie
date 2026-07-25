@@ -20,10 +20,16 @@
 {#if media.length}
   <div class="strip">
     {#each media as m, i (m.url + i)}
-      <button class="tile {m.kind}" onclick={() => onopen(i)} aria-label={`Open ${m.kind}`}>
+      <!-- The author's description IS the tile's name when there is one (V66/V67). Without it every tile
+           in a note announced identically ("Open image, button"), so a reader with several could not tell
+           them apart. The kind still leads, because the control's job is to open a thing of that kind. -->
+      <button class="tile {m.kind}" onclick={() => onopen(i)}
+              aria-label={m.alt ? `Open ${m.kind}: ${m.alt}` : `Open ${m.kind}`}>
         {#if failed.has(m.url)}
           <span class="tile-failed">Couldn’t load</span>
         {:else if m.kind === "image"}
+          <!-- alt="" is correct HERE and only here: the button above already carries the name, so labelling
+               the child too would make AT announce the same text twice. -->
           <img src={m.url} alt="" loading="lazy" onerror={() => markFailed(m.url)} />
         {:else if m.kind === "video"}
           <!-- preload metadata → shows the first frame as a poster; muted, no controls (a thumbnail). -->
