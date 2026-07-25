@@ -35,8 +35,11 @@ describe("loadGridDensity / saveGridDensity", () => {
     else delete (globalThis as { localStorage?: Storage }).localStorage;
   });
 
-  it("defaults to comfortable when unset", () => {
-    expect(loadGridDensity()).toBe("comfortable");
+  // V20: the default was the density that shows FEWEST — measured at 1280x800, three of twelve objects
+  // in view on an exhibit whose own summary says it exists "to browse side by side". Compact is now the
+  // unset default; an explicit "comfortable" is still honoured and still round-trips.
+  it("defaults to compact when unset", () => {
+    expect(loadGridDensity()).toBe("compact");
   });
 
   it("round-trips a saved density", () => {
@@ -46,14 +49,14 @@ describe("loadGridDensity / saveGridDensity", () => {
     expect(loadGridDensity()).toBe("comfortable");
   });
 
-  it("defaults to comfortable on an unrecognized stored value", () => {
+  it("defaults to compact on an unrecognized stored value", () => {
     localStorage.setItem("archie:gridDensity", "huge");
-    expect(loadGridDensity()).toBe("comfortable");
+    expect(loadGridDensity()).toBe("compact");
   });
 
   it("does not throw and defaults when localStorage is unavailable (SSR/private)", () => {
     delete (globalThis as { localStorage?: Storage }).localStorage;
     expect(() => saveGridDensity("compact")).not.toThrow();
-    expect(loadGridDensity()).toBe("comfortable");
+    expect(loadGridDensity()).toBe("compact");
   });
 });

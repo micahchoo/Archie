@@ -20,13 +20,13 @@ export function densityMetrics(d: Density): { minCol: string; intrinsic: string 
     : { minCol: "280px", intrinsic: "360px" };
 }
 
-/** Read the persisted density. Default Comfortable when unset, unrecognized, or localStorage is
+/** Read the persisted density. Default COMPACT when unset, unrecognized, or localStorage is
  *  unavailable (SSR / private mode). */
 export function loadGridDensity(): Density {
   try {
-    return localStorage.getItem(KEY) === "compact" ? "compact" : "comfortable";
+    return localStorage.getItem(KEY) === "comfortable" ? "comfortable" : "compact";
   } catch {
-    return "comfortable";
+    return "compact";
   }
 }
 

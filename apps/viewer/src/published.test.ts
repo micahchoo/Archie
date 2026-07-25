@@ -6,8 +6,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import { ZipFilesystem, publishLibrary, appendNew, asClientId, asExhibitId, asLibraryId, asObjectId, type Library, type AnnotationLog, type ExhibitsJson } from "@render/core";
 import {
   openPortableLibrary, closePortableLibrary, isPortable, loadGallery, loadPublishedExhibit,
-  modeFromProbe, probeViewerMode, bootErrorMessage, openLibraryFromFile, openLibraryFromSrc, mergeGalleries, toServingOrigin,
-} from "./published.js";
+  modeFromProbe, probeViewerMode, bootErrorMessage, openLibraryFromFile, openLibraryFromSrc, mergeGalleries, toServingOrigin, publishedAssetUrl } from "./published.js";
 import { BASE as CANONICAL_BASE } from "./published-base.js";
 
 // Hosted rebase (ADR-0010 portable read seam, tend Issue 16): the published manifest bakes asset URLs
@@ -243,5 +242,30 @@ describe("mergeGalleries (live over hosted)", () => {
     // The colliding slug is the LIVE entry (the author's working copy fronts its published snapshot).
     expect(merged.exhibits.filter((e) => e.slug === SLUG)).toHaveLength(1);
     expect(merged.exhibits.find((e) => e.slug === SLUG)!.order).toBe(1);
+  });
+});
+
+// V7: a tree-relative cover/thumbnail resolved against the PAGE and 404'd, so an exhibit whose baked
+// cover was sitting on disk rendered as a bare title. Absolute refs must pass through untouched — most
+// seeded covers are remote IIIF derivatives, and a live/OPFS-fronted exhibit hands us a usable URL.
+describe("publishedAssetUrl — tree-relative refs need the serving base (V7)", () => {
+  it("prefixes a tree-relative path", () => {
+    expect(publishedAssetUrl("screenshots/assets/o1.png")).toMatch(/published\/screenshots\/assets\/o1\.png$/);
+  });
+  it("passes absolute and special-scheme URLs through untouched", () => {
+    for (const u of [
+      "https://collections.library.yale.edu/iiif/2/1/full/400,/0/default.jpg",
+      "http://x/y.png",
+      "//cdn.example/z.png",
+      "/already/rooted.png",
+      "blob:http://localhost/abc",
+      "data:image/png;base64,iVBOR",
+    ]) expect(publishedAssetUrl(u)).toBe(u);
+  });
+  it("returns undefined for nothing, so the caller's own fallback still fires", () => {
+    expect(publishedAssetUrl(undefined)).toBeUndefined();
+    expect(publishedAssetUrl(null)).toBeUndefined();
+    expect(publishedAssetUrl("")).toBeUndefined();
+    expect(publishedAssetUrl("   ")).toBeUndefined();
   });
 });

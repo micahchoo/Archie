@@ -6,8 +6,8 @@
   // navigation, no page reload. The wall only appears when the image index loaded (older trees: cards only).
   import { onMount } from "svelte";
   import type { ExhibitsJson, ImageIndex } from "@render/core";
-  import { isLiveSlug } from "../published.js";
-  import { hasWall, filterExhibits, filterImages, wallHref, listedExhibits, unlistedSlugSet, type GalleryView } from "../gallery-view.js";
+  import { isLiveSlug, publishedAssetUrl } from "../published.js";
+  import { hasWall, filterExhibits, filterImages, wallHref, listedExhibits, unlistedSlugSet, searchActive, coverFallbacks, type GalleryView } from "../gallery-view.js";
   import { type Density, loadGridDensity, saveGridDensity, densityMetrics } from "../grid-density.js";
   import Credit from "./Credit.svelte";
 
@@ -25,6 +25,12 @@
   // The wall can vanish on a live refresh (index goes null) — never leave the view stranded there.
   $effect(() => { if (!wall && view === "wall") view = "exhibits"; });
 
+  // V6 — the lens browses, the search finds everything (Studio's Archie-2308 rule, ported). While a query
+  // is live BOTH corpora are filtered and BOTH result groups render, whatever the lens says; the lens hides,
+  // because there is nothing left for it to govern. Before this the lens silently scoped the search and only
+  // the placeholder said so, so typing before noticing searched the wrong corpus and an empty result read as
+  // "this library doesn't have it".
+  const searching = $derived(searchActive(query));
   const shownCards = $derived(filterExhibits(cards, query));
   const shownImages = $derived(imageIndex ? filterImages(imageIndex.images.filter((e) => !hidden.has(e.exhibitSlug)), query) : []);
 
@@ -39,6 +45,21 @@
   // rectangle on the front door — render an <img> and fall back to the exhibit's name on a quiet wash.
   let failed = $state(new Set<string>());
   function markFailed(key: string) { failed.add(key); failed = new Set(failed); }
+
+  // V7 — an exhibit with no explicit cover used to render as its title on a blank wash; in the seeded
+  // library that was the FIRST card, top-left. Studio has always borrowed the first object's thumbnail
+  // (gallery-data.ts `coverOf`); this is the same move off the baked index, which is emitted in
+  // library→reading order so "first" is the exhibit's opening object. Tracked under a `fb:` key so a
+  // borrowed cover that 404s falls through to the title rather than re-arming the explicit one.
+  const covers = $derived(coverFallbacks(imageIndex));
+  function coverSrcOf(ex: { slug: string; cover?: string }): { src: string; key: string } | null {
+    const declared = publishedAssetUrl(ex.cover); // tree-relative refs need the serving base (V7)
+    if (declared && !failed.has(ex.slug)) return { src: declared, key: ex.slug };
+    const borrowed = publishedAssetUrl(covers.get(ex.slug));
+    const key = `fb:${ex.slug}`;
+    if (borrowed && !failed.has(key)) return { src: borrowed, key };
+    return null;
+  }
   const aspectOf = (w?: number, h?: number) => (w && h ? `${w} / ${h}` : "3 / 2");
 </script>
 
@@ -52,16 +73,19 @@
 
   {#if cards.length > 0}
     <div class="toolbar">
-      {#if wall}
+      <!-- The lens governs BROWSING only, so it hides while a search is live (V6). -->
+      {#if wall && !searching}
         <div class="views" role="group" aria-label="Gallery view">
           <button type="button" class:on={view === "exhibits"} aria-pressed={view === "exhibits"} onclick={() => (view = "exhibits")}>Exhibits</button>
           <button type="button" class:on={view === "wall"} aria-pressed={view === "wall"} onclick={() => (view = "wall")}>All images</button>
         </div>
       {/if}
+      <!-- One name for one corpus: the box searches the whole library, so it says so and never swaps
+           meaning underneath the reader. -->
       <input class="search" type="search" bind:value={query}
-        placeholder={view === "wall" ? "Search images…" : "Search exhibits…"}
-        aria-label={view === "wall" ? "Search images by title" : "Search exhibits by title"} />
-      {#if view === "wall"}
+        placeholder={wall ? "Search this library…" : "Search exhibits…"}
+        aria-label={wall ? "Search this library by title" : "Search exhibits by title"} />
+      {#if view === "wall" && !searching}
         <div class="density" role="group" aria-label="Wall density">
           <button type="button" class:on={density === "comfortable"} aria-pressed={density === "comfortable"} onclick={() => setDensity("comfortable")}>Comfortable</button>
           <button type="button" class:on={density === "compact"} aria-pressed={density === "compact"} onclick={() => setDensity("compact")}>Compact</button>
@@ -72,50 +96,72 @@
 
   {#if cards.length === 0}
     <p class="empty">No exhibits published yet.</p>
+  {:else if searching}
+    <!-- SEARCH MODE (V6): both corpora, both groups, whatever the lens was set to. Counted headings so
+         "nothing here" is distinguishable from "nothing anywhere" without switching views to find out. -->
+    <div class="results">
+      <h2 class="group-head">Exhibits ({shownCards.length})</h2>
+      {#if shownCards.length === 0}
+        <p class="empty">No exhibits match “{query}”.</p>
+      {:else}
+        {@render cardGrid(shownCards)}
+      {/if}
+      {#if wall}
+        <h2 class="group-head">Images ({shownImages.length})</h2>
+        {#if shownImages.length === 0}
+          <p class="empty">No images match “{query}”.</p>
+        {:else}
+          {@render wallGrid(shownImages)}
+        {/if}
+      {/if}
+    </div>
   {:else if view === "exhibits"}
-    {#if shownCards.length === 0}
-      <p class="empty">No exhibits match “{query}”.</p>
-    {:else}
-      <ul class="grid cards">
-        {#each shownCards as ex (ex.slug)}
-          <li>
-            <a class="card" href={`#/${ex.slug}`}>
-              {#if ex.cover && !failed.has(ex.slug)}
-                <img class="cover" src={ex.cover} alt="" loading="lazy" decoding="async" onerror={() => markFailed(ex.slug)} />
-              {:else}
-                <span class="cover cover-fallback">{ex.title}</span>
-              {/if}
-              <span class="caption">
-                <span class="c-title">{ex.title}{#if isLiveSlug(ex.slug)}<span class="draft" title="Browser — saved only in this browser; only you can see it until you publish.">Browser</span>{/if}</span>
-                {#if ex.description}<span class="desc">{ex.description}</span>{/if}
-              </span>
-            </a>
-          </li>
-        {/each}
-      </ul>
-    {/if}
+    {@render cardGrid(shownCards)}
   {:else}
     <!-- All-images wall: one entry per Object from the baked index; a click opens the Object in its
          Exhibit (#/<slug>/o/<id>). Virtualized like ObjectGrid (content-visibility + lazy imgs). -->
-    {#if shownImages.length === 0}
-      <p class="empty">No images match “{query}”.</p>
-    {:else}
-      <ul class="grid wallgrid" style:--grid-min={metrics.minCol} style:--grid-intrinsic={metrics.intrinsic}>
-        {#each shownImages as img (`${img.exhibitSlug}/${img.objectId}`)}
-          <li style:aspect-ratio={aspectOf(img.width, img.height)}>
-            <a class="tile" href={wallHref(img)} title={img.title}>
-              {#if img.thumbnail && !failed.has(`${img.exhibitSlug}/${img.objectId}`)}
-                <img src={img.thumbnail} alt={img.title} loading="lazy" decoding="async" onerror={() => markFailed(`${img.exhibitSlug}/${img.objectId}`)} />
-              {:else}
-                <span class="tile-fallback">{img.title || "Untitled"}</span>
-              {/if}
-            </a>
-          </li>
-        {/each}
-      </ul>
-    {/if}
+    {@render wallGrid(shownImages)}
   {/if}
 </main>
+
+<!-- The two result grids as snippets so search mode and browse mode render the SAME markup — the groups
+     are a different arrangement of one gallery, not a second gallery. -->
+{#snippet cardGrid(items: typeof shownCards)}
+  <ul class="grid cards">
+    {#each items as ex (ex.slug)}
+      {@const c = coverSrcOf(ex)}
+      <li>
+        <a class="card" href={`#/${ex.slug}`}>
+          {#if c}
+            <img class="cover" src={c.src} alt="" loading="lazy" decoding="async" onerror={() => markFailed(c.key)} />
+          {:else}
+            <span class="cover cover-fallback">{ex.title}</span>
+          {/if}
+          <span class="caption">
+            <span class="c-title">{ex.title}{#if isLiveSlug(ex.slug)}<span class="draft" title="Browser — saved only in this browser; only you can see it until you publish.">Browser</span>{/if}</span>
+            {#if ex.description}<span class="desc">{ex.description}</span>{/if}
+          </span>
+        </a>
+      </li>
+    {/each}
+  </ul>
+{/snippet}
+
+{#snippet wallGrid(items: typeof shownImages)}
+  <ul class="grid wallgrid" style:--grid-min={metrics.minCol} style:--grid-intrinsic={metrics.intrinsic}>
+    {#each items as img (`${img.exhibitSlug}/${img.objectId}`)}
+      <li style:aspect-ratio={aspectOf(img.width, img.height)}>
+        <a class="tile" href={wallHref(img)} title={img.title}>
+          {#if img.thumbnail && !failed.has(`${img.exhibitSlug}/${img.objectId}`)}
+            <img src={publishedAssetUrl(img.thumbnail)} alt={img.title} loading="lazy" decoding="async" onerror={() => markFailed(`${img.exhibitSlug}/${img.objectId}`)} />
+          {:else}
+            <span class="tile-fallback">{img.title || "Untitled"}</span>
+          {/if}
+        </a>
+      </li>
+    {/each}
+  </ul>
+{/snippet}
 
 <style>
   /* Gallery wall — warm, lamplit; cards float as invitations (system.md §Exhibit Gallery). */
@@ -135,8 +181,13 @@
     letter-spacing: 0.1em; text-transform: uppercase; transition: color 160ms ease, background 160ms ease;
   }
   .views button:hover, .density button:hover { color: var(--accent-2); }
-  .views button.on, .density button.on { background: var(--accent); color: var(--ink-on-accent, #fff); }
-  .views button.on:hover, .density button.on:hover { color: var(--ink-on-accent, #fff); }
+  /* Selected state, quiet (V21's sibling): ink weight + an emphasis hairline instead of an accent fill,
+     so the segmented controls don't out-shout the library title. One idiom across both grids. */
+  .views button.on, .density button.on {
+    background: var(--surface-canvas); color: var(--ink-paper-primary); font-weight: 600;
+    box-shadow: inset 0 0 0 1px var(--border-paper-emphasis);
+  }
+  .views button.on:hover, .density button.on:hover { color: var(--ink-paper-primary); }
   .search {
     flex: 1; min-width: 12rem; max-width: 22rem;
     font-family: var(--font-body); font-size: 1rem; color: var(--ink-paper-primary);
@@ -149,6 +200,10 @@
   .cards { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
   .card { display: flex; flex-direction: column; text-decoration: none; background: var(--surface-canvas-raised); border: none; border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-lift-low); transition: transform 200ms ease, box-shadow 200ms ease; }
   .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lift-mid); }
+  /* Group headings in search mode — same quiet uppercase rubric as Studio's LibraryHome results. */
+  .group-head { margin: 0 0 var(--space-4); font-family: var(--font-ui), sans-serif; font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  .results .group-head:not(:first-child) { margin-top: var(--space-8); }
+
   .cover { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; background-color: var(--surface-canvas); }
   .cover-fallback { display: flex; align-items: center; justify-content: center; padding: var(--space-5); box-sizing: border-box; text-align: center; font-family: var(--font-display); font-size: 1.5rem; font-weight: 400; line-height: 1.15; color: var(--ink-canvas-secondary); }
   .caption { display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4) var(--space-5) var(--space-5); }
