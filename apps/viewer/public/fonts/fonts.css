@@ -2,8 +2,8 @@
    FOP VHS (marquee / wordmark) · Vinque Antique (ornate display, true italic) · LARAZ (clean body + chrome).
    Weight ranges let intermediate weights resolve to the shipped face instead of falling back to serif.
    NOTE: duplicated in apps/viewer/public/fonts/fonts.css — keep in sync. */
-@font-face { font-family: 'FOP VHS';        font-style: normal; font-weight: 400 700; font-display: swap; src: url(./FOPVHS.ttf) format('truetype'); }
+@font-face { font-family: 'FOP VHS';        font-style: normal; font-weight: 400 700; font-display: swap; src: url(./FOPVHS.woff2) format('woff2'); }
 @font-face { font-family: 'Vinque Antique'; font-style: normal; font-weight: 600 800; font-display: swap; src: url(./VinqueAntique-Bold.otf) format('opentype'); }
 @font-face { font-family: 'Vinque Antique'; font-style: italic; font-weight: 600 800; font-display: swap; src: url(./VinqueAntique-BoldItalic.otf) format('opentype'); }
-@font-face { font-family: 'LARAZ';          font-style: normal; font-weight: 300;     font-display: swap; src: url(./LARAZ-Light.ttf) format('truetype'); }
-@font-face { font-family: 'LARAZ';          font-style: normal; font-weight: 400 700; font-display: swap; src: url(./LARAZ-Regular.ttf) format('truetype'); }
+@font-face { font-family: 'LARAZ';          font-style: normal; font-weight: 300;     font-display: swap; src: url(./LARAZ-Light.woff2) format('woff2'); }
+@font-face { font-family: 'LARAZ';          font-style: normal; font-weight: 400 700; font-display: swap; src: url(./LARAZ-Regular.woff2) format('woff2'); }
