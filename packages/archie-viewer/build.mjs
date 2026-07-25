@@ -16,7 +16,7 @@
 import { gzipSync } from "node:zlib";
 import { readdirSync, readFileSync, writeFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
+import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire as makeRequire } from "node:module";
 
@@ -60,9 +60,37 @@ async function build(outdir) {
   return result;
 }
 
+// The EAGER closure: every chunk reachable from the entry through STATIC (`import-statement`) edges
+// only — i.e. exactly what a host downloads and parses on page load, before opening anything. Walked
+// from esbuild's metafile, which is the only place the static/dynamic distinction actually survives.
+//
+// This metric exists because the two below could not see the regression they were meant to prevent.
+// A leak shipped where index.ts (the bundle ENTRY) statically re-exported openObject from reader.js,
+// so `dist/archie-viewer.js` opened with a top-level `import … from "./chunk-<osd>.js"` and every
+// embed paid ~231KB gz of OSD/pixi at page load. entryGzKB never saw it — that measures the entry
+// FILE (6.1KB), not its graph. totalGzKB never saw it either — the chunk was already in the total,
+// eagerly or lazily. Both numbers moved <0.2KB when the leak was fixed and 225KB left the load path.
+// A lazy boundary is only real if something measures the closure; the file sizes cannot express it.
+function measureEagerGz(outdir, metafile) {
+  const outputs = metafile.outputs;
+  const entry = Object.keys(outputs).find((p) => basename(p) === "archie-viewer.js");
+  const reachable = new Set();
+  const walk = (p) => {
+    if (!p || reachable.has(p) || !outputs[p]) return;
+    reachable.add(p);
+    for (const imp of outputs[p].imports ?? []) {
+      if (imp.kind === "import-statement") walk(imp.path); // static only — dynamic-import is the boundary
+    }
+  };
+  walk(entry);
+  let gz = 0;
+  for (const p of reachable) gz += gzipSync(readFileSync(join(outdir, basename(p)))).length;
+  return +(gz / 1024).toFixed(1);
+}
+
 // Sum the gz size of every emitted .js chunk (entry + async reader chunk) — the total a host would
 // transfer if it opened an object (the worst case). The entry-only number is reported separately.
-function measureDist(outdir) {
+function measureDist(outdir, metafile) {
   let totalGz = 0;
   let entryGz = 0;
   let entryRaw = 0;
@@ -75,6 +103,7 @@ function measureDist(outdir) {
   return {
     entryRawKB: +(entryRaw / 1024).toFixed(1),
     entryGzKB: +(entryGz / 1024).toFixed(1),
+    eagerGzKB: measureEagerGz(outdir, metafile),
     totalGzKB: +(totalGz / 1024).toFixed(1),
   };
 }
@@ -86,8 +115,8 @@ const CHECK = process.argv.includes("--check");
 // for jsDelivr's /gh/ serving), and a verification step that rewrites the bytes it verifies is not a
 // verification step — `bundle:check` used to leave the released tree dirty as a side effect.
 const outdir = CHECK ? mkdtempSync(join(tmpdir(), "archie-viewer-check-")) : OUTDIR;
-await build(outdir);
-const m = measureDist(outdir);
+const result = await build(outdir);
+const m = measureDist(outdir, result.metafile);
 if (CHECK) rmSync(outdir, { recursive: true, force: true });
 
 if (CHECK) {
@@ -96,15 +125,32 @@ if (CHECK) {
     process.exit(0);
   }
   const base = JSON.parse(readFileSync(BASELINE, "utf8"));
-  const allowed = Math.max(base.totalGzKB * 0.1, 10);
-  const delta = +(m.totalGzKB - base.totalGzKB).toFixed(1);
-  const verdict = delta > allowed ? "FAIL" : "ok";
-  console.log(`${verdict} bundle total ${base.totalGzKB}KB → ${m.totalGzKB}KB gz (Δ ${delta >= 0 ? "+" : ""}${delta}KB, allowed +${allowed.toFixed(1)}KB)`);
-  process.exit(delta > allowed ? 1 : 0);
+  // Both metrics ratchet on the same max(10%, 10KB) shape as scripts/bundle-size.mjs. eagerGzKB is
+  // the load-bearing one — a lazy boundary that silently goes static lands as a large eager delta
+  // while totalGzKB barely moves (that is exactly how the OSD leak shipped). Baselines predating
+  // this field skip its gate rather than fail closed on a missing number.
+  const gates = [
+    { label: "eager (page load)", cur: m.eagerGzKB, base: base.eagerGzKB },
+    { label: "total (object open)", cur: m.totalGzKB, base: base.totalGzKB },
+  ];
+  let failed = false;
+  for (const g of gates) {
+    if (typeof g.base !== "number") {
+      console.warn(`no baseline for ${g.label} — run \`node build.mjs\` once to record it`);
+      continue;
+    }
+    const allowed = Math.max(g.base * 0.1, 10);
+    const delta = +(g.cur - g.base).toFixed(1);
+    const bad = delta > allowed;
+    failed ||= bad;
+    console.log(`${bad ? "FAIL" : "ok  "} ${g.label.padEnd(20)} ${g.base}KB → ${g.cur}KB gz (Δ ${delta >= 0 ? "+" : ""}${delta}KB, allowed +${allowed.toFixed(1)}KB)`);
+  }
+  process.exit(failed ? 1 : 0);
 }
 
 console.log(`<archie-viewer> bundle:`);
-console.log(`  entry  ${m.entryRawKB}KB min  ${m.entryGzKB}KB gz  (gallery path — OSD NOT included)`);
+console.log(`  entry  ${m.entryRawKB}KB min  ${m.entryGzKB}KB gz  (the entry FILE alone)`);
+console.log(`  eager  ${m.eagerGzKB}KB gz  (page load — entry's STATIC closure; OSD must NOT be here)`);
 console.log(`  total  ${m.totalGzKB}KB gz  (entry + lazy reader/OSD chunk — opening an object)`);
 writeFileSync(BASELINE, JSON.stringify({ measuredAt: new Date().toISOString(), ...m }, null, 2) + "\n");
 console.log(`  baseline written → ${BASELINE}`);

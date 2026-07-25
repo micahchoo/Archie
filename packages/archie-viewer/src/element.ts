@@ -36,7 +36,10 @@ import {
   readExhibit,
   type LoadedLibrary,
 } from "./load.js";
-import { OfflineRemoteBlockedError } from "./reader.js";
+// From reader-guards.js, NOT reader.js: this is a VALUE import on the eager path (the `instanceof`
+// at the openObject catch), so importing it from reader.js would put OSD in the entry's static graph
+// and undo the lazy `await import("./reader.js")` below.
+import { OfflineRemoteBlockedError } from "./reader-guards.js";
 import type { AvPlayerSurface } from "./av-player.js";
 import { createNoteCard, noteBodyHtml, type NoteCard } from "./note-card.js";
 import { resolveExhibitTarget, type ResolvedTarget } from "./target-resolve.js";

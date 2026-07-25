@@ -10,45 +10,14 @@ import {
   type ReadOnlyMountSurface,
 } from "@render/mount";
 import { commentOfAnnotation, stripMarkdown } from "@render/core";
-import type { AObject, AnnotationLike, W3CAnnotation } from "@render/core";
+import type { AnnotationLike, W3CAnnotation } from "@render/core";
+import { isRemoteSource, OfflineRemoteBlockedError, type OpenObjectOptions } from "./reader-guards.js";
 
-/** What the element hands the reader to open one object: the object (source/tileSource), its published
- *  head notes (rendered as overlay regions), the canvas IRI annotations target, and the offline flag. */
-export interface OpenObjectOptions {
-  object: AObject;
-  /** Published head notes for this object — geometry-only overlay regions (read-overlay.ts). */
-  annotations: W3CAnnotation[];
-  /** The canvas IRI the annotations target (defaults to the object source). */
-  canvasId?: string;
-  /** When true, refuse to mount a REMOTE source (http/https) — offline embeds show only embedded
-   *  (blob:/data:) media. Gates the remote tile/media fetch at the mount boundary (ADR-0019 offline). */
-  offline?: boolean;
-  /** Fired on overlay selection (the element can drive a sidebar / deep-link). */
-  onSelect?: (id: string | null) => void;
-}
-
-/** Thrown when an offline embed is asked to open a remote-sourced object. The element catches this to
- *  render a "this item lives online; this embed is offline" notice instead of a failed canvas. */
-export class OfflineRemoteBlockedError extends Error {
-  constructor() {
-    super("This item is hosted online and can't be shown while the viewer is offline.");
-    this.name = "OfflineRemoteBlockedError";
-  }
-}
-
-/** A source is REMOTE if it fetches over the network. `blob:` and `data:` are in-document (embedded
- *  assets the portable load minted) and are always allowed; everything else (http/https/IIIF info.json,
- *  protocol-relative) is remote. A structured tileSource is remote unless every URL in it is blob/data. */
-export function isRemoteSource(object: AObject): boolean {
-  const local = (u: string): boolean => u.startsWith("blob:") || u.startsWith("data:");
-  // A structured xyz/dzi descriptor overrides the source string (model.ts): classify by its URLs.
-  const ts = object.tileSource as { url?: string; tilesUrl?: string; filesPath?: string } | undefined;
-  if (ts) {
-    const urls = [ts.url, ts.tilesUrl, ts.filesPath].filter((u): u is string => typeof u === "string");
-    return urls.length === 0 ? !local(object.source) : urls.some((u) => !local(u));
-  }
-  return !local(object.source);
-}
+// Re-exported so this module stays the one-stop reader surface for its own importers (reader.test.ts,
+// the lazy `import("./reader.js")` site). The DEFINITIONS live in reader-guards.ts precisely so the
+// EAGER graph — index.ts's barrel, element.ts's `instanceof` — can reach them without pulling OSD in.
+// Import them from ./reader-guards.js there, never from here; see that module's header.
+export { isRemoteSource, OfflineRemoteBlockedError, type OpenObjectOptions };
 
 /**
  * Accessible-name source for the overlay's region shapes (Archie-9413): id → the FIRST comment line

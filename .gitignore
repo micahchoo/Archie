@@ -8,6 +8,11 @@ node_modules/
 # Build output / generated
 # ─────────────────────────────────────────────────────────────
 dist/
+# The two PUBLISHED embed trees are tracked artifacts, not build scratch — un-ignore them so a
+# rebuild's new content-hashed chunks appear in `git status` instead of silently vanishing from the
+# tree (that is how a8e228a shipped a root dist/ whose entry 404s on every chunk it imports).
+!/dist/
+!/packages/archie-viewer/dist/
 build/
 # Onboarding tutorial decks, synced from docs/learn by apps/studio/scripts/sync-learn.mjs
 # (canonical source is docs/learn; this copy is a build artifact).
