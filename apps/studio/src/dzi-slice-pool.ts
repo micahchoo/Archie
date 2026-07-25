@@ -37,6 +37,33 @@ export function poolSizeFor(width: number, height: number, cores = navigator.har
   return Math.max(1, Math.min(POOL_MAX, byBudget, cores));
 }
 
+/**
+ * ONE image slices at a time, process-wide.
+ *
+ * `POOL_BYTE_BUDGET` bounds the workers of a SINGLE call, which is the only thing the isolated bench
+ * exercised — and it is not the shape the caller has. `publishLibrary` fans out `mapLimit(exhibits, 6)`
+ * over an UNCAPPED `Promise.all` across each exhibit's objects, so a 10x7 library reaches ~42
+ * simultaneous `tileObject` calls. Per-call pools then meant ~42 x 8 = 336 workers each decoding its
+ * own copy of the source (~76 MB at the 5000x3800 import cap) — ~25 GB asked for at once.
+ *
+ * Measured end-to-end (scripts/perf/publishbench.ts, 70 objects, OPFS): every pool died with "The
+ * source image could not be decoded" / "Readback of the source image has failed" and `sliceToDziAuto`
+ * SILENTLY fell back to the inline slicer for all 70. The publish still succeeded and looked healthy —
+ * exactly the invisible-degradation the fallback was warned about — while the pooled path contributed
+ * nothing but 336 wasted worker spawns.
+ *
+ * Serializing is not a compromise here: the parallelism that matters is WITHIN one pyramid (bands
+ * across workers), and the pass was already thrashing rather than overlapping. Concurrent callers
+ * queue instead of competing for memory that does not exist.
+ */
+let poolGate: Promise<unknown> = Promise.resolve();
+/** Exported for the regression test only — production callers reach it through `sliceToDziAuto`. */
+export function withPoolGate<T>(fn: () => Promise<T>): Promise<T> {
+  const run = poolGate.then(fn, fn); // a prior REJECTION must not poison the queue
+  poolGate = run.catch(() => {});
+  return run;
+}
+
 type Task =
   | { kind: "strip"; level: DziLevel; rowFrom: number; rowTo: number }
   | { kind: "level"; level: DziLevel };
@@ -146,7 +173,9 @@ export async function sliceToDziAuto(
 ): Promise<SlicedDzi> {
   if (poolAvailable()) {
     try {
-      return await sliceToDziPooled(blob, width, height, filesPath, format, quality);
+      // Gated: concurrent callers queue rather than each spawning their own pool. See withPoolGate —
+      // without it a library-scale publish exhausts memory and every call degrades to inline, silently.
+      return await withPoolGate(() => sliceToDziPooled(blob, width, height, filesPath, format, quality));
     } catch (e) {
       console.warn("dzi: worker pool failed, falling back to the inline slicer", e);
     }

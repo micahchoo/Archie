@@ -102,3 +102,198 @@ production. Measured: both boot clean. Keep this gate.
   handing the blob to the pool. Unchanged from before, but it is now the largest remaining main-thread
   cost on the publish path.
 - The 22.4 s ingest figure is arithmetic (319 ms × 70), not a measured 70-file import.
+
+---
+
+# ADDENDUM — end-to-end validation (2026-07-24, later)
+
+The follow-up above ("the tiling numbers are bench-measured, not observed in a real publish") was
+run. `scripts/perf/publishbench.ts` drives the real `publishLibrary` over a whole library, with
+`tileObject` transcribed from `publish-flows.svelte.ts`, into the real fs backends.
+
+**It found a bug in what this ledger shipped, and it cut the headline number by an order of magnitude.**
+
+## 1. The worker pool self-destructed at library scale, silently
+
+`sliceToDziPooled` created a fresh pool per call, and `POOL_BYTE_BUDGET` bounded only that one call.
+The real caller is not one call: `publishLibrary` runs `mapLimit(exhibits, 6)` over an **uncapped**
+`Promise.all` across each exhibit's objects, so a 10×7 library reaches ~42 simultaneous `tileObject`
+calls → ~42 × 8 = **336 workers**, each decoding its own ~76 MB source (~25 GB asked for at once).
+
+Measured at 70 objects: every pool died (`The source image could not be decoded` / `Readback of the
+source image has failed`) and **all 70 fell back to the inline slicer**. The publish succeeded and
+looked healthy. This is exactly the silent degradation the fallback was flagged for — the difference
+is that here it was firing in the product's own realistic path, and only an end-to-end measurement
+could see it. The isolated bench measured one image at a time, which is the one condition the caller
+never satisfies.
+
+Fixed with a process-wide gate (`withPoolGate`) so one pyramid slices at a time; concurrent callers
+queue instead of competing for memory that does not exist. Serializing costs nothing real — the
+parallelism that matters is *within* a pyramid. Regression tests in `dzi-slice-pool.test.ts`.
+(`bake-async.ts` never had this: its pool is module-level and shared. The asymmetry is the bug.)
+
+## 2. The honest end-to-end number is 1.9x–4.7x, not 37x
+
+5000×3800 masters (the band `MAX_MASTER_DIM`/`TILE_MIN_EDGE` actually allow for an import), every
+object tileable — the worst case. `serial` is the real pre-change slicer at `encodeConcurrency = 1`.
+Tiling share is computed by DIFFERENCE against the same publish with tiling off; summing per-call
+timers double-counts, because objects tile concurrently (the first draft of this bench reported
+"tiling = 883% of total", which is how that was caught).
+
+| library | sink | serial | pooled | end-to-end |
+|---|---|---|---|---|
+| 10 objects | OPFS | 8422 ms | 2126 ms | **4.0x** |
+| 10 objects | zip-stream | 7805 ms | 1675 ms | **4.7x** |
+| 70 objects | OPFS | 24875 ms | 12954 ms | **1.9x** |
+| 70 objects | zip-stream | 20294 ms | 10909 ms | **1.9x** |
+
+**Why the gap.** The publish engine ALREADY fans out across objects. 42 objects each idling on serial
+encode round-trips still keep the CPU busy, so cross-object concurrency was recovering most of the
+waste that the per-image fix removes. At 70 objects `serial → inline` is only **1.26x**, against 19x
+for a single image in isolation. The per-image win was substantially redundant with concurrency the
+engine already had — invisible from the primitive, obvious from the flow.
+
+**What the target choice got right:** tiling really is ~99% of publish wall-clock in the all-tileable
+case (a 70-object publish with tiling off is 179 ms). So tiling was the correct thing to attack; only
+the magnitude was overstated.
+
+**Where the floor is.** 12954 ms / 70 ≈ 185 ms per image, against ~170 ms for one 5000×3800 pyramid
+measured alone — ~92% efficiency. The pool is saturated and the remaining time is real encode work
+(~26 600 tiles). Further gain needs fewer or cheaper encodes (quality, level count), which is a
+product decision, not a scheduling one.
+
+## Lesson for the next sweep
+
+A primitive benchmarked in isolation can be both correct and irrelevant. Two things only the
+end-to-end run could show: that the caller's concurrency had already claimed most of the win, and
+that the optimization actively broke itself at real scale while reporting success.
+
+---
+
+# ADDENDUM — end-to-end validation (2026-07-24, later)
+
+The follow-up above ("the tiling numbers are bench-measured, not observed in a real publish") was
+run. `scripts/perf/publishbench.ts` drives the real `publishLibrary` over a whole library, with
+`tileObject` transcribed from `publish-flows.svelte.ts`, into the real fs backends.
+
+**It found a bug in what this ledger shipped, and it cut the headline number by an order of magnitude.**
+
+## 1. The worker pool self-destructed at library scale, silently
+
+`sliceToDziPooled` created a fresh pool per call, and `POOL_BYTE_BUDGET` bounded only that one call.
+The real caller is not one call: `publishLibrary` runs `mapLimit(exhibits, 6)` over an **uncapped**
+`Promise.all` across each exhibit's objects, so a 10×7 library reaches ~42 simultaneous `tileObject`
+calls → ~42 × 8 = **336 workers**, each decoding its own ~76 MB source (~25 GB asked for at once).
+
+Measured at 70 objects: every pool died (`The source image could not be decoded` / `Readback of the
+source image has failed`) and **all 70 fell back to the inline slicer**. The publish succeeded and
+looked healthy. This is exactly the silent degradation the fallback was flagged for — the difference
+is that here it was firing in the product's own realistic path, and only an end-to-end measurement
+could see it. The isolated bench measured one image at a time, which is the one condition the caller
+never satisfies.
+
+Fixed with a process-wide gate (`withPoolGate`) so one pyramid slices at a time; concurrent callers
+queue instead of competing for memory that does not exist. Serializing costs nothing real — the
+parallelism that matters is *within* a pyramid. Regression tests in `dzi-slice-pool.test.ts`.
+(`bake-async.ts` never had this: its pool is module-level and shared. The asymmetry is the bug.)
+
+## 2. The honest end-to-end number is 1.9x–4.7x, not 37x
+
+5000×3800 masters (the band `MAX_MASTER_DIM`/`TILE_MIN_EDGE` actually allow for an import), every
+object tileable — the worst case. `serial` is the real pre-change slicer at `encodeConcurrency = 1`.
+Tiling share is computed by DIFFERENCE against the same publish with tiling off; summing per-call
+timers double-counts, because objects tile concurrently (the first draft of this bench reported
+"tiling = 883% of total", which is how that was caught).
+
+| library | sink | serial | pooled | end-to-end |
+|---|---|---|---|---|
+| 10 objects | OPFS | 8422 ms | 2126 ms | **4.0x** |
+| 10 objects | zip-stream | 7805 ms | 1675 ms | **4.7x** |
+| 70 objects | OPFS | 24875 ms | 12954 ms | **1.9x** |
+| 70 objects | zip-stream | 20294 ms | 10909 ms | **1.9x** |
+
+**Why the gap.** The publish engine ALREADY fans out across objects. 42 objects each idling on serial
+encode round-trips still keep the CPU busy, so cross-object concurrency was recovering most of the
+waste that the per-image fix removes. At 70 objects `serial → inline` is only **1.26x**, against 19x
+for a single image in isolation. The per-image win was substantially redundant with concurrency the
+engine already had — invisible from the primitive, obvious from the flow.
+
+**What the target choice got right:** tiling really is ~99% of publish wall-clock in the all-tileable
+case (a 70-object publish with tiling off is 179 ms). So tiling was the correct thing to attack; only
+the magnitude was overstated.
+
+**Where the floor is.** 12954 ms / 70 ≈ 185 ms per image, against ~170 ms for one 5000×3800 pyramid
+measured alone — ~92% efficiency. The pool is saturated and the remaining time is real encode work
+(~26 600 tiles). Further gain needs fewer or cheaper encodes (quality, level count), which is a
+product decision, not a scheduling one.
+
+## Lesson for the next sweep
+
+A primitive benchmarked in isolation can be both correct and irrelevant. Two things only the
+end-to-end run could show: that the caller's concurrency had already claimed most of the win, and
+that the optimization actively broke itself at real scale while reporting success.
+
+---
+
+# ADDENDUM — end-to-end validation (2026-07-24, later)
+
+The follow-up above ("the tiling numbers are bench-measured, not observed in a real publish") was
+run. `scripts/perf/publishbench.ts` drives the real `publishLibrary` over a whole library, with
+`tileObject` transcribed from `publish-flows.svelte.ts`, into the real fs backends.
+
+**It found a bug in what this ledger shipped, and it cut the headline number by an order of magnitude.**
+
+## 1. The worker pool self-destructed at library scale, silently
+
+`sliceToDziPooled` created a fresh pool per call, and `POOL_BYTE_BUDGET` bounded only that one call.
+The real caller is not one call: `publishLibrary` runs `mapLimit(exhibits, 6)` over an **uncapped**
+`Promise.all` across each exhibit's objects, so a 10×7 library reaches ~42 simultaneous `tileObject`
+calls → ~42 × 8 = **336 workers**, each decoding its own ~76 MB source (~25 GB asked for at once).
+
+Measured at 70 objects: every pool died (`The source image could not be decoded` / `Readback of the
+source image has failed`) and **all 70 fell back to the inline slicer**. The publish succeeded and
+looked healthy. This is exactly the silent degradation the fallback was flagged for — the difference
+is that here it was firing in the product's own realistic path, and only an end-to-end measurement
+could see it. The isolated bench measured one image at a time, which is the one condition the caller
+never satisfies.
+
+Fixed with a process-wide gate (`withPoolGate`) so one pyramid slices at a time; concurrent callers
+queue instead of competing for memory that does not exist. Serializing costs nothing real — the
+parallelism that matters is *within* a pyramid. Regression tests in `dzi-slice-pool.test.ts`.
+(`bake-async.ts` never had this: its pool is module-level and shared. The asymmetry is the bug.)
+
+## 2. The honest end-to-end number is 1.9x–4.7x, not 37x
+
+5000×3800 masters (the band `MAX_MASTER_DIM`/`TILE_MIN_EDGE` actually allow for an import), every
+object tileable — the worst case. `serial` is the real pre-change slicer at `encodeConcurrency = 1`.
+Tiling share is computed by DIFFERENCE against the same publish with tiling off; summing per-call
+timers double-counts, because objects tile concurrently (the first draft of this bench reported
+"tiling = 883% of total", which is how that was caught).
+
+| library | sink | serial | pooled | end-to-end |
+|---|---|---|---|---|
+| 10 objects | OPFS | 8422 ms | 2126 ms | **4.0x** |
+| 10 objects | zip-stream | 7805 ms | 1675 ms | **4.7x** |
+| 70 objects | OPFS | 24875 ms | 12954 ms | **1.9x** |
+| 70 objects | zip-stream | 20294 ms | 10909 ms | **1.9x** |
+
+**Why the gap.** The publish engine ALREADY fans out across objects. 42 objects each idling on serial
+encode round-trips still keep the CPU busy, so cross-object concurrency was recovering most of the
+waste that the per-image fix removes. At 70 objects `serial → inline` is only **1.26x**, against 19x
+for a single image in isolation. The per-image win was substantially redundant with concurrency the
+engine already had — invisible from the primitive, obvious from the flow.
+
+**What the target choice got right:** tiling really is ~99% of publish wall-clock in the all-tileable
+case (a 70-object publish with tiling off is 179 ms). So tiling was the correct thing to attack; only
+the magnitude was overstated.
+
+**Where the floor is.** 12954 ms / 70 ≈ 185 ms per image, against ~170 ms for one 5000×3800 pyramid
+measured alone — ~92% efficiency. The pool is saturated and the remaining time is real encode work
+(~26 600 tiles). Further gain needs fewer or cheaper encodes (quality, level count), which is a
+product decision, not a scheduling one.
+
+## Lesson for the next sweep
+
+A primitive benchmarked in isolation can be both correct and irrelevant. Two things only the
+end-to-end run could show: that the caller's concurrency had already claimed most of the win, and
+that the optimization actively broke itself at real scale while reporting success.
