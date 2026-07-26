@@ -17,7 +17,7 @@
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, withZoomBand, type MarkerStyleSpec, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
   import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
-  import { positionLabel } from "../exhibit-nav.js";
+  import { navPosition, navRegionName, navStepName, noteIndexOpenMark } from "../product-copy.js";
 
   // Resizable / collapsible narrative spine (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
   // responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom. Drag math
@@ -26,8 +26,9 @@
   const ASIDE_COLLAPSED_KEY = "archie.narrativeAsideCollapsed.v1";
   let asideWidth = $state<number | null>(loadAsideWidth(ASIDE_W_KEY));
   let asideCollapsed = $state<boolean>(loadAsideCollapsed(ASIDE_COLLAPSED_KEY));
-  // Expand a long note into the centred reading sheet (Phase-3 focus surface).
-  let readingSheet = $state<{ text: string } | null>(null);
+  // Expand the open note into the centred reading sheet (Phase-3 focus surface). A BOOLEAN, not a text
+  // snapshot: the sheet renders the same `current` note the card does (Archie-dbbc).
+  let readingSheet = $state(false);
 
   let {
     objects = [],
@@ -191,7 +192,11 @@
     return (id: string | null): number => (id === null ? base.length : (byR[id]?.length ?? 0));
   });
 
-  function activate(i: number) { activeIndex = i; selected = null; }
+  // Changing section clears the open note — and the reading sheet with it. The sheet renders under
+  // `{#if readingSheet && current}`, so clearing `selected` alone would unmount it while leaving the
+  // flag true, and the next plain note selection would open a sheet nobody asked for. Same latent bug
+  // as Reader.svelte's object-change effect; same fix, at the one place selection is cleared.
+  function activate(i: number) { activeIndex = i; selected = null; readingSheet = false; }
 
   // Aside pane toggle: the spine (the authored read) or the ACTIVE object's note list. The narrative's
   // aside was sections-only, so an object's notes were reachable solely via canvas markers — fine for a
@@ -205,18 +210,22 @@
     return rid !== undefined ? readings.find((r) => r.id === rid)?.colour : undefined;
   };
 
-  // Footer stepper (the note-pop's multi-object nav, in narrative form): step the SECTION — which switches
-  // the active object whenever the spine crosses to one. Unlike activate(), this CARRIES the reading: it
-  // selects the next section-object's first note so the note-pop stays open across the step (flip-and-read),
-  // instead of activate()'s selected=null unmounting it. Falls to null only when that object has no notes.
+  // Archie-01a6 — SECTION nav belongs to the canvas, in BOTH aside states.
+  //
+  // The narrative's mirror of the grid reader's object nav, and the same finding (V65): the spine is the
+  // only way to change section, the spine lives in a collapsible aside, and the gap that left had been
+  // filled by a stepper inside the NOTE CARD — a control acting on sections from inside a note, present
+  // only while the aside was collapsed. Now the nav is anchored to the canvas the sections drive.
+  //
+  // It behaves exactly like `activate()` (selection cleared), NOT like the popup stepper it replaces:
+  // that one deliberately carried the reading forward, selecting the next section-object's first note so
+  // the card would survive the step. A note from the section you just left has no claim on the section
+  // you just arrived at, and auto-opening one is the nav deciding what to read for you.
+  const canvasNav = $derived(sections.length > 1);
   function stepSection(delta: number) {
     const ni = activeIndex + delta;
     if (ni < 0 || ni >= sections.length) return;
-    activeIndex = ni;
-    const obj = objects.find((o) => o.id === sections[ni]?.objectId);
-    let notes = obj ? (annotationsByObject[obj.id] ?? []) : [];
-    if (obj && activeReading !== null) notes = overlay(notes, readingAnnotationsByObject[obj.id]?.[activeReading]);
-    selected = notes[0]?.id ?? null;
+    activate(ni);
   }
 
   // Note popup on marker click (CONTEXT §123 "Both: annomea popup/drawer on marker click"). Narrative
@@ -231,6 +240,12 @@
     return activeFrame ? activeNotes.filter((a) => a.id !== activeFrame.markId) : activeNotes;
   });
   const noteParts = $derived(current ? splitNoteMedia(commentOf(current)) : { media: [] as NoteMediaItem[], text: "" });
+  // The note's orientation label — "Section · object" in the narrative (the grid reader uses the plain
+  // object label). Derived ONCE and handed to both the card and the reading sheet, so "expand to read"
+  // cannot arrive somewhere that names the note differently (V64).
+  const noteEyebrow = $derived(
+    `${activeSection?.title ?? title}${multiObject && activeObject ? ` · ${activeObject.label}` : ""}`,
+  );
   // Geo readout (Q7): a Map note shows its centre lng/lat in the opened popup.
   const geoCoord = $derived.by(() => { if (!current) return null; const g = geoOf(current); return g ? formatLngLat(geoCenter(g)) : null; });
   let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);
@@ -323,6 +338,23 @@
          reach (>1 object). Scale cue: the locator's missing companion, HOW FAR IN vs WHERE — hidden
          during an AV section (no OSD zoom to report then). -->
     <div class="canvas-chrome-right">
+      {#if canvasNav}
+        <!-- Archie-01a6: the section nav, present in BOTH aside states, speaking its noun VISIBLY —
+             "Section 3 of 6", the same string the spine's own position indicator carries and the same
+             string the buttons announce. It joins this reserved flex row rather than claiming its own
+             absolute corner, which is what keeps it off the readout beside it (Archie-40fe). -->
+        <nav class="canvas-nav" aria-label={navRegionName("section")}>
+          <button type="button" class="cn-step" disabled={activeIndex <= 0}
+            onclick={() => stepSection(-1)}
+            aria-label={navStepName("section", "prev", sections[activeIndex - 1]?.title)}
+            title={navStepName("section", "prev", sections[activeIndex - 1]?.title)}><span aria-hidden="true">‹</span></button>
+          <span class="cn-pos">{navPosition(activeIndex, sections.length, "section")}</span>
+          <button type="button" class="cn-step" disabled={activeIndex >= sections.length - 1}
+            onclick={() => stepSection(1)}
+            aria-label={navStepName("section", "next", sections[activeIndex + 1]?.title)}
+            title={navStepName("section", "next", sections[activeIndex + 1]?.title)}><span aria-hidden="true">›</span></button>
+        </nav>
+      {/if}
       {#if onindex && objects.length > 1}
         <button type="button" class="to-index" onclick={onindex}>
           <span class="grid-mark" aria-hidden="true">▦</span>All items
@@ -342,13 +374,13 @@
   <!-- min/max match the spine's responsive clamp(360px … 620px) so a resize can't escape the designed
        reading-measure (#14). -->
   <ResizeDivider side="right" label="narrative" min={360} max={620} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={(s: AsideState) => saveAside(ASIDE_W_KEY, ASIDE_COLLAPSED_KEY, s)} />
-  <!-- Collapsed = give the canvas the page; the note-pop (with its footer section-stepper) becomes the
-       sole reading + nav surface, so `inert` drops the clipped spine (its section list) out of the a11y
-       tree + tab order — no invisible duplicate of the stepper's section nav. The ResizeDivider is a
-       sibling, so re-expanding stays reachable (§223 anti-trap). -->
+  <!-- Collapsed = give the canvas the page. Section nav survives the collapse now (it is canvas chrome —
+       Archie-01a6), so `inert` drops the clipped spine out of the a11y tree + tab order without taking
+       the reader's only way through the narrative with it. The ResizeDivider is a sibling, so
+       re-expanding stays reachable (§223 anti-trap). -->
   <aside class:collapsed={asideCollapsed} inert={asideCollapsed} style:--narr-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
     <p class="eyebrow">Narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}
-      {#if sections.length > 1}<span class="spine-pos">· {positionLabel(activeIndex, sections.length, "Section")}</span>{/if}</p>
+      {#if sections.length > 1}<span class="spine-pos">· {navPosition(activeIndex, sections.length, "section")}</span>{/if}</p>
     <h1>{title}</h1>
     <p class="hint">{asidePane === "sections"
       ? `Read down the page, or jump to any section. The image follows along, zooming to what each section is about${multiObject ? ", and switching between items as you go" : ""}.`
@@ -387,10 +419,17 @@
       <p class="empty">No notes on this item yet.</p>
     {/if}
     <ul class="notes-list">
-      {#each activeNotes as it (it.id)}
+      {#each activeNotes as it, i (it.id)}
         <li>
-          <button class:active={it.id === selected} style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)}>
-            <span class="card-preview">{stripMarkdown(commentOf(it))}</span>
+          <!-- Archie-dbbc / V60, ported from the Reader's list for the same reason: while its note is
+               open this entry MARKS POSITION and stops restating the text. Both note lists in the viewer
+               are the same idiom, so both had the same duplication. -->
+          <button class:active={it.id === selected} aria-current={it.id === selected ? "true" : undefined} style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)}>
+            {#if it.id === selected}
+              <span class="card-open">{noteIndexOpenMark(i, activeNotes.length)}</span>
+            {:else}
+              <span class="card-preview">{stripMarkdown(commentOf(it))}</span>
+            {/if}
           </button>
           {#if tagsOf(it).length}<span class="card-tags">{#each tagsOf(it) as t}<button type="button" class="tag tag-btn" onclick={() => onopenfinder?.(t)}>#{t}</button>{/each}</span>{/if}
         </li>
@@ -400,26 +439,44 @@
   </aside>
 
   {#if current}
-    <!-- The standalone note card (shared NotePopup). Narrative form: the footer steps SECTIONS — which
-         switch objects as the spine crosses them — and stepSection carries the reading so the card stays
-         open across a step (flip-and-read) instead of activate()'s selected=null unmounting it. -->
+    <!-- THE NOTE (shared NotePopup), in narrative form: the eyebrow is "Section · object" where the
+         Reader's is the object label — the mode difference is DATA, which is why one component still
+         serves both (Archie-c982). It carries no stepper: section nav is canvas chrome now.
+         `hidden-behind-sheet` and the `display: contents` wrapper: see Reader.svelte's note, which
+         records the full reasoning — anvil's mount guard (EmbeddedReader.svelte:670/:689) is the
+         stronger form and is unavailable here, because unmounting the card takes the ⤢ that
+         `use:dialog` returns focus to out of the document (V62/V63). -->
+    <div class="note-slot" class:hidden-behind-sheet={readingSheet}>
     <NotePopup
-      eyebrow={`${activeSection?.title ?? title}${multiObject && activeObject ? ` · ${activeObject.label}` : ""}`}
+      eyebrow={noteEyebrow}
       text={noteParts.text}
       media={noteParts.media}
       tags={tagsOf(current)}
       {geoCoord}
-      step={sections.length > 1 && asideCollapsed ? { index: activeIndex, total: sections.length, prevLabel: sections[activeIndex - 1]?.title, nextLabel: sections[activeIndex + 1]?.title, unit: "section", navLabel: "Sections in this narrative" } : null}
       onclose={() => (selected = null)}
-      onexpand={() => { if (noteParts.text) readingSheet = { text: noteParts.text }; }}
-      onstep={(d) => stepSection(d)}
+      onexpand={() => { if (noteParts.text) readingSheet = true; }}
       onopenfinder={(t) => onopenfinder?.(t)}
       onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
     />
+    </div>
   {/if}
 
-  {#if readingSheet}
-    <ReadingSheet text={readingSheet.text} onclose={() => (readingSheet = null)} />
+  {#if readingSheet && current}
+    <!-- Same note, same eyebrow, reading size. `noteEyebrow` is ONE derived value feeding both surfaces,
+         so the sheet cannot introduce its own idea of what you are reading (V64).
+         ONE MODAL AT A TIME: the finder and the lightbox are both `aria-modal="true"`, as is this sheet,
+         so both routes out of it close it first — the new surface replaces the sheet rather than
+         stacking on it. Full reasoning in Reader.svelte's twin of this block. -->
+    <ReadingSheet
+      eyebrow={noteEyebrow}
+      text={noteParts.text}
+      media={noteParts.media}
+      tags={tagsOf(current)}
+      {geoCoord}
+      onclose={() => (readingSheet = false)}
+      onopenfinder={(t) => { readingSheet = false; onopenfinder?.(t); }}
+      onmedia={(idx) => { readingSheet = false; lightbox = { media: noteParts.media, text: noteParts.text, index: idx }; }}
+    />
   {/if}
 
   {#if lightbox}
@@ -518,6 +575,32 @@
     position: absolute; z-index: 20; top: var(--topbar-h); right: var(--space-5);
     display: flex; align-items: center; gap: var(--space-2);
   }
+  /* Section nav (Archie-01a6) — the twin of Reader.svelte's object nav, ported verbatim so the two
+     readers' canvas chrome reads as one control (its legibility rationale is documented there: the
+     plate is opaque, not a scrim). Deliberate duplication, on the same grounds as `getFitOptions`
+     above: the two readers differ in container structure and in what they step, and the only shared
+     part is a pill of markup whose WORDING already lives in `product-copy`. */
+  .canvas-nav {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    background: var(--surface-canvas-raised); border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
+  }
+  .cn-step {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 28px; min-height: 28px; /* a real touch target, not a glyph's ink box (Fitts) */
+    background: none; border: none; padding: 0; cursor: pointer;
+    font-size: 1.05rem; line-height: 1; color: var(--ink-canvas-secondary);
+    border-radius: var(--radius-sm); transition: color 160ms ease;
+  }
+  .cn-step:hover:not(:disabled) { color: var(--accent-2); }
+  .cn-step:disabled { opacity: 0.32; cursor: default; }
+  .cn-step:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+  .cn-pos {
+    font-family: var(--font-ui), sans-serif; font-variant-numeric: tabular-nums;
+    font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-secondary);
+    white-space: nowrap;
+  }
   /* Grid-index escape — a quiet canvas overlay, sibling to the legend (same warm-paper pill language).
      Recedes so the read stays the star, but is always reachable so the narrative can never trap the
      visitor (§223 anti-trap, §137 escape-out). Connector-blue (--accent-2) hover — the secondary
@@ -567,6 +650,8 @@
   .notes-list li > button:hover { background: var(--surface-paper-hover); border-left-color: var(--accent); box-shadow: var(--shadow-lift-mid); }
   .notes-list li > button.active { background: var(--accent-muted); box-shadow: var(--shadow-lift-mid); }
   .card-preview { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  /* The open entry's position mark (Archie-dbbc / V60) — the index's chrome voice, not body prose. */
+  .card-open { display: block; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-secondary); }
   .card-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
   .tag { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-paper-secondary); background: var(--surface-paper-hover); padding: 2px var(--space-3); border-radius: var(--radius-sm); }
   .tag-btn { border: none; cursor: pointer; transition: color 160ms ease, background 160ms ease; }
@@ -574,4 +659,10 @@
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); background: var(--surface-paper-hover); border-radius: var(--radius-md); }
 
   /* The standalone note card's styles now live in the shared NotePopup.svelte component. */
+  /* The card's slot (Archie-dbbc / V60). `display: contents` generates no box, so the card keeps
+     `.narrative` as its containing block and its absolute anchoring is unchanged; `display: none`
+     takes the whole card off screen and out of the a11y tree while the reading sheet — the SAME note,
+     larger — is open, without unmounting the ⤢ that `use:dialog` returns focus to. */
+  .note-slot { display: contents; }
+  .note-slot.hidden-behind-sheet { display: none; }
 </style>
