@@ -25,6 +25,8 @@ import { TOKENS_MODULE_ID, TOKENS_CSS_PATH } from "./tokens-source.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUTDIR = join(__dirname, "dist");
+// Separate from OUTDIR on purpose — see buildSingleFile: dist/ is the jsDelivr artifact, this is not.
+const SINGLE_OUTDIR = join(__dirname, "dist-single");
 const BASELINE = join(__dirname, "bundle-size.json");
 
 // esbuild is a DECLARED devDep of this package, so the compiler is a lockfile-pinned build input —
@@ -80,6 +82,36 @@ async function build(outdir) {
     metafile: true,
     logLevel: "info",
     plugins: [archieTokens],
+  });
+  return result;
+}
+
+// The OFFLINE target — one IIFE file, no chunks, for a self-contained export opened from `file://`.
+//
+// Why a second target rather than reusing the ESM one: browsers refuse ES **module** scripts from a
+// `file://` origin (opaque origin, module scripts are CORS-fetched), so the shipped bundle cannot boot
+// by double-click no matter how it is referenced. IIFE loads from a plain `<script>`, and with
+// `splitting: false` + a single `outfile` esbuild has nowhere to put a chunk, so element.ts's
+// `await import("./reader.js")` is inlined instead of emitted as a sibling fetch.
+//
+// Code-splitting saves nothing here. An export exists to be READ — the reader chunk is always needed,
+// so deferring it would only add a fetch that `file://` would then refuse.
+//
+// Output goes to dist-single/, NOT dist/. dist/ is the CDN artifact and scripts/sync-dist.mjs mirrors
+// it to the repo root for jsDelivr; a CDN consumer must never resolve this bundle by accident.
+async function buildSingleFile(outfile) {
+  rmSync(dirname(outfile), { recursive: true, force: true });
+  mkdirSync(dirname(outfile), { recursive: true });
+  const result = await esbuild.build({
+    entryPoints: [join(__dirname, "src", "index.ts")],
+    bundle: true,
+    minify: true,
+    format: "iife",
+    splitting: false,
+    platform: "browser",
+    outfile,
+    metafile: true,
+    logLevel: "info",
   });
   return result;
 }
@@ -145,6 +177,18 @@ const result = await build(outdir);
 const m = measureDist(outdir, result.metafile);
 if (CHECK) rmSync(outdir, { recursive: true, force: true });
 
+// The offline single-file target, measured on its OWN budget. Deliberately NOT folded into eagerGzKB
+// or totalGzKB: those govern the CDN entry's lazy boundary, and that ratchet is the only thing that
+// ever caught the 225KB OSD leak (.claude/rules/archie-viewer-eager-closure.md). A second target
+// must never be able to move, relax, or explain away the first one's numbers.
+const singleOut = CHECK
+  ? join(mkdtempSync(join(tmpdir(), "archie-viewer-single-check-")), "archie-viewer.single.js")
+  : join(SINGLE_OUTDIR, "archie-viewer.single.js");
+await buildSingleFile(singleOut);
+const singleBytes = readFileSync(singleOut);
+const single = { singleFileRawKB: rawKB(singleBytes), singleFileGzKB: gzKB(singleBytes) };
+if (CHECK) rmSync(dirname(singleOut), { recursive: true, force: true });
+
 if (CHECK) {
   if (!existsSync(BASELINE)) {
     console.warn(`no baseline at ${BASELINE} — run \`node build.mjs\` once to set it`);
@@ -158,6 +202,7 @@ if (CHECK) {
   const gates = [
     { label: "eager (page load)", cur: m.eagerGzKB, base: base.eagerGzKB },
     { label: "total (object open)", cur: m.totalGzKB, base: base.totalGzKB },
+    { label: "single-file (offline)", cur: single.singleFileGzKB, base: base.singleFileGzKB },
   ];
   let failed = false;
   for (const g of gates) {
@@ -179,6 +224,8 @@ console.log(`  entry  ${m.entryRawKB}KB min  ${m.entryGzKB}KB gz  (the entry FIL
 console.log(`  eager  ${m.eagerGzKB}KB gz  (page load — entry's STATIC closure; OSD must NOT be here)`);
 console.log(`  total  ${m.totalGzKB}KB gz  (entry + lazy reader/OSD chunk — opening an object)`);
 
+console.log(`  single ${single.singleFileRawKB}KB min  ${single.singleFileGzKB}KB gz  (dist-single/ — the offline export payload, IIFE, no chunks)`);
+
 // MOVING THE BASELINE IS A DELIBERATE ACT (`--update`), NEVER A SIDE EFFECT OF BUILDING.
 //
 // This write used to be unconditional, which quietly defeated the whole ratchet. `dist/` here is a
@@ -199,7 +246,7 @@ console.log(`  total  ${m.totalGzKB}KB gz  (entry + lazy reader/OSD chunk — op
 // The root ratchet already had this right — its baseline is refreshed by a separately named script
 // (`pnpm bundle:baseline`, checks.yml:161), not by building. This file was the odd one out.
 if (UPDATE) {
-  writeFileSync(BASELINE, JSON.stringify({ measuredAt: new Date().toISOString(), ...m }, null, 2) + "\n");
+  writeFileSync(BASELINE, JSON.stringify({ measuredAt: new Date().toISOString(), ...m, ...single }, null, 2) + "\n");
   console.log(`  baseline UPDATED → ${BASELINE}`);
 } else {
   console.log(`  baseline unchanged (run \`pnpm bundle:baseline\` to move it — a deliberate, reviewable act)`);
