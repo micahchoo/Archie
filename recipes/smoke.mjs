@@ -668,12 +668,17 @@ async function main() {
         });
         await sr(() => document.querySelector("archie-viewer").shadowRoot
           .querySelector('.nr-stepper button[data-act="next-section"]')?.click());
-        await page.waitForTimeout(700);
-        narrative.afterNext = await sr(() => {
-          const s = document.querySelector("archie-viewer").shadowRoot;
-          const rows = [...s.querySelectorAll(".nr-sections button")];
-          return rows.indexOf(s.querySelector('.nr-sections button[aria-current="true"]'));
-        });
+        // WAIT for the condition, do NOT sleep at it. A section step that changes OBJECT tears down
+        // and remounts the canvas before the pane comes back, which a fixed 700ms lost a race with —
+        // observed as `active section 0 → -1` (no row current, because the pane was mid-remount). The
+        // flake was in this assertion, not the product; a timeout here still fails, but only after the
+        // app has genuinely had its chance.
+        narrative.afterNext = await page.waitForFunction(() => {
+          const sh = document.querySelector("archie-viewer").shadowRoot;
+          const rows = [...sh.querySelectorAll(".nr-sections button")];
+          const i = rows.indexOf(sh.querySelector('.nr-sections button[aria-current="true"]'));
+          return i > 0 ? i : false; // 0 is the starting section — keep waiting for the step to land
+        }, { timeout: 20000, polling: 200 }).then((h) => h.jsonValue()).catch(() => -1);
       }
 
       return { controls, posText, secondLabel, afterNext, truth, list, rowOpens, legend, marks, stepped, tokens, narrative, narrativeTruth };
