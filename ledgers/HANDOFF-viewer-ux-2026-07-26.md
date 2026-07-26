@@ -62,7 +62,42 @@ answer different questions, and neither answers the other's.**
 sequenced AFTER the dock work because `--finder-h`/`--topbar-h` do not survive it — the dock retires
 both.
 
-### THE DOCK SLICE — reviewed? NO. Integrated? YES, on a scratch branch.
+### THE DOCK SLICE — REVIEWED. Code approved; two citation BLOCKERs open.
+
+Report: `ledgers/REVIEW-canvas-chrome-dock-2026-07-26.md` (preserved on `main` at `cac7605`).
+**Verdict: approve the code, fix the evidence.**
+
+Passed: **zero live consumers** of anything retired (per-name, across definitions, type refs, string
+literals, barrels and tests); 207→191 reconciled **three independent ways**; replacements proven
+*stronger* by injection; geometry clean at **eight** viewports including 900×600 / 900×1400 / 1280×500,
+none of which the author tested; ten-times runs on every changed assertion, zero flakes. The reviewer
+re-ran the author's smoke injections rather than trusting them, and confirmed `dist/` reproduces
+byte-for-byte with `eagerGzKB` unmoved at 39.3 KB.
+
+**BLOCKER 1 — tropy is cited for the opposite of what it does** (ADR-0019 `:141-142`,
+`ExhibitView.svelte:703-705`, and this file `:365`, since fixed). See the corrected paragraph below.
+**BLOCKER 2 — clover's `Main` is not the header's parent**, and the false sentence was added by
+`d43155c`, *the commit that fixed the previous bad citation*: the author opened the file, confirmed
+what `Main` is, and did not grep where it is used. The premise survives (`Viewer.tsx:180-184` really
+does make them siblings); only the mechanism is wrong. A better unused citation exists — inside `Main`,
+`<Painting>` and `<MediaWrapper>` are flow siblings, i.e. clover docking a strip *below* the canvas.
+
+**SHOULD-FIX worth carrying:** `occlusion.spec.ts`'s `boxes.length >= N` is a **threshold, not a
+per-selector requirement** — renaming `.canvas-dock` left both suites green, and `smoke.mjs` has the
+identical shape. Also `occlusion.spec.ts:196`'s "THE VIEWER NEVER PASSED IT" is false and was false
+when written (`Reader.svelte:375/:406/:392` at `d6ff592`); the deletion is still right, the rationale
+is not.
+
+**Do not re-derive this:** the reviewer measured `seed-carry.test.ts` red ~1-in-3 on `integrate/dock`
+and ~5-in-12 on `8683b02`. That is the flake fixed by `a440721`, which postdates the merge base — it
+arrives when `main` is re-merged. Not the dock's doing, not still open.
+
+### Integration state
+
+`integrate/dock` = **`5842087`** = `main@8683b02` + dock's `d43155c`, nine conflicts resolved (all
+duplicate-content from the `-A` sweep; all taken from main's reviewed side, then verified
+byte-identical). **It is now well behind `main` and must be re-cut after the citation fixes land** —
+one integration merge, not two.
 
 `integrate/dock` = **`5842087`** = `main@8683b02` + dock's `d43155c`, nine conflicts resolved (all
 duplicate-content from the `-A` sweep; all taken from main's reviewed side, then verified
