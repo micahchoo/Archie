@@ -17,6 +17,7 @@ import { dispatchFitBounds, applyFitBounds, type FitOptions, type ViewportLike }
 import { createReadOnlyOverlay, type LabelFor } from "./read-overlay.js";
 import { createFrameOverlay } from "./frame-overlay.js";
 import { createSelectionHalo } from "./selection-halo.js";
+import { applyCanvasA11y, type A11yViewerLike } from "./canvas-a11y.js";
 import { xyzTileSource } from "./xyz.js";
 import { dziOsdSource } from "./dzi.js";
 import type { SelectionId } from "./surface.js";
@@ -243,6 +244,10 @@ export async function createReadOnlyMount(
   minZoomImageRatio: 0.5,
   ...(opts.locator ? { showNavigator: true, navigatorPosition: "BOTTOM_RIGHT", navigatorSizeRatio: 0.15, navigatorAutoFade: true } : {}),
  });
+
+ // V90 (Archie-3d55) — name the canvas immediately, before the open await (same reasoning as
+ // mount.ts: OSD builds it in the constructor, and a failed open must not leave an unnamed stop).
+ applyCanvasA11y(viewer as unknown as A11yViewerLike);
 
  // A non-tiled `{ type:"image" }` source decodes its WHOLE bitmap into webview memory; tiled
  // sources (dzi/xyz/iiif) are pyramids and are never capped (image-cap.ts).

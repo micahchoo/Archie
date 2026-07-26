@@ -224,9 +224,19 @@
 
   // Esc closes the open note-pop (#3), matching the Reader. Guarded so the lightbox / reading sheet own
   // Esc while open; arrows stay with OpenSeadragon (it pans the canvas), so only Esc is bound here.
+  // V26/V25 (Archie-3d55) — the same Escape ladder Reader.svelte walks, with the narrative's own top
+  // rung: the way UP from a narrative is its object index, not an exhibit overview.
   function onkey(e: KeyboardEvent) {
     if (lightbox || readingSheet) return;
-    if (e.key === "Escape" && selected !== null) { selected = null; e.preventDefault(); }
+    if (e.key !== "Escape") return;
+    if (selected !== null) { selected = null; e.preventDefault(); return; }
+    const active = document.activeElement as HTMLElement | null;
+    if (active?.closest(".openseadragon-container")) {
+      mainEl?.focus({ preventScroll: true });
+      e.preventDefault();
+      return;
+    }
+    if (onindex) { onindex(); e.preventDefault(); }
   }
 
   // V48 (Archie-40fe) — the same left-flank reservation Reader.svelte wires, for the same reason and
@@ -259,7 +269,8 @@
 <svelte:window onkeydown={onkey} />
 
 <div class="narrative">
-  <main bind:this={mainEl}>
+  <!-- tabindex="-1": the landing place Escape hands focus to when leaving the canvas (V25). -->
+  <main bind:this={mainEl} tabindex="-1">
     {#if activeSection && !activeObject}
       <!-- A section references an object that's no longer in the exhibit (deleted, section not pruned).
            Surface it instead of silently showing the wrong image with this section's prose. -->

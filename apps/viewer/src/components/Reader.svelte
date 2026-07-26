@@ -293,9 +293,32 @@
   // worked in the lightbox/reading-sheet but NOT in the note state itself. Guarded so the lightbox/sheet
   // (which bind their own Esc) own the key while open. Arrow-stepping is intentionally NOT bound here —
   // OpenSeadragon owns the arrow keys for panning the deep-zoom image, so hijacking them would regress pan.
+  // V26/V25 (Archie-3d55) — an Escape LADDER, not a single binding.
+  //
+  // Escape used to mean exactly one thing here: close the selected note. With no note open it did
+  // nothing at all — measured, still `#/voynich`, still "Object 2 of 12" — and the only way up a
+  // level was the BACK TO EXHIBIT button, which is invisible when the sidebar is collapsed. Same
+  // shape as V1's inert Escape in the empty hall: a binding per surface, no ladder.
+  //
+  // The rungs, innermost first. Each step is the smallest one that changes something, so a reader
+  // holding Escape walks out rather than teleporting:
+  //   1. a note is open           → close it
+  //   2. focus is inside the canvas → leave the canvas (V25's other half: arrows are OSD's while
+  //      focus is there, and the reader had no announced way to take them back)
+  //   3. otherwise                → up a level, to the exhibit
   function onkey(e: KeyboardEvent) {
     if (lightbox || readingSheet) return; // those surfaces own Esc while open
-    if (e.key === "Escape" && selected !== null) { selected = null; e.preventDefault(); }
+    if (e.key !== "Escape") return;
+    if (selected !== null) { selected = null; e.preventDefault(); return; }
+    const active = document.activeElement as HTMLElement | null;
+    if (active?.closest(".openseadragon-container")) {
+      // Hand focus back to the reader's own frame rather than to <body>: blurring to nothing is how
+      // a keyboard reader loses their place entirely.
+      mainEl?.focus({ preventScroll: true });
+      e.preventDefault();
+      return;
+    }
+    if (onback) { onback(); e.preventDefault(); }
   }
 
   // V48 (Archie-40fe) — tell the camera what is covering the canvas before it frames a region.
@@ -337,7 +360,9 @@
 <svelte:window onkeydown={onkey} />
 
 <div class="reader">
-  <main bind:this={mainEl}>
+  <!-- `tabindex="-1"` so Escape can hand focus back HERE when leaving the canvas (V25) — a landing
+       place inside the reader, never a tab stop of its own. -->
+  <main bind:this={mainEl} tabindex="-1">
     <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
          objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
     {#key object.canvasId}

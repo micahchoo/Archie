@@ -18,6 +18,7 @@ import { resolveTileSource, isDegenerateSelectorValue, selectorOf, selectorBBox,
 import { dispatchFitBounds, applyFitBounds, clampedFitRect, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import { createFrameOverlay, type FrameViewerLike } from "./frame-overlay.js";
 import { createSelectionHalo, type HaloViewerLike } from "./selection-halo.js";
+import { applyCanvasA11y, type A11yViewerLike } from "./canvas-a11y.js";
 import { GestureGuard } from "./gesture-guard.js";
 import { zoomBand } from "./zoom-band.js";
 import { imageToNavigatorPixel, type NavigatorDot } from "./marker-dots.js";
@@ -181,6 +182,13 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
     ...(opts.locator ? { showNavigator: true, navigatorPosition: "BOTTOM_RIGHT", navigatorSizeRatio: 0.15, navigatorAutoFade: true } : {}),
   });
 
+  // V90 (Archie-3d55) — name the canvas IMMEDIATELY, before the open await below. OSD builds its
+  // canvas div in the constructor, so there is nothing to wait for; and doing it here means the stop
+  // is named even when the open later FAILS, which is the state a reader is most likely to be stuck
+  // tabbing through. (The Annotorious layer is a separate call after the annotator exists — it isn't
+  // in the DOM yet.)
+  applyCanvasA11y(viewer as unknown as A11yViewerLike);
+
   try {
     await new Promise<void>((resolve, reject) => {
       viewer.addOnceHandler("open", () => resolve());
@@ -343,6 +351,12 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
   // decoupled from OSD's concrete Point/Rect/OverlayOptions types); OSD's real Viewer satisfies it
   // at runtime (addOverlay takes {element, location}) but its own types are narrower/wider than
   // the duck type in ways TS can't verify structurally — asserted once here, at the wiring point.
+  // V90 (Archie-3d55) — name the OSD canvas, drop Annotorious's decorative layers out of the tab
+  // order. Applied after the annotator exists (its layer is only in the DOM by then), and again on
+  // `open`, because Annotorious rebuilds its layer when the image changes.
+  applyCanvasA11y(viewer as unknown as A11yViewerLike);
+  viewer.addHandler("open", () => applyCanvasA11y(viewer as unknown as A11yViewerLike));
+
   const frameOverlay = createFrameOverlay(viewer as unknown as FrameViewerLike);
 
   // Selection halo (Archie-52a0) — the ring that says WHICH mark is open. A third overlay layer

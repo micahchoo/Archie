@@ -22,6 +22,14 @@ import {
 
 const NS = "http://www.w3.org/2000/svg";
 
+/** Arrow/Home/End → a step within the roving region set (V45). Both axes move, because the regions
+ *  are scattered over an image rather than laid out in a line — a reader pressing Down on a picture
+ *  means "the next one", and guessing at spatial order would be worse than honest sequence order. */
+const ROVE_KEYS: Record<string, number | undefined> = {
+  ArrowRight: 1, ArrowDown: 1,
+  ArrowLeft: -1, ArrowUp: -1,
+};
+
 /** Cap for a shape's accessible name (Archie-9413 review): a hostile `.archie.zip` can carry a
  * multi-hundred-KB comment line (bounded only by SRC_MAX_BYTES) or an arbitrarily long id, and an
  * AT reads aria-label IN FULL on every focus. ONE chokepoint — whatever labelFor OR the
@@ -136,6 +144,20 @@ export function createReadOnlyOverlay(
   let selectedId: string | null = null;
   let seq = 0;
   const selectSubs = new Set<(id: string | null) => void>();
+  // The roving set, in draw order — insertion-ordered because Set is, so "next" means the next
+  // region as authored rather than the next one in DOM paint order.
+  const tabbable = new Set<SVGSVGElement>();
+
+  /** Move focus by `step` within the roving set, wrapping, and hand the tab stop to the new element. */
+  const rove = (from: SVGSVGElement, step: number): void => {
+    const els = [...tabbable];
+    if (els.length < 2) return;
+    const i = els.indexOf(from);
+    if (i < 0) return;
+    const next = els[(i + step + els.length) % els.length]!;
+    for (const el of els) el.setAttribute("tabindex", el === next ? "0" : "-1");
+    next.focus();
+  };
 
   const emitSelect = (id: string | null): void => {
     selectedId = id;
@@ -153,6 +175,7 @@ export function createReadOnlyOverlay(
       if (isOverlayWrapper(wrapper)) wrapper.remove();
     }
     shapes = [];
+    tabbable.clear(); // else the rove set holds detached elements and the tab stop lands on nothing
   };
 
   /** Build the <svg> wrapper anchored to a shape's image-space bbox, with the geometry child appended. */
@@ -177,12 +200,32 @@ export function createReadOnlyOverlay(
     // from labelFor or the id fallback, and setAttribute-only (the header's no-markup rule stands).
     svg.setAttribute("role", "button");
     svg.setAttribute("aria-label", capLabel(labelFor ? labelFor(id) : `annotation ${id}`));
-    svg.setAttribute("tabindex", "0");
+    // V45 (Archie-3d55) — ROVING tabindex, not one stop per region.
+    //
+    // The audit found the two consumers disagreeing: the shell exposes no individual region (its
+    // marks are WebGL, with no per-shape node to focus — that is a hard fact, not a choice), while
+    // the embed exposed EVERY region as its own tab stop. Neither extreme is right. N stops does not
+    // scale: a 60-note page is 60 presses to tab past the image, which is the same wall V27 found on
+    // the filmstrip and the repo already ratified the answer for there — one stop in the sequence,
+    // arrows to move within (docs/research/a11y-interactions.md; Filmstrip.svelte, Archie-c831).
+    //
+    // So both consumers now give the same GUARANTEE by different mechanisms: every note is reachable
+    // and named. The shell's route is the notes list (DOM, ordered, named — and per Archie-c982 the
+    // list is the INDEX, which is exactly this job). The embed has no list, so the regions carry it.
+    svg.setAttribute("tabindex", tabbable.size === 0 ? "0" : "-1");
+    tabbable.add(svg);
     svg.addEventListener("keydown", (e) => {
-      if (e.key !== "Enter" && e.key !== " ") return;
-      e.preventDefault(); // Space must select, not scroll the host page
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault(); // Space must select, not scroll the host page
+        e.stopPropagation();
+        emitSelect(id);
+        return;
+      }
+      const step = ROVE_KEYS[e.key];
+      if (step === undefined) return;
+      e.preventDefault(); // arrows would otherwise pan OSD out from under the reader
       e.stopPropagation();
-      emitSelect(id);
+      rove(svg, step);
     });
     addFocusRing(svg);
     svg.append(geom);
