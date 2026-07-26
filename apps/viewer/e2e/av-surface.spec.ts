@@ -497,27 +497,27 @@ test.describe("V49 · the temporal map clears the item strip (Archie-b135)", () 
     }
   });
 
-  test("the reservation comes OUT of the column, so the map is not pushed off the bottom instead", async ({ page }) => {
-    // THE HALF THAT MAKES THIS TICKET WORTH ITS OWN TEST. V49's fix is `padding-bottom: var(--strip-h)`
-    // plus `box-sizing: border-box` on `.player` (MediaPlayer.svelte). Drop the `box-sizing` and the
-    // padding ADDS to the 100vh: the column becomes 840px in a 720px viewport, the map is shoved below
-    // the fold, and the first test above still passes — the map no longer overlaps the strip because it
-    // is no longer on screen at all. That is a different defect wearing the fix's clothes, and it is
-    // exactly what nothing was catching.
+  test("the map is not pushed off the bottom INSTEAD of being covered", async ({ page }) => {
+    // THE HALF THAT MAKES THIS ITS OWN TEST, and it is written against the OUTCOME rather than the
+    // mechanism — deliberately, because the mechanism changed under this test while it was being
+    // written, which is the best possible argument for not asserting one.
     //
-    // Measured on the unmodified build at 1280x720: `.player` 0-720 (= the viewport), `--strip-h` and
-    // the computed `padding-bottom` both 120px, `.tl-track` 556-580, `.filmstrip` 602-720.
+    // V49's original fix was `padding-bottom: var(--strip-h)` + `box-sizing: border-box` on a 100vh
+    // `.player`, and `Archie-b135` asks for the `box-sizing` removal as the red-green. That fix no
+    // longer exists: the docking work retired the reservation entirely and moved the strip into
+    // `ExhibitView`'s chrome bar BELOW the column (`MediaPlayer.svelte:485-488`). An assertion on
+    // `.player`'s computed height would now be red against correct code.
+    //
+    // What is invariant across both designs is the reader's side of it: **the temporal map has to be
+    // ON SCREEN.** "Not overlapping the strip" (the test above) is satisfied just as well by a map
+    // shoved below the fold — that is a different defect wearing the fix's clothes, and it is the one
+    // thing neither design gets for free. Asserting visibility is what separates them.
     await openAudioObject(page, { media: true });
     await expect(page.locator(".timeline")).toBeVisible();
 
     const vh = page.viewportSize()!.height;
-    const player = await rectOf(page.locator(".player"));
-    expect(Math.round(player.height), "the player column overflowed the viewport").toBeLessThanOrEqual(vh + 1);
-
-    // …and the map is inside it, not below the fold. `toBeInViewport` is the assertion that fails on
-    // the overflow case; the height check above says WHY it failed.
     await expect(page.locator(".tl-track")).toBeInViewport();
     const map = await rectOf(page.locator(".tl-track"));
-    expect(Math.round(map.y + map.height), "the temporal map's bottom edge is off-screen").toBeLessThanOrEqual(vh);
+    expect(Math.round(map.y + map.height), `the temporal map's bottom edge is off-screen (viewport ${vh}px)`).toBeLessThanOrEqual(vh);
   });
 });
