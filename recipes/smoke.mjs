@@ -127,7 +127,18 @@ async function main() {
     const url = res.url();
     if (!url.startsWith(base) || !/\/dist\/[^/]*\.js$/.test(url)) return;
     void res.text().then(
-      (t) => galleryPathScripts.push({ name: url.slice(base.length), osd: /openseadragon/i.test(t), bytes: t.length }),
+      (t) => galleryPathScripts.push({
+        name: url.slice(base.length),
+        // S3: the DROP-justified row names Annotorious and PixiJS as well as OpenSeadragon, and a
+        // PixiJS-only leak contains no "openseadragon" string anywhere — the original one-needle scan
+        // could not have seen the very dependency the ADR spends its Context section on.
+        engine: [
+          [/openseadragon/i, "OpenSeadragon"],
+          [/\bpixi(?:js)?\b/i, "PixiJS"],
+          [/@annotorious|a9s-annotation/i, "Annotorious"],
+        ].filter(([re]) => re.test(t)).map(([, label]) => label),
+        bytes: t.length,
+      }),
       () => {},
     );
   });
@@ -295,7 +306,9 @@ async function main() {
       })();
 
       if (clicked.skipped) {
-        console.log(`  info  region pointer check skipped: ${clicked.skipped}`);
+        // NOT `console.log`. A drive that cannot find its fixture must FAIL, or the whole assertion
+        // set evaporates and the run still reports PASS — see the label-completeness check below.
+        record(false, "the region pointer drive found its fixture", clicked.skipped);
       } else {
         record(clicked.wrappers.every((pe) => pe === "none"),
           "OSD overlay wrappers are out of the hit path",
@@ -391,7 +404,7 @@ async function main() {
     })();
 
     if (credit.skipped) {
-      console.log(`  info  credit check skipped: ${credit.skipped}`);
+      record(false, "the credit drive found its fixture", credit.skipped);
     } else {
       record(credit.truth.exhibit !== null && credit.exhibitCredit === credit.truth.exhibit,
         "the exhibit view shows the manifest's requiredStatement (V105)",
@@ -495,7 +508,14 @@ async function main() {
         }
         return {
           base: (pages.find((p) => p.id.endsWith("/annotations.json"))?.items ?? []).length,
-          readings, perReading,
+          readings,
+          perReading,
+          // S2: the implementation (reader-chrome.ts) offers the readings that actually have notes on
+          // THIS object — a legend row that lights up nothing is a lie. So the expectation has to be
+          // the same set. Comparing against EVERY reading in readings.json agreed with the code only
+          // by fixture coincidence (all three happen to touch o1) and would have broken, wrongly, the
+          // first time someone added a reading that skips a folio.
+          readingsHere: readings.filter((r) => (perReading[r.id] ?? 0) > 0),
         };
       }, [base, objId]);
 
@@ -560,7 +580,7 @@ async function main() {
         };
       }, [colour, baseColour]);
 
-      const firstReading = truth.readings[0];
+      const firstReading = truth.readingsHere[0];
       // reader-chrome.ts BASE_MARK_COLOUR — the one constant the legend's General swatch and the canvas
       // both read, so the smoke test names it once here too rather than inventing a second expectation.
       const BASE_MARK_COLOUR = "#6B7D6A";
@@ -571,6 +591,31 @@ async function main() {
         await page.waitForTimeout(900);
         const after = await readMarks(firstReading.colour, BASE_MARK_COLOUR);
         return { ...after, beforeColours: before.colours };
+      })() : null;
+
+      // ---- V56, the path the first drive never walked: STEP an object with a reading active -------
+      //
+      // This is where V56 came back (2026-07-25). `#markColours` was populated by the pane mount,
+      // which runs AFTER the canvas paints, so an object opened with a reading already active painted
+      // every mark in the BASE colour and nothing repainted. The legend showed the reading checked,
+      // with its green swatch, over a canvas with no green — the audit's original symptom exactly.
+      //
+      // The old drive could not see it: it picked a reading on a freshly-opened FIRST object (where
+      // the mount order happens to work out) and only ever stepped objects with no reading active.
+      // Both halves of the ordering matter, so the drive now does both, in that order.
+      const stepped = firstReading ? await (async () => {
+        await sr(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelector('.rc-step[data-act="next"]')?.click());
+        await page.waitForFunction(() => !!document.querySelector("archie-viewer").shadowRoot
+          .querySelector(".reader-aside .rc-aside"), { timeout: 20000, polling: 250 }).catch(() => {});
+        await page.waitForTimeout(1200);
+        const after = await readMarks(firstReading.colour, BASE_MARK_COLOUR);
+        const legendStillOn = await sr((id) => {
+          const sh = document.querySelector("archie-viewer").shadowRoot;
+          const opt = sh.querySelector(`.rc-legend .rc-opt[data-reading="${id}"]`);
+          return opt ? opt.getAttribute("aria-checked") === "true" : false;
+        }, firstReading.id);
+        return { ...after, legendStillOn };
       })() : null;
 
       // ---- V9/V31/V69: the SHARED token layer ----------------------------------------------------
@@ -631,11 +676,11 @@ async function main() {
         });
       }
 
-      return { controls, posText, secondLabel, afterNext, truth, list, rowOpens, legend, marks, tokens, narrative, narrativeTruth };
+      return { controls, posText, secondLabel, afterNext, truth, list, rowOpens, legend, marks, stepped, tokens, narrative, narrativeTruth };
     })();
 
     if (contract.skipped) {
-      console.log(`  info  capability contract checks skipped: ${contract.skipped}`);
+      record(false, "the capability-contract drive found its fixtures", contract.skipped);
     } else if (contract.paneUp === false) {
       record(false, "ADR-0019 contract: the reader's reading pane mounts", "no .rc-aside in the shadow DOM after opening an object");
     } else {
@@ -662,11 +707,12 @@ async function main() {
         `card ${contract.rowOpens.open ? "opened" : "did NOT open"} with ${JSON.stringify(contract.rowOpens.body)}; row marked current: ${contract.rowOpens.current}`);
 
       // --- readings + legend (MUST) ---
-      const wantNames = ["General notes", ...contract.truth.readings.map((r) => r.name)];
+      const wantNames = ["General notes", ...contract.truth.readingsHere.map((r) => r.name)];
       const gotNames = contract.legend.map((o) => o.name);
-      record(contract.truth.readings.length > 0 && JSON.stringify(gotNames) === JSON.stringify(wantNames),
-        "ADR-0019 MUST · the legend lists every reading in readings.json (V56)",
-        `rendered ${JSON.stringify(gotNames)} vs readings.json ${JSON.stringify(wantNames)}`);
+      record(contract.truth.readingsHere.length > 0 && JSON.stringify(gotNames) === JSON.stringify(wantNames),
+        "ADR-0019 MUST · the legend lists every reading with notes on this object (V56)",
+        `rendered ${JSON.stringify(gotNames)} vs manifest ${JSON.stringify(wantNames)}` +
+          ` (readings.json has ${contract.truth.readings.length}; ${contract.truth.readingsHere.length} carry notes here)`);
       const countsOk = contract.legend.every((o) => o.id === ""
         ? o.count === contract.truth.base
         : o.count === contract.truth.perReading[o.id]);
@@ -677,7 +723,7 @@ async function main() {
       // NUMBERS is what proves there is no second copy of them in the embed.
       const swatchesOk = contract.legend.every((o) =>
         o.strokeOpacity === "0.95" && o.fillOpacity === "0.18") &&
-        contract.truth.readings.every((r) => contract.legend.some((o) => o.id === r.id && o.stroke === r.colour));
+        contract.truth.readingsHere.every((r) => contract.legend.some((o) => o.id === r.id && o.stroke === r.colour));
       record(swatchesOk,
         "ADR-0019 MUST · legend swatches come from readingMarkerStyle (V56/V47)",
         contract.legend.map((o) => `${o.name}: stroke ${o.stroke} @${o.strokeOpacity}, fill @${o.fillOpacity}`).join(" | "));
@@ -693,6 +739,19 @@ async function main() {
       record(!!m && m.widths.length > 0 && m.widths.every((w) => w === "2"),
         "ADR-0019 MUST · marks take readingMarkerStyle's stroke weight, not the overlay default (V69)",
         m ? `stroke-width ${JSON.stringify([...new Set(m.widths)])} (2 = readingMarkerStyle normal; 1.5 = the un-styled overlay default)` : "no marks");
+
+      const st = contract.stepped;
+      const steppedOk = !!st
+        && st.legendStillOn                                     // the legend still claims the layer is on
+        && st.colours.includes(st.want)                         // ...and the canvas agrees
+        && st.colours.every((c) => c === st.want || c === st.wantBase);
+      record(steppedOk,
+        "ADR-0019 MUST · a reading survives stepping to the next object (V56)",
+        st ? `after Next: legend checked ${st.legendStillOn}, marks ${JSON.stringify([...new Set(st.colours)])}` +
+             `; reading ${JSON.stringify(st.want)}, base ${JSON.stringify(st.wantBase)}` +
+             (st.legendStillOn && !st.colours.includes(st.want)
+               ? " — legend says ON, canvas says base: the V56 symptom" : "")
+          : "no readings to carry");
 
       // --- shared tokens (MUST) ---
       const tokenNames = Object.keys(contract.tokens.want);
@@ -728,21 +787,108 @@ async function main() {
     // the leak. This is its behavioural twin: it asserts nothing was FETCHED, from the same drive the
     // rest of the contract uses, which is the claim a host actually cares about. The 2026-07-24 leak
     // shipped a top-level `import … from "./chunk-<osd>.js"` in the entry — it would fail here too.
-    const eagerOsd = galleryPathScripts.filter((s) => s.osd);
+    const eagerEngine = galleryPathScripts.filter((s) => s.engine.length > 0);
     const eagerBytes = galleryPathScripts.reduce((n, s) => n + s.bytes, 0);
-    record(galleryPathScripts.length > 0 && eagerOsd.length === 0,
+    record(galleryPathScripts.length > 0 && eagerEngine.length === 0,
       "ADR-0019 DROP-justified · the canvas engine is NOT on the gallery path",
       galleryPathScripts.length === 0
         ? "no /dist/*.js responses observed — the check would be vacuous"
         : `${galleryPathScripts.length} chunk(s), ${Math.round(eagerBytes / 1024)}KB raw` +
-          (eagerOsd.length ? ` — OpenSeadragon found in ${eagerOsd.map((s) => s.name).join(", ")}` : "; no OpenSeadragon in any of them"));
+          (eagerEngine.length
+            ? ` — ${eagerEngine.map((s) => `${s.name} carries ${s.engine.join("+")}`).join("; ")}`
+            : "; none of them carries the canvas engine"));
 
-    // ASSERTED LAST, deliberately. Covers are `loading="lazy"`, so the request that exposed V11 is
-    // not made until the image is near the viewport — checking earlier in the drive passed against
-    // the unfixed code (verified: it did). Give the lazy loads a beat, then judge.
+    // The same row's BYTE ceiling on the wire.
+    //
+    // This is NOT a coverage gap in `eagerGzKB` — that metric is a byte total over the entry's static
+    // closure and has no predicate, so any eager growth past its 10KB floor fails it whatever shape it
+    // has. (Verified: a ~118KB non-OSD module statically exported from index.ts fails it at
+    // 36 → 73.5KB gz.) What this adds is the OTHER surface. `eagerGzKB` reads the metafile — what the
+    // bundler intended; this reads the wire — what the browser actually pulled. A runtime-injected
+    // script, a chunk arriving through something other than a static import edge, or a CDN-side
+    // rewrite lands on the wire and never on the metafile. The pairing was already described at the
+    // collector above ("`eagerGzKB` ratchets the same claim from the metafile; this watches the
+    // wire"); asserting the total is what finishes it, rather than printing the number and moving on.
+    const EAGER_WIRE_MAX_KB = 200; // measured 103KB; roughly 2x headroom, and a leak is ~10x
+    record(galleryPathScripts.length > 0 && eagerBytes / 1024 <= EAGER_WIRE_MAX_KB,
+      "ADR-0019 DROP-justified · the gallery path stays under its wire budget",
+      `${Math.round(eagerBytes / 1024)}KB raw over ${galleryPathScripts.length} chunk(s), ceiling ${EAGER_WIRE_MAX_KB}KB`);
+
+    // ---- ADR-0019: every contracted assertion RAN ---------------------------------------------
+    //
+    // The gate that makes `ABSENT` mechanically unreachable rather than merely forbidden on paper.
+    //
+    // WHY IT EXISTS. Every drive above depends on a fixture, and a missing fixture used to be an
+    // `info` line with no `record()` — so `results` simply grew shorter and the run still exited 0.
+    // Measured: renaming ONE slug in `apps/viewer/public/published/exhibits.json` (`voynich` →
+    // `voynich-renamed`) took the run from 33 assertions to 6, PASS, exit 0 — rights, object nav, the
+    // note list, readings, the narrative, the tokens, the real-click, the halo and V55 all gone, CI
+    // green. That is annomea's "invisible by construction" failure relocated from FILES to FIXTURES,
+    // inside the very gate written to close it: a capability with no fixture was going missing exactly
+    // as quietly as a capability with no file.
+    //
+    // It also catches the other direction — an assertion DELETED from this file, which no amount of
+    // fixture care would surface.
+    //
+    // S4 note: `deep zoom` is a MUST row with no assertion of its own, because a headless WebGL canvas
+    // under swiftshader is genuinely flaky and a hard assert on it would be a flaky gate. It is
+    // enforced INDIRECTLY and completely here instead: the region, halo and V55 labels below only
+    // exist if the canvas mounted, so a canvas that does not mount fails this check by absence.
+    const CONTRACTED_LABELS = [
+      "custom element 'archie-viewer' is registered",
+      "gallery cards render in the shadow DOM",
+      "no uncaught page errors",
+      "no 'Illegal invocation' (detached fetch) anywhere",
+      // canvas-dependent (V68 / V43 / V55) — their presence IS the deep-zoom MUST row's enforcement
+      "OSD overlay wrappers are out of the hit path",
+      "the region geometry is the topmost hit target",
+      "a real mouse click on a region opens its note",
+      "the selected region gains a halo (V43)",
+      "the halo has real extent (not clipped to nothing)",
+      "the halo does not shield the mark it points at",
+      "the open note card does not cover the locator mini-map (V55)",
+      // rights (V105)
+      "the exhibit view shows the manifest's requiredStatement (V105)",
+      "the reader shows the OBJECT's own requiredStatement (V105)",
+      "the reader links the object's licence URI (V105)",
+      "the disclosure carries the manifest's Dublin Core metadata (V105 / Archie-c6bf)",
+      // the capability contract's MUST rows
+      "ADR-0019 MUST · object navigation is present in the reader (V30)",
+      "ADR-0019 MUST · Next actually opens the next object (V30)",
+      "ADR-0019 MUST · the note list indexes every note on the canvas (V70)",
+      "ADR-0019 MUST · list rows carry the note's own words, not its id (V70)",
+      "ADR-0019 MUST · a list row opens the note (V70)",
+      "ADR-0019 MUST · the legend lists every reading with notes on this object (V56)",
+      "ADR-0019 MUST · legend counts match the manifest's per-reading pages (V56)",
+      "ADR-0019 MUST · legend swatches come from readingMarkerStyle (V56/V47)",
+      "ADR-0019 MUST · picking a reading colours the MARKS on the canvas (V56)",
+      "ADR-0019 MUST · marks take readingMarkerStyle's stroke weight, not the overlay default (V69)",
+      "ADR-0019 MUST · a reading survives stepping to the next object (V56)",
+      "ADR-0019 MUST · the shadow root's tokens ARE the shell's tokens.css (V9/V31/V69)",
+      "ADR-0019 MUST · no retired pre-Verdant literals in the embed's own rules (V9/V31/V69)",
+      "ADR-0019 MUST · an exhibit with a spine offers its narrative (V88)",
+      "ADR-0019 MUST · every section in the manifest's Ranges renders (V88)",
+      "ADR-0019 MUST · the active section renders its PROSE (V88)",
+      "ADR-0019 MUST · the section stepper advances the spine (V88)",
+      "ADR-0019 DROP-justified · the canvas engine is NOT on the gallery path",
+      "ADR-0019 DROP-justified · the gallery path stays under its wire budget",
+      "no same-origin 404s during the drive (V11)",
+    ];
+    // Covers are `loading="lazy"`, so the request that exposed V11 is not made until the image is near
+    // the viewport — checking earlier in the drive passed against the unfixed code (verified: it did).
+    // Give the lazy loads a beat, then judge.
     await page.waitForTimeout(1200);
     record(notFound.length === 0, "no same-origin 404s during the drive (V11)",
       notFound.length ? notFound.slice(0, 5).join(" | ") : "none");
+
+    // TRULY last: it reads `results`, so every assertion it accounts for must already be in there.
+    const ran = new Set(results.map((r) => r.label));
+    const never = CONTRACTED_LABELS.filter((l) => !ran.has(l));
+    record(never.length === 0,
+      "ADR-0019 · every contracted assertion actually ran",
+      never.length === 0
+        ? `${CONTRACTED_LABELS.length}/${CONTRACTED_LABELS.length} present`
+        : `${never.length} NEVER RAN — ${never.join(" | ")}`);
   } catch (e) {
     record(false, "navigation / interaction", e.message);
   } finally {

@@ -28,7 +28,7 @@
 //                   `target`/`iiif-content` (or a card click once shown) is UNAFFECTED — reachability is
 //                   unchanged either way.
 
-import { parseRoute, overlay, thumbnailCandidates, licenseLabel, metadataRows, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit, type RightsFields, type W3CAnnotation } from "@render/core";
+import { parseRoute, thumbnailCandidates, licenseLabel, metadataRows, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit, type RightsFields, type W3CAnnotation } from "@render/core";
 // Type-only (erased): naming the reader's surface costs the eager graph nothing. A VALUE import from
 // either module is the leak — .claude/rules/archie-viewer-eager-closure.md.
 import type { EmbedReaderSurface } from "./reader.js";
@@ -142,13 +142,23 @@ export class ArchieViewerElement extends HTMLElement {
   /** The narrative spine's pane, mounted instead of the chrome on a narrative reading (narrative.ts). */
   #narrative: NarrativeAside | null = null;
   /** ADR-0007 / Q16: null = base notes only; a reading id OVERLAYS that reading on the base. Held on
-   *  the instance (never a module global, per this file's header) and reset when the object changes. */
+   *  the instance (never a module global, per this file's header).
+   *
+   *  It PERSISTS across objects, deliberately: a reader comparing one interpretive pass across a
+   *  12-folio manuscript should not be dropped back to base every time they press Next, and the
+   *  legend's own radio state says the layer is still on. (This docblock used to claim it was "reset
+   *  when the object changes"; it never was, and that false claim is exactly what hid the V56
+   *  step-with-a-reading regression — see #openObject.) Cleared only by opening a new library. */
   #activeReading: string | null = null;
   /** annotation id → its Reading's colour for the OPEN object (reader-chrome readingColourById). Held
    *  so the reader's `markColourOf` seam can be handed to `openObject` before the map is computed. */
   #markColours: Record<string, string> | null = null;
   /** Re-read the layer and repaint the canvas — set by the open that owns the current surface. */
   #reloadAnnotations: (() => void) | null = null;
+  /** The open object's notes UNDER the current reading layer (reader-chrome's `annotationsFor`, bound
+   *  to this exhibit/object). Lives here rather than as a method so render-core's `overlay` stays out
+   *  of the entry's static graph — see #openObject. */
+  #layerNotes: (() => W3CAnnotation[]) | null = null;
   /** The AV player surface for a sound/video object — mounted instead of OSD, torn down like #surface. */
   #avSurface: AvPlayerSurface | null = null;
   /** The text-only note card for the open reader — shown on overlay selection, torn down with the surface. */
@@ -401,18 +411,6 @@ export class ArchieViewerElement extends HTMLElement {
   // --- READER: lazy-import the deep-zoom mount only when an object opens ------------------------
   // `resolved` (optional) carries a cite-ladder fragment/select to apply ONCE the surface mounts: a
   // note's raw `selectId` (select+fit via the overlay nav contract) and/or a media fragment.
-  /**
-   * The notes ON the canvas for one object under the current reading layer: the always-visible base
-   * plus the active Reading's notes overlaid (ADR-0007 / Q16). This is ExhibitView.svelte's
-   * `annotationsOf`, through the SAME render-core `overlay` — the list, the legend counts and the
-   * marks all read this one function, so the index can never disagree with the canvas.
-   */
-  #annotationsFor(exhibit: PortableExhibit, objectId: string): W3CAnnotation[] {
-    const base = exhibit.annotationsByObject?.[objectId] ?? [];
-    if (this.#activeReading === null) return base;
-    return overlay(base, exhibit.readingAnnotationsByObject?.[objectId]?.[this.#activeReading]);
-  }
-
   async #openObject(
     exhibit: PortableExhibit,
     object: AObject,
@@ -424,6 +422,24 @@ export class ArchieViewerElement extends HTMLElement {
     const host = this.#root.querySelector<HTMLElement>(".reader-surface");
     if (!host) return;
 
+    // The reading-layer projection and the reading-colour map, BOTH from the lazy chrome module.
+    //
+    // WHY THE MAP IS BUILT HERE AND NOT IN #mountAside (V56, regression fixed 2026-07-25). It used to
+    // be assigned inside #mountAside, which runs AFTER the canvas mounts — so `markColourOf` was
+    // consulted while `#markColours` was still null (#teardownSurface having cleared it) and every
+    // mark took the BASE colour. Nothing repainted afterwards. Measured on voynich/o2 with `cipher`
+    // active: reached by Next, both marks base grey; reached by re-picking the reading, correct. The
+    // legend showed "Cipher reading" checked, with a green swatch, over a canvas with no green: the
+    // audit's original V56 symptom, in the one path the smoke drive did not walk. It now does.
+    //
+    // WHY `annotationsFor` LIVES IN reader-chrome (eager-closure hygiene). It is reachable only past
+    // this boundary, but as an element method its render-core `overlay` import sat in the ENTRY's
+    // static graph. See .claude/rules/archie-viewer-eager-closure.md on the shared barrel.
+    const { readingColourById, annotationsFor } = await import("./reader-chrome.js");
+    const layerNotes = (): W3CAnnotation[] => annotationsFor(exhibit, object.id, this.#activeReading);
+    this.#layerNotes = layerNotes;
+    this.#markColours = readingColourById(exhibit, object.id);
+
     // MEDIUM BRANCH (ADR-0019 AV): a sound/video object mounts the plain-DOM AV player (native
     // <audio>/<video> + cue band + note-card), NOT OSD. image (and unknown) → the OSD reader below.
     // Both paths are LAZY-imported so the gallery bundle ships neither until an object opens.
@@ -431,12 +447,12 @@ export class ArchieViewerElement extends HTMLElement {
       await this.#openAvObject(host, exhibit, object, resolved);
       // The AV player owns the canvas half only; navigation and the note list are the reader's, and an
       // AV object in a 12-object exhibit needs the way out just as much as an image does.
-      await this.#mountAside(exhibit, object, section);
+      await this.#mountAside(exhibit, object, section, layerNotes);
       return;
     }
 
     const { openObject } = await import("./reader.js"); // LAZY: OSD weight deferred to this point
-    let annotations = this.#annotationsFor(exhibit, object.id);
+    let annotations = layerNotes();
     const canvasId = exhibit.canvasIdByObject?.[object.id];
 
     // The TEXT-ONLY note card: floats on the reader surface, shows the SELECTED annotation's body
@@ -473,13 +489,14 @@ export class ArchieViewerElement extends HTMLElement {
         : "Couldn't load this media item.";
       host.innerHTML = `<p class="notice">${escapeHtml(msg)}</p>`;
     }
-    // The reading pane mounts AFTER the canvas so a mount failure still leaves the way out visible.
-    await this.#mountAside(exhibit, object, section, () => annotations);
-    // A legend switch re-reads the layer, so keep the closure above pointing at the live set.
+    // Assigned BEFORE #mountAside: the legend the chrome mounts can fire `onreading` the moment it
+    // exists, and #setReading has nothing to reload without this.
     this.#reloadAnnotations = (): void => {
-      annotations = this.#annotationsFor(exhibit, object.id);
+      annotations = layerNotes();
       this.#surface?.showAnnotations(annotations);
     };
+    // The reading pane mounts AFTER the canvas so a mount failure still leaves the way out visible.
+    await this.#mountAside(exhibit, object, section, () => annotations);
   }
 
   /**
@@ -509,19 +526,24 @@ export class ArchieViewerElement extends HTMLElement {
       return;
     }
 
-    const { mountReaderChrome, readingColourById } = await import("./reader-chrome.js");
-    this.#markColours = readingColourById(exhibit, object.id);
+    const { mountReaderChrome } = await import("./reader-chrome.js");
+    // #markColours is set by #openObject, BEFORE the canvas paints — see the note there (V56).
+    const notes = liveAnnotations ?? this.#layerNotes ?? ((): W3CAnnotation[] => []);
     this.#chrome = mountReaderChrome(aside, host, {
       exhibit,
       object,
-      annotations: liveAnnotations ? liveAnnotations() : this.#annotationsFor(exhibit, object.id),
+      annotations: notes(),
       activeReading: this.#activeReading,
       onselect: (id) => {
         // A row is a door to the note AND to its place on the image: select (visual state) then fit
         // (camera) — the ADR-0006 nav contract, the same pair a cite-ladder landing applies.
         this.#surface?.setSelected(id);
         this.#surface?.fitBounds(id);
-        this.#noteCard?.show(noteBodyHtml(liveAnnotations ? liveAnnotations() : [], id));
+        this.#noteCard?.show(noteBodyHtml(notes(), id));
+        // S1: on an AV object the embed owns no note card (the PLAYER owns one), so a row had nothing
+        // to open — 5 rows rendered on ex-voynich.o12 and none of them was a door. Route it into the
+        // player instead: seek to the note's cue and show its body, exactly as clicking that cue does.
+        this.#avSurface?.select(id);
         this.#chrome?.setSelected(id);
       },
       onreading: (id) => void this.#setReading(id),
@@ -542,7 +564,7 @@ export class ArchieViewerElement extends HTMLElement {
     // The list and the legend both describe the layer, so they are rebuilt; the canvas is not.
     this.#chrome?.destroy();
     this.#chrome = null;
-    await this.#mountAside(v.exhibit, v.object, undefined, () => this.#annotationsFor(v.exhibit, v.object.id));
+    await this.#mountAside(v.exhibit, v.object, undefined);
   }
 
   /**
@@ -646,6 +668,7 @@ export class ArchieViewerElement extends HTMLElement {
     this.#narrative = null;
     this.#markColours = null;
     this.#reloadAnnotations = null;
+    this.#layerNotes = null;
     this.#noteCard?.destroy();
     this.#noteCard = null;
     this.#surface?.destroy();

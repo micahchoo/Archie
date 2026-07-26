@@ -5,10 +5,12 @@
 // its shadow root. There is one token file; a hue changed there changes both consumers in the same
 // commit, by construction. No gate is needed because there is nothing to drift.
 //
-// OPEN, AND DELIBERATELY VISIBLE: that canonical file currently lives at `apps/viewer/src/tokens.css`,
-// i.e. a package resolving into an app — the wrong direction, and escalated rather than settled here.
-// The destination is a package below both consumers. The indirection above exists so that move is a
-// one-line edit in `tokens-source.mjs` and nothing in `src/` changes.
+// WHERE IT LIVES: `packages/render-core/src/tokens.css` — layer zero, BELOW both consumers, so
+// neither depends on the other for its design vocabulary. The shell's Astro pages reach it as
+// `@render/core/tokens.css`; this package reads the same bytes through `tokens-source.mjs`. (It was
+// briefly inside apps/viewer, which had a package resolving up into an app; that is fixed, not
+// pending.) The virtual-module indirection means moving it again is one line in `tokens-source.mjs`
+// and nothing in `src/` changes.
 //
 // WHY IT MATTERED. The embed's stylesheet had hand-written literals from the pre-"Verdant Clearing"
 // palette — `#f6efe9` ground, `#d2641e` accent, `system-ui` everywhere, square white cards — against

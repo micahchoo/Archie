@@ -3,7 +3,14 @@
    shadow — kept from Soft Static), moss ink, emerald signal + golden-amber second voice. Three
    voices: Vinque Antique (ornate display) / LARAZ (clean body) / LARAZ (quiet chrome), with FOP VHS
    reserved for the wordmark/marquee. Semantic token NAMES preserved so component refs resolve.
-   NOTE: duplicated in apps/viewer/src/tokens.css — keep the two in sync. */
+
+   STALE COPY — read this before editing. The SHARED token layer now lives at
+   `packages/render-core/src/tokens.css`, imported by apps/viewer (`@render/core/tokens.css`) and read
+   as text by the `<archie-viewer>` embed. This file is studio's own second copy, and the two have
+   ALREADY diverged: this file has --text-lede / --text-note that render-core's does not; render-core's
+   has --topbar-h / --scrim-top / --pane-top that this one does not. So "keep the two in sync" is no
+   longer true and had already stopped being true. Unifying studio onto the shared layer is filed
+   separately; until then, a token edit here reaches Studio ONLY. */
 
 :root {
  /* ── Palette (Verdant Clearing — names kept for resolution; values now green) ── */

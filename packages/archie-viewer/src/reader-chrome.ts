@@ -22,6 +22,7 @@
 
 import {
   commentOfAnnotation,
+  overlay,
   stripMarkdown,
   readingMarkerStyle,
   type AObject,
@@ -29,6 +30,26 @@ import {
   type Reading,
   type W3CAnnotation,
 } from "@render/core";
+
+/**
+ * The notes ON the canvas for one object under a reading layer: the always-visible base plus the
+ * active Reading's notes overlaid (ADR-0007 / Q16). ExhibitView.svelte's `annotationsOf`, through the
+ * SAME render-core `overlay` — the list, the legend counts and the marks all read this one function,
+ * so the index can never disagree with the canvas.
+ *
+ * It lives in THIS module, not on the element, for eager-closure reasons: it is only ever reachable
+ * past the lazy boundary, but as an element method its `overlay` import sat in the entry's static
+ * graph. See the note at element.ts `#openObject`.
+ */
+export function annotationsFor(
+  exhibit: PortableExhibit,
+  objectId: string,
+  activeReading: string | null,
+): W3CAnnotation[] {
+  const base = exhibit.annotationsByObject?.[objectId] ?? [];
+  if (activeReading === null) return base;
+  return overlay(base, exhibit.readingAnnotationsByObject?.[objectId]?.[activeReading]);
+}
 
 /**
  * The base layer's mark colour — the notes that belong to no Reading (ADR-0007's always-visible

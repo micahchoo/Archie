@@ -65,6 +65,20 @@ export interface AvPlayerOptions {
 
 /** The element's handle to the mounted player: torn down on object change / back / disconnect. */
 export interface AvPlayerSurface {
+  /**
+   * Open one note by id — seek the recording to its cue and show its body — i.e. exactly what a click
+   * on that cue in this player's own list does.
+   *
+   * WHY IT EXISTS (S1): the reader's note list (reader-chrome.ts) mounts beside an AV object too, and
+   * without this its rows were a DEAD DOOR. Measured on `ex-voynich.o12` (Sound, 5 notes): the rows
+   * rendered, `aria-current` moved, and nothing ever opened — because the embed's own `#noteCard` is
+   * null on this path (the player owns its card), so element.ts's row handler had nothing to drive.
+   * Returns false for an id with no timed cue, so the caller can tell "no such door" from "opened it".
+   *
+   * The mount already knew how to do this for an ARRIVING cite (`initialSelect`); this is the same
+   * behaviour exposed after mount, so the two entry points cannot drift.
+   */
+  select(id: string): boolean;
   destroy(): void;
 }
 
@@ -225,6 +239,16 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
   eyebrow.textContent = `Notes · ${cues.length} ${cues.length === 1 ? "moment" : "moments"}`;
   notes.appendChild(eyebrow);
 
+  /** Seek to a cue and open its body. The ONE implementation behind the cue click, the arriving
+   *  `initialSelect` cite, and the reader note list's `select(id)`. False = no cue with that id. */
+  const selectCue = (id: string): boolean => {
+    const c = cues.find((x) => x.id === id);
+    if (!c) return false;
+    media.currentTime = c.range.start;
+    card.show(noteBodyHtml(annotations, c.id));
+    return true;
+  };
+
   const cueButtons: HTMLButtonElement[] = [];
   if (cues.length === 0) {
     const empty = doc.createElement("p");
@@ -248,10 +272,9 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
       btn.append(t, line);
       // Click a cue → travel the recording to its start (seek) AND show its body in the note-card.
       // Seek-only (no play()) keeps parity with the section-142 read posture; the visitor presses play.
-      btn.addEventListener("click", () => {
-        media.currentTime = c.range.start;
-        card.show(noteBodyHtml(annotations, c.id));
-      });
+      // Routed through `selectCue` so the click, the arriving cite and the reader's note list are ONE
+      // behaviour — three entry points that could otherwise drift apart.
+      btn.addEventListener("click", () => selectCue(c.id));
       li.appendChild(btn);
       list.appendChild(li);
       cueButtons.push(btn);
@@ -302,6 +325,11 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
   media.src = object.source;
 
   return {
+    select(id: string): boolean {
+      const ok = selectCue(id);
+      if (ok) onTimeUpdate(); // paused media fires no timeupdate — sync the highlight to the new head
+      return ok;
+    },
     destroy(): void {
       media.removeEventListener("timeupdate", onTimeUpdate);
       media.removeEventListener("error", onError);

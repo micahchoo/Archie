@@ -133,6 +133,47 @@ describe("mountAvPlayer — selecting a cue seeks the media + shows the note bod
   });
 });
 
+describe("mountAvPlayer — surface.select is the reader note list's door (S1)", () => {
+  // The reader's note list mounts beside an AV object too, and its rows were a DEAD DOOR: the embed
+  // owns no note card on this path (the player owns one), so element.ts's row handler had nothing to
+  // drive. Measured on ex-voynich.o12 (Sound, 5 notes) — rows rendered, aria-current moved, nothing
+  // ever opened. `select` is the same behaviour a cue click has, exposed after mount.
+  const mounted = () => {
+    const h = host();
+    const surface = mountAvPlayer(h, {
+      object: soundObj(),
+      annotations: [timeNote("a", 12, 20, "the chant begins"), wholeNote("w", "whole")],
+    });
+    const media = h.querySelector("audio") as HTMLMediaElement;
+    let ct = 0;
+    Object.defineProperty(media, "currentTime", { get: () => ct, set: (v: number) => (ct = v), configurable: true });
+    return { h, surface, at: () => ct };
+  };
+
+  it("select(id) seeks to the cue and opens its body — the cue click's behaviour, by id", () => {
+    const { h, surface, at } = mounted();
+    expect(surface.select("a")).toBe(true);
+    expect(at()).toBe(12);
+    const card = h.querySelector(".archie-note-card") as HTMLElement;
+    expect(card.hidden).toBe(false);
+    expect(card.querySelector(".archie-note-card__body")!.textContent).toContain("the chant begins");
+  });
+
+  it("reports false for a note with no timed cue, so the caller can tell 'no door' from 'opened'", () => {
+    // A whole-track note has no cue to travel to; silently doing nothing and silently succeeding are
+    // different claims, and only the second would let a dead row look alive again.
+    const { surface } = mounted();
+    expect(surface.select("w")).toBe(false);
+    expect(surface.select("nope")).toBe(false);
+  });
+
+  it("syncs the active-cue highlight, which paused media would never fire a timeupdate for", () => {
+    const { h, surface } = mounted();
+    surface.select("a");
+    expect(h.querySelector('[data-cue="a"]')!.classList.contains("active")).toBe(true);
+  });
+});
+
 describe("mountAvPlayer — a t= landing computes a clamped PAUSED seek (no auto-play)", () => {
   it("on loadedmetadata, seeks currentTime to the clamped initialSeek and never calls play()", () => {
     const h = host();
