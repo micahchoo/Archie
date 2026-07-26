@@ -14,9 +14,11 @@
 
    ONE FILE, NO COPIES. Do not add a second copy "for" a consumer; a copy is what drifts.
    KNOWN, TRACKED EXCEPTION: `apps/studio/src/tokens.css` is still a separate copy and has ALREADY
-   diverged (studio carries --text-lede/--text-note that this file does not; this file carries
-   --topbar-h/--scrim-top/--pane-top that studio does not). Unifying it is filed separately — do not
-   assume the two agree. */
+   diverged — studio carries --text-lede/--text-note that this file does not. The divergence used to run
+   the other way too (--topbar-h/--scrim-top/--pane-top here and not there); it does not any more,
+   because the dock work (ADR-0019's layout row) retired all three from BOTH files. Verified 2026-07-26:
+   neither file defines any of them. Unifying the copies is filed separately — do not assume the two
+   agree. */
 
 :root {
  /* ── Palette (Verdant Clearing — names kept for resolution; values now green) ── */

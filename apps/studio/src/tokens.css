@@ -7,9 +7,11 @@
    STALE COPY — read this before editing. The SHARED token layer now lives at
    `packages/render-core/src/tokens.css`, imported by apps/viewer (`@render/core/tokens.css`) and read
    as text by the `<archie-viewer>` embed. This file is studio's own second copy, and the two have
-   ALREADY diverged: this file has --text-lede / --text-note that render-core's does not; render-core's
-   has --topbar-h / --scrim-top / --pane-top that this one does not. So "keep the two in sync" is no
-   longer true and had already stopped being true. Unifying studio onto the shared layer is filed
+   ALREADY diverged: this file has --text-lede / --text-note that render-core's does not. The reverse
+   half of that divergence is GONE — render-core used to carry --topbar-h / --scrim-top / --pane-top
+   that this file lacked, and the dock work (ADR-0019's layout row) retired all three from both, so
+   neither file defines them as of 2026-07-26. So "keep the two in sync" is still not true, but it is
+   less untrue than it was. Unifying studio onto the shared layer is filed
    separately; until then, a token edit here reaches Studio ONLY. */
 
 :root {

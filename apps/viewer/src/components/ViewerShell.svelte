@@ -390,7 +390,8 @@
 <style>
 /* THE APP FRAME (ADR-0019 layout row, 2026-07-26). The shell is a flex COLUMN and every persistent
      bar is a flow sibling of the routed view, so the canvas's box is bounded by the chrome rather than
-     running underneath it. clover-iiif does exactly this — `<ViewerHeader>` and `<ViewerContent>` are
+     running underneath it. clover-iiif does exactly this — under `Wrapper`'s `"> div"` column rule
+     (`Viewer.styled.tsx:125-127`, `:138-141`), `<ViewerHeader>` and `<ViewerContent>` are
      flex siblings (`Viewer/Viewer.tsx:180-184`, `Viewer.styled.tsx:15-22`) — and it is why its header
      can be `background-color: transparent` without a legibility problem: nothing is behind it.
      `min-height: 0` on `.route` is what lets the routed view actually shrink to the space left over

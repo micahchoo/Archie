@@ -73,8 +73,10 @@
      an overlay on the image. It was `position: absolute` at the canvas's top-left, cleared below the
      fixed top bar by `--topbar-h` and capped against `100vh` so a contested object's readings could not
      grow off the bottom. None of that survives docking: a row cannot grow off anything, and the reason
-     clover-iiif's header can be transparent applies here too — nothing is behind it (`Viewer.tsx:180-184`,
-     `Viewer/Viewer/Header.styled.ts:59`).
+     clover-iiif's header can be transparent applies here too — nothing is behind it
+     (`Viewer/Viewer/Header.styled.ts:59`; the column that makes header and content siblings is
+     `Wrapper` + its `"> div"` rule, `Viewer.styled.tsx:125-127`/`:138-141` — NOT `Main`, which is used
+     only inside `<ViewerContent>` at `Content.tsx:128`).
 
      Its layout flips with its home: the radios ran as a vertical column when it was a panel, and read as
      a HORIZONTAL row of chips in a bar. Same controls, same roles, same swatches. */

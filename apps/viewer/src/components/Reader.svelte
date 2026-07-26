@@ -374,7 +374,9 @@
 <div class="reader">
   <!-- THE STAGE (ADR-0019 layout row). A flex COLUMN: the canvas chrome bar · the canvas · the open
        note. Every one of those used to be `position: absolute` over `main`; now the canvas is one row
-       among siblings and nothing can be on top of it. clover-iiif's `<ViewerHeader>`/`<ViewerContent>`
+       among siblings and nothing can be on top of it. The nearest corpus shape is clover-iiif's
+       `Main` column, where `<Painting>` (the canvas) and `<MediaWrapper>` (the item strip) are flow
+       siblings (`Content.tsx:128-146`); its `<ViewerHeader>`/`<ViewerContent>`
        (`Viewer/Viewer.tsx:180-184`) is the same shape. -->
   <div class="stage">
     <!-- Canvas chrome — readings (leading) · object nav + zoom readout (trailing). One docked row.

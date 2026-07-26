@@ -34,7 +34,7 @@ export interface NoteCard {
 //
 // What that replaced, because it is the clearest small case for the whole ruling: V55 measured
 // 8970px² of overlap between this card and the OSD locator mini-map — both wanted the bottom-right
-// corner, since read-mount asks for `navigatorPosition: "BOTTOM_RIGHT"` (read-mount.ts:245) and the
+// corner, since read-mount asks for `navigatorPosition: "BOTTOM_RIGHT"` (read-mount.ts:241) and the
 // card anchored there too, so opening a note buried the one control that says where you are in the
 // image. The fix was the shell's reservation idiom: `--archie-locator-h`, published by reader.ts from
 // the navigator's MEASURED height (a literal would be wrong at every container size, since OSD sizes

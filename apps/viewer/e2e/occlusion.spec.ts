@@ -76,6 +76,30 @@ const DOCKED = [
   "button.cite-trigger",
 ];
 
+/**
+ * The members that MUST resolve on any reader surface, as opposed to the ones whose presence is
+ * conditional on the exhibit (a legend needs readings, a note row needs an open note, a filmstrip needs
+ * siblings).
+ *
+ * WHY THIS EXISTS, because the first version of this file did not have it and was weaker for it: the
+ * guard used to be `expect(boxes.length).toBeGreaterThanOrEqual(3)` — a THRESHOLD over the whole list.
+ * Renaming `.canvas-dock` to `.canvas-dockZ` left both suites GREEN, because the other named selectors
+ * still cleared the bar. A count says "enough things were found"; it never says "the thing I care about
+ * was found". Naming the required members is what makes a vanished dock a failure instead of a smaller
+ * number. (`recipes/smoke.mjs` carried the identical defect and is fixed the same way.)
+ */
+const REQUIRED = [".topbar", ".canvas-dock", ".chrome-dock"];
+
+/** Every REQUIRED selector must resolve to a real, laid-out box — not merely "enough of them did". */
+async function assertRequiredResolve(page: Page, present: string[]): Promise<void> {
+  const missing = REQUIRED.filter((sel) => !present.includes(sel));
+  expect(
+    missing,
+    `docked chrome that MUST be on screen is absent or has a zero box: ${missing.join(", ")} ` +
+      `(found: ${present.join(", ") || "nothing"}). A renamed or unmounted dock reads exactly like this.`,
+  ).toEqual([]);
+}
+
 /** Every docked element currently on screen, with its overlap against `canvas`. */
 async function dockedBoxes(page: Page, canvas: Rect): Promise<Array<{ sel: string; box: Rect; overlap: number }>> {
   const out: Array<{ sel: string; box: Rect; overlap: number }> = [];
@@ -107,9 +131,8 @@ test.describe("the grid reader's chrome docks out of the canvas (ADR-0019 layout
     expect(canvas, "no canvas box to measure against").not.toBeNull();
 
     const boxes = await dockedBoxes(page, canvas!);
-    // Non-empty, or "nothing overlaps" is the trivially-true reading of a reader that rendered no
-    // chrome at all. The filmstrip, the dock and the note row are all expected here.
-    expect(boxes.length, `docked chrome found: ${boxes.map((b) => b.sel).join(", ")}`).toBeGreaterThanOrEqual(3);
+    // Every REQUIRED member resolves — not "at least N of the list did". See REQUIRED's header.
+    await assertRequiredResolve(page, boxes.map((b) => b.sel));
 
     for (const b of boxes) {
       expect(b.overlap, describeOverlap(`${b.sel} over the canvas`, b.box, canvas!)).toBe(0);
@@ -154,7 +177,7 @@ test.describe("the narrative reader's chrome docks out of the canvas (ADR-0019 l
     const canvas = await rectOf(page.locator(".narrative main"));
     expect(canvas).not.toBeNull();
     const boxes = await dockedBoxes(page, canvas!);
-    expect(boxes.length, `docked chrome found: ${boxes.map((b) => b.sel).join(", ")}`).toBeGreaterThanOrEqual(2);
+    await assertRequiredResolve(page, boxes.map((b) => b.sel));
     for (const b of boxes) {
       expect(b.overlap, describeOverlap(`${b.sel} over the narrative canvas`, b.box, canvas!)).toBe(0);
     }
@@ -191,13 +214,24 @@ test.describe("the narrative reader's chrome docks out of the canvas (ADR-0019 l
   });
 });
 
-test.describe("a fitted region lands inside the canvas and clear of the chrome (V48)", () => {
-  test("every halo note fits inside the canvas box with nothing on it", async ({ page, baseURL }) => {
-    // `getFitOptions` was @render/mount's reservation seam, and THE VIEWER NEVER PASSED IT: every fit
-    // ran on PLAIN_FIT, so `fitBounds` centred the region in the whole container while the legend and
-    // the note card sat on top of the left flank — measured with a note open at 9.3x, the two stacked
-    // into a contiguous 502px column, ~22% of a 924x800 canvas, down its entire left edge. That seam is
-    // now DELETED rather than wired: nothing overlays the canvas, so the plain fit is the correct fit.
+test.describe("a fitted region is not clipped by chrome (V48)", () => {
+  test("no chrome sits on a fitted region, across every halo note", async ({ page, baseURL }) => {
+    // WHAT THIS MEASURES, precisely, because the sentence above it used to overreach: it opens every
+    // halo-drawing note and asserts the HALO — the fitted region's own drawn boundary — does not
+    // intersect the chrome selectors below. That is halo-vs-chrome. It is NOT chrome-vs-canvas: under
+    // an injection that gave `.canvas-dock` `position: absolute`, this sweep stayed green while the
+    // dock demonstrably sat on the image. The chrome-vs-canvas claim is the two suites at the top of
+    // this file; keep the two questions apart.
+    //
+    // `getFitOptions` was @render/mount's reservation seam, and it WAS wired — `Reader.svelte:375/:392`
+    // fed it and `:406` passed it, with the narrative twin at `NarrativeReader.svelte:647/:662/:695`.
+    // An earlier draft of this comment said the viewer "never passed it", which was false when written
+    // and stayed false through an edit that only changed its tense. So the deletion is a real behaviour
+    // change, not the removal of dead code: fits used to be widened and slid left by `leftInsetW` to
+    // clear the legend and the note card (measured with a note open at 9.3x, the two stacked into a
+    // contiguous 502px column, ~22% of a 924x800 canvas, down its whole left edge). The seam is deleted
+    // because **nothing floats any more**, so the region the camera frames is the region the reader
+    // sees — not because nobody was using it.
     //
     // The sweep stays because it is the only end-to-end check that the fit lands where the reader can
     // see it, and its ratchet drops from TWO known offenders to ZERO. The two were both ~1:4 regions

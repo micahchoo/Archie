@@ -382,7 +382,7 @@ async function main() {
         // ---- V55: the note card must not sit on top of the locator mini-map ----
         //
         // Both wanted the same corner: `note-card.ts` anchors bottom-right, and read-mount asks OSD for
-        // `navigatorPosition: "BOTTOM_RIGHT"` (read-mount.ts:245). Measured as an intersection of the
+        // `navigatorPosition: "BOTTOM_RIGHT"` (read-mount.ts:241). Measured as an intersection of the
         // two rects rather than by eye — an overlap of a few pixels is a different bug from a card
         // sitting squarely on the map, and only the numbers tell them apart.
         const occlusion = await page.evaluate(() => {
@@ -419,7 +419,14 @@ async function main() {
           const c = canvas.getBoundingClientRect();
           // The NAMED SET (see the ADR's layout row). The OSD locator is the documented exception and
           // is deliberately absent; adding a docked surface means adding it here.
+          //
+          // REQUIRED vs conditional. The first version asserted `boxes.length >= 2` over this whole
+          // list, which is a THRESHOLD and not a requirement: renaming one selector left the suite
+          // green because the others still cleared the bar. A count says "enough things were found",
+          // never "the thing I care about was found". These three must resolve on any open reader; the
+          // rest depend on the object (a legend needs readings, the card needs an open note).
           const named = [".reader-dock", ".rc-legend", ".reader-note", ".archie-note-card", ".reader-aside"];
+          const required = [".reader-dock", ".reader-note", ".reader-aside"];
           const boxes = [];
           for (const sel of named) {
             const el = sr.querySelector(sel);
@@ -432,11 +439,13 @@ async function main() {
           }
           const mid = sr.elementFromPoint(Math.round(c.left + c.width / 2), Math.round(c.top + c.height / 2));
           const midChrome = mid ? named.some((sel) => mid.closest?.(sel)) : false;
+          const found = boxes.map((b) => b.sel);
           return {
             measurable: true,
             canvas: [c.x, c.y, c.width, c.height].map(Math.round),
             boxes,
             offenders: boxes.filter((b) => b.overlap > 0),
+            missing: required.filter((sel) => !found.includes(sel)),
             midTag: mid ? mid.tagName.toLowerCase() : "null",
             midChrome,
           };
@@ -481,12 +490,16 @@ async function main() {
             : `not measurable (card: ${occ.card}, navigator: ${occ.nav})`);
 
         const d = clicked.dock ?? { measurable: false };
-        // The set must be NON-EMPTY, or "no overlaps" is the trivially-true reading of a reader that
-        // rendered no chrome at all — the same absence-passes-as-success shape the completeness check
-        // below exists to close, one level down.
-        record(d.measurable === true && (d.boxes?.length ?? 0) >= 2,
+        // EVERY required member resolves — not "at least N of the named set did". A count is
+        // satisfiable by the wrong members, which is the same absence-passes-as-success shape the
+        // completeness check below exists to close, one level down.
+        record(d.measurable === true && d.missing?.length === 0,
           "ADR-0019 MUST · the reader's docked chrome is actually on screen (layout)",
-          d.measurable ? `${d.boxes.length} docked element(s): ${d.boxes.map((b) => b.sel).join(", ")}` : `not measurable (${d.why})`);
+          d.measurable
+            ? (d.missing.length
+                ? `MISSING required docked element(s): ${d.missing.join(", ")} — found ${d.boxes.map((b) => b.sel).join(", ") || "nothing"}`
+                : `${d.boxes.length} docked element(s): ${d.boxes.map((b) => b.sel).join(", ")}`)
+            : `not measurable (${d.why})`);
         record(d.measurable === true && d.offenders?.length === 0,
           "ADR-0019 MUST · no docked chrome overlaps the canvas box (layout)",
           d.measurable

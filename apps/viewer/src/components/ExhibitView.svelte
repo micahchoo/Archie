@@ -700,9 +700,18 @@
        Everything in it used to be `position: fixed` over the canvas's bottom edge, and the whole of
        Archie-40fe (`--strip-h`, the pill-vs-filmstrip geometry tests, the note card's bottom offset)
        existed to keep those three surfaces off each other and off the image. Siblings in a row cannot
-       overlap, so the reservation has nothing left to do. tropy's default is the same posture:
-       `hasOverlayToolbar` is FALSE (`src/components/esper/container.js:11,39`) and the toolbar lives
-       outside the canvas. -->
+       overlap, so the reservation has nothing left to do.
+
+       PRIOR ART, corrected 2026-07-26 — tropy is the COUNTER-example, not the supporting one. An
+       earlier version of this comment read tropy's `hasOverlayToolbar = false`
+       (`esper/container.js:11`) as its default and claimed the same posture. That `:11` is a React
+       default-PARAMETER fallback; the prop is always passed explicitly (`item/container.js:106` ←
+       `:43-46`), `reducers/settings.js:38` sets it from `ARGS.frameless`, and `main/tropy.js:59`
+       defaults `frameless: true`. Tropy ships overlay toolbars ON, and switches its header from
+       `flex: 0 0 auto` to `position: absolute` to do it (`_esper.scss:174` vs `:179-183`). It had this
+       exact choice and took the other branch. The supporting citation is clover-iiif, which docks its
+       item strip below the canvas as flow siblings (`Content.tsx:128-146`) — see ADR-0019's layout
+       row for the full reading. -->
   <div class="chrome-dock">
     <!-- Cite affordance (V102, Archie-3ea1). -->
     <button class="cite-trigger" onclick={() => (citeOpen = true)} aria-label="Cite this view">

@@ -130,17 +130,55 @@ SIBLING of the canvas in normal flow — a row above it, a row below it, or a co
 surface on top of it. This is a contract, not a style: an embed and a shell that disagree about it show
 the same object differently, which is the class of drift this whole table exists to catch.
 
-**The corpus default, which is what settled it.** `IIIF/clover-iiif` `Viewer/Viewer.tsx:180-184` renders
-`<ViewerHeader>` and `<ViewerContent>` as flex SIBLINGS (`Viewer.styled.tsx:15-22`), and that is
-precisely *why* its header can be `background-color: transparent !important`
-(`Viewer/Viewer/Header.styled.ts:59`, `backgroundColor: "transparent !important"`) — nothing is behind
-it to be legible against. Its one genuinely over-canvas control, `PanelToggle`, is an **opaque plate**
-(`Viewer.styled.tsx:41-` — `position: absolute` + `background: $primary`), i.e. it sidesteps the
-contrast question rather than solving it. Precisely: `Viewer.styled.tsx:15-22` is the `Main` container
-(`display: flex`, `flexDirection: "column"`) that makes the header and the content COLUMN siblings —
-the header is the row above, which is exactly the shape adopted here. `tropy` `src/components/esper/container.js:11,39` makes an
-overlay toolbar **opt-in**, `hasOverlayToolbar` defaulting to `false`. `canvas-panel` paints no chrome
-over the image at all.
+**What the corpus actually does — a majority, not a default, and one deliberate dissenter.** Four
+systems were read for this; two more are named at the end as unread rather than implied.
+
+- **`IIIF/clover-iiif` — DOCKS, twice over.** `Viewer/Viewer.tsx:180-184` renders `<ViewerHeader>` and
+  `<ViewerContent>` as siblings; the column that makes them siblings is `Wrapper`
+  (`Viewer.styled.tsx:125-127`) via its `"> div"` rule (`:138-141`), which lays out the
+  `<Collapsible.Root>` holding both. That is *why* the header can be
+  `backgroundColor: "transparent !important"` (`Viewer/Viewer/Header.styled.ts:59`) — nothing is behind
+  it to be legible against. **The nearer citation for what this ADR does is one level down:** inside
+  `<ViewerContent>`, `Main` (`Viewer.styled.tsx:15-22`, `display: flex` / `flexDirection: "column"`)
+  holds `<Painting>` — the canvas — and `<MediaWrapper>` — the item strip — as flow siblings in a
+  column (`Content.tsx:128-146`). clover docks a thumbnail strip BELOW the canvas, which is exactly
+  what `.chrome-dock` and `.reader-note` do here. Its one genuinely over-canvas control is
+  `PanelToggle` (`Content.tsx:148`, styled `Viewer.styled.tsx:41-82`): `position: absolute` with
+  `background: $primary`, i.e. an **opaque plate** that sidesteps the contrast question rather than
+  solving it.
+- **`IIIF/universalviewer` — DOCKS.** `.headerPanel` and `.footerPanel` are `position: relative`
+  (`modules/uv-shared-module/css/styles.less:100`, `:303`) — normal flow — and the image's
+  `.centerPanel` is the absolutely-positioned element inset between them (`:164-166`), with the side
+  panels inset by an explicit reservation (`inset: calc(5em + 8px) 0 2em`, `:188-189`) and a named grid
+  at md+ (`grid-template-areas: "left center right"`, `:126`). Chrome is never over the image.
+- **`tropy` — OVERLAYS BY DEFAULT, and this is the honest counter-example.** It supports the
+  distinction *structurally*: `src/stylesheets/components/esper/_esper.scss:174` gives `.esper-header`
+  `flex: 0 0 auto` — a flow row — while `:179-183` switches it to `position: absolute; top: 0;
+  width: 100%` under `.esper.overlay-mode`. It **chooses the overlay**. `container.js:11`'s
+  `hasOverlayToolbar = false` is a React default-parameter fallback, not a decision: the prop is always
+  passed explicitly (`item/container.js:106` ← `:43-46`
+  `settings.overlayToolbars && layout !== SIDE_BY_SIDE`), `reducers/settings.js:38` sets
+  `overlayToolbars: ARGS.frameless`, and `main/tropy.js:59` defaults `frameless: true` (the only
+  `false` is the print window, `:398`); the default `layout` is `STACKED` (`reducers/settings.js:22`),
+  so the SIDE_BY_SIDE exclusion never fires. **Tropy ships overlay toolbars ON.** So a corpus system
+  that had precisely this choice in front of it went the other way — which is what the human's ruling
+  declines, knowingly.
+- **`canvas-panel` — ABSTAINS.** It paints no chrome over the image, but it has essentially no chrome
+  to place (one `<button>`), so it is evidence of a small surface rather than of a layout decision. A
+  stated absence, not a supporting vote.
+
+**`mirador`, `annomea` and `quire` were NOT read for this question.** They are in the corpus and could
+be; naming the gap is worth more than a fifth citation gathered in a hurry. So the claim this ADR
+rests on is the narrow one and it is enough: **of the systems actually read, docking is the majority
+posture and the one with the better legibility story — and the ruling is a design decision the human
+made on its merits, not a corpus mandate.**
+
+An earlier draft of this paragraph said "the corpus default", cited `:11` as tropy's *decision*, and
+attributed clover's column to `Main`. All three were wrong in the same direction — toward unanimity.
+The first two came from a sweep quoted without opening the files; the third was added in the very
+commit that fixed a different bad citation, by opening a definition and not grepping its **use**. That
+is `.claude/rules/prior-art-citation-discipline.md`'s habit 2 and habit 1b, failing in sequence, and it
+is recorded here rather than silently corrected because the failure mode is the point.
 
 **What it covers, and what it deliberately does not.** The row governs PERSISTENT chrome: navigation,
 readouts, the reading legend, the note surface, the item strip, the finder and cite triggers, status
@@ -152,7 +190,7 @@ strips. It does NOT govern:
   surface that appears and vanishes on a timer would reflow the canvas mid-read, twice, which costs
   more than the seconds of overlap it buys.
 - **the OSD locator mini-map.** This is the one NAMED EXCEPTION and it is not settled by this row.
-  It is OpenSeadragon's own `navigator` (`read-mount.ts:245`, `navigatorPosition: "BOTTOM_RIGHT"`),
+  It is OpenSeadragon's own `navigator` (`read-mount.ts:241`, `navigatorPosition: "BOTTOM_RIGHT"`),
   it is a map OF the image rather than chrome over it, and every viewer in the corpus floats it.
   Docking it needs `navigatorId` plumbing through `@render/mount`, which is a separate change. Until
   then the smoke assertion below is scoped to a NAMED SET of docked elements rather than "anything on
