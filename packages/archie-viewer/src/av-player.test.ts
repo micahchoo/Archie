@@ -150,26 +150,51 @@ describe("mountAvPlayer — surface.select is the reader note list's door (S1)",
     return { h, surface, at: () => ct };
   };
 
+  const body = (h: HTMLElement) =>
+    h.querySelector(".archie-note-card__body")!.textContent ?? "";
+
   it("select(id) seeks to the cue and opens its body — the cue click's behaviour, by id", () => {
     const { h, surface, at } = mounted();
-    expect(surface.select("a")).toBe(true);
+    expect(surface.select("a")).toBe("seeked");
     expect(at()).toBe(12);
     const card = h.querySelector(".archie-note-card") as HTMLElement;
     expect(card.hidden).toBe(false);
-    expect(card.querySelector(".archie-note-card__body")!.textContent).toContain("the chant begins");
+    expect(body(h)).toContain("the chant begins");
   });
 
-  it("reports false for a note with no timed cue, so the caller can tell 'no door' from 'opened'", () => {
-    // A whole-track note has no cue to travel to; silently doing nothing and silently succeeding are
-    // different claims, and only the second would let a dead row look alive again.
-    const { surface } = mounted();
-    expect(surface.select("w")).toBe(false);
-    expect(surface.select("nope")).toBe(false);
+  it("an UNCUED whole-recording note shows its body without seeking", () => {
+    // The residual defect the first pass shipped: `select` returned a bare false here, the caller read
+    // it as "nothing happened", and the row took the current styling while the card still showed the
+    // PREVIOUS note's text — current-looking, someone else's words. An uncued note has no moment to
+    // travel to, but it does have a body, and the visitor asked to read it.
+    const { h, surface, at } = mounted();
+    surface.select("a");            // land on the timed note first
+    expect(at()).toBe(12);
+    expect(surface.select("w")).toBe("shown");
+    expect(body(h)).toContain("whole");        // ITS body, not the timed note's
+    expect(body(h)).not.toContain("the chant begins");
+    expect(at()).toBe(12);                     // and the playhead did NOT move
+  });
+
+  it("reports 'unknown' for a note that isn't on this object, so a caller can tell 'no door' apart", () => {
+    const { h, surface } = mounted();
+    surface.select("a");
+    expect(surface.select("nope")).toBe("unknown");
+    expect(body(h)).toContain("the chant begins"); // unchanged — nothing happened, truthfully
   });
 
   it("syncs the active-cue highlight, which paused media would never fire a timeupdate for", () => {
     const { h, surface } = mounted();
     surface.select("a");
+    expect(h.querySelector('[data-cue="a"]')!.classList.contains("active")).toBe(true);
+  });
+
+  it("an uncued selection leaves the cue highlight where the playhead actually is", () => {
+    // The highlight tracks the PLAYHEAD, and showing a whole-recording note does not move it. Clearing
+    // or moving it here would misreport where the recording is.
+    const { h, surface } = mounted();
+    surface.select("a");
+    surface.select("w");
     expect(h.querySelector('[data-cue="a"]')!.classList.contains("active")).toBe(true);
   });
 });

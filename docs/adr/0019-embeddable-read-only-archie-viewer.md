@@ -107,13 +107,13 @@ missing — a bug by definition; no row may sit here).
 | rights / attribution / licence | `Credit.svelte`, `MetadataList` | `element.ts` `creditHtml` | PORT | **MUST** | smoke — value compared against the manifest's own `requiredStatement` / `rights` / `metadata` |
 | object navigation | `SidebarObjectNav.svelte` | `reader-chrome.ts` | PORT | **MUST** | smoke — Back to Exhibit + Prev · N of M · Next present, and Next actually changes the open object |
 | note list (the INDEX, Archie-c982) | `Reader.svelte` sidebar | `reader-chrome.ts` | PORT | **MUST** | smoke — row count equals the canvas's annotation count, and a row opens the note |
-| readings + legend | `ReadingLegend.svelte` | `reader-chrome.ts` + `reading-marks.ts` | ADAPT (no `setStyle` channel on a DOM-SVG overlay — the marks are styled after the draw, from the same `readingMarkerStyle`) | **MUST** | smoke — legend rows match the readings that have notes on **this object**, swatch numbers come from `readingMarkerStyle`, picking a reading recolours the marks, and a reading SURVIVES a step to the next object |
+| readings + legend | `ReadingLegend.svelte` | `reader-chrome.ts` + `reading-marks.ts` | ADAPT (no `setStyle` channel on a DOM-SVG overlay — the marks are styled after the draw, from the same `readingMarkerStyle`) | **MUST** | smoke — legend rows match the readings that have notes on **this object**, swatch numbers come from `readingMarkerStyle`, picking a reading recolours the marks, a reading SURVIVES a step to the next object, and a reading does NOT follow you into another exhibit (both fixtures publish ids cipher/hoax/abjad, so a carry-over would silently activate a different curator's layer) |
 | narrative spine (ADR-0005) | `NarrativeReader.svelte` | `narrative.ts` (lazy, and only for an exhibit WITH sections) | ADAPT (sections + prose + stepper; no resize divider, no per-section note pane) | **MUST** | smoke — section count matches the manifest's Ranges, prose renders, the stepper advances |
 | design language (V9/V31/V69) | `tokens.css` | the SAME file, read as text into the shadow root (`tokens.ts`) | PORT | **MUST** | smoke — a token's value in the shadow root compared against the canonical file fetched from the same tree |
 | deep zoom | OpenSeadragon | OpenSeadragon (lazy) | PORT | MUST | smoke, INDIRECTLY — a headless WebGL canvas is too flaky to assert on directly, so `canvasMounted` stays best-effort; but every region/halo/V55 assertion below only exists when it mounted, and the completeness check makes a missing assertion a failure. A canvas that never mounts fails by absence. |
 | region marks + selection | Annotorious → PixiJS WebGL | geometry-only DOM-SVG overlay (`read-overlay.ts`) | **DONE-differently** | MUST | smoke — a REAL driven mouse click on a region opens its note (V68); `eagerGzKB` for the weight claim |
 | note body | `NotePopup.svelte` | `note-card.ts` (text only) | ADAPT | MUST | smoke (the click assertion above asserts the card opens) |
-| AV playback | `MediaPlayer.svelte` | `av-player.ts` (lazy) | ADAPT | MUST | unit (`av-player.test.ts`) — no AV object in the smoke drive's path |
+| AV playback | `MediaPlayer.svelte` | `av-player.ts` (lazy) | ADAPT | MUST | smoke — the drive opens the exhibit's audio object, then asserts a TIMED row travels the recording to its cue and opens it, and an UNCUED whole-recording row shows ITS OWN body without moving the playhead |
 | cite / share | `CitePanel.svelte`, `CiteCard` | `currentContentState()` — the codec, no UI | ADAPT | SHOULD | unit (`content-state.test.ts`) |
 | note media (images in notes) | `NoteMedia`, `NoteLightbox` | — | DEFER-tracked | — | — (needs a ticket) |
 | reading sheet (long-form reading text) | `ReadingSheet.svelte` | — | DEFER-tracked | — | — (needs a ticket) |
@@ -132,6 +132,13 @@ missing — a bug by definition; no row may sit here).
   that reaches that state is the bug the table exists to surface.
 - A `DEFER-tracked` row without a ticket is a half-measure. The four above are named here so they
   are at least *visible*; filing them is follow-up work.
+- **A MUST row with no smoke label is a hole in the completeness check**, not merely a thinner test.
+  That check compares a hard-coded label list against the labels that ran, so a capability with no
+  label is invisible to it — the same shape as the file-driven audit this table replaced, one level up.
+  AV playback was the last such row (unit-tested only), and the residual defect found in review sat
+  exactly there: a unit test can assert what `select()` returns, but only a driven browser can say
+  WHICH note's body a row is displaying, and the uncued row was displaying the previous row's. The row
+  now has four labels. Every MUST row in this table has at least one.
 - **Every MUST assertion was proven RED-GREEN**: the capability was deleted, smoke failed, it was
   restored. This is not ceremony. The first version of the DROP-justified row's driven check matched
   `/dist/reader-*.js` by NAME, and the 2026-07-24 eager leak — reintroduced deliberately, taking

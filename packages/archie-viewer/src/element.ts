@@ -144,11 +144,23 @@ export class ArchieViewerElement extends HTMLElement {
   /** ADR-0007 / Q16: null = base notes only; a reading id OVERLAYS that reading on the base. Held on
    *  the instance (never a module global, per this file's header).
    *
-   *  It PERSISTS across objects, deliberately: a reader comparing one interpretive pass across a
+   *  It PERSISTS across OBJECTS, deliberately: a reader comparing one interpretive pass across a
    *  12-folio manuscript should not be dropped back to base every time they press Next, and the
-   *  legend's own radio state says the layer is still on. (This docblock used to claim it was "reset
-   *  when the object changes"; it never was, and that false claim is exactly what hid the V56
-   *  step-with-a-reading regression — see #openObject.) Cleared only by opening a new library. */
+   *  legend's own radio state says the layer is still on. It is CLEARED when the exhibit changes
+   *  (`#openExhibit`), because a Reading id is exhibit-scoped and means nothing in the next one —
+   *  which also covers opening a new library, since every route into a library goes through there.
+   *
+   *  BOTH halves are asserted by `recipes/smoke.mjs`, in a real browser, because both are about what
+   *  a visitor sees the legend claim:
+   *    kept  — "a reading survives stepping to the next object (V56)"
+   *    reset — "a Reading does not follow you into another exhibit (V56)"
+   *  The second is not hypothetical: `voynich` and `voynich-rosettes` publish the SAME reading ids
+   *  (cipher/hoax/abjad), so a carry-over silently activates a different curator's layer.
+   *
+   *  This docblock has now been wrong twice — it claimed a reset on object change that never existed
+   *  (which is what hid the V56 step-with-a-reading regression, see #openObject), and then claimed a
+   *  reset on library open that no code performed. A comment describing lifetime is a claim about
+   *  state; assert it or don't write it. */
   #activeReading: string | null = null;
   /** annotation id → its Reading's colour for the OPEN object (reader-chrome readingColourById). Held
    *  so the reader's `markColourOf` seam can be handed to `openObject` before the map is computed. */
@@ -373,6 +385,11 @@ export class ArchieViewerElement extends HTMLElement {
 
   async #openExhibit(slug: string, route?: ViewerRoute): Promise<void> {
     if (!this.#library) return;
+    // A Reading id is EXHIBIT-scoped (`{slug}/readings.json`), so it cannot mean anything in the next
+    // exhibit — and if two exhibits happened to share an id like "cipher", carrying it would silently
+    // activate a layer the visitor never chose. Reset here, where the exhibit changes; stepping
+    // OBJECTS inside one exhibit deliberately keeps it (see #activeReading).
+    this.#activeReading = null;
     const seq = ++this.#loadSeq;
     try {
       const { exhibit, lib } = await readExhibit(this.#library, slug);
@@ -543,8 +560,13 @@ export class ArchieViewerElement extends HTMLElement {
         // S1: on an AV object the embed owns no note card (the PLAYER owns one), so a row had nothing
         // to open — 5 rows rendered on ex-voynich.o12 and none of them was a door. Route it into the
         // player instead: seek to the note's cue and show its body, exactly as clicking that cue does.
-        this.#avSurface?.select(id);
-        this.#chrome?.setSelected(id);
+        //
+        // The row only takes the CURRENT styling if something actually opened. The first pass marked
+        // it unconditionally, so on the AV path the uncued whole-recording row looked selected while
+        // still displaying the previous row's body. "Current" is a claim that the pane below is about
+        // THIS note; don't make it when it isn't true.
+        const opened = this.#avSurface ? this.#avSurface.select(id) !== "unknown" : true;
+        if (opened) this.#chrome?.setSelected(id);
       },
       onreading: (id) => void this.#setReading(id),
       onstep: (objectId) => {

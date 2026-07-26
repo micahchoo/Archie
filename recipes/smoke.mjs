@@ -1,6 +1,19 @@
 // recipes/smoke.mjs — headless smoke test for the <archie-viewer> embed.
 //
+//   pnpm --filter @archie/viewer run gen     # PRECONDITION — see below
+//   pnpm --filter archie-viewer build && node scripts/sync-dist.mjs
 //   node recipes/smoke.mjs
+//
+// TWO PRECONDITIONS, both of which fail LOUDLY now but used to fail silently:
+//
+//  1. The published fixtures must exist. `apps/viewer/public/published/` is GENERATED, not committed,
+//     so on a fresh checkout the exhibits this drive names (`voynich`, `voynich-rosettes`) are simply
+//     absent. Until 2026-07-26 that produced `6/6 passed, RESULT: PASS` — every capability assertion
+//     skipped with an `info` line. It now fails, and the completeness check names each assertion that
+//     never ran. Run the viewer's `gen` first.
+//  2. `dist/` at the REPO ROOT is what `recipes/try.html` loads — NOT `packages/archie-viewer/dist/`.
+//     Rebuilding the package alone leaves this driving the previous bundle and reporting a fixed bug
+//     as broken (or, worse, a broken one as fixed). Always `node scripts/sync-dist.mjs` after a build.
 //
 // Spins up a tiny static server over the REPO ROOT (no external dep), loads
 // recipes/try.html in headless Chromium, and ASSERTS the element registers and
@@ -638,6 +651,116 @@ async function main() {
         return { want, got, legacy };
       }, base);
 
+      // ---- Reading LIFETIME: a Reading id is exhibit-scoped and must not follow you out ----------
+      //
+      // `voynich` and `voynich-rosettes` publish reading ids that are literally the same strings
+      // (cipher / hoax / abjad). So without a reset at the exhibit boundary, picking "Cipher reading"
+      // in one silently activates a DIFFERENT curator's cipher layer in the other — a layer the
+      // visitor never chose, presented as if they had. This drives the boundary the `#activeReading`
+      // docblock claims: kept across objects (asserted above by the step drive), cleared across
+      // exhibits. The docblock has been wrong twice; it is asserted now rather than believed.
+      const lifetime = await (async () => {
+        if (!(await open("voynich-rosettes"))) return { skipped: true };
+        await page.waitForFunction(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelectorAll("ul.grid li button[data-obj]").length > 0, { timeout: 15000, polling: 300 });
+        await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelector("ul.grid li button[data-obj]").click());
+        await page.waitForFunction(() => !!document.querySelector("archie-viewer").shadowRoot
+          .querySelector(".rc-legend .rc-opt"), { timeout: 20000, polling: 250 }).catch(() => {});
+        return sr(() => {
+          const sh = document.querySelector("archie-viewer").shadowRoot;
+          const opts = [...sh.querySelectorAll(".rc-legend .rc-opt")];
+          const on = opts.find((o) => o.getAttribute("aria-checked") === "true");
+          return {
+            skipped: false,
+            checked: on ? (on.dataset.reading || "(base)") : "(none)",
+            names: opts.map((o) => o.querySelector(".rc-nm").textContent.trim()),
+          };
+        });
+      })();
+
+      // ---- AV playback: the one MUST row that had no smoke label at all ---------------------------
+      //
+      // Every other MUST row is asserted here, so the label-completeness check covers them. AV was
+      // covered by unit tests only — and a unit test cannot say WHICH body a row displays, which is
+      // exactly where the residual S1 defect lived: the uncued whole-recording row took the current
+      // styling while still showing the previously-selected row's text. Current-looking, someone
+      // else's words. The hole in the contract and the defect were in the same place, which is the
+      // argument for closing it rather than documenting it.
+      const av = await (async () => {
+        if (!(await open("voynich"))) return { skipped: "no voynich card" };
+        await page.waitForFunction(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelectorAll("ul.grid li button[data-obj]").length > 0, { timeout: 15000, polling: 300 });
+        // The sonified folio (ex-voynich.o12) — found by its media kind, not by grid position, so a
+        // reordered exhibit reports "no AV object" rather than silently asserting on an image.
+        const opened = await page.evaluate(() => {
+          const sh = document.querySelector("archie-viewer").shadowRoot;
+          const btn = [...sh.querySelectorAll("ul.grid li button[data-obj]")]
+            .find((b) => b.querySelector(".cover .kind")?.textContent.trim() === "Audio");
+          if (!btn) return null;
+          btn.click();
+          return btn.dataset.obj;
+        });
+        if (!opened) return { skipped: "no audio object in this exhibit" };
+
+        const ready = await page.waitForFunction(() => {
+          const sh = document.querySelector("archie-viewer").shadowRoot;
+          return !!sh.querySelector("audio") && sh.querySelectorAll(".rc-notes button").length > 0;
+        }, { timeout: 20000, polling: 250 }).then(() => true).catch(() => false);
+        if (!ready) return { skipped: "AV player or note list never mounted" };
+
+        // Partition the reader's rows by whether the PLAYER has a cue for them: a timed note travels,
+        // an uncued whole-recording note does not. Read from the DOM rather than hardcoded, so this
+        // keeps meaning what it says if the fixture's notes change.
+        const rows = await sr(() => {
+          const sh = document.querySelector("archie-viewer").shadowRoot;
+          // Cue start times come off the player's own "m:ss" labels, so the expectation is the cue's
+          // real start rather than a hardcoded number.
+          const secs = (t) => t.split(":").reduce((n, part) => n * 60 + Number(part), 0);
+          const cues = new Map([...sh.querySelectorAll("[data-cue]")]
+            .map((c) => [c.dataset.cue, secs(c.querySelector(".t").textContent.trim())]));
+          return [...sh.querySelectorAll(".rc-notes button")].map((b) => ({
+            id: b.dataset.note,
+            timed: cues.has(b.dataset.note),
+            start: cues.get(b.dataset.note) ?? null,
+            text: b.textContent.trim().slice(0, 40),
+          }));
+        });
+        // A cue that starts at 0:00 cannot demonstrate a SEEK — the playhead is already there, so
+        // "did it travel" is unanswerable. Prefer a cue with somewhere to travel to. (The first timed
+        // note in this fixture starts at 0, which is what made the first version of this assertion
+        // report a false failure: the code was right and the expectation was not.)
+        const timed = rows.find((r) => r.timed && r.start > 0) ?? rows.find((r) => r.timed);
+        const uncued = rows.find((r) => !r.timed);
+
+        const read = () => sr(() => {
+          const sh = document.querySelector("archie-viewer").shadowRoot;
+          const card = sh.querySelector(".archie-note-card");
+          const cur = sh.querySelector('.rc-notes button[aria-current="true"]');
+          return {
+            open: card ? !card.hasAttribute("hidden") : false,
+            body: card?.querySelector(".archie-note-card__body")?.textContent.trim().slice(0, 60) ?? "",
+            current: cur ? cur.dataset.note : null,
+            at: sh.querySelector("audio")?.currentTime ?? -1,
+          };
+        });
+
+        let afterTimed = null, afterUncued = null;
+        if (timed) {
+          await sr((id) => document.querySelector("archie-viewer").shadowRoot
+            .querySelector(`.rc-notes button[data-note="${id}"]`).click(), timed.id);
+          await page.waitForTimeout(600);
+          afterTimed = await read();
+        }
+        if (uncued) {
+          await sr((id) => document.querySelector("archie-viewer").shadowRoot
+            .querySelector(`.rc-notes button[data-note="${id}"]`).click(), uncued.id);
+          await page.waitForTimeout(600);
+          afterUncued = await read();
+        }
+        return { rowCount: rows.length, timed, uncued, afterTimed, afterUncued };
+      })();
+
       // ---- V88: the narrative spine --------------------------------------------------------------
       if (!(await open("voynich-reading"))) return { skipped: "no voynich-reading card in this tree" };
       const narrativeTruth = await page.evaluate(async (b) => {
@@ -681,7 +804,7 @@ async function main() {
         }, { timeout: 20000, polling: 200 }).then((h) => h.jsonValue()).catch(() => -1);
       }
 
-      return { controls, posText, secondLabel, afterNext, truth, list, rowOpens, legend, marks, stepped, tokens, narrative, narrativeTruth };
+      return { controls, posText, secondLabel, afterNext, truth, list, rowOpens, legend, marks, stepped, lifetime, av, tokens, narrative, narrativeTruth };
     })();
 
     if (contract.skipped) {
@@ -752,6 +875,11 @@ async function main() {
         && st.colours.every((c) => c === st.want || c === st.wantBase);
       record(steppedOk,
         "ADR-0019 MUST · a reading survives stepping to the next object (V56)",
+      "ADR-0019 MUST · a Reading does not follow you into another exhibit (V56)",
+      "ADR-0019 MUST · the AV player and its note list mount (AV)",
+      "ADR-0019 MUST · a timed note's row travels the recording and opens it (AV/V70)",
+      "ADR-0019 MUST · an UNCUED note's row shows ITS OWN body, not the last one's (AV/V70)",
+      "ADR-0019 MUST · showing an uncued note does NOT move the playhead (AV)",
         st ? `after Next: legend checked ${st.legendStillOn}, marks ${JSON.stringify([...new Set(st.colours)])}` +
              `; reading ${JSON.stringify(st.want)}, base ${JSON.stringify(st.wantBase)}` +
              (st.legendStillOn && !st.colours.includes(st.want)
@@ -769,6 +897,49 @@ async function main() {
       record(contract.tokens.legacy.length === 0,
         "ADR-0019 MUST · no retired pre-Verdant literals in the embed's own rules (V9/V31/V69)",
         contract.tokens.legacy.length ? `found ${contract.tokens.legacy.join(", ")}` : "none");
+
+      // --- AV playback (MUST) — the row that had no label until 2026-07-26 ---
+      const a = contract.av;
+      if (a.skipped) {
+        record(false, "ADR-0019 MUST · the AV player and its note list mount (AV)", a.skipped);
+      } else {
+        record(a.rowCount > 0 && !!a.timed && !!a.uncued,
+          "ADR-0019 MUST · the AV player and its note list mount (AV)",
+          `${a.rowCount} row(s); timed ${a.timed ? `${JSON.stringify(a.timed.text)} @${a.timed.start}s` : "NONE"};` +
+            ` uncued ${a.uncued ? JSON.stringify(a.uncued.text) : "NONE"}` +
+            (a.uncued ? "" : " — no whole-recording note here, the uncued assertion below would be vacuous"));
+        const seekOk = !!a.afterTimed && a.afterTimed.open
+          && a.afterTimed.current === a.timed.id
+          && Math.abs(a.afterTimed.at - a.timed.start) < 1; // landed ON the cue, not merely somewhere
+        record(seekOk,
+          "ADR-0019 MUST · a timed note's row travels the recording and opens it (AV/V70)",
+          a.afterTimed
+            ? `cue starts ${a.timed.start}s, playhead landed ${a.afterTimed.at}s, card ` +
+              `${a.afterTimed.open ? "open" : "SHUT"}, current ${a.afterTimed.current === a.timed.id ? "this row" : a.afterTimed.current}`
+            : "not driven");
+        // The residual S1 defect, stated as the thing that was wrong: the row was current and the card
+        // was showing the OTHER note's body. Both halves are asserted, because either alone passes it.
+        const u = a.afterUncued;
+        const showsOwn = !!u && u.open && u.body.length > 0 && u.body !== (a.afterTimed?.body ?? null);
+        record(!!u && showsOwn && u.current === a.uncued.id,
+          "ADR-0019 MUST · an UNCUED note's row shows ITS OWN body, not the last one's (AV/V70)",
+          u ? `current ${u.current} (want ${a.uncued.id}); card ${JSON.stringify(u.body)}` +
+              ` vs the timed note's ${JSON.stringify(a.afterTimed?.body ?? "")}`
+            : "not driven");
+        record(!!u && !!a.afterTimed && u.at === a.afterTimed.at,
+          "ADR-0019 MUST · showing an uncued note does NOT move the playhead (AV)",
+          u && a.afterTimed ? `playhead ${a.afterTimed.at}s → ${u.at}s (a whole-recording note points at no moment)` : "not driven");
+      }
+
+      // --- the reading layer's lifetime (V56) ---
+      const lt = contract.lifetime;
+      record(!lt.skipped && lt.checked === "(base)",
+        "ADR-0019 MUST · a Reading does not follow you into another exhibit (V56)",
+        lt.skipped
+          ? "voynich-rosettes not in this tree"
+          : `after picking a reading in voynich, rosettes opens with ${lt.checked} checked` +
+            ` (both exhibits publish ids cipher/hoax/abjad, so a carry-over would silently activate` +
+            ` a different curator's layer); legend ${JSON.stringify(lt.names)}`);
 
       // --- narrative (MUST) ---
       const n = contract.narrative;
