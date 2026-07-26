@@ -88,7 +88,7 @@
 
 <style>
   /* The reader needs room — this is the one phase of the Publish surface that is not prose-width. */
-  .stage { position: relative; height: min(70vh, 640px); border: 1px solid var(--rule, #d9cfc4); border-radius: 8px; overflow: hidden; background: var(--paper, #f6efe9); }
+  .stage { position: relative; height: min(56vh, 560px); border: 1px solid var(--rule, #d9cfc4); border-radius: 8px; overflow: hidden; background: var(--paper, #f6efe9); }
   .mount { height: 100%; }
   .stage.busy .mount { visibility: hidden; }
   .wait, .err { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 1rem; text-align: center; font-family: var(--font-ui); font-size: var(--text-ui-sm, 0.85rem); }

@@ -16,6 +16,11 @@ import { test, expect } from "@playwright/test";
 // library or overview screens, so the walk lands on the editor route directly.
 const HASH_EDITOR = "#/voynich-rosettes/o/ex-voynich.o9";
 
+// 60s: this walk pays two costs a unit test never does — Vite dev-transforming the embed package on
+// first lazy import (it is ~930KB of source, unbundled here), and a FULL site projection of the seeded
+// library. Both are one-time and neither is what the test is asserting about.
+test.setTimeout(60_000);
+
 test("preview renders the reader inside the Publish surface", async ({ page }) => {
   const consoleErrors: string[] = [];
   page.on("console", (m) => { if (m.type() === "error") consoleErrors.push(m.text()); });
@@ -38,8 +43,8 @@ test("preview renders the reader inside the Publish surface", async ({ page }) =
   // The element upgrades (lazy import resolved + customElements.define ran) and reaches its gallery
   // view — i.e. previewTree's tree passed validateArchieMarker and openFilesystem read its index.
   const host = page.locator("archie-viewer");
-  await expect(host).toBeAttached();
-  await expect(page.locator(".stage.busy")).toHaveCount(0, { timeout: 20_000 });
+  await expect(host).toBeAttached({ timeout: 40_000 });
+  await expect(page.locator(".stage.busy")).toHaveCount(0, { timeout: 40_000 });
   await expect(page.locator(".stage .err")).toHaveCount(0);
   await expect(host.locator(".intro h1")).toBeVisible(); // pierces the open shadow root
 

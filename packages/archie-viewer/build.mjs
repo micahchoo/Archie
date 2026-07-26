@@ -112,6 +112,7 @@ async function buildSingleFile(outfile) {
     outfile,
     metafile: true,
     logLevel: "info",
+    plugins: [archieTokens], // same shared token layer as the ESM target — the shadow root needs the bytes inline
   });
   return result;
 }

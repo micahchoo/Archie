@@ -466,7 +466,7 @@
         {#if onexportselfcontained}
           <button class="choice" onclick={exportSelfContained}>
             <span class="c-title">A deposit copy</span>
-            <span class="c-desc">One <code>.html</code> file holding the library <em>and</em> a reader. Opens by double-click — no server, no account, no internet — and will still open in ten years. Shows your objects, images and notes. <strong>Narrative reading and search aren't in it</strong>; those need the full Viewer. Best for a USB stick, an attachment, or an archival deposit.</span>
+            <span class="c-desc">One <code>.html</code> file holding the library <em>and</em> a reader. Opens by double-click — no server, no account, no internet — and will still open in ten years. Shows your objects, images, notes and narrative readings. <strong>Search isn't in it</strong> — that needs the full Viewer. Best for a USB stick, an attachment, or an archival deposit.</span>
           </button>
         {/if}
         {#if !deployToPages}
@@ -1012,6 +1012,12 @@
     background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lift-mid); padding: var(--space-6);
+    /* A centred fixed dialog with no height cap overflows BOTH edges once its content exceeds the
+       viewport, and nothing can scroll it back — the content above the top edge is unreachable, not
+       merely off-screen. Latent since the surface was built; the chooser crossed the threshold when
+       it grew a fourth destination card. Caught by e2e/preview.spec.ts ("element is outside of the
+       viewport" with scroll-into-view already attempted), which is the only gate that could see it. */
+    max-height: calc(100vh - var(--space-8)); overflow-y: auto; overscroll-behavior: contain;
   }
   header { margin-bottom: var(--space-5); }
   .eyebrow { color: var(--ink-paper-muted); }

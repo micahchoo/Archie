@@ -6,10 +6,14 @@
 // `export default ""` — correct string in the shipped esbuild bundle, EMPTY under vitest. See
 // .claude/rules/vitest-css-id-empty-string.md for the measurement.
 //
-// Two build inputs implement it and must stay in step (there is no third consumer — the package is
-// source-consumed by esbuild and vitest only), both reading `tokens-source.mjs` for the path and id:
+// Two build inputs implement it and must stay in step, both reading `tokens-source.mjs` for the path and id:
 //   • build.mjs        — the `archieTokens` esbuild plugin (onResolve → namespace, onLoad minifies)
 //   • vitest.config.ts — the `archieTokens` Vite plugin, same esbuild minify, `enforce: "pre"`
+//
+// THIRD CONSUMER (2026-07-26): apps/studio now depends on this package (ViewerPreview.svelte lazy-
+// imports it for the publish preview), so svelte-check resolves into this SOURCE and reaches the
+// import above. A `.d.ts` inside a dependency is not in Studio's `include`, so it carries its own
+// copy at `apps/studio/src/archie-viewer-virtual.d.ts`. Rename the id and BOTH declarations change.
 //
 // Declared rather than inferred because TS7 reports TS2307/TS2882 on an undeclared module import (see
 // .claude/rules/two-typescript-compilers.md) — the same reason apps/studio carries css-modules.d.ts,
