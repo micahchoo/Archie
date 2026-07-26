@@ -3,7 +3,7 @@
 // publishLibrary and reads it back per-exhibit, exactly as a static consumer would. One log per exhibit;
 // each note targets its object's canvas.
 import { appendNew, asClientId, asExhibitId, asLibraryId, type AObject, type AnnotationLog, type Library, type Section } from "@render/core";
-import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichPolygonNotes, polygonSelectorValue, voynichSections, voynichCredits, voynichExhibitMetadata } from "./voynich.js";
+import { voynichObjects, voynichNotes, voynichReadings, voynichReadingNotes, voynichAvNotes, voynichWholeObjectNotes, voynichPolygonNotes, voynichMediaNotes, polygonSelectorValue, voynichSections, voynichCredits, voynichExhibitMetadata } from "./voynich.js";
 // Single source of truth lives in the viewer-owned base module (not this demo file), so the shell
 // can import canvasIdFor without pulling in demo fixtures. Re-exported for gen-published.mts.
 import { BASE, canvasIdFor } from "../src/published-base.js";
@@ -182,6 +182,16 @@ function buildVoynichLog(slug: string, opts: { objectIds?: Set<string>; includeA
     ({ log } = appendNew(log, {
       target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "SvgSelector", value: polygonSelectorValue(n.points) } },
       body: addBody(n.comment), motivation: "commenting", lastEditor: author, now: ++now, rng, ...(n.reading ? { reading: n.reading } : {}),
+    }));
+  }
+  // Media-bearing whole-object notes (Archie-0cc6 review) — appended after the polygons, LAST of all, so
+  // every note above keeps the logical id it already published. Bare canvas IRI, no selector: the
+  // markdown image is lifted out by splitNoteMedia into a NoteMedia tile on whichever reader opens it.
+  for (const n of voynichMediaNotes) {
+    if (!keep(n.objectId)) continue;
+    ({ log } = appendNew(log, {
+      target: canvasIdFor(slug, n.objectId),
+      body: addBody(n.comment), motivation: "commenting", lastEditor: author, now: ++now, rng,
     }));
   }
   return log;

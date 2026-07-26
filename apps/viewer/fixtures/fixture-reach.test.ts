@@ -5,6 +5,15 @@
 // without an assertion it is a fixture nobody would notice the loss of, and the path goes straight back
 // to unexercised the first time someone tidies the seed.
 //
+// WHAT THIS FILE'S SUBJECT ACTUALLY IS, because the distinction is the one this repo keeps being bitten
+// by. `getLog` is a lookup into `logsById` — the IN-MEMORY log the generator consumes, one step UPSTREAM
+// of `apps/viewer/public/published/**`. So these assertions prove the fixture reaches the bake's input,
+// NOT that the committed tree was regenerated. **Nothing here goes red if someone edits a fixture and
+// forgets `pnpm gen`**; the e2e suite's prebuild is what covers that, by regenerating and driving the
+// result. Same shape as `.claude/rules/svelte-no-typecheck-net.md`'s "a gate proves the code compiled,
+// never that the output carries anything" — worth stating plainly in a file whose whole subject is
+// assertions that answer a narrower question than they appear to.
+//
 // EVERY PREDICATE HERE IS IMPORTED FROM THE APP, NEVER RESTATED. `offline.ts:112-124` records what a
 // restated classifier costs: a hand-written "has a selector ⇒ region" test passed on a tree where the
 // app drew ZERO regions, because `isWholeObjectFor` routes a >=75%-coverage selector to the object
@@ -30,37 +39,65 @@ import { voynichPolygonNotes, voynichAvNotes } from "./voynich.js";
 /** o9's native pixel dimensions (fixtures/voynich.ts:99) — the canvas the coverage test measures against. */
 const O9 = { w: 7925, h: 7268 };
 
-const selectorsOf = (exhibitId: string) =>
-  getLog(exhibitId).map((r) => selectorOf(r as unknown as W3CAnnotation)).filter((s) => s !== null);
+/**
+ * Selectors published for an exhibit.
+ *
+ * The emptiness guard is not defensive noise — it is the fix for a measured hole. `getLog` is
+ * `logsById[exhibitId] ?? []` (`sample-data.ts`), so a MISTYPED OR RENAMED exhibit id yields an empty
+ * log, every filter over it yields `[]`, and any `toHaveLength(0)` assertion passes for the wrong
+ * reason. The review proved it: pointing this helper at `ex-atlas-RENAMED` left the file at 8/8. That
+ * is the same shape as the fixture rename that took a capability suite from 33 assertions to 6.
+ *
+ * Borrowed wholesale from `seed-carry.test.ts`'s `notesOf`, whose equivalent guard DID go red under the
+ * same probe — the donor was already in this commit, one file over.
+ */
+const selectorsOf = (exhibitId: string) => {
+  const log = getLog(exhibitId);
+  expect(log.length, `no published log for "${exhibitId}" — an unknown id reads as empty, not as absent`).toBeGreaterThan(0);
+  return log.map((r) => selectorOf(r as unknown as W3CAnnotation)).filter((s) => s !== null);
+};
 
 describe("Archie-f4fb — the seed carries a polygon region, and it renders as one", () => {
   // The showroom gap this closes: before this fixture the corpus was 100% rectangles, so every
   // screenshot, demo and e2e run exercised the rect branch only and a polygon regression would have
   // surfaced in front of a reader. It is filed low BECAUSE the selector is implemented — this asserts
   // the seed reaches it, not that the feature works.
-  it("appears in EVERY exhibit that carries o9, exactly once each", () => {
-    // All three Voynich exhibits carry o9 — the grid has every folio, the rosettes exhibit is o9 alone,
-    // and the narrative carries the full set. Listing all three rather than the two obvious ones is
-    // what makes this an assertion about the object FILTER rather than about two hand-picked slugs.
-    for (const exhibitId of ["ex-voynich", "ex-voynich-rosettes", "ex-voynich-reading"]) {
-      const polys = selectorsOf(exhibitId).filter((s) => shapeLabel(s) === "Polygon");
-      // A LITERAL 1, deliberately, and not `voynichPolygonNotes.length`. The first draft of this line
+  const polygonsIn = (exhibitId: string) => selectorsOf(exhibitId).filter((s) => shapeLabel(s) === "Polygon");
+
+  it("publishes BOTH polygons into the exhibits that carry both objects", () => {
+    // The grid has every folio and the narrative carries the full set, so both polygons (o9's rosette,
+    // o5's star-wheel) belong in both.
+    for (const exhibitId of ["ex-voynich", "ex-voynich-reading"]) {
+      // LITERAL counts, deliberately, and not `voynichPolygonNotes.length`. The first draft of this line
       // derived the expected count from the very fixture under test, so emptying `voynichPolygonNotes`
       // made it assert `0 === 0` and pass — the exact vacuity this whole file exists to prevent,
-      // reintroduced inside the gate against it. Adding a second polygon should be a deliberate edit
+      // reintroduced inside the gate against it. Adding a third polygon should be a deliberate edit
       // here, not something the test silently absorbs.
-      expect(polys, `${exhibitId} publishes no polygon region`).toHaveLength(1);
+      expect(polygonsIn(exhibitId), `${exhibitId} does not publish both polygon regions`).toHaveLength(2);
     }
-    expect(voynichPolygonNotes).toHaveLength(1); // the fixture and the number above agree
+    expect(voynichPolygonNotes).toHaveLength(2); // the fixture and the number above agree
   });
 
-  it("is absent from the exhibits that do not carry o9", () => {
-    // The rosettes exhibit is o9-ONLY and the grid is all folios, so both must have it; nothing else
-    // should. A polygon leaking into the atlas or the sampler would mean the object filter stopped
-    // filtering — the same class of bug §258's per-slug logicalId SNAG was.
-    for (const exhibitId of ["ex-atlas", "ex-geo", "ex-sampler"]) {
-      expect(selectorsOf(exhibitId).filter((s) => shapeLabel(s) === "Polygon")).toHaveLength(0);
-    }
+  it("FILTERS the o5 polygon out of the o9-only exhibit — the negative case, and it can fail", () => {
+    // THIS ASSERTION REPLACES ONE THAT COULD NOT FAIL, and the reason is worth keeping because the
+    // mistake is available anywhere in this fixture set.
+    //
+    // The old version asserted no polygon appears in `ex-atlas` / `ex-geo` / `ex-sampler`, and called
+    // that a test of the object filter. It is not. Those three exhibits are built by `buildAtlasLog` /
+    // `buildGeoLog` / `buildSamplerLog` — functions that never reference `voynichPolygonNotes` at all —
+    // so no change to `keep()` could put a polygon in them. Deleting the filter outright
+    // (`if (!keep(…)) continue;` → `if (false) continue;`) left the file green at 8/8. It asserted over
+    // data the filter cannot reach, which is the same shape as deriving an expectation from the thing
+    // under test: the assertion was true for a reason that had nothing to do with the code it named.
+    //
+    // What makes THIS one real: `voynich-rosettes` is built by `buildVoynichLog` with
+    // `objectIds: {ex-voynich.o9}`, so the o5 polygon is a note the filter must actively drop. It gets
+    // exactly one polygon, not two. Delete `keep()` and this goes red — which is why the o5 polygon
+    // exists at all (see the fixture's own comment).
+    const rosettes = polygonsIn("ex-voynich-rosettes");
+    expect(rosettes, "the o9-only exhibit no longer filters the o5 polygon out").toHaveLength(1);
+    // …and it is the RIGHT one. A count alone would pass if the filter kept o5 and dropped o9.
+    expect(selectorBBox(rosettes[0]!)!.x).toBe(935); // the rosette's bbox origin, not the star-wheel's 555
   });
 
   it("survives the publish round-trip as parseable geometry, not just as a string", () => {
