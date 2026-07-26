@@ -184,7 +184,10 @@
       // `initialSelected` below) — setting it here for a note that lives on an AV object would hijack the
       // top-level `isAV && activeData` branch (MF-2: same dead-end trap as the objects[0] seeding above).
       if (layout.type !== "narrative") selectedObjectId = arrival.objectId; // land on the object (not the grid overview)
-      arrivedNote = targetNote; // → Reader/NarrativeReader initialSelected → fitBounds
+      // The note's PUBLISHED id, never `targetNote` — that is the bare ULID from the address bar, and
+      // everything downstream (initialSelected → the annotations identity check → fitBounds) compares
+      // against `annotation.id`. Passing the URL segment on was the second half of V100.
+      arrivedNote = arrival.noteId; // → Reader/NarrativeReader initialSelected → fitBounds
       linkMissing = false;
       chromeVisible = true;
       setTimeout(() => (chromeVisible = false), 6000);

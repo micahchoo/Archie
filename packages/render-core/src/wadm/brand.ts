@@ -111,7 +111,10 @@ export function versionId(logicalId: LogicalId, version: number): VersionId {
   return `${logicalId}/v${version}` as VersionId;
 }
 
-const VERSION_ID_RE = /^([0-9A-HJKMNP-TV-Z]{26})\/v([1-9][0-9]*)$/;
+// ONE source for the `{ULID}/v{n}` shape, composed from ULID_RE so the charset is never spelled
+// twice. Both the bare-version parser and the published-IRI extractor below are built from it.
+const VERSION_ID_SRC = `(${ULID_RE.source.replace(/^\^|\$$/g, "")})\\/v([1-9][0-9]*)`;
+const VERSION_ID_RE = new RegExp(`^${VERSION_ID_SRC}$`);
 
 /** Parse a version id back into its logical id + version number. Throws on malformed input. */
 export function parseVersionId(vid: VersionId): { logicalId: LogicalId; version: number } {
@@ -120,6 +123,33 @@ export function parseVersionId(vid: VersionId): { logicalId: LogicalId; version:
     throw new TypeError(`invalid VersionId (expected {ULID}/v{n}): ${JSON.stringify(vid)}`);
   }
   return { logicalId: m[1] as LogicalId, version: Number(m[2]) };
+}
+
+// A PUBLISHED annotation id is `{baseUrl}{slug}/annotations/{ULID}/v{n}` (publish/site.ts `citeBase`).
+// Anchored on `/annotations/` AND on the end of the string, so a base path that happens to contain
+// `/annotations/` cannot shift the match — the failure mode a `split("/").at(-2)` would have had, and
+// which would have been invisible until someone deployed under such a path.
+const PUBLISHED_NOTE_ID_RE = new RegExp(`\\/annotations\\/${VERSION_ID_SRC}$`);
+
+/**
+ * The logical (stable, version-free) id of a note, from EITHER form callers hold: a bare ULID as it
+ * appears in an address (`#/<slug>/a/<ULID>`), or a full published annotation IRI. Anything else —
+ * a tombstoned cite, a foreign IRI, a malformed hand-typed id — is `null`, never a throw (ADR-0003:
+ * a miss degrades honestly).
+ *
+ * WHY THIS EXISTS. The cite ladder's note rung had NEVER resolved (V100). `route.ts` parses one path
+ * segment out of `#/<slug>/a/<id>`, while published ids are full IRIs, and `note-arrival.ts` compared
+ * the two with `===`. Nothing could satisfy it, and both halves were individually correct — the bug
+ * lived only in the seam. Normalising BOTH sides through this helper is what closes it, and it is why
+ * the comparison must never go back to matching raw ids.
+ */
+export function logicalIdOf(id: string | null | undefined): LogicalId | null {
+  if (typeof id !== "string") return null;
+  const s = id.trim();
+  if (s === "") return null;
+  if (ULID_RE.test(s)) return s as LogicalId; // already a bare logical id (the address-bar form)
+  const m = s.match(PUBLISHED_NOTE_ID_RE);
+  return m ? (m[1] as LogicalId) : null;
 }
 
 /** Brand a non-empty string as a ClientId. */

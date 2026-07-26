@@ -4,6 +4,7 @@ import {
   mintLogicalId,
   versionId,
   parseVersionId,
+  logicalIdOf,
   asClientId,
   type LogicalId,
   type ClientId,
@@ -77,5 +78,56 @@ describe("brand nominal typing (compile-time guard — enforced by tsc --noEmit)
     expect(typeof lid).toBe("string");
     void bad1;
     void bad2;
+  });
+});
+
+// logicalIdOf — the V100 fix (Archie-67b6). The cite ladder's note rung had never resolved because
+// `route.ts` parses ONE path segment out of `#/<slug>/a/<id>` while a published annotation id is the
+// full IRI `{base}{slug}/annotations/{ULID}/v{n}`, and the two were compared with `===`. This helper
+// is what both sides normalise through, so it must accept BOTH forms and refuse everything else.
+describe("logicalIdOf", () => {
+  const ULID = "01KVPP7FN3KRAF8B45HJQKYSZG";
+  const BASE = "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations";
+
+  it("passes a bare ULID through — the address-bar form", () => {
+    expect(logicalIdOf(ULID)).toBe(ULID);
+  });
+
+  it("extracts the ULID from a published annotation IRI — the data form", () => {
+    expect(logicalIdOf(`${BASE}/${ULID}/v1`)).toBe(ULID);
+  });
+
+  it("is version-agnostic: every version of a note has ONE logical id", () => {
+    // ADR-0003 — notes are append-only, so a citation minted at v1 must still name the note at v9.
+    expect(logicalIdOf(`${BASE}/${ULID}/v9`)).toBe(logicalIdOf(`${BASE}/${ULID}/v1`));
+  });
+
+  it("anchors on the RIGHTMOST /annotations/ segment", () => {
+    // A deploy path containing `/annotations/` must not shift the match — the silent failure a
+    // `split("/").at(-2)` would have had, invisible until someone deployed under such a path.
+    expect(logicalIdOf(`https://host/annotations/archive/lib/voynich/annotations/${ULID}/v2`)).toBe(ULID);
+  });
+
+  it("is idempotent — feeding its own output back is a no-op", () => {
+    expect(logicalIdOf(logicalIdOf(`${BASE}/${ULID}/v1`))).toBe(ULID);
+  });
+
+  it("returns null (never throws) for anything that is not a note id", () => {
+    for (const bad of [
+      "", "   ", "not-a-ulid", "../../etc/passwd",
+      `${BASE}/${ULID}`,            // no version tail
+      `${BASE}/${ULID}/v0`,         // versions are 1-based
+      `${BASE}/${ULID}/v1/extra`,   // not the end of the string
+      `${BASE}/NOTAULID0000000000000000/v1`,
+      `${BASE}/${ULID.toLowerCase()}/v1`, // Crockford base32 is upper-case
+      "https://collections.library.yale.edu/iiif/2/1006231/canvas/p1",
+      null, undefined, 42, {},
+    ] as unknown[]) {
+      expect(logicalIdOf(bad as string)).toBeNull();
+    }
+  });
+
+  it("refuses the ULID charset's excluded letters (I, L, O, U)", () => {
+    expect(logicalIdOf("01KVPP7FN3KRAF8B45HJQKYSZI")).toBeNull();
   });
 });
