@@ -54,3 +54,19 @@ describe("buildSingleFileHtml", () => {
     expect(buildSingleFileHtml({ bundle, libraryBytes })).toContain("This archive couldn't be opened");
   });
 });
+
+// The deposit-copy CAP (grill 2026-07-26). Measured in Chromium from file:// with the real bundle:
+// a 150 MB library is a 201 MB .html that opens after 6.3 s, and 300 MB takes 22.1 s — of BLANK
+// SCREEN, because the cost is document tokenization, which precedes every script in the file. No
+// spinner is possible. So this guard REFUSES where the sibling zip guards warn-and-proceed; those
+// can proceed because the browser's own download UI carries the wait, and this one has no such cover.
+describe("the deposit copy is capped, not merely warned", () => {
+  it("the document grows ~1.35x the library — the number the cap is set against", () => {
+    // 4 bytes → 8 base64 chars is the format's floor; at scale the ratio is 4/3 plus the wrapper.
+    const html = buildSingleFileHtml({ bundle: "", libraryBytes: new Uint8Array(3000) });
+    const payload = /base64">([^<]*)</.exec(html)?.[1] ?? "";
+    expect(payload.length).toBe(4000); // 3000 bytes → 4000 chars, exactly 4/3
+    // 50 MB in ⇒ ~67 MB of payload, which measured at 0.9 s to open. That is the cap's basis.
+    expect(Math.round((50 * 1024 * 1024 * 4) / 3 / 1024 / 1024)).toBe(67);
+  });
+});

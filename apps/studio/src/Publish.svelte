@@ -102,7 +102,7 @@
     previewtree?: () => Promise<{ fs: import("@render/core").Filesystem }>;
     /** Write the self-contained single-file export (publish-flows' exportSelfContained). Optional for
      *  the same reason previewtree is: a host that can't build one offers no card, never a broken one. */
-    onexportselfcontained?: () => Promise<boolean>;
+    onexportselfcontained?: () => Promise<{ ok: true } | { ok: false; reason: "too-large"; mb: number }>;
     /** The exportable (non-template) exhibits, for the working-copy chooser's include list. */
     exhibits?: { slug: string; title: string }[];
     /** The name the export starts from — the bound zip's name, else derived from the library title. */
@@ -299,8 +299,15 @@
   async function exportSelfContained() {
     if (!onexportselfcontained) return;
     menuPhase = "working"; destErrorMsg = "";
-    try { menuPhase = (await onexportselfcontained()) ? "done-download" : "choose"; }
-    catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't build the single-file export."; menuPhase = "error"; }
+    try {
+      const r = await onexportselfcontained();
+      if (r.ok) { menuPhase = "done-download"; return; }
+      // A refusal, not a failure. The error phase is the honest home for it (it has the Back
+      // affordance), but the copy must STEER rather than apologise — the author has a working
+      // route, it just isn't this one.
+      destErrorMsg = `This library is about ${r.mb} MB. A single file that size opens on a blank screen for several seconds, which reads as broken — so Archie doesn't make one. Use “Locally” or “Share a working copy” instead, or link large media by URL so the library references it rather than copying it in.`;
+      menuPhase = "error";
+    } catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't build the single-file export."; menuPhase = "error"; }
   }
 
   // === the zip export fields (ZipExportFields): name the file, pick the exhibits =======================
@@ -458,8 +465,8 @@
         </button>
         {#if onexportselfcontained}
           <button class="choice" onclick={exportSelfContained}>
-            <span class="c-title">As one file</span>
-            <span class="c-desc">The whole library <em>and</em> the viewer in a single <code>.html</code> file. Opens by double-click — no server, no account, no internet. Good for a USB stick, an email attachment, or a deposit copy that has to still work in ten years.</span>
+            <span class="c-title">A deposit copy</span>
+            <span class="c-desc">One <code>.html</code> file holding the library <em>and</em> a reader. Opens by double-click — no server, no account, no internet — and will still open in ten years. Shows your objects, images and notes. <strong>Narrative reading and search aren't in it</strong>; those need the full Viewer. Best for a USB stick, an attachment, or an archival deposit.</span>
           </button>
         {/if}
         {#if !deployToPages}

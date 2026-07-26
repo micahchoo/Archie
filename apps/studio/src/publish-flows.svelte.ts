@@ -80,6 +80,24 @@ const ZIP_WARN_BYTES = 250 * 1024 * 1024; // ~250 MB
 // actionable "publish to a folder / link by URL" error instead of OOMing (SCALE requirement #2).
 const EAGER_ZIP_CEILING_BYTES = 1024 * 1024 * 1024; // 1 GiB
 
+// The single-file export's HARD cap — a refusal, not a confirm, and the only guard in this file shaped
+// that way. Every other size guard here warns and lets the author proceed, which is right when the
+// browser's own download/progress UI carries the wait. The single-file export has no such cover:
+// the cost is the browser TOKENIZING one enormous HTML document, which happens BEFORE any script in
+// it runs, so nothing we ship can draw a spinner. The user sees a blank window and nothing else.
+//
+// Measured in Chromium from file:// with the real bundle (payload → .html size → time to open):
+//     1 MB →   2.2 MB → 0.05 s        50 MB →  68 MB → 0.9 s
+//    10 MB →  14.2 MB → 0.15 s       150 MB → 201 MB → 6.3 s
+//                                    300 MB → 401 MB → 22.1 s
+// It never crashed — atob is cheap and linear (636 ms at 300 MB). Document parse is the cost and it
+// is superlinear. So the ceiling is patience, not capacity, which is exactly why proceed-anyway is
+// the wrong shape: a 22-second blank window reads as a broken file, not a slow one.
+const SINGLE_FILE_MAX_BYTES = 50 * 1024 * 1024; // ~50 MB in, ~68 MB out, under a second to open
+
+/** What the single-file export reports back. `too-large` carries the size so the UI can say the number. */
+export type SelfContainedResult = { ok: true } | { ok: false; reason: "too-large"; mb: number };
+
 export function createPublishFlows(deps: PublishDeps) {
   // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
   // the old `dialogOpen`/`publishOpen` pair (one per dialog, toggled in lockstep by the chooser's
@@ -372,8 +390,13 @@ export function createPublishFlows(deps: PublishDeps) {
      *
      * Returns false when the size guard declined; the caller surfaces nothing (the guard already did).
      */
-    async exportSelfContained(opts?: ZipExportOpts): Promise<boolean> {
-      if (!(await zipSizeOk(opts?.slugs))) return false;
+    async exportSelfContained(opts?: ZipExportOpts): Promise<SelfContainedResult> {
+      // HARD cap, not a confirm — see SINGLE_FILE_MAX_BYTES. The other size guards in this file are
+      // warn-and-proceed because the browser's own download UI shows progress; this one cannot be.
+      const bytes = await estimateLibraryBytes(opts?.slugs);
+      if (bytes >= SINGLE_FILE_MAX_BYTES) {
+        return { ok: false, reason: "too-large", mb: Math.round(bytes / (1024 * 1024)) };
+      }
       const [{ buildSingleFileHtml }, bundleMod, { fs }] = await Promise.all([
         import("./single-file-export.js"),
         import("@render/archie-viewer/single?raw"),
@@ -385,7 +408,7 @@ export function createPublishFlows(deps: PublishDeps) {
         title: deps.buildFullLibrary().title ?? "",
       });
       downloadHtml(html, (opts?.name ?? deps.currentZipName()).replace(/\.archie\.zip$/, "") || "library");
-      return true;
+      return { ok: true };
     },
 
     /** Write the whole published tree into a bound folder's Filesystem (FSA or Tauri — the git /
