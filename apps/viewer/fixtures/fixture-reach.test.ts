@@ -44,8 +44,14 @@ describe("Archie-f4fb — the seed carries a polygon region, and it renders as o
     // what makes this an assertion about the object FILTER rather than about two hand-picked slugs.
     for (const exhibitId of ["ex-voynich", "ex-voynich-rosettes", "ex-voynich-reading"]) {
       const polys = selectorsOf(exhibitId).filter((s) => shapeLabel(s) === "Polygon");
-      expect(polys, `${exhibitId} publishes no polygon region`).toHaveLength(voynichPolygonNotes.length);
+      // A LITERAL 1, deliberately, and not `voynichPolygonNotes.length`. The first draft of this line
+      // derived the expected count from the very fixture under test, so emptying `voynichPolygonNotes`
+      // made it assert `0 === 0` and pass — the exact vacuity this whole file exists to prevent,
+      // reintroduced inside the gate against it. Adding a second polygon should be a deliberate edit
+      // here, not something the test silently absorbs.
+      expect(polys, `${exhibitId} publishes no polygon region`).toHaveLength(1);
     }
+    expect(voynichPolygonNotes).toHaveLength(1); // the fixture and the number above agree
   });
 
   it("is absent from the exhibits that do not carry o9", () => {

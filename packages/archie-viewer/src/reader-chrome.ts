@@ -155,17 +155,20 @@ const CHROME_STYLES = `
   .rc-stepper .rc-step:hover:not(:disabled) { color: var(--accent-2); }
   .rc-stepper .rc-step:disabled { opacity: .32; cursor: default; }
   .rc-pos { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-ui-sm); letter-spacing: .08em; color: var(--ink-paper-muted); }
-  /* Legend — a canvas overlay, ReadingLegend.svelte's placement and language. */
-  .rc-legend { position: absolute; z-index: 20; top: var(--space-4); left: var(--space-4); max-width: 17rem; max-height: calc(100% - 2 * var(--space-4)); overflow-y: auto; padding: var(--space-3) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); font-family: var(--font-body); }
-  .rc-legend .rc-eyebrow { color: var(--ink-canvas-secondary); }
-  .rc-legend .rc-opts { display: flex; flex-direction: column; gap: 2px; }
+  /* Legend — a DOCKED bar above the canvas (ADR-0019's layout row), ReadingLegend.svelte's placement
+     and language, which are now the same thing on both sides of the contract. It was an absolute
+     overlay at the canvas's top-left; as a row it needs no plate, no shadow and no contrast floor,
+     because nothing is behind it. The radios read as a horizontal chip row, exactly as the shell's do. */
+  .rc-legend { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3); min-width: 0; color: var(--ink-canvas-primary); font-family: var(--font-body); }
+  .rc-legend .rc-eyebrow { margin: 0; color: var(--ink-canvas-secondary); }
+  .rc-legend .rc-opts { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
   .rc-legend .rc-opt { display: flex; align-items: center; gap: var(--space-2); text-align: left; padding: var(--space-1) var(--space-2); border: none; border-radius: var(--radius-sm); background: transparent; color: var(--ink-canvas-secondary); cursor: pointer; font: inherit; font-size: .9rem; }
   .rc-legend .rc-opt:hover { color: var(--ink-canvas-primary); }
-  .rc-legend .rc-opt[aria-checked="true"] { color: var(--ink-canvas-primary); font-weight: 600; background: var(--surface-canvas-overlay); box-shadow: inset 2px 0 0 var(--rc-rd, var(--accent)); }
+  .rc-legend .rc-opt[aria-checked="true"] { color: var(--ink-canvas-primary); font-weight: 600; background: var(--surface-canvas-overlay); box-shadow: inset 0 -2px 0 var(--rc-rd, var(--accent)); }
   .rc-legend .rc-sw { flex: none; width: 14px; height: 14px; overflow: visible; border-radius: 2px; box-shadow: 0 0 0 1px var(--border-canvas-emphasis); }
-  .rc-legend .rc-nm { flex: 1; min-width: 0; }
-  .rc-legend .rc-ct { flex: none; padding-left: var(--space-3); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: .78rem; color: var(--ink-canvas-muted); }
-  .rc-legend .rc-desc { margin: var(--space-2) 0 0; padding-top: var(--space-2); border-top: 1px solid var(--border-canvas); font-size: .82rem; font-style: italic; line-height: 1.6; color: var(--ink-canvas-secondary); }
+  .rc-legend .rc-nm { min-width: 0; }
+  .rc-legend .rc-ct { flex: none; padding-left: var(--space-2); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: .78rem; color: var(--ink-canvas-muted); }
+  .rc-legend .rc-desc { margin: 0; padding-left: var(--space-3); border-left: 1px solid var(--border-canvas); font-size: .82rem; font-style: italic; line-height: 1.5; color: var(--ink-canvas-secondary); min-width: 0; max-width: 28ch; }
 `;
 
 const NS = "http://www.w3.org/2000/svg";
@@ -197,14 +200,17 @@ function swatch(doc: Document, colour: string): SVGSVGElement {
 }
 
 /**
- * Mount the reader chrome. `aside` receives the note list + object nav; `surface` (the positioned
- * canvas host) receives the floating legend. Both are children of the element's shadow root, which is
+ * Mount the reader chrome. `aside` receives the note list + object nav; `dock` (the stage's chrome row,
+ * `.reader-dock`) receives the reading legend. Both are children of the element's shadow root, which is
  * re-rendered wholesale per view — so `destroy()` is about the CURRENT view's teardown (object change,
  * back), not about surviving a re-render.
+ *
+ * `dock` used to be the positioned canvas host, because the legend was an absolute overlay on it.
+ * Handing it the ROW instead is the whole of the embed's half of ADR-0019's layout row.
  */
 export function mountReaderChrome(
   aside: HTMLElement,
-  surface: HTMLElement,
+  dock: HTMLElement,
   opts: ReaderChromeOptions,
 ): ReaderChrome {
   const doc = aside.ownerDocument;
@@ -310,7 +316,7 @@ export function mountReaderChrome(
   pane.append(nav);
   aside.append(pane);
 
-  // ---- V56: the reading legend (donor: ReadingLegend.svelte) --------------------------------------
+  // ---- V56: the reading legend, DOCKED (donor: ReadingLegend.svelte) ------------------------------
   // immarkus's Legend.tsx tracks ACTIVE state rather than listing every possible category
   // (`src/pages/knowledgegraph/Legend/Legend.tsx`, rows keyed off `settings.*`). Applied here: the
   // legend lists the readings that actually carry notes on THIS object, plus the always-present base
@@ -370,7 +376,7 @@ export function mountReaderChrome(
       p.textContent = activeDesc;
       legend.append(p);
     }
-    surface.append(legend);
+    dock.append(legend);
   }
 
   let selected: string | null = null;

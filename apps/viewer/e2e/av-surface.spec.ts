@@ -439,3 +439,85 @@ test.describe("V53 · the transcript aside resizes (and deliberately does not co
     await expect(page.locator(".resize-divider[aria-label='Resize transcript'] button.collapse")).toHaveCount(0);
   });
 });
+
+test.describe("V49 · the temporal map clears the item strip (Archie-b135)", () => {
+  // WHAT THIS TICKET ASSUMED, AND WHAT WAS ACTUALLY TRUE. `Archie-b135` was filed as "the seed has no
+  // local audio/video, so the AV surface has no offline gate", and proposed committing a small media
+  // asset into the seed to get one. The first half is false: this whole file is `goOffline` plus
+  // `withRecording`'s locally-synthesised PCM WAV, so the AV surface has had a hermetic browser gate
+  // since V53 — including `.timeline`, which needs a real decoded duration and gets one here. What was
+  // genuinely missing is only this: nobody had written V49's assertion. So this is it, and no binary
+  // was added to the repository.
+  //
+  // WHY NO COMMITTED ASSET, stated rather than assumed, because "a synthesised one may not exercise
+  // what a real file would" is a fair objection. It would buy one thing this cannot — proof that the
+  // seed's own media URL still resolves — and that is a third-party-uptime check, which `offline.ts`'s
+  // header is explicit about refusing. Against it: every published tree carries the bytes, forever.
+  // Prior art on that cost, opened rather than recalled: `hyperaudio-lite/__TEST__/test.mp3` is a
+  // 289 KB committed audio file whose own suite is `@jest-environment jsdom`
+  // (`__TEST__/hyperaudio-lite.test.js:2`) and therefore never decodes it — it only asserts the
+  // `data-media-src` STRING (`:183`). A binary paying no rent is the outcome to avoid.
+  //
+  // (That same file corrects a claim this repo repeats in two places — `av-surface.spec.ts`'s header
+  // above and `offline.ts`'s — that "hyperaudio-lite ships no test directory at all". It ships 311
+  // lines of jest. The conclusion those headers drew survives, because jsdom cannot drive media; the
+  // supporting sentence does not, and `.claude/rules/prior-art-citation-discipline.md` says to correct
+  // it rather than leave it because it points the right way.)
+  //
+  // WHY THE GEOMETRY AND NOT A SCREENSHOT: `.claude/rules/` records Archie-40fe's reasoning — a
+  // restyle that moves the strip 4px is not a regression, a restyle that puts it back over the map is.
+  // `occlusion.spec.ts` is the sibling file for the image reader; this is the AV column's version, and
+  // it lives here because only this file owns the machinery that gives the map a duration to lay out
+  // with.
+  const overlaps = (a: { x: number; y: number; width: number; height: number }, b: typeof a): boolean =>
+    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+  test("the transcript's temporal map is not covered by the filmstrip", async ({ page }) => {
+    await openAudioObject(page, { media: true });
+    await expect(page.locator(".timeline")).toBeVisible(); // needs a real duration — hence `media: true`
+    const strip = page.locator(".filmstrip");
+    await expect(strip).toBeVisible(); // the voynich grid is 12 objects, so the strip is shown
+
+    // Against the STRIP and against every FRAME in it. The band's own box is what `--strip-h` measures,
+    // but a frame that overflows its band would still be the thing sitting on the map.
+    const map = await rectOf(page.locator(".tl-track"));
+    const band = await rectOf(strip);
+    expect(
+      overlaps(map, band),
+      `map [${Math.round(map.x)},${Math.round(map.y)} ${Math.round(map.width)}x${Math.round(map.height)}] ` +
+        `vs strip [${Math.round(band.x)},${Math.round(band.y)} ${Math.round(band.width)}x${Math.round(band.height)}]`,
+    ).toBe(false);
+
+    const frames = page.locator(".filmstrip button.frame");
+    const n = await frames.count();
+    expect(n, "no filmstrip frames — this assertion would be vacuous").toBeGreaterThan(0);
+    for (let i = 0; i < n; i++) {
+      const f = await rectOf(frames.nth(i));
+      expect(overlaps(map, f), `frame ${i} sits on the temporal map`).toBe(false);
+    }
+  });
+
+  test("the reservation comes OUT of the column, so the map is not pushed off the bottom instead", async ({ page }) => {
+    // THE HALF THAT MAKES THIS TICKET WORTH ITS OWN TEST. V49's fix is `padding-bottom: var(--strip-h)`
+    // plus `box-sizing: border-box` on `.player` (MediaPlayer.svelte). Drop the `box-sizing` and the
+    // padding ADDS to the 100vh: the column becomes 840px in a 720px viewport, the map is shoved below
+    // the fold, and the first test above still passes — the map no longer overlaps the strip because it
+    // is no longer on screen at all. That is a different defect wearing the fix's clothes, and it is
+    // exactly what nothing was catching.
+    //
+    // Measured on the unmodified build at 1280x720: `.player` 0-720 (= the viewport), `--strip-h` and
+    // the computed `padding-bottom` both 120px, `.tl-track` 556-580, `.filmstrip` 602-720.
+    await openAudioObject(page, { media: true });
+    await expect(page.locator(".timeline")).toBeVisible();
+
+    const vh = page.viewportSize()!.height;
+    const player = await rectOf(page.locator(".player"));
+    expect(Math.round(player.height), "the player column overflowed the viewport").toBeLessThanOrEqual(vh + 1);
+
+    // …and the map is inside it, not below the fold. `toBeInViewport` is the assertion that fails on
+    // the overflow case; the height check above says WHY it failed.
+    await expect(page.locator(".tl-track")).toBeInViewport();
+    const map = await rectOf(page.locator(".tl-track"));
+    expect(Math.round(map.y + map.height), "the temporal map's bottom edge is off-screen").toBeLessThanOrEqual(vh);
+  });
+});

@@ -53,33 +53,10 @@ export function labelFromAnnotations(annotations: W3CAnnotation[]): (id: string)
   };
 }
 
-/**
- * V55 — publish the locator mini-map's height so the floating note card can reserve room below it.
- *
- * `--archie-locator-h` on the surface container is the embed's instance of the reservation model
- * Archie-40fe established for the shell's canvas chrome (`--strip-h` / `--finder-h`): the element that
- * OCCUPIES the corner declares how much it takes, and everything floating over the canvas offsets
- * against that property instead of hand-tuning a literal. It has to be measured rather than written
- * down — OSD sizes the navigator as a RATIO of the viewer (`navigatorSizeRatio: 0.15`), so its height
- * changes with the container and with the image's aspect.
- *
- * Returns a teardown for the observer, folded into the surface's own `destroy`.
- */
-function reserveLocatorSpace(container: HTMLElement): () => void {
-  const nav = container.querySelector<HTMLElement>(".navigator");
-  if (!nav) return () => {};
-  const apply = (): void => {
-    const h = nav.getBoundingClientRect().height;
-    // `navigatorAutoFade` only changes opacity, never layout, so a faded map still occupies the corner
-    // and still has to be cleared — measure the box, not the visibility.
-    container.style.setProperty("--archie-locator-h", h > 0 ? `${Math.ceil(h) + 8}px` : "0px");
-  };
-  apply();
-  if (typeof ResizeObserver === "undefined") return () => {};
-  const ro = new ResizeObserver(apply);
-  ro.observe(nav);
-  return () => ro.disconnect();
-}
+// V55's `reserveLocatorSpace` lived here: a ResizeObserver that published the OSD navigator's MEASURED
+// height as `--archie-locator-h` so the floating note card could sit clear of the mini-map they were
+// both anchored to. The card is DOCKED now (note-card.ts / `.reader-note`), so there is no corner
+// contest to arbitrate and nothing to measure. See ADR-0019's layout row.
 
 /**
  * Mount the read-only deep-zoom surface for ONE object into `container`. Resolves once OSD opens.
@@ -115,10 +92,5 @@ export async function openObject(
   };
   showAnnotations(opts.annotations);
 
-  const releaseLocator = reserveLocatorSpace(container);
-  const destroy = surface.destroy.bind(surface);
-  return Object.assign(surface, {
-    showAnnotations,
-    destroy(): void { releaseLocator(); destroy(); },
-  });
+  return Object.assign(surface, { showAnnotations });
 }

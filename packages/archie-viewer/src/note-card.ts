@@ -29,34 +29,30 @@ export interface NoteCard {
   destroy(): void;
 }
 
-// V55 (reconciled 2026-07-25, measured 8970px² of overlap before this line existed): the card and the
-// OSD locator mini-map both wanted the bottom-right corner — read-mount asks for
-// `navigatorPosition: "BOTTOM_RIGHT"` (read-mount.ts:245) and the card anchored there too, so opening a
-// note buried the one control that says where you are in the image.
+// DOCKED (2026-07-26, ADR-0019's layout row). The card sits in its own row under the canvas
+// (`.reader-note`), so it is a plain block with no anchoring at all.
 //
-// The fix is the SHELL's reservation model, not a second one: Archie-40fe established that floating
-// canvas chrome reserves against a CSS custom property the occupying element publishes (`--strip-h`,
-// `--finder-h`) rather than each element hand-tuning an offset. Here `--archie-locator-h` is published
-// by reader.ts from the navigator's MEASURED height (its size is a ratio of the viewer, so a literal
-// would be wrong at every other container size) and defaults to 0px — which is what the AV player's
-// card gets, since a temporal surface has no mini-map to clear.
+// What that replaced, because it is the clearest small case for the whole ruling: V55 measured
+// 8970px² of overlap between this card and the OSD locator mini-map — both wanted the bottom-right
+// corner, since read-mount asks for `navigatorPosition: "BOTTOM_RIGHT"` (read-mount.ts:245) and the
+// card anchored there too, so opening a note buried the one control that says where you are in the
+// image. The fix was the shell's reservation idiom: `--archie-locator-h`, published by reader.ts from
+// the navigator's MEASURED height (a literal would be wrong at every container size, since OSD sizes
+// the navigator as a ratio of the viewer). Docking removes the corner contest instead of arbitrating
+// it, and the measurement with it.
 const CARD_STYLE = [
-  "position:absolute",
-  "right:12px",
-  "bottom:calc(12px + var(--archie-locator-h, 0px))",
-  "max-width:min(360px, calc(100% - 24px))",
-  "max-height:50%",
+  "max-height:100%",
+  "box-sizing:border-box",
   "overflow:auto",
   "padding:14px 16px",
   "background:#fffdfb",
   "color:#2a2320",
-  "border:1px solid #c9a98f",
-  "border-radius:10px",
-  "box-shadow:0 4px 16px rgba(0,0,0,.18)",
+  "border:none",
+  "border-left:2px solid #3A8C5D",
   "font:inherit",
   "font-size:.95rem",
   "line-height:1.45",
-  "z-index:5",
+  "position:relative",
 ].join(";");
 
 const DISMISS_STYLE = [
@@ -73,11 +69,9 @@ const DISMISS_STYLE = [
 ].join(";");
 
 /**
- * Build a note card inside `host` (the reader surface, a positioned shadow-root child). The card starts
- * hidden; `show` reveals it with sanitized HTML, `hide`/dismiss conceals it. Returns the controller.
- *
- * The host MUST be a positioned ancestor (reader-surface is `position: relative`) so the absolutely-
- * positioned card anchors to it, mirroring NotePopup's float-on-selection placement.
+ * Build a note card inside `host` — the reader's note ROW (`.reader-note`), below the canvas. The card
+ * starts hidden; `show` reveals it with sanitized HTML, `hide`/dismiss conceals it. Returns the
+ * controller. The host imposes the height cap; the card fills it and scrolls.
  */
 export function createNoteCard(host: HTMLElement): NoteCard {
   const doc = host.ownerDocument;

@@ -96,15 +96,15 @@ const TEMPLATE_STYLES = `
      The pane is where the note LIST and the object stepper mount — see reader-chrome.ts, which is lazy.
 
      THE STAGE IS A COLUMN, and that is ADR-0019's layout row honoured on this side of the contract:
-     the reading legend takes `.reader-dock` above the canvas and the note card takes `.reader-note`
-     below it, so neither is ever on the image. Both used to be `position: absolute` over
-     `.reader-surface` — the legend at its top-left, the card at its bottom-right offset above the OSD
-     locator by a MEASURED `--archie-locator-h`. That measurement is gone with the overlap.
+     the reading legend takes .reader-dock above the canvas and the note card takes .reader-note below
+     it, so neither is ever on the image. Both used to be position:absolute over .reader-surface — the
+     legend at its top-left, the card at its bottom-right, offset above the OSD locator by a MEASURED
+     --archie-locator-h. That measurement is gone with the overlap.
 
      The cost is real and it lands hardest here, which the ruling named and accepted: a small embed is
-     short before it is narrow, and two docked bars come out of the image's height. `:empty` on both
-     rows is what keeps the bill at zero until there is something to show — an object with no readings
-     pays nothing for the legend, and the note row exists only while a note is open. */
+     short before it is narrow, and two docked bars come out of the image's height. :empty on both rows
+     is what keeps the bill at zero until there is something to show — an object with no readings pays
+     nothing for the legend, and the note row exists only while a note is open. */
   .reader { display: flex; align-items: stretch; width: 100%; height: 70vh; min-height: 320px; }
   .reader-stage { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; min-height: 0; }
   .reader-surface { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; background: var(--moss-shadow); }
