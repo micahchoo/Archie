@@ -238,6 +238,39 @@ test.describe("V53 · the note surface the AV reader had no way to reach", () =>
   });
 });
 
+test.describe("V53 · a note's picture, on a TIME-RANGED note", () => {
+  test("the tile renders on the card and a real click opens the lightbox", async ({ page }) => {
+    // The sampler's audio object carries an AV cue whose prose embeds an image (added with this slice —
+    // before it, EVERY AV note in EVERY fixture was comment-only, so `NoteMedia`/`NoteLightbox` on a
+    // temporal note was wired and unprovable). Nobody in the corpus ships note media on a time range:
+    // `videojs-annotation` bodies are `format: 'text/plain'` (`src/js/components/comment.js:29`),
+    // `osd-audio-video` escapes its body (`audio-canvas.html:562`), and clover-iiif's image branch is
+    // structurally unreachable for a temporal selector — `Item.tsx:76` forces `PointSelector` to the VTT
+    // renderer, and its `FragmentSelector` geometry math yields `!NaN,NaN` on a `t=` value (`:41-52`).
+    // So this is an Archie original; the argument for it is that it is the same authored note.
+    //
+    // The remote image is BLOCKED by `goOffline` and that is fine: the tile is a `<button>` that renders
+    // and stays clickable either way (`NoteMedia.svelte:26-42`, with `.tile-failed` inside it), so the
+    // affordance is what is under test, not the third party's uptime.
+    await goOffline(page);
+    await page.goto("./#/sampler");
+    await page.reload();
+    const audio = page.locator("button.object", { hasText: "listen with a transcript" });
+    await expect(audio).toHaveCount(1);
+    await audio.click();
+
+    const rows = page.locator(".cues li button");
+    await expect(rows).toHaveCount(5);
+    await rows.last().click(); // the media-bearing cue, t=240,270 — last by start time
+    await expect(card(page)).toBeVisible();
+
+    const tile = card(page).locator("button.tile");
+    await expect(tile).toHaveCount(1);
+    await tile.click();
+    await expect(page.locator("div.lb[role='dialog']")).toBeVisible();
+  });
+});
+
 test.describe("V53 · the Escape ladder this surface did not have", () => {
   test("Escape walks out one rung at a time: sheet → card → the exhibit", async ({ page }) => {
     await openAudioObject(page);

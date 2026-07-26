@@ -1,6 +1,6 @@
 {
   "@context": "https://www.w3.org/ns/anno.jsonld",
-  "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/canvas/ex-sampler.si1/annotations.json",
+  "id": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000008C4XMGVSPHSQ0SPAE.json",
   "type": "AnnotationPage",
   "items": [
     {
@@ -16,13 +16,11 @@
         }
       ],
       "motivation": "commenting",
-      "created": "1970-01-01T00:00:00.008Z",
-      "creator": {
-        "type": "Person",
-        "name": "curator"
-      },
       "archie:logicalId": "0000000008C4XMGVSPHSQ0SPAE",
-      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/sampler/annotations/history/0000000008C4XMGVSPHSQ0SPAE.json"
+      "archie:rev": "0000000008A98FCSX7QFZ32YZ3",
+      "archie:version": 1,
+      "archie:lastEditor": "curator",
+      "archie:parent": null
     }
   ]
 }
