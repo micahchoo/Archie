@@ -1,10 +1,52 @@
 # HANDOFF — Viewer UX, third wave (2026-07-26)
 
-Worktree `.claude/worktrees/chrome-occlusion`. **Everything below is MERGED AND PUSHED to `main`**
-(unlike the two prior handoffs, which described unmerged branches). `main` is at **`85c8ba5`**,
-CI green.
+Worktrees `.claude/worktrees/chrome-occlusion` (driver) and `.claude/worktrees/merge-main` (merges).
+`HANDOFF-viewer-ux-2026-07-25b.md` stays accurate for the second wave.
 
-Supersedes nothing — `HANDOFF-viewer-ux-2026-07-25b.md` stays accurate for the second wave.
+> **This file accreted chronologically across one long session.** Sections below the lead are
+> in the order they were written, so three of them describe states that are now HISTORY — each is
+> labelled as such in its heading. **The lead is the only current statement of state.** Where an
+> older section's numbers disagree with the lead, the lead wins.
+
+## CURRENT STATE — read this and nothing else for state
+
+**`origin/main` = local `main` = `ef7ef59`. CI green on all ten jobs** (svelte-check, test,
+typecheck, unit-scripts, e2e, gh-pages-build, archie-viewer-artifact, astro-check, embed-smoke,
+perf-ratchets).
+
+**Four of five slices merged and pushed:** `ux/note-surface`, `ux/offline-canvas`, `ux/embed-parity`,
+`ux/av-surface`. **`ux/narrative-coupling` is the only one outstanding** — reviewed at `6731987`,
+sent back for the guard-wedge fix, awaiting a new SHA.
+
+### The next actions, in order
+
+1. **Verify the narrative fix independently**, then re-review it — a post-review commit is
+   unreviewed, and `.claude/rules/post-review-fixes-are-unreviewed.md` exists because exactly that
+   shipped a silent defect on this session.
+2. **Merge `ux/narrative-coupling`**, run the full sweep **on the merged tree** (the combination is
+   never what either side tested), push, watch CI.
+3. **Thread `onopenfinder`** into both `<MediaPlayerLazy.current …>` instances
+   (`ExhibitView.svelte` :570, :592) **on `main`** — see "Post-merge work this created" below for
+   why it is deliberately not on either branch. The fixture note carrying a tag is already in place
+   and deliberately unasserted; write the assertion with the wire and red-green it in one pass.
+4. **Close `Archie-0d6c` and `Archie-c5cb`** with resolutions; index the gists on map `Archie-c97e`.
+5. **Write the three rules the narrative review earned** (below).
+
+### The three rules the narrative review earned — none written yet
+
+- `test.use({ reducedMotion })` **silently does not apply** describe-scoped in Playwright 1.60 under
+  this config: `matchMedia` reads `false` and the test then fails for an unrelated reason. Assert the
+  emulation took.
+- **Chromium swallows a synthetic wheel outright during a programmatic smooth scroll**, so such a
+  test must run under reduced motion or it is measuring Chromium's animation policy.
+- **A wall-clock quiet heuristic over `scroll` events is a load-sensitive gate.** This is the general
+  form of the wedge the review found, and the one worth having.
+
+### An open question, not a task
+
+CI runs `retries: 1`. That is what would have hidden the narrative flake — the reviewer caught it
+only because its first run was under load and it read the *failure* rather than the final tally.
+Worth deciding whether a retried-but-passed test should be surfaced. Untouched; leaning yes.
 
 ## What landed
 
@@ -113,7 +155,7 @@ islands stay ignorant of the address grammar; `ExhibitView` alone decides preced
 One interaction to preserve: the writer **yields** to V4's honest-degrade path. While the arrival
 chrome explains a missing target, `normalizeAddressToExhibit` owns the bar.
 
-## STATE — wave 1 two-thirds LANDED (local `main`, NOT pushed), wave 2 running
+## HISTORY — state mid-session: wave 1 two-thirds landed locally, wave 2 running
 
 Local `main` is at **`c4d14d5`**, three commits past `origin/main` (`85c8ba5`). **Nothing is pushed.**
 
@@ -252,13 +294,14 @@ must run before smoke will find them. Their absence used to yield a silent `6/6 
    **no fixture AV note carries a `reading`**, so a legend over nothing would be unfalsifiable in the
    same way as `Archie-0cc6`.
 
-## CURRENT STATE (read this first)
+## HISTORY — state at the AV merge (superseded by the lead; kept for its gate numbers and CI note)
 
-**`origin/main` is at `5574fec`+.** Wave 1 (all three slices) and the AV half of wave 2 are merged
-and pushed. **`ux/narrative-coupling` (`6731987`) is the only thing left unmerged**, awaiting its
-review.
+**`origin/main` was at `5574fec`+.** Wave 1 (all three slices) and the AV half of wave 2 merged and
+pushed. `ux/narrative-coupling` (`6731987`) the only thing left unmerged, awaiting its review.
 
-Merged-tree gates, re-measured after the AV merge: typecheck 7/7 · svelte-check **1520 files 0/0** ·
+Merged-tree gates, re-measured after the AV merge: typecheck **6/6** (see the gates block — "7/7"
+was reported all session and was wrong; `grep -c "typecheck: Done"` also matches `apps/viewer
+pre**typecheck**`, the `astro sync` step) · svelte-check **1520 files 0/0** ·
 studio vitest **931 / 70 files** · viewer vitest **176 / 21** · viewer e2e **110 passed, 0 skipped** ·
 smoke **42/42, 41 labels, no phantoms/duplicates/strays** · bundle ratchet ok · astro build 8 pages.
 
@@ -289,7 +332,7 @@ Fixed by budget (`test.setTimeout(240_000)`), never by narrowing the sweep — t
 explicitly not a tuning knob. A per-iteration guard now trips first and reports
 notes-done/total/elapsed.
 
-## PUSHED — `origin/main` is at `5de64d2`
+## HISTORY — the first push (`5de64d2`; `origin/main` has since moved to `ef7ef59`)
 
 22 commits, `85c8ba5..5de64d2`. Deploy-to-Pages green; Checks was still running at the time of
 writing (4m39s against a 2m31s baseline — expected, the suite grew).
@@ -298,7 +341,7 @@ Unrelated but surfaced by the push: GitHub reports **14 Dependabot vulnerabiliti
 branch (6 high, 4 moderate, 4 low). Pre-existing, untouched by this work. Remember this repo pins
 security overrides in `pnpm-workspace.yaml`, NOT `package.json` — pnpm 11 ignores the latter.
 
-## Wave 2 — BOTH IMPLEMENTATIONS DONE, both under review, NEITHER merged
+## Wave 2 — the two slices, their findings and their citations (AV has since MERGED)
 
 Both branch from `c4d14d5` (which is now on `origin/main`, so neither is orphaned by the push).
 
@@ -421,7 +464,7 @@ the ceiling it is measured against. Fixed on `ux/embed-parity` (write gated behi
 as `pnpm bundle:baseline`); allowance held at +10.0. Repo-wide sweep found exactly one instance — the
 root ratchet and `sync-dist:check` are clean, so don't redo that sweep.
 
-## Wave 2 — not started, unblocks the moment wave 1 merges
+## HISTORY — wave 2 as briefed, before either slice was built
 
 - `0d6c` + `c5cb` — narrative scroll coupling. Collides with `note-surface` on `NarrativeReader` and
   `ExhibitView`. `c5cb` must land WITH `0d6c`: once the spine is an input device, hiding it silently
@@ -438,7 +481,9 @@ root ratchet and `sync-dist:check` are clean, so don't redo that sweep.
 
 ## Ticket arithmetic — the map cannot close
 
-Started at **7** open, now **18**. Eleven were filed this session; every one is a thing that was
+Started at **7** open. This paragraph counted **18** mid-session; after the wave-1 and AV closes it
+is **16** (15 on the map plus `Archie-4524`) — and `0d6c`/`c5cb` close on the narrative merge,
+taking it to 14. Eleven were filed this session; every one is a thing that was
 already true and unrecorded, not new scope: `9eeb`, `de08`, `f4fb`, `ecf4`, `b135`, `1820`, `d6e9`,
 `9838`, `5185`, `c30a`, `0cc6`. Four are ready to close on merge (`dbbc`, `01a6`, `f90d`, `c314`).
 
@@ -469,25 +514,24 @@ values only producible against the intended code.
 
 ## Gates
 
-## Gates
-
 ```
-pnpm --filter @archie/viewer run check:svelte     # 0/0
+pnpm --filter @archie/viewer run check:svelte     # 1520 files, 0/0
 pnpm --filter @archie/studio run check            # 0/0
-pnpm -r run typecheck                             # TS7; never bare `tsc`
+pnpm -r run typecheck                             # SIX packages, not seven; TS7; never bare `tsc`
 cd apps/viewer && pnpm exec vitest run            # per-app; the ROOT binary fails rune tests
 cd apps/studio && pnpm exec vitest run
 cd packages/render-core && pnpm exec vitest run
 cd packages/render-mount && pnpm exec vitest run
 cd packages/archie-viewer && pnpm exec vitest run
-node recipes/smoke.mjs                            # 15/15
-pnpm --filter @archie/viewer run e2e              # 59
+node recipes/smoke.mjs                            # 42/42; 41 contracted labels, no phantoms/dupes/strays
+pnpm --filter @archie/viewer run e2e              # 110 passed, 0 skipped
 pnpm --filter @archie/studio run e2e              # 8; needs --config e2e/playwright.config.ts
 cd packages/archie-viewer && node build.mjs --check   # eager 36.1KB / total 266.4KB gz
 ```
 
-At `85c8ba5`: **2621+ unit tests**, 59 viewer e2e, 8 studio e2e, smoke 15/15, svelte-check 0/0 in
-both apps, TS7 clean.
+The counts in the comments above are the ones measured at **`ef7ef59`** (current `origin/main`).
+`85c8ba5`, the start of this session, was **2621+ unit tests**, 59 viewer e2e, 8 studio e2e, smoke
+15/15 — the deltas are what this session added, not drift.
 
 **Two traps that each cost a wrong measurement this session:**
 
