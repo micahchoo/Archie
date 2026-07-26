@@ -15,4 +15,5 @@ See `docs/methodology-dual-use.md` §2 for design rationale.
 | Q-3 | Within-exhibit search is a client-side static minisearch index, no server | 2026-06-20 | - | Axis 11. Search + tag-filter over note bodies/tags is built into the published Viewer as a client-side minisearch index (consistent with backend-less architectu |
 | Q-4 | Within-exhibit discovery is a mode-independent finder overlay, not a list filter | 2026-06-20 | - | Grilled 2026-06-20. Search+tags = one overlay at ExhibitView level (works in grid AND narrative; narrative has no note list). Scope: ALL readings — selecting  |
 | Q-5 | Keyboard surface for regions is the linear index, not the canvas markers | 2026-06-20 | - | Grilled 2026-06-20. Each note exists twice (SVG marker + index entry). The INDEX is the focusable/keyboard-operable surface: note cards (grid) or section spine  |
+| Q-6 | Preview hands the built tree to the embed IN-PROCESS; the hosted deep-link is the post-publish button | 2026-07-26 | - | PROPOSED, not yet user-gated (ledgers/EXPLORE-studio-folder-export-settings-2026-07-26.md §3). Studio never mints a URL for preview: connect-src forbids blob: o |
 <!-- DECISIONS_INDEX_END -->
