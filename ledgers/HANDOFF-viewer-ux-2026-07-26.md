@@ -359,11 +359,29 @@ which is why they are recorded verbatim rather than paraphrased into the tickets
 
 ### 1. Canvas chrome DOCKS out of the canvas (chose against the recommendation)
 
-The corpus default wins: chrome becomes a sibling of the canvas in normal flow and never sits over
-the image. `clover-iiif` `Viewer.tsx:180-184` — `<ViewerHeader>` and `<ViewerContent>` are flex
-siblings, which is *why* the header can be transparent; its one over-canvas control is an **opaque
-plate**, contrast sidestepped rather than solved. `tropy` `esper/container.js:11,39` — overlay
-toolbar is opt-in, `hasOverlayToolbar` defaults **false**.
+Chrome becomes a sibling of the canvas in normal flow and never sits over the image. `clover-iiif`
+`Viewer.tsx:180-184` — `<ViewerHeader>` and `<ViewerContent>` are flex siblings, which is *why* the
+header can be transparent; its one over-canvas control is an **opaque plate**, contrast sidestepped
+rather than solved.
+
+> **CORRECTED 2026-07-26, and the correction inverts the claim.** This paragraph used to open "the
+> corpus default wins" and cite `tropy` `esper/container.js:11,39` as "overlay toolbar is opt-in,
+> `hasOverlayToolbar` defaults **false**". **Tropy ships overlay toolbars ON.** `:11` is a React
+> default-parameter fallback and the prop is always passed explicitly; the chain runs
+> `item/container.js:106` → `:43-46` → `reducers/settings.js:38` → `main/tropy.js:59 frameless: true`
+> (the only `false` is `:398`, the print window), and `reducers/settings.js:22` sets `layout: STACKED`
+> so the `SIDE_BY_SIDE` exclusion never fires. Not cosmetic either: `_esper.scss:179-184` puts the
+> header at `position: absolute` over the image, against `flex: 0 0 auto` in the non-overlay branch.
+>
+> So tropy had exactly this row-vs-overlay choice and **picked the overlay**, solving contrast with a
+> blurred plate plus auto-hide (`_toolbar.scss:139-150`). The honest form is stronger than the claim it
+> replaces, because it stops pretending the corpus is unanimous: tropy supports the row-vs-overlay
+> *distinction* structurally, and chose the side this ruling declines.
+>
+> **There is no established "corpus default".** The claim rested on clover (supports), tropy
+> (contradicts) and canvas-panel (abstains — it has essentially no chrome to dock, one `<button>`).
+> universalviewer, mirador, annomea and quire were never swept. The human's ruling stands on its own
+> merits and needs no corpus consensus; it should not claim one it does not have.
 
 Consequences, and they are larger than `de08`'s body suggests:
 
