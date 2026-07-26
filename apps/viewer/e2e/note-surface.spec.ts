@@ -136,12 +136,97 @@ test.describe("one modal at a time — the sheet never stacks (Archie-dbbc revie
     // The media tile is the second route: NoteLightbox is `aria-modal="true"` as well. Asserted as an
     // invariant over the whole document rather than per-pair, so a THIRD modal surface reachable from
     // the note lands on this test instead of on a reader.
+    //
+    // THE ESCAPE ROUTE ONLY. This test drives `#/voynich`, which carries no media-bearing note, so the
+    // media tile named above is covered by the two tests BELOW instead — that gap is what `Archie-0cc6`
+    // was filed for, and the name of this test was the whole problem: it claimed a route its body never
+    // took, and reverting the `onmedia` guard left the file at 18/18 passing.
     await openFirstNote(page);
     await openSheet(page);
     expect(await openModals(page)).toEqual(["sheet"]);
     await page.keyboard.press("Escape");
     await expect(page.locator(".sheet")).toHaveCount(0);
     expect(await openModals(page)).toEqual([]);
+  });
+
+  // ── the media route, in BOTH readers (Archie-0cc6) ──────────────────────────────────────────────
+  //
+  // THE TICKET'S PREMISE WAS WRONG, AND CHECKING IT IS WHY THERE IS NO NEW FIXTURE HERE. `Archie-0cc6`
+  // states that "no note in the fixture is both expandable and media-bearing, because a note needs
+  // `text` to show the ⤢", and asks for a fixture to be added. Driven — every object, every note, both
+  // readers, offline, on the built bundle — the sampler exhibit already has TWO, and each shows a tile
+  // inside the open sheet:
+  //   · `sampler` object 2 (`si1`), note 0 — `samplerMediaNotes[0]`, a whole-object note. Original
+  //     sampler content; it predates the ticket.
+  //   · `sampler` object 1 (`sa1`), note 4 — the `t=240,270` cue added by V53's AV slice.
+  // The voynich sweep found none, which is consistent with the ticket's measurement and is almost
+  // certainly the exhibit it was taken on. So the fixture was never thin; the coverage was. Adding a
+  // third media note to satisfy the letter of the ticket would be fixture bloat with no path behind
+  // it — the opposite of what this slice is for.
+  //
+  // Two tests rather than one, because the guard is implemented TWICE (`Reader.svelte` and the AV
+  // reader), and one passing says nothing about the other.
+
+  /** Walk an object's notes to the first that is both expandable and media-bearing, and open its sheet. */
+  async function openSheetOnAMediaNote(page: Page, objectHasText: string): Promise<void> {
+    await goOffline(page);
+    await page.goto("./#/sampler");
+    // `reload()` because a `goto` to the hash the page is already on is a no-op — no navigation, no
+    // `hashchange`, no re-mount (the trap `av-surface.spec.ts:104-107` records).
+    await page.reload();
+    const object = page.locator("button.object", { hasText: objectHasText });
+    await expect(object).toHaveCount(1);
+    await object.click();
+
+    const notes = page.locator("aside li button, .cues li button");
+    await expect(notes.first()).toBeVisible();
+    const n = await notes.count();
+    for (let i = 0; i < n; i++) {
+      await notes.nth(i).click();
+      const pop = page.locator(".note-pop");
+      await expect(pop).toBeVisible();
+      if ((await pop.locator("button.tile").count()) === 0) continue;
+      const expand = pop.locator("button.expand");
+      if ((await expand.count()) === 0) continue;
+      await expand.click();
+      await expect(page.locator(".sheet")).toBeVisible();
+      await expect(page.locator(".sheet button.tile")).toHaveCount(1);
+      return;
+    }
+    // NOT `test.skip`. A seed that stops carrying a note with both text and media has removed this
+    // gate's subject, and that is a failure to fix rather than a green run with a quiet skip in it —
+    // the idiom the tags test at the bottom of this file already sets.
+    throw new Error(`no expandable media-bearing note on "${objectHasText}" — the fixture no longer exercises the media route`);
+  }
+
+  /** Open the tile inside the sheet and assert the lightbox REPLACED the sheet rather than stacking. */
+  async function assertLightboxReplacesSheet(page: Page): Promise<void> {
+    await page.locator(".sheet button.tile").click();
+    // Wait for BOTH transitions before snapshotting: `openModals` is a one-shot `evaluate` with no
+    // auto-wait, so reading it mid-transition yields a passing answer the app has not earned. The tag
+    // test above records this reading `[]` exactly once, in the run that caught it.
+    await expect(page.locator(".sheet")).toHaveCount(0);
+    await expect(page.locator("div.lb[role='dialog']")).toBeVisible();
+    expect(await openModals(page)).toEqual(["lb"]);
+  }
+
+  test("a media tile inside the sheet REPLACES it with the lightbox — the image reader", async ({ page }) => {
+    // `si1`'s whole-object note: prose plus a markdown image, so `splitNoteMedia` leaves text behind
+    // (which is what makes the ⤢ appear at all) and lifts the picture into a `NoteMedia` tile. The
+    // remote image is blocked by `goOffline` and that is fine — the tile is a `<button>` that renders
+    // and stays clickable either way, so the affordance is what is under test, not Yale's uptime.
+    await openSheetOnAMediaNote(page, "carries a picture");
+    expect(await openModals(page)).toEqual(["sheet"]);
+    await assertLightboxReplacesSheet(page);
+  });
+
+  test("a media tile inside the sheet REPLACES it with the lightbox — the AV reader", async ({ page }) => {
+    // The same guard in the other implementation, reached through a TIME-RANGED note's card. Both
+    // readers clear `readingSheet` on `onmedia`; reverting either one alone leaves the other's test
+    // green, which is why this is not parameterised away into one run.
+    await openSheetOnAMediaNote(page, "listen with a transcript");
+    expect(await openModals(page)).toEqual(["sheet"]);
+    await assertLightboxReplacesSheet(page);
   });
 });
 

@@ -119,8 +119,55 @@ missing — a bug by definition; no row may sit here).
 | reading sheet (long-form reading text) | `ReadingSheet.svelte` | — | DEFER-tracked | — | — (needs a ticket) |
 | cite hovercards in prose | `ProseCites.svelte` | — | DEFER-tracked | — | — (needs a ticket) |
 | full-text search | `SearchOverlay.svelte` + minisearch | — | DEFER-tracked | — | — (needs a ticket; the index and minisearch are real weight, so this one may well resolve as DROP-justified — but *undecided* is not the same as *dropped*) |
+| **layout: chrome docks OUT of the canvas** | `ViewerShell` topbar · `Reader`/`NarrativeReader` `.canvas-dock` + `.note-dock` · `ExhibitView` `.chrome-dock` | `element.ts` `.reader-dock` / `.reader-note` (`reader-chrome.ts` legend, `note-card.ts`) | PORT | **MUST** | smoke — every docked chrome element's box is measured against the canvas's box: zero intersection, AND `elementFromPoint` at the canvas centre is not a chrome node |
 | authoring / drawing | Studio | — | DROP-justified | — | the element is read-only by definition (ADR-0020 owns the round-trip) |
 | `@annotorious/openseadragon` + `@annotorious/plugin-tools` + PixiJS | Studio and the shell | — | DROP-justified — ~194 KB gz and the `script-src 'unsafe-eval'` grant, for an edit capability a read-only embed does not have | — | `eagerGzKB` in `build.mjs --check` (metafile), **and** smoke (wire): every `/dist/*.js` fetched before the first object open is read, scanned for OpenSeadragon **and PixiJS and Annotorious** — the row names all three, and a PixiJS-only leak contains no `openseadragon` string at all — and its byte total held under a ceiling |
+
+### The layout row, in full (amendment 2026-07-26, human ruling)
+
+**The image is never obscured by chrome, and both consumers honour it.** Persistent chrome is a
+SIBLING of the canvas in normal flow — a row above it, a row below it, or a column beside it — never a
+surface on top of it. This is a contract, not a style: an embed and a shell that disagree about it show
+the same object differently, which is the class of drift this whole table exists to catch.
+
+**The corpus default, which is what settled it.** `IIIF/clover-iiif` `Viewer/Viewer.tsx:180-184` renders
+`<ViewerHeader>` and `<ViewerContent>` as flex SIBLINGS (`Viewer.styled.tsx:15-22`), and that is
+precisely *why* its header can be `background-color: transparent !important`
+(`Header.styled.ts:57-73`) — nothing is behind it to be legible against. Its one genuinely over-canvas
+control, `PanelToggle`, is an **opaque plate** (`Viewer.styled.tsx:41-82`), i.e. it sidesteps the
+contrast question rather than solving it. `tropy` `src/components/esper/container.js:11,39` makes an
+overlay toolbar **opt-in**, `hasOverlayToolbar` defaulting to `false`. `canvas-panel` paints no chrome
+over the image at all.
+
+**What it covers, and what it deliberately does not.** The row governs PERSISTENT chrome: navigation,
+readouts, the reading legend, the note surface, the item strip, the finder and cite triggers, status
+strips. It does NOT govern:
+
+- **modal surfaces** — the finder overlay, the cite panel, the note lightbox, the reading sheet. A
+  modal takes the surface over on purpose and hands it back; docking one is meaningless.
+- **self-dismissing toasts** — the cold-arrival chrome (`ExhibitView` `.arrival`, 6–8s). Docking a
+  surface that appears and vanishes on a timer would reflow the canvas mid-read, twice, which costs
+  more than the seconds of overlap it buys.
+- **the OSD locator mini-map.** This is the one NAMED EXCEPTION and it is not settled by this row.
+  It is OpenSeadragon's own `navigator` (`read-mount.ts:245`, `navigatorPosition: "BOTTOM_RIGHT"`),
+  it is a map OF the image rather than chrome over it, and every viewer in the corpus floats it.
+  Docking it needs `navigatorId` plumbing through `@render/mount`, which is a separate change. Until
+  then the smoke assertion below is scoped to a NAMED SET of docked elements rather than "anything on
+  the canvas" — an honest gate over a real set beats a total-sounding one that quietly excludes what
+  it cannot handle.
+
+**What retired with it**, because a gate that keeps passing after its subject disappears is the failure
+mode this ADR is most alert to: `fitBoundsRect`'s chrome reservation and the whole `getFitOptions` seam
+(`FitOptions` now carries only `margin`); `--topbar-h`, `--scrim-top`, `--pane-top`, `--strip-h`,
+`--finder-h`; `Filmstrip`'s live `--strip-h` publisher; the embed's `reserveLocatorSpace` /
+`--archie-locator-h`. Every one of those existed so one floating surface could clear another. Tickets
+`Archie-de08` (V42, a contrast floor for chrome over an arbitrary image) and `Archie-c30a` (V48's
+vertical clearance) close **OBVIATED**: there is no contrast problem and nothing to clear if nothing
+floats.
+
+**The cost, named and accepted.** Vertical space is scarcest in a small embed, which is exactly where a
+docked bar taxes most. Both docked rows in the embed are `:empty`-gated, so an object with no readings
+and no open note pays nothing; the measured worst case is recorded in the slice's report.
 
 **How to use this table.**
 

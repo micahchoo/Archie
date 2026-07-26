@@ -402,7 +402,47 @@ async function main() {
           };
         });
 
-        return { visible, wrappers, hit, centre, halo, occlusion };
+        // ---- ADR-0019 layout row: chrome DOCKS out of the canvas ----
+        //
+        // Two independent measurements, because either one alone can be satisfied by the wrong thing.
+        // GEOMETRY says the boxes do not intersect — which a chrome element with `display: none`, a
+        // zero box, or one scrolled off screen would also satisfy. So a degenerate box is skipped
+        // rather than counted as clear, and the set must be NON-EMPTY. HIT-TESTING says
+        // `elementFromPoint` at the canvas's centre is not a chrome node — the check
+        // `.claude/rules/osd-overlay-wrapper.md` demands, because a surface can be geometrically
+        // elsewhere and still sit in the hit path through a wrapper, which is exactly how V68 shipped.
+        // A synthetic click would tell us nothing: this is a layout fact and a hit fact.
+        const dock = await page.evaluate(() => {
+          const sr = document.querySelector("archie-viewer").shadowRoot;
+          const canvas = sr.querySelector(".reader-surface");
+          if (!canvas) return { measurable: false, why: "no .reader-surface" };
+          const c = canvas.getBoundingClientRect();
+          // The NAMED SET (see the ADR's layout row). The OSD locator is the documented exception and
+          // is deliberately absent; adding a docked surface means adding it here.
+          const named = [".reader-dock", ".rc-legend", ".reader-note", ".archie-note-card", ".reader-aside"];
+          const boxes = [];
+          for (const sel of named) {
+            const el = sr.querySelector(sel);
+            if (!el) continue;
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) continue; // not rendered — nothing to judge
+            const ox = Math.max(0, Math.min(c.right, r.right) - Math.max(c.left, r.left));
+            const oy = Math.max(0, Math.min(c.bottom, r.bottom) - Math.max(c.top, r.top));
+            boxes.push({ sel, box: [r.x, r.y, r.width, r.height].map(Math.round), overlap: Math.round(ox * oy) });
+          }
+          const mid = sr.elementFromPoint(Math.round(c.left + c.width / 2), Math.round(c.top + c.height / 2));
+          const midChrome = mid ? named.some((sel) => mid.closest?.(sel)) : false;
+          return {
+            measurable: true,
+            canvas: [c.x, c.y, c.width, c.height].map(Math.round),
+            boxes,
+            offenders: boxes.filter((b) => b.overlap > 0),
+            midTag: mid ? mid.tagName.toLowerCase() : "null",
+            midChrome,
+          };
+        });
+
+        return { visible, wrappers, hit, centre, halo, occlusion, dock };
       })();
 
       if (clicked.skipped) {
@@ -439,6 +479,24 @@ async function main() {
           occ.measurable
             ? `overlap ${occ.overlap}px² — navigator ${JSON.stringify(occ.navBox)}, card ${JSON.stringify(occ.cardBox)}`
             : `not measurable (card: ${occ.card}, navigator: ${occ.nav})`);
+
+        const d = clicked.dock ?? { measurable: false };
+        // The set must be NON-EMPTY, or "no overlaps" is the trivially-true reading of a reader that
+        // rendered no chrome at all — the same absence-passes-as-success shape the completeness check
+        // below exists to close, one level down.
+        record(d.measurable === true && (d.boxes?.length ?? 0) >= 2,
+          "ADR-0019 MUST · the reader's docked chrome is actually on screen (layout)",
+          d.measurable ? `${d.boxes.length} docked element(s): ${d.boxes.map((b) => b.sel).join(", ")}` : `not measurable (${d.why})`);
+        record(d.measurable === true && d.offenders?.length === 0,
+          "ADR-0019 MUST · no docked chrome overlaps the canvas box (layout)",
+          d.measurable
+            ? (d.offenders.length
+                ? d.offenders.map((o) => `${o.sel} ${JSON.stringify(o.box)} overlaps ${o.overlap}px²`).join(" | ")
+                : `canvas ${JSON.stringify(d.canvas)} clear of ${d.boxes.length} docked element(s)`)
+            : `not measurable (${d.why})`);
+        record(d.measurable === true && d.midChrome === false,
+          "ADR-0019 MUST · the canvas centre hit-tests to the canvas, not to chrome (layout)",
+          d.measurable ? `elementFromPoint at the canvas centre → <${d.midTag}>` : `not measurable (${d.why})`);
       }
     }
     // ---- V105 (Archie-b681): the embed ships attribution, licence and metadata ----
@@ -1148,6 +1206,10 @@ async function main() {
       "the halo has real extent (not clipped to nothing)",
       "the halo does not shield the mark it points at",
       "the open note card does not cover the locator mini-map (V55)",
+      // the layout row (2026-07-26): chrome docks OUT of the canvas, in BOTH consumers
+      "ADR-0019 MUST · the reader's docked chrome is actually on screen (layout)",
+      "ADR-0019 MUST · no docked chrome overlaps the canvas box (layout)",
+      "ADR-0019 MUST · the canvas centre hit-tests to the canvas, not to chrome (layout)",
       // rights (V105)
       "the exhibit view shows the manifest's requiredStatement (V105)",
       "the reader shows the OBJECT's own requiredStatement (V105)",
