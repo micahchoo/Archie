@@ -64,6 +64,24 @@ contiguous suffix** — and a suffix in path order is a coherent *region* of the
 precisely the set you were least likely to be thinking about. Every list you truncate is sorted by
 something; ask what that something correlates with before you cut it.
 
+**How the bad check got written, in the author's own account** — worth more than the diagnosis,
+because nothing about the moment felt like a decision:
+
+> I wanted to answer one question — *did my sweep catch anything foreign?* — and I reached for the
+> shape I always reach for: pipe the stat list through a filter for the noise I knew about, then
+> eyeball it. […] Both halves felt like tidying. Neither felt like a decision about *scope*. That is
+> the whole mechanism: **I chose the filter to remove what I already understood, which meant the
+> filter was shaped by my existing mental model, and then truncated what remained — so the check
+> could only ever confirm the model it was built from.**
+
+So the one question to ask before running any probe, which is cheaper than all of the above:
+
+> **What would this command print if the thing I fear were true?**
+
+With 17 non-noise files and `head -20`, the answer is *"the same thing"* — which makes it not a
+check. If a probe's output is identical in the world you fear and the world you expect, it has zero
+information content no matter how much work it looks like.
+
 Don't eyeball a stat list. Assert the set difference, so the check has no scope to be implicit about:
 
 ```sh
