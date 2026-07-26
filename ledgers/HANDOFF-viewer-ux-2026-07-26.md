@@ -252,6 +252,43 @@ must run before smoke will find them. Their absence used to yield a silent `6/6 
    **no fixture AV note carries a `reading`**, so a legend over nothing would be unfalsifiable in the
    same way as `Archie-0cc6`.
 
+## CURRENT STATE (read this first)
+
+**`origin/main` is at `5574fec`+.** Wave 1 (all three slices) and the AV half of wave 2 are merged
+and pushed. **`ux/narrative-coupling` (`6731987`) is the only thing left unmerged**, awaiting its
+review.
+
+Merged-tree gates, re-measured after the AV merge: typecheck 7/7 · svelte-check **1520 files 0/0** ·
+studio vitest **931 / 70 files** · viewer vitest **176 / 21** · viewer e2e **110 passed, 0 skipped** ·
+smoke **42/42, 41 labels, no phantoms/duplicates/strays** · bundle ratchet ok · astro build 8 pages.
+
+### Two jobs waiting on `main` after the narrative merge
+
+1. **Thread `onopenfinder` into both `<MediaPlayerLazy.current …>` instances** (`ExhibitView.svelte`
+   :570, :592). `MediaPlayer` declares the prop and passes tag chips to `NotePopup`/`ReadingSheet`
+   **only when wired** — deliberate, since `NotePopup.svelte:127` renders every tag as a `<button>`
+   calling `onopenfinder?.(t)`, so tags with no handler ship the dead-door defect the slice exists to
+   close. **The fixture note carrying a tag is already in place and deliberately unasserted** — write
+   the assertion together with the wire and red-green it in one pass.
+2. **`ReadingLegend` on AV** — filed as `Archie-4524`. Needs five props threaded AND a fixture AV note
+   carrying a `reading`; fixture FIRST, then the control, then revert the fixture and watch it fail.
+
+### Tickets
+
+Closed: `Archie-dbbc`, `Archie-01a6`. **`Archie-7b86` stays OPEN** — V53 resolved (full eleven-drop
+enumeration in its body), V49 untaken, V50 deferred because the ticket's premise that wavesurfer.js
+is already a dependency is **false**. Open on the map: 15 + `Archie-4524`.
+
+### CI note that cost a diagnosis
+
+The V48 sweep opens all 67 halo notes in ONE test (~31s local) against the suite's 60s default, and
+CI overran it. It failed as **"the deep-zoom canvas never painted"** — a true statement about a false
+cause. Ruled out the canvas rather than assuming: `openPaintedNote` is the same helper
+`selection.spec.ts` calls five times and `canvas-offline.spec.ts` twice, all green in the same run.
+Fixed by budget (`test.setTimeout(240_000)`), never by narrowing the sweep — the sweep width is
+explicitly not a tuning knob. A per-iteration guard now trips first and reports
+notes-done/total/elapsed.
+
 ## PUSHED — `origin/main` is at `5de64d2`
 
 22 commits, `85c8ba5..5de64d2`. Deploy-to-Pages green; Checks was still running at the time of

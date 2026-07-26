@@ -65,6 +65,23 @@ An ambiguous anchor plus "replace the first" is a coin toss that looks like a pa
 `sed -i`, to `Edit` with a short `old_string`, and to any codemod. The general form applies to
 `grep` over a line window, to `find` in one directory, and to a `head -n` you drew a conclusion from.
 
+**1b. The probe can be correct and still not be read.** A fourth instance, and the most humbling,
+because nothing about the command was wrong. A reviewer established that a corpus library "has no
+note-media feature" by grepping one variable name (`thumbnail`), getting two hits, and concluding the
+feature was absent — without ever grepping for the *feature*. The variable traced and the feature
+reasoned about were two different things, and `grep -n thumbnail Item.tsx` **was the entire
+argument**. Their own diagnosis: *"I ran that exact command and didn't draw the conclusion from it,
+because I'd already decided what the file said."*
+
+So: **grep where a thing is USED, not only where it is defined** — and when a probe's output is the
+whole basis of a claim, re-read the output against the claim rather than against your expectation.
+
+The pressure runs hardest in one specific direction: **a correction offered in your favour is the one
+you are least likely to check.** That claim was a *strengthening* handed to an author, in their
+favour, and it survived only until someone opened the file in order to apply it. Both parties had to
+be wrong in the same direction for it to get that far. When a review hands you good news, that is the
+moment to open the file.
+
 **2. Reconcile every number you report against a number you actually read.** The report said
 "41/41 contracted labels". That number was never measured — it was inferred from the *hard-assertion*
 count (41/41) on the assumption the two agreed. The completeness line said `35/35`. **The fact that
