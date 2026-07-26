@@ -56,6 +56,55 @@ parameter, not a default.** Two agents briefed to work on disjoint file territor
 disjoint if they share a checkout — territory separates their *edits*, nothing separates their *git
 state*. Verify the worktree list after dispatch, not the brief.
 
+**Resolved: `ux/fixture-reach` IS wave 1, and merges as one unit.** The `-A` hazard fired — dock's
+`dca4215` swept two of the fixture agent's in-progress files (`e2e/av-surface.spec.ts`,
+`fixtures/fixture-reach.test.ts`) into a dock commit. Nothing was lost, but splitting the branch back
+into two clean slices would be per-file surgery on two agents' in-flight work, which is more risk
+than the separation buys. So dock + fixture merge and get reviewed together, and `ux/dock-chrome`
+stays an empty label. Both agents are now adding explicit paths only. The fixture agent will name,
+in its report, which of its files landed inside `dca4215`, so a reviewer of that commit knows two
+hands are in it.
+
+### ⚠ V49 HAS REGRESSED ON THE DOCKED BUILD — found by the gate `b135` asked for
+
+The best thing wave 1 has produced so far, and it is a *finding*, not a deliverable. `Archie-b135`
+asked for a gate that the AV temporal map is not covered by the item strip, red-greened by removing
+`box-sizing: border-box` from `.player`. **That fix no longer exists** — dock retired the `--strip-h`
+reservation and moved the strip into ExhibitView's chrome bar. So the agent rewrote the assertion
+against the OUTCOME rather than the mechanism, and it went red. Measured on `dca4215`, offline,
+1280×720, `#/voynich` → Kryptogramm, real decoded duration:
+
+```
+viewport      720
+.player       y 53  → bottom 917  (h 864)   ← 197px past the fold
+.tl-track     y 873 → bottom 897             ← starts 153px BELOW the fold
+.filmstrip    y 926 → bottom 1037            ← also entirely below the fold
+document      scrollHeight 1045 vs clientHeight 720
+ancestors     overflow-y: visible            ← the whole PAGE scrolls now
+```
+
+`toBeInViewport()` on `.tl-track` reports **viewport ratio 0** on arrival.
+
+**Ruled a real regression, not a new baseline.** The no-overlap assertion passes — the strip no longer
+covers the map — but the map is now off the bottom of the page instead. The dock ruling's entire
+justification was that floating chrome kept *covering* things (the drift badge and the degrade notice
+had each been evicted from two corners for stealing clicks); satisfying it by pushing the transport
+controls below the fold is the same defect in different clothes, and worse, since an overlapped
+control is at least visibly present. b135 named this failure mode in advance — "a different defect
+wearing the fix's clothes, which a strip-overlap-only test calls fixed" — and the gate caught exactly
+it.
+
+**The gate ships RED.** It is not being re-scoped to "reachable by scroll"; that would be lowering a
+bar to accommodate unreviewed WIP.
+
+Suspected mechanism, handed to dock to verify rather than to accept: `.shell` is `min-height: 100dvh`,
+which *permits* document growth where the pre-dock shell was viewport-bounded because the chrome was
+`position: fixed` and contributed no height. And `.route > :global(*) { flex: 1 1 auto; min-height: 0 }`
+reaches only the route's DIRECT child — if ExhibitView's internals don't carry `min-height: 0` down to
+the player column, the flex constraint stops one level in and everything below sizes intrinsically.
+**The image route has not been checked for the same growth**, and must be: a deep-zoom canvas inside a
+growable document resizes itself forever.
+
 Merged: `ux/note-surface`, `ux/offline-canvas`, `ux/embed-parity`, `ux/av-surface`,
 `ux/narrative-coupling`.
 
