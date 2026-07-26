@@ -269,12 +269,26 @@ test.describe("V53 · a note's picture, on a TIME-RANGED note", () => {
   test("the tile renders on the card and a real click opens the lightbox", async ({ page }) => {
     // The sampler's audio object carries an AV cue whose prose embeds an image (added with this slice —
     // before it, EVERY AV note in EVERY fixture was comment-only, so `NoteMedia`/`NoteLightbox` on a
-    // temporal note was wired and unprovable). Nobody in the corpus ships note media on a time range:
-    // `videojs-annotation` bodies are `format: 'text/plain'` (`src/js/components/comment.js:29`),
-    // `osd-audio-video` escapes its body (`audio-canvas.html:562`), and clover-iiif's image branch is
-    // structurally unreachable for a temporal selector — `Item.tsx:76` forces `PointSelector` to the VTT
-    // renderer, and its `FragmentSelector` geometry math yields `!NaN,NaN` on a `t=` value (`:41-52`).
-    // So this is an Archie original; the argument for it is that it is the same authored note.
+    // temporal note was wired and unprovable).
+    //
+    // ON PRIOR ART — corrected 2026-07-26 by re-reading the files, not by argument. An earlier draft of
+    // this comment claimed nobody in the corpus ships note media on a time range, citing clover-iiif as a
+    // case where the feature exists but is "structurally unreachable" for a temporal selector. That
+    // conflated two independent things and overstated the claim. What the files actually say:
+    //   · `videojs-annotation` (`src/js/components/comment.js:29` — `format: 'text/plain'`) and
+    //     `osd-audio-video` (`audio-canvas.html:562` — escaped body) are genuinely absent. Those hold.
+    //   · clover-iiif is NOT a counter-example. `Item.tsx:181-191` renders an `image/*` BODY through
+    //     `AnnotationItemImage`, and `imageUri` (`:182-184`) is the BODY's own `id` — real note-authored
+    //     media, not a target crop. That branch is blocked only for a `PointSelector` (`:76` forces those
+    //     to the VTT renderer); a `t=` FragmentSelector annotation carrying an image body reaches it. So
+    //     clover is a PARTIAL DONOR for this idea rather than evidence that nobody does it.
+    //   · The `!NaN,NaN` bug is real but lives elsewhere, and is wider than described: `thumbnail`
+    //     (`:52`) is a decorative region crop painted as a `backgroundImage` on the `<span>` that wraps
+    //     EVERY item (`:207-215`), in every format branch. `:41-42`'s `xywh.split(",").slice(2)` yields
+    //     `[]` for `t=240,270`, so w/h are `undefined` and every row of a temporal panel requests
+    //     `…/240,270/!NaN,NaN/0/default.jpg`. Borrow the intent; never the geometry math.
+    // Archie's version is a NARROWER original than first claimed — one note renderer reached from a
+    // temporal spine — and clover is the nearest thing to a precedent for it.
     //
     // The remote image is BLOCKED by `goOffline` and that is fine: the tile is a `<button>` that renders
     // and stays clickable either way (`NoteMedia.svelte:26-42`, with `.tile-failed` inside it), so the
