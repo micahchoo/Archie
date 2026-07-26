@@ -42,6 +42,7 @@
     initialSelected = null,
     initialRegion = null,
     onnotehover,
+    onlocus,
     notesHidden = false,
     onhiddenchange,
     onopenfinder,
@@ -75,6 +76,10 @@
     /** Hovering a note in the list solos its mark on the canvas (the legend's hover affordance,
      *  per-note). The host owns the state so the styleOf identity re-mints. null = hover ended. */
     onnotehover?: (id: string | null) => void;
+    /** V101 (Archie-99b1): report the DEEPEST rung open here, so ExhibitView can write the address.
+     *  Reports the note's raw published id — this island stays ignorant of the address grammar; the
+     *  caller converts to a logical id. Null = no note selected (the object itself is the rung). */
+    onlocus?: (l: { noteId: string | null; xywh: string | null }) => void;
     /** Hide-all (ReadingLegend declutter): when true the canvas draws no markers — only the SELECTED
      *  note's mark stays, so picking from the list still shows what you chose. The note list is intact. */
     notesHidden?: boolean;
@@ -157,6 +162,14 @@
   // Scale cue (Archie-93fd): current zoom / home zoom, streamed live from Canvas's onzoom. Defaults
   // to 1 (home/fit) — the value it settles back to once the canvas mounts and reports its own home.
   let zoomRatio = $state(1);
+
+  // V101 (Archie-99b1): publish the deepest rung upward whenever selection changes, so the address
+  // can follow. Reports the RAW published note id; ExhibitView owns the address grammar. The region
+  // rides along only while the arrival region is still the one being shown — once the reader picks a
+  // different note, the old `?xywh=` no longer describes anything and must not stick to the address.
+  $effect(() => {
+    onlocus?.({ noteId: selected, xywh: selected !== null && selected === initialSelected ? initialRegion : null });
+  });
 
   // Deep-link sub-region (4.2): the camera target fragment for Canvas's `focus`. The route gives the raw
   // xywh VALUE (no `xywh=` prefix); fitRegion's parser needs the prefixed form, so add it when absent. A

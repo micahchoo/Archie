@@ -43,6 +43,7 @@
     styleFor,
     frameFor,
     initialSelected = null,
+    onlocus,
     initialSection = null,
     notesHidden = false,
     onhiddenchange,
@@ -72,6 +73,10 @@
      *  the narrative (its sidebar is the section spine, not a note list), making it unreachable. */
     frameFor?: (objectId: string) => { markId: string; colour: string } | null;
     initialSelected?: string | null; // deep-link arrival: land on the section whose object owns this note
+    /** V101/V84 (Archie-99b1): report the deepest rung — the active SECTION, plus a selected note if
+     *  one is open. V84 is exactly this: the spine had no address, so stepping out and back lost
+     *  your place. Raw published note id; the caller owns the address grammar. */
+    onlocus?: (l: { sectionId: string | null; noteId: string | null }) => void;
     /** Section-cite arrival (#/<slug>/s/<id>, ADR-0021 / 4.6): the resolved (in-range) section index to
      *  land the spine on. Takes precedence over a note's owning-section when both are present (an explicit
      *  section cite wins). null = no section cite. */
@@ -128,6 +133,14 @@
   });
 
   const activeSection = $derived(sections[activeIndex]);
+
+  // V101/V84 (Archie-99b1): publish the deepest rung upward so the address can follow. V84 IS this:
+  // the spine carried no address, so stepping out to the index and back lost your place entirely.
+  // The section is the narrative's own unit of navigation, so it is the rung here — an object id
+  // would be the wrong grain (the spine may revisit one object across several sections).
+  $effect(() => {
+    onlocus?.({ sectionId: activeSection?.id ?? null, noteId: selected });
+  });
   const activeObject = $derived.by(() => {
     // A section whose objectId no longer resolves (its object was deleted in Studio without the section
     // being pruned) must NOT silently fall back to objects[0] — that pairs the WRONG image with this

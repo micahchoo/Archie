@@ -9,7 +9,8 @@
   import {
     resolveLayout, overlay, selectorOf, asExhibitId,
     isWholeObjectFor, wholeObjectFlagOf, emphasisOf, readingMarkerStyle,
-    type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation,
+    routeToHash, logicalIdOf,
+    type Exhibit, type LayoutDescriptor, type RightsFields, type W3CAnnotation, type ViewerRoute,
   } from "@render/core";
   import { loadPublishedExhibit, type PublishedExhibit } from "../published.js";
   import { canvasIdFor } from "../published-base.js";
@@ -62,6 +63,12 @@
   let selectedObjectId = $state<string | null>(null);
   let arrivedNote = $state<string | null>(null); // deep-link target id (land-in-context)
   let arrivedRegion = $state<string | null>(null); // xywh sub-region off the note link → camera fit (4.2)
+  // The live locus reported UP by the reader islands (Archie-99b1) — distinct from the `arrived*`
+  // props, which are the one-shot DEEP-LINK seeds. These track what the reader is looking at NOW.
+  let locusNote = $state<string | null>(null); // raw published note id (converted to logical for the address)
+  let locusSection = $state<string | null>(null);
+  let locusRegion = $state<string | null>(null);
+  let locusTime = $state<string | null>(null);
   let chromeVisible = $state(false); // cold-arrival chrome (§124), fades after a few seconds
   let linkMissing = $state(false); // the deep-linked note resolved to no owner (tombstoned cite) — be honest (#8)
   // Object-announce (4.4): an #/<slug>/o/<id> deep-link whose object isn't in the exhibit used to degrade
@@ -174,6 +181,57 @@
     const want = `#/${slug}`;
     if (location.hash !== want) history.replaceState(null, "", want);
   }
+
+  /**
+   * THE ADDRESS TRACKS THE DEEPEST OPEN RUNG (V101/V24/V84/V52, Archie-99b1).
+   *
+   * `route.ts` has always PARSED `/o/`, `/a/`, `/s/`, `?xywh` and `?t`, and the viewer has always
+   * honoured all five on arrival — it just never WROTE any of them. Every rung of the cite ladder was
+   * readable and unreachable: you could follow a link to a note but never produce one from the note
+   * you were reading. Three findings collapse into this one seam:
+   *   V84 — the narrative spine had no address, so stepping out to the index and back lost your place.
+   *   V52 — ADR-0021's `t=` landing seek is correctly built and was structurally UNREACHABLE, because
+   *         no address ever carried `t=`. Working code with no way in.
+   *   V106 — the finder can only show a result's address once every result HAS one.
+   *
+   * `replaceState`, never `pushState`. Escape and browser Back both already mean "up a level"; a
+   * history entry per selection would redefine Back as "the previous note", which is a different and
+   * worse contract. (If a case for pushState appears it is ARRIVAL, not selection.)
+   *
+   * Built through `routeToHash` — the inverse already exists, and hand-building strings here is how
+   * the writer and the parser drift into disagreeing. That is not hypothetical: an address nothing
+   * can parse is exactly how V100 survived.
+   */
+  const locus = $derived.by(() => {
+    if (!data || !layout) return null;
+    // Precedence is the ladder's own: a note is deeper than a section or an object. In a narrative the
+    // SECTION is the unit of navigation (the spine may revisit one object across several sections), so
+    // an object id would be the wrong grain there; grid/single navigate by object.
+    const noteId = locusNote ? (logicalIdOf(locusNote) ?? undefined) : undefined;
+    // In a narrative, an object opened FROM the index (ADR-0016's escape-out) is its own reading
+    // surface and is DEEPER than the section behind it — so it takes the rung. Otherwise the spine's
+    // active section is the narrative's rung, and grid/single use their selected object.
+    const openObject = layout.type === "narrative" ? indexObjectId : selectedObjectId;
+    const route: ViewerRoute = {
+      view: "exhibit",
+      slug,
+      ...(noteId ? { noteId } : {}),
+      ...(!noteId && openObject ? { objectId: openObject } : {}),
+      ...(!noteId && !openObject && layout.type === "narrative" && locusSection ? { sectionId: locusSection } : {}),
+      // xywh/t ride a note only — that is the grammar route.ts reads, and routeToHash enforces it.
+      ...(noteId && locusRegion ? { xywh: locusRegion } : {}),
+      ...(noteId && locusTime ? { t: locusTime } : {}),
+    };
+    return routeToHash(route);
+  });
+
+  $effect(() => {
+    // Don't fight the honest-degrade writers: while the arrival chrome is explaining that a cited
+    // target was missing, `normalizeAddressToExhibit` owns the bar. Re-asserting a locus here would
+    // race it and could restore the dead address the reader was just rescued from (V4).
+    if (locus === null || linkMissing || objectMissing) return;
+    if (location.hash !== locus) history.replaceState(null, "", locus);
+  });
 
   function arriveAtNote(targetNote: string) {
     if (!data || !layout) return;
@@ -437,6 +495,7 @@
     {#key activeData.id}
       {#if MediaPlayerLazy.current}
         <MediaPlayerLazy.current
+          onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }}
           object={activeData}
           annotations={annotationsOf(activeData.id)}
           rights={objectRightsOf(activeData.id)}
@@ -457,7 +516,7 @@
         <!-- Keyed like the grid-AV player: stepping the carousel between AV index objects must remount. -->
         {#key indexData.id}
           {#if MediaPlayerLazy.current}
-            <MediaPlayerLazy.current object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} initialSeek={t} onback={() => (indexObjectId = null)} />
+            <MediaPlayerLazy.current object={indexData} annotations={annotationsOf(indexData.id)} rights={objectRightsOf(indexData.id)} initialSeek={t} onback={() => (indexObjectId = null)} onlocus={(l) => { locusNote = l.noteId; locusTime = l.t; }} />
           {/if}
         {/key}
       {:else}
@@ -475,6 +534,7 @@
             rights={objectRightsOf(indexObject.id)}
             initialSelected={arrivedNote}
             initialRegion={arrivedRegion}
+            onlocus={(l) => { locusNote = l.noteId; locusRegion = l.xywh; }}
             onnotehover={(id) => (hoverNote = id)}
             notesHidden={notesHidden}
             onhiddenchange={(v) => (notesHidden = v)}
@@ -512,6 +572,7 @@
           frameFor={(objectId) => { const o = data?.objects.find((x) => x.id === objectId); return frameFor(objectId, o?.width, o?.height); }}
           initialSelected={arrivedNote}
           initialSection={arrivedSection}
+          onlocus={(l) => { locusSection = l.sectionId; locusNote = l.noteId; }}
           notesHidden={notesHidden}
           onhiddenchange={(v) => (notesHidden = v)}
           onindex={() => (narrativeIndex = true)}
@@ -534,6 +595,7 @@
         rights={objectRightsOf(activeObject.id)}
         initialSelected={arrivedNote}
         initialRegion={arrivedRegion}
+        onlocus={(l) => { locusNote = l.noteId; locusRegion = l.xywh; }}
         onnotehover={(id) => (hoverNote = id)}
         notesHidden={notesHidden}
         onhiddenchange={(v) => (notesHidden = v)}
