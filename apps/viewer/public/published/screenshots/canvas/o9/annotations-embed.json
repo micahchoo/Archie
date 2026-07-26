@@ -2,7 +2,44 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/annotations-embed.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTSB51QWHDNY3YV9FVD5WY/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:444.75780006834975,39.219912470340184,548.6312148507753,809.032262479223"
+        }
+      },
+      "modified": "2026-06-22T04:52:58.152Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Basemap tiles stream from an XYZ template as you pan — standard web-map tiling.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "xyz",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "tiles",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTSB51QWHDNY3YV9FVD5WY/v1",
+      "created": "2026-06-22T04:52:57.121Z",
+      "archie:logicalId": "01KVPTSB51QWHDNY3YV9FVD5WY",
+      "archie:reading": "embed",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTSB51QWHDNY3YV9FVD5WY.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",

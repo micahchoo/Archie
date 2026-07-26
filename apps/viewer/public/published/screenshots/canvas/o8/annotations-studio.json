@@ -2,7 +2,75 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBKA4KEQVQ9H0K54M8HJ6/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:387.9269882659714,766.8187744458929,644.1981747066491,102.08604954367672"
+        }
+      },
+      "modified": "2026-06-22T03:53:02.420Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Video gets both axes: pause on a frame, draw a box on it, and the note anchors to that spot at that moment.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "video",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "frame",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBKA4KEQVQ9H0K54M8HJ6/v1",
+      "created": "2026-06-22T03:53:00.996Z",
+      "archie:logicalId": "01KVPQBKA4KEQVQ9H0K54M8HJ6",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQBKA4KEQVQ9H0K54M8HJ6.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQC34WBN738E6T9F7BMA8C/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:398.974350209444,770.1510389814107,763.5279672690142,28.27881360255617"
+        }
+      },
+      "modified": "2026-06-22T03:53:18.997Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Scrub the markbar to jump between annotated frames.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "markbar",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQC34WBN738E6T9F7BMA8C/v1",
+      "created": "2026-06-22T03:53:17.212Z",
+      "archie:logicalId": "01KVPQC34WBN738E6T9F7BMA8C",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQC34WBN738E6T9F7BMA8C.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

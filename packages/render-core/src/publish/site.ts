@@ -19,6 +19,7 @@ import { toExhibitsJson, toReadingCollection, type ExhibitsJson } from "../iiif/
 import { buildImageIndex } from "../iiif/image-index.js";
 import { toManifest, objectsFromManifest, canvasIdMap, sectionsFromManifest, sectionsToAnnotationCollection, embedHeadsIntoManifest, findCanvasesMissingDimensions, type HeadsEmbed } from "../iiif/manifest.js";
 import { rightsFromIIIF } from "../iiif/rights.js";
+import { rebaseCanvasId } from "../iiif/canvasid.js";
 import { langMap, type IIIFManifest, type LangMap } from "../iiif/presentation.js";
 import type { Exhibit, AObject, Section, Reading, RightsFields } from "../model/model.js";
 import type { DziTileSource } from "../iiif/resolve.js";
@@ -229,6 +230,21 @@ function rewriteHeadBodies(rec: AnnotationRecord, exhibitSlug: string, rw: LinkR
   });
   if (!changed) return rec;
   return { ...rec, body: Array.isArray(rec.body) ? next : next[0]! };
+}
+
+/** Re-mint a head's canvas target onto the base being published to, when it provably denotes one of
+ *  THIS exhibit's canvases at some other origin (see `rebaseCanvasId` for why this is not a fuzzy
+ *  match). Applied to the CONSUMER PROJECTION only — the same posture as `rewriteHeadBodies` beside
+ *  it: the history sidecar keeps the authored target verbatim, so a load→publish round trip rebases
+ *  from canonical each time rather than compounding. Returns the record unchanged when nothing moves. */
+function rebaseHeadTarget(rec: AnnotationRecord, base: string, slug: string, isObjectId: (id: string) => boolean): AnnotationRecord {
+  const t = rec.target;
+  if (typeof t === "string") {
+    const next = rebaseCanvasId(t, base, slug, isObjectId);
+    return next === t ? rec : { ...rec, target: next };
+  }
+  const next = rebaseCanvasId(t.source, base, slug, isObjectId);
+  return next === t.source ? rec : { ...rec, target: { ...t, source: next } };
 }
 
 async function writeJson(dir: FsDirectory, name: string, data: unknown): Promise<void> {
@@ -538,7 +554,13 @@ export async function publishLibrary(fs: Filesystem, library: Library, getLog: L
 
     // Per-canvas heads pages — grouped by the canvas (target.source) they annotate, at the path
     // the manifest references: {slug}/canvas/{objId}/annotations.json.
-    const heads = projectHeads(log);
+    // REBASE BEFORE GROUPING. The filter below is exact canvas-IRI equality against `baseUrl`, so a
+    // log authored at another origin (a Studio library on WORKING_IRI_BASE, a loaded tree being
+    // re-published elsewhere) would match nothing and drop every note with a healthy-looking publish.
+    // `rebaseCanvasId` re-mints only IRIs that provably denote this exhibit's own canvases.
+    const objectIds = new Set<string>(exhibit.objects.map((o) => o.id));
+    const isObjectId = (id: string) => objectIds.has(id);
+    const heads = projectHeads(log).map((h) => rebaseHeadTarget(h, baseUrl, exhibit.slug, isObjectId));
     const canvasDir = await exDir.getDirectory("canvas", { create: true });
     const readings = exhibit.readings ?? [];
     const collId = (rid: string) => `${baseUrl}${exhibit.slug}/annotations/readings/${rid}.json`;

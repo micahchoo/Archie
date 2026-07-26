@@ -1,8 +1,15 @@
 // Regression: the live-source published with baseUrl=`${PUBLISHED}/` (a tree path) while the Studio writes
 // annotation targets against BASE (https://archie.demo/). site.ts groups per-canvas annotations by
-// `targetSource(h) === ${baseUrl}{slug}/canvas/{id}`, so a mismatched base silently DROPS every annotation —
-// invisible for images (baked via a consistent base) but fatal for maps (live-source only). These tests pin
-// the base-match contract AND that a Map object's annotations (with archie:geo) project + survive publish.
+// `targetSource(h) === ${baseUrl}{slug}/canvas/{id}`, so a mismatched base silently DROPPED every annotation —
+// invisible for images (baked via a consistent base) but fatal for maps (live-source only).
+//
+// UPDATED 2026-07-25. That hazard is GONE: `publishLibrary` now rebases a head's canvas target onto the
+// base being published to before grouping (`rebaseCanvasId`), because the same defect was found to be
+// dropping every note from any re-publish at a new origin — the committed `archie-library.archie.zip`
+// shipped 21 canvases with zero inline annotations for exactly this reason. The second test below used to
+// PIN the drop ("DROPS the annotations when baseUrl ≠ the target base"); it now asserts the opposite,
+// which is a strictly stronger claim: a base mismatch is survivable, not fatal. Callers matching the base
+// is still the tidy thing to do — it is no longer load-bearing for data survival.
 import { describe, it, expect } from "vitest";
 import { publishLibrary } from "./site.js";
 import { fsJsonSource } from "./read.js";
@@ -38,8 +45,14 @@ describe("publishLibrary — Map annotation projection (live-source baseUrl regr
     expect((page.items![0] as unknown as Record<string, unknown>)["archie:geo"]).toEqual({ type: "bbox", west: -0.1, south: 51.4, east: 0.1, north: 51.6 });
   });
 
-  it("DROPS the annotations when baseUrl ≠ the target base (the bug the live source hit)", async () => {
+  it("SURVIVES a baseUrl ≠ the target base — the geo note rebases onto the published canvas", async () => {
+    // Was: `expect(...).toBe(0)`, pinning the drop. The map note is the sharpest case for the rebase,
+    // because a Map object exists ONLY on the live-source path, where the base mismatch was guaranteed.
     const page = await mapPage("/published/");
-    expect(page.items?.length ?? 0).toBe(0);
+    expect(page.items?.length ?? 0).toBe(1);
+    // and it lands on the canvas the published manifest actually names
+    expect(JSON.stringify(page)).toContain("/published/geo/canvas/m1");
+    // the geo-truth rides through the rebase untouched (the rebase touches the target IRI, nothing else)
+    expect(JSON.stringify(page)).toContain("51.4");
   });
 });

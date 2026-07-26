@@ -2,7 +2,147 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ974KKZ3AX3CZSN57YND2/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:529.073272490223,589.0811560719792,91.24380704041732,103.40964797913944"
+        }
+      },
+      "modified": "2026-06-22T03:51:44.447Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Annotate sound the way you annotate images — by marking moments on the waveform.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "audio",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "annotation",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ974KKZ3AX3CZSN57YND2/v1",
+      "created": "2026-06-22T03:51:42.995Z",
+      "archie:logicalId": "01KVPQ974KKZ3AX3CZSN57YND2",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ974KKZ3AX3CZSN57YND2.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9M3EFS5QM5K92HFVE2X7/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:647.6951070130516,590.7200709100948,90.44126588919244,96.60082306147478"
+        }
+      },
+      "modified": "2026-06-22T03:51:57.535Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Drag across the waveform to mark a time range; the note anchors to those seconds.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "time",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "range",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9M3EFS5QM5K92HFVE2X7/v1",
+      "created": "2026-06-22T03:51:56.270Z",
+      "archie:logicalId": "01KVPQ9M3EFS5QM5K92HFVE2X7",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ9M3EFS5QM5K92HFVE2X7.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9ZSGZ8B0S399SDGA16Y1/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:637.3739573808042,812.0595934248123,182.47937326277827,41.7741199620566"
+        }
+      },
+      "modified": "2026-06-22T03:52:09.765Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Or drop a point marker at a single instant.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "point",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "marker",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9ZSGZ8B0S399SDGA16Y1/v1",
+      "created": "2026-06-22T03:52:08.240Z",
+      "archie:logicalId": "01KVPQ9ZSGZ8B0S399SDGA16Y1",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ9ZSGZ8B0S399SDGA16Y1.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQAAYRBSXJBZAEMZDCJTT9/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:511.30787793352744,574.0280140513246,793.6321856072923,134.4148767965222"
+        }
+      },
+      "modified": "2026-06-22T03:52:21.116Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The marker bar shows every annotated moment along the track.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "markbar",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQAAYRBSXJBZAEMZDCJTT9/v1",
+      "created": "2026-06-22T03:52:19.672Z",
+      "archie:logicalId": "01KVPQAAYRBSXJBZAEMZDCJTT9",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQAAYRBSXJBZAEMZDCJTT9.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

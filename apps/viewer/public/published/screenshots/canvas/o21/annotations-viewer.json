@@ -2,7 +2,113 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21/annotations-viewer.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVBNQXP686QGKY4A8ZVXYD/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:31.212516297262223,86.2451108213821,1372.6117904084,578.8720000432954"
+        }
+      },
+      "modified": "2026-06-22T05:02:59.057Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Expand a long note into a centred sheet over a dimmed backdrop — distraction-free reading.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "reading",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sheet",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVBNQXP686QGKY4A8ZVXYD/v1",
+      "created": "2026-06-22T05:02:57.789Z",
+      "archie:logicalId": "01KVPVBNQXP686QGKY4A8ZVXYD",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVBNQXP686QGKY4A8ZVXYD.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVC0A89K2KFNM146AT8MTZ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:5.101337985469616,42.61764875778155,291.37235109496936,214.6954165962932"
+        }
+      },
+      "modified": "2026-06-22T05:03:09.676Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The legend toggles readings: the plain base pass, or the colour-coded interpretations, with a hide-all to declutter entirely.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "legend",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "toggle",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hide-all",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVC0A89K2KFNM146AT8MTZ/v1",
+      "created": "2026-06-22T05:03:08.616Z",
+      "archie:logicalId": "01KVPVC0A89K2KFNM146AT8MTZ",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVC0A89K2KFNM146AT8MTZ.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVCAY1YNYB1JKXDHGX9D3T/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21",
+      "modified": "2026-06-22T05:03:22.574Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Hover an in-library cite link and a rich preview card floats in — peek at the cited note without leaving the page.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cite",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hovercard",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVCAY1YNYB1JKXDHGX9D3T/v2",
+      "created": "2026-06-22T05:03:19.489Z",
+      "archie:logicalId": "01KVPVCAY1YNYB1JKXDHGX9D3T",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVCAY1YNYB1JKXDHGX9D3T.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",

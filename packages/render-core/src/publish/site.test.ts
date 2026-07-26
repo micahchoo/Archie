@@ -627,3 +627,79 @@ describe("publishLibrary — archie.json is the COMMIT MARKER, written LAST unde
     expect(order.indexOf("exhibits.json")).toBeLessThan(marker);
   });
 });
+
+// A LIBRARY THAT CHANGES ORIGIN — the class that shipped silently (2026-07-25).
+//
+// `publishLibrary` groups heads by EXACT canvas-IRI equality against the base it is publishing to.
+// Studio authors every target against `WORKING_IRI_BASE`; a deploy publishes to a real origin; and
+// `loadLibrary` → `publishLibrary` (gen-published.mts baking a dropped zip) re-publishes a tree
+// whose log still carries the ORIGINAL base. Each of those is a base change, and before the rebase
+// every one of them emitted zero annotations with a completely successful publish.
+//
+// The committed `apps/viewer/libraries/archie-library.archie.zip` is the artifact: manifest + canvas
+// ids at the deploy origin, 182 history records at `https://archie.demo/`, and 0 inline annotations
+// across all 21 canvases. These tests fail against the pre-rebase publisher.
+describe("publishLibrary — annotations survive a change of base", () => {
+  const WORKING = "https://archie.demo/";
+  const DEPLOY = "https://u.gh.io/lib/";
+  const exW = {
+    id: asExhibitId("exW"), slug: "w", title: "W",
+    objects: [{ id: asObjectId("o1"), source: "https://img/a.jpg", label: "A1", width: 10, height: 10 }],
+  };
+  const libW: Library = { id: asLibraryId("lib"), title: "Lib", exhibits: [exW] };
+  // Authored exactly as Studio authors it: target the WORKING canvas IRI.
+  const workingLog: AnnotationLog = appendNew([], {
+    target: { type: "SpecificResource", source: `${WORKING}w/canvas/o1`, selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: "xywh=pixel:1,2,3,4" } },
+    body: { type: "TextualBody", value: "authored against the working base" },
+    lastEditor: alice, modifiedAt: "t", now: 1,
+  }).log;
+
+  const inlineCount = async (fs: MemoryFilesystem, slug: string): Promise<number> => {
+    const manifest = JSON.parse(new TextDecoder().decode(await (await (await (await fs.root()).getDirectory(slug)).getFile("manifest.json")).readable()));
+    return manifest.items.reduce((n: number, c: { annotations?: Array<{ items?: unknown[] }> }) =>
+      n + (c.annotations ?? []).reduce((m, p) => m + (p.items?.length ?? 0), 0), 0);
+  };
+
+  it("publishes a working-base note onto the deploy origin's canvas", async () => {
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libW, () => workingLog, { baseUrl: DEPLOY });
+    expect(await inlineCount(fs, "w")).toBe(1);
+    // and the emitted target is the DEPLOY canvas, not the working one — a consumer resolves it.
+    const objDir = await (await (await (await fs.root()).getDirectory("w")).getDirectory("canvas")).getDirectory("o1");
+    const page = JSON.parse(new TextDecoder().decode(await (await objDir.getFile("annotations.json")).readable()));
+    expect(JSON.stringify(page)).toContain(`${DEPLOY}w/canvas/o1`);
+    expect(JSON.stringify(page)).not.toContain(WORKING);
+  });
+
+  it("keeps the HISTORY sidecar canonical — the rebase is projection-only", async () => {
+    // Same posture as rewriteHeadBodies: history is the authored record. If the rebase leaked into
+    // history, a round trip would compound rewrites instead of re-deriving from canonical.
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libW, () => workingLog, { baseUrl: DEPLOY });
+    const reloaded = await readAnnotations(await (await (await fs.root()).getDirectory("w")).getDirectory("annotations"));
+    const t = reloaded[0]!.target;
+    expect(typeof t === "string" ? t : t.source).toBe(`${WORKING}w/canvas/o1`);
+  });
+
+  it("survives load → re-publish at a DIFFERENT base (the gen-published.mts path)", async () => {
+    // Publish at the working base (what Studio's zip export does), load it back, then re-publish to
+    // a deploy origin — the exact sequence that fossilised `screenshots` into a note-less exhibit.
+    const first = new MemoryFilesystem();
+    await publishLibrary(first, libW, () => workingLog, { baseUrl: WORKING });
+    const loaded = await loadLibrary(first);
+    const second = new MemoryFilesystem();
+    await publishLibrary(second, loaded.library, (id) => loaded.logs[id] ?? [], { baseUrl: DEPLOY });
+    expect(await inlineCount(second, "w")).toBe(1);
+  });
+
+  it("does NOT claim a canvas belonging to something else", async () => {
+    // The rebase must stay narrow: a note on an external IIIF canvas is not this exhibit's note.
+    const foreignLog: AnnotationLog = appendNew([], {
+      target: "https://collections.library.yale.edu/iiif/2/1006231/canvas/p1",
+      body: { type: "TextualBody", value: "elsewhere" }, lastEditor: alice, modifiedAt: "t", now: 1,
+    }).log;
+    const fs = new MemoryFilesystem();
+    await publishLibrary(fs, libW, () => foreignLog, { baseUrl: DEPLOY });
+    expect(await inlineCount(fs, "w")).toBe(0);
+  });
+});

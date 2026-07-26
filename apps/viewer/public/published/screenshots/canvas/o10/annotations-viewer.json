@@ -2,7 +2,44 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations-viewer.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTVF2F6PT03V2SJTGC632T/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:440.37191770390615,313.0190552578707,551.0238672985934,43.2741257040779"
+        }
+      },
+      "modified": "2026-06-22T04:54:07.986Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Insert the cite and it renders as a live link — readers hover it for a preview card.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "live",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cite",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTVF2F6PT03V2SJTGC632T/v1",
+      "created": "2026-06-22T04:54:06.671Z",
+      "archie:logicalId": "01KVPTVF2F6PT03V2SJTGC632T",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTVF2F6PT03V2SJTGC632T.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",

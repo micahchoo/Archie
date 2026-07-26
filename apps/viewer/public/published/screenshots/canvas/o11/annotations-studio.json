@@ -2,7 +2,106 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTW548XFNYTTMMB9F7W122/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1063.744509428106,63.34810786785846,370.5997392438069,172.09908735332456"
+        }
+      },
+      "modified": "2026-06-22T04:54:30.475Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Set the exhibit's display title and summary — the name and blurb readers meet first.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "title",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "summary",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTW548XFNYTTMMB9F7W122/v1",
+      "created": "2026-06-22T04:54:29.256Z",
+      "archie:logicalId": "01KVPTW548XFNYTTMMB9F7W122",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTW548XFNYTTMMB9F7W122.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWB0MMX6F1VQ0QWFZWN45/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1079.886849006099,246.7444055794975,342.2808074450386,45.82146293215837"
+        }
+      },
+      "modified": "2026-06-22T04:54:36.855Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Credit the work with an attribution statement.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "attribution",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWB0MMX6F1VQ0QWFZWN45/v1",
+      "created": "2026-06-22T04:54:35.284Z",
+      "archie:logicalId": "01KVPTWB0MMX6F1VQ0QWFZWN45",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTWB0MMX6F1VQ0QWFZWN45.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWJBS6HABV5HS0QGMK1ZV/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1071.6433090040362,314.52805857927586,356.88364165315375,41.80663211344989"
+        }
+      },
+      "modified": "2026-06-22T04:54:44.093Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Choose a license — Creative Commons or RightsStatements.org — so reuse terms travel with the exhibit.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "license",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWJBS6HABV5HS0QGMK1ZV/v1",
+      "created": "2026-06-22T04:54:42.809Z",
+      "archie:logicalId": "01KVPTWJBS6HABV5HS0QGMK1ZV",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTWJBS6HABV5HS0QGMK1ZV.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

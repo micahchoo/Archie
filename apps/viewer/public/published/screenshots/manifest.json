@@ -99,7 +99,133 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/annotations-embed.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP7FN3KRAF8B45HJQKYSZG/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:16.607525735866844,14.331015156755731,584.9136732817352,49.2254081474728"
+                }
+              },
+              "modified": "2026-06-22T03:33:21.157Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Archie's reader drops into any web page as a single <archie-viewer> custom element — no framework, no build step on the host.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "web",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "embed",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP7FN3KRAF8B45HJQKYSZG/v1",
+              "created": "2026-06-22T03:33:17.603Z",
+              "archie:logicalId": "01KVPP7FN3KRAF8B45HJQKYSZG",
+              "archie:reading": "embed",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPP7FN3KRAF8B45HJQKYSZG.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP80S5NHFMEBP6XPB5X6B5/v2",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+              "modified": "2026-06-22T03:33:36.169Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Point it at a published library by URL, or at a local .archie.zip to browse exhibits with no internet at all.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "src",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "offline",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "zip",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP80S5NHFMEBP6XPB5X6B5/v1",
+              "created": "2026-06-22T03:33:35.141Z",
+              "archie:logicalId": "01KVPP80S5NHFMEBP6XPB5X6B5",
+              "archie:reading": "embed",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPP80S5NHFMEBP6XPB5X6B5.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP9R9G1NT2Y4DVNH9748SC/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+              "modified": "2026-06-22T03:34:35.012Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Deep-zoom still works inside the embed; tiles stream on demand.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "embedded",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "deep-zoom",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP9R9G1NT2Y4DVNH9748SC/v2",
+              "created": "2026-06-22T03:34:31.984Z",
+              "archie:logicalId": "01KVPP9R9G1NT2Y4DVNH9748SC",
+              "archie:reading": "embed",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPP9R9G1NT2Y4DVNH9748SC.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPABZXRC6HX4FHSWFDK3MT/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+              "modified": "2026-06-22T03:34:53.883Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Multiple embeds on one page stay independent — each tag carries its own library.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "instance",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "context",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPABZXRC6HX4FHSWFDK3MT/v2",
+              "created": "2026-06-22T03:34:52.157Z",
+              "archie:logicalId": "01KVPPABZXRC6HX4FHSWFDK3MT",
+              "archie:reading": "embed",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPABZXRC6HX4FHSWFDK3MT.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
@@ -120,7 +246,64 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/annotations-power.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA22B8HQFH407D649MEZH/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+              "modified": "2026-06-22T03:34:44.091Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A pre-baked DZI pyramid streams tiles straight to the canvas; a bare source string auto-detects the right tile handler — IIIF, DZI, or plain image.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "dzi",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "auto-detect",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA22B8HQFH407D649MEZH/v2",
+              "created": "2026-06-22T03:34:41.995Z",
+              "archie:logicalId": "01KVPPA22B8HQFH407D649MEZH",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPA22B8HQFH407D649MEZH.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA6R7M3P8RX7J8BV5XCJX/v2",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+              "modified": "2026-06-22T03:34:48.558Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Malformed or empty region selectors are skipped safely — a broken box never breaks the read.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "safe",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "skip",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA6R7M3P8RX7J8BV5XCJX/v1",
+              "created": "2026-06-22T03:34:46.791Z",
+              "archie:logicalId": "01KVPPA6R7M3P8RX7J8BV5XCJX",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPA6R7M3P8RX7J8BV5XCJX.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
@@ -184,7 +367,139 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPHN7FTV2HEHQP4874791K/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:224.82398956975257,431.2255541069079,333.2464146023466,192.43807040417198"
+                }
+              },
+              "modified": "2026-06-22T03:38:52.611Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Your library is every exhibit you're authoring, gathered in one place. Open one to keep editing, or start a fresh exhibit.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "library",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "home",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPHN7FTV2HEHQP4874791K/v1",
+              "created": "2026-06-22T03:38:50.991Z",
+              "archie:logicalId": "01KVPPHN7FTV2HEHQP4874791K",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPHN7FTV2HEHQP4874791K.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJ4G30S8KATCWEWG3XMA2/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:889.5930977144695,345.22477701938556,132.04653691541114,41.03150314177748"
+                }
+              },
+              "modified": "2026-06-22T03:39:08.091Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Bind your work to disk however you like — a folder, one portable .archie.zip, or stay browser-only. The current binding shows here and you can switch anytime.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "save",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "binding",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJ4G30S8KATCWEWG3XMA2/v1",
+              "created": "2026-06-22T03:39:06.627Z",
+              "archie:logicalId": "01KVPPJ4G30S8KATCWEWG3XMA2",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPJ4G30S8KATCWEWG3XMA2.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJKJFF4H8GQPPRPXQXVX6/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:242.14041172084404,328.13802591510006,482.90020073173224,69.4517036094519"
+                }
+              },
+              "modified": "2026-06-22T03:39:23.257Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Save status, always visible: Saved, Saving…, or Unsaved. Browser-only work persists in the browser; bind to a file for a copy you can move or back up.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "save",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "status",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJKJFF4H8GQPPRPXQXVX6/v1",
+              "created": "2026-06-22T03:39:22.063Z",
+              "archie:logicalId": "01KVPPJKJFF4H8GQPPRPXQXVX6",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPJKJFF4H8GQPPRPXQXVX6.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPK4C6V3EYVMWR1G0JP3W3/v2",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+              "modified": "2026-06-22T03:39:40.726Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Start an exhibit by bringing in media — images, audio, video, or a IIIF manifest URL.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "ingest",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPK4C6V3EYVMWR1G0JP3W3/v1",
+              "created": "2026-06-22T03:39:39.270Z",
+              "archie:logicalId": "01KVPPK4C6V3EYVMWR1G0JP3W3",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPK4C6V3EYVMWR1G0JP3W3.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -247,7 +562,36 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/annotations-power.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPKSN8JMHKCDTE193ZHN4D/v2",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+              "modified": "2026-06-22T03:40:02.684Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Open a local image straight from the OS file dialog and annotate it offline — no server, no upload.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "offline",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "local",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPKSN8JMHKCDTE193ZHN4D/v1",
+              "created": "2026-06-22T03:40:01.064Z",
+              "archie:logicalId": "01KVPPKSN8JMHKCDTE193ZHN4D",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPKSN8JMHKCDTE193ZHN4D.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
@@ -311,7 +655,142 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPWV61EGQ8VK9A7AWC5KR3/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:130.02357550156162,201.3413915120946,1295.436766623207,671.6558018252933"
+                }
+              },
+              "modified": "2026-06-22T03:44:59.099Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "An exhibit opens as an overview — its objects laid out as plates on one canvas you pan and zoom, so you see the whole shape before diving into any single image.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "overview",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "canvas",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPWV61EGQ8VK9A7AWC5KR3/v1",
+              "created": "2026-06-22T03:44:57.537Z",
+              "archie:logicalId": "01KVPPWV61EGQ8VK9A7AWC5KR3",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPWV61EGQ8VK9A7AWC5KR3.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPX6VRX9CJJTZRWB3YBW4B/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:349.808568533077,224.3436484019039,336.0988355887245,36.98695319875915"
+                }
+              },
+              "modified": "2026-06-22T03:45:10.716Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Drag plates to arrange them — the layout is yours to compose.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "arrange",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPX6VRX9CJJTZRWB3YBW4B/v1",
+              "created": "2026-06-22T03:45:09.496Z",
+              "archie:logicalId": "01KVPPX6VRX9CJJTZRWB3YBW4B",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPX6VRX9CJJTZRWB3YBW4B.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXHXRX4KRD2JSPE6A7J9V/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:612.3958426766069,487.2400412005684,213.48552829230266,227.83749658086094"
+                }
+              },
+              "modified": "2026-06-22T03:45:22.281Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Click any plate to enter its editor and start annotating.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "enter",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "object",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXHXRX4KRD2JSPE6A7J9V/v1",
+              "created": "2026-06-22T03:45:20.824Z",
+              "archie:logicalId": "01KVPPXHXRX4KRD2JSPE6A7J9V",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPXHXRX4KRD2JSPE6A7J9V.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXYMDNM262HBZH9TKK77X/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:2.6183397432406252,137.46260317088618,1440.938722294654,63.36375488917869"
+                }
+              },
+              "modified": "2026-06-22T03:45:35.334Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Begin a narrative spine right here — frame these objects into an ordered story.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "narrative",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXYMDNM262HBZH9TKK77X/v1",
+              "created": "2026-06-22T03:45:33.837Z",
+              "archie:logicalId": "01KVPPXYMDNM262HBZH9TKK77X",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPXYMDNM262HBZH9TKK77X.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -438,7 +917,188 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZDS42NAQF1A4751J79G3/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:911.0652759669719,473.3598742089974,154.82398956975237,69.26336375488921"
+                }
+              },
+              "modified": "2026-06-22T03:46:23.781Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Pin a note to any region: drag a box on the deep-zoom canvas and the note anchors there. Redraw or nudge the box whenever you like.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "region",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "annotation",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZDS42NAQF1A4751J79G3/v1",
+              "created": "2026-06-22T03:46:22.116Z",
+              "archie:logicalId": "01KVPPZDS42NAQF1A4751J79G3",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPZDS42NAQF1A4751J79G3.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZN0NJE6RPCQVSNNTFFEJ/v2",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+              "modified": "2026-06-22T03:46:31.464Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Or make a whole-object note with no box at all — a thin colour border frames the entire image instead of a region.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "whole-object",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZN0NJE6RPCQVSNNTFFEJ/v1",
+              "created": "2026-06-22T03:46:29.525Z",
+              "archie:logicalId": "01KVPPZN0NJE6RPCQVSNNTFFEJ",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPZN0NJE6RPCQVSNNTFFEJ.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ09AGVX1H0TATKZW9HB22/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:906.5697589477821,470.90328654547255,166.23207301173386,73.3376792698827"
+                }
+              },
+              "modified": "2026-06-22T03:46:51.803Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Write the note body in markdown.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "comment",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "markdown",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ09AGVX1H0TATKZW9HB22/v1",
+              "created": "2026-06-22T03:46:50.320Z",
+              "archie:logicalId": "01KVPQ09AGVX1H0TATKZW9HB22",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ09AGVX1H0TATKZW9HB22.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ0ZPZC5CT5ZA3YHSDTWM5/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:905.3635661458206,473.3920034767501,167.3526441975098,67.90525858322462"
+                }
+              },
+              "modified": "2026-06-22T03:47:14.578Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Tag it — tags drive filtering and the search finder later.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "tags",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ0ZPZC5CT5ZA3YHSDTWM5/v1",
+              "created": "2026-06-22T03:47:13.247Z",
+              "archie:logicalId": "01KVPQ0ZPZC5CT5ZA3YHSDTWM5",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ0ZPZC5CT5ZA3YHSDTWM5.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1ABXZ0MVHKT94RSHK26Q/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1147.179388741199,450.2850812815683,275.4871963995579,197.23596940668745"
+                }
+              },
+              "modified": "2026-06-22T03:47:25.844Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Assign the note to a reading — one interpretive pass among several.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "reading",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1ABXZ0MVHKT94RSHK26Q/v1",
+              "created": "2026-06-22T03:47:24.157Z",
+              "archie:logicalId": "01KVPQ1ABXZ0MVHKT94RSHK26Q",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ1ABXZ0MVHKT94RSHK26Q.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ25ABW3P2WHFJGWCZV2M5/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+              "modified": "2026-06-22T03:47:55.688Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Delete a note in one click; its mark and region go with it.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "delete",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ25ABW3P2WHFJGWCZV2M5/v2",
+              "created": "2026-06-22T03:47:51.755Z",
+              "archie:logicalId": "01KVPQ25ABW3P2WHFJGWCZV2M5",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ25ABW3P2WHFJGWCZV2M5.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -501,7 +1161,75 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/annotations-power.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1QJ9PFANV0A3Y6ATGQZG/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:757.1657845777061,461.1886351785758,298.0443285528031,417.73142112125146"
+                }
+              },
+              "modified": "2026-06-22T03:47:43.679Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Emphasis makes a mark stand out or recede — normal, strong, or muted.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "emphasis",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1QJ9PFANV0A3Y6ATGQZG/v1",
+              "created": "2026-06-22T03:47:37.673Z",
+              "archie:logicalId": "01KVPQ1QJ9PFANV0A3Y6ATGQZG",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ1QJ9PFANV0A3Y6ATGQZG.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ2HRPFN2N9YE8N47TF1E7/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:792.3397496470833,643.3725414743437,26.10545009099087,22.89373856560087"
+                }
+              },
+              "modified": "2026-06-22T03:48:06.470Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Deep-zoom to pixel detail — but never past native resolution, nor out into an unreadable speck. The camera clamps both ends.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "zoom",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "clamp",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ2HRPFN2N9YE8N47TF1E7/v1",
+              "created": "2026-06-22T03:48:04.502Z",
+              "archie:logicalId": "01KVPQ2HRPFN2N9YE8N47TF1E7",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ2HRPFN2N9YE8N47TF1E7.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
@@ -565,7 +1293,147 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3AAWR0TBS3E5XMPVH43C/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:431.0667449644606,148.89230769230826,563.2333767926987,87.02737940026077"
+                }
+              },
+              "modified": "2026-06-22T03:48:31.187Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Readings are competing interpretations of the same image — a 'cipher' reading, a 'botanical' reading — each its own coloured pass over the marks.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "readings",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3AAWR0TBS3E5XMPVH43C/v1",
+              "created": "2026-06-22T03:48:29.660Z",
+              "archie:logicalId": "01KVPQ3AAWR0TBS3E5XMPVH43C",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ3AAWR0TBS3E5XMPVH43C.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3PYKWSMSWN86SMP5QFJJ/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1148.0908346417489,442.4878108120564,275.87093107944065,192.30418918311364"
+                }
+              },
+              "modified": "2026-06-22T03:48:43.803Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The rail lists every reading. The eye toggles a reading's marks on or off; the pen picks which reading you're authoring into.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "rail",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "visibility",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "filter",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3PYKWSMSWN86SMP5QFJJ/v1",
+              "created": "2026-06-22T03:48:42.579Z",
+              "archie:logicalId": "01KVPQ3PYKWSMSWN86SMP5QFJJ",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ3PYKWSMSWN86SMP5QFJJ.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3WXQ4PJ0614J4BEAC2XN/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1185.2358385757177,491.75479017904684,22.815751259013496,106.80780259713993"
+                }
+              },
+              "modified": "2026-06-22T03:48:49.960Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Give each reading a colour — its identity in the legend and on the canvas.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "colour",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "swatch",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3WXQ4PJ0614J4BEAC2XN/v1",
+              "created": "2026-06-22T03:48:48.695Z",
+              "archie:logicalId": "01KVPQ3WXQ4PJ0614J4BEAC2XN",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ3WXQ4PJ0614J4BEAC2XN.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4C01AJ4MZNXYPKTMBA6G/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:419.0988522347517,466.5793025456476,168.39568925806373,48.28454060767183"
+                }
+              },
+              "modified": "2026-06-22T03:49:05.549Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Describe a reading in a line so readers know what lens they're looking through.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "description",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4C01AJ4MZNXYPKTMBA6G/v1",
+              "created": "2026-06-22T03:49:04.129Z",
+              "archie:logicalId": "01KVPQ4C01AJ4MZNXYPKTMBA6G",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ4C01AJ4MZNXYPKTMBA6G.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -586,7 +1454,44 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/annotations-viewer.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4XCJ9SFDQKGGKSD6ECDS/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1153.2618905724526,513.5302623512094,248.87097459657753,37.86928225817428"
+                }
+              },
+              "modified": "2026-06-22T03:49:23.609Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Hover a reading to solo it — isolate one interpretation, or compare two side by side.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "solo",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "compare",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4XCJ9SFDQKGGKSD6ECDS/v1",
+              "created": "2026-06-22T03:49:21.938Z",
+              "archie:logicalId": "01KVPQ4XCJ9SFDQKGGKSD6ECDS",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ4XCJ9SFDQKGGKSD6ECDS.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
@@ -692,7 +1597,142 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ6WAR7APH4FZ9KHGGCY5N/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:25.927509778356956,610.4558018252928,298.0631029986962,99.35436766623206"
+                }
+              },
+              "modified": "2026-06-22T03:50:27.971Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A narrative is a spine of sections — ordered prose that walks a reader through your objects, one framed view at a time.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "narrative",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "spine",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ6WAR7APH4FZ9KHGGCY5N/v1",
+              "created": "2026-06-22T03:50:26.392Z",
+              "archie:logicalId": "01KVPQ6WAR7APH4FZ9KHGGCY5N",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ6WAR7APH4FZ9KHGGCY5N.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ75FWS5H8V4TE8X71VDJJ/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:8.973474919030693,496.8269112234135,170.07406655231756,45.39570949328777"
+                }
+              },
+              "modified": "2026-06-22T03:50:37.041Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Each section points at an object; draw a region and that becomes the camera the reader lands on.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "framing",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "camera",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ75FWS5H8V4TE8X71VDJJ/v1",
+              "created": "2026-06-22T03:50:35.772Z",
+              "archie:logicalId": "01KVPQ75FWS5H8V4TE8X71VDJJ",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ75FWS5H8V4TE8X71VDJJ.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ7P5344ZF6XBH0AGS55M9/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:253.6249865323566,449.5252144446616,120.6048199394701,40.094720543115045"
+                }
+              },
+              "modified": "2026-06-22T03:50:54.275Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Write the section's prose beside it — markdown, with live cites to other notes.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "prose",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ7P5344ZF6XBH0AGS55M9/v1",
+              "created": "2026-06-22T03:50:52.835Z",
+              "archie:logicalId": "01KVPQ7P5344ZF6XBH0AGS55M9",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ7P5344ZF6XBH0AGS55M9.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ85RCS2W54ZJ1GQDE0ZSQ/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1.4491951983921503,451.59595727558997,377.3936456849484,232.49776384343545"
+                }
+              },
+              "modified": "2026-06-22T03:51:10.229Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Reorder sections to retell the story; the reader follows your order.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "reorder",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ85RCS2W54ZJ1GQDE0ZSQ/v1",
+              "created": "2026-06-22T03:51:08.812Z",
+              "archie:logicalId": "01KVPQ85RCS2W54ZJ1GQDE0ZSQ",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ85RCS2W54ZJ1GQDE0ZSQ.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -819,7 +1859,147 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ974KKZ3AX3CZSN57YND2/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:529.073272490223,589.0811560719792,91.24380704041732,103.40964797913944"
+                }
+              },
+              "modified": "2026-06-22T03:51:44.447Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Annotate sound the way you annotate images — by marking moments on the waveform.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "audio",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "annotation",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ974KKZ3AX3CZSN57YND2/v1",
+              "created": "2026-06-22T03:51:42.995Z",
+              "archie:logicalId": "01KVPQ974KKZ3AX3CZSN57YND2",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ974KKZ3AX3CZSN57YND2.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9M3EFS5QM5K92HFVE2X7/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:647.6951070130516,590.7200709100948,90.44126588919244,96.60082306147478"
+                }
+              },
+              "modified": "2026-06-22T03:51:57.535Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Drag across the waveform to mark a time range; the note anchors to those seconds.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "time",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "range",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9M3EFS5QM5K92HFVE2X7/v1",
+              "created": "2026-06-22T03:51:56.270Z",
+              "archie:logicalId": "01KVPQ9M3EFS5QM5K92HFVE2X7",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ9M3EFS5QM5K92HFVE2X7.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9ZSGZ8B0S399SDGA16Y1/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:637.3739573808042,812.0595934248123,182.47937326277827,41.7741199620566"
+                }
+              },
+              "modified": "2026-06-22T03:52:09.765Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Or drop a point marker at a single instant.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "point",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "marker",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ9ZSGZ8B0S399SDGA16Y1/v1",
+              "created": "2026-06-22T03:52:08.240Z",
+              "archie:logicalId": "01KVPQ9ZSGZ8B0S399SDGA16Y1",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ9ZSGZ8B0S399SDGA16Y1.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQAAYRBSXJBZAEMZDCJTT9/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o7",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:511.30787793352744,574.0280140513246,793.6321856072923,134.4148767965222"
+                }
+              },
+              "modified": "2026-06-22T03:52:21.116Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The marker bar shows every annotated moment along the track.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "markbar",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQAAYRBSXJBZAEMZDCJTT9/v1",
+              "created": "2026-06-22T03:52:19.672Z",
+              "archie:logicalId": "01KVPQAAYRBSXJBZAEMZDCJTT9",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQAAYRBSXJBZAEMZDCJTT9.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -946,7 +2126,75 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBKA4KEQVQ9H0K54M8HJ6/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:387.9269882659714,766.8187744458929,644.1981747066491,102.08604954367672"
+                }
+              },
+              "modified": "2026-06-22T03:53:02.420Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Video gets both axes: pause on a frame, draw a box on it, and the note anchors to that spot at that moment.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "video",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "frame",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBKA4KEQVQ9H0K54M8HJ6/v1",
+              "created": "2026-06-22T03:53:00.996Z",
+              "archie:logicalId": "01KVPQBKA4KEQVQ9H0K54M8HJ6",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQBKA4KEQVQ9H0K54M8HJ6.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQC34WBN738E6T9F7BMA8C/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:398.974350209444,770.1510389814107,763.5279672690142,28.27881360255617"
+                }
+              },
+              "modified": "2026-06-22T03:53:18.997Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Scrub the markbar to jump between annotated frames.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "markbar",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQC34WBN738E6T9F7BMA8C/v1",
+              "created": "2026-06-22T03:53:17.212Z",
+              "archie:logicalId": "01KVPQC34WBN738E6T9F7BMA8C",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQC34WBN738E6T9F7BMA8C.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -1009,7 +2257,39 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8/annotations-power.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBSK91N5ZC2B81HMJ78S2/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o8",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:532.3162343209095,809.0688643618212,217.97222721755156,50.906464955266756"
+                }
+              },
+              "modified": "2026-06-22T03:53:08.488Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The selector carries time and space together (t=… plus xywh=…), so the mark appears only while that frame is on screen.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "spatiotemporal",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQBSK91N5ZC2B81HMJ78S2/v1",
+              "created": "2026-06-22T03:53:07.433Z",
+              "archie:logicalId": "01KVPQBSK91N5ZC2B81HMJ78S2",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQBSK91N5ZC2B81HMJ78S2.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
@@ -1073,7 +2353,80 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRDG94NM4T6KSZZ6QEV7P/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:467.71838331160365,242.30769230769232,505.7366362451108,533.8983050847455"
+                }
+              },
+              "modified": "2026-06-22T04:52:28.186Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Add a map as an object — a basemap you pan and zoom like any image, for notes about places.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "map",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "layer",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRDG94NM4T6KSZZ6QEV7P/v1",
+              "created": "2026-06-22T04:52:26.761Z",
+              "archie:logicalId": "01KVPTRDG94NM4T6KSZZ6QEV7P",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTRDG94NM4T6KSZZ6QEV7P.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRN8G5YTMAEFXQ6ANPP5Z/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:474.17209908735344,663.7880361522989,446.88749917132554,45.24561907497832"
+                }
+              },
+              "modified": "2026-06-22T04:52:36.000Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Frame a lat/lng extent and anchor a note to that patch of the world.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "geo",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "extent",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRN8G5YTMAEFXQ6ANPP5Z/v1",
+              "created": "2026-06-22T04:52:34.704Z",
+              "archie:logicalId": "01KVPTRN8G5YTMAEFXQ6ANPP5Z",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTRN8G5YTMAEFXQ6ANPP5Z.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -1115,7 +2468,44 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/annotations-embed.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTSB51QWHDNY3YV9FVD5WY/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:444.75780006834975,39.219912470340184,548.6312148507753,809.032262479223"
+                }
+              },
+              "modified": "2026-06-22T04:52:58.152Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Basemap tiles stream from an XYZ template as you pan — standard web-map tiling.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "xyz",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "tiles",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTSB51QWHDNY3YV9FVD5WY/v1",
+              "created": "2026-06-22T04:52:57.121Z",
+              "archie:logicalId": "01KVPTSB51QWHDNY3YV9FVD5WY",
+              "archie:reading": "embed",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTSB51QWHDNY3YV9FVD5WY.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
@@ -1200,7 +2590,75 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTRE7CE9JHF8Y8VQC55C3/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:434.86310299869626,93.2855280312908,564.4067796610168,637.1577574967405"
+                }
+              },
+              "modified": "2026-06-22T04:53:45.470Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Cite another note, object, or exhibit from inside a note — your library cross-links itself.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "citation",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTRE7CE9JHF8Y8VQC55C3/v1",
+              "created": "2026-06-22T04:53:43.495Z",
+              "archie:logicalId": "01KVPTTRE7CE9JHF8Y8VQC55C3",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTTRE7CE9JHF8Y8VQC55C3.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTV5EN315FWE0GV5NFQS98/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:542.6876559790784,198.01447326996941,90.50344274257407,39.882873072998734"
+                }
+              },
+              "modified": "2026-06-22T04:53:57.989Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Or browse thumbnails when you'd rather recognise than recall.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "thumbnail",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "browse",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTV5EN315FWE0GV5NFQS98/v1",
+              "created": "2026-06-22T04:53:56.821Z",
+              "archie:logicalId": "01KVPTV5EN315FWE0GV5NFQS98",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTV5EN315FWE0GV5NFQS98.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -1221,7 +2679,44 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations-viewer.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTVF2F6PT03V2SJTGC632T/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:440.37191770390615,313.0190552578707,551.0238672985934,43.2741257040779"
+                }
+              },
+              "modified": "2026-06-22T04:54:07.986Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Insert the cite and it renders as a live link — readers hover it for a preview card.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "live",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "cite",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTVF2F6PT03V2SJTGC632T/v1",
+              "created": "2026-06-22T04:54:06.671Z",
+              "archie:logicalId": "01KVPTVF2F6PT03V2SJTGC632T",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTVF2F6PT03V2SJTGC632T.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
@@ -1263,7 +2758,44 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations-power.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTZTE4PVA6MWH34XG5K7V/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:476.1593876479084,116.96088147152146,494.27492269955746,43.1971361014739"
+                }
+              },
+              "modified": "2026-06-22T04:53:52.415Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Press Cmd-K and search by text to find what to cite.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "cmd-k",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "search",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTZTE4PVA6MWH34XG5K7V/v1",
+              "created": "2026-06-22T04:53:51.054Z",
+              "archie:logicalId": "01KVPTTZTE4PVA6MWH34XG5K7V",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTTZTE4PVA6MWH34XG5K7V.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
@@ -1327,7 +2859,106 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTW548XFNYTTMMB9F7W122/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1063.744509428106,63.34810786785846,370.5997392438069,172.09908735332456"
+                }
+              },
+              "modified": "2026-06-22T04:54:30.475Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Set the exhibit's display title and summary — the name and blurb readers meet first.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "title",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "summary",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTW548XFNYTTMMB9F7W122/v1",
+              "created": "2026-06-22T04:54:29.256Z",
+              "archie:logicalId": "01KVPTW548XFNYTTMMB9F7W122",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTW548XFNYTTMMB9F7W122.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWB0MMX6F1VQ0QWFZWN45/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1079.886849006099,246.7444055794975,342.2808074450386,45.82146293215837"
+                }
+              },
+              "modified": "2026-06-22T04:54:36.855Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Credit the work with an attribution statement.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "attribution",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWB0MMX6F1VQ0QWFZWN45/v1",
+              "created": "2026-06-22T04:54:35.284Z",
+              "archie:logicalId": "01KVPTWB0MMX6F1VQ0QWFZWN45",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTWB0MMX6F1VQ0QWFZWN45.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWJBS6HABV5HS0QGMK1ZV/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o11",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1071.6433090040362,314.52805857927586,356.88364165315375,41.80663211344989"
+                }
+              },
+              "modified": "2026-06-22T04:54:44.093Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Choose a license — Creative Commons or RightsStatements.org — so reuse terms travel with the exhibit.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "license",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTWJBS6HABV5HS0QGMK1ZV/v1",
+              "created": "2026-06-22T04:54:42.809Z",
+              "archie:logicalId": "01KVPTWJBS6HABV5HS0QGMK1ZV",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTWJBS6HABV5HS0QGMK1ZV.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -1454,7 +3085,80 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXB33MANN2N5Q8NTMGNN4/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1198.8044191249219,134.16027354180855,229.79139504563227,267.2750977835723"
+                }
+              },
+              "modified": "2026-06-22T04:55:11.449Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Populate an exhibit with media — drop in images, audio, or video from your machine.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "ingest",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "media",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXB33MANN2N5Q8NTMGNN4/v1",
+              "created": "2026-06-22T04:55:08.131Z",
+              "archie:logicalId": "01KVPTXB33MANN2N5Q8NTMGNN4",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTXB33MANN2N5Q8NTMGNN4.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXMJFRNFAXNYT4W690FSZ/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1219.265238552109,239.22343127550712,216.39874279478272,35.89222304003644"
+                }
+              },
+              "modified": "2026-06-22T04:55:19.009Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Paste a IIIF manifest URL and Archie pulls in its folios as objects, ready to annotate.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "iiif",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "import",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXMJFRNFAXNYT4W690FSZ/v1",
+              "created": "2026-06-22T04:55:17.839Z",
+              "archie:logicalId": "01KVPTXMJFRNFAXNYT4W690FSZ",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTXMJFRNFAXNYT4W690FSZ.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -1496,7 +3200,44 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/annotations-embed.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTY1K7DWA15MPS9QANPR0J/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:716.3428207891895,426.6972029373288,387.6127421077938,467.7125903382745"
+                }
+              },
+              "modified": "2026-06-22T04:55:32.363Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Remote images deep-zoom in place — tiles load with anonymous CORS and a 60-second timeout, no copy required.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "remote",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "deep-zoom",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTY1K7DWA15MPS9QANPR0J/v1",
+              "created": "2026-06-22T04:55:31.175Z",
+              "archie:logicalId": "01KVPTY1K7DWA15MPS9QANPR0J",
+              "archie:reading": "embed",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTY1K7DWA15MPS9QANPR0J.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",
@@ -1581,7 +3322,106 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13/annotations-studio.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTYSVWFK6R3NVVW9ETEPDJ/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:446.5971316818775,160.16949152542378,546.6737178941364,573.7940026075617"
+                }
+              },
+              "modified": "2026-06-22T04:55:58.528Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Publish turns your exhibit into a static site — shareable, indexable, hostable anywhere.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "publish",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTYSVWFK6R3NVVW9ETEPDJ/v1",
+              "created": "2026-06-22T04:55:56.028Z",
+              "archie:logicalId": "01KVPTYSVWFK6R3NVVW9ETEPDJ",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTYSVWFK6R3NVVW9ETEPDJ.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZ0ANDMJM4TWRXZ3TJZQK/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:457.3502945204009,210.66635616168207,510.95345994910633,128.6734921101703"
+                }
+              },
+              "modified": "2026-06-22T04:56:03.753Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Choose where it goes: a local folder, a downloadable zip, or straight to GitHub Pages.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "destinations",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZ0ANDMJM4TWRXZ3TJZQK/v1",
+              "created": "2026-06-22T04:56:02.645Z",
+              "archie:logicalId": "01KVPTZ0ANDMJM4TWRXZ3TJZQK",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTZ0ANDMJM4TWRXZ3TJZQK.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZB3BZE9Y0KJ3RW8MR3B3/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:472.69570073491934,442.69800872433177,505.05893169191893,104.16840466145834"
+                }
+              },
+              "modified": "2026-06-22T04:56:14.854Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "For GitHub, give a repo, a branch, and a personal access token; Archie pushes the built pages.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "github",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "pat",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZB3BZE9Y0KJ3RW8MR3B3/v1",
+              "created": "2026-06-22T04:56:13.675Z",
+              "archie:logicalId": "01KVPTZB3BZE9Y0KJ3RW8MR3B3",
+              "archie:reading": "studio",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTZB3BZE9Y0KJ3RW8MR3B3.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",
@@ -1602,7 +3442,36 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13/annotations-viewer.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZSKGX3FPY48AHJ099D1Y/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13",
+              "modified": "2026-06-22T04:56:31.342Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Published pages carry SEO metadata — OpenGraph and Twitter tags, schema.org JSON-LD, a sitemap — so links preview richly and search engines index them.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "seo",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "metadata",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZSKGX3FPY48AHJ099D1Y/v2",
+              "created": "2026-06-22T04:56:28.528Z",
+              "archie:logicalId": "01KVPTZSKGX3FPY48AHJ099D1Y",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTZSKGX3FPY48AHJ099D1Y.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
@@ -1644,7 +3513,36 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13/annotations-power.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZMG5Q4VK731XEEW0EJN9/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o13",
+              "modified": "2026-06-22T04:56:25.744Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Each step reports its status — working, done, or the exact error if something fails.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "status",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "steps",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTZMG5Q4VK731XEEW0EJN9/v2",
+              "created": "2026-06-22T04:56:23.301Z",
+              "archie:logicalId": "01KVPTZMG5Q4VK731XEEW0EJN9",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTZMG5Q4VK731XEEW0EJN9.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
@@ -1771,7 +3669,121 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14/annotations-power.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0NCEFYM5Z8R3MR7DVKB2/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:396.1408083441982,231.11507488758244,125.55410691003914,461.7793188542689"
+                }
+              },
+              "modified": "2026-06-22T04:56:58.298Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Archie is keyboard-first — a shortcut for every common move, listed in this overlay.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "shortcuts",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0NCEFYM5Z8R3MR7DVKB2/v1",
+              "created": "2026-06-22T04:56:56.974Z",
+              "archie:logicalId": "01KVPV0NCEFYM5Z8R3MR7DVKB2",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV0NCEFYM5Z8R3MR7DVKB2.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0YJPEZZ54ZSNADDM2TVY/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:405.66693977311354,455.25505022989955,556.5915836954296,47.85647261680333"
+                }
+              },
+              "modified": "2026-06-22T04:57:07.741Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Save, cite (Cmd-K), and dismiss without leaving the keyboard.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "save",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "cite",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "dismiss",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0YJPEZZ54ZSNADDM2TVY/v1",
+              "created": "2026-06-22T04:57:06.390Z",
+              "archie:logicalId": "01KVPV0YJPEZZ54ZSNADDM2TVY",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV0YJPEZZ54ZSNADDM2TVY.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV1687SJBZHBAAHGD96WXM/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:416.33942345036235,419.07203525963627,412.0773771922188,33.994310794529156"
+                }
+              },
+              "modified": "2026-06-22T04:57:16.046Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Step between objects and open this help from anywhere with a key.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "object",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "nav",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "help",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV1687SJBZHBAAHGD96WXM/v1",
+              "created": "2026-06-22T04:57:14.247Z",
+              "archie:logicalId": "01KVPV1687SJBZHBAAHGD96WXM",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV1687SJBZHBAAHGD96WXM.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
@@ -1856,7 +3868,111 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15/annotations-viewer.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV26C33PV4MX9278BAPFQ5/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:193.14211212516307,257.5619295958279,1039.6349413298565,544.4589308996087"
+                }
+              },
+              "modified": "2026-06-22T04:57:48.314Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Published exhibits greet visitors as a wall of cards — cover image, title, and how many notes wait inside.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "gallery",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "cards",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV26C33PV4MX9278BAPFQ5/v1",
+              "created": "2026-06-22T04:57:47.139Z",
+              "archie:logicalId": "01KVPV26C33PV4MX9278BAPFQ5",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV26C33PV4MX9278BAPFQ5.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2G4V2788DZ8JT4KKWVE7/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:206.58566740098,279.59189407903625,342.06379535134647,472.7650271995683"
+                }
+              },
+              "modified": "2026-06-22T04:57:58.390Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Cards sit in the order you set, so the most important exhibit leads.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "order",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2G4V2788DZ8JT4KKWVE7/v1",
+              "created": "2026-06-22T04:57:57.147Z",
+              "archie:logicalId": "01KVPV2G4V2788DZ8JT4KKWVE7",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV2G4V2788DZ8JT4KKWVE7.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2SCY64FP7B31MXDKFVM9/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:559.6110202826076,278.87442538065267,318.2543214339703,539.3707776913068"
+                }
+              },
+              "modified": "2026-06-22T04:58:07.848Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "One card per exhibit; click through to read.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "open",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "exhibit",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2SCY64FP7B31MXDKFVM9/v1",
+              "created": "2026-06-22T04:58:06.622Z",
+              "archie:logicalId": "01KVPV2SCY64FP7B31MXDKFVM9",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV2SCY64FP7B31MXDKFVM9.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
@@ -1983,7 +4099,186 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16/annotations-viewer.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4PQEWGK6A28DZYYSQYZE/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+              "modified": "2026-06-22T04:59:11.673Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Long note? Expand it into a centred reading sheet over a dimmed backdrop.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "expand",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "sheet",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4PQEWGK6A28DZYYSQYZE/v2",
+              "created": "2026-06-22T04:59:09.422Z",
+              "archie:logicalId": "01KVPV4PQEWGK6A28DZYYSQYZE",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV4PQEWGK6A28DZYYSQYZE.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4WM6GFC3Q5YH9HV5HH34/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+              "modified": "2026-06-22T04:59:17.986Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The note list is a sidebar you can drag to resize or collapse; your preference is remembered next time.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "resizable",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "sidebar",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "persists",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4WM6GFC3Q5YH9HV5HH34/v2",
+              "created": "2026-06-22T04:59:15.462Z",
+              "archie:logicalId": "01KVPV4WM6GFC3Q5YH9HV5HH34",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV4WM6GFC3Q5YH9HV5HH34.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV58QGTDE34GP9Z2TKBHT2/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+              "modified": "2026-06-22T04:59:30.873Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Hover a note in the list and its mark solos on the canvas — everything else fades.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "hover",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "solo",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV58QGTDE34GP9Z2TKBHT2/v2",
+              "created": "2026-06-22T04:59:27.856Z",
+              "archie:logicalId": "01KVPV58QGTDE34GP9Z2TKBHT2",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV58QGTDE34GP9Z2TKBHT2.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5TTYBFP8MKF1SC63XFPC/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+              "modified": "2026-06-22T04:59:48.706Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Click a mark and the camera fits and highlights it; click a whole-object mark and a thin colour border frames the entire image.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "fit",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "highlight",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5TTYBFP8MKF1SC63XFPC/v2",
+              "created": "2026-06-22T04:59:46.398Z",
+              "archie:logicalId": "01KVPV5TTYBFP8MKF1SC63XFPC",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV5TTYBFP8MKF1SC63XFPC.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5Z9WKTNG4PVZNJFVFRV2/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+              "modified": "2026-06-22T04:59:53.041Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Read an image with its notes pinned right to the regions they describe.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "pinned",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "notes",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5Z9WKTNG4PVZNJFVFRV2/v2",
+              "created": "2026-06-22T04:59:50.972Z",
+              "archie:logicalId": "01KVPV5Z9WKTNG4PVZNJFVFRV2",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV5Z9WKTNG4PVZNJFVFRV2.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV63QEQZZX7VVGYBVNACF7/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+              "modified": "2026-06-22T04:59:57.626Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Selecting a note floats its card in beside the canvas; with the sidebar open, the camera centres the mark in the space you can still see.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "note",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "card",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "centre",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV63QEQZZX7VVGYBVNACF7/v2",
+              "created": "2026-06-22T04:59:55.502Z",
+              "archie:logicalId": "01KVPV63QEQZZX7VVGYBVNACF7",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV63QEQZZX7VVGYBVNACF7.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
@@ -2025,7 +4320,36 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16/annotations-power.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4HHCSPRQ1D9GBKYG00YZ/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+              "modified": "2026-06-22T04:59:07.065Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "On touch, scroll the note list without panning the canvas — the two never fight.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "touch",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "scroll",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4HHCSPRQ1D9GBKYG00YZ/v2",
+              "created": "2026-06-22T04:59:04.108Z",
+              "archie:logicalId": "01KVPV4HHCSPRQ1D9GBKYG00YZ",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV4HHCSPRQ1D9GBKYG00YZ.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
@@ -2110,7 +4434,152 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/annotations-viewer.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7AJC9AMDV7KA3T4K4T44/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1028.604954367666,46.34941329856589,409.5176010430248,607.8226857887875"
+                }
+              },
+              "modified": "2026-06-22T05:00:36.607Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Audio and video read with a transcript spine — the words beside the sound, each line a moment you can jump to.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "transcript",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "spine",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7AJC9AMDV7KA3T4K4T44/v1",
+              "created": "2026-06-22T05:00:35.276Z",
+              "archie:logicalId": "01KVPV7AJC9AMDV7KA3T4K4T44",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV7AJC9AMDV7KA3T4K4T44.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7TVKJ7F7G6XDY4SVJ62F/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:254.32831362558795,470.9602660707756,492.9782742835579,53.40597971405208"
+                }
+              },
+              "modified": "2026-06-22T05:00:53.437Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Click a transcript line to seek there; as it plays, the active line highlights and follows along.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "seek",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "highlight",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7TVKJ7F7G6XDY4SVJ62F/v1",
+              "created": "2026-06-22T05:00:51.955Z",
+              "archie:logicalId": "01KVPV7TVKJ7F7G6XDY4SVJ62F",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV7TVKJ7F7G6XDY4SVJ62F.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV82JGG21D1GWRCK77CYW4/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:-0.37959549891194655,811.6761549495234,1015.2710354327334,72.36273038721447"
+                }
+              },
+              "modified": "2026-06-22T05:01:01.011Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The waveform doubles as a map of annotated moments.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "waveform",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "map",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV82JGG21D1GWRCK77CYW4/v1",
+              "created": "2026-06-22T05:00:59.856Z",
+              "archie:logicalId": "01KVPV82JGG21D1GWRCK77CYW4",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV82JGG21D1GWRCK77CYW4.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8Y393TA4F7G6Q0QDBKVW/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:1025.5638310479999,564.828031177177,397.92481529769657,52.966101694915324"
+                }
+              },
+              "modified": "2026-06-22T05:01:29.710Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Step between sibling tracks from the carousel in a multi-object AV exhibit.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "sibling",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "nav",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8Y393TA4F7G6Q0QDBKVW/v1",
+              "created": "2026-06-22T05:01:28.041Z",
+              "archie:logicalId": "01KVPV8Y393TA4F7G6Q0QDBKVW",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV8Y393TA4F7G6Q0QDBKVW.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
@@ -2152,7 +4621,44 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/annotations-power.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8AQJ1Q35K0TE5HXCDCZR/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:241.82890144179234,458.10708538274093,524.769861269106,80.35099788986645"
+                }
+              },
+              "modified": "2026-06-22T05:01:09.383Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Open at a shared timestamp and the player lands there, paused — no autoplay surprise.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "deep-link",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "paused",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8AQJ1Q35K0TE5HXCDCZR/v1",
+              "created": "2026-06-22T05:01:08.210Z",
+              "archie:logicalId": "01KVPV8AQJ1Q35K0TE5HXCDCZR",
+              "archie:reading": "power",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV8AQJ1Q35K0TE5HXCDCZR.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
@@ -2237,7 +4743,106 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19/annotations-viewer.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9CW5PV7JHQYZD37NX765/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:409.04823989569763,160.16949152542378,617.2099087353322,48.109517601043024"
+                }
+              },
+              "modified": "2026-06-22T05:01:44.273Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Find anything across the exhibit — open the finder with Cmd-K or just '/'.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "finder",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9CW5PV7JHQYZD37NX765/v1",
+              "created": "2026-06-22T05:01:43.173Z",
+              "archie:logicalId": "01KVPV9CW5PV7JHQYZD37NX765",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV9CW5PV7JHQYZD37NX765.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9JJYKF5330NHBS8DZNF8/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:417.029402508654,217.47909454659896,540.5020680663575,74.93424897720627"
+                }
+              },
+              "modified": "2026-06-22T05:01:50.204Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Search note text and filter by tag; results update as you type.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "search",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "tags",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9JJYKF5330NHBS8DZNF8/v1",
+              "created": "2026-06-22T05:01:49.022Z",
+              "archie:logicalId": "01KVPV9JJYKF5330NHBS8DZNF8",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV9JJYKF5330NHBS8DZNF8.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9SAVCSR722RJSDJ6D4D0/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o19",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:414.54994453753056,300.4782720520569,614.5334090787544,69.5489717136706"
+                }
+              },
+              "modified": "2026-06-22T05:01:57.031Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Pick a result and the reader jumps straight to that note, whatever mode you're in.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "jump",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV9SAVCSR722RJSDJ6D4D0/v1",
+              "created": "2026-06-22T05:01:55.931Z",
+              "archie:logicalId": "01KVPV9SAVCSR722RJSDJ6D4D0",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV9SAVCSR722RJSDJ6D4D0.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
@@ -2364,7 +4969,121 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20/annotations-viewer.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVAF4TCGPRP95V980HRGM7/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:137.99217731421132,122.62059973924386,1132.333767926988,631.2907431551497"
+                }
+              },
+              "modified": "2026-06-22T05:02:19.512Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "A note can carry its own media — click a thumbnail and it opens full-screen.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "note",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "media",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVAF4TCGPRP95V980HRGM7/v1",
+              "created": "2026-06-22T05:02:18.266Z",
+              "archie:logicalId": "01KVPVAF4TCGPRP95V980HRGM7",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVAF4TCGPRP95V980HRGM7.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVATK54DXK4D8V45EGJS2R/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:232.90241456155113,161.49674997288952,1024.024368975112,575.8025103566426"
+                }
+              },
+              "modified": "2026-06-22T05:02:31.059Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Step through a note's images, audio, or video in a carousel with the arrow keys.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "carousel",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "arrows",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVATK54DXK4D8V45EGJS2R/v1",
+              "created": "2026-06-22T05:02:29.989Z",
+              "archie:logicalId": "01KVPVATK54DXK4D8V45EGJS2R",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVATK54DXK4D8V45EGJS2R.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVB1TKQ9PE28TXETBGSEQH/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:180.27624167692093,685.0451808703999,1074.0843954844645,50.73102042096912"
+                }
+              },
+              "modified": "2026-06-22T05:02:38.442Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The note's text sits beside the media; Esc or the backdrop closes it.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "text",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "beside",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "close",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVB1TKQ9PE28TXETBGSEQH/v1",
+              "created": "2026-06-22T05:02:37.395Z",
+              "archie:logicalId": "01KVPVB1TKQ9PE28TXETBGSEQH",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVB1TKQ9PE28TXETBGSEQH.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",
@@ -2491,7 +5210,113 @@
         {
           "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21/annotations-viewer.json",
           "type": "AnnotationPage",
-          "items": [],
+          "items": [
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVBNQXP686QGKY4A8ZVXYD/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:31.212516297262223,86.2451108213821,1372.6117904084,578.8720000432954"
+                }
+              },
+              "modified": "2026-06-22T05:02:59.057Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Expand a long note into a centred sheet over a dimmed backdrop — distraction-free reading.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "reading",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "sheet",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVBNQXP686QGKY4A8ZVXYD/v1",
+              "created": "2026-06-22T05:02:57.789Z",
+              "archie:logicalId": "01KVPVBNQXP686QGKY4A8ZVXYD",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVBNQXP686QGKY4A8ZVXYD.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVC0A89K2KFNM146AT8MTZ/v2",
+              "type": "Annotation",
+              "target": {
+                "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21",
+                "type": "SpecificResource",
+                "selector": {
+                  "type": "FragmentSelector",
+                  "conformsTo": "http://www.w3.org/TR/media-frags/",
+                  "value": "xywh=pixel:5.101337985469616,42.61764875778155,291.37235109496936,214.6954165962932"
+                }
+              },
+              "modified": "2026-06-22T05:03:09.676Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "The legend toggles readings: the plain base pass, or the colour-coded interpretations, with a hide-all to declutter entirely.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "legend",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "toggle",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "hide-all",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVC0A89K2KFNM146AT8MTZ/v1",
+              "created": "2026-06-22T05:03:08.616Z",
+              "archie:logicalId": "01KVPVC0A89K2KFNM146AT8MTZ",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVC0A89K2KFNM146AT8MTZ.json"
+            },
+            {
+              "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVCAY1YNYB1JKXDHGX9D3T/v3",
+              "type": "Annotation",
+              "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o21",
+              "modified": "2026-06-22T05:03:22.574Z",
+              "body": [
+                {
+                  "type": "TextualBody",
+                  "value": "Hover an in-library cite link and a rich preview card floats in — peek at the cited note without leaving the page.",
+                  "purpose": "commenting"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "cite",
+                  "purpose": "tagging"
+                },
+                {
+                  "type": "TextualBody",
+                  "value": "hovercard",
+                  "purpose": "tagging"
+                }
+              ],
+              "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVCAY1YNYB1JKXDHGX9D3T/v2",
+              "created": "2026-06-22T05:03:19.489Z",
+              "archie:logicalId": "01KVPVCAY1YNYB1JKXDHGX9D3T",
+              "archie:reading": "viewer",
+              "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVCAY1YNYB1JKXDHGX9D3T.json"
+            }
+          ],
           "partOf": [
             {
               "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",

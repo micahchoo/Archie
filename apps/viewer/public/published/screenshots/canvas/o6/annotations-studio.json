@@ -2,7 +2,142 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ6WAR7APH4FZ9KHGGCY5N/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:25.927509778356956,610.4558018252928,298.0631029986962,99.35436766623206"
+        }
+      },
+      "modified": "2026-06-22T03:50:27.971Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A narrative is a spine of sections — ordered prose that walks a reader through your objects, one framed view at a time.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "narrative",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "spine",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ6WAR7APH4FZ9KHGGCY5N/v1",
+      "created": "2026-06-22T03:50:26.392Z",
+      "archie:logicalId": "01KVPQ6WAR7APH4FZ9KHGGCY5N",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ6WAR7APH4FZ9KHGGCY5N.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ75FWS5H8V4TE8X71VDJJ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:8.973474919030693,496.8269112234135,170.07406655231756,45.39570949328777"
+        }
+      },
+      "modified": "2026-06-22T03:50:37.041Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Each section points at an object; draw a region and that becomes the camera the reader lands on.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "framing",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "camera",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ75FWS5H8V4TE8X71VDJJ/v1",
+      "created": "2026-06-22T03:50:35.772Z",
+      "archie:logicalId": "01KVPQ75FWS5H8V4TE8X71VDJJ",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ75FWS5H8V4TE8X71VDJJ.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ7P5344ZF6XBH0AGS55M9/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:253.6249865323566,449.5252144446616,120.6048199394701,40.094720543115045"
+        }
+      },
+      "modified": "2026-06-22T03:50:54.275Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Write the section's prose beside it — markdown, with live cites to other notes.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "prose",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ7P5344ZF6XBH0AGS55M9/v1",
+      "created": "2026-06-22T03:50:52.835Z",
+      "archie:logicalId": "01KVPQ7P5344ZF6XBH0AGS55M9",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ7P5344ZF6XBH0AGS55M9.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ85RCS2W54ZJ1GQDE0ZSQ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o6",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1.4491951983921503,451.59595727558997,377.3936456849484,232.49776384343545"
+        }
+      },
+      "modified": "2026-06-22T03:51:10.229Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Reorder sections to retell the story; the reader follows your order.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "reorder",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ85RCS2W54ZJ1GQDE0ZSQ/v1",
+      "created": "2026-06-22T03:51:08.812Z",
+      "archie:logicalId": "01KVPQ85RCS2W54ZJ1GQDE0ZSQ",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ85RCS2W54ZJ1GQDE0ZSQ.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

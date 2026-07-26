@@ -2,7 +2,75 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTRE7CE9JHF8Y8VQC55C3/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:434.86310299869626,93.2855280312908,564.4067796610168,637.1577574967405"
+        }
+      },
+      "modified": "2026-06-22T04:53:45.470Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Cite another note, object, or exhibit from inside a note — your library cross-links itself.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "citation",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTRE7CE9JHF8Y8VQC55C3/v1",
+      "created": "2026-06-22T04:53:43.495Z",
+      "archie:logicalId": "01KVPTTRE7CE9JHF8Y8VQC55C3",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTTRE7CE9JHF8Y8VQC55C3.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTV5EN315FWE0GV5NFQS98/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:542.6876559790784,198.01447326996941,90.50344274257407,39.882873072998734"
+        }
+      },
+      "modified": "2026-06-22T04:53:57.989Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Or browse thumbnails when you'd rather recognise than recall.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "thumbnail",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "browse",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTV5EN315FWE0GV5NFQS98/v1",
+      "created": "2026-06-22T04:53:56.821Z",
+      "archie:logicalId": "01KVPTV5EN315FWE0GV5NFQS98",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTV5EN315FWE0GV5NFQS98.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

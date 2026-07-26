@@ -2,7 +2,36 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/annotations-power.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPKSN8JMHKCDTE193ZHN4D/v2",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+      "modified": "2026-06-22T03:40:02.684Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Open a local image straight from the OS file dialog and annotate it offline — no server, no upload.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "offline",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "local",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPKSN8JMHKCDTE193ZHN4D/v1",
+      "created": "2026-06-22T03:40:01.064Z",
+      "archie:logicalId": "01KVPPKSN8JMHKCDTE193ZHN4D",
+      "archie:reading": "power",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPKSN8JMHKCDTE193ZHN4D.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",

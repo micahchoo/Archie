@@ -2,7 +2,64 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/annotations-power.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA22B8HQFH407D649MEZH/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:34:44.091Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A pre-baked DZI pyramid streams tiles straight to the canvas; a bare source string auto-detects the right tile handler — IIIF, DZI, or plain image.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "dzi",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "auto-detect",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA22B8HQFH407D649MEZH/v2",
+      "created": "2026-06-22T03:34:41.995Z",
+      "archie:logicalId": "01KVPPA22B8HQFH407D649MEZH",
+      "archie:reading": "power",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPA22B8HQFH407D649MEZH.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA6R7M3P8RX7J8BV5XCJX/v2",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:34:48.558Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Malformed or empty region selectors are skipped safely — a broken box never breaks the read.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "safe",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "skip",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPA6R7M3P8RX7J8BV5XCJX/v1",
+      "created": "2026-06-22T03:34:46.791Z",
+      "archie:logicalId": "01KVPPA6R7M3P8RX7J8BV5XCJX",
+      "archie:reading": "power",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPA6R7M3P8RX7J8BV5XCJX.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
