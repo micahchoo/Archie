@@ -143,15 +143,22 @@ branch cannot clobber them — but they need committing from there, by whoever o
 
 ## Next actions, ranked
 
-1. **Rebase and merge — the P0 is STRANDED.** The strikethrough below refers to an *earlier* merge;
-   it is no longer the state. Measured at end of session 3: `git rev-list --left-right --count
-   main...HEAD` → **14 ahead, 2 behind**. The two unmerged commits are `7124ded` (the
-   `fs:allow-rename` P0 + its CI gate) and `b8ff174` (this handoff). **`main` today still ships a
-   desktop build that loses 100% of authored work**, and the fix has zero value where it sits. `main`
-   moved 10 → 14 during one session, so rebase against a freshly measured count, re-run
-   `pnpm capabilities:check` (bare node, cheap) plus the normal gates, and merge.
+1. ~~**Rebase and merge — the P0 is STRANDED.**~~ **DONE 2026-07-26.** `main` is at `c420cb4`;
+   the desktop build it ships can now write. Rebased clean onto `8841c1b` (no path overlap with the
+   16 commits `main` had gained), gates re-run — `pnpm capabilities:check` ok, `node --test
+   scripts/lib/*.test.mjs` **16/16** — then fast-forwarded. Artifact-measured in `main`'s own tree,
+   not by exit code: `fs:allow-rename` present in `src-tauri/capabilities/default.json`, the gate
+   runs green from there, and the `checks.yml` step is wired.
 
-   ~~Rebase, then merge this branch.~~ *(done for the pre-session-3 commits only.)*
+   **Two mechanics worth knowing before the next merge.** `main` is NOT in the primary checkout
+   (that sits on `perf/spine-and-image-pipeline`) — it lives in the
+   `.claude/worktrees/merge-main` worktree, so you cannot `git checkout main` from here and
+   `git push . HEAD:main` is refused against a checked-out branch. Fast-forward *that* worktree
+   instead, after confirming it is clean and at the tip. And `main` moved **10 → 14 → 16 ahead
+   inside a single session** — measure the count immediately before you rebase, never from a
+   number you read earlier.
+
+   **`main` is 3 ahead of `origin/main` — the push has NOT been made.**
 
    The rest of the ranking, decided at the end of session 3:
 
