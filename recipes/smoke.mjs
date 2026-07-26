@@ -94,6 +94,21 @@ async function main() {
     if (msg.type() === "warning") consoleWarnings.push(msg.text());
   });
 
+  // V11 (Archie-84e0): every 404 the drive provokes, so a tree-relative asset resolved against the
+  // HOST PAGE cannot hide again. It was visible in exactly this flow — `HTTP 404
+  // /recipes/screenshots/assets/o1-e1-embed.png` — and nothing was watching for it, because a
+  // missing image degrades to a blank box rather than an error.
+  //
+  // Same-origin only, and only under the served root: the seed exhibits load folios from remote IIIF
+  // services this drive has no control over, and a Yale outage must not read as an Archie regression.
+  const notFound = [];
+  page.on("response", (res) => {
+    if (res.status() !== 404) return;
+    const url = res.url();
+    if (!url.startsWith(base)) return; // third-party — not ours to assert on
+    notFound.push(`${res.status()} ${url.slice(base.length)}`);
+  });
+
   let canvasMounted = false;
   let galleryCount = 0, objCount = 0;
   try {
@@ -259,6 +274,12 @@ async function main() {
             : "absent");
       }
     }
+    // ASSERTED LAST, deliberately. Covers are `loading="lazy"`, so the request that exposed V11 is
+    // not made until the image is near the viewport — checking earlier in the drive passed against
+    // the unfixed code (verified: it did). Give the lazy loads a beat, then judge.
+    await page.waitForTimeout(1200);
+    record(notFound.length === 0, "no same-origin 404s during the drive (V11)",
+      notFound.length ? notFound.slice(0, 5).join(" | ") : "none");
   } catch (e) {
     record(false, "navigation / interaction", e.message);
   } finally {

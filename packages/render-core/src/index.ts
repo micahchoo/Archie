@@ -94,6 +94,7 @@ export * from "./concurrency.js";
 export * from "./url/deeplink.js";
 export * from "./url/route.js";
 export * from "./url/breadcrumb.js";
+export * from "./url/asset-url.js";
 export * from "./note/media.js";
 export * from "./iiif/resolve.js";
 // Grid-thumbnail candidate chain (thumbnail-mitigations gap 2) — the ONE fallback-order definition
