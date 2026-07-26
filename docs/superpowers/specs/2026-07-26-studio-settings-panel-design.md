@@ -24,8 +24,12 @@ Each states an outcome, not a mechanism.
 - **R4** An author can tell when the app has silently fallen back off a fast path (worker-pool
   fallback) rather than discovering it as unexplained slowness.
 - **R5** An author can change how often Studio saves, without being able to turn saving off.
-- **R6** An author can find and flip a kill-switch without opening a console, and understands it
-  applies on reload.
+- ~~**R6** An author can find and flip a kill-switch without opening a console, and understands it
+  applies on reload.~~ **WITHDRAWN 2026-07-26 (user-gated).** The requirement presumed a set of
+  author-facing flags. There is exactly one flag, `archie.structureRevlog`, it is default-ON, and it
+  exists "only as an emergency KILL-SWITCH" (`feature-flags.ts:14-19`) — so surfacing it would
+  advertise a lever the author must never pull. An emergency switch belongs in localStorage, where it
+  is. Reinstate R6 when a second, genuinely optional flag exists.
 - **R7** Settings that belong to *this library* are distinguishable from settings that belong to
   *this app on this machine*.
 - **R8** Nothing in this panel can silently corrupt authored content.
@@ -53,7 +57,7 @@ Each states an outcome, not a mechanism.
 | **L2** | **Autosave cadence is exposed as named choices with a floor, no off switch.** Current 800 ms behaviour stays the default and the fastest option. | Freecut's `0 = off` (`use-auto-save.ts:21-44`); a free-form millisecond field. | R5, R8 |
 | **L3** | **"Reclaim space" ships, gated behind a typed confirmation** showing the retained size and naming what is lost (the migration rollback copy). | A one-click destructive button; hiding the retained bytes entirely. | R3, R8 |
 | **L4** | **Performance knobs are READ-ONLY in v1** — pool widths, DZI tile size, and `bakeFallbackCount()` are shown as diagnostics, not controls. | Sliders for `POOL_MAX`; a tile-size picker. | R4 |
-| **L5** | **Flag toggles state "applies on reload" and do not take effect mid-session.** | Live-flipping `structureRevlog`; any flag read that bypasses the boot-cached const. | R6, C2 |
+| ~~**L5**~~ | ~~Flag toggles state "applies on reload" and do not take effect mid-session.~~ **WITHDRAWN 2026-07-26 (user-gated): NO Flags section in v1.** The only flag is a default-ON emergency kill-switch; a section for it would advertise a footgun. It stays in localStorage. When a second optional flag lands, reinstate this decision as written — the "applies on reload" rule is still the right one, because callers cache the value at boot (`feature-flags.ts:3-6`). | ~~R6~~ (withdrawn) |
 | **L6** | **Layout state (pane widths, collapsed rails) is NOT in the panel.** It is already directly manipulable by dragging; a numeric mirror is decoration. | A "reset layout" section; width spinners. | R7 |
 | **L7** | **Settings never writes authored content.** No rights, metadata, or readings controls. | Folding `RightsEditor` or bulk-rights into settings. | R8, C4 |
 
@@ -88,9 +92,8 @@ Each states an outcome, not a mechanism.
   `feature-flags.ts` exports exactly one key, `archie.structureRevlog`, default **ON**, surviving
   "only as an emergency KILL-SWITCH" (`:14-19`). That weakens L5 rather than answering it: a Flags
   section holding one always-on emergency switch is a section that shows the author a lever they must
-  never pull. Recommend L5 be re-decided as *no Flags section until a second, genuinely optional flag
-  exists* — the kill-switch stays a console/localStorage affair, which is what an emergency switch
-  should be. Flagged for the user, since L5 was theirs.
+  never pull. **User-gated 2026-07-26: L5 and R6 are both WITHDRAWN — no Flags section in v1.** The
+  kill-switch stays a localStorage affair, which is what an emergency switch should be.
 
 **Exploratory (answerable during implementation):**
 
@@ -129,13 +132,13 @@ that a separate surface would have done structurally, at a fraction of the cost.
 
 ## Traceability
 
-**RXS** — R1→L1 (panel exists) · R2→L1+L4 · R3→L3 · R4→L4 · R5→L2 · R6→L5 · R7→L1+L6 · R8→L2,L3,L7.
-No silent gaps.
+**RXS** — R1→L1 (panel exists) · R2→L1+L4 · R3→L3 · R4→L4 · R5→L2 · ~~R6→L5~~ (both withdrawn
+together, so no gap is opened) · R7→L1+L6 · R8→L2,L3,L7. No silent gaps.
 
-**SXR** — L1→R7 · L2→R5,R8 · L3→R3,R8 · L4→R4 · L5→R6 · L6→R7 · L7→R8. No orphaned decisions.
+**SXR** — L1→R7 · L2→R5,R8 · L3→R3,R8 · L4→R4 · ~~L5→R6~~ (withdrawn) · L6→R7 · L7→R8. No orphaned
+decisions.
 
 ## Next
 
-Route: **writing-plans**. Both blocking questions are now answered (see above), so nothing gates the
-plan — except that **L5 should be re-decided before it is planned**: the flags answer undercut its
-premise, and L5 was a user-gated decision, so it is the user's to change rather than mine.
+Route: **writing-plans**. Nothing gates the plan: both blocking questions are answered, and L5/R6 are
+withdrawn by the user. Six decisions remain (L1–L4, L6, L7), all with their requirements intact.
