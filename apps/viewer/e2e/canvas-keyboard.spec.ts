@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { CANVAS, aRegionNote, goOffline, openPaintedNarrative, openPaintedNote } from "./offline.js";
+import { CANVAS, aHaloNote, goOffline, openPaintedNarrative, openPaintedNote } from "./offline.js";
 
 // Archie-3d55 (V90/V25/V26) — the canvas is reachable, nameable and escapable by keyboard.
 //
@@ -186,7 +186,7 @@ test.describe("Escape is a ladder on a live canvas too (V26/V25)", () => {
     // reader holding Escape walks out rather than teleporting. Asserting the rungs individually would
     // not catch a collapse — a binding that jumped straight from an open note to the index passes
     // every single-rung test. Walking it in one go is what pins the order.
-    const note = await aRegionNote(baseURL!);
+    const note = await aHaloNote(baseURL!);
     await goOffline(page);
     await openPaintedNote(page, note.ulid);
     await expect(page.locator(".note-pop")).toBeVisible();

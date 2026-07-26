@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { CANVAS, canvasInk, goOfflineCounting, openPaintedNarrative, screenshotNotes } from "./offline.js";
+import { CANVAS, FRAME, HALO, canvasInk, goOfflineCounting, openPaintedNarrative, openPaintedNote, screenshotNotes } from "./offline.js";
 
 // THE PREMISE, ASSERTED. Every canvas test in this suite — the halo in selection.spec.ts, the
 // keyboard ladder in canvas-keyboard.spec.ts, the V48 clearance in occlusion.spec.ts — rests on one
@@ -53,13 +53,29 @@ test.describe("the screenshots exhibit is self-contained (the premise every canv
     expect(traffic.bad, `4xx/5xx: ${traffic.bad.join(" | ")}`).toHaveLength(0);
   });
 
-  test("it carries both kinds of note the canvas draws differently", async ({ baseURL }) => {
-    // The halo specs need a REGION note (a mark with geometry); the frame specs need a WHOLE-OBJECT
-    // note (no selector). A regeneration that dropped either kind would leave those specs skipping or
-    // throwing in a helper rather than reporting the real cause; name the requirement here.
+  test("it carries both kinds of note the canvas draws differently", async ({ page, baseURL }) => {
+    // The halo specs need a note that DRAWS A HALO; the frame specs need one that draws the FRAME.
+    // A regeneration that dropped either kind would leave those specs skipping or throwing inside a
+    // helper rather than reporting the real cause, so name the requirement here.
+    //
+    // "Draws a halo" is not "has a selector" — see `screenshotNotes`. Asserting the weaker property
+    // would let this test pass on a tree where every selector covers its whole canvas and NOTHING
+    // draws a halo, which is the exact vacuity mode this file exists to catch.
     const notes = await screenshotNotes(baseURL!);
-    expect(notes.filter((n) => n.region).length, "no region-targeted notes to draw marks for").toBeGreaterThan(0);
-    expect(notes.filter((n) => !n.region).length, "no whole-object notes to draw a frame for").toBeGreaterThan(0);
+    const halo = notes.filter((n) => n.halo);
+    const whole = notes.filter((n) => n.wholeObject);
+    expect(halo.length, "no halo-drawing notes to ring").toBeGreaterThan(0);
+    expect(whole.length, "no whole-object notes to draw a frame for").toBeGreaterThan(0);
+
+    // And the classification is checked against the APP, not just against itself: drive one of each
+    // and require the canvas to draw what the predicate promised. A pure-data test cannot notice that
+    // it has drifted from the renderer; this is what makes the promise binding.
+    await goOfflineCounting(page);
+    await openPaintedNote(page, halo[0]!.ulid);
+    await expect(page.locator(HALO)).toHaveCount(1);
+    await openPaintedNote(page, whole[0]!.ulid);
+    await expect(page.locator(FRAME)).toHaveCount(1);
+    await expect(page.locator(HALO)).toHaveCount(0);
   });
 
   test("OSD stays in the DOM — the failed-mount teardown does not happen here", async ({ page }) => {

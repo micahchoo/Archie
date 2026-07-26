@@ -12,10 +12,33 @@ import { HALO, goOffline, openPaintedNote, screenshotNotes } from "./offline.js"
 // "asserting it end-to-end needs a painted canvas — which this offline suite cannot produce". The
 // `screenshots` exhibit produces one (canvas-offline.spec.ts), so the end-to-end half of the
 // left-flank reservation is measurable with the network cut.
+//
+// Measuring it found a GAP IN THE FIX, not just a missing test: the reservation is horizontal-only,
+// so a region tall enough to make the fit height-constrained is still clipped by the note card. Two
+// of the exhibit's 67 halo notes are in that state on the unmodified build. It is asserted as what it
+// is — see the V48 describe — and is being filed separately; do not fix V48 here.
 
 type Rect = { x: number; y: number; width: number; height: number };
 
 const rectOf = async (l: Locator): Promise<Rect | null> => ((await l.count()) ? await l.first().boundingBox() : null);
+
+/**
+ * A rect read only once it has stopped moving. `fitBounds` ANIMATES, so a box sampled the instant a
+ * note opens is mid-flight — over a 67-note sweep that is a reliable source of phantom overlaps. Two
+ * identical consecutive reads is the settle condition; a fixed sleep would be both slower and less
+ * certain.
+ */
+async function settled(page: Page, selector: string): Promise<Rect | null> {
+  let prev: string | null = null;
+  for (let i = 0; i < 12; i++) {
+    const box = await rectOf(page.locator(selector));
+    const now = JSON.stringify(box);
+    if (now === prev) return box;
+    prev = now;
+    await page.waitForTimeout(120);
+  }
+  return rectOf(page.locator(selector));
+}
 
 /** Do two rects share any area at all? Touching edges is fine; overlap is not. */
 const overlaps = (a: Rect, b: Rect): boolean =>
@@ -127,28 +150,55 @@ test.describe("the fitted region clears the chrome that floats over the canvas (
     // catches the seam never being WIRED — which is what actually shipped, with the unit tests green.
     // The halo is the region's own drawn boundary, so measuring it measures where the fit landed.
     //
-    // SWEEP SEVERAL NOTES, NOT ONE. Measured with the reservation forced off: 14 of the exhibit's
-    // first 16 region notes land under the legend — but the FIRST one is one of the two that do not
-    // (its region is short and wide, so the unreserved fit still clears the legend's bottom edge by
-    // 10px). A single-note version of this test passes against the unwired seam. Ten is comfortably
-    // past the two lucky ones.
-    const notes = (await screenshotNotes(baseURL!)).filter((n) => n.region).slice(0, 10);
-    expect(notes.length, "not enough region notes to sweep").toBeGreaterThan(4);
+    // SWEEP EVERY HALO NOTE — the width is not a choice. A first draft swept one note, and a second
+    // swept ten; both numbers were picked by watching the result, which is how a sweep gets tuned to
+    // stay green. There are 67 halo-drawing notes and this opens all of them, so there is no width
+    // left to tune. (~35s. That is the price of the repo's only end-to-end gate on this fix.)
+    //
+    // Measured with the reservation forced off, this goes red on the 2nd note. Measured with it ON,
+    // it goes red on nothing EXCEPT the height-constrained case below — which is a real gap, not a
+    // tuning artefact, and is named rather than sliced out of the sweep.
+    const notes = (await screenshotNotes(baseURL!)).filter((n) => n.halo);
+    expect(notes.length, "not enough halo notes to sweep").toBeGreaterThan(20);
     await goOffline(page);
 
+    const offenders: string[] = [];
     for (const note of notes) {
       await openPaintedNote(page, note.ulid);
-      const halo = await rectOf(page.locator(HALO));
-      expect(halo, `no halo for ${note.ulid} — the region was never fitted`).not.toBeNull();
+      const halo = await settled(page, HALO);
+      expect(halo, `no halo for ${note.ulid} — the classifier promised one`).not.toBeNull();
+      const canvas = await rectOf(page.locator(".openseadragon-canvas"));
+
       for (const sel of ["aside.legend", ".note-pop"]) {
         const chrome = await rectOf(page.locator(sel));
-        if (!chrome) continue;
+        if (!chrome || !overlaps(halo!, chrome)) continue;
+
+        // THE KNOWN GAP (V48 is horizontal-only). `fitBoundsRect` returns
+        // `{ x: box.x - w * l, y: box.y, w, h: box.h }` — it widens the rect and slides it left, and
+        // NEVER touches y or h. When a region is tall enough that the fit is HEIGHT-constrained,
+        // widening changes no zoom and the slide is the only effect, so nothing can lift the region
+        // clear of a card anchored to the bottom-left. Measured on this tree: exactly two notes, both
+        // ~1:4 aspect, fitted to 626px of a 720px canvas, clipped by `.note-pop` (never the legend,
+        // which is top-left and which the horizontal slide does clear).
+        //
+        // So the assertion says what actually holds rather than what we wish did: the reservation
+        // clears the chrome for every region EXCEPT one that fills the canvas height. An offender
+        // that is NOT height-constrained is a genuine regression and fails here.
+        const fillsHeight = canvas !== null && halo!.height >= canvas.height * 0.8;
         expect(
-          overlaps(halo!, chrome),
-          describeOverlap(`${sel} over fitted region (${note.ulid})`, chrome, halo!),
-        ).toBe(false);
+          fillsHeight,
+          `${describeOverlap(`${sel} over fitted region (${note.ulid})`, chrome, halo!)} — and this ` +
+            `region does NOT fill the canvas height, so the horizontal-only reservation should have ` +
+            `cleared it. That is a regression, not the known gap.`,
+        ).toBe(true);
+        offenders.push(`${note.ulid}(${sel})`);
       }
     }
+
+    // RATCHET, so the named gap cannot quietly widen. Two today. If V48 grows a vertical reservation
+    // this drops to zero and still passes — a fix must never be punished by its own regression test —
+    // but a third offender appearing is a failure that names itself.
+    expect(offenders.length, `height-constrained occlusions: ${offenders.join(", ")}`).toBeLessThanOrEqual(2);
   });
 });
 

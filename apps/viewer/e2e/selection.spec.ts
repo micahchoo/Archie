@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { FRAME, HALO, aRegionNote, aWholeObjectNote, boxOf, goOffline, openPaintedNarrative, openPaintedNote } from "./offline.js";
+import { FRAME, HALO, aHaloNote, aWholeObjectNote, boxOf, goOffline, openPaintedNarrative, openPaintedNote } from "./offline.js";
 
 // Archie-52a0 (V43/V46/V47) — what the canvas says about the note you opened.
 //
@@ -32,7 +32,7 @@ test.describe("the selection ring means something (V43)", () => {
   });
 
   test("selecting a region note draws a ring around it", async ({ page, baseURL }) => {
-    const note = await aRegionNote(baseURL!);
+    const note = await aHaloNote(baseURL!);
     await goOffline(page);
     await openPaintedNote(page, note.ulid);
 
@@ -57,7 +57,7 @@ test.describe("the selection ring means something (V43)", () => {
     // a plain div sized to the overlay's box which defaults to `pointer-events: auto` — so an
     // unneutralised wrapper turns the ring into an opaque lid over the very mark the reader just
     // selected, and the next click does nothing at all.
-    const note = await aRegionNote(baseURL!);
+    const note = await aHaloNote(baseURL!);
     await goOffline(page);
     await openPaintedNote(page, note.ulid);
 
@@ -98,10 +98,18 @@ test.describe("the selection ring means something (V43)", () => {
     // `el.dispatchEvent(new MouseEvent("click"))` BOTH succeed against code where a real mouse click
     // does nothing (.claude/rules/osd-overlay-wrapper.md's table) — so neither is written here.
     //
+    // ALREADY INVESTIGATED, DON'T REDO IT: making the GL canvas `pointer-events: none` does NOT break
+    // this test, and that is correct rather than a hole. Measured — with the canvas verifiably out of
+    // the hit stack (`elementFromPoint` became `DIV.openseadragon-canvas`), a real click still opened
+    // the right note, because Annotorious binds to an ANCESTOR and hit-tests in its own geometry
+    // model, so that element's `pointer-events` is inert on this renderer. A change with no
+    // user-visible effect failing to turn a test red is the test behaving. The click path IS gated:
+    // cutting the canvas→app selection seam turns this red, and it is position-sensitive.
+    //
     // Until this build there was nowhere in the viewer suite to drive one: hit-testing needs a painted
     // canvas at a known screen position, and offline there was none. The mark's position is taken from
     // the halo the address-open draws, then the note is dismissed and the same pixel clicked cold.
-    const note = await aRegionNote(baseURL!);
+    const note = await aHaloNote(baseURL!);
     await goOffline(page);
     await openPaintedNote(page, note.ulid);
 

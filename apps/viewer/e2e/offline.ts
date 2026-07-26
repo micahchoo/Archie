@@ -1,4 +1,6 @@
 import { expect, type Page } from "@playwright/test";
+import { isWholeObjectFor, selectorOf, wholeObjectFlagOf } from "@render/core";
+import type { W3CAnnotation } from "@render/core";
 
 // Most bundled sample exhibits point at a remote image service (Yale IIIF, archive.org, OSM tiles).
 // Cutting those off is what makes this suite hermetic — and it also sharpens the assertions: the
@@ -8,10 +10,11 @@ import { expect, type Page } from "@playwright/test";
 //
 // ONE exhibit is different, and the difference is load-bearing: `screenshots` owns its images. All 21
 // of its canvases paint from `published/screenshots/assets/*.png`, served by the same preview server
-// that serves the app. Measured on this build with the route below installed: 21 distinct image
-// responses, ZERO aborted remote requests, ZERO responses >= 400, and an OpenSeadragon canvas
-// carrying real ink (860x720, 660 distinct sampled colours). See `canvas-offline.spec.ts`, which
-// asserts exactly that so the premise cannot rot silently.
+// that serves the app. Measured on this build with the route below installed: ZERO aborted remote
+// requests, ZERO responses >= 400, and an OpenSeadragon canvas carrying real ink (860x720, 660
+// distinct sampled colours). The exhibit is a NARRATIVE — it shows one object per section — so a
+// single arrival fetches ONE image; walking all 21 sections fetches 21 distinct local images. Both
+// figures are asserted, by two separate tests, in `canvas-offline.spec.ts`.
 //
 // That is what lets the canvas assertions — halo, frame, keyboard, the Escape ladder, and a REAL
 // mouse hit-test on a mark — live in this hermetic suite instead of in a human's hands. They were
@@ -19,16 +22,23 @@ import { expect, type Page } from "@playwright/test";
 // occlusion.spec.ts used to say so.
 //
 // Prior art, checked before committing to this shape (repo CLAUDE.md): NOTHING in the IIIF corpus
-// tests a painted deep-zoom canvas hermetically. cozy-iiif and universalviewer's suites fetch live
-// manifests (iiif.io cookbook, Wellcome tiles); clover-iiif neuters canvas entirely in
-// `src/setupTests.ts` (`HTMLCanvasElement.prototype.getContext = () => ({})`) and its one info.json
-// fixture (`src/lib/iiif-test-fixtures.ts` `tileSourceResponse`) is imported by nothing; canvas-panel
-// ships no tests for atlas at all. No project checks in a tile pyramid, and none intercepts tile
-// routes. The closest transferable idea is clover's two-method fake OSD viewer in
-// `src/lib/openseadragon-helpers.test.ts`, which asserts overlay geometry with no viewer — which is
-// what `packages/render-mount`'s unit suites already do. Serving REAL image bytes from the same
-// origin as the app is a stronger position than any of them, and it needs no fixture pyramid because
-// the seed already owns one.
+// tests a painted deep-zoom canvas hermetically.
+//   - cozy-iiif: raw `fetch` against live services (davidrumsey.com, iiif.io, ids.si.edu) — no msw,
+//     no nock. Its suite depends on a third party being up, which is what this one refuses to do.
+//   - clover-iiif: neuters canvas entirely in `src/setupTests.ts`
+//     (`HTMLCanvasElement.prototype.getContext = () => ({})`), and its one info.json fixture
+//     (`src/lib/iiif-test-fixtures.ts` `tileSourceResponse`) is imported by nothing.
+//   - universalviewer: no canvas or manifest tests to compare against — its whole suite is three
+//     files (`src/Utils.spec.ts`, `content-handlers/iiif/PubSub.spec.ts`, `.../XYWHFragment.spec.ts`),
+//     none of which touch the network. (An earlier draft of this header claimed it fetched Wellcome
+//     tiles. It does not: "Wellcome" appears only in bundled demo data and a build example, neither
+//     run by jest. Corrected rather than dropped — a wrong citation is worse than none.)
+//   - canvas-panel: ships no tests for atlas at all.
+// No project checks in a tile pyramid, and none intercepts tile routes. The closest transferable idea
+// is clover's two-method fake OSD viewer in `src/lib/openseadragon-helpers.test.ts`, which asserts
+// overlay geometry with no viewer — which is what `packages/render-mount`'s unit suites already do.
+// Serving REAL image bytes from the same origin as the app is a stronger position than any of them,
+// and it needs no fixture pyramid because the seed already owns one.
 export async function goOffline(page: Page): Promise<void> {
   await page.route(/^https?:\/\/(?!localhost|127\.0\.0\.1)/, (route) => route.abort());
 }
@@ -72,8 +82,10 @@ export async function goOfflineCounting(page: Page): Promise<TrafficLog> {
 export interface PublishedNote {
   ulid: string;
   text: string;
-  /** True when the note targets a REGION (has a selector) — the case that draws a mark and a halo. */
-  region: boolean;
+  /** True when selecting this note makes the app draw a HALO — i.e. it has region geometry to ring. */
+  halo: boolean;
+  /** True when the app draws the object FRAME for it instead — no geometry to ring. */
+  wholeObject: boolean;
 }
 
 /**
@@ -86,18 +98,34 @@ export interface PublishedNote {
 export async function screenshotNotes(baseURL: string): Promise<PublishedNote[]> {
   const res = await fetch(new URL("published/screenshots/manifest.json", baseURL));
   const manifest = (await res.json()) as {
-    items: Array<{ annotations?: Array<{ items?: Array<{ id: string; body?: unknown; target?: unknown }> }> }>;
+    items: Array<{ width?: number; height?: number; annotations?: Array<{ items?: Array<Record<string, unknown>> }> }>;
   };
   const notes: PublishedNote[] = [];
   for (const canvas of manifest.items) {
     for (const page of canvas.annotations ?? []) {
-      for (const a of page.items ?? []) {
-        const ulid = a.id.split("/annotations/")[1]?.split("/")[0];
+      for (const raw of page.items ?? []) {
+        const ulid = String(raw.id).split("/annotations/")[1]?.split("/")[0];
         if (!ulid) continue;
-        const body = Array.isArray(a.body) ? a.body[0] : a.body;
+        const body = Array.isArray(raw.body) ? raw.body[0] : raw.body;
         const text = (body as { value?: string } | undefined)?.value ?? "";
-        const t = a.target;
-        notes.push({ ulid, text, region: typeof t === "object" && t !== null && !!(t as { selector?: unknown }).selector });
+
+        // THE APP'S OWN PREDICATE, IMPORTED — NOT A REPLICA, AND NOT "has a selector".
+        //
+        // The first version of this classifier asked `!!target.selector` and called that "region".
+        // That is wrong in a way that hollows out the file it lives in: `frameFor` (ExhibitView) routes
+        // a note to the whole-object FRAME when `isWholeObjectFor` says so, and that is a >= 75%
+        // COVERAGE heuristic (`geometry/coverage.ts`), not "has no selector". Measured on this tree:
+        // note 01KWT0S7NJ8SWVMNNV8P8405H7 carries `xywh=pixel:0,0,1440,900` on a 1440x900 canvas — a
+        // selector, so the old classifier called it a region — and the app draws it as {halo: 0,
+        // frame: 1}. So `no region-targeted notes to draw marks for` could pass on a tree where ZERO
+        // halos are drawable, which is exactly the vacuity this suite exists to catch.
+        //
+        // Importing the predicate rather than restating it means the classifier cannot drift from the
+        // app: change the threshold in coverage.ts and these helpers change with it.
+        const ann = raw as unknown as W3CAnnotation;
+        const selector = selectorOf(ann);
+        const whole = isWholeObjectFor(selector, canvas.width ?? 0, canvas.height ?? 0, wholeObjectFlagOf(ann));
+        notes.push({ ulid, text, halo: selector !== null && !whole, wholeObject: whole });
       }
     }
   }
@@ -105,16 +133,16 @@ export async function screenshotNotes(baseURL: string): Promise<PublishedNote[]>
   return notes;
 }
 
-/** The first REGION note with enough body text to identify the card it opens. */
-export async function aRegionNote(baseURL: string): Promise<PublishedNote> {
-  const n = (await screenshotNotes(baseURL)).find((x) => x.region && x.text.length > 12);
-  if (!n) throw new Error("no region-targeted note in the published screenshots manifest");
+/** The first note that actually draws a HALO, with enough body text to identify the card it opens. */
+export async function aHaloNote(baseURL: string): Promise<PublishedNote> {
+  const n = (await screenshotNotes(baseURL)).find((x) => x.halo && x.text.length > 12);
+  if (!n) throw new Error("no halo-drawing note in the published screenshots manifest");
   return n;
 }
 
-/** The first WHOLE-OBJECT note (no selector) — the case the object frame is drawn for. */
+/** The first WHOLE-OBJECT note — the case the object frame is drawn for instead of a mark. */
 export async function aWholeObjectNote(baseURL: string): Promise<PublishedNote> {
-  const n = (await screenshotNotes(baseURL)).find((x) => !x.region);
+  const n = (await screenshotNotes(baseURL)).find((x) => x.wholeObject);
   if (!n) throw new Error("no whole-object note in the published screenshots manifest");
   return n;
 }
@@ -153,6 +181,9 @@ export async function openPaintedNarrative(page: Page): Promise<void> {
  * the whole canvas the moment it mounts — a blank viewer is already opaque, and an alpha test would
  * report it as painted. A real photographic tile lands in the hundreds; the seed's screenshots
  * measure ~660. The bar callers use (50) is far above an empty viewer and far below any real image.
+ *
+ * This also covers the solid-colour-placeholder case for free, which an alpha or mean-luminance test
+ * would not: a flat fill has ONE distinct colour, two orders of magnitude under the bar.
  */
 export async function canvasInk(page: Page): Promise<number> {
   return page.evaluate(() => {
