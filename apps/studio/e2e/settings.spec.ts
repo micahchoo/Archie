@@ -2,15 +2,22 @@ import { test, expect } from "@playwright/test";
 
 // The Settings panel, phase 1 (spec: docs/superpowers/specs/2026-07-26-studio-settings-panel-design.md).
 //
-// This spec exists for the failure mode .claude/rules/svelte-no-typecheck-net.md documents: `onsettings`
-// is an OPTIONAL prop gating an optional menu item, which is the exact shape that can be declared in a
-// $props() TYPE and omitted from the destructuring beside it — after which `{#if onsettings}` renders
-// nothing while svelte-check reports 0 errors / 0 warnings. Driving the menu is the only thing that
-// can see it.
+// What this spec is NOT for, measured rather than assumed. The obvious justification would be
+// .claude/rules/svelte-no-typecheck-net.md's typed-but-unbound prop: `onsettings` is an optional prop
+// gating an optional menu item, the exact shape the rule says renders nothing at 0 errors / 0 warnings.
+// That was injected here (removed `onsettings` from HelpMenu's destructuring, left it in the type) and
+// **svelte-check caught it**, twice: `HelpMenu.svelte 36:12` and `37:32`, "Cannot find name
+// 'onsettings'". So this spec is not the only net for that bug, and claiming otherwise would be the
+// overclaim the rule itself warns about. (The rule's `oncancel` case stands as recorded; the difference
+// worth noting is that this menu item reaches the prop through a `{@const}`, which svelte-check
+// resolves against the script scope. Don't generalise either result without re-injecting.)
 //
-// It also pins the two claims the panel makes that a unit test cannot: that the diagnostics thunk is
-// actually CALLED (a readout wired to nothing renders "—", which looks like a legitimate unknown), and
-// that the surface can be dismissed (it is on the shared modality ladder, not its own ad-hoc handler).
+// What it IS for — three things no static gate can answer:
+//   • the diagnostics thunk is actually CALLED. A readout wired to nothing still renders every row and
+//     every label; it just shows "—", which reads as a legitimate unknown rather than a defect.
+//   • Esc dismisses through the shared modality ladder rather than a private keydown.
+//   • L7 holds as a NEGATIVE contract — no control that edits authored content has drifted onto the
+//     surface. That one can only be asserted against what is actually rendered.
 const HASH_EDITOR = "#/voynich-rosettes/o/ex-voynich.o9";
 
 test.setTimeout(60_000);
