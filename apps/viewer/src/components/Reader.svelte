@@ -269,7 +269,15 @@
     const c = object.canvasId;
     // Object actually changed: clear the selection. (The `stepIntoReading` carry that used to keep a
     // note open across a popup-stepper step went with the popup stepper — Archie-01a6.)
-    if (prevCanvas !== undefined && prevCanvas !== c) selected = null;
+    //
+    // `readingSheet` must be cleared with it. The sheet renders under `{#if readingSheet && current}`,
+    // so clearing `selected` alone UNMOUNTS the sheet while leaving the flag true — and the next plain
+    // note selection would then open a reading sheet nobody asked for. Latent rather than shipping
+    // today (the scrim covers every control that could change the object while the sheet is open, and
+    // `use:dialog` traps Tab), but it stops being latent the moment any control lands above z-index 60
+    // or the finder gains a cross-object result. Clear the flag where the selection is cleared, not
+    // where the sheet happens to be unreachable.
+    if (prevCanvas !== undefined && prevCanvas !== c) { selected = null; readingSheet = false; }
     prevCanvas = c;
     armArrival = true; // every landing (first paint or carousel switch) arms the reveal; the
                        // canvas-ready onzoom below fires it once marks are actually on screen
@@ -540,20 +548,32 @@
          and there is nothing to leak. That is the stronger form and it was the first choice here.
 
          It is not available to Archie, because Archie has a focus contract anvil's embed does not:
-         `use:dialog` (dialog-a11y.ts) restores focus on close only `if (trigger && document.contains(
-         trigger))`, and the trigger is this card's ⤢. Under a mount guard the card unmounts in the same
-         flush the sheet mounts, so the action snapshots `<body>` and Escape out of the sheet strands a
-         keyboard reader — measured as note.spec.ts's V63 guard "Escape closes it and returns focus to
-         the ⤢ that opened it". Closing V60 by reopening V62 is not a trade worth making, and the
-         alternative (hand-rolling focus return in the host, past the shared action that exists to own
-         it) is worse than the CSS.
+         `use:dialog` (dialog-a11y.ts) captures its restore target from `document.activeElement` at
+         ACTION MOUNT and restores it on destroy only `if (trigger && document.contains(trigger))`. The
+         trigger is this card's ⤢. Under a mount guard the card unmounts in the same flush the sheet
+         mounts, and the failure is ORDER-INDEPENDENT: unmount-first snapshots `BODY`, action-first
+         snapshots the ⤢ and then finds `document.contains` false by the time it restores. Either way
+         Escape out of the sheet strands a keyboard reader — note.spec.ts's V63 guard, "Escape closes it
+         and returns focus to the ⤢ that opened it". "We'll order the effects correctly" is not an
+         escape hatch; there is no order that works.
+
+         The one form that WOULD work is restore-by-RE-QUERY — an `onrestore` on the shared action plus
+         a host callback focusing the freshly-remounted ⤢ after a `tick()`. A restore-target PARAMETER
+         cannot work: the remounted ⤢ is a different node than the one captured, so no node reference
+         survives the round trip. That is ~10 lines across three files plus a dependence on flush
+         ordering that only a driven browser test can keep honest — to buy an observable guarantee these
+         two CSS lines already deliver.
 
          So: hidden, and hidden the way that gives the same OBSERVABLE guarantee. `display: none` takes
          the card out of rendering AND out of the a11y tree — the ticket's defect was "in the DOM and
          LEGIBLE", and e2e/note-surface.spec.ts asserts the count of VISIBLE `.note-body` elements is
          exactly one. The wrapper is `display: contents` when shown, so it generates no box: `.note-pop`
-         keeps `.reader` as its containing block, its absolute anchoring is untouched, and the
-         `getFitOptions` reservation that queries `.note-pop` still measures the right rect. -->
+         keeps `.reader` as its containing block and its absolute anchoring is untouched.
+         What the hidden card does to the `getFitOptions` reservation, precisely: `.note-pop` measures
+         0×0 while the sheet is open, so the loop's `if (!r || r.width === 0) continue` skips it and the
+         card reads as NOT OCCLUDING. That is the correct answer, not a lucky one — the canvas behind a
+         full-screen scrim is not being read, so there is no left flank to reserve. -->
+
     <div class="note-slot" class:hidden-behind-sheet={readingSheet}>
     <NotePopup
       eyebrow={object.label}
@@ -576,7 +596,32 @@
   {#if readingSheet && current}
     <!-- The sheet is the SAME note at reading size: it takes the card's props, not a text snapshot. That
          is what makes the sheet's header identical to the card's by construction (V64) and what stops
-         media/tags/geo vanishing on expand. -->
+         media/tags/geo vanishing on expand.
+
+         Closing the sheet is "read less", not "dismiss the note": it collapses back to the card and
+         deliberately leaves `selected` alone. Only the card's × clears selection (see its `onclose`
+         above; anvil ADR-0007 F5, "on close … clear the canvas's selected state"). This is the one
+         place the two dismissals diverge, and the divergence is the point.
+
+         ONE MODAL AT A TIME. Giving the sheet the card's whole prop set closed a real gap (tags, media
+         and geo used to vanish on expand) and opened a new one: the sheet is `aria-modal="true"`, and
+         both of the things its chips and tiles can open — the finder (SearchOverlay) and the lightbox
+         (NoteLightbox) — are `aria-modal="true"` too. Clicking a tag chip inside the sheet stacked two
+         modals, each asserting to assistive tech that everything outside it is hidden, and one of them
+         necessarily lying. So both routes CLOSE the sheet first: the new surface REPLACES it rather
+         than covering it. This is the same one-at-a-time posture the whole slice rests on, applied to
+         the surfaces the note can reach.
+
+         The alternative with precedent was to not forward these at sheet size at all — NotePopup
+         already withholds ⤢ there (see its header block), so "drop an affordance the sheet can't
+         honour" is an established pattern in this component. It is not the same case. ⤢ at sheet size
+         is MEANINGLESS — it offers to expand what is already expanded, so withholding it costs the
+         reader nothing. A tag chip and a media tile are meaningful at any size: the chip is how you
+         find the other notes sharing a tag, the tile is how you see the image. Withholding them would
+         make the sheet show LESS than the card it came from — which is V64's exact shape, reintroduced
+         in miniature by the fix for it. Replace keeps the sheet a full peer of the card; and unlike
+         "render them inert", it leaves no control that looks clickable and isn't. -->
+
     <ReadingSheet
       eyebrow={object.label}
       text={noteParts.text}
@@ -584,8 +629,8 @@
       tags={tagsOf(current)}
       {geoCoord}
       onclose={() => (readingSheet = false)}
-      onopenfinder={(t) => onopenfinder?.(t)}
-      onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+      onopenfinder={(t) => { readingSheet = false; onopenfinder?.(t); }}
+      onmedia={(idx) => { readingSheet = false; lightbox = { media: noteParts.media, text: noteParts.text, index: idx }; }}
     />
   {/if}
 </div>

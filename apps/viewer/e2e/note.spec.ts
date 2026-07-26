@@ -81,15 +81,21 @@ test.describe("dismissing a note (V62)", () => {
     // which silently assumed the list entry looks the same in both states. It no longer does: an
     // entry whose note is open marks position ("Note 1 of 7 · Open") instead of restating the note
     // (V60), so the text changes back on close and the old assertion failed against correct
-    // behaviour. Comparing the node to `document.activeElement` is what the test always meant, and
-    // it cannot be invalidated by what the entry chooses to display.
+    // behaviour. Worse than fragile, it was INVERTED: it could pass only if the open-mark STUCK.
+    //
+    // Compared by true NODE IDENTITY, via an elementHandle taken BEFORE the click. A `Locator`
+    // re-resolves after the action, so `trigger.evaluate(el => el === document.activeElement)` would
+    // assert only "whatever is first in the list NOW has focus" — a future change that reordered the
+    // list on close and restored focus by index would pass it. The handle is the node actually clicked.
     const trigger = await openFirstNote(page);
+    const handle = await trigger.elementHandle();
+    expect(handle).not.toBeNull();
     await page.locator(".note-pop button.close").click();
     await expect(page.locator(".note-pop")).toHaveCount(0);
 
     const a = await active(page);
     expect(a?.tag).toBe("button");
-    expect(await trigger.evaluate((el) => el === document.activeElement)).toBe(true); // the trigger itself, not <body>
+    expect(await handle!.evaluate((el) => el === document.activeElement)).toBe(true); // the trigger itself, not <body>
   });
 
   test("dismissing also clears the canvas's selection, not just the card", async ({ page }) => {

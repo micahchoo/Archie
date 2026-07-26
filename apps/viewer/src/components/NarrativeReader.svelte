@@ -192,7 +192,11 @@
     return (id: string | null): number => (id === null ? base.length : (byR[id]?.length ?? 0));
   });
 
-  function activate(i: number) { activeIndex = i; selected = null; }
+  // Changing section clears the open note — and the reading sheet with it. The sheet renders under
+  // `{#if readingSheet && current}`, so clearing `selected` alone would unmount it while leaving the
+  // flag true, and the next plain note selection would open a sheet nobody asked for. Same latent bug
+  // as Reader.svelte's object-change effect; same fix, at the one place selection is cleared.
+  function activate(i: number) { activeIndex = i; selected = null; readingSheet = false; }
 
   // Aside pane toggle: the spine (the authored read) or the ACTIVE object's note list. The narrative's
   // aside was sections-only, so an object's notes were reachable solely via canvas markers — fine for a
@@ -459,7 +463,10 @@
 
   {#if readingSheet && current}
     <!-- Same note, same eyebrow, reading size. `noteEyebrow` is ONE derived value feeding both surfaces,
-         so the sheet cannot introduce its own idea of what you are reading (V64). -->
+         so the sheet cannot introduce its own idea of what you are reading (V64).
+         ONE MODAL AT A TIME: the finder and the lightbox are both `aria-modal="true"`, as is this sheet,
+         so both routes out of it close it first — the new surface replaces the sheet rather than
+         stacking on it. Full reasoning in Reader.svelte's twin of this block. -->
     <ReadingSheet
       eyebrow={noteEyebrow}
       text={noteParts.text}
@@ -467,8 +474,8 @@
       tags={tagsOf(current)}
       {geoCoord}
       onclose={() => (readingSheet = false)}
-      onopenfinder={(t) => onopenfinder?.(t)}
-      onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+      onopenfinder={(t) => { readingSheet = false; onopenfinder?.(t); }}
+      onmedia={(idx) => { readingSheet = false; lightbox = { media: noteParts.media, text: noteParts.text, index: idx }; }}
     />
   {/if}
 

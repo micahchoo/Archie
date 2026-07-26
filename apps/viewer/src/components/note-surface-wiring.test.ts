@@ -90,11 +90,34 @@ describe("Archie-01a6 — the note card carries no stepper", () => {
 
   it("the Reader's sidebar footer is the way UP only — its canvas chrome owns stepping", () => {
     // Reader keeps SidebarObjectNav for "Back to Exhibit" and deliberately does NOT hand it the
-    // sibling list: two object steppers in one reader is the disagreement V23 measured. (MediaPlayer
-    // still opts in — an AV object has no canvas chrome to put a stepper in. See the component header.)
+    // sibling list: two object steppers in one reader is the disagreement V23 measured.
     const instances = instancesOf("./Reader.svelte", "Reader.svelte", "SidebarObjectNav");
     expect(instances).toHaveLength(1);
     expect(instances[0]).toEqual(["onoverview"]);
+  });
+
+  it("MediaPlayer OPTS IN — the AV path keeps its stepper", () => {
+    // The other half of the same decision, and the one with a stranded user behind it. The argument
+    // for making the stepper opt-in rather than deleting it is precisely that MediaPlayer is the
+    // sanctioned opter: an AV object has a waveform and a transcript, not an OSD canvas, so 01a6's
+    // "put the nav where the thing it navigates lives" has nowhere else to land there. Delete these
+    // props and an AV reader in a multi-object exhibit has no way to the next object at all.
+    //
+    // Asserted here rather than left to the driven suite because MediaPlayer is not this slice's
+    // territory: this pins what it is OWED, so a future edit to SidebarObjectNav's prop surface that
+    // silently drops the AV path fails in this repo's cheapest gate rather than in a reader's hands.
+    const instances = instancesOf("./MediaPlayer.svelte", "MediaPlayer.svelte", "SidebarObjectNav");
+    expect(instances).toHaveLength(1);
+    // All three stepper props, or `stepper` stays false and the control never renders.
+    expect(instances[0]).toEqual(expect.arrayContaining(["siblings", "currentId", "onstep", "onoverview"]));
+  });
+
+  it("SidebarObjectNav still ACCEPTS the stepper props MediaPlayer passes", () => {
+    // The pair to the above: the opt-in is a handshake, and either side going quiet breaks it. A prop
+    // passed to a component that no longer declares it is exactly the wiring class svelte-check is
+    // blind to (.claude/rules/svelte-no-typecheck-net.md).
+    const props = propsOf("./SidebarObjectNav.svelte", "SidebarObjectNav.svelte");
+    expect(props).toEqual(expect.arrayContaining(["siblings", "currentId", "onstep", "onoverview"]));
   });
 });
 

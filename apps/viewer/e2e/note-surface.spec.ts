@@ -71,6 +71,77 @@ test.describe("only ONE note-content element is on screen at a time (V60)", () =
     const others = page.locator("aside li button:not([aria-current])");
     expect(await others.count()).toBeGreaterThan(0);
     expect(await others.first().locator(".card-preview").count()).toBe(1);
+
+    // …and the preview COMES BACK when the note closes. Asserted directly rather than inferred from
+    // `aria-current` clearing (note.spec.ts): both are driven by the same selected-ness, so that one
+    // is a proxy. A de-emphasis that never reverted would quietly erode the list one note at a time.
+    await page.locator(".note-pop button.close").click();
+    await expect(page.locator(".note-pop")).toHaveCount(0);
+    await expect(trigger.locator(".card-preview")).toHaveCount(1);
+    await expect(trigger.locator(".card-open")).toHaveCount(0);
+  });
+});
+
+test.describe("one modal at a time — the sheet never stacks (Archie-dbbc review)", () => {
+  /** Every element currently claiming `aria-modal="true"`, named by a stable class. */
+  const openModals = (page: Page) =>
+    page.evaluate(() =>
+      [...document.querySelectorAll('[aria-modal="true"]')].map(
+        (e) => (e.className || "").toString().split(/\s+/)[0] || e.tagName.toLowerCase(),
+      ),
+    );
+
+  test("a tag chip inside the sheet REPLACES it with the finder", async ({ page }) => {
+    // Introduced by this branch and caught in review. Giving the sheet the card's whole prop set
+    // closed a real gap (tags/media/geo used to vanish on expand) and opened this: the sheet is
+    // `aria-modal="true"`, and so is the finder it can now reach. Two of them at once is a false
+    // statement to assistive tech in both directions — each says everything outside it is hidden and
+    // one is demonstrably wrong — and it strands a mouse reader behind two escapes.
+    await goOffline(page);
+    await page.goto("./#/voynich");
+    await page.locator("button.object").first().click();
+    const reading = page.locator('.legend .opt[role="radio"]').nth(1); // tags ride on reading-scoped notes
+    await expect(reading).toBeVisible();
+    await reading.click();
+
+    const notes = page.locator("aside li");
+    const n = await notes.count();
+    let found = false;
+    for (let i = 0; i < n; i++) {
+      await notes.nth(i).locator("button").first().click();
+      await expect(page.locator(".note-pop")).toBeVisible();
+      if ((await page.locator(".note-pop .tags .tag").count()) === 0) continue;
+      const expand = page.locator(".note-pop button.expand");
+      if ((await expand.count()) === 0) continue;
+      found = true;
+      await expand.click();
+      await expect(page.locator(".sheet")).toBeVisible();
+      expect(await openModals(page)).toEqual(["sheet"]);
+
+      await page.locator(".sheet .tags .tag").first().click();
+      // Wait for BOTH transitions to settle before snapshotting: `openModals` is a one-shot evaluate
+      // with no auto-wait, so asserting on it while the finder is still mounting reads `[]` and the
+      // test would claim a pass the app has not earned yet (it read `[]` exactly once, in the run
+      // that caught this).
+      await expect(page.locator(".sheet")).toHaveCount(0);
+      await expect(page.locator(".finder")).toBeVisible();
+      // Exactly one modal, and it is the finder — not ["sheet","finder"].
+      expect(await openModals(page)).toEqual(["finder"]);
+      break;
+    }
+    expect(found, "no expandable tagged note — the fixture no longer exercises this").toBe(true);
+  });
+
+  test("never two `aria-modal` elements, on any route out of the sheet", async ({ page }) => {
+    // The media tile is the second route: NoteLightbox is `aria-modal="true"` as well. Asserted as an
+    // invariant over the whole document rather than per-pair, so a THIRD modal surface reachable from
+    // the note lands on this test instead of on a reader.
+    await openFirstNote(page);
+    await openSheet(page);
+    expect(await openModals(page)).toEqual(["sheet"]);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".sheet")).toHaveCount(0);
+    expect(await openModals(page)).toEqual([]);
   });
 });
 
