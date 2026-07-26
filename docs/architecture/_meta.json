@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "project_shape": "monorepo",
   "analyzed_at": "2026-05-25T16:30:00Z",
-  "git_sha": "nogit",
+  "git_sha": "unknown — the 2026-05-25 analysis ran without git metadata",
   "levels_completed": [1, 2, 3, 4, 5, 6, 7, 8],
   "levels_skipped": [],
   "subsystems": [
@@ -21,25 +21,22 @@
     "evolution",
     "convention"
   ],
-  "staleness_hashes": {
-    "domain.md": "nogit",
-    "ecosystem.md": "nogit",
-    "infrastructure.md": "nogit",
-    "subsystems.md": "nogit",
-    "cross-cutting/patterns.md": "nogit",
-    "risk-map.md": "nogit",
-    "evolution.md": "nogit",
-    "overview.md": "nogit"
-  },
+  "staleness_tracking": "not-wired. This file previously carried a staleness_hashes map whose eight entries were all the literal string 'nogit' — the mechanism was written but never connected to git, so it reported 'not stale' by construction for two months. Removed 2026-07-26 rather than left asserting a freshness it never measured. Check drift by hand against the known_gaps below until it is wired for real.",
   "sources": [
     "CONTEXT.md (2026-05-24 grill session)",
     "HANDOFF.md (2026-05-25 implementation log)",
-    "docs/adr/0001-0004",
+    "docs/adr/0001-0004 (the four that existed then; 26 ADRs exist as of 2026-07-26)",
     "docs/decisions/archie.md (Q-1..Q-7)",
     "codebase-analytics.sh (2026-05-25)",
     "feature-map.sh (2026-05-25)",
-    ".understand-anything/ knowledge graph (2026-05-24, 188 files)"
+    ".understand-anything/ knowledge graph (2026-05-24, 188 files) — that cache was deleted 2026-07-26 at 26% accuracy; this entry records provenance, not a live path"
   ],
-  "confidence": "high",
-  "stale_since": null
+  "confidence": "partial",
+  "stale_since": "2026-05-26",
+  "known_gaps": [
+    "packages/archie-viewer — the embeddable web component is not described in any of the 21 architecture docs",
+    "src-tauri / the desktop (Flatpak) target — not described in any of the 21 architecture docs",
+    "the worker-based DZI tiling pipeline (dzi-slicer.ts, dzi-tile-worker.ts, dzi-slice-pool.ts) — mentioned in 1 of 21",
+    "measured 2026-07-26: 930 commits and 543 changed source files since analyzed_at; of 46 code files these docs cite, 4 no longer exist"
+  ]
 }
