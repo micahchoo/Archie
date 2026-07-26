@@ -10,13 +10,20 @@ Worktrees `.claude/worktrees/chrome-occlusion` (driver) and `.claude/worktrees/m
 
 ## CURRENT STATE — read this and nothing else for state
 
-**All five slices are MERGED into local `main` (`37783df`). NOT PUSHED — `origin/main` is still
-`ef7ef59`.** The push is the next action and needs the human's word; everything below it is done.
+**All five slices are MERGED and PUSHED. `origin/main` = local `main` = `04d38ce`.
+CI GREEN — all ten jobs at `04d38ce`**, e2e included, read per-job rather than from a summary line.
 
 Merged: `ux/note-surface`, `ux/offline-canvas`, `ux/embed-parity`, `ux/av-surface`,
 `ux/narrative-coupling`.
 
-**Merged-tree gates, all measured on `37783df`, not inherited from any branch:**
+> **CI trap worth knowing.** The run for the *previous* commit `c34f359` reads `cancelled`, and that
+> is not a failure — pushing `04d38ce` while it was still running triggered the workflow's
+> concurrency group and killed its e2e job mid-flight. Nine jobs had already succeeded. If you push
+> twice in quick succession, check the run for the LATEST sha; the older one's `cancelled` is
+> self-inflicted and means nothing.
+
+**Merged-tree gates, all measured locally on `37783df` before the push, not inherited from any
+branch — and independently confirmed by CI at `04d38ce`:**
 
 | gate | result |
 | --- | --- |
@@ -32,14 +39,21 @@ Merged: `ux/note-surface`, `ux/offline-canvas`, `ux/embed-parity`, `ux/av-surfac
 
 ### The next actions, in order
 
-1. **Push `main`** and watch CI. Nothing else is blocked on anything.
-2. **Thread `onopenfinder`** into both `<MediaPlayerLazy.current …>` instances
+1. **Thread `onopenfinder`** into both `<MediaPlayerLazy.current …>` instances
    (`ExhibitView.svelte` :570, :592) — see "Post-merge work this created" below for why it was
    deliberately kept off both branches. The fixture note carrying a tag is already in place and
-   deliberately unasserted; write the assertion with the wire and red-green it in one pass.
-3. **Write the three rules the narrative review earned** (below) — none exist yet.
-4. **`Archie-4524`** — `ReadingLegend` on the AV surface. Fixture first, then the control, then
-   revert the fixture and watch it fail.
+   deliberately unasserted; write the assertion with the wire and red-green it in one pass. Do this
+   FIRST and alone: `ExhibitView` is the collision hotspot for two wave-1 slices.
+2. **Close `Archie-5185`** as a decision (flip-and-read stays removed — ruling 4 below).
+3. **`ecf4` is mechanical, not a judgement call** — measured 2026-07-26: `render-core/src/tokens.css`
+   (105 tokens) and `apps/studio/src/tokens.css` (102) share 100 names with **zero value
+   disagreements**. The viewer no longer has its own copy at all. Studio-only: `--text-lede`,
+   `--text-note`. Core-only: `--finder-h`, `--pane-top`, `--scrim-dim`, `--scrim-top`, `--topbar-h`.
+   Move the two up, point studio at core, delete the copy. (Note `--finder-h`/`--topbar-h` may not
+   survive the dock work — sequence it after.)
+4. **Surface retried-but-passed tests in CI** (ruling 5 below).
+5. **Write the three rules the narrative review earned** (below) — none exist yet.
+6. Then the waves.
 
 ### Tickets
 
@@ -55,7 +69,67 @@ V49 untaken, V50 deferred because the ticket's premise that wavesurfer.js is alr
 **The map cannot fully close, and that should be stated rather than finessed:** V103/V104 depend on
 `Archie-a5b1`, which lives on `map:dc-metadata` and is open.
 
+## DECISIONS THE HUMAN MADE, 2026-07-26 — these change the shape of the remaining work
+
+Four rulings. Each was put with a recommendation and prior art; two went AGAINST the recommendation,
+which is why they are recorded verbatim rather than paraphrased into the tickets that prompted them.
+
+### 1. Canvas chrome DOCKS out of the canvas (chose against the recommendation)
+
+The corpus default wins: chrome becomes a sibling of the canvas in normal flow and never sits over
+the image. `clover-iiif` `Viewer.tsx:180-184` — `<ViewerHeader>` and `<ViewerContent>` are flex
+siblings, which is *why* the header can be transparent; its one over-canvas control is an **opaque
+plate**, contrast sidestepped rather than solved. `tropy` `esper/container.js:11,39` — overlay
+toolbar is opt-in, `hasOverlayToolbar` defaults **false**.
+
+Consequences, and they are larger than `de08`'s body suggests:
+
+- **`de08` (V42) and `c30a` (V48) both close as OBVIATED, not fixed.** There is no contrast floor to
+  establish and no vertical clearance to reserve if nothing floats.
+- **`Archie-40fe`'s reservation model retires** — `--strip-h`/`--finder-h`, `fitBoundsRect`'s
+  horizontal reservation, and `isWholeObjectFor`'s coverage rule lose their reason to exist. That is
+  shipped, tested `render-core` code, so removing it is a deletion with its own review burden.
+- **V80's fix (`9a81`) and the narrative spine's 30px clearance become moot** for the same reason.
+- The recommendation had been the opaque plate (smallest change, corpus-cited, keeps `40fe`). It was
+  declined in favour of the corpus *default*. Don't relitigate it as "the cheaper option existed" —
+  it was on the table and named.
+
+### 2. BOTH consumers dock — it is an ADR-0019 CONTRACT, not a pixel
+
+"The image is never obscured by chrome" is a contract the shell and the embed both honour. So:
+ADR-0019 gains a **layout row**, and `recipes/smoke.mjs` gains the assertion that holds it. The cost
+was named and accepted: vertical space is scarcest in a small embed, which is exactly where a docked
+bar taxes most.
+
+### 3. V50 — waveform peaks are BAKED AT PUBLISH into the manifest (chose against the recommendation)
+
+No runtime dependency. Publish computes a peaks array — the pipeline already bakes thumbnails and
+tiles DZI in workers — and the reader draws it on a plain `<canvas>`, so the cues sit on something
+visible. **wavesurfer.js is NOT being added**; the recommendation was to add it and was declined.
+
+Two consequences to carry: the **embed can have this too** (no `eagerGzKB` cost, unlike wavesurfer),
+and an object that has not been published — the author's working store — **has no peaks until it
+is**, so the reader needs an honest no-peaks state rather than an empty canvas.
+
+Adding a third worker path means it gets BOTH of what [[perf-measure-the-flow]] requires: a
+process-wide pool (never per-call) and a way for a silent fallback to be seen.
+
+### 4. Flip-and-read stays REMOVED — `Archie-5185` closes as a decision
+
+Stepping is navigation; opening a note is a separate act. Docking strengthens this: a docked bar is
+unambiguously persistent navigation. The gated-restore option was declined specifically to avoid a
+persistent control that behaves differently on invisible prior state.
+
+### 5. CI keeps `retries: 1`, but a retried-but-passed test is SURFACED
+
+Not silent, not fatal. A test that passed only on retry is reported as a warning carrying its
+first-run failure, so the narrative-flake class cannot fold into a green tally again. Infra noise
+still does not red the build.
+
 ## THE REMAINING 13, GROUPED BY FILE TERRITORY
+
+**Re-grouped below for the rulings above** — the dock decision merges `de08`+`c30a` into one large
+slice that touches `packages/archie-viewer`, which now collides with `1820` and pushes it to wave 2.
 
 Territory, not topic — the wave boundaries below are real collisions verified the way the last five
 slices were (`comm -12` over `git diff --name-only main...<branch>`), not preference. Three of the
@@ -70,9 +144,14 @@ hotspot for two of the groups below — landing it before any dispatch keeps the
 
 | slice | tickets | territory |
 | --- | --- | --- |
+| **dock the chrome** | `de08`, `c30a` (both obviated) | `apps/viewer` chrome components, `packages/archie-viewer/src/`, `packages/render-core` (retire `fitBoundsRect` reservation + `isWholeObjectFor`), `docs/adr/0019`, `recipes/smoke.mjs` |
 | **fixtures** | `b135`, `f4fb`, `0cc6`, + the fixture half of `4524` | `apps/viewer/fixtures/`, `apps/studio/src/seed-data*`, `sample-data*`, `gen-published` |
-| **embed DEFER rows** | `1820` | `packages/archie-viewer/src/` |
 | **small verifications** | `9838`, `d6e9` | `Reader.svelte` (one comment), plus a record-only ticket |
+
+The dock slice is the big one and it reaches `packages/archie-viewer`, so **`1820` moves to wave 2** —
+they would collide. It is also a slice with a large *deletion* component, which wants its own review
+attention: removing a reservation model is the kind of change where a gate keeps passing because the
+thing it measured stopped existing.
 
 Every fixtures ticket is the same shape — *the guard is correct and nothing reaches it*. The
 shared-fixture rule governs: **never edit an existing fixture to make one test work; add a new one**
@@ -90,21 +169,22 @@ is the thing it exists to prevent.
 
 | slice | tickets | note |
 | --- | --- | --- |
-| **canvas chrome** | `de08`, then `c30a` | ONE decision, in this order |
+| **embed DEFER rows** | `1820` | moved here — collides with the dock slice on `packages/archie-viewer` |
+| **baked waveform peaks** | `7b86` V50 | publish-side peaks into the manifest + a reader canvas; NO wavesurfer |
 | **finder** | `9eeb` | V106 — the substrate exists, the affordance doesn't |
 | **AV** | `7b86` V49, `4524` control half | needs wave 1's fixtures to exist first |
 
-`de08` before `c30a` is load-bearing: if the corpus argument against floating chrome wins, V48's
-vertical gap **disappears rather than being solved**, and `c30a`'s structural finding
-(`fitBoundsRect` never touches `y`/`h`) becomes moot. Fixing `c30a` first risks building a
-reservation for chrome that shouldn't float.
+That ordering question is now **answered** — see the decisions section above. The corpus argument
+against floating chrome won, so V48's vertical gap disappears rather than being solved and
+`c30a`'s structural finding (`fitBoundsRect` never touches `y`/`h`) is moot. Both tickets close as
+obviated, and the work is the dock slice in wave 1.
 
 ### Wave 3 — last, because it collides with wave 2
 
 **`ecf4`** — `tokens.css` has already drifted between the two apps. Touches both apps' CSS, which
 wave 2's chrome work also touches.
 
-### The three that need YOU, not an agent
+### The three that needed the human — ALL ANSWERED 2026-07-26, see the decisions section
 
 1. **`5185` flip-and-read.** A reading decision, not a structural one. `stepIntoReading` was removed
    as a side effect of `01a6`; neither ticket asked for that. Needs someone who actually reads a
