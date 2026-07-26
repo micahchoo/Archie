@@ -28,8 +28,13 @@
 //                   `target`/`iiif-content` (or a card click once shown) is UNAFFECTED — reachability is
 //                   unchanged either way.
 
-import { parseRoute, thumbnailCandidates, licenseLabel, metadataRows, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit, type RightsFields } from "@render/core";
-import type { ReadOnlyMountSurface } from "@render/mount";
+import { parseRoute, overlay, thumbnailCandidates, licenseLabel, metadataRows, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit, type RightsFields, type W3CAnnotation } from "@render/core";
+// Type-only (erased): naming the reader's surface costs the eager graph nothing. A VALUE import from
+// either module is the leak — .claude/rules/archie-viewer-eager-closure.md.
+import type { EmbedReaderSurface } from "./reader.js";
+import type { ReaderChrome } from "./reader-chrome.js";
+import type { NarrativeAside } from "./narrative.js";
+import { TOKENS_CSS } from "./tokens.js";
 import {
   openLibraryFromFile,
   openLibraryFromSrc,
@@ -52,53 +57,73 @@ type View =
   | { kind: "loading" }
   | { kind: "gallery"; cold?: boolean }
   | { kind: "exhibit"; exhibit: PortableExhibit; error?: string }
-  | { kind: "reader"; exhibit: PortableExhibit; object: AObject };
+  /** `section` present ⇒ the NARRATIVE reading of the exhibit (V88): same canvas, spine in the pane. */
+  | { kind: "reader"; exhibit: PortableExhibit; object: AObject; section?: number };
 
+// Component CSS, written AGAINST the shared token layer (TOKENS_CSS, tokens.ts) — never against
+// literals. Every colour, radius, shadow, step of the type scale and unit of space below resolves to
+// a custom property the shell defines in the SAME file it reads itself. That is what V9/V31/V69 were:
+// this block used to hold `#f6efe9`, `#d2641e`, `system-ui` and square white cards, which is a second
+// (drifted) design system, not a lighter one. The component RULES stay local — the embed has no
+// Svelte components to share, and anvil's `applyThemeProps` draws the same line (shared property
+// writes, per-caller reset).
 const TEMPLATE_STYLES = `
-  :host { display: block; position: relative; min-height: 320px; font-family: system-ui, sans-serif; color: #2a2320; }
+  :host { display: block; position: relative; min-height: 320px; font-family: var(--font-body); color: var(--ink-canvas-primary); }
   .wrap { min-height: inherit; }
-  .empty { display: grid; place-items: center; min-height: 320px; padding: 2rem; text-align: center; background: #f6efe9; }
-  .empty .frame { max-width: 30rem; padding: 2.5rem 2rem; border: 1px dashed #c9a98f; border-radius: 12px; }
-  .empty h1 { font-weight: 300; font-size: 2rem; margin: 0 0 .5rem; }
-  .empty button { font: inherit; padding: .6rem 1.4rem; border: none; border-radius: 8px; background: #d2641e; color: #fff; cursor: pointer; }
-  .empty .err { color: #b00020; margin-top: .75rem; }
-  .empty .cold { background: #f0e0d4; padding: .5rem .75rem; border-radius: 6px; font-size: .85rem; }
-  .wash { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(210,100,30,.12); border: 1px dashed #c9a98f; pointer-events: none; }
-  .grid { list-style: none; margin: 0; padding: 2rem; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
-  .grid button, .grid a { display: flex; flex-direction: column; text-align: left; width: 100%; padding: 0; border: none; border-radius: 10px; overflow: hidden; background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.08); cursor: pointer; text-decoration: none; color: inherit; }
-  .grid .cover { width: 100%; aspect-ratio: 3/2; object-fit: cover; background: #e7ded7; display: grid; place-items: center; color: #8a7a6c; }
+  .empty { display: grid; place-items: center; min-height: 320px; padding: var(--space-8); text-align: center; background: var(--surface-canvas); }
+  .empty .frame { max-width: 30rem; padding: var(--space-10) var(--space-8); border: 1px dashed var(--border-canvas-emphasis); border-radius: var(--radius-md); }
+  .empty h1 { font-family: var(--font-display-2); font-weight: 400; font-size: 2rem; margin: 0 0 var(--space-2); }
+  .empty button { font: inherit; font-family: var(--font-ui); padding: var(--space-3) var(--space-6); border: none; border-radius: var(--radius-sm); background: var(--accent); color: var(--ink-on-accent); cursor: pointer; }
+  .empty button:hover { background: var(--accent-hover); }
+  .empty .err { color: var(--semantic-error); margin-top: var(--space-3); }
+  .empty .cold, .intro .cold { background: var(--accent-2-muted); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); font-size: .85rem; }
+  .grid { list-style: none; margin: 0; padding: var(--space-8); display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-5); }
+  .grid button, .grid a { display: flex; flex-direction: column; text-align: left; width: 100%; padding: 0; border: none; border-radius: var(--radius-md); overflow: hidden; background: var(--surface-canvas-raised); box-shadow: var(--shadow-lift-low); cursor: pointer; text-decoration: none; color: inherit; }
+  .grid .cover { width: 100%; aspect-ratio: 3/2; object-fit: cover; background: var(--surface-canvas-overlay); display: grid; place-items: center; color: var(--ink-canvas-muted); }
   .grid .cover .glyph { font-size: 1.8rem; line-height: 1; align-self: end; }
   .grid .cover .kind { align-self: start; font-size: .85rem; }
-  .grid .caption { padding: 1rem; display: flex; flex-direction: column; gap: .25rem; }
-  .grid .title { font-size: 1.2rem; }
-  .grid .count, .grid .desc { font-size: .85rem; color: #6b5d52; }
-  header.intro { padding: 2rem 2rem 0; }
-  .intro .cold { background: #f0e0d4; padding: .5rem .75rem; border-radius: 6px; font-size: .85rem; display: inline-block; margin: 0 0 .5rem; }
-  header.intro h1 { font-weight: 300; margin: 0 0 .5rem; }
-  .topbar { display: flex; gap: .75rem; padding: .75rem 2rem; align-items: center; }
-  .topbar button { font: inherit; padding: .35rem .9rem; border: 1px solid #c9a98f; border-radius: 6px; background: transparent; cursor: pointer; }
-  .reader-surface { position: relative; width: 100%; height: 70vh; min-height: 320px; background: #1c1714; }
-  .notice { padding: 2rem; text-align: center; color: #6b5d52; }
+  .grid .caption { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-1); }
+  .grid .title { font-family: var(--font-display-2); font-size: 1.2rem; }
+  .grid .count, .grid .desc { font-size: .85rem; color: var(--ink-canvas-secondary); }
+  header.intro { padding: var(--space-8) var(--space-8) 0; }
+  .intro .cold { display: inline-block; margin: 0 0 var(--space-2); }
+  header.intro h1 { font-family: var(--font-display-2); font-weight: 400; margin: 0 0 var(--space-2); }
+  .topbar { display: flex; gap: var(--space-3); padding: var(--space-3) var(--space-8); align-items: center; }
+  .topbar button { font: inherit; font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-2) var(--space-4); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); background: transparent; color: inherit; cursor: pointer; }
+  .topbar button:hover { color: var(--accent-2); border-color: var(--accent-2); }
+  .topbar .title { font-family: var(--font-display-2); font-size: 1.05rem; }
+  /* The reader is a canvas + a reading pane (the shell's Reader.svelte proportions in plain DOM). The
+     pane is where the note LIST and the object stepper mount — see reader-chrome.ts, which is lazy. */
+  .reader { display: flex; align-items: stretch; width: 100%; height: 70vh; min-height: 320px; }
+  .reader-surface { position: relative; flex: 1 1 auto; min-width: 0; height: 100%; background: var(--moss-shadow); }
+  /* The pane RESERVES its width from the first paint, before the lazy chrome lands in it. It used to
+     collapse while empty, so mounting the chrome shrank the canvas and every region overlay jumped —
+     measured as a moving hit target (a click computed against the pre-mount layout landed on nothing).
+     An unstyled-but-sized pane for one frame is the correct trade against reflowing the image. */
+  .reader-aside { flex: 0 0 clamp(240px, 26%, 360px); overflow-y: auto; background: var(--surface-paper); border-left: 1px solid var(--border-paper); }
+  @media (max-width: 720px) { .reader { flex-direction: column; height: auto; } .reader-surface { height: 60vh; } .reader-aside { flex: none; max-height: 40vh; border-left: none; border-top: 1px solid var(--border-paper); } }
+  .notice { padding: var(--space-8); text-align: center; color: var(--ink-canvas-secondary); }
+  .err { padding: 0 var(--space-8); color: var(--semantic-error); }
   /* Credit line (V105) — apps/viewer Credit.svelte's idiom in plain DOM: one quiet mono line, plus an
      ⓘ disclosure carrying the licence and the descriptive metadata. IIIF makes requiredStatement a
      MUST-display, so the line itself is never behind the disclosure. <details> rather than a wired
      button: the open/close and the a11y semantics are the platform's, and the embed adds no listener. */
-  .credit { display: inline-flex; align-items: baseline; gap: .5rem; position: relative; font-family: ui-monospace, monospace; font-size: .72rem; letter-spacing: .06em; line-height: 1.5; color: #6b5d52; }
+  .credit { display: inline-flex; align-items: baseline; gap: var(--space-2); position: relative; font-family: var(--font-mono); font-size: .72rem; letter-spacing: .06em; line-height: 1.5; color: var(--ink-canvas-secondary); }
   .credit .line { font-style: normal; }
   .credit details { display: inline; }
   .credit summary { cursor: pointer; list-style: none; padding: 6px; margin: -6px; font-size: .85rem; line-height: 1; opacity: .7; }
   .credit summary::-webkit-details-marker { display: none; }
-  .credit summary:hover { opacity: 1; color: #d2641e; }
+  .credit summary:hover { opacity: 1; color: var(--accent-2); }
   .credit .panel {
     position: absolute; z-index: 20; top: 1.5rem; left: 0; min-width: 16rem; max-width: 24rem;
-    display: flex; flex-direction: column; gap: .5rem; padding: .75rem 1rem;
-    background: #fff; color: #2a2320; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.14);
+    display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-3) var(--space-4);
+    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border-radius: var(--radius-sm); box-shadow: var(--shadow-lift-low);
   }
-  .credit .panel p { margin: 0; display: flex; flex-direction: column; gap: 2px; font-family: system-ui, sans-serif; font-size: .82rem; line-height: 1.6; }
-  .credit .panel .k { font-family: ui-monospace, monospace; font-size: .62rem; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: #8a7a6c; }
-  .credit .panel .v { color: #2a2320; }
-  .credit .panel a { color: #b4531a; }
-  header.intro .credit { margin: 0 0 .5rem; }
+  .credit .panel p { margin: 0; display: flex; flex-direction: column; gap: 2px; font-family: var(--font-body); font-size: .82rem; line-height: 1.6; }
+  .credit .panel .k { font-family: var(--font-mono); font-size: .62rem; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-canvas-muted); }
+  .credit .panel .v { color: var(--ink-canvas-primary); }
+  .credit .panel a { color: var(--accent-2-paper); }
+  header.intro .credit { margin: 0 0 var(--space-2); }
   .topbar .credit { margin-left: auto; }
 `;
 
@@ -111,7 +136,19 @@ export class ArchieViewerElement extends HTMLElement {
   #root: ShadowRoot;
   #library: LoadedLibrary | null = null;
   #view: View = { kind: "empty" };
-  #surface: ReadOnlyMountSurface | null = null;
+  #surface: EmbedReaderSurface | null = null;
+  /** The reader's lazy chrome — note list + object nav + reading legend (reader-chrome.ts). */
+  #chrome: ReaderChrome | null = null;
+  /** The narrative spine's pane, mounted instead of the chrome on a narrative reading (narrative.ts). */
+  #narrative: NarrativeAside | null = null;
+  /** ADR-0007 / Q16: null = base notes only; a reading id OVERLAYS that reading on the base. Held on
+   *  the instance (never a module global, per this file's header) and reset when the object changes. */
+  #activeReading: string | null = null;
+  /** annotation id → its Reading's colour for the OPEN object (reader-chrome readingColourById). Held
+   *  so the reader's `markColourOf` seam can be handed to `openObject` before the map is computed. */
+  #markColours: Record<string, string> | null = null;
+  /** Re-read the layer and repaint the canvas — set by the open that owns the current surface. */
+  #reloadAnnotations: (() => void) | null = null;
   /** The AV player surface for a sound/video object — mounted instead of OSD, torn down like #surface. */
   #avSurface: AvPlayerSurface | null = null;
   /** The text-only note card for the open reader — shown on overlay selection, torn down with the surface. */
@@ -364,9 +401,26 @@ export class ArchieViewerElement extends HTMLElement {
   // --- READER: lazy-import the deep-zoom mount only when an object opens ------------------------
   // `resolved` (optional) carries a cite-ladder fragment/select to apply ONCE the surface mounts: a
   // note's raw `selectId` (select+fit via the overlay nav contract) and/or a media fragment.
-  async #openObject(exhibit: PortableExhibit, object: AObject, resolved?: ResolvedTarget): Promise<void> {
+  /**
+   * The notes ON the canvas for one object under the current reading layer: the always-visible base
+   * plus the active Reading's notes overlaid (ADR-0007 / Q16). This is ExhibitView.svelte's
+   * `annotationsOf`, through the SAME render-core `overlay` — the list, the legend counts and the
+   * marks all read this one function, so the index can never disagree with the canvas.
+   */
+  #annotationsFor(exhibit: PortableExhibit, objectId: string): W3CAnnotation[] {
+    const base = exhibit.annotationsByObject?.[objectId] ?? [];
+    if (this.#activeReading === null) return base;
+    return overlay(base, exhibit.readingAnnotationsByObject?.[objectId]?.[this.#activeReading]);
+  }
+
+  async #openObject(
+    exhibit: PortableExhibit,
+    object: AObject,
+    resolved?: ResolvedTarget,
+    section?: number,
+  ): Promise<void> {
     this.#teardownSurface();
-    this.#setView({ kind: "reader", exhibit, object });
+    this.#setView({ kind: "reader", exhibit, object, ...(section !== undefined ? { section } : {}) });
     const host = this.#root.querySelector<HTMLElement>(".reader-surface");
     if (!host) return;
 
@@ -375,11 +429,14 @@ export class ArchieViewerElement extends HTMLElement {
     // Both paths are LAZY-imported so the gallery bundle ships neither until an object opens.
     if (object.mediaType === "sound" || object.mediaType === "video") {
       await this.#openAvObject(host, exhibit, object, resolved);
+      // The AV player owns the canvas half only; navigation and the note list are the reader's, and an
+      // AV object in a 12-object exhibit needs the way out just as much as an image does.
+      await this.#mountAside(exhibit, object, section);
       return;
     }
 
     const { openObject } = await import("./reader.js"); // LAZY: OSD weight deferred to this point
-    const annotations = exhibit.annotationsByObject?.[object.id] ?? [];
+    let annotations = this.#annotationsFor(exhibit, object.id);
     const canvasId = exhibit.canvasIdByObject?.[object.id];
 
     // The TEXT-ONLY note card: floats on the reader surface, shows the SELECTED annotation's body
@@ -389,6 +446,8 @@ export class ArchieViewerElement extends HTMLElement {
     const onSelect = (id: string | null): void => {
       // noteBodyHtml returns "" for null/unknown ids → show() hides the card.
       this.#noteCard?.show(noteBodyHtml(annotations, id));
+      // V70's other direction: a mark clicked on the canvas highlights its row in the index.
+      this.#chrome?.setSelected(id);
     };
 
     try {
@@ -398,6 +457,10 @@ export class ArchieViewerElement extends HTMLElement {
         ...(canvasId ? { canvasId } : {}),
         offline: this.offline,
         onSelect,
+        // V56 canvas half — the colour map is the exhibit's own reading membership (reader-chrome's
+        // readingColourById), and the STYLE numbers come from render-core's readingMarkerStyle inside
+        // reading-marks.ts. Neither is restated here.
+        markColourOf: (id) => this.#markColours?.[id],
       });
       if (resolved) this.#applyFragment(this.#surface, resolved);
     } catch (e) {
@@ -410,6 +473,107 @@ export class ArchieViewerElement extends HTMLElement {
         : "Couldn't load this media item.";
       host.innerHTML = `<p class="notice">${escapeHtml(msg)}</p>`;
     }
+    // The reading pane mounts AFTER the canvas so a mount failure still leaves the way out visible.
+    await this.#mountAside(exhibit, object, section, () => annotations);
+    // A legend switch re-reads the layer, so keep the closure above pointing at the live set.
+    this.#reloadAnnotations = (): void => {
+      annotations = this.#annotationsFor(exhibit, object.id);
+      this.#surface?.showAnnotations(annotations);
+    };
+  }
+
+  /**
+   * Mount the reading pane: the NARRATIVE spine when a section index is in play (V88), otherwise the
+   * reader chrome — note list (V70), object nav (V30) and the reading legend (V56). Both modules are
+   * dynamic imports, so neither is in the entry's static closure; the narrative one is fetched ONLY
+   * for an exhibit that actually has sections.
+   */
+  async #mountAside(
+    exhibit: PortableExhibit,
+    object: AObject,
+    section?: number,
+    liveAnnotations?: () => W3CAnnotation[],
+  ): Promise<void> {
+    const aside = this.#root.querySelector<HTMLElement>(".reader-aside");
+    const host = this.#root.querySelector<HTMLElement>(".reader-surface");
+    if (!aside || !host) return;
+
+    if (section !== undefined && (exhibit.sections?.length ?? 0) > 0) {
+      const { mountNarrative } = await import("./narrative.js"); // LAZY, and only for a real spine
+      this.#narrative = mountNarrative(aside, {
+        exhibit,
+        index: section,
+        onactivate: (i) => void this.#openNarrativeSection(exhibit, i),
+        onindex: () => { this.#teardownSurface(); this.#setView({ kind: "exhibit", exhibit }); },
+      });
+      return;
+    }
+
+    const { mountReaderChrome, readingColourById } = await import("./reader-chrome.js");
+    this.#markColours = readingColourById(exhibit, object.id);
+    this.#chrome = mountReaderChrome(aside, host, {
+      exhibit,
+      object,
+      annotations: liveAnnotations ? liveAnnotations() : this.#annotationsFor(exhibit, object.id),
+      activeReading: this.#activeReading,
+      onselect: (id) => {
+        // A row is a door to the note AND to its place on the image: select (visual state) then fit
+        // (camera) — the ADR-0006 nav contract, the same pair a cite-ladder landing applies.
+        this.#surface?.setSelected(id);
+        this.#surface?.fitBounds(id);
+        this.#noteCard?.show(noteBodyHtml(liveAnnotations ? liveAnnotations() : [], id));
+        this.#chrome?.setSelected(id);
+      },
+      onreading: (id) => void this.#setReading(id),
+      onstep: (objectId) => {
+        const next = exhibit.objects.find((o) => o.id === objectId);
+        if (next) void this.#openObject(exhibit, next);
+      },
+      onoverview: () => { this.#teardownSurface(); this.#setView({ kind: "exhibit", exhibit }); },
+    });
+  }
+
+  /** Switch the visible Reading layer without tearing down the canvas (the legend is a radio). */
+  async #setReading(id: string | null): Promise<void> {
+    const v = this.#view;
+    if (v.kind !== "reader") return;
+    this.#activeReading = id;
+    this.#reloadAnnotations?.();
+    // The list and the legend both describe the layer, so they are rebuilt; the canvas is not.
+    this.#chrome?.destroy();
+    this.#chrome = null;
+    await this.#mountAside(v.exhibit, v.object, undefined, () => this.#annotationsFor(v.exhibit, v.object.id));
+  }
+
+  /**
+   * Activate one section of the narrative spine (ADR-0005): open its object and fit its `start`
+   * camera. When the section stays on the SAME object the canvas is kept and only the camera and the
+   * pane move — remounting OSD per paragraph would throw away the reader's place in the image.
+   */
+  async #openNarrativeSection(exhibit: PortableExhibit, index: number): Promise<void> {
+    const sections = exhibit.sections ?? [];
+    const s = sections[index];
+    if (!s) return;
+    const object = exhibit.objects.find((o) => o.id === s.objectId);
+    const v = this.#view;
+    if (object && v.kind === "reader" && v.object.id === object.id && this.#surface) {
+      this.#view = { kind: "reader", exhibit, object, section: index };
+      if (s.start) this.#surface.fitRegion(s.start.startsWith("xywh=") ? s.start : `xywh=${s.start}`);
+      this.#narrative?.destroy();
+      this.#narrative = null;
+      await this.#mountAside(exhibit, object, index);
+      return;
+    }
+    if (!object) {
+      // The spine points at an object that is no longer in the exhibit: show the section list against
+      // the grid rather than a blank canvas (NarrativeReader's `missing-obj` degrade, simplified).
+      this.#setView({ kind: "exhibit", exhibit, error: "This section points to an item that's no longer in the exhibit." });
+      return;
+    }
+    const resolved: ResolvedTarget = s.start
+      ? { kind: "object", objectId: object.id, fragment: { kind: "xywh", value: s.start.replace(/^xywh=/, "") } }
+      : { kind: "object", objectId: object.id };
+    await this.#openObject(exhibit, object, resolved, index);
   }
 
   // --- AV READER: lazy-import the native-media player only when a sound/video object opens ----------
@@ -458,7 +622,7 @@ export class ArchieViewerElement extends HTMLElement {
    * contract) — a resolved AV landing never reaches here: #openAvObject routes it to the native player,
    * which seeks-paused on loadedmetadata (Section-142).
    */
-  #applyFragment(surface: ReadOnlyMountSurface, resolved: ResolvedTarget): void {
+  #applyFragment(surface: EmbedReaderSurface, resolved: ResolvedTarget): void {
     if (resolved.selectId) {
       // The note's own shape: select (visual state) then fit (camera). fitBounds resolves the id against
       // the live annotation list through the shared oracle; an off-image region clamps to whole-object.
@@ -476,6 +640,12 @@ export class ArchieViewerElement extends HTMLElement {
   }
 
   #teardownSurface(): void {
+    this.#chrome?.destroy();
+    this.#chrome = null;
+    this.#narrative?.destroy();
+    this.#narrative = null;
+    this.#markColours = null;
+    this.#reloadAnnotations = null;
     this.#noteCard?.destroy();
     this.#noteCard = null;
     this.#surface?.destroy();
@@ -513,7 +683,10 @@ export class ArchieViewerElement extends HTMLElement {
 
   #render(): void {
     const v = this.#view;
-    const style = `<style>${TEMPLATE_STYLES}</style>`;
+    // The SHARED token layer first, component rules after — `var(--…)` below resolves against the same
+    // custom properties the shell defines, out of the same file (tokens.ts). A host page's own styles
+    // cannot reach in (shadow DOM), so the embed must carry the vocabulary itself.
+    const style = `<style>${TOKENS_CSS}${TEMPLATE_STYLES}</style>`;
     if (v.kind === "empty") { this.#renderEmpty(style, v.error, v.cold); return; }
     if (v.kind === "loading") { this.#root.innerHTML = `${style}<div class="wrap"><p class="notice">Opening…</p></div>`; return; }
     if (v.kind === "gallery") { this.#renderGallery(style, v.cold); return; }
@@ -610,9 +783,14 @@ export class ArchieViewerElement extends HTMLElement {
   #renderExhibit(style: string, exhibit: PortableExhibit, error?: string): void {
     const objects = exhibit.objects ?? [];
     const countOf = (id: string): number => (exhibit.annotationsByObject?.[id] ?? []).length;
+    // V88 entry: an exhibit with a spine offers the authored READ beside the grid of its items. The
+    // button is the only eager trace of the narrative — the module itself is fetched on the click.
+    const sections = exhibit.sections ?? [];
     this.#root.innerHTML = `${style}
       <div class="wrap">
-        <div class="topbar"><button type="button" data-act="back">← Gallery</button></div>
+        <div class="topbar"><button type="button" data-act="back">← Gallery</button>${
+          sections.length > 0 ? `<button type="button" data-act="narrative">Read the narrative · ${sections.length} ${sections.length === 1 ? "section" : "sections"}</button>` : ""
+        }</div>
         <header class="intro"><h1>${escapeHtml(exhibit.title)}</h1>${creditHtml(exhibit)}</header>
         ${error ? `<p class="err">${escapeHtml(error)}</p>` : ""}
         <ul class="grid">
@@ -624,6 +802,8 @@ export class ArchieViewerElement extends HTMLElement {
         </ul>
       </div>`;
     this.#root.querySelector<HTMLButtonElement>('[data-act="back"]')!.addEventListener("click", () => this.#setView({ kind: "gallery" }));
+    this.#root.querySelector<HTMLButtonElement>('[data-act="narrative"]')
+      ?.addEventListener("click", () => void this.#openNarrativeSection(exhibit, 0));
     this.#wireCoverFallbacks();
     for (const btn of this.#root.querySelectorAll<HTMLButtonElement>("[data-obj]")) {
       btn.addEventListener("click", () => {
@@ -642,7 +822,13 @@ export class ArchieViewerElement extends HTMLElement {
           ${/* the OBJECT's own credit — no display-time inheritance, matching ExhibitView.svelte's Q5 rule */ ""}
           ${creditHtml(object)}
         </div>
-        <div class="reader-surface"></div>
+        ${/* The canvas and the reading pane. The pane is filled by the LAZY chrome/narrative modules
+             (#mountAside) — it renders empty (and `:empty` hides it) if they never load, so a failed
+             lazy import costs the pane, never the image. */ ""}
+        <div class="reader">
+          <div class="reader-surface"></div>
+          <div class="reader-aside"></div>
+        </div>
       </div>`;
     this.#root.querySelector<HTMLButtonElement>('[data-act="back"]')!.addEventListener("click", () => {
       this.#teardownSurface();

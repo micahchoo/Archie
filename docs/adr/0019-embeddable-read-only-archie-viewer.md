@@ -63,6 +63,77 @@ already-pure `render-core` selectors (`geometry/selector.ts`), reusing the in-re
   (`scripts/sync-dist.mjs`) to resync the root copy, and `pnpm sync-dist:check` to verify it before
   release — it diffs both trees and exits 1 on drift.
 
+## Capability contract (amendment 2026-07-25, Archie-f90d / Archie-52a9)
+
+The Decision above says "a thin shell over the SAME `@render/core` — one engine, not a fork", and it
+sanctions exactly one divergence: Annotorious/PixiJS out, DOM-SVG overlay in. Parity for everything
+else was **convention**, and convention is what drifted. `element.ts:9-10` records the mechanism —
+the markup was *ported, not imported* — and by 2026-07-25 the embed had silently lost object
+navigation, the note list, Readings, the narrative, rights and the shell's whole visual language,
+with every test green throughout.
+
+**Why the previous audit did not see it, and why this table is shaped the way it is.** annomea's
+`EMBED-AUDIT.md` (2026-05-23) is the cautionary tale this ADR was written against, and it diagnoses
+the audit as sharply as the code. Its Channel-3 Web Component had evaporated entirely, and the audit
+before it missed the whole channel because it was **file-driven**: "annomea has **no** embed/
+directory, so every anvil embed file had zero counterpart to compare against and was **invisible by
+construction**" (`EMBED-AUDIT.md:15`). A capability with no file cannot be missed by a **capability**-
+driven check, which is what follows. The verdict vocabulary and the one-row-per-capability shape are
+annomea's (`:21`, `:23-33`) — including `DONE-differently`, which is precisely what this ADR's
+DOM-SVG overlay is and which a bare `DROP` would misreport.
+
+**What is ours and not inherited:** annomea proposed **no automated gate** — its enforcement was a
+one-time audit plus a manual "Prioritized recovery order" (`:53-62`). Nothing in the surveyed corpus
+gates embed parity: clover-iiif documents its surface as an options table plus a named unsupported
+list (`pages/docs/viewer.mdx:78-89, 251-275, 668`), canvas-panel scopes by framing sentence ("not a
+IIIF Viewer … a component of your application", `docs/intro.md:15`), anvil ADR-0006 weighs each
+pattern's cost in prose. All of those are documents. The `recipes/smoke.mjs` column below is Archie's
+own answer to the problem annomea named and did not solve.
+
+Verdicts, annomea's vocabulary: **PORT** · **ADAPT** (port the UX, strip the dropped subsystem's
+coupling) · **DONE-differently** · **DROP-justified** · **DEFER-tracked** · **ABSENT** (claimed-kept,
+missing — a bug by definition; no row may sit here).
+
+| capability | shell surface | embed surface | verdict | obligation | gate |
+| --- | --- | --- | --- | --- | --- |
+| rights / attribution / licence | `Credit.svelte`, `MetadataList` | `element.ts` `creditHtml` | PORT | **MUST** | smoke — value compared against the manifest's own `requiredStatement` / `rights` / `metadata` |
+| object navigation | `SidebarObjectNav.svelte` | `reader-chrome.ts` | PORT | **MUST** | smoke — Back to Exhibit + Prev · N of M · Next present, and Next actually changes the open object |
+| note list (the INDEX, Archie-c982) | `Reader.svelte` sidebar | `reader-chrome.ts` | PORT | **MUST** | smoke — row count equals the canvas's annotation count, and a row opens the note |
+| readings + legend | `ReadingLegend.svelte` | `reader-chrome.ts` + `reading-marks.ts` | ADAPT (no `setStyle` channel on a DOM-SVG overlay — the marks are styled after the draw, from the same `readingMarkerStyle`) | **MUST** | smoke — legend rows match `readings.json`, swatch numbers come from `readingMarkerStyle`, and picking a reading recolours the marks |
+| narrative spine (ADR-0005) | `NarrativeReader.svelte` | `narrative.ts` (lazy, and only for an exhibit WITH sections) | ADAPT (sections + prose + stepper; no resize divider, no per-section note pane) | **MUST** | smoke — section count matches the manifest's Ranges, prose renders, the stepper advances |
+| design language (V9/V31/V69) | `tokens.css` | the SAME file, read as text into the shadow root (`tokens.ts`) | PORT | **MUST** | smoke — a token's value in the shadow root compared against the canonical file fetched from the same tree |
+| deep zoom | OpenSeadragon | OpenSeadragon (lazy) | PORT | MUST | smoke (canvas mount is best-effort headless) |
+| region marks + selection | Annotorious → PixiJS WebGL | geometry-only DOM-SVG overlay (`read-overlay.ts`) | **DONE-differently** | MUST | smoke — a REAL driven mouse click on a region opens its note (V68); `eagerGzKB` for the weight claim |
+| note body | `NotePopup.svelte` | `note-card.ts` (text only) | ADAPT | MUST | smoke (the click assertion above asserts the card opens) |
+| AV playback | `MediaPlayer.svelte` | `av-player.ts` (lazy) | ADAPT | MUST | unit (`av-player.test.ts`) — no AV object in the smoke drive's path |
+| cite / share | `CitePanel.svelte`, `CiteCard` | `currentContentState()` — the codec, no UI | ADAPT | SHOULD | unit (`content-state.test.ts`) |
+| note media (images in notes) | `NoteMedia`, `NoteLightbox` | — | DEFER-tracked | — | — (needs a ticket) |
+| reading sheet (long-form reading text) | `ReadingSheet.svelte` | — | DEFER-tracked | — | — (needs a ticket) |
+| cite hovercards in prose | `ProseCites.svelte` | — | DEFER-tracked | — | — (needs a ticket) |
+| full-text search | `SearchOverlay.svelte` + minisearch | — | DEFER-tracked | — | — (needs a ticket; the index and minisearch are real weight, so this one may well resolve as DROP-justified — but *undecided* is not the same as *dropped*) |
+| authoring / drawing | Studio | — | DROP-justified | — | the element is read-only by definition (ADR-0020 owns the round-trip) |
+| `@annotorious/openseadragon` + `@annotorious/plugin-tools` + PixiJS | Studio and the shell | — | DROP-justified — ~194 KB gz and the `script-src 'unsafe-eval'` grant, for an edit capability a read-only embed does not have | — | `eagerGzKB` in `build.mjs --check` |
+
+**How to use this table.**
+
+- A row's **obligation** is what the embed owes, not what it happens to do. A MUST row that stops
+  being true is a failing build, not a backlog item.
+- **Adding a `DROP-justified` row is a deliberate, reviewable act with a written reason** — that is
+  the whole point. The failure mode this replaces is a capability leaving with no row at all.
+- **`ABSENT` must never appear.** It is annomea's name for "claimed kept, actually missing"; a row
+  that reaches that state is the bug the table exists to surface.
+- A `DEFER-tracked` row without a ticket is a half-measure. The four above are named here so they
+  are at least *visible*; filing them is follow-up work.
+- The gate column is load-bearing in one specific way: `eagerGzKB` is the only thing that can see the
+  weight claims, and `recipes/smoke.mjs` is the only thing that can see the behavioural ones (it
+  drives the BUILT bundle in real Chromium). Neither `entryGzKB`, `totalGzKB`, nor any unit suite can
+  substitute — see `.claude/rules/archie-viewer-eager-closure.md` and `.claude/rules/osd-overlay-wrapper.md`
+  for the two occasions each was proven blind.
+- Parity is cheap here for a structural reason worth restating: every MUST capability above rides
+  behind the `await import("./reader.js")` boundary the canvas already needed, so none of it lands in
+  the eager path. Lazy-loading as an explicit design pattern rather than an optimisation is
+  universalviewer's posture too (`manual/ARCHITECTURE.md:42,60`).
+
 ## Alternatives rejected
 
 - **Native WordPress/Ghost plugins** (user's initial idea): server-side → breaks the no-server lock; no

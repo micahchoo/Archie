@@ -8,11 +8,16 @@ import { createReadOnlyMount } from "@render/mount";
 import { isRemoteSource, openObject, labelFromAnnotations, OfflineRemoteBlockedError } from "./reader.js";
 import type { AObject, W3CAnnotation } from "@render/core";
 
-vi.mock("@render/mount", () => ({
+vi.mock("@render/mount", async (importOriginal) => ({
+  // Spread the REAL module first: openObject's reading-mark pass (reading-marks.ts) calls the genuine
+  // `overlayShapeFor` to work out which records the overlay will draw, and a mock that omitted it would
+  // make the pass throw rather than degrade. Only the mount is faked — a live OSD can't run here.
+  ...(await importOriginal<typeof import("@render/mount")>()),
   createReadOnlyMount: vi.fn(async () => ({
     setAnnotations: vi.fn(),
     setSelected: vi.fn(),
     fitBounds: vi.fn(),
+    fitRegion: vi.fn(),
     onSelect: vi.fn(() => () => {}),
     destroy: vi.fn(),
   })),

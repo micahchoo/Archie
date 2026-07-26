@@ -109,6 +109,18 @@ async function main() {
     notFound.push(`${res.status()} ${url.slice(base.length)}`);
   });
 
+  // ADR-0019's DROP-justified row (Annotorious/PixiJS out, the canvas engine lazy) made drivable: every
+  // deep-zoom chunk fetched BEFORE the first object is opened. `eagerGzKB` ratchets the same claim from
+  // the metafile; this watches the wire. Collection stops at the first object click below.
+  const readerChunkBeforeOpen = [];
+  let watchingGalleryPath = true;
+  page.on("request", (req) => {
+    if (!watchingGalleryPath) return;
+    const url = req.url();
+    if (!url.startsWith(base)) return;
+    if (/\/dist\/(reader|av-player)-[^/]*\.js$/.test(url)) readerChunkBeforeOpen.push(url.slice(base.length));
+  });
+
   let canvasMounted = false;
   let galleryCount = 0, objCount = 0;
   try {
@@ -155,6 +167,7 @@ async function main() {
       console.log(`  info  object grid: ${objCount} object(s)`);
 
       if (objCount > 0) {
+        watchingGalleryPath = false; // past this click, the deep-zoom chunk is SUPPOSED to arrive
         await page.evaluate(() => document.querySelector("archie-viewer")
           .shadowRoot.querySelector("ul.grid li button[data-obj]").click());
         // reader-surface appears immediately; the OSD canvas mounts after lazy import + WebGL init.
@@ -244,7 +257,30 @@ async function main() {
           };
         }, centre);
 
-        return { visible, wrappers, hit, centre, halo };
+        // ---- V55: the note card must not sit on top of the locator mini-map ----
+        //
+        // Both wanted the same corner: `note-card.ts` anchors bottom-right, and read-mount asks OSD for
+        // `navigatorPosition: "BOTTOM_RIGHT"` (read-mount.ts:245). Measured as an intersection of the
+        // two rects rather than by eye — an overlap of a few pixels is a different bug from a card
+        // sitting squarely on the map, and only the numbers tell them apart.
+        const occlusion = await page.evaluate(() => {
+          const sr = document.querySelector("archie-viewer").shadowRoot;
+          const card = sr.querySelector(".archie-note-card");
+          const nav = sr.querySelector(".navigator");
+          if (!card || card.hasAttribute("hidden") || !nav) return { measurable: false, card: !!card, nav: !!nav };
+          const c = card.getBoundingClientRect();
+          const n = nav.getBoundingClientRect();
+          const w = Math.max(0, Math.min(c.right, n.right) - Math.max(c.left, n.left));
+          const h = Math.max(0, Math.min(c.bottom, n.bottom) - Math.max(c.top, n.top));
+          return {
+            measurable: true,
+            overlap: Math.round(w * h),
+            navBox: [n.x, n.y, n.width, n.height].map(Math.round),
+            cardBox: [c.x, c.y, c.width, c.height].map(Math.round),
+          };
+        });
+
+        return { visible, wrappers, hit, centre, halo, occlusion };
       })();
 
       if (clicked.skipped) {
@@ -272,6 +308,13 @@ async function main() {
           h.present
             ? `svg pointer-events: ${h.selfPE}, wrapper: ${h.wrapperPE}, topmost at centre: <${h.topTag}>`
             : "absent");
+
+        const occ = clicked.occlusion ?? { measurable: false };
+        record(occ.measurable === true && occ.overlap === 0,
+          "the open note card does not cover the locator mini-map (V55)",
+          occ.measurable
+            ? `overlap ${occ.overlap}px² — navigator ${JSON.stringify(occ.navBox)}, card ${JSON.stringify(occ.cardBox)}`
+            : `not measurable (card: ${occ.card}, navigator: ${occ.nav})`);
       }
     }
     // ---- V105 (Archie-b681): the embed ships attribution, licence and metadata ----
@@ -357,6 +400,326 @@ async function main() {
         wantLabels.length === 0 ? "no metadata in this manifest — assertion would be vacuous"
           : `manifest labels [${wantLabels.join(", ")}]; rendered [${credit.exhibitMetaRows.join(", ")}]${missing.length ? ` — MISSING ${missing.join(", ")}` : ""}`);
     }
+
+    // ================================================================================================
+    // ADR-0019 CAPABILITY CONTRACT — one block per MUST row of the table in that ADR.
+    // ================================================================================================
+    //
+    // WHY THIS IS CAPABILITY-DRIVEN AND NOT FILE-DRIVEN. annomea's EMBED-AUDIT.md found its whole
+    // Channel-3 Web Component had evaporated, and explains why the audit before it could not see the
+    // loss: that audit compared FILES, annomea had no embed/ directory, so every counterpart "had zero
+    // counterpart to compare against and was invisible by construction" (:15). Archie lost object
+    // navigation, the note list, Readings, the narrative and its whole visual language exactly that
+    // way, with every unit suite green. A check that asks "does the built bundle DO this?" cannot be
+    // fooled by the absence of the file that used to do it. annomea proposed no gate — this is ours.
+    //
+    // Every assertion below was proven RED-GREEN: the capability was deleted, this failed, it was
+    // restored. An assertion that passes against the broken code is worse than no assertion.
+    const contract = await (async () => {
+      const open = async (slug) => {
+        await page.goto(`${base}/recipes/try.html`, { waitUntil: "load", timeout: 20000 });
+        const ok = await page.waitForFunction((s) => {
+          const sr = document.querySelector("archie-viewer")?.shadowRoot;
+          return !!sr?.querySelector(`button[data-slug="${s}"]`);
+        }, slug, { timeout: 15000, polling: 300 }).then(() => true).catch(() => false);
+        if (!ok) return false;
+        await page.evaluate((s) => document.querySelector("archie-viewer").shadowRoot
+          .querySelector(`button[data-slug="${s}"]`).click(), slug);
+        return true;
+      };
+      const sr = (fn, arg) => page.evaluate(fn, arg);
+
+      if (!(await open("voynich"))) return { skipped: "no voynich card in this tree" };
+      await page.waitForFunction(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelectorAll("ul.grid li button[data-obj]").length > 1, { timeout: 15000, polling: 300 });
+      // Truth for the nav assertion: the SECOND object's label, straight off the grid we are leaving.
+      const secondLabel = await sr(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelectorAll("ul.grid li button[data-obj]")[1].querySelector(".title").textContent.trim());
+      const objId = await sr(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelector("ul.grid li button[data-obj]").dataset.obj);
+      await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelector("ul.grid li button[data-obj]").click());
+      // The reading pane is lazy; wait for it rather than racing it.
+      const paneUp = await page.waitForFunction(() => {
+        const s = document.querySelector("archie-viewer").shadowRoot;
+        return !!s.querySelector(".reader-aside .rc-aside");
+      }, { timeout: 20000, polling: 250 }).then(() => true).catch(() => false);
+      if (!paneUp) return { paneUp: false };
+
+      // ---- V30: object navigation --------------------------------------------------------------
+      // The audit's measurement was the reader's ENTIRE visible control set on a 12-object exhibit:
+      // `["← The Whole Manuscript"]`. So the assertion is on the control set, and then on the control
+      // actually working — a disabled-looking Next that navigates nowhere is the same failure.
+      const controls = await sr(() => [...document.querySelector("archie-viewer").shadowRoot
+        .querySelectorAll(".reader-aside button, .topbar button")].map((b) => b.textContent.trim()));
+      const posText = await sr(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelector(".rc-pos")?.textContent.trim() ?? null);
+      await sr(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelector('.rc-step[data-act="next"]')?.click());
+      const afterNext = await page.waitForFunction((want) => {
+        const t = document.querySelector("archie-viewer").shadowRoot.querySelector(".topbar .title");
+        return t && t.textContent.trim() === want ? t.textContent.trim() : false;
+      }, secondLabel, { timeout: 15000, polling: 250 }).then((h) => h.jsonValue()).catch(() => null);
+
+      // ---- V70 + V56: the note list and the reading legend, back on the FIRST object -------------
+      if (!(await open("voynich"))) return { skipped: "no voynich card on the second pass" };
+      await page.waitForFunction(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelectorAll("ul.grid li button[data-obj]").length > 0, { timeout: 15000, polling: 300 });
+      await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelector("ul.grid li button[data-obj]").click());
+      await page.waitForFunction(() => !!document.querySelector("archie-viewer").shadowRoot
+        .querySelector(".reader-aside .rc-aside"), { timeout: 20000, polling: 250 }).catch(() => {});
+
+      // TRUTH, from the same published tree: the canvas's BASE annotation page, and its per-reading
+      // pages. Asserting "the list is non-empty" would pass against a list showing one wrong note.
+      const truth = await page.evaluate(async ([b, id]) => {
+        const m = await (await fetch(`${b}/apps/viewer/public/published/voynich/manifest.json`)).json();
+        const canvas = m.items.find((c) => c.id.endsWith(`/canvas/${id}`));
+        const pages = canvas?.annotations ?? [];
+        const readings = await (await fetch(`${b}/apps/viewer/public/published/voynich/readings.json`)).json();
+        const perReading = {};
+        for (const r of readings) {
+          const p = pages.find((pg) => pg.id.endsWith(`/annotations-${r.id}.json`));
+          perReading[r.id] = (p?.items ?? []).length;
+        }
+        return {
+          base: (pages.find((p) => p.id.endsWith("/annotations.json"))?.items ?? []).length,
+          readings, perReading,
+        };
+      }, [base, objId]);
+
+      const list = await sr(() => {
+        const s = document.querySelector("archie-viewer").shadowRoot;
+        const rows = [...s.querySelectorAll(".rc-notes button")];
+        return { count: rows.length, previews: rows.map((r) => r.textContent.trim()) };
+      });
+      // A row is a DOOR: clicking it must open the note body, not merely highlight itself.
+      const rowOpens = await (async () => {
+        await sr(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelector(".rc-notes button")?.click());
+        await page.waitForTimeout(400);
+        return sr(() => {
+          const s = document.querySelector("archie-viewer").shadowRoot;
+          const card = s.querySelector(".archie-note-card");
+          return {
+            open: card ? !card.hasAttribute("hidden") : false,
+            body: card?.querySelector(".archie-note-card__body")?.textContent.trim().slice(0, 60) ?? "",
+            current: !!s.querySelector('.rc-notes button[aria-current="true"]'),
+          };
+        });
+      })();
+
+      const legend = await sr(() => {
+        const s = document.querySelector("archie-viewer").shadowRoot;
+        return [...s.querySelectorAll(".rc-legend .rc-opt")].map((o) => ({
+          id: o.dataset.reading,
+          name: o.querySelector(".rc-nm").textContent.trim(),
+          count: Number(o.querySelector(".rc-ct").textContent.trim()),
+          // The swatch IS the mark: these attributes are handed over verbatim from
+          // render-core's readingMarkerStyle, so asserting them asserts the shared call.
+          stroke: o.querySelector(".rc-sw rect")?.getAttribute("stroke") ?? null,
+          strokeOpacity: o.querySelector(".rc-sw rect")?.getAttribute("stroke-opacity") ?? null,
+          fillOpacity: o.querySelector(".rc-sw rect")?.getAttribute("fill-opacity") ?? null,
+        }));
+      });
+
+      // Pick the first reading and check the CANVAS changed colour — the audit's "zero coloured marks"
+      // is about the image, not the panel. Compare in resolved rgb(): a hex in `style.color` reads back
+      // normalised, so the expectation is normalised the same way through the browser itself.
+      // Base notes stay on the canvas when a reading is picked (ADR-0007 / Q16 — a reading OVERLAYS the
+      // base), so "every mark is the reading's colour" would be the WRONG assertion: it would demand a
+      // regression. The claim that matters is a transition — the reading's hue is absent from the
+      // canvas before, present after, and every other mark is the base colour, not a third thing.
+      const readMarks = (colour, baseColour) => sr(([c, bc]) => {
+        const s = document.querySelector("archie-viewer").shadowRoot;
+        const resolve = (hex) => {
+          const probe = document.createElement("span");
+          probe.style.color = hex;
+          document.body.appendChild(probe);
+          const v = getComputedStyle(probe).color;
+          probe.remove();
+          return v;
+        };
+        const svgs = [...s.querySelectorAll('svg[id^="archie-region-"]')];
+        return {
+          want: resolve(c),
+          wantBase: resolve(bc),
+          colours: svgs.map((v) => v.style.color).filter(Boolean),
+          widths: svgs.map((v) => v.firstElementChild?.getAttribute("stroke-width")).filter(Boolean),
+        };
+      }, [colour, baseColour]);
+
+      const firstReading = truth.readings[0];
+      // reader-chrome.ts BASE_MARK_COLOUR — the one constant the legend's General swatch and the canvas
+      // both read, so the smoke test names it once here too rather than inventing a second expectation.
+      const BASE_MARK_COLOUR = "#6B7D6A";
+      const marks = firstReading ? await (async () => {
+        const before = await readMarks(firstReading.colour, BASE_MARK_COLOUR);
+        await sr((id) => document.querySelector("archie-viewer").shadowRoot
+          .querySelector(`.rc-legend .rc-opt[data-reading="${id}"]`)?.click(), firstReading.id);
+        await page.waitForTimeout(900);
+        const after = await readMarks(firstReading.colour, BASE_MARK_COLOUR);
+        return { ...after, beforeColours: before.colours };
+      })() : null;
+
+      // ---- V9/V31/V69: the SHARED token layer ----------------------------------------------------
+      // Not "does a token exist" — does the value in the shadow root equal the shell's own file? A
+      // second, drifted copy is exactly what passes a mere existence check.
+      const tokens = await page.evaluate(async (b) => {
+        const css = await (await fetch(`${b}/packages/render-core/src/tokens.css`)).text();
+        const want = {};
+        for (const name of ["--ink-canvas-primary", "--surface-canvas", "--accent", "--radius-md"]) {
+          want[name] = (new RegExp(`${name}:\\s*([^;]+);`).exec(css)?.[1] ?? "").trim();
+        }
+        const host = document.querySelector("archie-viewer");
+        const cs = getComputedStyle(host);
+        const got = {};
+        for (const name of Object.keys(want)) got[name] = cs.getPropertyValue(name).trim();
+        // The retired literals the audit named (white + orange, pre-Verdant). Their presence in the
+        // embed's own rules means a second design system came back.
+        const style = host.shadowRoot.querySelector("style")?.textContent ?? "";
+        const legacy = ["#d2641e", "#f6efe9", "#2a2320", "#c9a98f"].filter((h) => style.includes(h));
+        return { want, got, legacy };
+      }, base);
+
+      // ---- V88: the narrative spine --------------------------------------------------------------
+      if (!(await open("voynich-reading"))) return { skipped: "no voynich-reading card in this tree" };
+      const narrativeTruth = await page.evaluate(async (b) => {
+        const m = await (await fetch(`${b}/apps/viewer/public/published/voynich-reading/manifest.json`)).json();
+        const lm = (v) => (v && typeof v === "object" ? Object.values(v)[0].join(" ") : v);
+        return { sections: (m.structures ?? []).length, titles: (m.structures ?? []).map((r) => lm(r.label)) };
+      }, base);
+      const entered = await page.waitForFunction(() => !!document.querySelector("archie-viewer")
+        .shadowRoot.querySelector('[data-act="narrative"]'), { timeout: 15000, polling: 250 })
+        .then(() => true).catch(() => false);
+      let narrative = { entered };
+      if (entered) {
+        await sr(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelector('[data-act="narrative"]').click());
+        await page.waitForFunction(() => !!document.querySelector("archie-viewer").shadowRoot
+          .querySelector(".nr-sections li"), { timeout: 20000, polling: 250 }).catch(() => {});
+        narrative = await sr(() => {
+          const s = document.querySelector("archie-viewer").shadowRoot;
+          const rows = [...s.querySelectorAll(".nr-sections button")];
+          const active = s.querySelector('.nr-sections button[aria-current="true"]');
+          return {
+            entered: true,
+            count: rows.length,
+            titles: rows.map((r) => r.querySelector(".nr-num")?.textContent.trim() ?? ""),
+            proseChars: active?.querySelector(".nr-prose")?.textContent.trim().length ?? 0,
+            activeIndex: rows.indexOf(active),
+          };
+        });
+        await sr(() => document.querySelector("archie-viewer").shadowRoot
+          .querySelector('.nr-stepper button[data-act="next-section"]')?.click());
+        await page.waitForTimeout(700);
+        narrative.afterNext = await sr(() => {
+          const s = document.querySelector("archie-viewer").shadowRoot;
+          const rows = [...s.querySelectorAll(".nr-sections button")];
+          return rows.indexOf(s.querySelector('.nr-sections button[aria-current="true"]'));
+        });
+      }
+
+      return { controls, posText, secondLabel, afterNext, truth, list, rowOpens, legend, marks, tokens, narrative, narrativeTruth };
+    })();
+
+    if (contract.skipped) {
+      console.log(`  info  capability contract checks skipped: ${contract.skipped}`);
+    } else if (contract.paneUp === false) {
+      record(false, "ADR-0019 contract: the reader's reading pane mounts", "no .rc-aside in the shadow DOM after opening an object");
+    } else {
+      // --- object navigation (MUST) ---
+      const hasBack = contract.controls.some((c) => /Back to Exhibit/i.test(c));
+      const hasPrev = contract.controls.some((c) => /Prev/i.test(c));
+      const hasNext = contract.controls.some((c) => /Next/i.test(c));
+      record(hasBack && hasPrev && hasNext,
+        "ADR-0019 MUST · object navigation is present in the reader (V30)",
+        `control set ${JSON.stringify(contract.controls)}; position ${JSON.stringify(contract.posText)}`);
+      record(contract.afterNext === contract.secondLabel,
+        "ADR-0019 MUST · Next actually opens the next object (V30)",
+        `after Next the reader shows ${JSON.stringify(contract.afterNext)}, grid's 2nd object is ${JSON.stringify(contract.secondLabel)}`);
+
+      // --- note list (MUST) ---
+      record(contract.truth.base > 0 && contract.list.count === contract.truth.base,
+        "ADR-0019 MUST · the note list indexes every note on the canvas (V70)",
+        `list has ${contract.list.count} row(s), the manifest's base annotation page has ${contract.truth.base}`);
+      record(contract.list.previews.length > 0 && contract.list.previews.every((p) => p.length > 0 && !/^annotation /.test(p)),
+        "ADR-0019 MUST · list rows carry the note's own words, not its id (V70)",
+        contract.list.previews.map((p) => JSON.stringify(p.slice(0, 40))).join(", "));
+      record(contract.rowOpens.open && contract.rowOpens.body.length > 0 && contract.rowOpens.current,
+        "ADR-0019 MUST · a list row opens the note (V70)",
+        `card ${contract.rowOpens.open ? "opened" : "did NOT open"} with ${JSON.stringify(contract.rowOpens.body)}; row marked current: ${contract.rowOpens.current}`);
+
+      // --- readings + legend (MUST) ---
+      const wantNames = ["General notes", ...contract.truth.readings.map((r) => r.name)];
+      const gotNames = contract.legend.map((o) => o.name);
+      record(contract.truth.readings.length > 0 && JSON.stringify(gotNames) === JSON.stringify(wantNames),
+        "ADR-0019 MUST · the legend lists every reading in readings.json (V56)",
+        `rendered ${JSON.stringify(gotNames)} vs readings.json ${JSON.stringify(wantNames)}`);
+      const countsOk = contract.legend.every((o) => o.id === ""
+        ? o.count === contract.truth.base
+        : o.count === contract.truth.perReading[o.id]);
+      record(contract.legend.length > 1 && countsOk,
+        "ADR-0019 MUST · legend counts match the manifest's per-reading pages (V56)",
+        contract.legend.map((o) => `${o.name}=${o.count}`).join(", ") + ` vs base ${contract.truth.base} / ${JSON.stringify(contract.truth.perReading)}`);
+      // readingMarkerStyle("<colour>", "normal") = stroke <colour> @0.95, fill @0.18. Asserting the
+      // NUMBERS is what proves there is no second copy of them in the embed.
+      const swatchesOk = contract.legend.every((o) =>
+        o.strokeOpacity === "0.95" && o.fillOpacity === "0.18") &&
+        contract.truth.readings.every((r) => contract.legend.some((o) => o.id === r.id && o.stroke === r.colour));
+      record(swatchesOk,
+        "ADR-0019 MUST · legend swatches come from readingMarkerStyle (V56/V47)",
+        contract.legend.map((o) => `${o.name}: stroke ${o.stroke} @${o.strokeOpacity}, fill @${o.fillOpacity}`).join(" | "));
+      const m = contract.marks;
+      const marksOk = !!m
+        && !m.beforeColours.includes(m.want)                       // the hue was NOT on the canvas before
+        && m.colours.includes(m.want)                              // it is now
+        && m.colours.every((c) => c === m.want || c === m.wantBase); // and nothing took a third colour
+      record(marksOk,
+        "ADR-0019 MUST · picking a reading colours the MARKS on the canvas (V56)",
+        m ? `before ${JSON.stringify([...new Set(m.beforeColours)])} → after ${JSON.stringify([...new Set(m.colours)])}; reading ${JSON.stringify(m.want)}, base ${JSON.stringify(m.wantBase)}`
+          : "no readings to pick");
+      record(!!m && m.widths.length > 0 && m.widths.every((w) => w === "2"),
+        "ADR-0019 MUST · marks take readingMarkerStyle's stroke weight, not the overlay default (V69)",
+        m ? `stroke-width ${JSON.stringify([...new Set(m.widths)])} (2 = readingMarkerStyle normal; 1.5 = the un-styled overlay default)` : "no marks");
+
+      // --- shared tokens (MUST) ---
+      const tokenNames = Object.keys(contract.tokens.want);
+      const mismatched = tokenNames.filter((n) => contract.tokens.got[n] !== contract.tokens.want[n] || contract.tokens.want[n] === "");
+      record(mismatched.length === 0,
+        "ADR-0019 MUST · the shadow root's tokens ARE the shell's tokens.css (V9/V31/V69)",
+        mismatched.length === 0
+          ? tokenNames.map((n) => `${n}=${contract.tokens.got[n]}`).join(", ")
+          : mismatched.map((n) => `${n}: embed ${JSON.stringify(contract.tokens.got[n])} vs tokens.css ${JSON.stringify(contract.tokens.want[n])}`).join(" | "));
+      record(contract.tokens.legacy.length === 0,
+        "ADR-0019 MUST · no retired pre-Verdant literals in the embed's own rules (V9/V31/V69)",
+        contract.tokens.legacy.length ? `found ${contract.tokens.legacy.join(", ")}` : "none");
+
+      // --- narrative (MUST) ---
+      const n = contract.narrative;
+      record(n.entered === true,
+        "ADR-0019 MUST · an exhibit with a spine offers its narrative (V88)",
+        n.entered ? "the exhibit view carries the narrative entry" : "no [data-act=narrative] control on an exhibit with sections");
+      record(contract.narrativeTruth.sections > 0 && n.count === contract.narrativeTruth.sections,
+        "ADR-0019 MUST · every section in the manifest's Ranges renders (V88)",
+        `${n.count} section row(s) vs ${contract.narrativeTruth.sections} Range(s): ${JSON.stringify(n.titles ?? [])}`);
+      record((n.proseChars ?? 0) > 40,
+        "ADR-0019 MUST · the active section renders its PROSE (V88)",
+        `${n.proseChars ?? 0} characters of prose in the active section (0 = the thumbnails-only regression)`);
+      record(n.activeIndex === 0 && n.afterNext === 1,
+        "ADR-0019 MUST · the section stepper advances the spine (V88)",
+        `active section ${n.activeIndex} → ${n.afterNext} after Next`);
+    }
+
+    // ---- ADR-0019 DROP-justified row, driven: the canvas engine is not on the gallery path ----
+    //
+    // `eagerGzKB` (build.mjs --check) is the ratchet for this row, and it is the metric that can see
+    // the leak. This is its behavioural twin: it asserts nothing was FETCHED, from the same drive the
+    // rest of the contract uses, which is the claim a host actually cares about. The 2026-07-24 leak
+    // shipped a top-level `import … from "./chunk-<osd>.js"` in the entry — it would fail here too.
+    record(readerChunkBeforeOpen.length === 0,
+      "ADR-0019 DROP-justified · the gallery path fetches no deep-zoom chunk",
+      readerChunkBeforeOpen.length ? readerChunkBeforeOpen.join(" | ") : "none (OSD arrives only on object open)");
 
     // ASSERTED LAST, deliberately. Covers are `loading="lazy"`, so the request that exposed V11 is
     // not made until the image is near the viewport — checking earlier in the drive passed against

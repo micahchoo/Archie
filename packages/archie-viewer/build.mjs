@@ -19,6 +19,7 @@ import { tmpdir } from "node:os";
 import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire as makeRequire } from "node:module";
+import { TOKENS_MODULE_ID, TOKENS_CSS_PATH } from "./tokens-source.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUTDIR = join(__dirname, "dist");
@@ -42,6 +43,26 @@ function rawKB(bytes) {
   return +(bytes.length / 1024).toFixed(1);
 }
 
+// Resolve `virtual:archie-tokens` (src/tokens.ts) to the shell's token file, minified. The embed
+// injects those bytes into its SHADOW ROOT, where a `<link>` cannot reach, so the token layer has to
+// travel as a string rather than a stylesheet. Minifying does not weaken the sharing — the custom
+// properties and their values are byte-identical, which is the whole content of the contract — and it
+// is worth 2.5KB gz on the EAGER path (3.9KB → 1.4KB, measured). vitest.config.ts mirrors this
+// exactly; `tokens-source.mjs` holds the single declaration of the path and the id.
+const archieTokens = {
+  name: "archie-tokens",
+  setup(build) {
+    build.onResolve({ filter: new RegExp(`^${TOKENS_MODULE_ID}$`) }, () => ({
+      path: TOKENS_CSS_PATH,
+      namespace: "archie-tokens",
+    }));
+    build.onLoad({ filter: /.*/, namespace: "archie-tokens" }, async (args) => {
+      const { code } = await esbuild.transform(readFileSync(args.path, "utf8"), { loader: "css", minify: true });
+      return { contents: `export default ${JSON.stringify(code)};`, loader: "js" };
+    });
+  },
+};
+
 async function build(outdir) {
   rmSync(outdir, { recursive: true, force: true });
   mkdirSync(outdir, { recursive: true });
@@ -56,6 +77,7 @@ async function build(outdir) {
     entryNames: "archie-viewer",
     metafile: true,
     logLevel: "info",
+    plugins: [archieTokens],
   });
   return result;
 }
