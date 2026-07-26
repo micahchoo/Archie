@@ -160,12 +160,20 @@
   // can bounce the reader onto a neighbour. No corpus system solves this; all three DODGE it, and it is
   // worth being precise about how, because "quire does it too" would be a false comfort:
   //   - scrollama never scrolls at all (`grep scrollIntoView src/` is empty; it only reads `scrollTop`).
-  //   - quire's `canvas-panel.js:259` really does call `goToFigureState` — and its `scrollToHash` — from
-  //     inside an IntersectionObserver callback, with no suppression. But it CANNOT re-enter: its
-  //     observer root is `.quire-entry__content`, an element that carries no CSS rule anywhere in the
-  //     repo and so is not a scroller, while `scrollToHash` scrolls the DOCUMENT. A document scroll
-  //     moves the root and the target by the same delta, so the geometry the observer measures is
-  //     invariant under the scroll its own callback triggers. Structurally immune, not solved.
+  //   - quire's `canvas-panel.js:259` really does call `goToFigureState` (`:68`) — and its
+  //     `scrollToHash` (`:118`) — from inside an IntersectionObserver callback, with no suppression of
+  //     any kind. But it CANNOT re-enter: its observer root is `.quire-entry__content`
+  //     (`intersection-observer-factory.js:12`) while `scroll-to-hash.js:21-28` scrolls the DOCUMENT.
+  //     An IntersectionObserver measures the target's geometry RELATIVE TO ITS ROOT, and a document
+  //     scroll translates root and target by the same delta — so the measurement is invariant under the
+  //     scroll its own callback triggers. Structurally immune, not solved.
+  //     (An earlier version of this note added "and `.quire-entry__content` carries no CSS rule anywhere
+  //     in the repo, so it is not a scroller". True of that checkout and worthless as evidence: the
+  //     checkout vendors no 11ty theme stylesheets AT ALL — zero `.scss`, no `node_modules`, and its
+  //     only two `.css` files belong to an unrelated React app. An absence proved against a tree with no
+  //     stylesheets in it is exactly the shape `prior-art-citation-discipline.md` warns about. Dropped:
+  //     the root-relative argument above holds whether or not the root is a scroller, so the weaker
+  //     claim was never load-bearing.)
   //   - annomea/anvil have no scroll-coupled surface at all.
   // Here the observer's root IS the scroller we scroll, so the re-entry is real. So this is ours:
   //
@@ -194,10 +202,21 @@
   //   The zero-distance case falls out for free and is worth naming: if the column is already at the
   //   target, no intent is armed at all. That is the exact shape review used to wedge the old design.
   //
-  //   `INTENT_MAX_MS` survives ONLY as a backstop against a scroll that never starts or a target made
-  //   unreachable by a later reflow. Nothing in normal operation reaches it, which is why no test pins
-  //   its value — and that is the honest state, not an oversight: a constant no behaviour depends on
-  //   cannot be gated, and the fix for "the constant isn't pinned" was to make the constant not matter.
+  //   `INTENT_MAX_MS` is the backstop for an intent that never arrives — a target made unreachable by a
+  //   reflow mid-flight (prose images landing, the pane toggle) is the realistic path. An earlier
+  //   version of this comment claimed nothing in normal operation reaches it and that therefore no test
+  //   could pin it. Review disproved that in BOTH directions and it is worth recording how, because the
+  //   error was structural rather than a wrong number: the deadline was read only inside
+  //   `intentActive()`, whose only caller is the observer callback. So where observer crossings kept
+  //   coming the ceiling did fire (measured at 1491ms), and where they did not — the column left at rest
+  //   short of its target — NOTHING consulted it at all, and the highlight stayed frozen for 3500ms with
+  //   no recovery. A deadline that only a callback can notice is not a backstop, because the wedge it is
+  //   meant to bound is exactly the state in which that callback stops arriving.
+  //   So it is now enforced by a timer armed with the intent, which ends the intent AND re-observes the
+  //   beats so the observer re-delivers against the column's real position. `endIntent` is the single
+  //   exit, so arrival and reader input cancel that timer rather than leaving it to fire on a later
+  //   intent. It only ever ENDS suppression, never extends it — which is what separates it from the
+  //   quiet-timer design it replaced.
   //
   //   When an intent ends we deliberately do NOT resync `activeIndex` from wherever the line ended up —
   //   the column cannot always put the requested beat on the line, and resyncing would undo the very
@@ -216,25 +235,45 @@
   let intentTop = 0;
   let intentDown = true;
   let intentDeadline = 0;
+  let intentTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Set by the observer effect: disconnect and re-observe, forcing a fresh delivery against the
+   *  column's current position. The backstop's way of asking "so where are we actually?". */
+  let resyncObserver: (() => void) | undefined;
   /**
-   * Arrival tolerance, for the exact-landing and zero-distance edges only.
+   * Arrival tolerance — and it is LOAD-BEARING, which took two wrong readings to establish.
    *
-   * Measured, both directions, because "the constant is pinned" is the kind of claim that should not be
-   * asserted without trying it:
    *  - FROM ABOVE it is pinned. At 100000 every `scrollToBeat` takes the nothing-to-do branch and the
    *    prose stops following at all; `activate → camera AND prose … stepping the canvas nav` reddens.
-   *  - FROM BELOW it is NOT pinned, and that is the design working rather than a hole. Once
-   *    `intentArrived` asks "reached OR PASSED" instead of "equals", the tolerance stops carrying the
-   *    comparison: at 0 the whole suite is still green, because a scroll that steps over the target
-   *    still terminates the intent. 2px is here for a sub-pixel exact landing, not as a tuning knob.
+   *  - FROM BELOW it is pinned too, and an earlier version of this note said the opposite. The suite IS
+   *    green at 0 — but that is a coverage gap, not redundancy: every probe in it jumps to `max` or `0`,
+   *    hundreds of pixels past the target, so every intent is released by overshoot and the tolerance
+   *    never has to do anything. Two independent mechanisms make 0 a real defect.
+   *      (a) CHROMIUM ROUNDS `scrollTo` TO WHOLE PIXELS, while this target comes from
+   *          `getBoundingClientRect()` and is fractional — 20 of 21 beats are non-exact, landing up to
+   *          0.48px short, stable across DPR 1 → 2.4. Landing 0.36px short satisfies
+   *          `scrollTop >= intentTop - 2` and fails at 0, so the intent never ends and the column can
+   *          then move somewhere SHORT of the target, where reached-or-passed cannot rescue it either.
+   *      (b) the same constant gates the nothing-to-do branch in `scrollToBeat`, so at 0 a sub-pixel
+   *          target arms an intent whose `scrollTo` may not move the column at all — and therefore may
+   *          emit no scroll event, so nothing is ever there to notice the arrival.
+   *    Pinned by "a sub-pixel arrival still ends the intent" below: at 2 the highlight follows the
+   *    column to the truth, at 0 it stays stuck on the activated beat.
    */
   const ARRIVE_PX = 2;
   const INTENT_MAX_MS = 1500;
 
+  /** The ONE exit from a live intent, so the backstop timer can never outlive the intent that armed it
+   *  and fire against a later one. */
+  function endIntent(): void {
+    scrollIntent = null;
+    clearTimeout(intentTimer);
+    intentTimer = undefined;
+  }
+
   /** True while a programmatic scroll owns the column — the observer must stay out of the way. */
   function intentActive(): boolean {
     if (scrollIntent === null) return false;
-    if (performance.now() > intentDeadline) { scrollIntent = null; return false; }
+    if (performance.now() > intentDeadline) { endIntent(); return false; }
     return true;
   }
 
@@ -293,23 +332,45 @@
   }
 
   /** Each scroll of the column asks one question of a live intent — are we there yet? — and hands the
-   *  column back the moment the answer is yes. With no intent live, this is also where the two column
-   *  ends are resolved. */
+   *  column back the moment the answer is yes, or the moment the intent has outlived its deadline.
+   *  `intentActive()` is what consults that deadline; testing `scrollIntent !== null` here instead was
+   *  the structural half of the backstop hole (this path never noticed the ceiling at all). With no
+   *  intent live, this is also where the two column ends are resolved. */
   function onColumnScroll() {
-    if (scrollIntent !== null) {
+    if (intentActive()) {
       if (!intentArrived()) return; // still travelling — the observer stays muted
-      scrollIntent = null;
+      endIntent();
     }
     const end = beatAtColumnEnd();
     if (end !== null && end !== activeIndex) goToSection(end, { scroll: false });
   }
-  /** A direct scroll INPUT from the reader abandons the intent outright — a human who reaches for the
-   *  column mid-animation wins, immediately, whether or not the programmatic scroll ever arrived.
-   *  Bound to the input events, never to `scroll`: `scroll` is what the animation itself emits, so it
-   *  cannot tell the two apart. `pointerdown` is in the list because a SCROLLBAR DRAG is the realistic
-   *  way a reader scrolls without ever emitting wheel/touch/key. */
+
+  /**
+   * A direct scroll INPUT from the reader abandons the intent — a human who reaches for the column
+   * mid-animation wins immediately, whether or not the programmatic scroll ever arrived.
+   *
+   * IT MUST STOP THE MACHINE, NOT JUST DROP THE TOKEN, and that distinction shipped a real bounce
+   * before review caught it. Clearing `scrollIntent` un-mutes the observer; if the programmatic
+   * animation is still running, the observer then reports every beat the animation sweeps past —
+   * measured at TEN spurious section changes in ~300ms on a beat-0-to-18 activation, each one clearing
+   * the open note and swapping the canvas object. Precisely the defect this whole guard exists to
+   * prevent, reintroduced by the thing meant to make it polite.
+   *
+   * Why `wheel`/`touchstart` looked fine and hid it: Chromium cancels a programmatic smooth scroll when
+   * a real scroll GESTURE arrives, so for those the column had genuinely stopped and the un-muted
+   * observer saw a still column. `pointerdown` is not a scroll gesture — nothing stops the animation —
+   * so it exposed a dependence on browser behaviour this code never stated. Scrolling to the current
+   * position cancels the animation ourselves, which makes all four paths honest rather than three of
+   * them lucky.
+   *
+   * `pointerdown` earns its place in the list: a scrollbar drag, a press-and-hold on a beat, starting a
+   * text selection in the prose and a right-click all scroll or intend to scroll without ever emitting
+   * wheel/touch/key.
+   */
   function onColumnInput() {
-    scrollIntent = null;
+    const el = asideEl;
+    if (scrollIntent !== null && el) el.scrollTo({ top: el.scrollTop, behavior: "auto" });
+    endIntent();
   }
 
   /** Scroll beat `i` onto the column's centre line, under an intent that mutes the observer until the
@@ -319,11 +380,18 @@
     const el = asideEl;
     if (!li || !el) return;
     const top = centreTopFor(el, li);
-    if (Math.abs(el.scrollTop - top) <= ARRIVE_PX) { scrollIntent = null; return; }
+    if (Math.abs(el.scrollTop - top) <= ARRIVE_PX) { endIntent(); return; }
+    endIntent(); // a new intent replaces any old one, timer and all
     scrollIntent = i;
     intentTop = top;
     intentDown = top > el.scrollTop;
     intentDeadline = performance.now() + INTENT_MAX_MS;
+    // The backstop, armed WITH the intent rather than left for a callback to notice. An intent that
+    // never arrives — a reflow moving the target mid-flight is the realistic way — otherwise wedges the
+    // highlight for as long as nothing else touches the column, because the observer that would have
+    // spotted the expiry is exactly the thing the intent has muted. Re-observing forces a fresh delivery
+    // against wherever the column really is.
+    intentTimer = setTimeout(() => { endIntent(); resyncObserver?.(); }, INTENT_MAX_MS);
     // `scrollTo` on the column rather than `scrollIntoView` on the beat: we need the destination as a
     // NUMBER to test arrival against, and this scrolls exactly one box — no ancestor walk to reason about.
     el.scrollTo({ top, behavior });
@@ -475,7 +543,11 @@
       }
     }, { root, rootMargin: "-50% 0px -50% 0px", threshold: 0 });
 
-    for (const li of beatEls.slice(0, n)) if (li) io.observe(li);
+    const observeAll = () => { for (const li of beatEls.slice(0, n)) if (li) io.observe(li); };
+    observeAll();
+    // Re-observing re-delivers each target's CURRENT state, which is how the backstop asks where the
+    // column actually ended up without duplicating the centre-line rule outside the observer.
+    resyncObserver = () => { io.disconnect(); observeAll(); };
 
     // The column's listeners belong to the coupling, not to the `<aside>`'s markup: they carry no
     // interaction a reader has to reach, they are meaningless while the sections pane is unmounted,
@@ -489,9 +561,10 @@
 
     return () => {
       io.disconnect();
+      resyncObserver = undefined;
       root.removeEventListener("scroll", onColumnScroll);
       for (const ev of INPUTS) root.removeEventListener(ev, onColumnInput);
-      scrollIntent = null;
+      endIntent();
     };
   });
 

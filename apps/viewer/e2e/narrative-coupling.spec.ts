@@ -166,13 +166,21 @@ test.describe("the two directions do not fight (the reentrancy guard)", () => {
     // mounts scrolled to the top with `activeIndex` already at the cited beat, and for a beat the
     // column cannot centre (the last, where the scroll clamps) the line settles over the NEIGHBOUR.
     //
-    // Honest about what this gates, corrected after review re-ran the injections: it reddens against
-    // NEITHER the reentrancy guard NOR `beatAtColumnEnd` on its own. Removing the guard alone changes
-    // nothing here (the arrival scroll is instant, so the observer's first delivery already sees the
-    // settled column); removing `beatAtColumnEnd` alone reddens two OTHER tests but not this one.
-    // Removing BOTH does redden it — so this test is held up by the disjunction, not vacuous, but it
-    // pins neither mechanism by itself. The guard's own gate is the multi-beat sweep above;
-    // `beatAtColumnEnd`'s is the two-ends test below.
+    // What this gates, third time of asking, and the two wrong answers are worth more than the right
+    // one because they were the same mistake twice:
+    //
+    //  - It does NOT redden on removing the reentrancy guard. The arrival scroll is instant, so the
+    //    observer's first delivery already sees the settled column. (Holds; re-verified.)
+    //  - It DOES redden on removing `beatAtColumnEnd`. An earlier revision of this comment claimed the
+    //    opposite and said "corrected after review re-ran the injections", which made a false statement
+    //    sound measured. The injection behind it disabled only the HEAD branch (`scrollTop <= 1`) — and
+    //    this test cites the LAST section, which the FOOT branch resolves. It never touched the
+    //    mechanism under test. Disabling the whole function reddens this test deterministically.
+    //
+    // The lesson is not about this test: an injection that does not reach the code you are attributing
+    // to is a green that means nothing, and it reads exactly like a real result. The same incomplete-
+    // injection error produced a false green on the per-exhibit collapse key earlier in this branch.
+    // `beatAtColumnEnd`'s dedicated gate is still the two-ends test below; this one pins it as well.
     await openNarrative(page, "voynich-reading", 6, "/s/5");
     await expect(page.locator(ACTIVE_POS)).toHaveText("Section 6 of 6");
 
@@ -343,6 +351,158 @@ test.describe("the two directions do not fight (the reentrancy guard)", () => {
     // verified-fresh build, and a full battery run — red every time. The bar sits well clear of both.
     expect(worstLag, "the highlight fell behind the column — an intent outlived the scroll it covered")
       .toBeLessThanOrEqual(2);
+  });
+
+  test("a pointer press mid-sweep does not bounce the reader through the beats in between", async ({ page }) => {
+    // Review found this in the previous delta, and it is the guard's own defect class reintroduced by
+    // the thing meant to make the guard polite. `onColumnInput` cleared the intent TOKEN but left the
+    // programmatic scroll RUNNING, so the un-muted observer reported every beat the animation swept
+    // past: ten spurious section changes in ~300ms, each clearing the open note and swapping the canvas
+    // object. `wheel`/`touchstart` hid it because Chromium cancels a programmatic smooth scroll when a
+    // real scroll gesture arrives — so those paths were correct by luck, not by construction.
+    // `pointerdown` is not a scroll gesture, so nothing stopped the animation.
+    //
+    // Injected defect that reddens it: delete the `el.scrollTo({ top: el.scrollTop })` line from
+    // `onColumnInput`, leaving it to clear the token alone.
+    //
+    // A SYNTHETIC `pointerdown` on the column, not a real `page.mouse.down()`, and review's own false
+    // positive is the reason: a real press lands on whatever beat has scrolled under the cursor, so it
+    // registers as a genuine click on that beat and looks like a bounce that reproduces even with the
+    // fix in place. Dispatching on the column hits the listener under test and nothing else.
+    await openNarrative(page, "screenshots", 21);
+    await beatReachedLine(page, 0, "the spine did not rest on its first beat");
+
+    const visited = await page.evaluate(async () => {
+      const col = document.querySelector("aside.spine");
+      const lis = Array.from(document.querySelectorAll<HTMLElement>(".sections li"));
+      const far = lis.at(18)?.querySelector("button");
+      const ol = document.querySelector(".sections");
+      if (!(col instanceof HTMLElement) || !(far instanceof HTMLElement) || !ol) return ["no column"];
+
+      const seen: string[] = [];
+      const rec = () => {
+        const t = document.querySelector('.sections button[aria-current="true"] .beat-pos')?.textContent;
+        if (t && seen[seen.length - 1] !== t) seen.push(t);
+      };
+      new MutationObserver(rec).observe(ol, { subtree: true, attributes: true, attributeFilter: ["aria-current"] });
+
+      far.click(); // a long smooth sweep, beat 0 → beat 18
+      await new Promise((r) => requestAnimationFrame(() => r(null))); // one frame in, animation running
+      col.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }));
+      for (let f = 0; f < 40; f++) await new Promise((r) => requestAnimationFrame(() => r(null)));
+      return seen;
+    });
+
+    // One transition — the activation itself. Measured: 1 with the animation stopped, 10 without
+    // (9 spurious, e.g. Sections 5, 7, 9, 13, 14, 15, 16, 17, 19 on one run).
+    //
+    // What this does NOT gate, stated so nobody reads it as more than it is: dropping `"pointerdown"`
+    // from `INPUTS` leaves it green, because that removes the trigger rather than the bug. This pins
+    // the scroll-stop in `onColumnInput`, which is the part that makes all four input paths correct by
+    // construction instead of three of them correct by Chromium's gesture-cancellation behaviour.
+    expect(visited, "the pointer press un-muted the observer over a still-running scroll").toEqual([
+      "Section 19 of 21",
+    ]);
+  });
+
+  test("a sub-pixel arrival still ends the intent", async ({ page }) => {
+    // The pin for `ARRIVE_PX`, which the previous delta wrongly called unpinned from below. Chromium
+    // rounds `scrollTo` to whole pixels while the target comes from `getBoundingClientRect()` and is
+    // fractional — 20 of 21 beats land up to ~0.48px SHORT. A short landing satisfies
+    // `scrollTop >= intentTop - 2` and fails at 0, so at 0 the intent never ends; moving the column to a
+    // position still short of the target then cannot rescue it via reached-or-passed either, and the
+    // highlight stays stuck on the activated beat while the reader looks at a different one.
+    //
+    // The rest of the suite is green at 0 purely because every other probe jumps to `max` or `0`,
+    // hundreds of pixels past the target, where overshoot releases every intent. That is a coverage
+    // gap, and this test is the thing that closes it.
+    //
+    // Injected defect that reddens it: `ARRIVE_PX = 0`.
+    await openNarrative(page, "screenshots", 21);
+    await beatReachedLine(page, 0, "the spine did not rest on its first beat");
+
+    const probe = await page.evaluate(async () => {
+      const col = document.querySelector("aside.spine");
+      const lis = Array.from(document.querySelectorAll<HTMLElement>(".sections li"));
+      const near = lis.at(2)?.querySelector("button");
+      if (!(col instanceof HTMLElement) || !(near instanceof HTMLElement)) return { showing: -1, truth: -2, short: 0 };
+
+      const centreTarget = (li: HTMLElement): number => {
+        const c = col.getBoundingClientRect();
+        const b = li.getBoundingClientRect();
+        return col.scrollTop + (b.top + b.height / 2 - (c.top + c.height / 2));
+      };
+      const asked = centreTarget(lis[2] as HTMLElement);
+      near.click();
+      for (let f = 0; f < 30; f++) await new Promise((r) => requestAnimationFrame(() => r(null)));
+      const landedShort = asked - col.scrollTop; // > 0 when Chromium rounded us short of the target
+
+      // Now move SHORT of that target, where only a properly-ended intent lets the observer speak.
+      col.scrollTop = 300;
+      for (let f = 0; f < 6; f++) await new Promise((r) => requestAnimationFrame(() => r(null)));
+
+      const r = col.getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      const truth = lis.findIndex((li) => {
+        const b = li.getBoundingClientRect();
+        return b.top <= mid && b.bottom >= mid;
+      });
+      const t = document.querySelector('.sections button[aria-current="true"] .beat-pos')?.textContent ?? "";
+      const m = /Section (\d+) of/.exec(t);
+      return { showing: m?.[1] ? Number(m[1]) - 1 : -1, truth, short: landedShort };
+    });
+
+    // Non-vacuity: this only tests anything if the landing really was fractional-short of the target.
+    expect(probe.short, "the scroll landed exactly on target — no sub-pixel shortfall to test")
+      .toBeGreaterThan(0);
+    expect(probe.truth, "no beat crosses the line at scrollTop 300 — the probe proves nothing")
+      .toBeGreaterThanOrEqual(0);
+    expect(probe.showing, "the highlight is stuck on the activated beat — the intent never ended")
+      .toBe(probe.truth);
+  });
+
+  test("an intent that never arrives releases on its own", async ({ page }) => {
+    // `INTENT_MAX_MS` as a real backstop. The previous delta claimed nothing in normal operation reached
+    // it and that it therefore could not be pinned; review disproved that in both directions. The half
+    // that mattered: the deadline was only ever read inside the observer callback, so when the column
+    // came to rest short of its target — no crossings, no scroll events — NOTHING consulted it, and the
+    // highlight stayed frozen for 3500ms with no recovery. A deadline only a callback can notice cannot
+    // bound a wedge whose definition is that the callback stopped arriving.
+    //
+    // It is now a timer armed with the intent that ends it and re-observes. This drives the
+    // non-arriving case directly: activate far away, then park the column somewhere short of the target
+    // without any input event, and wait past the ceiling.
+    //
+    // Injected defect that reddens it: delete the `intentTimer = setTimeout(...)` line.
+    await openNarrative(page, "screenshots", 21);
+    await beatReachedLine(page, 0, "the spine did not rest on its first beat");
+
+    const parked = await page.evaluate(async () => {
+      const col = document.querySelector("aside.spine");
+      const lis = Array.from(document.querySelectorAll<HTMLElement>(".sections li"));
+      const far = lis.at(18)?.querySelector("button");
+      if (!(col instanceof HTMLElement) || !(far instanceof HTMLElement)) return { showing: -1, truth: -2 };
+      far.click();
+      await new Promise((r) => requestAnimationFrame(() => r(null)));
+      // Park short of the target by assignment — no wheel/touch/key/pointer, so nothing cancels the
+      // intent the way a reader would. This is the reflow-moved-the-target shape.
+      col.scrollTop = 300;
+      await new Promise((r) => setTimeout(r, 2200)); // past INTENT_MAX_MS (1500)
+      const r = col.getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      const truth = lis.findIndex((li) => {
+        const b = li.getBoundingClientRect();
+        return b.top <= mid && b.bottom >= mid;
+      });
+      const t = document.querySelector('.sections button[aria-current="true"] .beat-pos')?.textContent ?? "";
+      const m = /Section (\d+) of/.exec(t);
+      return { showing: m?.[1] ? Number(m[1]) - 1 : -1, truth };
+    });
+
+    expect(parked.truth, "no beat crosses the line where the column was parked — the probe proves nothing")
+      .toBeGreaterThanOrEqual(0);
+    expect(parked.showing, "the highlight never recovered — the intent outlived its own deadline")
+      .toBe(parked.truth);
   });
 
   test("the column's two ends resolve to the first and last beat", async ({ page }) => {
