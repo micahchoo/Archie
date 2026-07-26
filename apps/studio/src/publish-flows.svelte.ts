@@ -342,6 +342,20 @@ export function createPublishFlows(deps: PublishDeps) {
     openMenu() { s.open = true; },
     close() { s.open = false; },
 
+    /**
+     * The published tree, in memory, for an in-Studio preview (archie-ux Q-6) — handed straight to
+     * `<archie-viewer>`'s `openLibraryFs`, never serialized.
+     *
+     * Reuses `projectSite(false)` rather than `buildZipFs` for three reasons: it is the SAME
+     * projection the GH-Pages deploy pushes (so a preview is evidence about what readers actually
+     * get, not a second rendering path), it skips deflate entirely, and it stays clear of the eager
+     * zip path's ~2× memory peak (see the LARGE-MEDIA note at the top of this file) and its
+     * EAGER_ZIP_CEILING_BYTES abort — neither of which a preview has any reason to pay.
+     *
+     * Originals are excluded (`withOriginals: false`): a preview reads, it does not archive.
+     */
+    previewTree: () => projectSite(false),
+
     /** Write the whole published tree into a bound folder's Filesystem (FSA or Tauri — the git /
      *  GH-Pages on-ramp; also the binding store's folder sink). */
     writeToFolder: writeTree,
