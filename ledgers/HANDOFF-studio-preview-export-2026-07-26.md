@@ -1,7 +1,14 @@
 # HANDOFF — Studio preview + deposit-copy export (2026-07-26)
 
 Branch **`explore/studio-folder-export-settings`**, worktree `.claude/worktrees/studio-explore`.
-**MERGED into local `main` (`b7ba6e5`), NOT pushed.** Branch and `main` are the same commit; tree clean.
+**MERGED and PUSHED.** Branch and `main` are the same commit; tree clean.
+
+> Correction to an earlier line here, which said `main` was unpushed and left for someone else: the
+> `merge-main` lane pushed in the meantime, so every code commit below — the empty-hall fix
+> (`3a3806e`), the Settings panel (`b7ba6e5`) — is on `origin/main`. Only handoff commits have ever
+> trailed. The original claim was true when written and stopped being true within the hour; that is
+> the tempo of this tree, and it is why nothing here should be trusted without re-checking `git
+> rev-list --left-right --count main...HEAD`.
 
 Separate from the viewer-ux lane (`ledgers/HANDOFF-viewer-ux-2026-07-26.md`) and from the root
 `HANDOFF.md` (perf sweeps) — do not sweep those in.
@@ -12,9 +19,10 @@ Separate from the viewer-ux lane (`ledgers/HANDOFF-viewer-ux-2026-07-26.md`) and
 > after any long-running command — twice it had moved by the time a gate finished. If `main` has moved
 > again, re-run the gates before trusting anything below.
 >
-> **Why `main` is unpushed:** the `merge-main` worktree holds a commit of its own that isn't on
-> `origin`, so `git push` from here would publish their work as a side effect of publishing mine.
-> Pushing is theirs to do, or yours.
+> **On pushing from here:** the `merge-main` worktree periodically holds commits of its own that
+> aren't on `origin`, so a `git push` from this worktree can publish their work as a side effect of
+> publishing yours. Check `git log --oneline origin/main..main` before pushing, and prefer letting
+> that lane push.
 
 ## What shipped
 
@@ -64,10 +72,8 @@ tree. Three of these were mine.
 
 ## Session 2 (same day, later) — what closed
 
-**MERGED.** `main` is at `b7ba6e5`, local only — **not pushed**, deliberately: the `merge-main`
-worktree lane is preparing a wave-1 merge, and pushing would put their unpushed commit up as a side
-effect of mine. `main` moved THREE times during this session; each merge was a checked `--ff-only`
-into their worktree, never a ref rewrite under them.
+**MERGED**, and since pushed by the `merge-main` lane. `main` moved SIX times across this session;
+each merge from here was a checked `--ff-only` into their worktree, never a ref rewrite under them.
 
 Also closed:
 
@@ -102,7 +108,7 @@ The panel names both as "aren't here yet" in its own copy, so the surface does n
 
 ## Next actions, ranked
 
-1. ~~Rebase, then merge this branch.~~ **DONE** — `main` at `b7ba6e5`, unpushed (see above).
+1. ~~Rebase, then merge this branch.~~ **DONE** — merged and on `origin/main`.
 2. **`Archie-b5c2` — measure FSA folder autosave vs OPFS.** One measurement that decides web
    folder-canonical, a multi-week direction. **Blocked on a human**: needs a real
    `showDirectoryPicker` handle, which requires a user gesture Playwright cannot supply. Wants a
