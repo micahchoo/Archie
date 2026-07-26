@@ -106,6 +106,41 @@ Also closed:
 
 The panel names both as "aren't here yet" in its own copy, so the surface does not read as finished.
 
+## Session 3 (2026-07-26, later) — the desktop build was driven for the first time
+
+Commit `7124ded`. Read `Archie-91e7`, `Archie-ce7a`, and the corrections on `Archie-9ece`.
+
+- **P0 fixed and gated.** `fs:allow-rename` was never granted, so every desktop write failed at its
+  temp-then-rename commit point — first boot: 18 directories, 4 files, **zero bytes of content**.
+  `scripts/check-tauri-capabilities.mjs` now derives the method list from the `TauriFsBridge`
+  interface and fails on any ungranted method (and on any *unmapped* new one). Red-greened; wired
+  into CI's `unit-scripts`; 16 unit tests.
+- **`Archie-ce7a` (user-reported):** the media-folder picker uses `<input webkitdirectory>`, which
+  WebKitGTK does not implement — it silently degrades to a single-FILE picker. `pickTauriFolder()`
+  already exists and `folder-backend.ts:38-42` is the branching precedent; `folder-drop.ts:42-45` is
+  the donor for the `webkitRelativePath` wrinkle. Not fixed.
+- **Both defects sit exactly where `Archie-a09d` predicted** — native fs/dialog flows with no
+  tauri-build smoke. That ticket called the gap; this session is its receipt.
+
+### Two method traps that cost real time — do not repeat them
+
+1. **`cargo build` bakes `devUrl`, not `frontendDist`.** Only `tauri build --debug --no-bundle`
+   produces a packaged origin. Two rebuilds silently drove the **main checkout's** dev server on
+   :5174 — a sibling's frontend — which is `[[viewer-e2e-shared-port]]` reached through a build flag
+   instead of a reused server. **Confirm the origin before trusting any desktop result:**
+   `ls ~/.local/share/digital.compost.archie/localstorage` must show `tauri_localhost_0.*`, never
+   `http_localhost_5174.*`. Everything measured on the wrong origin was re-measured or withdrawn.
+2. **A blank screenshot is a capture artifact, not a blank app.** `import` reads the X window while
+   WebKit composites to a GPU surface. Boot with `WEBKIT_DISABLE_COMPOSITING_MODE=1` or you will file
+   a phantom bug — this nearly happened.
+
+### `sd` writes to the MAIN checkout, not this worktree
+
+`sd` resolved its store to `/mnt/Ghar/.../Archie/.seeds/issues.jsonl`. Every ticket written this
+session (`Archie-91e7`, `Archie-ce7a`, the 9ece corrections) is an **uncommitted change in the main
+checkout's working tree**, which another lane owns. `7124ded` touches no `.seeds` data, so this
+branch cannot clobber them — but they need committing from there, by whoever owns that tree.
+
 ## Next actions, ranked
 
 1. ~~Rebase, then merge this branch.~~ **DONE** — merged and on `origin/main`.
