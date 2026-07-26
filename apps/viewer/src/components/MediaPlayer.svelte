@@ -17,6 +17,7 @@
     annotations = [],
     rights,
     initialSeek,
+    onlocus,
     onback,
     siblings,
     currentId,
@@ -31,6 +32,12 @@
      *  to this clamped offset PAUSED — section-142: landing seeks but must NOT auto-play, so this does NOT
      *  go through `seekTo` (which couples play()). Garbage / out-of-range → head (0). */
     initialSeek?: string;
+    /** V52/V101 (Archie-99b1): report the deepest rung — the cue the playhead is inside, and its START
+     *  offset. ADR-0021's `t=` landing seek was correctly built and structurally UNREACHABLE because no
+     *  address ever carried `t=`; this is the write half. The cue's start (not `currentTime`) is what
+     *  rides the address: a link must land at the beginning of the moment it names, and a per-frame
+     *  value would rewrite the bar continuously and cite an arbitrary instant. */
+    onlocus?: (l: { noteId: string | null; t: string | null }) => void;
     /** Escape-out (ADR-0016 §137/§223): an AV object opened FROM the narrative index needs a step back
      *  to that index, else it dead-end-traps the visitor (the carousel/breadcrumb don't serve it). Optional
      *  + back-compat — absent (single AV, AV-in-grid carry their own nav) hides the affordance. */
@@ -101,6 +108,12 @@
     }
     return out;
   });
+  // Publish the current cue upward for the address (V52/V101). Fires on cue BOUNDARIES, not per frame.
+  $effect(() => {
+    const c = activeIdx >= 0 ? cues[activeIdx] : undefined;
+    onlocus?.({ noteId: c?.id ?? null, t: c ? String(c.range.start) : null });
+  });
+
   // Spatiotemporal regions visible at the current moment — each box shows while currentTime ∈ its window;
   // the active cue's box is emphasised. The read-side mirror of the Studio's frame-draw (ADR-0006).
   const videoBoxes = $derived.by(() =>
