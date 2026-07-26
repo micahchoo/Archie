@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Locator } from "@playwright/test";
-import { goOffline } from "./offline.js";
+import { HALO, goOffline, openPaintedNote, screenshotNotes } from "./offline.js";
 
 // Archie-40fe (V22/V71/V87) — floating chrome must not sit on the thing it is meant to help you read.
 //
@@ -8,9 +8,10 @@ import { goOffline } from "./offline.js";
 // regression, a restyle that puts it back on top of the filmstrip is. Overlap survives as the thing
 // being measured no matter how the surfaces are painted.
 //
-// V48 (chrome over the CANVAS) is not here: it is fixed in `fitBoundsRect`'s left-flank reservation
-// and unit-tested there, and asserting it end-to-end needs a painted canvas — which this offline
-// suite cannot produce (selection.spec.ts's header has the measurement).
+// V48 (chrome over the CANVAS) IS here now, at the bottom. This header used to say it could not be:
+// "asserting it end-to-end needs a painted canvas — which this offline suite cannot produce". The
+// `screenshots` exhibit produces one (canvas-offline.spec.ts), so the end-to-end half of the
+// left-flank reservation is measurable with the network cut.
 
 type Rect = { x: number; y: number; width: number; height: number };
 
@@ -101,10 +102,55 @@ test.describe("an open note clears the filmstrip (V71)", () => {
 });
 
 // V49 (the AV temporal map, covered by the item strip) is fixed by the same `--strip-h` reservation
-// and is NOT asserted here. The timeline renders only under `cues.length > 0 && !mediaError && dur > 0`,
-// and `dur` comes from media metadata — offline, the seed's sounded folio (archive.org) never loads,
-// so the element does not exist to measure. Same structural limit as the canvas assertions; see
-// selection.spec.ts's header. Verified by an online drive on 2026-07-25 instead.
+// and is STILL NOT asserted here. The timeline renders only under
+// `cues.length > 0 && !mediaError && dur > 0`, and `dur` comes from media metadata — offline, the
+// seed's sounded folio (archive.org) never loads, so the element does not exist to measure.
+//
+// The canvas assertions escaped this limit by moving to `screenshots`; V49 CANNOT follow them, and the
+// reason is specific rather than structural: every one of the 21 published `screenshots` bodies is
+// `type: "Image"` (measured against `public/published/screenshots/manifest.json`). There is no
+// locally-sourced AUDIO or VIDEO object anywhere in the seed, so there is nothing hermetic to give a
+// duration to. Closing this needs a small local media asset in a seed exhibit — a change to the seed
+// and the publish fixtures, not to this suite. Until then it is a named gap, verified by an online
+// drive on 2026-07-25.
+
+test.describe("the fitted region clears the chrome that floats over the canvas (V48)", () => {
+  test("the selected region is not under the legend or the note card", async ({ page, baseURL }) => {
+    // `getFitOptions` is @render/mount's reservation seam, and THE VIEWER NEVER PASSED IT: every fit
+    // ran on PLAIN_FIT, so `fitBounds` centred the region in the whole container while the legend and
+    // the note card sat on top of the left flank. Measured with a note open at 9.3x: the two stacked
+    // into a contiguous 502px column, ~22% of a 924x800 canvas, down its entire left edge — including
+    // the side the fitted region's own boundary lies on. The reader asks to look closely; the app
+    // zooms, then covers a fifth of the answer.
+    //
+    // The unit half lives in `fitBoundsRect`. This is the end-to-end half, and it is the one that
+    // catches the seam never being WIRED — which is what actually shipped, with the unit tests green.
+    // The halo is the region's own drawn boundary, so measuring it measures where the fit landed.
+    //
+    // SWEEP SEVERAL NOTES, NOT ONE. Measured with the reservation forced off: 14 of the exhibit's
+    // first 16 region notes land under the legend — but the FIRST one is one of the two that do not
+    // (its region is short and wide, so the unreserved fit still clears the legend's bottom edge by
+    // 10px). A single-note version of this test passes against the unwired seam. Ten is comfortably
+    // past the two lucky ones.
+    const notes = (await screenshotNotes(baseURL!)).filter((n) => n.region).slice(0, 10);
+    expect(notes.length, "not enough region notes to sweep").toBeGreaterThan(4);
+    await goOffline(page);
+
+    for (const note of notes) {
+      await openPaintedNote(page, note.ulid);
+      const halo = await rectOf(page.locator(HALO));
+      expect(halo, `no halo for ${note.ulid} — the region was never fitted`).not.toBeNull();
+      for (const sel of ["aside.legend", ".note-pop"]) {
+        const chrome = await rectOf(page.locator(sel));
+        if (!chrome) continue;
+        expect(
+          overlaps(halo!, chrome),
+          describeOverlap(`${sel} over fitted region (${note.ulid})`, chrome, halo!),
+        ).toBe(false);
+      }
+    }
+  });
+});
 
 test.describe("the narrative spine can be read to its end (V87)", () => {
   test("the last spine card can be scrolled clear of the finder pill", async ({ page }) => {
