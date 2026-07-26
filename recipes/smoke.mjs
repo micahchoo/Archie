@@ -660,7 +660,25 @@ async function main() {
       // docblock claims: kept across objects (asserted above by the step drive), cleared across
       // exhibits. The docblock has been wrong twice; it is asserted now rather than believed.
       const lifetime = await (async () => {
-        if (!(await open("voynich-rosettes"))) return { skipped: true };
+        // NAVIGATE IN-PAGE. `open()` does a full page.goto, which re-creates the element and gives it
+        // a fresh `#activeReading` — so a reload-based version of this assertion passes whether or not
+        // the reset exists. Verified: with the reset deleted it still reported 41/41 PASS. Element
+        // state can only be tested across navigations the ELEMENT performs, so this walks the reader's
+        // own way out (back to the grid, back to the gallery) and opens the sibling exhibit by click.
+        const up = async (sel) => {
+          const ok = await sr((q) => {
+            const b = document.querySelector("archie-viewer").shadowRoot.querySelector(q);
+            if (!b) return false;
+            b.click();
+            return true;
+          }, sel);
+          if (ok) await page.waitForTimeout(400);
+          return ok;
+        };
+        if (!(await up('.topbar [data-act="back"]'))) return { skipped: "no way back from the reader" };
+        if (!(await up('.topbar [data-act="back"]'))) return { skipped: "no way back to the gallery" };
+        const opened = await up('button[data-slug="voynich-rosettes"]');
+        if (!opened) return { skipped: "no voynich-rosettes card in this tree" };
         await page.waitForFunction(() => document.querySelector("archie-viewer").shadowRoot
           .querySelectorAll("ul.grid li button[data-obj]").length > 0, { timeout: 15000, polling: 300 });
         await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
@@ -936,7 +954,7 @@ async function main() {
       record(!lt.skipped && lt.checked === "(base)",
         "ADR-0019 MUST · a Reading does not follow you into another exhibit (V56)",
         lt.skipped
-          ? "voynich-rosettes not in this tree"
+          ? lt.skipped
           : `after picking a reading in voynich, rosettes opens with ${lt.checked} checked` +
             ` (both exhibits publish ids cipher/hoax/abjad, so a carry-over would silently activate` +
             ` a different curator's layer); legend ${JSON.stringify(lt.names)}`);
