@@ -56,7 +56,29 @@ parameter, not a default.** Two agents briefed to work on disjoint file territor
 disjoint if they share a checkout — territory separates their *edits*, nothing separates their *git
 state*. Verify the worktree list after dispatch, not the brief.
 
-**Resolved: `ux/fixture-reach` IS wave 1, and merges as one unit.** The `-A` hazard fired — dock's
+**REVERSED, 14:5x — the fixture slice is being extracted and merges to `main` FIRST.** The paragraph
+below is what I decided an hour earlier on the information then available; the reversal is recorded
+rather than overwritten because the *reason* is the useful part. What changed was a measurement, made
+by the fixture agent in a clean worktree cut at `49327c0` with only its own paths applied:
+
+| tree | result |
+| --- | --- |
+| base `49327c0` alone | 36/36 pass |
+| base + fixture paths only | **85/85 pass** — both V49 tests and both media-route tests included |
+| `ux/fixture-reach` HEAD (dock's WIP in it) | **~35 failures** across eight spec files |
+
+A slice that is finished, isolated and provably green does not wait behind an unfinished slice with a
+known regression — and the ordering is independently right, because those fixtures are the
+**dependency** of the V49 gate that measures the dock work. Branch `ux/fixture-slice`, cut from
+`49327c0`, carrying only: `apps/studio/src/seed-carry.test.ts`, `apps/studio/src/seed-data.ts`,
+`apps/viewer/fixtures/`, `apps/viewer/public/published/`, `apps/viewer/e2e/av-surface.spec.ts`,
+`apps/viewer/e2e/note-surface.spec.ts`.
+
+Known consequence, mine to resolve at merge time and nobody else's: `note-surface.spec.ts` also
+exists inside dock's `dca4215`, so the wave-1 branch will conflict on duplicate content when `main`
+is merged into it.
+
+**Superseded — kept for its reasoning: `ux/fixture-reach` IS wave 1, and merges as one unit.** The `-A` hazard fired — dock's
 `dca4215` swept two of the fixture agent's in-progress files (`e2e/av-surface.spec.ts`,
 `fixtures/fixture-reach.test.ts`) into a dock commit. Nothing was lost, but splitting the branch back
 into two clean slices would be per-file surgery on two agents' in-flight work, which is more risk
