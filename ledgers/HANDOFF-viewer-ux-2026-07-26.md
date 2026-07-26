@@ -10,23 +10,86 @@ Worktrees `.claude/worktrees/chrome-occlusion` (driver) and `.claude/worktrees/m
 
 ## CURRENT STATE — read this and nothing else for state
 
-**`origin/main` = local `main` = `cb1bbfe`.** Four commits past `04d38ce`, in order:
+**`origin/main` = local `main` = `7ee0b82`** (16:10). The fixture slice is MERGED; the dock slice is
+under review and NOT merged.
 
 | sha | what |
 | --- | --- |
-| `40179bc` | the five human rulings, and the waves re-cut around them |
-| `49327c0` | `onopenfinder` threaded to the AV player — its new test found `Archie-d37d` |
-| `bbd3ea5` | the CI flaky reporter + the three rules the narrative review earned |
 | `cb1bbfe` | `5185` closed, `d37d` filed, `d6e9`+`d37d` blocked on the dock decision |
+| *(≈20 commits)* | **a CONCURRENT SESSION's studio work** — Settings phase 1, preview/export lane, `previewTree`, single-file IIFE viewer target. Not ours; see the red ratchet below |
+| `24733fd` | `de08`, `c30a`, `9838` closed (written by `sd` to the CANONICAL checkout, copied across) |
+| `0637a05` | the fixture-slice review report, preserved off its subagent worktree |
+| `8683b02` | **merge: the fixture slice** — f4fb, 4524, 0cc6, b135 |
+| `a440721` | the flake fix that merge shipped (see below) |
+| `6dec59b`, `7ee0b82` | `a-green-run-is-one-sample.md` + the counting-trap sharpenings |
 
-CI at `cb1bbfe`: **Pages green, Checks still `in_progress`** as of 14:21. Read per-job, and read the
-run for the LATEST sha (see the concurrency-group trap below). Both runs at `49327c0` are green.
+### ⚠ `main` IS RED, AND IT IS NOT FROM OUR WORK
 
-**Next-actions 1–5 from the previous lead are all DONE** — the `onopenfinder` wire (`49327c0`),
-`5185` closed, the flaky reporter, the three rules. Only `ecf4` (item 3, tokens) is outstanding, and
-it is deliberately sequenced AFTER the dock work because `--finder-h`/`--topbar-h` may not survive it.
+```
+FAIL  apps/studio dist (js+css gz)  558.8KB → 875.1KB (Δ +316.3KB, allowed +55.9KB)
+ok    apps/viewer dist (js+css gz)  368.1KB → 388.9KB (Δ +20.8KB, allowed +36.8KB)
+```
 
-### ⚠ WAVE 1 IS RUNNING, AND THE TWO AGENTS SHARE ONE WORKING TREE
+`d620093 feat(studio): export a self-contained viewer + library` (the concurrent session's) embeds the
+IIFE viewer bundle. It surfaced only at `8683b02` because **their own rapid pushes cancelled every
+Checks run on their commits** — ours was the first to complete.
+
+**The bytes are NOT on the startup path**, measured rather than inferred: `archie-viewer.single-*.js`
+is 936K and referenced **zero** times from `index.html`; `publish-flows.svelte.ts:401` reaches it via
+`import("./single-file-export.js")`. So the feature is correctly lazy. **The root ratchet measures
+`apps/studio dist` as a TOTAL and cannot tell eager from lazy** — the same blindness
+`[[archie-viewer-eager-closure]]` documents from the other side, which is exactly why the embed grew a
+separate `eagerGzKB`.
+
+Three options, put to the human, undecided at time of writing: raise the studio baseline (fast, and
+the move the rules warn about — a gate satisfied by moving its own reference); give studio's ratchet
+an **eager/lazy split** like the embed's (recommended — passes honestly and makes the metric answer
+the question people think it asks); or leave it red (not viable, it blocks the dock merge).
+
+### The flake that reached `main`, and the rule it earned
+
+`8683b02` shipped a test failing **9 times in 20** against a correct tree. Fixed in `a440721`
+(verified independently here at 25/25 and 20/20; the author's own tallies 30/30). Cause, read from
+source: `AnnotationSession.createNote` mints through `newRecord` with **no seeded rng** — the viewer's
+bake threads `seededRng(slugSeed)` for ADR-0014 durable anchors — so two notes minted in the same
+millisecond are ordered by `Math.random` under `projectHeads`' `(logicalId, rev)` sort.
+
+It reached `main` past four people, each of whom ran it exactly once. New rule:
+`.claude/rules/a-green-run-is-one-sample.md`. **The reviewer's injections and the author's green run
+answer different questions, and neither answers the other's.**
+
+**Next-actions 1–5 from the previous lead are all DONE.** Only `ecf4` (tokens) is outstanding, still
+sequenced AFTER the dock work because `--finder-h`/`--topbar-h` do not survive it — the dock retires
+both.
+
+### THE DOCK SLICE — reviewed? NO. Integrated? YES, on a scratch branch.
+
+`integrate/dock` = **`5842087`** = `main@8683b02` + dock's `d43155c`, nine conflicts resolved (all
+duplicate-content from the `-A` sweep; all taken from main's reviewed side, then verified
+byte-identical). **It is now behind `main` by four commits and must be re-merged before it lands.**
+
+Dock's own tip is `d43155c` on `ux/dock-chrome-recovered`, worktree `.claude/worktrees/dock-chrome-solo`.
+`ux/dock-chrome` is an **empty label at `49327c0`** — it never advanced, and three separate false
+"my work was destroyed" conclusions were drawn from reading it.
+
+**V49 is fixed.** Author's numbers at 1280×720, `#/voynich` → Kryptogramm, offline: `.tl-track`
+y 550→574 **ratio 1** (was ratio 0), `.filmstrip` y 603→712 ratio 1, `.player` y 53→594, document
+**720/720** (was 1045/720). Image / image+note-open / narrative / gallery all 720/720. Cause was
+`.shell { min-height: 100dvh }` — `min-height` lets percentage heights below resolve to `auto`, so any
+route with intrinsic height grew the document. Fix: `height: 100dvh` + `overflow: auto` on `.route`.
+
+**The 35 failures were ONE cause.** Suite now 140/0. Five assertions genuinely changed subject and
+were **replaced, not deleted** — `read.spec.ts:11,24` and `object-nav.spec.ts:53,69` moved from
+`closest("main")` to `closest(".canvas-dock")` plus geometric clearance (V40/V80's fix was moving
+chrome INTO `main`, so containment there would now mean chrome is back on the image);
+`canvas-keyboard.spec.ts:95` `.reader > main` → `.reader main`.
+
+**One finding AGAINST the brief, and the agent was right to stop.** `isWholeObjectFor` is **not** part
+of the reservation model — it answers ADR-0018's whole-object-frame question and has three live
+consumers (`ExhibitView.svelte:458`, studio `App.svelte:1504`, `e2e/offline.ts:127`). My dispatch brief
+listed it for retirement; deleting it would have removed the whole-object border from both apps.
+
+### ⚠ HISTORY — WAVE 1 RAN WITH THE TWO AGENTS SHARING ONE WORKING TREE
 
 `impl-dock-chrome` (de08 + c30a + 9838) and `impl-fixture-reach` (b135, f4fb, 0cc6, 4524-fixture-half)
 were dispatched **without worktree isolation**. Both are operating in
