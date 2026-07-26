@@ -71,14 +71,26 @@ Each states an outcome, not a mechanism.
 
 ## Open Questions
 
-**Blocking (answer before planning):**
+**Blocking — both ANSWERED 2026-07-26, from source. Neither blocks planning.**
 
-- Does the retained OPFS copy have a cheap size measurement on desktop? `navigator.storage.estimate()`
-  is inert under `isTauri()` per C3 — but that gating was *about* the folder, and the estimate may
-  still report OPFS usage correctly. If it doesn't, R3's "show the size" needs a tree walk, which
-  changes the cost of L3 materially.
-- Is `structureRevlog` still the only flag? If a second lands before this is built, L5's
-  "applies on reload" copy needs to be per-flag rather than a section note.
+- **Does the retained OPFS copy have a cheap size measurement on desktop? Yes — and the question was
+  framed backwards.** `refreshQuota` early-returns under `isTauri()`
+  (`storage-quota.svelte.ts:50`), but that is an app-level choice, not an engine limitation:
+  `navigator.storage.estimate()` is never called there, and nothing disables it. The stated reason is
+  that on desktop the estimate "would report only OPFS CACHE residue (not the real folder library) —
+  worse than nothing" (`:14-16`). For the *chip*, which is predicting whether the author's library
+  will fit, that is correct. But **the residue is precisely what R3 wants to show**: L3's control is
+  about reclaiming the leftover OPFS copy after the folder became canonical. So the number the chip
+  deliberately refuses is the number this panel needs. L3 costs one `estimate()` call — no tree walk.
+  Do NOT reuse the chip's store for it (its `usage` is pinned null on desktop by design); call
+  `estimate()` directly and comment why this caller wants what the chip rejects.
+- **Is `structureRevlog` still the only flag? Yes — and it is a kill-switch, not a toggle.**
+  `feature-flags.ts` exports exactly one key, `archie.structureRevlog`, default **ON**, surviving
+  "only as an emergency KILL-SWITCH" (`:14-19`). That weakens L5 rather than answering it: a Flags
+  section holding one always-on emergency switch is a section that shows the author a lever they must
+  never pull. Recommend L5 be re-decided as *no Flags section until a second, genuinely optional flag
+  exists* — the kill-switch stays a console/localStorage affair, which is what an emergency switch
+  should be. Flagged for the user, since L5 was theirs.
 
 **Exploratory (answerable during implementation):**
 
@@ -124,5 +136,6 @@ No silent gaps.
 
 ## Next
 
-Route: **writing-plans**. The two blocking open questions above are cheap and should be answered
-first — both are single measurements, not investigations.
+Route: **writing-plans**. Both blocking questions are now answered (see above), so nothing gates the
+plan — except that **L5 should be re-decided before it is planned**: the flags answer undercut its
+premise, and L5 was a user-gated decision, so it is the user's to change rather than mine.
