@@ -10,9 +10,10 @@ export { createCanvasController, type CanvasController } from "./controller.js";
 // Re-exported from @render/core (canonical home; impl + deps live there). Kept here for adapter-consumer back-compat.
 export { sanitizeHtml, renderMarkdown, stripMarkdown } from "@render/core";
 // Re-export the marker-style type so adapter consumers (the viewer) needn't depend on @render/mount directly.
-// FitOptions rides along because the APPS now supply it: Reader/NarrativeReader measure the chrome
-// occluding the canvas's left flank and hand it to Canvas's `getFitOptions` (Archie-40fe / V48).
-export type { MarkerStyle, FrameOverlay, FitOptions } from "@render/mount";
+// `FitOptions` used to ride along because the apps supplied Archie-40fe/V48's chrome reservation through
+// Canvas's `getFitOptions`. Both retired with the dock contract (ADR-0019's layout row) — nothing
+// overlays the canvas, so no app has a reservation to hand down.
+export type { MarkerStyle, FrameOverlay } from "@render/mount";
 // Scale cue (Archie-93fd) — same re-export boundary as above: the viewer formats Canvas's `onzoom`
 // ratio with the SAME function studio imports straight from @render/mount, without adding that
 // package as a direct viewer dependency.

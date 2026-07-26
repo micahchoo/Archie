@@ -13,7 +13,7 @@
 import OpenSeadragon from "openseadragon";
 import { resolveTileSource, selectorOf, wholeObjectFlagOf } from "@render/core";
 import type { TileSourceDescriptor, W3CAnnotation, AnnotationLike, W3CSelector } from "@render/core";
-import { dispatchFitBounds, applyFitBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
+import { dispatchFitBounds, applyFitBounds, type ViewportLike } from "./fitbounds.js";
 import { createReadOnlyOverlay, type LabelFor } from "./read-overlay.js";
 import { createFrameOverlay } from "./frame-overlay.js";
 import { createSelectionHalo } from "./selection-halo.js";
@@ -24,7 +24,6 @@ import type { SelectionId } from "./surface.js";
 import { guardImageDimensions, MAX_DECODE_DIM, type ImageGuardResult } from "./image-cap.js";
 
 /** Plain fit (no sidebar reservation) — used when the adapter supplies no fit options (donor: mount.ts:28). */
-const PLAIN_FIT: FitOptions = { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
 
 /**
  * The read-only subset of MountSurface: load/select annotations, fit a region, subscribe to selection,
@@ -57,8 +56,6 @@ export interface ReadOnlyMountOptions {
  canvasId?: string;
  /** Fired on user selection. */
  onSelect?: (id: SelectionId | null) => void;
- /** Adapter-supplied current sidebar state for fitBounds reservation. */
- getFitOptions?: () => FitOptions;
  /** Accessible-name source for an overlay shape (P0-6). */
  labelFor?: LabelFor;
  /** Show the OSD locator mini-map (worklist 1.1). */
@@ -123,7 +120,6 @@ export function wireReadOnlySurface(
  viewport: ViewportLike,
  overlay: ReadOnlyOverlayLike,
  getAnnotations: () => W3CAnnotation[],
- getFitOptions?: () => FitOptions,
  halo?: SelectionHaloLike,
 ): ReadOnlyMountSurface & { emitSelect(id: SelectionId | null): void } {
  const selectSubs = new Set<(id: SelectionId | null) => void>();
@@ -141,7 +137,7 @@ export function wireReadOnlySurface(
  };
 
  const fitBounds = (id: SelectionId): void => {
-  dispatchFitBounds(viewport, getAnnotations(), id, getFitOptions?.() ?? PLAIN_FIT);
+  dispatchFitBounds(viewport, getAnnotations(), id, {});
  };
 
  // Fit an arbitrary region fragment (a Section's camera target / an explicit ?xywh cite — NOT an
@@ -149,7 +145,7 @@ export function wireReadOnlySurface(
  // exactly as the editor's image path does (mount.ts fitRegion). `t=...` → fitBoundsRect null → no-op.
  const fitRegion = (fragment: string): void => {
   const selector = { type: "FragmentSelector", value: fragment } as W3CSelector;
-  applyFitBounds(viewport, selector, getFitOptions?.() ?? PLAIN_FIT);
+  applyFitBounds(viewport, selector, {});
  };
 
  // The single selection entry point: notify subscribers AND select-then-fit (the nav contract). A
@@ -308,7 +304,6 @@ export async function createReadOnlyMount(
   viewer.viewport as unknown as ViewportLike,
   overlay,
   () => current,
-  opts.getFitOptions,
   halo,
  );
 

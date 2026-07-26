@@ -2511,7 +2511,7 @@
                    an editing canvas needs the surrounding context and the shape's resize handles on
                    screen, and a full-bleed fit shoved the marker under the viewport edges. Section
                    camera targets (focus) still frame exactly as authored (fitRegion pins fraction=1). -->
-              <CanvasComp source={currentSource} tileSource={currentTileSource} canvasId={vs.canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator dots={dotItems} bind:selected={vs.selected} getFitOptions={() => ({ containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, noteViewFraction: 0.5 })} oncreate={onCreate} onupdate={onUpdate} ondelete={ondelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} nativeFetch={nativeFetch} />
+              <CanvasComp source={currentSource} tileSource={currentTileSource} canvasId={vs.canvasId} annotations={canvasAnnotations} frame={studioFrame} focus={canvasFocus} tool={drawShape} drawing={drawArmed} styleOf={styleOfLive} locator dots={dotItems} bind:selected={vs.selected} oncreate={onCreate} onupdate={onUpdate} ondelete={ondelete} onzoom={(r) => (zoomRatio = r)} rectIds={marginaliaRectIds} onmarkerrects={(r) => (markerRects = r)} nativeFetch={nativeFetch} />
             {:else}
               <div class="no-canvas">Loading…</div>
             {/if}

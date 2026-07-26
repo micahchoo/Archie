@@ -4,7 +4,7 @@
   // component only wires the surface to $state, drawing props, and lifecycle callbacks.
   // NOT in the tsc/test gate (real OSD render = browser verification).
   import { onMount, onDestroy } from "svelte";
-  import { createMount, zoomBand, dotsVisibleForBand, rectCenter, type ZoomBand, type ScreenRect, type FitOptions, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay, type NativeFetch } from "@render/mount";
+  import { createMount, zoomBand, dotsVisibleForBand, rectCenter, type ZoomBand, type ScreenRect, type MountSurface, type DrawTool, type MarkerStyle, type FrameOverlay, type NativeFetch } from "@render/mount";
   import { type W3CAnnotation, type TileSourceDescriptor } from "@render/core";
   import { createCanvasController, type CanvasController } from "./controller.js";
 
@@ -19,7 +19,6 @@
     focus = null,
     tool = "rectangle",
     drawing = false,
-    getFitOptions,
     oncreate,
     onupdate,
     ondelete,
@@ -48,7 +47,6 @@
     focus?: string | null;
     tool?: DrawTool;
     drawing?: boolean;
-    getFitOptions?: () => FitOptions;
     oncreate?: (a: W3CAnnotation) => void;
     onupdate?: (a: W3CAnnotation) => void;
     ondelete?: (id: string) => void;
@@ -155,7 +153,7 @@
 
   onMount(async () => {
     try {
-      surface = await createMount(el, { source, ...(tileSource ? { tileSource } : {}), ...(canvasId ? { canvasId } : {}), ...(getFitOptions ? { getFitOptions } : {}), ...(locator ? { locator } : {}), ...(nativeFetch ? { nativeFetch } : {}) });
+      surface = await createMount(el, { source, ...(tileSource ? { tileSource } : {}), ...(canvasId ? { canvasId } : {}), ...(locator ? { locator } : {}), ...(nativeFetch ? { nativeFetch } : {}) });
       if (destroyed) { surface.destroy(); surface = undefined; return; } // unmounted mid-mount (remount race) — tear down here; onDestroy's controller was still undefined
       surface.setAnnotations(annotations);
       if (styleOf) surface.setStyle(styleOf);

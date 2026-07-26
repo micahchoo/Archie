@@ -2,14 +2,17 @@ import { describe, it, expect } from "vitest";
 import { fitBoundsRect, applyFitBounds, clampedFitRect, clampToContentBounds, type FitOptions, type ViewportLike } from "./fitbounds.js";
 import type { W3CFragmentSelector, W3CSvgSelector } from "@render/core";
 
-// Characterization test (the Phase-1 acceptance ORACLE). Pins anvil's fitForSidebar behavior
-// (EmbeddedReader.svelte:314-337) as a PURE image-space-rect computation, so the new
-// @render/mount path can be held to the SAME spec as anvil-stock (the spike's gate).
+// The fit oracle. `fitBoundsRect` is a PURE image-space-rect computation, so the @render/mount path
+// can be held to a spec without a browser.
 //
-// anvil's rule: if the sidebar is a non-sheet open panel with a known width, expand the
-// annotation's bounds rightward so the visible (non-sidebar) region centers it:
-//   f = min(0.85, sidebarW / containerW);  expandedW = w / (1 - f)
-// Otherwise fit the annotation's plain bounds (Annotorious fitBounds(id), centered).
+// WHAT USED TO BE HERE, and why it is not. Two describes covered the chrome-reservation model:
+// anvil's `fitForSidebar` characterization (widen by `w/(1-f)` for an open side panel,
+// EmbeddedReader.svelte:314-337) and Archie-40fe/V48's left-flank reservation (slide the rect out
+// from under the legend and the note card). Both were deleted on 2026-07-26 because their SUBJECT is
+// gone, not because they failed: under ADR-0019's layout row no persistent surface overlaps the
+// canvas, so the container and the visible window are the same rectangle and `FitOptions` carries
+// only the margin. A reservation test against code that has nothing to reserve against would assert
+// that a parameter still exists, which is not a behaviour.
 
 const rect: W3CFragmentSelector = { type: "FragmentSelector", value: "xywh=pixel:100,50,200,80" };
 const poly: W3CSvgSelector = { type: "SvgSelector", value: "<svg><polygon points='10,10 110,10 60,90'/></svg>" };
@@ -19,45 +22,19 @@ const poly: W3CSvgSelector = { type: "SvgSelector", value: "<svg><polygon points
 // breathing-room margin (Archie-52a0 / V44) is a deliberate addition ON TOP of that oracle and has
 // its own describe block below; folding it into these fixtures would quietly restate the anvil spec
 // as something anvil never did, and leave the margin itself unpinned.
-const sidebarOpen: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: false, detailOpen: true, margin: 0 };
-const sheet: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: true, detailOpen: true, margin: 0 };
-const closed: FitOptions = { containerW: 1000, sidebarW: 0, sidebarIsSheet: false, detailOpen: false, margin: 0 };
+const sheet: FitOptions = { margin: 0 };
 
-describe("fitBoundsRect — anvil fitForSidebar characterization (the gate oracle)", () => {
-  it("plain fit (sidebar is a sheet) returns the annotation's own bounds", () => {
+describe("fitBoundsRect — the region's own bounds (the gate oracle)", () => {
+  it("returns the annotation's own bounds", () => {
     expect(fitBoundsRect(rect, sheet)).toEqual({ x: 100, y: 50, w: 200, h: 80 });
   });
 
-  it("plain fit (detail closed / no sidebar) returns the annotation's own bounds", () => {
-    expect(fitBoundsRect(rect, closed)).toEqual({ x: 100, y: 50, w: 200, h: 80 });
-  });
-
-  it("sidebar-open expands width by w/(1-f) keeping x,y,h (reserves room for the panel)", () => {
-    // f = 300/1000 = 0.3; expandedW = 200 / 0.7 = 285.714...
-    const r = fitBoundsRect(rect, sidebarOpen)!;
-    expect(r.x).toBe(100);
-    expect(r.y).toBe(50);
-    expect(r.h).toBe(80);
-    expect(r.w).toBeCloseTo(200 / 0.7, 6);
-  });
-
-  it("caps the sidebar fraction at 0.85 (anvil's Math.min guard)", () => {
-    // sidebarW 950 of 1000 would be f=0.95; capped to 0.85 -> expandedW = 200/0.15
-    const r = fitBoundsRect(rect, { containerW: 1000, sidebarW: 950, sidebarIsSheet: false, detailOpen: true, margin: 0 })!;
-    expect(r.w).toBeCloseTo(200 / 0.15, 6);
-  });
-
   it("works for a polygon selector via its bounding box", () => {
-    // polygon bbox = {x:10,y:10,w:100,h:80}; plain fit (sheet)
     expect(fitBoundsRect(poly, sheet)).toEqual({ x: 10, y: 10, w: 100, h: 80 });
   });
 
   it("returns null for a degenerate / unparseable selector", () => {
     expect(fitBoundsRect({ type: "SvgSelector", value: "<polygon points='NaN'/>" }, sheet)).toBeNull();
-  });
-
-  it("falls back to plain bounds when containerW is unknown (0), even if detail is open", () => {
-    expect(fitBoundsRect(rect, { containerW: 0, sidebarW: 300, sidebarIsSheet: false, detailOpen: true, margin: 0 })).toEqual({ x: 100, y: 50, w: 200, h: 80 });
   });
 });
 
@@ -66,7 +43,7 @@ describe("fitBoundsRect — anvil fitForSidebar characterization (the gate oracl
 // the region and nothing it sits in, and the selection ring (drawn OUTSIDE the geometry) was itself
 // half off-screen at the exact moment of closest looking.
 describe("fitBoundsRect — breathing-room margin (V44)", () => {
-  const plain: Omit<FitOptions, "margin"> = { containerW: 1000, sidebarW: 300, sidebarIsSheet: true, detailOpen: true };
+  const plain: Omit<FitOptions, "margin"> = {};
 
   it("DEFAULTS to a 15%-larger rect — an omitted margin is not a zero margin", () => {
     // 200×80 grown by 0.15 → 230×92, centred on the same point (100,50 → 85,44).
@@ -91,11 +68,6 @@ describe("fitBoundsRect — breathing-room margin (V44)", () => {
     expect(fitBoundsRect(poly, plain)).toEqual({ x: 2.5, y: 4, w: 115, h: 92 });
   });
 
-  it("runs BEFORE the sidebar reservation, so the panel reserves room around a breathing region", () => {
-    const r = fitBoundsRect(rect, { ...plain, sidebarIsSheet: false })!;
-    expect(r.w).toBeCloseTo(230 / 0.7, 6); // the INFLATED width widened, not the raw 200
-  });
-
   it("an explicit margin of 0 restores the historical edge-to-edge fit", () => {
     expect(fitBoundsRect(rect, { ...plain, margin: 0 })).toEqual({ x: 100, y: 50, w: 200, h: 80 });
   });
@@ -112,64 +84,6 @@ describe("fitBoundsRect — breathing-room margin (V44)", () => {
     const r = fitBoundsRect(flush, plain)!;
     expect(r.x).toBeLessThan(0);
     expect(clampToContentBounds(r, { width: 1000, height: 800 })).toEqual({ x: 0, y: 0, w: 107.5, h: 107.5 });
-  });
-});
-
-// The LEFT-flank reservation (Archie-40fe / V48). The right-hand sidebar is a panel the canvas ends
-// BEFORE; the legend and the note card are chrome the canvas continues UNDERNEATH. Measured in the
-// viewer, they stacked into a contiguous 502px column — ~22% of a 924x800 canvas, down its whole left
-// edge — at the moment the reader had just asked to zoom in on a detail.
-describe("fitBoundsRect — left-flank reservation for floating chrome (V48)", () => {
-  const base: FitOptions = { containerW: 1000, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, margin: 0 };
-
-  it("widens LEFTWARD so the region sits clear of the occluding column", () => {
-    // f = 300/1000 = 0.3 → w = 200/0.7 = 285.71, and x slides left by the occluded share (w*0.3).
-    const r = fitBoundsRect(rect, { ...base, leftInsetW: 300 })!;
-    expect(r.w).toBeCloseTo(200 / 0.7, 6);
-    expect(r.x).toBeCloseTo(100 - (200 / 0.7) * 0.3, 6);
-    expect(r.y).toBe(50);
-    expect(r.h).toBe(80);
-  });
-
-  it("leaves the region exactly inside the VISIBLE window, which is the whole point", () => {
-    // The invariant worth asserting: whatever the reservation, the visible sub-rect must be the
-    // region itself. Anything else means the camera framed something the reader cannot see.
-    const r = fitBoundsRect(rect, { ...base, leftInsetW: 300 })!;
-    const visibleLeft = r.x + r.w * 0.3;
-    expect(visibleLeft).toBeCloseTo(100, 6);
-    expect(visibleLeft + r.w * 0.7).toBeCloseTo(300, 6); // 100 + 200
-  });
-
-  it("reserves BOTH flanks at once when a sidebar is open too", () => {
-    // fL 0.2 + fR 0.3 → visible 0.5 → w = 400; region starts 0.2*400 = 80 in.
-    const r = fitBoundsRect(rect, { containerW: 1000, sidebarW: 300, sidebarIsSheet: false, detailOpen: true, margin: 0, leftInsetW: 200 })!;
-    expect(r.w).toBeCloseTo(400, 6);
-    expect(r.x).toBeCloseTo(100 - 80, 6);
-    expect(r.x + r.w * 0.2).toBeCloseTo(100, 6); // region's left edge is where the chrome ends
-  });
-
-  it("caps the TOTAL reservation, not each side — two greedy flanks can't invert the rect", () => {
-    // 600 + 600 of 1000 would be 1.2 → a NEGATIVE visible width. The cap is over the sum.
-    const r = fitBoundsRect(rect, { containerW: 1000, sidebarW: 600, sidebarIsSheet: false, detailOpen: true, margin: 0, leftInsetW: 600 })!;
-    expect(r.w).toBeGreaterThan(0);
-    expect(r.w).toBeCloseTo(200 / 0.15, 6); // MAX_SIDEBAR_FRACTION 0.85
-  });
-
-  it("scales a capped pair proportionally, so the region lands BETWEEN them", () => {
-    // Equal greedy flanks stay equal after the cap: half the 0.85 each, so the region is centred.
-    const r = fitBoundsRect(rect, { containerW: 1000, sidebarW: 600, sidebarIsSheet: false, detailOpen: true, margin: 0, leftInsetW: 600 })!;
-    expect(r.x + r.w * 0.425).toBeCloseTo(100, 6);
-  });
-
-  it("is inert when nothing is occluding (the overwhelmingly common case)", () => {
-    expect(fitBoundsRect(rect, base)).toEqual({ x: 100, y: 50, w: 200, h: 80 });
-    expect(fitBoundsRect(rect, { ...base, leftInsetW: 0 })).toEqual({ x: 100, y: 50, w: 200, h: 80 });
-  });
-
-  it("composes with the breathing-room margin rather than replacing it", () => {
-    // The margin applies to the REGION first, then the flanks reserve around the breathing region.
-    const r = fitBoundsRect(rect, { ...base, margin: 0.15, leftInsetW: 300 })!;
-    expect(r.w).toBeCloseTo(230 / 0.7, 6); // 230 = the inflated width
   });
 });
 
@@ -197,12 +111,6 @@ describe("applyFitBounds — dispatch to an OSD-like viewport (the mockable gate
     const { vp, calls } = mockViewport();
     expect(applyFitBounds(vp, poly, sheet)).toBe(true);
     expect(calls[0]!.rect).toEqual({ vx: 10, vy: 10, vw: 100, vh: 80 });
-  });
-
-  it("widens the rect for an open sidebar before fitting", () => {
-    const { vp, calls } = mockViewport();
-    applyFitBounds(vp, rect, sidebarOpen);
-    expect((calls[0]!.rect as { vw: number }).vw).toBeCloseTo(200 / 0.7, 6);
   });
 
   it("no-ops (returns false, no fitBounds call) on a degenerate selector", () => {

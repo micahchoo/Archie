@@ -47,7 +47,7 @@ const annotations: W3CAnnotation[] = [
   { id: "rect-note", target: { type: "SpecificResource", source: "c1", selector: rectSel } },
   { id: "poly-note", target: { type: "SpecificResource", source: "c1", selector: [polySel] } },
 ] as unknown as W3CAnnotation[];
-const PLAIN: FitOptions = { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
+const PLAIN: FitOptions = {};
 
 describe("wireReadOnlySurface — setAnnotations / onSelect / destroy", () => {
   it("setAnnotations reaches the overlay", () => {
@@ -149,13 +149,6 @@ describe("wireReadOnlySurface.fitBounds — the SHARED dispatchFitBounds oracle 
     expect(calls).toHaveLength(0);
   });
 
-  it("uses adapter-supplied fit options when present", () => {
-    const { viewport, calls } = mockViewport();
-    const sidebar: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: false, detailOpen: true };
-    const s = wireReadOnlySurface(viewport, fakeOverlay(), () => annotations, () => sidebar);
-    s.fitBounds("rect-note");
-    expect(calls[0]).toEqual(fitBoundsRect(rectSel, sidebar)!);
-  });
 });
 
 describe("wireReadOnlySurface.fitRegion — raw region fragment, NOT an annotation (Archie-69a7)", () => {
@@ -173,13 +166,6 @@ describe("wireReadOnlySurface.fitRegion — raw region fragment, NOT an annotati
     expect(calls).toHaveLength(0);
   });
 
-  it("uses adapter-supplied fit options (sidebar-reservation parity with fitBounds)", () => {
-    const { viewport, calls } = mockViewport();
-    const sidebar: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: false, detailOpen: true };
-    const s = wireReadOnlySurface(viewport, fakeOverlay(), () => annotations, () => sidebar);
-    s.fitRegion("xywh=pixel:100,50,200,80");
-    expect(calls[0]).toEqual(fitBoundsRect(rectSel, sidebar)!);
-  });
 });
 
 // FIX 1 — whole-object notes get a clickable frame instead of being warn-and-dropped (the voynich/o1

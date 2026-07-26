@@ -15,7 +15,7 @@ import { createOSDAnnotator, W3CImageFormat, UserSelectAction } from "@annotorio
 import type { ImageAnnotation, W3CImageAnnotation, DrawingStyle, DrawingStyleExpression } from "@annotorious/openseadragon";
 import { mountPlugin } from "@annotorious/plugin-tools";
 import { resolveTileSource, isDegenerateSelectorValue, selectorOf, selectorBBox, regionPixelRect } from "@render/core";
-import { dispatchFitBounds, applyFitBounds, clampedFitRect, type FitOptions, type ViewportLike } from "./fitbounds.js";
+import { dispatchFitBounds, applyFitBounds, clampedFitRect, type ViewportLike } from "./fitbounds.js";
 import { createFrameOverlay, type FrameViewerLike } from "./frame-overlay.js";
 import { createSelectionHalo, type HaloViewerLike } from "./selection-halo.js";
 import { applyCanvasA11y, type A11yViewerLike } from "./canvas-a11y.js";
@@ -28,7 +28,6 @@ import type { W3CSelector, TileSourceDescriptor, TileSource, AnnotationLike } fr
 import type { MountSurface, SelectionId, FrameOverlay, MarkerStyle } from "./surface.js";
 
 /** Plain fit (no sidebar reservation) — used when the adapter supplies no fit options. */
-const PLAIN_FIT: FitOptions = { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
 
 /** The tileSources shape OpenSeadragon accepts (string URL, a `{type}`/custom config, or a parsed
  *  info.json object). Captured from OSD's own option type so the resolver stays byte-compatible. */
@@ -115,8 +114,6 @@ export interface MountOptions {
   canvasId?: string;
   /** Fired on user selection (the inversion of anvil's $effect). */
   onSelect?: (id: SelectionId | null) => void;
-  /** Adapter-supplied current sidebar state for fitBounds reservation (reactivity stays in the adapter). */
-  getFitOptions?: () => FitOptions;
   drawingEnabled?: boolean;
   /** Worklist 1.1: show the locator mini-map (OSD navigator, bottom-right, auto-fading) — the
    *  viewport-within-image answer to "where am I at 8×?". Off by default (opt-in per surface). */
@@ -491,7 +488,7 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
         return;
       }
       // Image path: the same dispatchFitBounds oracle the gate test pins.
-      dispatchFitBounds(viewer.viewport as unknown as ViewportLike, anns, id, opts.getFitOptions?.() ?? PLAIN_FIT);
+      dispatchFitBounds(viewer.viewport as unknown as ViewportLike, anns, id, {});
     },
     fitRegion(fragment: string) {
       // Fit an arbitrary region fragment (a Section's camera target — NOT an annotation). Same oracle
@@ -502,7 +499,7 @@ export async function createMount(container: HTMLElement, opts: MountOptions): P
         if (box) fitBoxOnMap(box);
         return;
       }
-      applyFitBounds(viewer.viewport as unknown as ViewportLike, selector, opts.getFitOptions?.() ?? PLAIN_FIT);
+      applyFitBounds(viewer.viewport as unknown as ViewportLike, selector, {});
     },
     setSelected(id: SelectionId | null) {
       if (id === null) annotator.cancelSelected();

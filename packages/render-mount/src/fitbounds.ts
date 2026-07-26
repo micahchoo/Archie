@@ -12,26 +12,22 @@ import { selectorBBox, selectorOf, type Box, type W3CSelector, type AnnotationLi
 // "./fitbounds" (gate.test.ts: `type AnnotationLike`) keep resolving from the same module.
 export { selectorOf, type AnnotationLike };
 
+/**
+ * What the fit still needs to know — which, since ADR-0019's layout contract, is only the margin.
+ *
+ * THE RESERVATION MODEL IS GONE, deliberately (2026-07-26). This interface used to carry
+ * `containerW` / `sidebarW` / `sidebarIsSheet` / `detailOpen` (anvil's `fitForSidebar`,
+ * EmbeddedReader.svelte:314-337) and `leftInsetW` (Archie-40fe / V48), so the camera could frame a
+ * region in the part of the canvas that chrome was NOT covering. Under the dock contract nothing
+ * covers the canvas: every persistent surface — legend, note card, object nav, readout, item strip —
+ * is a sibling of the canvas box in normal flow, so the visible window and the container are the same
+ * rectangle and there is nothing left to reserve against. See ADR-0019's layout row.
+ */
 export interface FitOptions {
-  /** OSD container width in px (0 = unknown → plain fit). */
-  containerW: number;
-  /** Sidebar width in px (0 = no sidebar). */
-  sidebarW: number;
-  /** True when the sidebar is an overlay sheet (not a side panel) → plain fit. */
-  sidebarIsSheet: boolean;
-  /** True when the detail panel is open. */
-  detailOpen: boolean;
-  /** Width in px of the container's LEFT edge covered by FLOATING chrome (Archie-40fe / V48) — the
-   *  reading legend and the note card, which overlay the canvas rather than sitting beside it. 0/omitted
-   *  = nothing occluding. The right-hand `sidebarW` models a panel the canvas ends BEFORE; this models
-   *  chrome the canvas continues UNDERNEATH, which is why it needs its own number rather than a sign. */
-  leftInsetW?: number;
   /** Breathing-room margin as a fraction of the region's own size (Archie-52a0 / V44). Omit for
    *  `FIT_MARGIN`; pass 0 for the historical edge-to-edge fit. */
   margin?: number;
 }
-
-const MAX_SIDEBAR_FRACTION = 0.85; // anvil's Math.min guard (EmbeddedReader.svelte:332)
 
 /**
  * Default breathing room around a fitted region (Archie-ed50 / V44). The pre-52a0 fit returned the
@@ -56,42 +52,18 @@ function inflate(box: Box, m: number): Box {
 }
 
 /**
- * Compute the image-space rect to fit for a selected annotation. The region is first given its
- * breathing-room margin (`opts.margin` ?? `FIT_MARGIN`); then, when a non-sheet sidebar is open over
- * the right, the rect is widened rightward by `w/(1-f)` so the annotation centers in the visible
- * (non-sidebar) region. Null if the selector has no parseable region.
+ * Compute the image-space rect to fit for a selected annotation: the region's own bbox, given its
+ * breathing-room margin (`opts.margin` ?? `FIT_MARGIN`). Null if the selector has no parseable region.
  *
- * ORDER MATTERS and is deliberate: the margin is a property of the REGION (how much of its
- * surroundings the reader should see), the sidebar widening a property of the VIEWPORT (which part
- * of the frame is actually visible). Applying the margin first means the sidebar reservation
- * reserves space around the already-breathing region, not around a rect pinned to its edges.
+ * There is nothing else to compute. The chrome reservation that used to live here — widen the rect by
+ * `w/(1-f)` and slide it away from whatever is covering a flank — retired with the surfaces that made
+ * it necessary: the canvas's box is now exactly the visible window (ADR-0019's layout row), so the
+ * region the camera frames is the region the reader sees.
  */
 export function fitBoundsRect(selector: W3CSelector, opts: FitOptions): Box | null {
   const raw = selectorBBox(selector);
   if (raw === null) return null;
-  const box = inflate(raw, opts.margin ?? FIT_MARGIN);
-  if (!(opts.containerW > 0)) return box; // no container width → nothing to reserve against
-
-  // TWO reservations now, not one (Archie-40fe / V48). The right-hand sidebar was always modelled;
-  // the LEFT flank was not, and in the viewer the legend plus the note card were measured stacking
-  // into a contiguous 502px occluding column — ~22% of a 924x800 canvas, down its entire left edge,
-  // at the exact moment the reader had asked to zoom in on a detail.
-  const sidebarActive = opts.detailOpen && !opts.sidebarIsSheet && opts.sidebarW > 0;
-  const fR = sidebarActive ? opts.sidebarW / opts.containerW : 0;
-  const fL = (opts.leftInsetW ?? 0) > 0 ? opts.leftInsetW! / opts.containerW : 0;
-  // One cap over the TOTAL, not one per side: two 60% reservations must not sum past the guard and
-  // produce a negative visible width (anvil capped a single side; the sum is the real invariant).
-  const total = Math.min(MAX_SIDEBAR_FRACTION, fL + fR);
-  if (!(total > 0)) return box;
-  // Scale the pair back proportionally if the cap bit, so the region still lands between them rather
-  // than being shoved under whichever side happened to be listed first.
-  const k = fL + fR > 0 ? total / (fL + fR) : 0;
-  const l = fL * k;
-
-  // Widen so the region occupies the VISIBLE window, then slide left by the occluded left share.
-  // With fL = 0 this reduces exactly to the historical `w/(1-f)` with x unchanged.
-  const w = box.w / (1 - total);
-  return { x: box.x - w * l, y: box.y, w, h: box.h };
+  return inflate(raw, opts.margin ?? FIT_MARGIN);
 }
 
 /**

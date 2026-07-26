@@ -31,8 +31,7 @@ const annotations: AnnotationLike[] = [
   { id: "poly-note", target: { type: "SpecificResource", source: "c1", selector: [polySel] } },
 ];
 
-const sheet: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: true, detailOpen: true };
-const sidebarOpen: FitOptions = { containerW: 1000, sidebarW: 300, sidebarIsSheet: false, detailOpen: true };
+const sheet: FitOptions = {};
 
 describe("GATE — the new @render/mount fitBounds path matches the anvil-stock oracle", () => {
   // The new path must fit the SAME image rect the anvil-stock oracle (fitBoundsRect) computes.
@@ -46,12 +45,6 @@ describe("GATE — the new @render/mount fitBounds path matches the anvil-stock 
     const { vp, calls } = mockViewport();
     expect(dispatchFitBounds(vp, annotations, "poly-note", sheet)).toBe(true);
     expect(calls[0]).toEqual(fitBoundsRect(polySel, sheet)!);
-  });
-
-  it("sidebar-open: new path applies the SAME w/(1-f) expansion as the oracle", () => {
-    const { vp, calls } = mockViewport();
-    dispatchFitBounds(vp, annotations, "rect-note", sidebarOpen);
-    expect(calls[0]).toEqual(fitBoundsRect(rectSel, sidebarOpen)!);
   });
 
   it("unknown id: no fit (the new path no-ops on a missing annotation)", () => {
