@@ -15,6 +15,21 @@
 //     Rebuilding the package alone leaves this driving the previous bundle and reporting a fixed bug
 //     as broken (or, worse, a broken one as fixed). Always `node scripts/sync-dist.mjs` after a build.
 //
+// KNOWN, UNATTRIBUTED FLAKE (2026-07-26) — read this before assuming a red run is a real regression.
+// One run in six reported `41/42, RESULT: FAIL` and the failing label was not captured before the
+// next run went green; three consecutive clean runs followed, and every red-green probe behaved as
+// designed. So: a single failure with no other evidence MIGHT be this, and it is recorded rather than
+// rounded off to "transient" precisely so the next person doesn't rediscover it cold. If you hit one,
+// capture the FAIL line before re-running — that is the whole reason it is still unattributed.
+//
+// The two candidates, both browser-timing:
+//   • the narrative section stepper — a section step that changes OBJECT remounts the canvas; this
+//     already waits on a condition (it used to sleep 700ms and lost the race, observed as
+//     `active section 0 → -1`), so it is the less likely of the two now.
+//   • the AV note-list drive — its two post-click reads used FIXED 600ms sleeps until 2026-07-26 and
+//     are now bounded condition waits. This was the prime suspect. If the flake does not recur, say
+//     so here; if it does, it was not this and the suspicion should move on.
+//
 // Spins up a tiny static server over the REPO ROOT (no external dep), loads
 // recipes/try.html in headless Chromium, and ASSERTS the element registers and
 // renders its gallery into the shadow DOM. Best-effort: clicks into an exhibit →
@@ -835,17 +850,41 @@ async function main() {
           };
         });
 
+        // WAIT ON THE CONDITION, not the clock. These were two fixed 600ms sleeps, and they are the
+        // prime suspect for the unattributed 41/42 in the header note.
+        //
+        // Most of a row click settles SYNCHRONOUSLY (`select()`, `setSelected()` and `card.show()` are
+        // all sync DOM writes); the one genuinely async effect is the media SEEK, which a real
+        // network-backed <audio> completes on its own schedule. So the wait is on the seek landing,
+        // and on the selection having moved at all.
+        //
+        // Waiting on something this also ASSERTS is safe here, and the reason is worth stating because
+        // it is the line between a wait and a rigged test: the wait is BOUNDED and falls THROUGH on
+        // timeout, so a genuinely broken seek still reaches the assertion and still fails — five
+        // seconds later, with the real measured value in the detail. It would only be vacuous if a
+        // timeout short-circuited the assertion (returning `skipped`, say), which is exactly the
+        // mistake the lifetime drive made in a different form.
+        const settle = async (id, seekTo) => {
+          await page.waitForFunction(([wantId, wantAt]) => {
+            const sh = document.querySelector("archie-viewer").shadowRoot;
+            const cur = sh.querySelector('.rc-notes button[aria-current="true"]');
+            if (!cur || cur.dataset.note !== wantId) return false;
+            if (wantAt === null) return true; // uncued: there is no seek to wait for
+            return Math.abs((sh.querySelector("audio")?.currentTime ?? -1) - wantAt) < 1;
+          }, [id, seekTo], { timeout: 5000, polling: 100 }).catch(() => {});
+        };
+
         let afterTimed = null, afterUncued = null;
         if (timed) {
           await sr((id) => document.querySelector("archie-viewer").shadowRoot
             .querySelector(`.rc-notes button[data-note="${id}"]`).click(), timed.id);
-          await page.waitForTimeout(600);
+          await settle(timed.id, timed.start);
           afterTimed = await read();
         }
         if (uncued) {
           await sr((id) => document.querySelector("archie-viewer").shadowRoot
             .querySelector(`.rc-notes button[data-note="${id}"]`).click(), uncued.id);
-          await page.waitForTimeout(600);
+          await settle(uncued.id, null);
           afterUncued = await read();
         }
         return { rowCount: rows.length, timed, uncued, afterTimed, afterUncued };
