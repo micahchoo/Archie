@@ -148,12 +148,109 @@ files, empty pairwise intersections), and `bundle-size.json` is blob **`6acd6b6`
 `85c8ba5`'s, so the pre-branch floor was carried forward rather than re-anchored. That is the check
 that matters most on this branch, because of the trapdoor below.
 
-A first reviewer was stopped mid-run; a second is going now against brief
-`/tmp/rev-embed-parity-brief.md`. Seven items; the two blocking ones: (1) is the smoke MUST-label
-completeness check a hand-maintained **literal** list or a tautology derived from the same source as
-the labels, and (2) does the new V56 assertion drive *pick a reading THEN step objects* — the order
-that was actually broken — rather than re-picking after stepping, which proves nothing.
-**Treat this slice as unverified until those are answered.**
+**REVIEWED — findings at `/tmp/rev-embed-parity-findings.md`. No blocking findings; both blockers
+reproduced red-green by a second party.**
+
+- **B2 holds.** `CONTRACTED_LABELS` (`smoke.mjs:842-881`) is a **hand-maintained literal array of 35
+  strings** compared against labels derived from `results` — the two sides share no code, so it is
+  not a tautology. Renaming one slug in `exhibits.json` produced `RESULT: FAIL`, `7/11`, and a
+  completeness line naming exactly **28 NEVER RAN**. Asserted on the success path too (`35/35
+  present` on the green run).
+- **B3 holds, strongly.** The stepped block clicks Next with **no re-pick** — pick-then-step, the
+  broken order. Reverting gave the exact reported red. The decisive detail: on the reverted build the
+  *older* pick-only assertion **still passed**, so only the new stepped one catches V56.
+- S2's two sides are independently derived (raw published JSON vs in-memory model). S3's needles fire
+  on `reader-JVWCTVE3.js` (804KB) and nothing else. S4 is non-circular — all seven canvas-dependent
+  labels are literals in the hand-written list. All eight gates matched the claimed numbers exactly.
+- **Item 5:** current raw is **103KB** against the 200KB ceiling (~1.94x headroom), and the engine
+  chunk is 804KB raw — so the ceiling sits ~8x below the leak class it exists to catch.
+
+**Two should-fixes sent back to the implementer (a new SHA is expected):**
+
+1. The `#activeReading` docblock's last sentence — "Cleared only by opening a new library" — is still
+   **false**; `#teardownSurface` clears seven fields and not that one. Benign, but this is the same
+   docblock whose falseness hid V56.
+2. **S1 is 4/5.** Driven in real Chromium, row [1] seeks `0 → 45` and shows its own body — the door
+   works. But the **uncued whole-recording row [4] marks itself current while displaying row [1]'s
+   body**: `selectCue` returns `false` (correct design — it keeps "no door" and "opened it"
+   distinguishable), the caller treats that as *nothing happened* when what happened is *the
+   selection moved with no cue to seek to*, and on the AV branch `#noteCard` is never created.
+   **Why it outweighs its size:** AV playback is the **only one of ten MUST rows with no smoke
+   label**, so B2's completeness check structurally cannot cover it — the one documented hole in the
+   contract is exactly where the residual defect sits. Either give AV playback a label or record it
+   in the ADR as knowingly uncovered; not implied-covered.
+
+Two incidentals: `.claude/rules/viewer-e2e-shared-port.md` does not exist at `8e949c8` (moot — smoke
+stands up its own server on an ephemeral port), and the `voynich*` fixtures are **not committed**, so
+`pnpm gen` in `apps/viewer` is a precondition for smoke finding them at all. The rebuilt bundle was
+confirmed byte-identical to the committed `dist/`, so the smoke drive does test current source.
+
+## The embed slice IS MERGED — and verifying it caught a defect all gates were green through
+
+Merged at **`39e2902`** (from `72f26adc2530c61201bddf67702f1d08a9eef223`, 7 commits). Then fixed at
+**`eee2f41`**.
+
+**What was wrong.** Five string literals meant for `CONTRACTED_LABELS` had been spliced into the
+middle of the stepped-reading `record(...)` argument list, ~135 lines from the array. Introduced by
+`72f26ad` — the commit made in response to the coordinator's should-fix message, i.e. **after** the
+independent review passed at `8e949c8`, which was clean.
+
+1. The completeness check covered **35 labels, not 40**. All four AV playback labels were absent from
+   it — so the one MUST row with no label, **exactly where S1's residual defect sat**, was still
+   uncovered by the commit that claimed to cover it.
+2. `record(ok, label, detail)` bound the first stray as its `detail`, replacing the V56 stepped
+   assertion's diagnostic (the string that prints *"legend says ON, canvas says base: the V56
+   symptom"*) with a label. The assertion still worked; its failure message stopped explaining
+   anything. That was the branch's own B3 diagnostic, disabled.
+
+Nothing was invented by the fix — all five are genuinely recorded at lines 922/925, 933, 943, 948,
+955, so it moves them.
+
+**Red-green**, with the AV block made to record *nothing* (both branches unreachable — the
+fixture-collapse case, NOT the skip case, which `record(false)` already caught):
+
+```
+before:  35/35 present,  RESULT: PASS      <- the hole
+after:   FAIL, "4 NEVER RAN" naming all four AV labels
+clean:   40/40 present,  41/41,  RESULT: PASS
+```
+
+**How it was found, which is the transferable part:** the agent's report said "contracted labels
+41/41"; the merged tree printed **35/35**. Chasing the one number that did not reconcile was the only
+route in — smoke was `RESULT: PASS` either way and every other gate was green. Two lessons worth
+keeping: **a fix made after the review is unreviewed**, and the natural moment to relax is exactly
+when the hard part has been signed off.
+
+One coordinator misstep on the way, recorded because it is the same class: the first injection used
+`if (false)`, which routes to the `else` branch where all four records live — so it forced the
+*normal* path and came back green. Reporting that as "the gate is broken" would have been the exact
+false conclusion this session keeps cataloguing.
+
+**Merged-tree gates with all three slices in:** typecheck 7/7 · svelte-check **1519 files 0/0** ·
+vitest **176 + 182 + 1194** · bundle ratchet ok (eager 36 → 38.9 gz, Δ+2.9/+10.0; total 266.3 → 274.9)
+and `--check` provably did **not** rewrite the baseline · `sync-dist:check` matching · smoke **41/41,
+40/40 contracted** · `astro build` 8 pages.
+
+**Precondition worth knowing:** the `voynich*` fixtures are not committed — `pnpm gen` in `apps/viewer`
+must run before smoke will find them. Their absence used to yield a silent `6/6 PASS`.
+
+## Post-merge work this created — NOT yet done
+
+1. **Thread `onopenfinder` into both `<MediaPlayerLazy.current …>` instances** (`ExhibitView.svelte`
+   :570 and :592). `MediaPlayer.svelte` now declares the optional prop and passes tag chips to
+   `NotePopup`/`ReadingSheet` **only when it is wired** — deliberate: `NotePopup.svelte:127` renders
+   every tag as a `<button>` calling `onopenfinder?.(t)`, so handing it tags with no handler ships the
+   dead-door defect the slice exists to close. Today an AV note's tags are honestly *absent* rather
+   than dishonestly inert; keep that.
+   Do the wire on `main` AFTER both wave-2 branches merge, not on either branch — the path is only
+   provable once a fixture AV note carries a tag, and splitting prop and fixture across branches
+   leaves a window where the assertion is vacuous or failing. The AV agent is adding the fixture note
+   (a NEW one — the shared-fixture rule forbids editing an existing one) and deliberately NOT the
+   assertion; write that with the wire and red-green it in one pass.
+2. **File `ReadingLegend` on the AV surface** as its own ticket. A real enumerated V53 gap, correctly
+   not built: it needs `readings`/`activeReading`/`onreading`/`styleOf`/`readingCount` threaded, and
+   **no fixture AV note carries a `reading`**, so a legend over nothing would be unfalsifiable in the
+   same way as `Archie-0cc6`.
 
 ## Wave 2 — DISPATCHED, running now
 
