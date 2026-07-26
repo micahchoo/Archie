@@ -28,7 +28,7 @@
 //                   `target`/`iiif-content` (or a card click once shown) is UNAFFECTED — reachability is
 //                   unchanged either way.
 
-import { parseRoute, thumbnailCandidates, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit } from "@render/core";
+import { parseRoute, thumbnailCandidates, licenseLabel, metadataRows, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit, type RightsFields } from "@render/core";
 import type { ReadOnlyMountSurface } from "@render/mount";
 import {
   openLibraryFromFile,
@@ -79,6 +79,27 @@ const TEMPLATE_STYLES = `
   .topbar button { font: inherit; padding: .35rem .9rem; border: 1px solid #c9a98f; border-radius: 6px; background: transparent; cursor: pointer; }
   .reader-surface { position: relative; width: 100%; height: 70vh; min-height: 320px; background: #1c1714; }
   .notice { padding: 2rem; text-align: center; color: #6b5d52; }
+  /* Credit line (V105) — apps/viewer Credit.svelte's idiom in plain DOM: one quiet mono line, plus an
+     ⓘ disclosure carrying the licence and the descriptive metadata. IIIF makes requiredStatement a
+     MUST-display, so the line itself is never behind the disclosure. <details> rather than a wired
+     button: the open/close and the a11y semantics are the platform's, and the embed adds no listener. */
+  .credit { display: inline-flex; align-items: baseline; gap: .5rem; position: relative; font-family: ui-monospace, monospace; font-size: .72rem; letter-spacing: .06em; line-height: 1.5; color: #6b5d52; }
+  .credit .line { font-style: normal; }
+  .credit details { display: inline; }
+  .credit summary { cursor: pointer; list-style: none; padding: 6px; margin: -6px; font-size: .85rem; line-height: 1; opacity: .7; }
+  .credit summary::-webkit-details-marker { display: none; }
+  .credit summary:hover { opacity: 1; color: #d2641e; }
+  .credit .panel {
+    position: absolute; z-index: 20; top: 1.5rem; left: 0; min-width: 16rem; max-width: 24rem;
+    display: flex; flex-direction: column; gap: .5rem; padding: .75rem 1rem;
+    background: #fff; color: #2a2320; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,.14);
+  }
+  .credit .panel p { margin: 0; display: flex; flex-direction: column; gap: 2px; font-family: system-ui, sans-serif; font-size: .82rem; line-height: 1.6; }
+  .credit .panel .k { font-family: ui-monospace, monospace; font-size: .62rem; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: #8a7a6c; }
+  .credit .panel .v { color: #2a2320; }
+  .credit .panel a { color: #b4531a; }
+  header.intro .credit { margin: 0 0 .5rem; }
+  .topbar .credit { margin-left: auto; }
 `;
 
 export class ArchieViewerElement extends HTMLElement {
@@ -546,6 +567,7 @@ export class ArchieViewerElement extends HTMLElement {
       <div class="wrap">
         <header class="intro"><h1>${escapeHtml(title)}</h1>
           ${cold ? `<p class="cold">That link points deeper than this library reaches — here's the whole gallery.</p>` : ""}
+          ${creditHtml(gallery?.library)}
         </header>
         <ul class="grid">
           ${cards.map((c) => `
@@ -591,7 +613,7 @@ export class ArchieViewerElement extends HTMLElement {
     this.#root.innerHTML = `${style}
       <div class="wrap">
         <div class="topbar"><button type="button" data-act="back">← Gallery</button></div>
-        <header class="intro"><h1>${escapeHtml(exhibit.title)}</h1></header>
+        <header class="intro"><h1>${escapeHtml(exhibit.title)}</h1>${creditHtml(exhibit)}</header>
         ${error ? `<p class="err">${escapeHtml(error)}</p>` : ""}
         <ul class="grid">
           ${objects.map((o) => `
@@ -617,6 +639,8 @@ export class ArchieViewerElement extends HTMLElement {
         <div class="topbar">
           <button type="button" data-act="back">← ${escapeHtml(exhibit.title)}</button>
           <span class="title">${escapeHtml(object.label)}</span>
+          ${/* the OBJECT's own credit — no display-time inheritance, matching ExhibitView.svelte's Q5 rule */ ""}
+          ${creditHtml(object)}
         </div>
         <div class="reader-surface"></div>
       </div>`;
@@ -648,6 +672,45 @@ function objectCoverHtml(o: AObject): string {
   const glyph = kind === "video" ? "▶" : kind === "sound" ? "♪" : "⌖";
   const word = kind === "video" ? "Video" : kind === "sound" ? "Audio" : "Map";
   return `<span class="cover"><span class="glyph" aria-hidden="true">${glyph}</span><span class="kind">${word}</span></span>`;
+}
+
+/**
+ * The credit line + ⓘ disclosure for one view-level's rights (V105, Archie-b681).
+ *
+ * WHY THIS IS NOT OPTIONAL. `<archie-viewer>` showed NO attribution, licence or metadata at any
+ * level, against published manifests that DO carry `requiredStatement` — which IIIF makes a
+ * MUST-display and which the shell renders on the same bytes. An embed that strips a required
+ * statement is legal exposure, not a missing feature.
+ *
+ * ALREADY-RESOLVED VALUES ONLY. The opt-in cascade (library → exhibit → object) collapses at publish
+ * time, so every level's `RightsFields` arrives complete: the gallery's on `ExhibitsJson.library`,
+ * the exhibit's spread onto `PortableExhibit` by `rightsFromIIIF`, the object's on `AObject` (which
+ * extends `RightsFields`). Re-running inheritance here would let the embed and the shell disagree
+ * about what a work is credited to — see ExhibitView.svelte's Q5 note.
+ *
+ * The credit VALUE is always in the light DOM, never behind the disclosure — a MUST-display behind a
+ * click is not displayed. The licence and the Dublin Core rows (Archie-c6bf, via the same
+ * `metadataRows` projection the shell's panel uses) ride the disclosure, as they do in the shell.
+ */
+function creditHtml(rights: RightsFields | undefined): string {
+  const value = rights?.requiredStatement?.value ?? "";
+  const label = rights?.requiredStatement?.label || "Attribution";
+  const licence = licenseLabel(rights?.rights);
+  const rows = metadataRows(rights);
+  if (!value && !licence && rows.length === 0) return "";
+  const licenceHtml = rights?.rights
+    ? `<a href="${escapeAttr(rights.rights)}" target="_blank" rel="noopener noreferrer">${escapeHtml(licence!)}</a>`
+    : escapeHtml(licence ?? "");
+  return `<div class="credit">
+      ${value ? `<span class="line">${escapeHtml(value)}</span>` : ""}
+      <details><summary title="About &amp; rights" aria-label="About &amp; rights">ⓘ</summary>
+        <div class="panel">
+          ${value ? `<p><span class="k">${escapeHtml(label)}</span><span class="v">${escapeHtml(value)}</span></p>` : ""}
+          ${licence ? `<p><span class="k">License</span><span class="v">${licenceHtml}</span></p>` : ""}
+          ${rows.map((r) => `<p><span class="k">${escapeHtml(r.label)}</span>${r.values.map((v) => `<span class="v">${escapeHtml(v.text)}</span>`).join("")}</p>`).join("")}
+        </div>
+      </details>
+    </div>`;
 }
 
 function escapeHtml(s: string): string {

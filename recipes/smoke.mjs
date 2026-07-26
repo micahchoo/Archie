@@ -274,6 +274,90 @@ async function main() {
             : "absent");
       }
     }
+    // ---- V105 (Archie-b681): the embed ships attribution, licence and metadata ----
+    //
+    // The embed rendered NONE of it, at any level, against published manifests that DO carry
+    // `requiredStatement` — which IIIF makes a MUST-display and which apps/viewer renders from the
+    // same bytes. That is legal exposure, not a missing feature.
+    //
+    // The assertion compares the shadow DOM against the MANIFEST's own value, fetched from the same
+    // tree the embed just read. Asserting merely that a `.credit` element exists would pass against a
+    // credit line showing the wrong work's attribution — which is the failure that actually matters,
+    // and exactly how the two consumers could drift apart.
+    const credit = await (async () => {
+      await page.goto(`${base}/recipes/try.html`, { waitUntil: "load", timeout: 20000 });
+      const ok = await page.waitForFunction(() => {
+        const sr = document.querySelector("archie-viewer")?.shadowRoot;
+        return !!sr?.querySelector('button[data-slug="voynich"]');
+      }, { timeout: 15000, polling: 300 }).then(() => true).catch(() => false);
+      if (!ok) return { skipped: "no voynich card in this tree" };
+
+      // EXHIBIT level first — the credit must be on the exhibit view, not only inside the reader.
+      await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelector('button[data-slug="voynich"]').click());
+      await page.waitForFunction(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelectorAll("ul.grid li button[data-obj]").length > 0, { timeout: 15000, polling: 300 });
+      const exhibitCredit = await page.evaluate(() => {
+        const el = document.querySelector("archie-viewer").shadowRoot.querySelector("header.intro .credit .line");
+        return el ? el.textContent.trim() : null;
+      });
+      // Dublin Core rows (Archie-c6bf) ride the SAME already-resolved RightsFields — no second fetch.
+      const exhibitMetaRows = await page.evaluate(() => [...document.querySelector("archie-viewer").shadowRoot
+        .querySelectorAll("header.intro .credit .panel p")].map((p) => p.querySelector(".k")?.textContent.trim()));
+
+      // OBJECT level — the reader shows the OBJECT's own credit (no display-time inheritance, the Q5
+      // rule apps/viewer's ExhibitView.svelte states and this mirrors).
+      const objId = await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelector("ul.grid li button[data-obj]").dataset.obj);
+      await page.evaluate(() => document.querySelector("archie-viewer").shadowRoot
+        .querySelector("ul.grid li button[data-obj]").click());
+      const objectCredit = await page.waitForFunction(() => {
+        const el = document.querySelector("archie-viewer").shadowRoot.querySelector(".topbar .credit .line");
+        return el ? el.textContent.trim() : false;
+      }, { timeout: 15000, polling: 250 }).then((h) => h.jsonValue()).catch(() => null);
+      const licenceHref = await page.evaluate(() => {
+        const a = document.querySelector("archie-viewer").shadowRoot.querySelector(".topbar .credit .panel a");
+        return a ? a.getAttribute("href") : null;
+      });
+
+      // The manifest's OWN values, read from the same published tree.
+      const truth = await page.evaluate(async ([b, id]) => {
+        // The same tree the element's `src=` names in try.html — the server roots at the repo.
+        const m = await (await fetch(`${b}/apps/viewer/public/published/voynich/manifest.json`)).json();
+        const lm = (v) => (v && typeof v === "object" ? Object.values(v)[0].join(" ") : v);
+        const canvas = m.items.find((c) => c.id.endsWith(`/canvas/${id}`));
+        return {
+          exhibit: m.requiredStatement ? lm(m.requiredStatement.value) : null,
+          exhibitMetaLabels: (m.metadata ?? []).map((e) => lm(e.label)),
+          object: canvas?.requiredStatement ? lm(canvas.requiredStatement.value) : null,
+          objectRights: canvas?.rights ?? null,
+        };
+      }, [base, objId]);
+      return { exhibitCredit, exhibitMetaRows, objectCredit, licenceHref, truth, objId };
+    })();
+
+    if (credit.skipped) {
+      console.log(`  info  credit check skipped: ${credit.skipped}`);
+    } else {
+      record(credit.truth.exhibit !== null && credit.exhibitCredit === credit.truth.exhibit,
+        "the exhibit view shows the manifest's requiredStatement (V105)",
+        `rendered ${JSON.stringify(credit.exhibitCredit)} vs manifest ${JSON.stringify(credit.truth.exhibit)}`);
+      record(credit.truth.object !== null && credit.objectCredit === credit.truth.object,
+        "the reader shows the OBJECT's own requiredStatement (V105)",
+        `${credit.objId}: rendered ${JSON.stringify(credit.objectCredit)} vs manifest ${JSON.stringify(credit.truth.object)}`);
+      record(credit.truth.objectRights !== null && credit.licenceHref === credit.truth.objectRights,
+        "the reader links the object's licence URI (V105)",
+        `href ${JSON.stringify(credit.licenceHref)} vs manifest rights ${JSON.stringify(credit.truth.objectRights)}`);
+      // Every Dublin Core label the manifest carries must appear in the disclosure. Asserting the
+      // COUNT alone would pass against a panel that rendered the licence row three times.
+      const wantLabels = credit.truth.exhibitMetaLabels ?? [];
+      const missing = wantLabels.filter((l) => !credit.exhibitMetaRows.includes(l));
+      record(wantLabels.length > 0 && missing.length === 0,
+        "the disclosure carries the manifest's Dublin Core metadata (V105 / Archie-c6bf)",
+        wantLabels.length === 0 ? "no metadata in this manifest — assertion would be vacuous"
+          : `manifest labels [${wantLabels.join(", ")}]; rendered [${credit.exhibitMetaRows.join(", ")}]${missing.length ? ` — MISSING ${missing.join(", ")}` : ""}`);
+    }
+
     // ASSERTED LAST, deliberately. Covers are `loading="lazy"`, so the request that exposed V11 is
     // not made until the image is near the viewport — checking earlier in the drive passed against
     // the unfixed code (verified: it did). Give the lazy loads a beat, then judge.
