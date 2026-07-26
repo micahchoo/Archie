@@ -14,7 +14,8 @@
   import ReadingLegend from "./ReadingLegend.svelte";
   import ProseCites from "./ProseCites.svelte";
   import { type MarkerStyle, type FrameOverlay, type FitOptions, formatZoomRatio, zoomBand } from "@render/svelte";
-  import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
+  import { loadAsideWidth, saveAsideWidth, scopedKey, loadSessionCollapsed, saveSessionCollapsed, type AsideState } from "../aside-persistence.js";
+  import { untrack } from "svelte";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, withZoomBand, type MarkerStyleSpec, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
   import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
   import { navPosition, navRegionName, navStepName, noteIndexOpenMark } from "../product-copy.js";
@@ -22,15 +23,22 @@
   // Resizable / collapsible narrative spine (Phase-2 expandability). `asideWidth` is a px OVERRIDE of the
   // responsive clamp() default (null ⇒ default); persisted per the archie.*.v1 metadata idiom. Drag math
   // is headless-tested in @render/core; ResizeDivider is the handle. Collapse = give the canvas the page.
+  //
+  // Archie-c5cb splits the two halves of that state apart, because they answer different questions.
+  // WIDTH stays global (`archie.narrativeAsideWidth.v1`, localStorage): "how wide I like my reading
+  // column" is one taste, not one per exhibit. COLLAPSED is now per-exhibit AND session-scoped — see
+  // `aside-persistence.ts` for the full reasoning; the short form is that after Archie-0d6c the spine
+  // is the mode's input device, so a sticky global "hidden" silently removed the interaction the mode
+  // is named for, on narratives the reader had never opened.
   const ASIDE_W_KEY = "archie.narrativeAsideWidth.v1";
   const ASIDE_COLLAPSED_KEY = "archie.narrativeAsideCollapsed.v1";
   let asideWidth = $state<number | null>(loadAsideWidth(ASIDE_W_KEY));
-  let asideCollapsed = $state<boolean>(loadAsideCollapsed(ASIDE_COLLAPSED_KEY));
   // Expand the open note into the centred reading sheet (Phase-3 focus surface). A BOOLEAN, not a text
   // snapshot: the sheet renders the same `current` note the card does (Archie-dbbc).
   let readingSheet = $state(false);
 
   let {
+    slug = "",
     objects = [],
     canvasIdOf,
     annotationsByObject = {},
@@ -51,6 +59,8 @@
     onindex,
     onopenfinder,
   }: {
+    /** The exhibit's slug — scopes the per-exhibit collapse key (Archie-c5cb). */
+    slug?: string;
     objects: AObject[];
     /** Resolve an object id to its published canvas IRI (the Viewer owns the slug). */
     canvasIdOf: (objectId: string) => string;
@@ -93,6 +103,16 @@
     onopenfinder?: (tag: string) => void;
   } = $props();
 
+  // Per-exhibit, session-scoped collapse (Archie-c5cb). Read once, at mount, from the slug-scoped key.
+  // svelte-ignore state_referenced_locally -- initial-capture is the contract: the slug is fixed for a
+  // mounted narrative (the shell re-keys ExhibitView per route), so this seeds once and the toggle owns
+  // it from there.
+  let asideCollapsed = $state<boolean>(loadSessionCollapsed(scopedKey(ASIDE_COLLAPSED_KEY, slug)));
+  function setCollapsed(v: boolean) {
+    asideCollapsed = v;
+    saveSessionCollapsed(scopedKey(ASIDE_COLLAPSED_KEY, slug), v);
+  }
+
   // Deep-link arrival → land on the right section. An explicit section cite (4.6) wins; else land on the
   // section whose object OWNS the note. The owner search now scans BASE + per-reading pages (4.9) via the
   // shared resolver — a note that lives ONLY on a reading overlay used to fall to section 0.
@@ -113,6 +133,205 @@
   // Only meaningful for the spatial (non-AV) branch — see the `{#if !isAV}` guard below.
   let zoomRatio = $state(1);
 
+  // ── The image follows along: ONE coupling, run in both directions (Archie-0d6c) ─────────────────
+  //
+  // The spine is a single scrollable column of beats; the canvas follows `activeSection.start` through
+  // the existing declarative `focus` prop. So the whole feature is: keep `activeIndex` and the column's
+  // scroll position agreeing with each other, whichever one the reader moved.
+  //
+  // PRIOR ART, and exactly what each citation does and does not support:
+  //
+  //  - `scrollama` (corpus, README:5) — "IntersectionObserver in favor of scroll events". That is the
+  //    citation for the API CHOICE and nothing else: don't hand-roll scroll math, don't bind `scroll`.
+  //    It does NOT support the guard below; scrollama never scrolls the page itself (`grep scrollIntoView
+  //    src/` is empty — it only ever READS `scrollTop`), so it has no two-directions problem to solve.
+  //  - `quire` `_assets/javascript/application/intersection-observer-factory.js` — the observer's exact
+  //    shape, ported: `root` = the scrolling content column, `rootMargin: '-50% 0% -50% 0%'` collapsing
+  //    that root to a horizontal CENTRE LINE, `threshold: 0`, and a callback that acts only on
+  //    `entry.isIntersecting`. A zero-height root is what makes "the active beat" unambiguous: at most
+  //    one beat can cross the line, so there is no tie to break and no ratio to rank.
+  //  - `quire` `canvas-panel.js` `goToFigureState` — the one-function shape for the activate direction.
+  //    ONE function owns the whole transition (state, then scroll, then address), and both the click
+  //    handler and the observer callback route through it, so the two directions cannot each hold half
+  //    the state. `goToSection` is that function here.
+  //
+  // THE GUARD BELOW IS ORIGINAL DESIGN WITH NO CORPUS PRECEDENT — stated, not dressed up.
+  // A programmatic scroll re-enters the observer and reports the beats it sweeps past, so an activation
+  // can bounce the reader onto a neighbour. No corpus system solves this; all three DODGE it, and it is
+  // worth being precise about how, because "quire does it too" would be a false comfort:
+  //   - scrollama never scrolls at all (`grep scrollIntoView src/` is empty; it only reads `scrollTop`).
+  //   - quire's `canvas-panel.js:259` really does call `goToFigureState` — and its `scrollToHash` — from
+  //     inside an IntersectionObserver callback, with no suppression. But it CANNOT re-enter: its
+  //     observer root is `.quire-entry__content`, an element that carries no CSS rule anywhere in the
+  //     repo and so is not a scroller, while `scrollToHash` scrolls the DOCUMENT. A document scroll
+  //     moves the root and the target by the same delta, so the geometry the observer measures is
+  //     invariant under the scroll its own callback triggers. Structurally immune, not solved.
+  //   - annomea/anvil have no scroll-coupled surface at all.
+  // Here the observer's root IS the scroller we scroll, so the re-entry is real. So this is ours:
+  //
+  //   An INTENT token. `scrollToBeat` computes the exact scrollTop it is scrolling TO and records it
+  //   with the target index; while an intent is live the observer is inert; the intent ends when the
+  //   column ARRIVES at that scrollTop, or when the reader touches the column, whichever comes first.
+  //
+  //   Arrival, not a timer. An earlier draft ended the intent on the column going quiet — the last
+  //   `scroll` event plus a 150ms settle, re-armed by each scroll. Review measured that fully defeated:
+  //   because every scroll re-armed it, a zero-distance activation followed by continuous scrolling
+  //   froze the highlight for 1546ms while the reader passed 2760px and 15 sections, released only by
+  //   the outer ceiling. A scrollbar drag is the realistic path to that (it emits `scroll` without the
+  //   `wheel`/`touchstart`/`keydown` that cancel an intent). Arrival has no such failure mode: the
+  //   target is known exactly at the moment we ask for it, so "are we there yet" is a comparison rather
+  //   than a guess, and the suppression lasts precisely as long as the scroll it is covering. It also
+  //   removes the load-sensitivity a wall-clock heuristic had, and that is not a hopeful aside — it is
+  //   the same root cause as a flake review caught in one full-suite run under CPU contention, where
+  //   the bounce test saw an intermediate "Section 2 of 21". The mechanism, measured directly on an
+  //   instrumented build: a smooth scroll emits `scroll` continuously, so the 150ms quiet timer should
+  //   never have fired mid-animation — but a single natural FRAME STALL of 160ms did leave the column
+  //   silent long enough, the timer fired, the observer went live mid-sweep, and it reported whatever
+  //   beat was under the line at that instant. Under contention stalls get longer and more frequent,
+  //   which is exactly why the flake only appeared under load. Arrival cannot be released by a stall:
+  //   only reaching or passing the target ends it, and a stalled frame moves nothing.
+  //
+  //   The zero-distance case falls out for free and is worth naming: if the column is already at the
+  //   target, no intent is armed at all. That is the exact shape review used to wedge the old design.
+  //
+  //   `INTENT_MAX_MS` survives ONLY as a backstop against a scroll that never starts or a target made
+  //   unreachable by a later reflow. Nothing in normal operation reaches it, which is why no test pins
+  //   its value — and that is the honest state, not an oversight: a constant no behaviour depends on
+  //   cannot be gated, and the fix for "the constant isn't pinned" was to make the constant not matter.
+  //
+  //   When an intent ends we deliberately do NOT resync `activeIndex` from wherever the line ended up —
+  //   the column cannot always put the requested beat on the line, and resyncing would undo the very
+  //   activation that asked for it. The reader's next real scroll takes ownership back.
+  //
+  // What the guard is and is NOT gated by, measured rather than assumed: deleting `intentActive()`
+  // does NOT change where a section cite lands (the arrival scroll is instant, so the observer's first
+  // delivery already sees the settled column). What the guard holds is the JOURNEY: without it a smooth
+  // sweep across several beats fires a full section change for each one it passes, closing the open note
+  // and swapping the canvas's object per beat. `narrative-coupling.spec.ts`'s "does not bounce the
+  // reader through the beats in between" records that, and reddens on removal.
+  let asideEl = $state<HTMLElement | undefined>(undefined);
+  let beatEls: (HTMLElement | undefined)[] = [];
+  let scrollIntent: number | null = null;
+  /** The exact scrollTop the live intent is travelling to, and which way. Meaningless when null. */
+  let intentTop = 0;
+  let intentDown = true;
+  let intentDeadline = 0;
+  /**
+   * Arrival tolerance, for the exact-landing and zero-distance edges only.
+   *
+   * Measured, both directions, because "the constant is pinned" is the kind of claim that should not be
+   * asserted without trying it:
+   *  - FROM ABOVE it is pinned. At 100000 every `scrollToBeat` takes the nothing-to-do branch and the
+   *    prose stops following at all; `activate → camera AND prose … stepping the canvas nav` reddens.
+   *  - FROM BELOW it is NOT pinned, and that is the design working rather than a hole. Once
+   *    `intentArrived` asks "reached OR PASSED" instead of "equals", the tolerance stops carrying the
+   *    comparison: at 0 the whole suite is still green, because a scroll that steps over the target
+   *    still terminates the intent. 2px is here for a sub-pixel exact landing, not as a tuning knob.
+   */
+  const ARRIVE_PX = 2;
+  const INTENT_MAX_MS = 1500;
+
+  /** True while a programmatic scroll owns the column — the observer must stay out of the way. */
+  function intentActive(): boolean {
+    if (scrollIntent === null) return false;
+    if (performance.now() > intentDeadline) { scrollIntent = null; return false; }
+    return true;
+  }
+
+  /** The scrollTop that puts `li` on the column's centre line, clamped to what the column can reach.
+   *  Read from live rects rather than `offsetTop`: the `<li>`'s offsetParent is `.narrative` (the aside
+   *  is not positioned), so `offsetTop` is measured against the wrong box entirely. */
+  function centreTopFor(el: HTMLElement, li: HTMLElement): number {
+    const c = el.getBoundingClientRect();
+    const b = li.getBoundingClientRect();
+    const delta = b.top + b.height / 2 - (c.top + c.height / 2);
+    return Math.max(0, Math.min(el.scrollTop + delta, el.scrollHeight - el.clientHeight));
+  }
+
+  /**
+   * Has the column reached — or passed — the live intent's target?
+   *
+   * REACHED OR PASSED, not equals, and that distinction is the whole robustness of this design. An
+   * equality test (even with a tolerance) assumes the column approaches the target smoothly and stops
+   * on it. A scroll driven by something OTHER than our own animation does not: a dragged scrollbar
+   * moves in jumps, and one 58px step can straddle a 2px window and miss it entirely. The intent would
+   * then survive to the backstop — reintroducing, through the back door, exactly the wedge that ending
+   * on arrival was meant to remove. Recording the direction of travel at issue time and asking whether
+   * we are at or beyond the target makes overshoot terminate the intent, which is the honest reading:
+   * once the column is past where we asked it to go, our scroll is over however it got there.
+   *
+   * Clamping the target at issue time is what makes this correct for a beat that CANNOT be centred
+   * (the last one) as well as one that can.
+   */
+  function intentArrived(): boolean {
+    const el = asideEl;
+    if (!el) return true;
+    return intentDown ? el.scrollTop >= intentTop - ARRIVE_PX : el.scrollTop <= intentTop + ARRIVE_PX;
+  }
+  /**
+   * The beat at a column END, or null in between.
+   *
+   * MEASURED HOLE in the centre-line rule, closed here rather than by moving the line (2026-07-26,
+   * `voynich-reading`, 1280x720): the column's header — eyebrow, title, hint, credit, pane toggle, on
+   * top of the `--pane-top` reservation — pushes the first beat's box to 400–819px in a 720px column,
+   * so at `scrollTop: 0` the centre line at 360 sits ABOVE it. Symmetrically, the V87 finder-pill
+   * reservation at the foot leaves the last beat ending 98px clear of the scroll floor, so at maximum
+   * scroll the line at 1985 sits above its top at 2017. Both ends therefore have NO beat on the line,
+   * and the observer is structurally silent there — nothing crosses, so nothing is reported.
+   *
+   * Scrolled hard against an end, the beat at that end is the one being read. Two boundary predicates
+   * say so. This is not the hand-rolled scroll math scrollama warns against — there is no offset
+   * arithmetic and no ranking; it is the two positions where "which beat crosses the line" has no
+   * answer at all.
+   */
+  function beatAtColumnEnd(): number | null {
+    const el = asideEl;
+    if (!el || sections.length === 0) return null;
+    if (el.scrollTop <= 1) return 0;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 1) return sections.length - 1;
+    return null;
+  }
+
+  /** Each scroll of the column asks one question of a live intent — are we there yet? — and hands the
+   *  column back the moment the answer is yes. With no intent live, this is also where the two column
+   *  ends are resolved. */
+  function onColumnScroll() {
+    if (scrollIntent !== null) {
+      if (!intentArrived()) return; // still travelling — the observer stays muted
+      scrollIntent = null;
+    }
+    const end = beatAtColumnEnd();
+    if (end !== null && end !== activeIndex) goToSection(end, { scroll: false });
+  }
+  /** A direct scroll INPUT from the reader abandons the intent outright — a human who reaches for the
+   *  column mid-animation wins, immediately, whether or not the programmatic scroll ever arrived.
+   *  Bound to the input events, never to `scroll`: `scroll` is what the animation itself emits, so it
+   *  cannot tell the two apart. `pointerdown` is in the list because a SCROLLBAR DRAG is the realistic
+   *  way a reader scrolls without ever emitting wheel/touch/key. */
+  function onColumnInput() {
+    scrollIntent = null;
+  }
+
+  /** Scroll beat `i` onto the column's centre line, under an intent that mutes the observer until the
+   *  column gets there. A scroll with nowhere to go arms no intent — there is nothing to suppress. */
+  function scrollToBeat(i: number, behavior: ScrollBehavior) {
+    const li = beatEls[i];
+    const el = asideEl;
+    if (!li || !el) return;
+    const top = centreTopFor(el, li);
+    if (Math.abs(el.scrollTop - top) <= ARRIVE_PX) { scrollIntent = null; return; }
+    scrollIntent = i;
+    intentTop = top;
+    intentDown = top > el.scrollTop;
+    intentDeadline = performance.now() + INTENT_MAX_MS;
+    // `scrollTo` on the column rather than `scrollIntoView` on the beat: we need the destination as a
+    // NUMBER to test arrival against, and this scrolls exactly one box — no ancestor walk to reason about.
+    el.scrollTo({ top, behavior });
+  }
+
+  const reducedMotion = () =>
+    typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   // Re-selection seam (A0): when ExhibitView's arriveAtNote re-fires on an ALREADY-mounted narrative
   // (search jump Q-4, keyboard index Q-5), `initialSelected` changes to a new note. `selected` and
   // `activeIndex` were only seeded once at init, so without this the re-selection did nothing. Track the
@@ -128,7 +347,10 @@
       // Owner search scans BASE + per-reading pages (4.9) — a reading-only note now lands on its section.
       const ownerId = ownerObjectOf(next, objectIds, { annotationsByObject, readingAnnotationsByObject });
       const idx = sections.findIndex((s) => s.objectId === ownerId);
-      if (idx >= 0) activeIndex = idx;
+      // Both halves, as everywhere else now: the camera follows `activeSection.start`, and the prose
+      // comes with it. Without the scroll the reader landed on the right image beside the wrong beat.
+      // NOT via `goToSection` — that clears `selected`, and this seam has just set it.
+      if (idx >= 0) { activeIndex = idx; scrollToBeat(idx, "auto"); }
     }
     prevInitialSelected = next;
   });
@@ -192,11 +414,86 @@
     return (id: string | null): number => (id === null ? base.length : (byR[id]?.length ?? 0));
   });
 
+  // THE one function that owns a section transition — quire's `goToFigureState` shape (canvas-panel.js:68).
+  // Every door into a new section goes through here: a spine click, the canvas stepper, the observer.
+  // That is the point of the shape: with two entry points each doing half the work, the scroll direction
+  // and the activate direction each held part of the state and disagreed (V82 — a cite landed the camera
+  // and stranded the prose off-screen).
+  //
   // Changing section clears the open note — and the reading sheet with it. The sheet renders under
   // `{#if readingSheet && current}`, so clearing `selected` alone would unmount it while leaving the
   // flag true, and the next plain note selection would open a sheet nobody asked for. Same latent bug
   // as Reader.svelte's object-change effect; same fix, at the one place selection is cleared.
-  function activate(i: number) { activeIndex = i; selected = null; readingSheet = false; }
+  //
+  // `scroll: false` is for the one caller that MUST NOT scroll: the observer, which is reporting where
+  // the reader has already scrolled to. Scrolling back at them would be the fight this whole seam exists
+  // to prevent — and the intent guard would not even catch it, because the intent would be honest.
+  function goToSection(i: number, opts: { scroll?: boolean } = {}) {
+    if (i < 0 || i >= sections.length) return;
+    activeIndex = i;
+    selected = null;
+    readingSheet = false;
+    if (opts.scroll !== false) scrollToBeat(i, reducedMotion() ? "auto" : "smooth");
+  }
+  const activate = (i: number) => goToSection(i);
+
+  // Scroll → camera (V81). quire's `intersection-observer-factory.js`, ported: the column as root, a
+  // -50%/-50% margin collapsing it to a centre line, threshold 0, act on `isIntersecting`.
+  //
+  // Rewired (not just re-targeted) whenever the observed set changes — the `<ol>` only exists in the
+  // sections pane, and it is unmounted/remounted by the pane toggle and by collapsing the aside. The
+  // effect reads exactly those four things and `untrack`s `activeIndex`, because re-running on every
+  // activation would tear down and rebuild the observer inside its own callback.
+  //
+  // The re-sync at the end is load-bearing on ARRIVAL, not just on a pane toggle: a section cite mounts
+  // the spine scrolled to the TOP with `activeIndex` already at the cited beat, so the observer's very
+  // first callback would report beat 0 and overwrite the cite. Setting the intent synchronously here,
+  // before any callback can be delivered, is what makes the cite stick.
+  $effect(() => {
+    const root = asideEl;
+    const pane = asidePane;
+    const n = sections.length;
+    const collapsed = asideCollapsed;
+    if (!root || pane !== "sections" || collapsed || n === 0) return;
+
+    const io = new IntersectionObserver((entries) => {
+      if (intentActive()) return; // ← the guard; see the block comment above
+      // AN END OF THE COLUMN OUTRANKS THE LINE, at both entry points, or the two disagree and the
+      // observer wins the argument. Measured (2026-07-26, `voynich-reading`): scrolled hard to the
+      // foot, the line sits on beat 4 of 6 while the reader is plainly at beat 5. The scroll handler
+      // set 5, the observer's crossing report for beat 4 landed a frame later, and the last beat was
+      // unreachable by scrolling. One rule, checked first in both places.
+      const end = beatAtColumnEnd();
+      if (end !== null) {
+        if (end !== activeIndex) goToSection(end, { scroll: false });
+        return;
+      }
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const i = beatEls.indexOf(e.target as HTMLElement);
+        if (i >= 0 && i !== activeIndex) goToSection(i, { scroll: false });
+      }
+    }, { root, rootMargin: "-50% 0px -50% 0px", threshold: 0 });
+
+    for (const li of beatEls.slice(0, n)) if (li) io.observe(li);
+
+    // The column's listeners belong to the coupling, not to the `<aside>`'s markup: they carry no
+    // interaction a reader has to reach, they are meaningless while the sections pane is unmounted,
+    // and writing them as attributes made svelte-check's a11y rule (correctly) flag a non-interactive
+    // element with mouse and keyboard handlers. Wired and torn down with the observer they belong to.
+    root.addEventListener("scroll", onColumnScroll, { passive: true });
+    const INPUTS = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
+    for (const ev of INPUTS) root.addEventListener(ev, onColumnInput, { passive: true });
+
+    scrollToBeat(untrack(() => activeIndex), "auto");
+
+    return () => {
+      io.disconnect();
+      root.removeEventListener("scroll", onColumnScroll);
+      for (const ev of INPUTS) root.removeEventListener(ev, onColumnInput);
+      scrollIntent = null;
+    };
+  });
 
   // Aside pane toggle: the spine (the authored read) or the ACTIVE object's note list. The narrative's
   // aside was sections-only, so an object's notes were reachable solely via canvas markers — fine for a
@@ -355,6 +652,20 @@
             title={navStepName("section", "next", sections[activeIndex + 1]?.title)}><span aria-hidden="true">›</span></button>
         </nav>
       {/if}
+      {#if asideCollapsed && sections.length > 0}
+        <!-- Archie-c5cb — the collapsed spine's visible, NAMED way back.
+             The ResizeDivider stays a sibling of the collapsed aside (Archie-3d55's anti-trap idiom, and
+             re-measured here: its collapse disc is `opacity: 1` while `.collapsed`, so the state is
+             reversible). But re-measuring it also showed what it is NOT: a 20px chevron disc on a 10px
+             seam whose only WORDS live in `aria-label`. That was survivable when hiding the spine cost
+             the reader a panel of prose. After Archie-0d6c it costs them the mode's input device — the
+             surface whose scroll drives the camera — so the way back has to say so on screen.
+             It joins the canvas-chrome row for exactly the reason Archie-01a6 put the section nav there:
+             when the aside is gone, the affordances it owned have to be reachable from the canvas. -->
+        <button type="button" class="to-index show-spine" onclick={() => setCollapsed(false)}>
+          <span class="grid-mark" aria-hidden="true">☰</span>Show sections
+        </button>
+      {/if}
       {#if onindex && objects.length > 1}
         <button type="button" class="to-index" onclick={onindex}>
           <span class="grid-mark" aria-hidden="true">▦</span>All items
@@ -373,12 +684,18 @@
 
   <!-- min/max match the spine's responsive clamp(360px … 620px) so a resize can't escape the designed
        reading-measure (#14). -->
-  <ResizeDivider side="right" label="narrative" min={360} max={620} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={(s: AsideState) => saveAside(ASIDE_W_KEY, ASIDE_COLLAPSED_KEY, s)} />
+  <!-- The two halves of this state persist differently now (Archie-c5cb): width globally in
+       localStorage, collapsed per-exhibit in sessionStorage. `setCollapsed` rather than a raw write
+       so the divider's chevron and the canvas-chrome "Show sections" button commit identically. -->
+  <ResizeDivider side="right" label="narrative" min={360} max={620} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={(s: AsideState) => { saveAsideWidth(ASIDE_W_KEY, s.width); setCollapsed(s.collapsed); }} />
   <!-- Collapsed = give the canvas the page. Section nav survives the collapse now (it is canvas chrome —
        Archie-01a6), so `inert` drops the clipped spine out of the a11y tree + tab order without taking
        the reader's only way through the narrative with it. The ResizeDivider is a sibling, so
        re-expanding stays reachable (§223 anti-trap). -->
-  <aside class:collapsed={asideCollapsed} inert={asideCollapsed} style:--narr-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
+  <!-- `bind:this`: this column IS the scroll container (`overflow: auto`), so it is both the observer's
+       root and the surface whose quiet ends a programmatic scroll's intent (Archie-0d6c). Its scroll
+       and input listeners are attached by that effect, not here — see the comment there. -->
+  <aside bind:this={asideEl} class="spine" class:collapsed={asideCollapsed} inert={asideCollapsed} style:--narr-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
     <p class="eyebrow">Narrative · {sections.length} {sections.length === 1 ? "section" : "sections"}
       {#if sections.length > 1}<span class="spine-pos">· {navPosition(activeIndex, sections.length, "section")}</span>{/if}</p>
     <h1>{title}</h1>
@@ -395,8 +712,17 @@
     {#if asidePane === "sections"}
     <ol class="sections">
       {#each sections as s, i (s.id)}
-        <li>
-          <button class:active={i === activeIndex} onclick={() => activate(i)}>
+        <li bind:this={beatEls[i]}>
+          <button class:active={i === activeIndex} aria-current={i === activeIndex ? "true" : undefined} onclick={() => activate(i)}>
+            <!-- V85: number the beats. Once the active beat moves under the reader — the scroll now
+                 drives it — "where am I" cannot be answered by typographic emphasis alone: the reader
+                 has to look at the highlight and count. Every beat states its own position, in the
+                 noun-and-position idiom `SidebarObjectNav` and Archie-01a6 already use ("Section 3 of
+                 6", `navPosition`), so the answer is legible from whichever beat you are looking at.
+                 Its own element, deliberately OUTSIDE `.num`: narrative.spec.ts's V86 label assertions
+                 read `.num`'s first child text node and its `.obj` span, and a position string folded
+                 in there would be read as part of the section title. -->
+            <span class="beat-pos">{navPosition(i, sections.length, "section")}</span>
             <!-- V86: rendered as `HERBAL· F1R — HERBAL (OPENING PAGE)` — the leading space inside <span
                  class="obj"> is trimmed at compile time, so at letter-spacing 0.16em the separator sat
                  flush against the section title; and the section title and the object label both carry
@@ -550,6 +876,15 @@
   }
   .sections button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-mid); }
   .sections button.active { border-left-color: var(--accent); background: var(--accent-muted); box-shadow: var(--shadow-lift-mid); }
+  /* Per-beat position (V85) — the quietest thing on the card: tabular mono, muted, on its own line
+     above the title. It locates; it must never compete with the prose it labels. The ACTIVE beat's
+     lifts to connector-blue, the same "you are here" register `.spine-pos` uses in the eyebrow. */
+  .beat-pos {
+    display: block; font-family: var(--font-mono), monospace; font-variant-numeric: tabular-nums;
+    font-size: 0.68rem; letter-spacing: 0.08em; color: var(--ink-paper-muted);
+    margin-bottom: var(--space-1);
+  }
+  .sections button.active .beat-pos { color: var(--accent-2); }
   .num { display: inline-block; font-family: var(--font-ui); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-secondary); margin-bottom: var(--space-2); }
   /* The separator lives here, not in the markup, so compile-time whitespace trimming can't eat it (V86). */
   .num .obj::before { content: " · "; }

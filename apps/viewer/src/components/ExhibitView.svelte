@@ -631,6 +631,7 @@
     {:else}
       {#if NarrativeReaderLazy.current}
         <NarrativeReaderLazy.current
+          slug={slug}
           objects={data.objects}
           canvasIdOf={canvasIdOf}
           annotationsByObject={data.annotationsByObject}
