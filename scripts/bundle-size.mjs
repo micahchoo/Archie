@@ -2,6 +2,7 @@ import { gzipSync } from "node:zlib";
 import { writeFileSync, readdirSync, readFileSync, existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { createRequire } from "node:module";
+import { eagerGzKB } from "./lib/eager-closure.mjs";
 
 // esbuild is a transitive (vitest/vite) dep, not hoisted — resolve it from the pnpm store.
 // Version-agnostic: a hardcoded esbuild@X pin broke every time the lockfile re-resolved.
@@ -71,27 +72,9 @@ function distGzKB(dir) {
 // `isEntry`, following `imports` (static) and NEVER `dynamicImports` — the boundary, exactly as
 // packages/archie-viewer/build.mjs walks esbuild's metafile for `kind === "import-statement"`.
 // Returns null when a dist has no manifest; the check treats null-where-a-baseline-exists as a
-// FAILURE, because dropping `build.manifest` would otherwise silently retire this gate.
-function eagerGzKB(dist) {
-  const manifestPath = join(dist, ".vite", "manifest.json");
-  if (!existsSync(manifestPath)) return null;
-  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-  const files = new Set();
-  const walk = (key) => {
-    const node = manifest[key];
-    if (!node || files.has(node.file)) return;
-    files.add(node.file);
-    for (const css of node.css ?? []) files.add(css);
-    for (const imp of node.imports ?? []) walk(imp);
-  };
-  for (const [key, node] of Object.entries(manifest)) if (node.isEntry) walk(key);
-  let total = 0;
-  for (const f of files) {
-    const p = join(dist, f);
-    if (existsSync(p)) total += gzipSync(readFileSync(p)).length;
-  }
-  return +(total / 1024).toFixed(1);
-}
+// FAILURE, because dropping `build.manifest` would otherwise silently retire this gate. The walk
+// lives in scripts/lib/eager-closure.mjs so `node --test scripts/lib/*.test.mjs` (CI's unit-scripts
+// job) can assert the lazy boundary directly, without a real dist.
 
 const appBundles = [];
 for (const [label, dist] of [["apps/studio dist (js+css gz)", `${root}/apps/studio/dist`], ["apps/viewer dist (js+css gz)", `${root}/apps/viewer/dist`]]) {
