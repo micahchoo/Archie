@@ -893,11 +893,6 @@ async function main() {
         && st.colours.every((c) => c === st.want || c === st.wantBase);
       record(steppedOk,
         "ADR-0019 MUST · a reading survives stepping to the next object (V56)",
-      "ADR-0019 MUST · a Reading does not follow you into another exhibit (V56)",
-      "ADR-0019 MUST · the AV player and its note list mount (AV)",
-      "ADR-0019 MUST · a timed note's row travels the recording and opens it (AV/V70)",
-      "ADR-0019 MUST · an UNCUED note's row shows ITS OWN body, not the last one's (AV/V70)",
-      "ADR-0019 MUST · showing an uncued note does NOT move the playhead (AV)",
         st ? `after Next: legend checked ${st.legendStillOn}, marks ${JSON.stringify([...new Set(st.colours)])}` +
              `; reading ${JSON.stringify(st.want)}, base ${JSON.stringify(st.wantBase)}` +
              (st.legendStillOn && !st.colours.includes(st.want)
@@ -1058,6 +1053,13 @@ async function main() {
       "ADR-0019 MUST · picking a reading colours the MARKS on the canvas (V56)",
       "ADR-0019 MUST · marks take readingMarkerStyle's stroke weight, not the overlay default (V69)",
       "ADR-0019 MUST · a reading survives stepping to the next object (V56)",
+      "ADR-0019 MUST · a Reading does not follow you into another exhibit (V56)",
+      // AV playback — the MUST row that had no label at all until 2026-07-26, which is exactly
+      // where S1's residual defect sat. A MUST row with no label is invisible to the check below.
+      "ADR-0019 MUST · the AV player and its note list mount (AV)",
+      "ADR-0019 MUST · a timed note's row travels the recording and opens it (AV/V70)",
+      "ADR-0019 MUST · an UNCUED note's row shows ITS OWN body, not the last one's (AV/V70)",
+      "ADR-0019 MUST · showing an uncued note does NOT move the playhead (AV)",
       "ADR-0019 MUST · the shadow root's tokens ARE the shell's tokens.css (V9/V31/V69)",
       "ADR-0019 MUST · no retired pre-Verdant literals in the embed's own rules (V9/V31/V69)",
       "ADR-0019 MUST · an exhibit with a spine offers its narrative (V88)",
