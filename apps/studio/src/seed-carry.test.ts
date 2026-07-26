@@ -55,12 +55,21 @@ describe("the Studio seed carries what the Viewer's bake carries", () => {
         .map((s) => s.value)
         .sort(); // stable content key — the seed's head order is not deterministic (see above)
     const expected = voynichPolygonNotes.map((n) => polygonSelectorValue(n.points)).sort();
+    // The fixture entry authored for an OBJECT — identity, not array position. `voynichPolygonNotes[0]`
+    // would silently retarget if the array were ever reordered, which is the same coupling the sort
+    // above exists to remove (measured: reversing the array reddened this file while the viewer twin,
+    // already keyed on objectId, stayed green).
+    const polygonOn = (objectId: string) => {
+      const n = voynichPolygonNotes.find((x) => x.objectId === objectId);
+      expect(n, `no polygon fixture authored on ${objectId}`).toBeDefined();
+      return n!;
+    };
     expect(values("voynich"), "the grid does not seed both polygons").toHaveLength(2);
     expect(values("voynich")).toEqual(expected);
     // The o9-only exhibit: one polygon, and the RIGHT one. Single-element, so order cannot bite here —
     // but it is asserted by VALUE rather than by count for the same reason as above.
     expect(values("voynich-rosettes"), "the o9-only exhibit seeds the wrong number").toHaveLength(1);
-    expect(values("voynich-rosettes")[0]).toBe(polygonSelectorValue(voynichPolygonNotes[0]!.points));
+    expect(values("voynich-rosettes")[0]).toBe(polygonSelectorValue(polygonOn("ex-voynich.o9").points));
   });
 
   it("FILTERS the o5 polygon out of the o9-only exhibit — a negative case that can fail", () => {
@@ -79,7 +88,9 @@ describe("the Studio seed carries what the Viewer's bake carries", () => {
       .filter((s) => s !== null && shapeLabel(s) === "Polygon");
     expect(polys, "the o9-only exhibit no longer filters the o5 polygon out").toHaveLength(1);
     // The RIGHT one — a bare count would pass if the filter kept o5 and dropped o9.
-    expect(polys[0]!.value).toBe(polygonSelectorValue(voynichPolygonNotes[0]!.points));
+    const o9 = voynichPolygonNotes.find((x) => x.objectId === "ex-voynich.o9");
+    expect(o9, "no polygon fixture authored on ex-voynich.o9").toBeDefined();
+    expect(polys[0]!.value).toBe(polygonSelectorValue(o9!.points));
   });
 
   it("seeds the AV note's `reading`, which is the field a legend will read", () => {

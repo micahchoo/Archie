@@ -77,6 +77,13 @@ describe("Archie-f4fb — the seed carries a polygon region, and it renders as o
    * read a nondeterministic order and failed 9 times in 20 against a correct tree). The twin's order was
    * unstable; this one's is merely implicit. Both are fixed by naming what you mean.
    */
+  /** The fixture polygon authored for an OBJECT — identity, not array position. */
+  const polygonOn = (objectId: string) => {
+    const n = voynichPolygonNotes.find((x) => x.objectId === objectId);
+    expect(n, `no polygon fixture authored on ${objectId}`).toBeDefined();
+    return n!;
+  };
+
   const polygonNamed = (exhibitId: string, note: (typeof voynichPolygonNotes)[number]) => {
     const want = polygonSelectorValue(note.points);
     const hit = polygonsIn(exhibitId).find((s) => s.value === want);
@@ -117,14 +124,16 @@ describe("Archie-f4fb — the seed carries a polygon region, and it renders as o
     const rosettes = polygonsIn("ex-voynich-rosettes");
     expect(rosettes, "the o9-only exhibit no longer filters the o5 polygon out").toHaveLength(1);
     // …and it is the RIGHT one. A count alone would pass if the filter kept o5 and dropped o9.
-    expect(selectorBBox(rosettes[0]!)!.x).toBe(935); // the rosette's bbox origin, not the star-wheel's 555
+    // …and it is the RIGHT one, asserted by VALUE against the o9 fixture rather than by a bbox literal.
+    // `rosettes[0]` is safe here only because there is exactly one — guaranteed by the line above.
+    expect(rosettes[0]!.value).toBe(polygonSelectorValue(polygonOn("ex-voynich.o9").points));
   });
 
   it("survives the publish round-trip as parseable geometry, not just as a string", () => {
     // `shapeLabel` only reads for the substring `<polygon`, so it alone would pass on markup the
     // renderer cannot use. `selectorBBox` runs the SAME `parsePolygonPoints` the overlay builder does,
     // and returns null on empty/NaN points — this is what makes the assertion about geometry.
-    const poly = polygonNamed("ex-voynich", voynichPolygonNotes[0]!);
+    const poly = polygonNamed("ex-voynich", polygonOn("ex-voynich.o9"));
     const box = selectorBBox(poly);
     expect(box, "the published polygon's points do not parse").not.toBeNull();
     expect(box!.w).toBeGreaterThan(0);
@@ -139,11 +148,11 @@ describe("Archie-f4fb — the seed carries a polygon region, and it renders as o
     // reader.
     // Named, so "twelve" is a claim about the ROSETTE specifically. The o5 wheel has ten, and a
     // positional `.find` would swap them silently if the fixture array were ever reordered.
-    const poly = polygonNamed("ex-voynich", voynichPolygonNotes[0]!);
+    const poly = polygonNamed("ex-voynich", polygonOn("ex-voynich.o9"));
     expect(isV1Shape(poly)).toBe(true);
     expect(parsePolygonPoints(poly.value)).toHaveLength(12);
     // The second polygon is real geometry too — asserted here rather than left to the count above.
-    expect(parsePolygonPoints(polygonNamed("ex-voynich", voynichPolygonNotes[1]!).value)).toHaveLength(10);
+    expect(parsePolygonPoints(polygonNamed("ex-voynich", polygonOn("ex-voynich.o5")).value)).toHaveLength(10);
   });
 
   it("is drawn as a REGION, not routed to the whole-object frame", () => {
