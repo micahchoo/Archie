@@ -277,18 +277,22 @@ test.describe("V53 · a note's picture, on a TIME-RANGED note", () => {
     // conflated two independent things and overstated the claim. What the files actually say:
     //   · `videojs-annotation` (`src/js/components/comment.js:29` — `format: 'text/plain'`) and
     //     `osd-audio-video` (`audio-canvas.html:562` — escaped body) are genuinely absent. Those hold.
-    //   · clover-iiif is NOT a counter-example. `Item.tsx:181-191` renders an `image/*` BODY through
-    //     `AnnotationItemImage`, and `imageUri` (`:182-184`) is the BODY's own `id` — real note-authored
-    //     media, not a target crop. That branch is blocked only for a `PointSelector` (`:76` forces those
-    //     to the VTT renderer); a `t=` FragmentSelector annotation carrying an image body reaches it. So
-    //     clover is a PARTIAL DONOR for this idea rather than evidence that nobody does it.
+    //   · clover-iiif is NOT a counter-example — it is the DONOR. `Item.tsx:181-191` renders an `image/*`
+    //     BODY through `AnnotationItemImage`, and `imageUri` (`:182-184`) is the BODY's own `id` — real
+    //     note-authored media, not a target crop. That branch is blocked only for a `PointSelector`
+    //     (`:76` forces those to the VTT renderer); a `t=` FragmentSelector annotation carrying an image
+    //     body reaches it. And the control is the SAME SHAPE as the one this test drives —
+    //     `Image.tsx:16-19` is `<ButtonStyled onClick={handleClick}><img src={imageUri} …/><span>{caption}
+    //     </span></ButtonStyled>`, i.e. a clickable image tile with a caption, which is structurally
+    //     `NoteMedia.svelte:26-42`'s `<button class="tile">` + `<img>` + label.
     //   · The `!NaN,NaN` bug is real but lives elsewhere, and is wider than described: `thumbnail`
     //     (`:52`) is a decorative region crop painted as a `backgroundImage` on the `<span>` that wraps
     //     EVERY item (`:207-215`), in every format branch. `:41-42`'s `xywh.split(",").slice(2)` yields
     //     `[]` for `t=240,270`, so w/h are `undefined` and every row of a temporal panel requests
     //     `…/240,270/!NaN,NaN/0/default.jpg`. Borrow the intent; never the geometry math.
-    // Archie's version is a NARROWER original than first claimed — one note renderer reached from a
-    // temporal spine — and clover is the nearest thing to a precedent for it.
+    // So Archie's version is NOT an original at the tile level at all — clover already ships that
+    // control. What is original here is only the reach: a note carrying media, on a TIME-RANGED target,
+    // opening the same renderer the image reader uses. Claim that and no more.
     //
     // The remote image is BLOCKED by `goOffline` and that is fine: the tile is a `<button>` that renders
     // and stays clickable either way (`NoteMedia.svelte:26-42`, with `.tile-failed` inside it), so the
