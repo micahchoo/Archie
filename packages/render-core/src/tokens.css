@@ -3,7 +3,20 @@
    shadow — kept from Soft Static), moss ink, emerald signal + golden-amber second voice. Three
    voices: Vinque Antique (ornate display) / LARAZ (clean body) / LARAZ (quiet chrome), with FOP VHS
    reserved for the wordmark/marquee. Semantic token NAMES preserved so component refs resolve.
-   NOTE: duplicated in apps/viewer/src/tokens.css — keep the two in sync. */
+
+   THIS IS THE SHARED TOKEN LAYER (Archie-52a9 / Archie-c314). It lives in render-core — layer zero,
+   below every consumer — because THREE surfaces need the same vocabulary and only two of them are
+   apps: `apps/viewer` (its Astro pages import `@render/core/tokens.css`) and the framework-free
+   `<archie-viewer>` embed, which cannot use a `<link>` at all and reads these bytes as text into its
+   shadow root (`packages/archie-viewer/tokens-source.mjs`). It used to live inside apps/viewer, which
+   made the embed reach up into an app for its design system — the wrong direction, and the thing that
+   let V9/V31/V69 happen (the embed simply grew its own literals instead).
+
+   ONE FILE, NO COPIES. Do not add a second copy "for" a consumer; a copy is what drifts.
+   KNOWN, TRACKED EXCEPTION: `apps/studio/src/tokens.css` is still a separate copy and has ALREADY
+   diverged (studio carries --text-lede/--text-note that this file does not; this file carries
+   --topbar-h/--scrim-top/--pane-top that studio does not). Unifying it is filed separately — do not
+   assume the two agree. */
 
 :root {
  /* ── Palette (Verdant Clearing — names kept for resolution; values now green) ── */

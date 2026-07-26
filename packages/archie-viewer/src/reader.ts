@@ -12,6 +12,17 @@ import {
 import { commentOfAnnotation, stripMarkdown } from "@render/core";
 import type { AnnotationLike, W3CAnnotation } from "@render/core";
 import { isRemoteSource, OfflineRemoteBlockedError, type OpenObjectOptions } from "./reader-guards.js";
+import { paintReadingMarksWhenDrawn } from "./reading-marks.js";
+
+/**
+ * The surface the EMBED holds: the read-only mount contract plus one addition — `showAnnotations`,
+ * which replaces the drawn set AND re-paints the Reading colours in one call. The legend (V56) needs
+ * exactly that: switching layer must change which marks are on the canvas and what colour they are,
+ * without tearing down OSD and losing the camera.
+ */
+export interface EmbedReaderSurface extends ReadOnlyMountSurface {
+  showAnnotations(annotations: W3CAnnotation[]): void;
+}
 
 // Re-exported so this module stays the one-stop reader surface for its own importers (reader.test.ts,
 // the lazy `import("./reader.js")` site). The DEFINITIONS live in reader-guards.ts precisely so the
@@ -43,6 +54,34 @@ export function labelFromAnnotations(annotations: W3CAnnotation[]): (id: string)
 }
 
 /**
+ * V55 — publish the locator mini-map's height so the floating note card can reserve room below it.
+ *
+ * `--archie-locator-h` on the surface container is the embed's instance of the reservation model
+ * Archie-40fe established for the shell's canvas chrome (`--strip-h` / `--finder-h`): the element that
+ * OCCUPIES the corner declares how much it takes, and everything floating over the canvas offsets
+ * against that property instead of hand-tuning a literal. It has to be measured rather than written
+ * down — OSD sizes the navigator as a RATIO of the viewer (`navigatorSizeRatio: 0.15`), so its height
+ * changes with the container and with the image's aspect.
+ *
+ * Returns a teardown for the observer, folded into the surface's own `destroy`.
+ */
+function reserveLocatorSpace(container: HTMLElement): () => void {
+  const nav = container.querySelector<HTMLElement>(".navigator");
+  if (!nav) return () => {};
+  const apply = (): void => {
+    const h = nav.getBoundingClientRect().height;
+    // `navigatorAutoFade` only changes opacity, never layout, so a faded map still occupies the corner
+    // and still has to be cleared — measure the box, not the visibility.
+    container.style.setProperty("--archie-locator-h", h > 0 ? `${Math.ceil(h) + 8}px` : "0px");
+  };
+  apply();
+  if (typeof ResizeObserver === "undefined") return () => {};
+  const ro = new ResizeObserver(apply);
+  ro.observe(nav);
+  return () => ro.disconnect();
+}
+
+/**
  * Mount the read-only deep-zoom surface for ONE object into `container`. Resolves once OSD opens.
  * Offline + a remote source → throws OfflineRemoteBlockedError BEFORE constructing OSD (no network
  * touch). The returned surface is the element's handle to setAnnotations / fitBounds / destroy.
@@ -50,7 +89,7 @@ export function labelFromAnnotations(annotations: W3CAnnotation[]): (id: string)
 export async function openObject(
   container: HTMLElement,
   opts: OpenObjectOptions,
-): Promise<ReadOnlyMountSurface> {
+): Promise<EmbedReaderSurface> {
   if (opts.offline && isRemoteSource(opts.object)) {
     throw new OfflineRemoteBlockedError();
   }
@@ -67,6 +106,19 @@ export async function openObject(
     locator: true,
   });
 
-  surface.setAnnotations(opts.annotations);
-  return surface;
+  // ONE path sets the drawn set, so the colour pass can never be forgotten by a future caller: the
+  // initial load below and every legend switch go through the same function.
+  const colourOf = opts.markColourOf ?? ((): undefined => undefined);
+  const showAnnotations = (annotations: W3CAnnotation[]): void => {
+    surface.setAnnotations(annotations);
+    paintReadingMarksWhenDrawn(container, annotations, colourOf);
+  };
+  showAnnotations(opts.annotations);
+
+  const releaseLocator = reserveLocatorSpace(container);
+  const destroy = surface.destroy.bind(surface);
+  return Object.assign(surface, {
+    showAnnotations,
+    destroy(): void { releaseLocator(); destroy(); },
+  });
 }

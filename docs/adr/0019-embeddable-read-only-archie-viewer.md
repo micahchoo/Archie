@@ -63,6 +63,112 @@ already-pure `render-core` selectors (`geometry/selector.ts`), reusing the in-re
   (`scripts/sync-dist.mjs`) to resync the root copy, and `pnpm sync-dist:check` to verify it before
   release — it diffs both trees and exits 1 on drift.
 
+## Capability contract (amendment 2026-07-25, Archie-f90d / Archie-52a9)
+
+The Decision above says "a thin shell over the SAME `@render/core` — one engine, not a fork", and it
+sanctions exactly one divergence: Annotorious/PixiJS out, DOM-SVG overlay in. Parity for everything
+else was **convention**, and convention is what drifted. `element.ts:9-10` records the mechanism —
+the markup was *ported, not imported* — and by 2026-07-25 the embed had silently lost object
+navigation, the note list, Readings, the narrative, rights and the shell's whole visual language,
+with every test green throughout.
+
+**Why the previous audit did not see it, and why this table is shaped the way it is.** annomea's
+`EMBED-AUDIT.md` (2026-05-23) is the cautionary tale this ADR was written against, and it diagnoses
+the audit as sharply as the code. Its Channel-3 Web Component had evaporated entirely, and the audit
+before it missed the whole channel because it was **file-driven**: "annomea has **no** embed/
+directory, so every anvil embed file had zero counterpart to compare against and was **invisible by
+construction**" (`EMBED-AUDIT.md:15`).
+
+**What is inherited, precisely:** the **verdict vocabulary** (`:21`) — including `DONE-differently`,
+which is exactly what this ADR's DOM-SVG overlay is and which a bare `DROP` would misreport — and the
+diagnosis above. **What is not:** the row axis. annomea's table is one row per **anvil source file**
+(`:23-33`: `embed/AnnotatedImage.svelte`, `lib/share-url.ts`, …), which is the very file-driven shape
+its own prose identifies as the reason the channel went missing — it names the disease and then
+tabulates the symptom. The table below is one row per **capability**, so a capability with no file
+has somewhere to be absent from. That change of axis is the whole mechanism, and it is ours.
+
+**The gate is ours too.** annomea proposed no automated enforcement — a one-time audit plus a manual
+"Prioritized recovery order" (`:53-62`). Nor does the rest of the corpus: clover-iiif documents its
+surface as a Features list (`pages/docs/viewer.mdx:78-89`) and an options table (`:251-275`);
+canvas-panel scopes by framing sentence ("not a IIIF Viewer … a component of your application",
+`docs/intro.md:15`); anvil ADR-0006 weighs each pattern's cost in prose. anvil **does** ship an
+automated embed smoke in CI (`.github/workflows/ci.yml:98-103` → `.testing/clients/embed-smoke.mjs`),
+so "all of them are documents" would be false — but it asserts that the embed RENDERS, never that it
+matches the app. So the accurate claim, and the one this ADR rests on: **no prior art gates parity
+between an embed and its app surface.** `recipes/smoke.mjs` is Archie's answer to the problem annomea
+named and did not solve.
+
+Verdicts, annomea's vocabulary: **PORT** · **ADAPT** (port the UX, strip the dropped subsystem's
+coupling) · **DONE-differently** · **DROP-justified** · **DEFER-tracked** · **ABSENT** (claimed-kept,
+missing — a bug by definition; no row may sit here).
+
+| capability | shell surface | embed surface | verdict | obligation | gate |
+| --- | --- | --- | --- | --- | --- |
+| rights / attribution / licence | `Credit.svelte`, `MetadataList` | `element.ts` `creditHtml` | PORT | **MUST** | smoke — value compared against the manifest's own `requiredStatement` / `rights` / `metadata` |
+| object navigation | `SidebarObjectNav.svelte` | `reader-chrome.ts` | PORT | **MUST** | smoke — Back to Exhibit + Prev · N of M · Next present, and Next actually changes the open object |
+| note list (the INDEX, Archie-c982) | `Reader.svelte` sidebar | `reader-chrome.ts` | PORT | **MUST** | smoke — row count equals the canvas's annotation count, and a row opens the note |
+| readings + legend | `ReadingLegend.svelte` | `reader-chrome.ts` + `reading-marks.ts` | ADAPT (no `setStyle` channel on a DOM-SVG overlay — the marks are styled after the draw, from the same `readingMarkerStyle`) | **MUST** | smoke — legend rows match the readings that have notes on **this object**, swatch numbers come from `readingMarkerStyle`, picking a reading recolours the marks, a reading SURVIVES a step to the next object, and a reading does NOT follow you into another exhibit (both fixtures publish ids cipher/hoax/abjad, so a carry-over would silently activate a different curator's layer) |
+| narrative spine (ADR-0005) | `NarrativeReader.svelte` | `narrative.ts` (lazy, and only for an exhibit WITH sections) | ADAPT (sections + prose + stepper; no resize divider, no per-section note pane) | **MUST** | smoke — section count matches the manifest's Ranges, prose renders, the stepper advances |
+| design language (V9/V31/V69) | `tokens.css` | the SAME file, read as text into the shadow root (`tokens.ts`) | PORT | **MUST** | smoke — a token's value in the shadow root compared against the canonical file fetched from the same tree |
+| deep zoom | OpenSeadragon | OpenSeadragon (lazy) | PORT | MUST | smoke, INDIRECTLY — a headless WebGL canvas is too flaky to assert on directly, so `canvasMounted` stays best-effort; but every region/halo/V55 assertion below only exists when it mounted, and the completeness check makes a missing assertion a failure. A canvas that never mounts fails by absence. |
+| region marks + selection | Annotorious → PixiJS WebGL | geometry-only DOM-SVG overlay (`read-overlay.ts`) | **DONE-differently** | MUST | smoke — a REAL driven mouse click on a region opens its note (V68); `eagerGzKB` for the weight claim |
+| note body | `NotePopup.svelte` | `note-card.ts` (text only) | ADAPT | MUST | smoke (the click assertion above asserts the card opens) |
+| AV playback | `MediaPlayer.svelte` | `av-player.ts` (lazy) | ADAPT | MUST | smoke — the drive opens the exhibit's audio object, then asserts a TIMED row travels the recording to its cue and opens it, and an UNCUED whole-recording row shows ITS OWN body without moving the playhead |
+| cite / share | `CitePanel.svelte`, `CiteCard` | `currentContentState()` — the codec, no UI | ADAPT | SHOULD | unit (`content-state.test.ts`) |
+| note media (images in notes) | `NoteMedia`, `NoteLightbox` | — | DEFER-tracked | — | — (needs a ticket) |
+| reading sheet (long-form reading text) | `ReadingSheet.svelte` | — | DEFER-tracked | — | — (needs a ticket) |
+| cite hovercards in prose | `ProseCites.svelte` | — | DEFER-tracked | — | — (needs a ticket) |
+| full-text search | `SearchOverlay.svelte` + minisearch | — | DEFER-tracked | — | — (needs a ticket; the index and minisearch are real weight, so this one may well resolve as DROP-justified — but *undecided* is not the same as *dropped*) |
+| authoring / drawing | Studio | — | DROP-justified | — | the element is read-only by definition (ADR-0020 owns the round-trip) |
+| `@annotorious/openseadragon` + `@annotorious/plugin-tools` + PixiJS | Studio and the shell | — | DROP-justified — ~194 KB gz and the `script-src 'unsafe-eval'` grant, for an edit capability a read-only embed does not have | — | `eagerGzKB` in `build.mjs --check` (metafile), **and** smoke (wire): every `/dist/*.js` fetched before the first object open is read, scanned for OpenSeadragon **and PixiJS and Annotorious** — the row names all three, and a PixiJS-only leak contains no `openseadragon` string at all — and its byte total held under a ceiling |
+
+**How to use this table.**
+
+- A row's **obligation** is what the embed owes, not what it happens to do. A MUST row that stops
+  being true is a failing build, not a backlog item.
+- **Adding a `DROP-justified` row is a deliberate, reviewable act with a written reason** — that is
+  the whole point. The failure mode this replaces is a capability leaving with no row at all.
+- **`ABSENT` must never appear.** It is annomea's name for "claimed kept, actually missing"; a row
+  that reaches that state is the bug the table exists to surface.
+- A `DEFER-tracked` row without a ticket is a half-measure. The four above are named here so they
+  are at least *visible*; filing them is follow-up work.
+- **A MUST row with no smoke label is a hole in the completeness check**, not merely a thinner test.
+  That check compares a hard-coded label list against the labels that ran, so a capability with no
+  label is invisible to it — the same shape as the file-driven audit this table replaced, one level up.
+  AV playback was the last such row (unit-tested only), and the residual defect found in review sat
+  exactly there: a unit test can assert what `select()` returns, but only a driven browser can say
+  WHICH note's body a row is displaying, and the uncued row was displaying the previous row's. The row
+  now has four labels. Every MUST row in this table has at least one.
+- **Every MUST assertion was proven RED-GREEN**: the capability was deleted, smoke failed, it was
+  restored. This is not ceremony. The first version of the DROP-justified row's driven check matched
+  `/dist/reader-*.js` by NAME, and the 2026-07-24 eager leak — reintroduced deliberately, taking
+  `eagerGzKB` from 37.6KB to 270.5KB — passed it at 33/33, because a static re-export makes esbuild
+  hoist OpenSeadragon into a `chunk-*.js` the filter never looked at. It now reads the bytes. An
+  assertion nobody has watched fail is a guess about what it covers.
+- **A missing FIXTURE must fail like a missing capability.** Every drive here depends on a published
+  exhibit being where it was, and a drive that could not find one used to log `info` and record
+  nothing — so the run simply got shorter and still exited 0. Measured: renaming one slug in
+  `exhibits.json` took the suite from 33 assertions to **6, PASS, exit 0**, with rights, navigation,
+  the note list, readings, the narrative, the tokens, the real-click, the halo and V55 all gone. That
+  is annomea's "invisible by construction" relocated from files to fixtures, inside the gate written
+  to close it. Two things fix it: every skip is now a `record(false, …)`, and a final check compares a
+  hard-coded list of contracted labels against the labels that actually ran. **That check is what
+  makes `ABSENT` mechanically unreachable rather than merely forbidden here** — it also catches an
+  assertion someone deletes, and it is how the `deep zoom` row is enforced without asserting on a
+  flaky headless canvas.
+- The gate column is load-bearing in one specific way: `eagerGzKB` is the only thing that can see the
+  weight claims, and `recipes/smoke.mjs` is the only thing that can see the behavioural ones (it
+  drives the BUILT bundle in real Chromium). Neither `entryGzKB`, `totalGzKB`, nor any unit suite can
+  substitute — see `.claude/rules/archie-viewer-eager-closure.md` and `.claude/rules/osd-overlay-wrapper.md`
+  for the two occasions each was proven blind.
+- Parity is cheap here for a structural reason worth restating: every MUST capability above rides
+  behind the `await import("./reader.js")` boundary the canvas already needed, so none of it lands in
+  the eager path. Measured eager cost of the whole contract: **36.0 → 38.9 KB gz**, roughly two thirds
+  of it the shared token layer. (For the record, the Decision's "~5–15 KB gz core" was an estimate made
+  in 2026-06 before the read-only core existed; the measured floor was already 36 KB before this
+  amendment. The estimate was never met and is not the budget — `bundle-size.json` is.) Lazy-loading as an explicit design pattern rather than an optimisation is
+  universalviewer's posture too (`manual/ARCHITECTURE.md:42,60`).
+
 ## Alternatives rejected
 
 - **Native WordPress/Ghost plugins** (user's initial idea): server-side → breaks the no-server lock; no

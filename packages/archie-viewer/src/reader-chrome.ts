@@ -1,0 +1,396 @@
+// The reader's CHROME — object navigation (V30), the note list (V70) and the reading legend (V56).
+//
+// LAZY BY CONSTRUCTION. element.ts imports this module with `await import("./reader-chrome.js")` from
+// the same place it already does `await import("./reader.js")`, so none of it is in the entry's static
+// closure and none of it lands in `eagerGzKB`. That is the whole reason Archie-52a9 could decide
+// "parity by default": the weight argument dissolves behind a boundary the canvas already needed.
+// Prior art for the posture: universalviewer names lazy-loading an explicit Design Pattern on its
+// content handlers (`manual/ARCHITECTURE.md:42,60`) rather than a workaround.
+//
+// WHY EACH PIECE EXISTS (Archie-52a9's measurements, re-verified 2026-07-25):
+//   V30 — a 12-object exhibit's entire visible control set in the reader was `["← The Whole
+//         Manuscript"]`. There was no way to move between objects AT ALL.
+//   V70 — with no list, the marker was the ONLY door to a note. Per Archie-c982 the list is the
+//         INDEX; read-overlay.ts:212 even names that contract ("The shell's route is the notes list
+//         … The embed has no list, so the regions carry it") — this is the list it was waiting for.
+//   V56 — three readings in the library, zero coloured marks, no legend.
+//
+// This module renders PLAIN DOM. Donor markup and behaviour: apps/viewer SidebarObjectNav.svelte
+// (Back to Exhibit + Prev · N of M · Next), Reader.svelte's note-card list, ReadingLegend.svelte
+// (radiogroup + swatch). Ported structure, NOT the Svelte components — the same rule element.ts:9
+// records, now with the capability contract in ADR-0019 and recipes/smoke.mjs watching it.
+
+import {
+  commentOfAnnotation,
+  overlay,
+  stripMarkdown,
+  readingMarkerStyle,
+  type AObject,
+  type PortableExhibit,
+  type Reading,
+  type W3CAnnotation,
+} from "@render/core";
+
+/**
+ * The notes ON the canvas for one object under a reading layer: the always-visible base plus the
+ * active Reading's notes overlaid (ADR-0007 / Q16). ExhibitView.svelte's `annotationsOf`, through the
+ * SAME render-core `overlay` — the list, the legend counts and the marks all read this one function,
+ * so the index can never disagree with the canvas.
+ *
+ * It lives in THIS module, not on the element, for eager-closure reasons: it is only ever reachable
+ * past the lazy boundary, but as an element method its `overlay` import sat in the entry's static
+ * graph. See the note at element.ts `#openObject`.
+ */
+export function annotationsFor(
+  exhibit: PortableExhibit,
+  objectId: string,
+  activeReading: string | null,
+): W3CAnnotation[] {
+  const base = exhibit.annotationsByObject?.[objectId] ?? [];
+  if (activeReading === null) return base;
+  return overlay(base, exhibit.readingAnnotationsByObject?.[objectId]?.[activeReading]);
+}
+
+/**
+ * The base layer's mark colour — the notes that belong to no Reading (ADR-0007's always-visible
+ * base). ONE constant, shared by the legend's "General notes" swatch and by the canvas pass
+ * (reading-marks.ts), so the chip and the mark can never disagree about what "base" looks like.
+ * Value is the token palette's `--mist-blue`, resolved: a custom property cannot be handed to
+ * `readingMarkerStyle`, which returns concrete style numbers for SVG attributes.
+ */
+export const BASE_MARK_COLOUR = "#6B7D6A";
+
+/**
+ * Inject a stylesheet that covers `anchor` and its siblings, and hand back the node for teardown.
+ *
+ * A ShadowRoot accepts a `<style>` child directly and that is the live path (the element's own root).
+ * A plain Document does NOT — it allows exactly one element child — so a non-shadow host (a test, a
+ * programmatic mount) needs `<head>`. Getting this wrong throws rather than degrading, which is how
+ * it was found.
+ */
+export function injectStyle(anchor: Element, css: string, marker: string): HTMLStyleElement {
+  const doc = anchor.ownerDocument;
+  const style = doc.createElement("style");
+  style.setAttribute(marker, "");
+  style.textContent = css;
+  const root = anchor.getRootNode() as ShadowRoot | Document;
+  const target: ParentNode = (root as ShadowRoot).host ? root : (doc.head ?? doc.documentElement!);
+  target.appendChild(style);
+  return style;
+}
+
+/** Same string the shell's stepper renders (`apps/viewer/src/exhibit-nav.ts` positionLabel). */
+export function positionLabel(index: number, total: number, unit: string): string {
+  return `${unit} ${index + 1} of ${total}`;
+}
+
+/** The list row's preview: the note's first plain-text content, capped. Mirrors the shell's
+ *  `stripMarkdown(commentOf(it))` card preview — the SAME render-core strip the overlay's accessible
+ *  name uses (reader.ts labelFromAnnotations), so a row and its mark announce the same words. */
+export function previewOf(ann: W3CAnnotation): string {
+  const text = stripMarkdown(commentOfAnnotation(ann)).replace(/\s+/g, " ").trim();
+  if (text.length === 0) return "Untitled note";
+  return text.length > 180 ? `${text.slice(0, 179)}…` : text;
+}
+
+/**
+ * annotation id → its Reading's colour, for ONE object. Built from the exhibit's own
+ * `readingAnnotationsByObject`, exactly as ExhibitView.svelte's `readingColourById` does — a note not
+ * on any reading is base (absent from the map), which is what makes the base layer colourless rather
+ * than mis-coloured.
+ */
+export function readingColourById(exhibit: PortableExhibit, objectId: string): Record<string, string> {
+  const m: Record<string, string> = {};
+  const byR = exhibit.readingAnnotationsByObject?.[objectId] ?? {};
+  for (const r of exhibit.readings ?? []) {
+    if (!r.colour) continue;
+    for (const a of byR[r.id] ?? []) if (a.id) m[String(a.id)] = r.colour;
+  }
+  return m;
+}
+
+export interface ReaderChromeOptions {
+  exhibit: PortableExhibit;
+  object: AObject;
+  /** The notes currently ON the surface for this object (base + the active reading) — the list and the
+   *  canvas must show the same set, or the list stops being an index of what is there. */
+  annotations: readonly W3CAnnotation[];
+  /** The active reading id, or null for base-only (the shell's `activeReading`; ADR-0007 / Q16). */
+  activeReading: string | null;
+  /** A row (or a legend layer) was chosen. */
+  onselect(id: string): void;
+  onreading(id: string | null): void;
+  onstep(objectId: string): void;
+  onoverview(): void;
+}
+
+export interface ReaderChrome {
+  /** Reflect the surface's current selection into the list (the canvas is the other direction). */
+  setSelected(id: string | null): void;
+  destroy(): void;
+}
+
+const CHROME_STYLES = `
+  .rc-aside { display: flex; flex-direction: column; min-height: 100%; padding: var(--space-5) var(--space-5) var(--space-6); box-sizing: border-box; font-family: var(--font-body); color: var(--ink-paper-primary); }
+  .rc-eyebrow { font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-paper-secondary); margin: 0 0 var(--space-2); }
+  .rc-empty { margin: 0; font-size: .9rem; font-style: italic; color: var(--ink-paper-muted); }
+  .rc-notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); flex: 1 1 auto; }
+  .rc-notes > li { margin: 0; }
+  /* The card idiom of the shell's note list: warm paper, a reading-colour left edge, a 3-line clamp. */
+  .rc-notes button {
+    display: block; width: 100%; text-align: left; cursor: pointer; font: inherit;
+    padding: var(--space-3); border: 1px solid var(--border-paper); border-left: 3px solid transparent;
+    border-radius: var(--radius-sm); background: var(--surface-paper-card); color: inherit;
+    font-size: .9rem; line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .rc-notes button:hover { background: var(--surface-paper-hover); }
+  .rc-notes button[aria-current="true"] { background: var(--surface-paper-hover); border-color: var(--accent); font-weight: 600; }
+  /* Object nav — SidebarObjectNav.svelte in plain DOM: sticky foot, Back to Exhibit + Prev/N of M/Next. */
+  .rc-nav { position: sticky; bottom: 0; margin: var(--space-5) calc(-1 * var(--space-5)) calc(-1 * var(--space-6)); padding: var(--space-3) var(--space-5) var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); background: var(--surface-paper); border-top: 1px solid var(--border-canvas); }
+  .rc-nav .rc-overview { align-self: start; display: inline-flex; align-items: center; gap: var(--space-2); background: none; border: none; padding: var(--space-1) 0; cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-paper-secondary); }
+  .rc-nav .rc-overview:hover { color: var(--accent-2); }
+  .rc-stepper { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+  .rc-stepper .rc-step { display: inline-flex; align-items: center; gap: var(--space-1); background: none; border: none; padding: var(--space-2); cursor: pointer; font-family: var(--font-ui); font-size: var(--text-ui-sm); color: var(--ink-paper-secondary); }
+  .rc-stepper .rc-step:hover:not(:disabled) { color: var(--accent-2); }
+  .rc-stepper .rc-step:disabled { opacity: .32; cursor: default; }
+  .rc-pos { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: var(--text-ui-sm); letter-spacing: .08em; color: var(--ink-paper-muted); }
+  /* Legend — a canvas overlay, ReadingLegend.svelte's placement and language. */
+  .rc-legend { position: absolute; z-index: 20; top: var(--space-4); left: var(--space-4); max-width: 17rem; max-height: calc(100% - 2 * var(--space-4)); overflow-y: auto; padding: var(--space-3) var(--space-4); background: var(--surface-canvas-raised); color: var(--ink-canvas-primary); border-radius: var(--radius-md); box-shadow: var(--shadow-lift-low); font-family: var(--font-body); }
+  .rc-legend .rc-eyebrow { color: var(--ink-canvas-secondary); }
+  .rc-legend .rc-opts { display: flex; flex-direction: column; gap: 2px; }
+  .rc-legend .rc-opt { display: flex; align-items: center; gap: var(--space-2); text-align: left; padding: var(--space-1) var(--space-2); border: none; border-radius: var(--radius-sm); background: transparent; color: var(--ink-canvas-secondary); cursor: pointer; font: inherit; font-size: .9rem; }
+  .rc-legend .rc-opt:hover { color: var(--ink-canvas-primary); }
+  .rc-legend .rc-opt[aria-checked="true"] { color: var(--ink-canvas-primary); font-weight: 600; background: var(--surface-canvas-overlay); box-shadow: inset 2px 0 0 var(--rc-rd, var(--accent)); }
+  .rc-legend .rc-sw { flex: none; width: 14px; height: 14px; overflow: visible; border-radius: 2px; box-shadow: 0 0 0 1px var(--border-canvas-emphasis); }
+  .rc-legend .rc-nm { flex: 1; min-width: 0; }
+  .rc-legend .rc-ct { flex: none; padding-left: var(--space-3); font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: .78rem; color: var(--ink-canvas-muted); }
+  .rc-legend .rc-desc { margin: var(--space-2) 0 0; padding-top: var(--space-2); border-top: 1px solid var(--border-canvas); font-size: .82rem; font-style: italic; line-height: 1.6; color: var(--ink-canvas-secondary); }
+`;
+
+const NS = "http://www.w3.org/2000/svg";
+
+/**
+ * V47's rule, held here too: the swatch IS the mark. Its fill/stroke come out of `readingMarkerStyle`
+ * — the SAME call the canvas paints with (reading-marks.ts) and the SAME one ReadingLegend.svelte's
+ * swatch makes — so there is no second copy of 0.18/0.95/2 anywhere in the embed. Built with
+ * createElementNS + setAttribute, never innerHTML (ADR-0019's overlay rule, applied by habit).
+ */
+function swatch(doc: Document, colour: string): SVGSVGElement {
+  const ms = readingMarkerStyle(colour, "normal");
+  const svg = doc.createElementNS(NS, "svg") as SVGSVGElement;
+  svg.setAttribute("class", "rc-sw");
+  svg.setAttribute("viewBox", "0 0 14 14");
+  svg.setAttribute("aria-hidden", "true");
+  const rect = doc.createElementNS(NS, "rect");
+  rect.setAttribute("x", "1.5");
+  rect.setAttribute("y", "1.5");
+  rect.setAttribute("width", "11");
+  rect.setAttribute("height", "11");
+  rect.setAttribute("fill", ms.fill);
+  rect.setAttribute("fill-opacity", String(ms.fillOpacity));
+  rect.setAttribute("stroke", ms.stroke);
+  rect.setAttribute("stroke-opacity", String(ms.strokeOpacity));
+  rect.setAttribute("stroke-width", String(ms.strokeWidth));
+  svg.append(rect);
+  return svg;
+}
+
+/**
+ * Mount the reader chrome. `aside` receives the note list + object nav; `surface` (the positioned
+ * canvas host) receives the floating legend. Both are children of the element's shadow root, which is
+ * re-rendered wholesale per view — so `destroy()` is about the CURRENT view's teardown (object change,
+ * back), not about surviving a re-render.
+ */
+export function mountReaderChrome(
+  aside: HTMLElement,
+  surface: HTMLElement,
+  opts: ReaderChromeOptions,
+): ReaderChrome {
+  const doc = aside.ownerDocument;
+  const { exhibit, object, annotations } = opts;
+  const objects = exhibit.objects ?? [];
+  const colourById = readingColourById(exhibit, object.id);
+
+  // The chrome's stylesheet rides the shadow root beside the element's own; it is removed by
+  // destroy() so a torn-down reader leaves no orphan <style> behind on the next view.
+  const style = injectStyle(aside, CHROME_STYLES, "data-archie-chrome");
+
+  // ---- V70: the note list, which IS the index (Archie-c982) --------------------------------------
+  const pane = doc.createElement("div");
+  pane.className = "rc-aside";
+
+  const heading = doc.createElement("p");
+  heading.className = "rc-eyebrow";
+  heading.textContent = `${annotations.length} ${annotations.length === 1 ? "note" : "notes"}`;
+  pane.append(heading);
+
+  const rows = new Map<string, HTMLButtonElement>();
+  if (annotations.length === 0) {
+    const empty = doc.createElement("p");
+    empty.className = "rc-empty";
+    empty.textContent = "No notes on this item yet.";
+    pane.append(empty);
+  } else {
+    const list = doc.createElement("ul");
+    list.className = "rc-notes";
+    list.setAttribute("aria-label", "Notes on this item");
+    for (const ann of annotations) {
+      const id = String(ann.id ?? "");
+      const li = doc.createElement("li");
+      const btn = doc.createElement("button");
+      btn.type = "button";
+      btn.dataset["note"] = id;
+      // textContent, never innerHTML: a list preview is plain stripped text, and the only sanitized
+      // HTML in this package goes through note-card.ts's renderMarkdown pipeline.
+      btn.textContent = previewOf(ann);
+      const colour = colourById[id];
+      if (colour) btn.style.borderLeftColor = colour;
+      btn.addEventListener("click", () => opts.onselect(id));
+      rows.set(id, btn);
+      li.append(btn);
+      list.append(li);
+    }
+    pane.append(list);
+  }
+
+  // ---- V30: object navigation (donor: SidebarObjectNav.svelte) -----------------------------------
+  // Shown whenever the exhibit HAS siblings. A single-object exhibit still gets "Back to Exhibit" —
+  // the way up is the one control the reader never had a duplicate of.
+  const idx = objects.findIndex((o) => o.id === object.id);
+  const nav = doc.createElement("nav");
+  nav.className = "rc-nav";
+  nav.setAttribute("aria-label", "Objects in this exhibit");
+
+  const overview = doc.createElement("button");
+  overview.type = "button";
+  overview.className = "rc-overview";
+  overview.dataset["act"] = "overview";
+  // "Back to Exhibit" is the LOCKED canonical term for going up a level (system.md Archie-dba2 /
+  // Archie-2cc1) — the shell's breadcrumb, its reader-back and this stepper all say the same phrase.
+  overview.textContent = "▦ Back to Exhibit";
+  nav.append(overview);
+  overview.addEventListener("click", () => opts.onoverview());
+
+  if (objects.length > 1) {
+    const prev = idx > 0 ? objects[idx - 1] : undefined;
+    const next = idx >= 0 && idx < objects.length - 1 ? objects[idx + 1] : undefined;
+    const stepper = doc.createElement("div");
+    stepper.className = "rc-stepper";
+
+    const mkStep = (
+      target: AObject | undefined,
+      act: string,
+      label: string,
+      whenNone: string,
+    ): HTMLButtonElement => {
+      const b = doc.createElement("button");
+      b.type = "button";
+      b.className = "rc-step";
+      b.dataset["act"] = act;
+      b.textContent = label;
+      b.disabled = !target;
+      b.setAttribute("aria-label", target ? `${label.trim()} object: ${target.label}` : whenNone);
+      b.title = target ? `${label.trim()}: ${target.label}` : whenNone;
+      if (target) b.addEventListener("click", () => opts.onstep(target.id));
+      return b;
+    };
+
+    const pos = doc.createElement("span");
+    pos.className = "rc-pos";
+    pos.textContent = idx >= 0 ? positionLabel(idx, objects.length, "Object") : `– of ${objects.length}`;
+
+    stepper.append(
+      mkStep(prev, "prev", "‹ Prev", "This is the first object"),
+      pos,
+      mkStep(next, "next", "Next ›", "This is the last object"),
+    );
+    nav.append(stepper);
+  }
+  pane.append(nav);
+  aside.append(pane);
+
+  // ---- V56: the reading legend (donor: ReadingLegend.svelte) --------------------------------------
+  // immarkus's Legend.tsx tracks ACTIVE state rather than listing every possible category
+  // (`src/pages/knowledgegraph/Legend/Legend.tsx`, rows keyed off `settings.*`). Applied here: the
+  // legend lists the readings that actually carry notes on THIS object, plus the always-present base
+  // layer — not the library's full reading set, which on a single-folio object would offer layers
+  // that light up nothing.
+  const byR = exhibit.readingAnnotationsByObject?.[object.id] ?? {};
+  const baseCount = (exhibit.annotationsByObject?.[object.id] ?? []).length;
+  const present: Reading[] = (exhibit.readings ?? []).filter((r) => (byR[r.id] ?? []).length > 0);
+  let legend: HTMLElement | null = null;
+  if (present.length > 0) {
+    legend = doc.createElement("aside");
+    legend.className = "rc-legend";
+    legend.setAttribute("aria-label", "Readings");
+
+    const title = doc.createElement("p");
+    title.className = "rc-eyebrow";
+    title.textContent = "Readings";
+    legend.append(title);
+
+    const opts_ = doc.createElement("div");
+    opts_.className = "rc-opts";
+    opts_.setAttribute("role", "radiogroup");
+    opts_.setAttribute("aria-label", "Readings of this source");
+
+    const mkOpt = (id: string | null, name: string, colour: string, count: number): HTMLButtonElement => {
+      const b = doc.createElement("button");
+      b.type = "button";
+      b.className = "rc-opt";
+      b.setAttribute("role", "radio");
+      b.setAttribute("aria-checked", String(opts.activeReading === id));
+      b.dataset["reading"] = id ?? "";
+      b.style.setProperty("--rc-rd", colour);
+      b.append(swatch(doc, colour));
+      const nm = doc.createElement("span");
+      nm.className = "rc-nm";
+      nm.textContent = name;
+      const ct = doc.createElement("span");
+      ct.className = "rc-ct";
+      ct.textContent = String(count);
+      ct.title = `${count} notes on this image`;
+      b.append(nm, ct);
+      b.addEventListener("click", () => opts.onreading(id));
+      return b;
+    };
+
+    // The base layer is always offered — Q16: base notes stay visible, a reading OVERLAYS them.
+    opts_.append(mkOpt(null, "General notes", BASE_MARK_COLOUR, baseCount));
+    for (const r of present) {
+      opts_.append(mkOpt(r.id, r.name, r.colour ?? "#3A8C5D", (byR[r.id] ?? []).length));
+    }
+    legend.append(opts_);
+
+    const activeDesc = present.find((r) => r.id === opts.activeReading)?.description;
+    if (activeDesc) {
+      const p = doc.createElement("p");
+      p.className = "rc-desc";
+      p.textContent = activeDesc;
+      legend.append(p);
+    }
+    surface.append(legend);
+  }
+
+  let selected: string | null = null;
+  return {
+    setSelected(id: string | null): void {
+      if (selected !== null) rows.get(selected)?.removeAttribute("aria-current");
+      selected = id;
+      if (id !== null) {
+        const row = rows.get(id);
+        row?.setAttribute("aria-current", "true");
+        // A mark clicked on the canvas must find its row even when the list has scrolled past it —
+        // otherwise the index answers "where am I" only in one direction.
+        row?.scrollIntoView?.({ block: "nearest" });
+      }
+    },
+    destroy(): void {
+      pane.remove();
+      legend?.remove();
+      style.remove();
+      rows.clear();
+    },
+  };
+}

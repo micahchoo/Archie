@@ -30,6 +30,9 @@ export interface OpenObjectOptions {
   offline?: boolean;
   /** Fired on overlay selection (the element can drive a sidebar / deep-link). */
   onSelect?: (id: string | null) => void;
+  /** V56: annotation id → its Reading's colour (undefined = a base note). When present the reader
+   *  paints each drawn mark through render-core's `readingMarkerStyle` (reading-marks.ts). */
+  markColourOf?: (id: string) => string | undefined;
 }
 
 /** Thrown when an offline embed is asked to open a remote-sourced object. The element catches this to

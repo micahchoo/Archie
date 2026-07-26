@@ -12,7 +12,7 @@
 import type { GetStaticPaths } from "astro";
 import exhibitsJson from "../../public/published/exhibits.json";
 import ExhibitView from "../components/ExhibitView.svelte";
-import "../tokens.css";
+import "@render/core/tokens.css"; // the SHARED token layer (render-core = layer zero; the embed reads the same file)
 import "@annotorious/openseadragon/annotorious-openseadragon.css";
 import "@annotorious/plugin-tools/annotorious-plugin-tools.css";
 import "../markers.css"; // A2 + stroke-over-stroke marker styling — must load AFTER Annotorious CSS

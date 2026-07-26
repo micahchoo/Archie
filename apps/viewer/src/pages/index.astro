@@ -4,7 +4,7 @@
 // Gallery (from exhibits.json) and any exhibit at runtime — renders an arbitrary published Library
 // with no per-exhibit code. CSS for BOTH surfaces loads here (the shell renders exhibits too).
 import ViewerShell from "../components/ViewerShell.svelte";
-import "../tokens.css";
+import "@render/core/tokens.css"; // the SHARED token layer (render-core = layer zero; the embed reads the same file)
 import "@annotorious/openseadragon/annotorious-openseadragon.css";
 import "@annotorious/plugin-tools/annotorious-plugin-tools.css";
 import "../markers.css"; // A2 + stroke-over-stroke marker styling — must load AFTER Annotorious CSS

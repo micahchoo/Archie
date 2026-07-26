@@ -29,10 +29,21 @@ export interface NoteCard {
   destroy(): void;
 }
 
+// V55 (reconciled 2026-07-25, measured 8970px² of overlap before this line existed): the card and the
+// OSD locator mini-map both wanted the bottom-right corner — read-mount asks for
+// `navigatorPosition: "BOTTOM_RIGHT"` (read-mount.ts:245) and the card anchored there too, so opening a
+// note buried the one control that says where you are in the image.
+//
+// The fix is the SHELL's reservation model, not a second one: Archie-40fe established that floating
+// canvas chrome reserves against a CSS custom property the occupying element publishes (`--strip-h`,
+// `--finder-h`) rather than each element hand-tuning an offset. Here `--archie-locator-h` is published
+// by reader.ts from the navigator's MEASURED height (its size is a ratio of the viewer, so a literal
+// would be wrong at every other container size) and defaults to 0px — which is what the AV player's
+// card gets, since a temporal surface has no mini-map to clear.
 const CARD_STYLE = [
   "position:absolute",
   "right:12px",
-  "bottom:12px",
+  "bottom:calc(12px + var(--archie-locator-h, 0px))",
   "max-width:min(360px, calc(100% - 24px))",
   "max-height:50%",
   "overflow:auto",

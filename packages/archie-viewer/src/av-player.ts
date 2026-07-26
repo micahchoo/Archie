@@ -65,6 +65,29 @@ export interface AvPlayerOptions {
 
 /** The element's handle to the mounted player: torn down on object change / back / disconnect. */
 export interface AvPlayerSurface {
+  /**
+   * Open one note by id: show its body, and — if it is a TIMED note — travel the recording to its cue
+   * first. Exactly what a click on that cue in this player's own list does.
+   *
+   * WHY IT EXISTS (S1): the reader's note list (reader-chrome.ts) mounts beside an AV object too, and
+   * without this its rows were a DEAD DOOR. Measured on `ex-voynich.o12` (Sound, 5 notes): the rows
+   * rendered, `aria-current` moved, and nothing ever opened — because the embed's own `#noteCard` is
+   * null on this path (the player owns its card), so element.ts's row handler had nothing to drive.
+   *
+   * THE RESULT IS THREE-WAY, and that is the fix for the residual defect the first pass shipped. It
+   * returned a bare `false` for an uncued note, the caller read that as "nothing happened", and the
+   * WHOLE-RECORDING row then took the current styling while still displaying the previously-selected
+   * row's body — current-looking, showing someone else's text. An uncued note has no cue to seek to
+   * but it still has a body, and the visitor asked to read it.
+   *
+   *   "seeked"  — timed note: travelled to its cue AND showed its body
+   *   "shown"   — whole-recording note: showed its body, no seek (there is no moment to travel to)
+   *   "unknown" — no such note on this object: nothing happened, and the caller can say so
+   *
+   * The mount already knew how to do this for an ARRIVING cite (`initialSelect`); this is the same
+   * behaviour exposed after mount, so the two entry points cannot drift.
+   */
+  select(id: string): "seeked" | "shown" | "unknown";
   destroy(): void;
 }
 
@@ -225,6 +248,24 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
   eyebrow.textContent = `Notes · ${cues.length} ${cues.length === 1 ? "moment" : "moments"}`;
   notes.appendChild(eyebrow);
 
+  /** Seek to a cue and open its body. The ONE implementation behind the cue click, the arriving
+   *  `initialSelect` cite, and the reader note list's `select(id)`. False = no cue with that id. */
+  const selectCue = (id: string): boolean => {
+    const c = cues.find((x) => x.id === id);
+    if (!c) return false;
+    media.currentTime = c.range.start;
+    card.show(noteBodyHtml(annotations, c.id));
+    return true;
+  };
+
+  /** Show an UNCUED (whole-recording) note's body. No seek: there is no moment to travel to, and
+   *  moving the playhead would be a lie about where the note points. */
+  const showWholeNote = (id: string): boolean => {
+    if (!wholeNotes.some((n) => n.id === id)) return false;
+    card.show(noteBodyHtml(annotations, id));
+    return true;
+  };
+
   const cueButtons: HTMLButtonElement[] = [];
   if (cues.length === 0) {
     const empty = doc.createElement("p");
@@ -248,10 +289,9 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
       btn.append(t, line);
       // Click a cue → travel the recording to its start (seek) AND show its body in the note-card.
       // Seek-only (no play()) keeps parity with the section-142 read posture; the visitor presses play.
-      btn.addEventListener("click", () => {
-        media.currentTime = c.range.start;
-        card.show(noteBodyHtml(annotations, c.id));
-      });
+      // Routed through `selectCue` so the click, the arriving cite and the reader's note list are ONE
+      // behaviour — three entry points that could otherwise drift apart.
+      btn.addEventListener("click", () => selectCue(c.id));
       li.appendChild(btn);
       list.appendChild(li);
       cueButtons.push(btn);
@@ -302,6 +342,14 @@ export function mountAvPlayer(host: HTMLElement, opts: AvPlayerOptions): AvPlaye
   media.src = object.source;
 
   return {
+    select(id: string): "seeked" | "shown" | "unknown" {
+      if (selectCue(id)) {
+        onTimeUpdate(); // paused media fires no timeupdate — sync the highlight to the new head
+        return "seeked";
+      }
+      // No cue, but the note may still be a whole-recording one with a body worth showing.
+      return showWholeNote(id) ? "shown" : "unknown";
+    },
     destroy(): void {
       media.removeEventListener("timeupdate", onTimeUpdate);
       media.removeEventListener("error", onError);

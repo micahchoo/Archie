@@ -12,7 +12,8 @@
     "test": "vitest run",
     "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit",
     "build": "node build.mjs",
-    "bundle:check": "node build.mjs --check"
+    "bundle:check": "node build.mjs --check",
+    "bundle:baseline": "node build.mjs --update"
   },
   "dependencies": {
     "@render/core": "workspace:*",
