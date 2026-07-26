@@ -172,7 +172,19 @@ test.describe("the fitted region clears the chrome that floats over the canvas (
     await goOffline(page);
 
     const offenders: string[] = [];
-    for (const note of notes) {
+    // A timeout reports the symptom at whatever boundary it happened to trip, not the reason: when
+    // this overran on 2026-07-26 it surfaced as "the deep-zoom canvas never painted", which is a true
+    // statement about a false cause. This budget trips FIRST, and says how far the sweep actually got.
+    const startedAt = Date.now();
+    const SWEEP_BUDGET_MS = 200_000; // under the 240s test timeout, so this message wins the race
+    for (const [i, note] of notes.entries()) {
+      const elapsed = Date.now() - startedAt;
+      expect(
+        elapsed,
+        `the sweep ran out of budget after ${i}/${notes.length} notes in ${Math.round(elapsed / 1000)}s. ` +
+          `This is a CLOCK failure, not a canvas one — check the elapsed time before suspecting WebGL, ` +
+          `and raise test.setTimeout above rather than narrowing the sweep.`,
+      ).toBeLessThan(SWEEP_BUDGET_MS);
       await openPaintedNote(page, note.ulid);
       const halo = await settled(page, HALO);
       expect(halo, `no halo for ${note.ulid} — the classifier promised one`).not.toBeNull();
