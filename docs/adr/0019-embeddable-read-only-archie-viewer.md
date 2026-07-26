@@ -133,9 +133,12 @@ the same object differently, which is the class of drift this whole table exists
 **The corpus default, which is what settled it.** `IIIF/clover-iiif` `Viewer/Viewer.tsx:180-184` renders
 `<ViewerHeader>` and `<ViewerContent>` as flex SIBLINGS (`Viewer.styled.tsx:15-22`), and that is
 precisely *why* its header can be `background-color: transparent !important`
-(`Header.styled.ts:57-73`) — nothing is behind it to be legible against. Its one genuinely over-canvas
-control, `PanelToggle`, is an **opaque plate** (`Viewer.styled.tsx:41-82`), i.e. it sidesteps the
-contrast question rather than solving it. `tropy` `src/components/esper/container.js:11,39` makes an
+(`Viewer/Viewer/Header.styled.ts:59`, `backgroundColor: "transparent !important"`) — nothing is behind
+it to be legible against. Its one genuinely over-canvas control, `PanelToggle`, is an **opaque plate**
+(`Viewer.styled.tsx:41-` — `position: absolute` + `background: $primary`), i.e. it sidesteps the
+contrast question rather than solving it. Precisely: `Viewer.styled.tsx:15-22` is the `Main` container
+(`display: flex`, `flexDirection: "column"`) that makes the header and the content COLUMN siblings —
+the header is the row above, which is exactly the shape adopted here. `tropy` `src/components/esper/container.js:11,39` makes an
 overlay toolbar **opt-in**, `hasOverlayToolbar` defaulting to `false`. `canvas-panel` paints no chrome
 over the image at all.
 

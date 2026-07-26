@@ -74,7 +74,7 @@
      fixed top bar by `--topbar-h` and capped against `100vh` so a contested object's readings could not
      grow off the bottom. None of that survives docking: a row cannot grow off anything, and the reason
      clover-iiif's header can be transparent applies here too — nothing is behind it (`Viewer.tsx:180-184`,
-     `Header.styled.ts:57-73`).
+     `Viewer/Viewer/Header.styled.ts:59`).
 
      Its layout flips with its home: the radios ran as a vertical column when it was a panel, and read as
      a HORIZONTAL row of chips in a bar. Same controls, same roles, same swatches. */
