@@ -2,7 +2,44 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10/annotations-power.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTZTE4PVA6MWH34XG5K7V/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o10",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:476.1593876479084,116.96088147152146,494.27492269955746,43.1971361014739"
+        }
+      },
+      "modified": "2026-06-22T04:53:52.415Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Press Cmd-K and search by text to find what to cite.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cmd-k",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "search",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTTZTE4PVA6MWH34XG5K7V/v1",
+      "created": "2026-06-22T04:53:51.054Z",
+      "archie:logicalId": "01KVPTTZTE4PVA6MWH34XG5K7V",
+      "archie:reading": "power",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTTZTE4PVA6MWH34XG5K7V.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",

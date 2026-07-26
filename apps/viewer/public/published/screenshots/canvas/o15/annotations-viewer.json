@@ -2,7 +2,111 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15/annotations-viewer.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV26C33PV4MX9278BAPFQ5/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:193.14211212516307,257.5619295958279,1039.6349413298565,544.4589308996087"
+        }
+      },
+      "modified": "2026-06-22T04:57:48.314Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Published exhibits greet visitors as a wall of cards — cover image, title, and how many notes wait inside.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "gallery",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cards",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV26C33PV4MX9278BAPFQ5/v1",
+      "created": "2026-06-22T04:57:47.139Z",
+      "archie:logicalId": "01KVPV26C33PV4MX9278BAPFQ5",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV26C33PV4MX9278BAPFQ5.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2G4V2788DZ8JT4KKWVE7/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:206.58566740098,279.59189407903625,342.06379535134647,472.7650271995683"
+        }
+      },
+      "modified": "2026-06-22T04:57:58.390Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Cards sit in the order you set, so the most important exhibit leads.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "order",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2G4V2788DZ8JT4KKWVE7/v1",
+      "created": "2026-06-22T04:57:57.147Z",
+      "archie:logicalId": "01KVPV2G4V2788DZ8JT4KKWVE7",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV2G4V2788DZ8JT4KKWVE7.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2SCY64FP7B31MXDKFVM9/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o15",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:559.6110202826076,278.87442538065267,318.2543214339703,539.3707776913068"
+        }
+      },
+      "modified": "2026-06-22T04:58:07.848Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "One card per exhibit; click through to read.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "open",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "exhibit",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV2SCY64FP7B31MXDKFVM9/v1",
+      "created": "2026-06-22T04:58:06.622Z",
+      "archie:logicalId": "01KVPV2SCY64FP7B31MXDKFVM9",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV2SCY64FP7B31MXDKFVM9.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",

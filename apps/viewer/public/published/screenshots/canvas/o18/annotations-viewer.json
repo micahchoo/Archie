@@ -2,7 +2,152 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/annotations-viewer.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7AJC9AMDV7KA3T4K4T44/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1028.604954367666,46.34941329856589,409.5176010430248,607.8226857887875"
+        }
+      },
+      "modified": "2026-06-22T05:00:36.607Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Audio and video read with a transcript spine — the words beside the sound, each line a moment you can jump to.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "transcript",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "spine",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7AJC9AMDV7KA3T4K4T44/v1",
+      "created": "2026-06-22T05:00:35.276Z",
+      "archie:logicalId": "01KVPV7AJC9AMDV7KA3T4K4T44",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV7AJC9AMDV7KA3T4K4T44.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7TVKJ7F7G6XDY4SVJ62F/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:254.32831362558795,470.9602660707756,492.9782742835579,53.40597971405208"
+        }
+      },
+      "modified": "2026-06-22T05:00:53.437Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click a transcript line to seek there; as it plays, the active line highlights and follows along.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "seek",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "highlight",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV7TVKJ7F7G6XDY4SVJ62F/v1",
+      "created": "2026-06-22T05:00:51.955Z",
+      "archie:logicalId": "01KVPV7TVKJ7F7G6XDY4SVJ62F",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV7TVKJ7F7G6XDY4SVJ62F.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV82JGG21D1GWRCK77CYW4/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:-0.37959549891194655,811.6761549495234,1015.2710354327334,72.36273038721447"
+        }
+      },
+      "modified": "2026-06-22T05:01:01.011Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The waveform doubles as a map of annotated moments.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "waveform",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "map",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV82JGG21D1GWRCK77CYW4/v1",
+      "created": "2026-06-22T05:00:59.856Z",
+      "archie:logicalId": "01KVPV82JGG21D1GWRCK77CYW4",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV82JGG21D1GWRCK77CYW4.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8Y393TA4F7G6Q0QDBKVW/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1025.5638310479999,564.828031177177,397.92481529769657,52.966101694915324"
+        }
+      },
+      "modified": "2026-06-22T05:01:29.710Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Step between sibling tracks from the carousel in a multi-object AV exhibit.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sibling",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "nav",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8Y393TA4F7G6Q0QDBKVW/v1",
+      "created": "2026-06-22T05:01:28.041Z",
+      "archie:logicalId": "01KVPV8Y393TA4F7G6Q0QDBKVW",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV8Y393TA4F7G6Q0QDBKVW.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",

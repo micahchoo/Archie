@@ -2,7 +2,75 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/annotations-power.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1QJ9PFANV0A3Y6ATGQZG/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:757.1657845777061,461.1886351785758,298.0443285528031,417.73142112125146"
+        }
+      },
+      "modified": "2026-06-22T03:47:43.679Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Emphasis makes a mark stand out or recede — normal, strong, or muted.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "emphasis",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1QJ9PFANV0A3Y6ATGQZG/v1",
+      "created": "2026-06-22T03:47:37.673Z",
+      "archie:logicalId": "01KVPQ1QJ9PFANV0A3Y6ATGQZG",
+      "archie:reading": "power",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ1QJ9PFANV0A3Y6ATGQZG.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ2HRPFN2N9YE8N47TF1E7/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:792.3397496470833,643.3725414743437,26.10545009099087,22.89373856560087"
+        }
+      },
+      "modified": "2026-06-22T03:48:06.470Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Deep-zoom to pixel detail — but never past native resolution, nor out into an unreadable speck. The camera clamps both ends.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "zoom",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "clamp",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ2HRPFN2N9YE8N47TF1E7/v1",
+      "created": "2026-06-22T03:48:04.502Z",
+      "archie:logicalId": "01KVPQ2HRPFN2N9YE8N47TF1E7",
+      "archie:reading": "power",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ2HRPFN2N9YE8N47TF1E7.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",

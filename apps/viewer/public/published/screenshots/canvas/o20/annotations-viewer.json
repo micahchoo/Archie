@@ -2,7 +2,121 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20/annotations-viewer.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVAF4TCGPRP95V980HRGM7/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:137.99217731421132,122.62059973924386,1132.333767926988,631.2907431551497"
+        }
+      },
+      "modified": "2026-06-22T05:02:19.512Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "A note can carry its own media — click a thumbnail and it opens full-screen.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "note",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "media",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVAF4TCGPRP95V980HRGM7/v1",
+      "created": "2026-06-22T05:02:18.266Z",
+      "archie:logicalId": "01KVPVAF4TCGPRP95V980HRGM7",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVAF4TCGPRP95V980HRGM7.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVATK54DXK4D8V45EGJS2R/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:232.90241456155113,161.49674997288952,1024.024368975112,575.8025103566426"
+        }
+      },
+      "modified": "2026-06-22T05:02:31.059Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Step through a note's images, audio, or video in a carousel with the arrow keys.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "carousel",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "arrows",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVATK54DXK4D8V45EGJS2R/v1",
+      "created": "2026-06-22T05:02:29.989Z",
+      "archie:logicalId": "01KVPVATK54DXK4D8V45EGJS2R",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVATK54DXK4D8V45EGJS2R.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVB1TKQ9PE28TXETBGSEQH/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o20",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:180.27624167692093,685.0451808703999,1074.0843954844645,50.73102042096912"
+        }
+      },
+      "modified": "2026-06-22T05:02:38.442Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The note's text sits beside the media; Esc or the backdrop closes it.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "text",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "beside",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "close",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPVB1TKQ9PE28TXETBGSEQH/v1",
+      "created": "2026-06-22T05:02:37.395Z",
+      "archie:logicalId": "01KVPVB1TKQ9PE28TXETBGSEQH",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPVB1TKQ9PE28TXETBGSEQH.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",

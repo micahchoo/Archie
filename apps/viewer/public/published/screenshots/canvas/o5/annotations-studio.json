@@ -2,7 +2,147 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3AAWR0TBS3E5XMPVH43C/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:431.0667449644606,148.89230769230826,563.2333767926987,87.02737940026077"
+        }
+      },
+      "modified": "2026-06-22T03:48:31.187Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Readings are competing interpretations of the same image — a 'cipher' reading, a 'botanical' reading — each its own coloured pass over the marks.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "readings",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3AAWR0TBS3E5XMPVH43C/v1",
+      "created": "2026-06-22T03:48:29.660Z",
+      "archie:logicalId": "01KVPQ3AAWR0TBS3E5XMPVH43C",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ3AAWR0TBS3E5XMPVH43C.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3PYKWSMSWN86SMP5QFJJ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1148.0908346417489,442.4878108120564,275.87093107944065,192.30418918311364"
+        }
+      },
+      "modified": "2026-06-22T03:48:43.803Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The rail lists every reading. The eye toggles a reading's marks on or off; the pen picks which reading you're authoring into.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "rail",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "visibility",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "filter",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3PYKWSMSWN86SMP5QFJJ/v1",
+      "created": "2026-06-22T03:48:42.579Z",
+      "archie:logicalId": "01KVPQ3PYKWSMSWN86SMP5QFJJ",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ3PYKWSMSWN86SMP5QFJJ.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3WXQ4PJ0614J4BEAC2XN/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1185.2358385757177,491.75479017904684,22.815751259013496,106.80780259713993"
+        }
+      },
+      "modified": "2026-06-22T03:48:49.960Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Give each reading a colour — its identity in the legend and on the canvas.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "colour",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "swatch",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ3WXQ4PJ0614J4BEAC2XN/v1",
+      "created": "2026-06-22T03:48:48.695Z",
+      "archie:logicalId": "01KVPQ3WXQ4PJ0614J4BEAC2XN",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ3WXQ4PJ0614J4BEAC2XN.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4C01AJ4MZNXYPKTMBA6G/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o5",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:419.0988522347517,466.5793025456476,168.39568925806373,48.28454060767183"
+        }
+      },
+      "modified": "2026-06-22T03:49:05.549Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Describe a reading in a line so readers know what lens they're looking through.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "description",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ4C01AJ4MZNXYPKTMBA6G/v1",
+      "created": "2026-06-22T03:49:04.129Z",
+      "archie:logicalId": "01KVPQ4C01AJ4MZNXYPKTMBA6G",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ4C01AJ4MZNXYPKTMBA6G.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

@@ -2,7 +2,80 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRDG94NM4T6KSZZ6QEV7P/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:467.71838331160365,242.30769230769232,505.7366362451108,533.8983050847455"
+        }
+      },
+      "modified": "2026-06-22T04:52:28.186Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Add a map as an object — a basemap you pan and zoom like any image, for notes about places.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "map",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "layer",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRDG94NM4T6KSZZ6QEV7P/v1",
+      "created": "2026-06-22T04:52:26.761Z",
+      "archie:logicalId": "01KVPTRDG94NM4T6KSZZ6QEV7P",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTRDG94NM4T6KSZZ6QEV7P.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRN8G5YTMAEFXQ6ANPP5Z/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o9",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:474.17209908735344,663.7880361522989,446.88749917132554,45.24561907497832"
+        }
+      },
+      "modified": "2026-06-22T04:52:36.000Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Frame a lat/lng extent and anchor a note to that patch of the world.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "geo",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "extent",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTRN8G5YTMAEFXQ6ANPP5Z/v1",
+      "created": "2026-06-22T04:52:34.704Z",
+      "archie:logicalId": "01KVPTRN8G5YTMAEFXQ6ANPP5Z",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTRN8G5YTMAEFXQ6ANPP5Z.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

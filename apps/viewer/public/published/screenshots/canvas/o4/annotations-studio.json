@@ -2,7 +2,188 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZDS42NAQF1A4751J79G3/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:911.0652759669719,473.3598742089974,154.82398956975237,69.26336375488921"
+        }
+      },
+      "modified": "2026-06-22T03:46:23.781Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Pin a note to any region: drag a box on the deep-zoom canvas and the note anchors there. Redraw or nudge the box whenever you like.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "region",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "annotation",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZDS42NAQF1A4751J79G3/v1",
+      "created": "2026-06-22T03:46:22.116Z",
+      "archie:logicalId": "01KVPPZDS42NAQF1A4751J79G3",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPZDS42NAQF1A4751J79G3.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZN0NJE6RPCQVSNNTFFEJ/v2",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+      "modified": "2026-06-22T03:46:31.464Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Or make a whole-object note with no box at all — a thin colour border frames the entire image instead of a region.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "whole-object",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPZN0NJE6RPCQVSNNTFFEJ/v1",
+      "created": "2026-06-22T03:46:29.525Z",
+      "archie:logicalId": "01KVPPZN0NJE6RPCQVSNNTFFEJ",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPZN0NJE6RPCQVSNNTFFEJ.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ09AGVX1H0TATKZW9HB22/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:906.5697589477821,470.90328654547255,166.23207301173386,73.3376792698827"
+        }
+      },
+      "modified": "2026-06-22T03:46:51.803Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Write the note body in markdown.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "comment",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "markdown",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ09AGVX1H0TATKZW9HB22/v1",
+      "created": "2026-06-22T03:46:50.320Z",
+      "archie:logicalId": "01KVPQ09AGVX1H0TATKZW9HB22",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ09AGVX1H0TATKZW9HB22.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ0ZPZC5CT5ZA3YHSDTWM5/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:905.3635661458206,473.3920034767501,167.3526441975098,67.90525858322462"
+        }
+      },
+      "modified": "2026-06-22T03:47:14.578Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Tag it — tags drive filtering and the search finder later.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "tags",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ0ZPZC5CT5ZA3YHSDTWM5/v1",
+      "created": "2026-06-22T03:47:13.247Z",
+      "archie:logicalId": "01KVPQ0ZPZC5CT5ZA3YHSDTWM5",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ0ZPZC5CT5ZA3YHSDTWM5.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1ABXZ0MVHKT94RSHK26Q/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1147.179388741199,450.2850812815683,275.4871963995579,197.23596940668745"
+        }
+      },
+      "modified": "2026-06-22T03:47:25.844Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Assign the note to a reading — one interpretive pass among several.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "reading",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ1ABXZ0MVHKT94RSHK26Q/v1",
+      "created": "2026-06-22T03:47:24.157Z",
+      "archie:logicalId": "01KVPQ1ABXZ0MVHKT94RSHK26Q",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ1ABXZ0MVHKT94RSHK26Q.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ25ABW3P2WHFJGWCZV2M5/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o4",
+      "modified": "2026-06-22T03:47:55.688Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Delete a note in one click; its mark and region go with it.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "delete",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPQ25ABW3P2WHFJGWCZV2M5/v2",
+      "created": "2026-06-22T03:47:51.755Z",
+      "archie:logicalId": "01KVPQ25ABW3P2WHFJGWCZV2M5",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPQ25ABW3P2WHFJGWCZV2M5.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

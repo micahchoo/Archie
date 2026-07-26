@@ -2,7 +2,44 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/annotations-embed.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTY1K7DWA15MPS9QANPR0J/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:716.3428207891895,426.6972029373288,387.6127421077938,467.7125903382745"
+        }
+      },
+      "modified": "2026-06-22T04:55:32.363Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Remote images deep-zoom in place — tiles load with anonymous CORS and a 60-second timeout, no copy required.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "remote",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "deep-zoom",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTY1K7DWA15MPS9QANPR0J/v1",
+      "created": "2026-06-22T04:55:31.175Z",
+      "archie:logicalId": "01KVPTY1K7DWA15MPS9QANPR0J",
+      "archie:reading": "embed",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTY1K7DWA15MPS9QANPR0J.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",

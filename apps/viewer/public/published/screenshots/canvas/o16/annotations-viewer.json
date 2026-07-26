@@ -2,7 +2,186 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16/annotations-viewer.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4PQEWGK6A28DZYYSQYZE/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:11.673Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Long note? Expand it into a centred reading sheet over a dimmed backdrop.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "expand",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sheet",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4PQEWGK6A28DZYYSQYZE/v2",
+      "created": "2026-06-22T04:59:09.422Z",
+      "archie:logicalId": "01KVPV4PQEWGK6A28DZYYSQYZE",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV4PQEWGK6A28DZYYSQYZE.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4WM6GFC3Q5YH9HV5HH34/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:17.986Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "The note list is a sidebar you can drag to resize or collapse; your preference is remembered next time.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "resizable",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "sidebar",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "persists",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV4WM6GFC3Q5YH9HV5HH34/v2",
+      "created": "2026-06-22T04:59:15.462Z",
+      "archie:logicalId": "01KVPV4WM6GFC3Q5YH9HV5HH34",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV4WM6GFC3Q5YH9HV5HH34.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV58QGTDE34GP9Z2TKBHT2/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:30.873Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Hover a note in the list and its mark solos on the canvas — everything else fades.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "hover",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "solo",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV58QGTDE34GP9Z2TKBHT2/v2",
+      "created": "2026-06-22T04:59:27.856Z",
+      "archie:logicalId": "01KVPV58QGTDE34GP9Z2TKBHT2",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV58QGTDE34GP9Z2TKBHT2.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5TTYBFP8MKF1SC63XFPC/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:48.706Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click a mark and the camera fits and highlights it; click a whole-object mark and a thin colour border frames the entire image.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "fit",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "highlight",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5TTYBFP8MKF1SC63XFPC/v2",
+      "created": "2026-06-22T04:59:46.398Z",
+      "archie:logicalId": "01KVPV5TTYBFP8MKF1SC63XFPC",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV5TTYBFP8MKF1SC63XFPC.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5Z9WKTNG4PVZNJFVFRV2/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:53.041Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Read an image with its notes pinned right to the regions they describe.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "pinned",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "notes",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV5Z9WKTNG4PVZNJFVFRV2/v2",
+      "created": "2026-06-22T04:59:50.972Z",
+      "archie:logicalId": "01KVPV5Z9WKTNG4PVZNJFVFRV2",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV5Z9WKTNG4PVZNJFVFRV2.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV63QEQZZX7VVGYBVNACF7/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o16",
+      "modified": "2026-06-22T04:59:57.626Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Selecting a note floats its card in beside the canvas; with the sidebar open, the camera centres the mark in the space you can still see.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "note",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "card",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "centre",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV63QEQZZX7VVGYBVNACF7/v2",
+      "created": "2026-06-22T04:59:55.502Z",
+      "archie:logicalId": "01KVPV63QEQZZX7VVGYBVNACF7",
+      "archie:reading": "viewer",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV63QEQZZX7VVGYBVNACF7.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/viewer.json",

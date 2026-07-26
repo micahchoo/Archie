@@ -2,7 +2,44 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18/annotations-power.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8AQJ1Q35K0TE5HXCDCZR/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o18",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:241.82890144179234,458.10708538274093,524.769861269106,80.35099788986645"
+        }
+      },
+      "modified": "2026-06-22T05:01:09.383Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Open at a shared timestamp and the player lands there, paused — no autoplay surprise.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "deep-link",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "paused",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV8AQJ1Q35K0TE5HXCDCZR/v1",
+      "created": "2026-06-22T05:01:08.210Z",
+      "archie:logicalId": "01KVPV8AQJ1Q35K0TE5HXCDCZR",
+      "archie:reading": "power",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV8AQJ1Q35K0TE5HXCDCZR.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",

@@ -2,7 +2,142 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPWV61EGQ8VK9A7AWC5KR3/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:130.02357550156162,201.3413915120946,1295.436766623207,671.6558018252933"
+        }
+      },
+      "modified": "2026-06-22T03:44:59.099Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "An exhibit opens as an overview — its objects laid out as plates on one canvas you pan and zoom, so you see the whole shape before diving into any single image.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "overview",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "canvas",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPWV61EGQ8VK9A7AWC5KR3/v1",
+      "created": "2026-06-22T03:44:57.537Z",
+      "archie:logicalId": "01KVPPWV61EGQ8VK9A7AWC5KR3",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPWV61EGQ8VK9A7AWC5KR3.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPX6VRX9CJJTZRWB3YBW4B/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:349.808568533077,224.3436484019039,336.0988355887245,36.98695319875915"
+        }
+      },
+      "modified": "2026-06-22T03:45:10.716Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Drag plates to arrange them — the layout is yours to compose.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "arrange",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPX6VRX9CJJTZRWB3YBW4B/v1",
+      "created": "2026-06-22T03:45:09.496Z",
+      "archie:logicalId": "01KVPPX6VRX9CJJTZRWB3YBW4B",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPX6VRX9CJJTZRWB3YBW4B.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXHXRX4KRD2JSPE6A7J9V/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:612.3958426766069,487.2400412005684,213.48552829230266,227.83749658086094"
+        }
+      },
+      "modified": "2026-06-22T03:45:22.281Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Click any plate to enter its editor and start annotating.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "enter",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "object",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXHXRX4KRD2JSPE6A7J9V/v1",
+      "created": "2026-06-22T03:45:20.824Z",
+      "archie:logicalId": "01KVPPXHXRX4KRD2JSPE6A7J9V",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPXHXRX4KRD2JSPE6A7J9V.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXYMDNM262HBZH9TKK77X/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o3",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:2.6183397432406252,137.46260317088618,1440.938722294654,63.36375488917869"
+        }
+      },
+      "modified": "2026-06-22T03:45:35.334Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Begin a narrative spine right here — frame these objects into an ordered story.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "narrative",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPXYMDNM262HBZH9TKK77X/v1",
+      "created": "2026-06-22T03:45:33.837Z",
+      "archie:logicalId": "01KVPPXYMDNM262HBZH9TKK77X",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPXYMDNM262HBZH9TKK77X.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

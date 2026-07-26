@@ -2,7 +2,139 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPHN7FTV2HEHQP4874791K/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:224.82398956975257,431.2255541069079,333.2464146023466,192.43807040417198"
+        }
+      },
+      "modified": "2026-06-22T03:38:52.611Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Your library is every exhibit you're authoring, gathered in one place. Open one to keep editing, or start a fresh exhibit.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "library",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "home",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPHN7FTV2HEHQP4874791K/v1",
+      "created": "2026-06-22T03:38:50.991Z",
+      "archie:logicalId": "01KVPPHN7FTV2HEHQP4874791K",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPHN7FTV2HEHQP4874791K.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJ4G30S8KATCWEWG3XMA2/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:889.5930977144695,345.22477701938556,132.04653691541114,41.03150314177748"
+        }
+      },
+      "modified": "2026-06-22T03:39:08.091Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Bind your work to disk however you like — a folder, one portable .archie.zip, or stay browser-only. The current binding shows here and you can switch anytime.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "save",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "binding",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJ4G30S8KATCWEWG3XMA2/v1",
+      "created": "2026-06-22T03:39:06.627Z",
+      "archie:logicalId": "01KVPPJ4G30S8KATCWEWG3XMA2",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPJ4G30S8KATCWEWG3XMA2.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJKJFF4H8GQPPRPXQXVX6/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:242.14041172084404,328.13802591510006,482.90020073173224,69.4517036094519"
+        }
+      },
+      "modified": "2026-06-22T03:39:23.257Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Save status, always visible: Saved, Saving…, or Unsaved. Browser-only work persists in the browser; bind to a file for a copy you can move or back up.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "save",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "status",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPJKJFF4H8GQPPRPXQXVX6/v1",
+      "created": "2026-06-22T03:39:22.063Z",
+      "archie:logicalId": "01KVPPJKJFF4H8GQPPRPXQXVX6",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPJKJFF4H8GQPPRPXQXVX6.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPK4C6V3EYVMWR1G0JP3W3/v2",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o2",
+      "modified": "2026-06-22T03:39:40.726Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Start an exhibit by bringing in media — images, audio, video, or a IIIF manifest URL.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "ingest",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPK4C6V3EYVMWR1G0JP3W3/v1",
+      "created": "2026-06-22T03:39:39.270Z",
+      "archie:logicalId": "01KVPPK4C6V3EYVMWR1G0JP3W3",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPK4C6V3EYVMWR1G0JP3W3.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

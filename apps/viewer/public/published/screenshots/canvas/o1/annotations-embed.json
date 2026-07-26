@@ -2,7 +2,133 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1/annotations-embed.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP7FN3KRAF8B45HJQKYSZG/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:16.607525735866844,14.331015156755731,584.9136732817352,49.2254081474728"
+        }
+      },
+      "modified": "2026-06-22T03:33:21.157Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Archie's reader drops into any web page as a single <archie-viewer> custom element — no framework, no build step on the host.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "web",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "embed",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP7FN3KRAF8B45HJQKYSZG/v1",
+      "created": "2026-06-22T03:33:17.603Z",
+      "archie:logicalId": "01KVPP7FN3KRAF8B45HJQKYSZG",
+      "archie:reading": "embed",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPP7FN3KRAF8B45HJQKYSZG.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP80S5NHFMEBP6XPB5X6B5/v2",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:33:36.169Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Point it at a published library by URL, or at a local .archie.zip to browse exhibits with no internet at all.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "src",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "offline",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "zip",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP80S5NHFMEBP6XPB5X6B5/v1",
+      "created": "2026-06-22T03:33:35.141Z",
+      "archie:logicalId": "01KVPP80S5NHFMEBP6XPB5X6B5",
+      "archie:reading": "embed",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPP80S5NHFMEBP6XPB5X6B5.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP9R9G1NT2Y4DVNH9748SC/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:34:35.012Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Deep-zoom still works inside the embed; tiles stream on demand.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "embedded",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "deep-zoom",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPP9R9G1NT2Y4DVNH9748SC/v2",
+      "created": "2026-06-22T03:34:31.984Z",
+      "archie:logicalId": "01KVPP9R9G1NT2Y4DVNH9748SC",
+      "archie:reading": "embed",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPP9R9G1NT2Y4DVNH9748SC.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPABZXRC6HX4FHSWFDK3MT/v3",
+      "type": "Annotation",
+      "target": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o1",
+      "modified": "2026-06-22T03:34:53.883Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Multiple embeds on one page stay independent — each tag carries its own library.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "instance",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "context",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPPABZXRC6HX4FHSWFDK3MT/v2",
+      "created": "2026-06-22T03:34:52.157Z",
+      "archie:logicalId": "01KVPPABZXRC6HX4FHSWFDK3MT",
+      "archie:reading": "embed",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPPABZXRC6HX4FHSWFDK3MT.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/embed.json",

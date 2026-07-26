@@ -2,7 +2,80 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12/annotations-studio.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXB33MANN2N5Q8NTMGNN4/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1198.8044191249219,134.16027354180855,229.79139504563227,267.2750977835723"
+        }
+      },
+      "modified": "2026-06-22T04:55:11.449Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Populate an exhibit with media — drop in images, audio, or video from your machine.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "ingest",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "media",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXB33MANN2N5Q8NTMGNN4/v1",
+      "created": "2026-06-22T04:55:08.131Z",
+      "archie:logicalId": "01KVPTXB33MANN2N5Q8NTMGNN4",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTXB33MANN2N5Q8NTMGNN4.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXMJFRNFAXNYT4W690FSZ/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o12",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:1219.265238552109,239.22343127550712,216.39874279478272,35.89222304003644"
+        }
+      },
+      "modified": "2026-06-22T04:55:19.009Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Paste a IIIF manifest URL and Archie pulls in its folios as objects, ready to annotate.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "iiif",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "import",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPTXMJFRNFAXNYT4W690FSZ/v1",
+      "created": "2026-06-22T04:55:17.839Z",
+      "archie:logicalId": "01KVPTXMJFRNFAXNYT4W690FSZ",
+      "archie:reading": "studio",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPTXMJFRNFAXNYT4W690FSZ.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/studio.json",

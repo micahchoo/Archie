@@ -2,7 +2,121 @@
   "@context": "https://www.w3.org/ns/anno.jsonld",
   "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14/annotations-power.json",
   "type": "AnnotationPage",
-  "items": [],
+  "items": [
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0NCEFYM5Z8R3MR7DVKB2/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:396.1408083441982,231.11507488758244,125.55410691003914,461.7793188542689"
+        }
+      },
+      "modified": "2026-06-22T04:56:58.298Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Archie is keyboard-first — a shortcut for every common move, listed in this overlay.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "shortcuts",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0NCEFYM5Z8R3MR7DVKB2/v1",
+      "created": "2026-06-22T04:56:56.974Z",
+      "archie:logicalId": "01KVPV0NCEFYM5Z8R3MR7DVKB2",
+      "archie:reading": "power",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV0NCEFYM5Z8R3MR7DVKB2.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0YJPEZZ54ZSNADDM2TVY/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:405.66693977311354,455.25505022989955,556.5915836954296,47.85647261680333"
+        }
+      },
+      "modified": "2026-06-22T04:57:07.741Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Save, cite (Cmd-K), and dismiss without leaving the keyboard.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "save",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "cite",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "dismiss",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV0YJPEZZ54ZSNADDM2TVY/v1",
+      "created": "2026-06-22T04:57:06.390Z",
+      "archie:logicalId": "01KVPV0YJPEZZ54ZSNADDM2TVY",
+      "archie:reading": "power",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV0YJPEZZ54ZSNADDM2TVY.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV1687SJBZHBAAHGD96WXM/v2",
+      "type": "Annotation",
+      "target": {
+        "source": "https://micahchoo.github.io/Archie/viewer/published/screenshots/canvas/o14",
+        "type": "SpecificResource",
+        "selector": {
+          "type": "FragmentSelector",
+          "conformsTo": "http://www.w3.org/TR/media-frags/",
+          "value": "xywh=pixel:416.33942345036235,419.07203525963627,412.0773771922188,33.994310794529156"
+        }
+      },
+      "modified": "2026-06-22T04:57:16.046Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "Step between objects and open this help from anywhere with a key.",
+          "purpose": "commenting"
+        },
+        {
+          "type": "TextualBody",
+          "value": "object",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "nav",
+          "purpose": "tagging"
+        },
+        {
+          "type": "TextualBody",
+          "value": "help",
+          "purpose": "tagging"
+        }
+      ],
+      "prov:wasRevisionOf": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/01KVPV1687SJBZHBAAHGD96WXM/v1",
+      "created": "2026-06-22T04:57:14.247Z",
+      "archie:logicalId": "01KVPV1687SJBZHBAAHGD96WXM",
+      "archie:reading": "power",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/history/01KVPV1687SJBZHBAAHGD96WXM.json"
+    }
+  ],
   "partOf": [
     {
       "id": "https://micahchoo.github.io/Archie/viewer/published/screenshots/annotations/readings/power.json",
