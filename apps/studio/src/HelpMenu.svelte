@@ -12,7 +12,16 @@
   // so it takes NO focus trap — only `use:floating`, which registers it on the shared dismissal ladder so
   // Esc closes it first (the ladder's top rung, ahead of any scrimmed surface). Archie-5968.
   import { floating } from "./modality.svelte";
-  let { ontutorial, onshortcuts }: { ontutorial: () => void; onshortcuts: () => void } = $props();
+  // `onsettings` is OPTIONAL so a host that has no settings surface offers no item, rather than a
+  // dead one — the same shape as Publish's `previewtree`/`onexportselfcontained`. It lives here, on
+  // the shared menu, because both the editor chrome AND the library home mount it: one edit, and the
+  // door is reachable from either place. (CmdK alone would be undiscoverable; a new chrome control
+  // would be a second thing to find.)
+  let { ontutorial, onshortcuts, onsettings }: {
+    ontutorial: () => void;
+    onshortcuts: () => void;
+    onsettings?: () => void;
+  } = $props();
   let open = $state(false);
 </script>
 
@@ -24,6 +33,10 @@
     <div class="help-menu" role="menu" use:floating={{ onClose: () => (open = false) }}>
       <button role="menuitem" onclick={() => { open = false; ontutorial(); }}>Start the tutorial</button>
       <button role="menuitem" onclick={() => { open = false; onshortcuts(); }}>Keyboard shortcuts <kbd>?</kbd></button>
+      {#if onsettings}
+        {@const openSettings = onsettings}
+        <button role="menuitem" onclick={() => { open = false; openSettings(); }}>Settings</button>
+      {/if}
     </div>
   {/if}
 </div>
