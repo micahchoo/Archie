@@ -62,13 +62,13 @@ premise about the fixture was never checked.
   `CONTRACTED_LABELS` in `recipes/smoke.mjs`. A label list derived from the same structure that emits
   the labels is a tautology and cannot catch anything.
 
-## And the process half
+## The process half lives next door
 
-**A fix made after the review is unreviewed.** The splice that removed five labels from
-`CONTRACTED_LABELS` — silently dropping the completeness check from 40 rows to 35, including every AV
-row — landed in the commit written *in response to the review's findings*. The reviewed SHA was
-clean. The natural moment to relax is exactly when the hard part has been signed off; re-run the gate
-and re-read the diff after the last fix, not before it.
+The splice that dropped `CONTRACTED_LABELS` from 40 rows to 35 landed in an **unreviewed
+post-review commit**, and the habits that catch that class — assert the anchor is *unique* rather
+than merely present, reconcile every reported number against one you actually read, read the DETAIL
+line and not just `PASS`/`FAIL` — are in `[[post-review-fixes-are-unreviewed]]`. Read both; they are
+the same failure wearing different clothes.
 
 Parent principle in `[[svelte-no-typecheck-net]]`: a gate answers the question it was asked, and
 *"did this actually exercise anything?"* is a question no gate asks itself.
