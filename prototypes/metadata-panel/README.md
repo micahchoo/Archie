@@ -52,8 +52,10 @@ but are never rows of the metadata list.
   per-object metadata tables on demand at the figure. Variant B is this shape.
 - **Tropy** (in `Annotators/Image/tropy`) — template-driven label:value metadata panel
   in a side pane; repeated fields render one label with stacked values.
-- **prototypes/marginalia-presentation** — repo precedent for the throwaway static
+- **prototypes/metadata-editor** — repo precedent for the throwaway static
   prototype form (self-contained HTML, README stating the question + decisions).
+  (`prototypes/marginalia-presentation` was the precedent cited when this was
+  written; it was deleted 2026-07-26 after its ticket `Archie-f411` closed.)
 
 Seed data mirrors `apps/viewer/fixtures/voynich.ts` (folio labels, Yale IIIF image ids,
 the Beinecke requiredStatement). Visual system is the live Verdant Clearing tokens
