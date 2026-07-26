@@ -87,6 +87,48 @@ stays an empty label. Both agents are now adding explicit paths only. The fixtur
 in its report, which of its files landed inside `dca4215`, so a reviewer of that commit knows two
 hands are in it.
 
+### REVIEW OF THE FIXTURE SLICE — 1 BLOCKER, 3 SHOULD-FIX, 4 NIT
+
+Report: `ledgers/REVIEW-ux-fixture-slice-2026-07-26.md` in worktree `agent-afc9cdda6410329fa`
+(**not on any branch** — copy it before that worktree is reaped). **17 injections, 15 went red.**
+Fix commit `1d3e33a` landed at 15:34; its red-greens are not yet reported and it has a possible
+`pnpm typecheck` error at `seed-carry.test.ts:36` that is unconfirmed at time of writing.
+
+**BLOCKER — a negative assertion that cannot fail.** `fixture-reach.test.ts` `is absent from the
+exhibits that do not carry o9`: deleting the object filter outright (`if (!keep(…)) continue` →
+`if (false) continue`) left it at `8 passed`, and the studio twin at `3 passed`. Structural, and the
+shape generalises: `ex-atlas`/`ex-geo`/`ex-sampler` come from three builder functions that never
+reference `voynichPolygonNotes`, so **no change to the filter can reach them**. Worse, of the exhibits
+`buildVoynichLog` does produce, the only object-restricted one (`voynich-rosettes`) *carries* o9 — so
+no exhibit exists in which the polygon should be filtered out, and `keep()` is an untested branch with
+no test that could cover it. A second probe renaming the ids also passed, because `getLog` is
+`logsById[id] ?? []` and an unknown id yields `[]` → `toHaveLength(0)` → green. The donor fix was
+already in the same commit: `seed-carry.test.ts`'s `expect(make, \`no seed factory for ${slug}\`)
+.not.toBeNull()`, which *did* redden under the rename probe.
+
+**SHOULD-FIX 1 — the guard is implemented THREE times, not two.** `NarrativeReader.svelte:877` is
+ungated; reverting it leaves `note-surface.spec.ts` at `10 passed` and the full suite at `137`. The
+reason it was missed is the slice's own subject: `grep -rn '!\[' apps/viewer/fixtures/*.ts` returns two
+hits, both in `sampler.ts`, and the sampler is not a narrative exhibit — **no fixture can reach the
+narrative reader's sheet-media route at all.**
+
+**SHOULD-FIX 3 — `Archie-b135`'s own proposed red-green is a NO-OP, and this is worth carrying past
+this slice.** The ticket asks the V49 fix be proven by deleting `box-sizing: border-box` from
+`.player`. `packages/render-core/src/tokens.css:201-203` is `* { box-sizing: border-box; }`, so
+deleting the declaration changes no computed style: the reviewer dumped the geometry and `.player`
+still reports `border-box`, `.tl-track` still sits at y 556→580, and the suite stays green **because
+nothing happened**. Forcing `content-box` explicitly is what reproduces it. So the author's choice of
+an outcome assertion over the mechanism assertion is better-founded than their commit message argues —
+the mechanism red-green was *unavailable*, not merely superseded. **A ticket that prescribes its own
+red-green is prescribing an untested probe.**
+
+**Verified clean by the reviewer:** published tree regenerates byte-identical (539 files, empty `git
+status`); the fixtures reached the artifact, grepped rather than inferred (polygon in exactly the 9
+o9-carrying files, `t=165,205` on the abjad reading channel only); zero vacuity patterns, zero skipped
+tests; and **all sixteen prior-art citations opened at their cited lines and confirmed.** It did not
+re-run either `svelte-check` (no `.svelte` file changed) and says so rather than inheriting the
+author's figures.
+
 ### The fixture slice — FINISHED, and its report exists nowhere but here
 
 `ux/fixture-slice` = **`1cdf706`**, parent `49327c0`, not merged, not pushed. The agent's operating
