@@ -27,7 +27,14 @@ export default defineConfig({
   // Serial: the specs share one dev server and drive global browser history; parallel workers would
   // only add nondeterminism without isolating anything the per-test browser context doesn't already.
   workers: 1,
-  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : [["list"]],
+  // `flaky-reporter` raises a retried-but-passed test to a GitHub annotation + the job summary,
+  // carrying the FIRST run's error. The retry stays (a real browser under runner load will noise
+  // occasionally, and a build that cries wolf gets ignored) — but a load-sensitive DEFECT looks
+  // exactly like that noise, which is how one nearly shipped on 2026-07-26. Human ruling: keep the
+  // retry, surface the flake. See scripts/flaky-reporter.mjs for the full reasoning.
+  reporter: process.env.CI
+    ? [["list"], ["html", { open: "never" }], ["../../../scripts/flaky-reporter.mjs"]]
+    : [["list"]],
   timeout: 30_000,
   expect: { timeout: 10_000 },
   use: {

@@ -7,7 +7,10 @@
   "license": "GPL-3.0-only",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts",
+    "./single": "./dist-single/archie-viewer.single.js"
+  },
   "scripts": {
     "test": "vitest run",
     "typecheck": "node ../../node_modules/typescript-native/bin/tsc --noEmit",

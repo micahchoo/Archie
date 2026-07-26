@@ -11,3 +11,11 @@
 // pulls vite's whole ambient surface (import.meta.env, the ?url/?raw/?worker query-suffix modules,
 // asset module types) into a project that uses none of it. This states only the missing fact.
 declare module "*.css";
+
+// `?raw` imports (Vite): the text of a file as a string. Used by the self-contained export to inline
+// the IIFE viewer bundle (publish-flows `exportSelfContained`). TS7 reports TS2882/TS2307 on an
+// undeclared module specifier where TS5 was silent — see .claude/rules/two-typescript-compilers.md.
+declare module "*?raw" {
+  const content: string;
+  export default content;
+}

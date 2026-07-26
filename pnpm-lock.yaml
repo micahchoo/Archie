@@ -44,6 +44,9 @@ importers:
       '@annotorious/plugin-tools':
         specifier: ^1.6.0
         version: 1.6.0(@annotorious/annotorious@3.8.2)(@annotorious/openseadragon@3.8.2(openseadragon@5.0.1))
+      '@render/archie-viewer':
+        specifier: workspace:*
+        version: link:../../packages/archie-viewer
       '@render/core':
         specifier: workspace:*
         version: link:../../packages/render-core

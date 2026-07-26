@@ -37,6 +37,11 @@
   import IdentityPrompt from "./IdentityPrompt.svelte";
   import TutorialModal from "./TutorialModal.svelte";
   import HelpMenu from "./HelpMenu.svelte";
+  import Settings from "./Settings.svelte";
+  // Settings' diagnostics readouts (L4) — the pool width and fallback counter come from the modules
+  // that own them, never from a copied constant, so the panel cannot report a stale ceiling.
+  import { bakePoolSize, bakeFallbackCount } from "./bake-async.js";
+  import { poolAvailable } from "./dzi-slice-pool.js";
   import NoteEditor from "./NoteEditor.svelte";
   import Marginalia from "./Marginalia.svelte";
   import { matches, typingInField } from "./shortcuts.js";
@@ -50,7 +55,7 @@
     AnnotationSession, asClientId, encodeLinkRef, stripMarkdown,
     timeFragmentValue, mediaFragmentValue, parseTimeFragment, importTranscript, thumbnailUrl,
     tagsOf, emphasisOf, readingMarkerStyle, withZoomBand, workingToLibrary, resolveLayoutType,
-    isWholeObjectFor, wholeObjectFlagOf, selectorOf, selectorBBox,
+    isWholeObjectFor, wholeObjectFlagOf, selectorOf, selectorBBox, DZI_TILE_SIZE,
     type LogicalId, type Library, type LayoutType, type W3CAnnotation, type W3CBody, type AnnotationRecord, type AnnotationLog, type Section, type Reading, type RightsFields, type Emphasis, type TileSourceDescriptor,
   } from "@render/core";
   import { formatZoomRatio, zoomBand, type DrawTool, type MarkerStyle, type FrameOverlay } from "@render/mount";
@@ -1751,6 +1756,18 @@
   }
   let helpOpen = $state(false); // the `?` shortcuts cheat-sheet
   let tutorialOpen = $state(false); // the onboarding tutorial modal (embeds the learn decks)
+  let settingsOpen = $state(false); // the Settings panel (door: HelpMenu, shared with LibraryHome)
+  // Runtime facts the Settings panel READS (L4 — diagnostics, never knobs). Passed as a thunk so the
+  // panel reads them when it opens rather than this component re-deriving them on every tick;
+  // bakeFallbackCount in particular is a plain module counter, not reactive state.
+  function settingsDiagnostics() {
+    return {
+      bakeWorkers: bakePoolSize(),
+      bakeFallbacks: bakeFallbackCount(),
+      tilePoolAvailable: poolAvailable(),
+      dziTileSize: DZI_TILE_SIZE,
+    };
+  }
   // Global + image-editor keyboard shortcuts (registry-driven; AV shortcuts live in AvEditor, palette in CmdK).
   function onGlobalKey(e: KeyboardEvent) {
     // ? opens the shortcuts cheat-sheet when NOTHING is scrimmed (not while typing). When ShortcutsHelp IS
@@ -2161,10 +2178,14 @@
       bindingKind={bnd.binding.kind} bindingDirty={bnd.dirty} bindingBusy={bnd.busy} bindingError={bnd.error}
       hasRealWork={safetyHasRealWork} onflush={requestSave} />
     <button class="publish-signal" onclick={() => maybePromptIdentity(() => void ensurePub().then((p) => p.openMenu()))}>Publish & share…</button>
-    <HelpMenu ontutorial={() => (tutorialOpen = true)} onshortcuts={() => (helpOpen = true)} />
+    <HelpMenu ontutorial={() => (tutorialOpen = true)} onshortcuts={() => (helpOpen = true)}
+      onsettings={() => (settingsOpen = true)} />
   </header>
 
   <ReadingsModal open={readingsOpen} readings={currentReadings} palette={READING_PALETTE} onchange={setReadings} onadd={(id) => rdg.setActive(id)} onclose={() => (readingsOpen = false)} />
+
+  <Settings open={settingsOpen} onclose={() => (settingsOpen = false)}
+    libraryName={lib.meta.title || PROJECT_TITLE} diagnostics={settingsDiagnostics} />
 
   {#if isTemplate(vs.currentSlug)}
     <!-- Per-exhibit playground banner (§115): an EXAMPLE is a template — exploring it is honest play,
@@ -2676,6 +2697,8 @@
       onzip={p.localPublishZip}
       ondownload={p.download}
       onenterweb={p.openPublish}
+      previewtree={p.previewTree}
+      onexportselfcontained={() => p.exportSelfContained()}
       exhibits={exportableExhibits}
       suggestedZipName={suggestedZipName}
       library={deployLibrary}

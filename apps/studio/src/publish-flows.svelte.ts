@@ -9,7 +9,7 @@ import {
   MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, publishToGitHub, renderMarkdown, readStructureReport, asExhibitId,
   type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type MissingAsset, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
 } from "@render/core";
-import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk } from "./binding.js";
+import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk, downloadHtml } from "./binding.js";
 import type { CorruptLogFinding } from "./publish-warnings.js";
 import { pickFolderBinding } from "./folder-backend.js";
 import { sliceToDziAuto } from "./dzi-slice-pool.js";
@@ -79,6 +79,24 @@ const ZIP_WARN_BYTES = 250 * 1024 * 1024; // ~250 MB
 // a couple GB. 1 GiB uncompressed (≈2 GiB peak) is the backstop — past it ZipFilesystem throws an
 // actionable "publish to a folder / link by URL" error instead of OOMing (SCALE requirement #2).
 const EAGER_ZIP_CEILING_BYTES = 1024 * 1024 * 1024; // 1 GiB
+
+// The single-file export's HARD cap — a refusal, not a confirm, and the only guard in this file shaped
+// that way. Every other size guard here warns and lets the author proceed, which is right when the
+// browser's own download/progress UI carries the wait. The single-file export has no such cover:
+// the cost is the browser TOKENIZING one enormous HTML document, which happens BEFORE any script in
+// it runs, so nothing we ship can draw a spinner. The user sees a blank window and nothing else.
+//
+// Measured in Chromium from file:// with the real bundle (payload → .html size → time to open):
+//     1 MB →   2.2 MB → 0.05 s        50 MB →  68 MB → 0.9 s
+//    10 MB →  14.2 MB → 0.15 s       150 MB → 201 MB → 6.3 s
+//                                    300 MB → 401 MB → 22.1 s
+// It never crashed — atob is cheap and linear (636 ms at 300 MB). Document parse is the cost and it
+// is superlinear. So the ceiling is patience, not capacity, which is exactly why proceed-anyway is
+// the wrong shape: a 22-second blank window reads as a broken file, not a slow one.
+const SINGLE_FILE_MAX_BYTES = 50 * 1024 * 1024; // ~50 MB in, ~68 MB out, under a second to open
+
+/** What the single-file export reports back. `too-large` carries the size so the UI can say the number. */
+export type SelfContainedResult = { ok: true } | { ok: false; reason: "too-large"; mb: number };
 
 export function createPublishFlows(deps: PublishDeps) {
   // ONE open flag (Archie-1921 — PublishDialog + the Publish wizard merged into one scrimmed surface):
@@ -341,6 +359,57 @@ export function createPublishFlows(deps: PublishDeps) {
     get missingAssets(): MissingAsset[] { return s.missingAssets; },
     openMenu() { s.open = true; },
     close() { s.open = false; },
+
+    /**
+     * The published tree, in memory, for an in-Studio preview (archie-ux Q-6) — handed straight to
+     * `<archie-viewer>`'s `openLibraryFs`, never serialized.
+     *
+     * Reuses `projectSite(false)` rather than `buildZipFs` for three reasons: it is the SAME
+     * projection the GH-Pages deploy pushes (so a preview is evidence about what readers actually
+     * get, not a second rendering path), it skips deflate entirely, and it stays clear of the eager
+     * zip path's ~2× memory peak (see the LARGE-MEDIA note at the top of this file) and its
+     * EAGER_ZIP_CEILING_BYTES abort — neither of which a preview has any reason to pay.
+     *
+     * Originals are excluded (`withOriginals: false`): a preview reads, it does not archive.
+     */
+    previewTree: () => projectSite(false),
+
+    /**
+     * The SELF-CONTAINED export (archie-linkability Q-3): one .html file holding the viewer and the
+     * library, openable by double-click with no server, no hosted Archie, and no network.
+     *
+     * Unlike `previewTree` this deliberately DOES take the zip path — `.archie.zip` is the portable
+     * format the element's `openFile` already reads, and an export is a heavyweight, explicitly-
+     * requested action where the eager path's cost is the same one `download` already pays. The size
+     * guard runs first for exactly that reason, and it is stricter here: base64 inflates the payload
+     * by ~33%, so the same library costs more as an export than as a zip.
+     *
+     * The bundle is fetched with a DYNAMIC import so ~900KB of viewer source does not land in
+     * Studio's startup chunk — Vite splits it into its own chunk, loaded the first time an author
+     * exports. `?raw` because the text is data here, not code this app runs.
+     *
+     * Returns false when the size guard declined; the caller surfaces nothing (the guard already did).
+     */
+    async exportSelfContained(opts?: ZipExportOpts): Promise<SelfContainedResult> {
+      // HARD cap, not a confirm — see SINGLE_FILE_MAX_BYTES. The other size guards in this file are
+      // warn-and-proceed because the browser's own download UI shows progress; this one cannot be.
+      const bytes = await estimateLibraryBytes(opts?.slugs);
+      if (bytes >= SINGLE_FILE_MAX_BYTES) {
+        return { ok: false, reason: "too-large", mb: Math.round(bytes / (1024 * 1024)) };
+      }
+      const [{ buildSingleFileHtml }, bundleMod, { fs }] = await Promise.all([
+        import("./single-file-export.js"),
+        import("@render/archie-viewer/single?raw"),
+        buildZipFs(opts?.slugs),
+      ]);
+      const html = buildSingleFileHtml({
+        bundle: (bundleMod as { default: string }).default,
+        libraryBytes: fs.toZip(),
+        title: deps.buildFullLibrary().title ?? "",
+      });
+      downloadHtml(html, (opts?.name ?? deps.currentZipName()).replace(/\.archie\.zip$/, "") || "library");
+      return { ok: true };
+    },
 
     /** Write the whole published tree into a bound folder's Filesystem (FSA or Tauri — the git /
      *  GH-Pages on-ramp; also the binding store's folder sink). */

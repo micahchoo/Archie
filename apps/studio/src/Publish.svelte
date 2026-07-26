@@ -37,6 +37,7 @@
   import { untrack } from "svelte";
   import { createPublishMachine, isResumableState } from "./publish-machine.svelte.js";
   import Spinner from "./Spinner.svelte";
+  import ViewerPreview from "./ViewerPreview.svelte";
   import { isTauri } from "./tauri-fs.js";
   // Scrimmed surface via the shared helper (Archie-5968): scrim-click + Esc + focus trap/return, single-scrim
   // invariant. ONE `use:scrimmed` now (was two, one per dialog) — merging removes the unmount/remount that
@@ -58,6 +59,8 @@
     onzip,
     ondownload,
     onenterweb,
+    previewtree,
+    onexportselfcontained,
     exhibits = [],
     suggestedZipName = "",
     // --- desktop device-flow seams (App.svelte wires these from deploy-flows in Task 13) ---
@@ -93,6 +96,13 @@
     /** Entering the GitHub wizard step from the chooser: runs the size-guard confirm + caches the site
      *  projection (publish-flows' openPublish). Resolves false if the author declined the guard — stay put. */
     onenterweb: () => Promise<boolean>;
+    /** Build the published tree in memory for the "as a reader sees it" preview (publish-flows'
+     *  previewTree). Optional: absent ⇒ the preview affordance is not offered at all, which is how a
+     *  host that cannot project a site (no library open) degrades — not a button that errors. */
+    previewtree?: () => Promise<{ fs: import("@render/core").Filesystem }>;
+    /** Write the self-contained single-file export (publish-flows' exportSelfContained). Optional for
+     *  the same reason previewtree is: a host that can't build one offers no card, never a broken one. */
+    onexportselfcontained?: () => Promise<{ ok: true } | { ok: false; reason: "too-large"; mb: number }>;
     /** The exportable (non-template) exhibits, for the working-copy chooser's include list. */
     exhibits?: { slug: string; title: string }[];
     /** The name the export starts from — the bound zip's name, else derived from the library title. */
@@ -173,7 +183,11 @@
   });
 
   // === step 1: the destination chooser (former PublishDialog.svelte) ===================================
-  type MenuPhase = "choose" | "zip-options" | "local" | "working" | "done-folder" | "done-zip" | "done-download" | "error" | "wizard";
+  // "preview" is a PHASE of this surface, not a second scrim — the modality contract's nested-flow
+  // rule (see this file's header): opening one surface from inside another replaces it, with an
+  // in-surface back affordance. A preview overlay on top of the dialog would break the single-scrim
+  // invariant.
+  type MenuPhase = "choose" | "zip-options" | "local" | "working" | "done-folder" | "done-zip" | "done-download" | "error" | "wizard" | "preview";
   let menuPhase = $state<MenuPhase>("choose");
   let folderName = $state("");
   let zipName = $state("");
@@ -279,6 +293,22 @@
   /** In-surface "← Back" from the wizard's entry screens to step 1 (the modality contract's nested-flow
    *  rule) — NOT a close, so it never touches machine state. */
   function backToChooser() { menuPhase = "choose"; }
+  // The single-file export reuses the working/error phases the other destinations use — same shape,
+  // same recovery. `false` means the size guard declined, which already told the author why: return
+  // to the chooser rather than showing a second, emptier message.
+  async function exportSelfContained() {
+    if (!onexportselfcontained) return;
+    menuPhase = "working"; destErrorMsg = "";
+    try {
+      const r = await onexportselfcontained();
+      if (r.ok) { menuPhase = "done-download"; return; }
+      // A refusal, not a failure. The error phase is the honest home for it (it has the Back
+      // affordance), but the copy must STEER rather than apologise — the author has a working
+      // route, it just isn't this one.
+      destErrorMsg = `This library is about ${r.mb} MB. A single file that size opens on a blank screen for several seconds, which reads as broken — so Archie doesn't make one. Use “Locally” or “Share a working copy” instead, or link large media by URL so the library references it rather than copying it in.`;
+      menuPhase = "error";
+    } catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't build the single-file export."; menuPhase = "error"; }
+  }
 
   // === the zip export fields (ZipExportFields): name the file, pick the exhibits =======================
   // ONE state pair serves both zip surfaces (the working-copy panel and the local-publish fallback) —
@@ -409,7 +439,26 @@
   <div class="dialog" role="dialog" aria-modal="true" aria-label="Publish" tabindex="-1"
     use:scrimmed={{ onClose: close }} onkeydown={trapFocus}>
 
-    {#if menuPhase === "choose"}
+    {#if menuPhase === "choose" && exhibits.length === 0}
+      <!-- Refuse-and-explain on a library with nothing publishable in it. `exhibits` IS the publishable
+           set — App passes `exportableExhibits`, the same `!isTemplate(slug)` filter `buildFullLibrary`
+           applies via `workingToLibrary` — so this cannot drift from what a publish would actually ship;
+           one predicate, read twice, rather than a second count that could disagree.
+           Before this, every destination happily built a site with zero exhibits and said nothing: a
+           fresh install (examples only) published an empty gallery and reported success. The working-copy
+           panel was already unreachable here (its export button disables on an empty selection) but gave
+           no reason, so this screen is also that missing explanation. -->
+      <header>
+        <p class="eyebrow">Publish</p>
+        <h2>There's nothing to publish yet</h2>
+        <p class="lede">The examples Archie ships with are a playground, not your content — publishing leaves them out. Right now that would build an empty site, so Archie won't build one.</p>
+      </header>
+      <p class="empty-note">Two ways on: start an exhibit of your own, or open an example and press <strong>Keep a copy</strong>. A copy belongs to you, and it publishes.</p>
+      <div class="actions">
+        <button type="button" class="ghost" onclick={close}>Close</button>
+      </div>
+
+    {:else if menuPhase === "choose"}
       <header>
         <p class="eyebrow">Publish</p>
         <h2>Where should this go?</h2>
@@ -433,6 +482,12 @@
           <span class="c-title">Share a working copy</span>
           <span class="c-desc">A copy of your library a colleague can open, annotate, and send back to you — or keep as your own backup, or share as a link. One <code>.archie.zip</code> file. Good for a work in progress, not a permanent citation.</span>
         </button>
+        {#if onexportselfcontained}
+          <button class="choice" onclick={exportSelfContained}>
+            <span class="c-title">A deposit copy</span>
+            <span class="c-desc">One <code>.html</code> file holding the library <em>and</em> a reader. Opens by double-click — no server, no account, no internet — and will still open in ten years. Shows your objects, images, notes and narrative readings. <strong>Search isn't in it</strong> — that needs the full Viewer. Best for a USB stick, an attachment, or an archival deposit.</span>
+          </button>
+        {/if}
         {#if !deployToPages}
           <!-- Flag off (no deploy infra): the quieter escape hatch — same wizard. -->
           <button class="choice" onclick={enterWizard}>
@@ -441,7 +496,17 @@
           </button>
         {/if}
       </div>
-      <div class="actions"><button type="button" class="ghost" onclick={close}>Cancel</button></div>
+      <div class="actions">
+        {#if previewtree}
+          <!-- Not a destination, so not a `.choice` — a secondary action beside Cancel. Reads as
+               "see it before you decide where it goes." -->
+          <button type="button" class="ghost" onclick={() => (menuPhase = "preview")}>Preview as reader</button>
+        {/if}
+        <button type="button" class="ghost" onclick={close}>Cancel</button>
+      </div>
+
+    {:else if menuPhase === "preview" && previewtree}
+      <ViewerPreview {previewtree} onback={backToChooser} />
 
     {:else if menuPhase === "zip-options"}
       <header>
@@ -966,6 +1031,12 @@
     background: var(--surface-canvas-raised); color: var(--ink-paper-primary);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lift-mid); padding: var(--space-6);
+    /* A centred fixed dialog with no height cap overflows BOTH edges once its content exceeds the
+       viewport, and nothing can scroll it back — the content above the top edge is unreachable, not
+       merely off-screen. Latent since the surface was built; the chooser crossed the threshold when
+       it grew a fourth destination card. Caught by e2e/preview.spec.ts ("element is outside of the
+       viewport" with scroll-into-view already attempted), which is the only gate that could see it. */
+    max-height: calc(100vh - var(--space-8)); overflow-y: auto; overscroll-behavior: contain;
   }
   header { margin-bottom: var(--space-5); }
   .eyebrow { color: var(--ink-paper-muted); }
@@ -974,6 +1045,15 @@
   .lede { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-secondary); margin: 0; }
 
   /* Step 1 — the destination chooser. */
+  /* The nothing-to-publish screen's one paragraph: the way FORWARD, held apart from the lede (which
+     says why there's nothing) so the reader's next action isn't buried in the explanation. */
+  .empty-note {
+    font-family: var(--font-body); font-size: 1rem; line-height: 1.6; margin: 0;
+    color: var(--ink-paper-primary);
+    padding: var(--space-4) var(--space-5);
+    border: 1px solid var(--border-paper); border-radius: var(--radius-lg);
+    background: var(--surface-paper-hover);
+  }
   .choices { display: flex; flex-direction: column; gap: var(--space-3); }
   .choice {
     display: flex; flex-direction: column; gap: var(--space-1); text-align: left; cursor: pointer;

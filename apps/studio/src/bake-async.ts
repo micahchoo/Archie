@@ -37,11 +37,18 @@ export function bakeWorkersAvailable(): boolean {
 let fallbacks = 0;
 export const bakeFallbackCount = (): number => fallbacks;
 
+/** The pool width this machine will use. Exported so a READOUT (the Settings panel's diagnostics)
+ *  reports the number the pool actually builds, rather than re-deriving it from a copied POOL_MAX —
+ *  a duplicated ceiling is a readout that silently starts lying the day the ceiling moves. */
+export function bakePoolSize(): number {
+  return Math.max(1, Math.min(POOL_MAX, navigator.hardwareConcurrency || 4));
+}
+
 function ensurePool(): Worker[] | null {
   if (!bakeWorkersAvailable()) return null;
   if (pool) return pool;
   try {
-    const size = Math.max(1, Math.min(POOL_MAX, navigator.hardwareConcurrency || 4));
+    const size = bakePoolSize();
     pool = Array.from({ length: size }, () => {
       const wk = new Worker(new URL("./bake-worker.ts", import.meta.url), { type: "module" });
       wk.onmessage = (e: MessageEvent) => {

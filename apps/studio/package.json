@@ -18,6 +18,7 @@
   "dependencies": {
     "@annotorious/openseadragon": "^3.8.2",
     "@annotorious/plugin-tools": "^1.6.0",
+    "@render/archie-viewer": "workspace:*",
     "@render/core": "workspace:*",
     "@render/mount": "workspace:*",
     "@render/svelte": "workspace:*",

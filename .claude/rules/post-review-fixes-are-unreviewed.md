@@ -45,11 +45,52 @@ the same defect:
 | --- | --- | --- |
 | `assert old in s` before a first-occurrence replace | *does this exist* | *is this unique* |
 | `sed -n '890,905p'` to check a commit for strays | *is it here* | *is it anywhere* |
+| `git show --stat <sha> \| grep -v <noise> \| head -20` to check a commit is territory-clean | *are the first 20 mine* | *are they all mine* |
 
 The first put five labels in the wrong place. The second then read the guilty commit as clean, because
 the strays sat at line 878 — outside the window — which is how the defect got attributed to the wrong
 commit even during the audit *of that defect*. Neither probe was wrong about what it measured. Both
 were wrong about what they were taken to have shown.
+
+**The third (2026-07-26, wave 1) is the one to remember, because the truncation was not arbitrary.**
+An agent verified that its own commit carried no other agent's files, reported "clean — I checked",
+and was believed and acted on. The commit carried **eleven** foreign files. `git show --stat` emits
+paths in sorted order, and the noise it was filtering (`public/published/…`) sorted *before*
+`apps/viewer/src/components/…`, so `head -20` cut the list exactly at the boundary where the foreign
+files began.
+
+That is the general hazard: **`head` on sorted output does not drop a random sample, it drops a
+contiguous suffix** — and a suffix in path order is a coherent *region* of the tree, which is
+precisely the set you were least likely to be thinking about. Every list you truncate is sorted by
+something; ask what that something correlates with before you cut it.
+
+**How the bad check got written, in the author's own account** — worth more than the diagnosis,
+because nothing about the moment felt like a decision:
+
+> I wanted to answer one question — *did my sweep catch anything foreign?* — and I reached for the
+> shape I always reach for: pipe the stat list through a filter for the noise I knew about, then
+> eyeball it. […] Both halves felt like tidying. Neither felt like a decision about *scope*. That is
+> the whole mechanism: **I chose the filter to remove what I already understood, which meant the
+> filter was shaped by my existing mental model, and then truncated what remained — so the check
+> could only ever confirm the model it was built from.**
+
+So the one question to ask before running any probe, which is cheaper than all of the above:
+
+> **What would this command print if the thing I fear were true?**
+
+With 17 non-noise files and `head -20`, the answer is *"the same thing"* — which makes it not a
+check. If a probe's output is identical in the world you fear and the world you expect, it has zero
+information content no matter how much work it looks like.
+
+Don't eyeball a stat list. Assert the set difference, so the check has no scope to be implicit about:
+
+```sh
+comm -13 <(printf '%s\n' $ALLOWED | sort) <(git show --name-only --format= "$SHA" | sort)
+```
+
+Empty output or it is not clean. No `head`, no `grep -v`, nothing to read past. And **paste the
+output even when it is empty**, so a reader knows the check was run rather than assumed — an
+unstated clean check is indistinguishable from no check.
 
 So, before trusting any probe: **name the question it actually answers, and check that it is the
 question you need.** A scope that is implicit — a line range, a first match, a single directory, one

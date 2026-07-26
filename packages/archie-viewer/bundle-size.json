@@ -1,7 +1,9 @@
 {
-  "measuredAt": "2026-07-26T02:11:37.973Z",
-  "entryRawKB": 21,
-  "entryGzKB": 7.1,
-  "eagerGzKB": 36,
-  "totalGzKB": 266.3
+  "measuredAt": "2026-07-26T21:12:15.186Z",
+  "entryRawKB": 29.2,
+  "entryGzKB": 9.7,
+  "eagerGzKB": 38.9,
+  "totalGzKB": 274.9,
+  "singleFileRawKB": 931.8,
+  "singleFileGzKB": 274.5
 }
