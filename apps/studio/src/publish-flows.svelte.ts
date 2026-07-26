@@ -9,7 +9,7 @@ import {
   MemoryFilesystem, ZipFilesystem, publishLibrary, collectFiles, publishToGitHub, renderMarkdown, readStructureReport, asExhibitId,
   type Filesystem, type Library, type AnnotationLog, type BrokenLink, type IncompleteCanvas, type MissingAsset, type GitHubTarget, type PublishProgress, type IncrementalScope, type SectionLog, type PublishResult,
 } from "@render/core";
-import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk } from "./binding.js";
+import { supportsStreamingZipSave, openStreamingZipSave, saveZipToDisk, downloadHtml } from "./binding.js";
 import type { CorruptLogFinding } from "./publish-warnings.js";
 import { pickFolderBinding } from "./folder-backend.js";
 import { sliceToDziAuto } from "./dzi-slice-pool.js";
@@ -355,6 +355,38 @@ export function createPublishFlows(deps: PublishDeps) {
      * Originals are excluded (`withOriginals: false`): a preview reads, it does not archive.
      */
     previewTree: () => projectSite(false),
+
+    /**
+     * The SELF-CONTAINED export (archie-linkability Q-3): one .html file holding the viewer and the
+     * library, openable by double-click with no server, no hosted Archie, and no network.
+     *
+     * Unlike `previewTree` this deliberately DOES take the zip path — `.archie.zip` is the portable
+     * format the element's `openFile` already reads, and an export is a heavyweight, explicitly-
+     * requested action where the eager path's cost is the same one `download` already pays. The size
+     * guard runs first for exactly that reason, and it is stricter here: base64 inflates the payload
+     * by ~33%, so the same library costs more as an export than as a zip.
+     *
+     * The bundle is fetched with a DYNAMIC import so ~900KB of viewer source does not land in
+     * Studio's startup chunk — Vite splits it into its own chunk, loaded the first time an author
+     * exports. `?raw` because the text is data here, not code this app runs.
+     *
+     * Returns false when the size guard declined; the caller surfaces nothing (the guard already did).
+     */
+    async exportSelfContained(opts?: ZipExportOpts): Promise<boolean> {
+      if (!(await zipSizeOk(opts?.slugs))) return false;
+      const [{ buildSingleFileHtml }, bundleMod, { fs }] = await Promise.all([
+        import("./single-file-export.js"),
+        import("@render/archie-viewer/single?raw"),
+        buildZipFs(opts?.slugs),
+      ]);
+      const html = buildSingleFileHtml({
+        bundle: (bundleMod as { default: string }).default,
+        libraryBytes: fs.toZip(),
+        title: deps.buildFullLibrary().title ?? "",
+      });
+      downloadHtml(html, (opts?.name ?? deps.currentZipName()).replace(/\.archie\.zip$/, "") || "library");
+      return true;
+    },
 
     /** Write the whole published tree into a bound folder's Filesystem (FSA or Tauri — the git /
      *  GH-Pages on-ramp; also the binding store's folder sink). */

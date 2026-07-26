@@ -46,6 +46,14 @@ export function downloadZip(bytes: Uint8Array, filename: string): void {
   triggerBlobDownload(new Blob([bytes as unknown as BlobPart], { type: "application/zip" }), name, 60_000);
 }
 
+/** Download the self-contained export as ONE .html file (archie-linkability Q-3). Same download
+ *  mechanism as `downloadZip`; a different type and extension because the artifact is a document the
+ *  recipient opens directly, not an archive they feed to something. */
+export function downloadHtml(html: string, filename: string): void {
+  const name = filename.endsWith(".html") ? filename : `${filename}.html`;
+  triggerBlobDownload(new Blob([html], { type: "text/html;charset=utf-8" }), name, 60_000);
+}
+
 /** Chromium-class browsers expose `showSaveFilePicker` → a writable file STREAM. This is where the
  *  streaming-zip save (LARGE-MEDIA-MEMORY-CEILING A.1) goes, so a big library's archive never fully
  *  materializes in memory. Distinct from `supportsFolderPicker` (which binds a whole project folder). */

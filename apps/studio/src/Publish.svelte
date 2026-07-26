@@ -60,6 +60,7 @@
     ondownload,
     onenterweb,
     previewtree,
+    onexportselfcontained,
     exhibits = [],
     suggestedZipName = "",
     // --- desktop device-flow seams (App.svelte wires these from deploy-flows in Task 13) ---
@@ -99,6 +100,9 @@
      *  previewTree). Optional: absent ⇒ the preview affordance is not offered at all, which is how a
      *  host that cannot project a site (no library open) degrades — not a button that errors. */
     previewtree?: () => Promise<{ fs: import("@render/core").Filesystem }>;
+    /** Write the self-contained single-file export (publish-flows' exportSelfContained). Optional for
+     *  the same reason previewtree is: a host that can't build one offers no card, never a broken one. */
+    onexportselfcontained?: () => Promise<boolean>;
     /** The exportable (non-template) exhibits, for the working-copy chooser's include list. */
     exhibits?: { slug: string; title: string }[];
     /** The name the export starts from — the bound zip's name, else derived from the library title. */
@@ -289,6 +293,15 @@
   /** In-surface "← Back" from the wizard's entry screens to step 1 (the modality contract's nested-flow
    *  rule) — NOT a close, so it never touches machine state. */
   function backToChooser() { menuPhase = "choose"; }
+  // The single-file export reuses the working/error phases the other destinations use — same shape,
+  // same recovery. `false` means the size guard declined, which already told the author why: return
+  // to the chooser rather than showing a second, emptier message.
+  async function exportSelfContained() {
+    if (!onexportselfcontained) return;
+    menuPhase = "working"; destErrorMsg = "";
+    try { menuPhase = (await onexportselfcontained()) ? "done-download" : "choose"; }
+    catch (e) { destErrorMsg = e instanceof Error ? e.message : "Couldn't build the single-file export."; menuPhase = "error"; }
+  }
 
   // === the zip export fields (ZipExportFields): name the file, pick the exhibits =======================
   // ONE state pair serves both zip surfaces (the working-copy panel and the local-publish fallback) —
@@ -443,6 +456,12 @@
           <span class="c-title">Share a working copy</span>
           <span class="c-desc">A copy of your library a colleague can open, annotate, and send back to you — or keep as your own backup, or share as a link. One <code>.archie.zip</code> file. Good for a work in progress, not a permanent citation.</span>
         </button>
+        {#if onexportselfcontained}
+          <button class="choice" onclick={exportSelfContained}>
+            <span class="c-title">As one file</span>
+            <span class="c-desc">The whole library <em>and</em> the viewer in a single <code>.html</code> file. Opens by double-click — no server, no account, no internet. Good for a USB stick, an email attachment, or a deposit copy that has to still work in ten years.</span>
+          </button>
+        {/if}
         {#if !deployToPages}
           <!-- Flag off (no deploy infra): the quieter escape hatch — same wizard. -->
           <button class="choice" onclick={enterWizard}>

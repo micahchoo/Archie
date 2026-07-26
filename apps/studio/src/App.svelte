@@ -2677,6 +2677,7 @@
       ondownload={p.download}
       onenterweb={p.openPublish}
       previewtree={p.previewTree}
+      onexportselfcontained={() => p.exportSelfContained()}
       exhibits={exportableExhibits}
       suggestedZipName={suggestedZipName}
       library={deployLibrary}
