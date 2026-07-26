@@ -132,13 +132,28 @@ missing — a bug by definition; no row may sit here).
   that reaches that state is the bug the table exists to surface.
 - A `DEFER-tracked` row without a ticket is a half-measure. The four above are named here so they
   are at least *visible*; filing them is follow-up work.
-- **A MUST row with no smoke label is a hole in the completeness check**, not merely a thinner test.
-  That check compares a hard-coded label list against the labels that ran, so a capability with no
-  label is invisible to it — the same shape as the file-driven audit this table replaced, one level up.
+- **A MUST row is covered only when its labels are entries in `CONTRACTED_LABELS`** — the hard-coded
+  array in `recipes/smoke.mjs`. Writing a `record()` call is *not* coverage: the completeness check
+  compares that array against the labels that ran, so a capability the array does not name is
+  invisible to it however many assertions exist for it. Say "an entry in `CONTRACTED_LABELS`", never
+  "has a label" — the two readings come apart exactly where it matters, and the vaguer one licenses a
+  row that looks covered and is not. A row the array does not name is the same shape as the
+  file-driven audit this table replaced, one level up.
+
   AV playback was the last such row (unit-tested only), and the residual defect found in review sat
   exactly there: a unit test can assert what `select()` returns, but only a driven browser can say
-  WHICH note's body a row is displaying, and the uncued row was displaying the previous row's. The row
-  now has four labels. Every MUST row in this table has at least one.
+  WHICH note's body a row is displaying, and the uncued row was displaying the previous row's. AV now
+  has four entries in the array. Every MUST row in this table has at least one.
+
+  **This paragraph was itself false when first written (2026-07-25, corrected 2026-07-26).** It
+  claimed AV had four labels while all four existed only as `record()` calls, spliced by a bad patch
+  into an argument list ~135 lines from the array — so the row this paragraph declared covered was
+  still invisible to the very check the paragraph describes, and smoke reported PASS either way. It is
+  recorded here rather than quietly fixed because a document written to stop a capability going
+  missing had itself gone the distance from *naming the disease* to *tabulating the symptom* in the
+  space of three paragraphs, which is the failure this ADR attributes to annomea's own audit above.
+  The mechanical invariants that would have caught it now run inside `smoke.mjs` before the browser
+  starts; the process habits are in `.claude/rules/post-review-fixes-are-unreviewed.md`.
 - **Every MUST assertion was proven RED-GREEN**: the capability was deleted, smoke failed, it was
   restored. This is not ceremony. The first version of the DROP-justified row's driven check matched
   `/dist/reader-*.js` by NAME, and the 2026-07-24 eager leak — reintroduced deliberately, taking

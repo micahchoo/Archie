@@ -28,6 +28,7 @@
 
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
+import { readFileSync } from "node:fs"; // auditOwnSource reads this file's own text
 import { join, extname, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
@@ -77,7 +78,78 @@ function loadChromium() {
 const results = [];
 const record = (ok, label, detail = "") => { results.push({ ok, label, detail }); console.log(`  ${ok ? "PASS" : "FAIL"}  ${label}${detail ? " — " + detail : ""}`); };
 
+/**
+ * STATIC self-audit of this file, run before the browser starts.
+ *
+ * The completeness check below is only as good as `CONTRACTED_LABELS`, and that array is
+ * hand-maintained beside data derived from the same source — which is precisely the shape that
+ * failed on 2026-07-25: five entries meant for the array were spliced by a bad patch into a
+ * `record(...)` argument list ~135 lines away, so four AV labels silently left the array. Coverage
+ * dropped 40 → 35 and this suite still printed `RESULT: PASS`, because nothing compared the array
+ * against the calls. The defect was found by a human noticing two reported numbers disagreeing.
+ *
+ * These three invariants have NO legitimate exceptions, so they can be machine-checked:
+ *
+ *   1. no PHANTOMS   — every array entry is genuinely recorded somewhere in this file. An entry
+ *                      naming an assertion that does not exist is coverage on paper only.
+ *   2. no DUPLICATES — an array entry twice inflates the "N/N present" count without covering more.
+ *   3. no STRAYS     — no label-shaped literal sits inside a `record(...)` call after its label
+ *                      argument. That is the splice's exact signature, and `record(ok, label,
+ *                      detail)` silently binds the first such stray as the assertion's DIAGNOSTIC —
+ *                      which is how a V56 failure message got replaced by a label and nobody noticed.
+ *
+ * The converse (recorded-but-not-listed) is deliberately NOT asserted: failure-only fixture guards,
+ * this check, and the `navigation / interaction` catch-all are legitimately outside the array, and an
+ * allowlist for them would just be a second hand-maintained list with the same disease.
+ */
+function auditOwnSource() {
+  const src = readFileSync(fileURLToPath(import.meta.url), "utf8");
+  const arr = /const CONTRACTED_LABELS = \[([\s\S]*?)\n {4}\];/.exec(src);
+  if (!arr) return { ok: false, detail: "CONTRACTED_LABELS array not found — this check cannot run" };
+  const listed = [...arr[1].matchAll(/^\s*"((?:[^"\\]|\\.)*)",/gm)].map((m) => m[1]);
+  const recorded = new Set(
+    [...src.matchAll(/record\(\s*[^,]*?,\s*\n?\s*"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]),
+  );
+
+  const phantoms = listed.filter((l) => !recorded.has(l));
+  const duplicates = listed.filter((l, i) => listed.indexOf(l) !== i);
+
+  // A `record(` call's own text, gathered by paren depth; anything label-shaped past the label line
+  // is a stray.
+  const lines = src.split("\n");
+  const strays = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (!/^\s*record\(/.test(lines[i])) continue;
+    let depth = 0, j = i;
+    const body = [];
+    do {
+      for (const ch of lines[j]) { if (ch === "(") depth++; else if (ch === ")") depth--; }
+      body.push(lines[j]);
+      j++;
+    } while (depth > 0 && j < lines.length && j - i < 40);
+    for (let k = 2; k < body.length; k++) {
+      if (/^\s*"ADR-0019 /.test(body[k])) strays.push(`line ${i + k + 1}: ${body[k].trim().slice(0, 60)}`);
+    }
+  }
+
+  const problems = [
+    phantoms.length ? `${phantoms.length} PHANTOM (listed, never recorded): ${phantoms.join(" | ")}` : "",
+    duplicates.length ? `${duplicates.length} DUPLICATE: ${duplicates.join(" | ")}` : "",
+    strays.length ? `${strays.length} STRAY label(s) inside a record() call: ${strays.join(" | ")}` : "",
+  ].filter(Boolean);
+
+  return {
+    ok: problems.length === 0,
+    detail: problems.length ? problems.join("; ") : `${listed.length} labels: no phantoms, no duplicates, no strays`,
+  };
+}
+
 async function main() {
+  // FIRST, before any browser cost: the gate's own bookkeeping. A suite whose coverage list has
+  // silently shrunk reports PASS just as loudly as one that is whole.
+  const selfAudit = auditOwnSource();
+  record(selfAudit.ok, "ADR-0019 · the contracted-label bookkeeping is intact", selfAudit.detail);
+
   const { chromium, how } = loadChromium();
   console.log(`archie-viewer smoke test (${how})`);
 
@@ -1024,6 +1096,7 @@ async function main() {
     // enforced INDIRECTLY and completely here instead: the region, halo and V55 labels below only
     // exist if the canvas mounted, so a canvas that does not mount fails this check by absence.
     const CONTRACTED_LABELS = [
+      "ADR-0019 · the contracted-label bookkeeping is intact",
       "custom element 'archie-viewer' is registered",
       "gallery cards render in the shadow DOM",
       "no uncaught page errors",
