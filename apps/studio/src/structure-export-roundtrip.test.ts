@@ -151,7 +151,7 @@ describe("two-author round trip: publish → .archie.zip → import merge (Archi
 describe("publish with a torn structure store — parity with the annotation ship-what-reads posture", () => {
   function publishDeps(): PublishDeps {
     return {
-      baseUrl: "https://u.gh.io/lib/",
+      publishBase: () => "https://u.gh.io/lib/",
       flushExhibit: async () => {},
       loadAllLogs: async () => ({}),
       buildFullLibrary: () => libraryA,

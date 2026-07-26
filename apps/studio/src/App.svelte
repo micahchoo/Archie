@@ -82,6 +82,9 @@
   // Seed / default-exhibit data lives in seed-data.ts (the DOMINO cut): DEFAULT_EXHIBITS, the per-slug
   // session factories (seededFor), and the shared region/time selector constructors + BASE.
   import { DEFAULT_EXHIBITS, seededFor, BASE, timeSel } from "./seed-data.js";
+  // Light module by design — reading the remembered deploy URL must not pull the lazy deploy bundle
+  // into the startup graph (see deploy/remembered.ts's header).
+  import { publishBaseFor } from "./deploy/remembered.js";
   // Geo-note selector math (pure, taking the tileSource explicitly) — the geo half of the DOMINO cut.
   import { geoLabelOf, geoForTarget, selectorValue } from "./geo-notes.js";
   // The ingest flows (object-add, exhibit-create, bulk-note import, library-replace) — the DOMINO cut.
@@ -1929,7 +1932,11 @@
     if (pub) return pub;
     const { createPublishFlows } = await import("./publish-flows.svelte.js");
     const created = createPublishFlows({
-      baseUrl: BASE,
+      // NOT `BASE` (= WORKING_IRI_BASE). That is the working store's internal identifier namespace and
+      // must never reach a published artifact — baking it made every deployed site carry manifest and
+      // canvas ids on a domain nobody owns. Resolved per publish instead: the library's live URL if it
+      // has deployed, else relative ids. See deploy/remembered.ts.
+      publishBase: () => publishBaseFor(DEPLOY_LIBRARY_ID),
       flushExhibit: () => save(),
       loadAllLogs: () => loadAllLogs(true), // publish path — torn-store warns ON (Archie-a690)
       annotationCorruption: () => publishAnnotationCorruption, // findings from that same loadAllLogs pass → dialog advisory
@@ -1944,7 +1951,7 @@
     // moment the dialog opens.
     const deployMod = await import("./deploy/deploy-flows.svelte.js");
     df = deployMod;
-    deploy = deployMod.createDeployFlows({ library: deployLibrary, projectSite: () => created.projectSiteFs() });
+    deploy = deployMod.createDeployFlows({ library: deployLibrary, projectSite: (baseUrl: string) => created.projectSiteFs(baseUrl) });
     // Load the Publish surface UI now too (it renders under {#if pub} once ready).
     void import("./Publish.svelte").then((m) => { PublishComp = m.default; });
     return created;
