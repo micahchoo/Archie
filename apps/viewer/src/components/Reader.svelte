@@ -490,11 +490,24 @@
   <!-- min/max match the aside's responsive clamp(320px … 560px) so a resize can't escape the designed
        reading-measure (#14) — the floor and ceiling are the same numbers the CSS clamp uses. -->
   <ResizeDivider side="right" label="notes" min={320} max={560} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={(s: AsideState) => saveAside(ASIDE_W_KEY, ASIDE_COLLAPSED_KEY, s)} />
-  <!-- Collapsed = the floating card is the sole note surface (object nav is canvas chrome in BOTH
+  <!-- Collapsed = the docked note row is the sole note surface (object nav is canvas chrome in BOTH
        states now — Archie-01a6), so the clipped aside (width:0, overflow:hidden) must leave the a11y
        tree + tab order too: `inert` stops its note list and its "Back to Exhibit" footer being
        announced or tabbed while invisible. The ResizeDivider is a sibling, so un-collapsing stays
-       reachable. -->
+       reachable.
+
+       BOTH HALVES ARE NOW MEASURED, not assumed (Archie-9838, 2026-07-26). Against Chromium's OWN
+       accessibility tree — `Accessibility.getFullAXTree` over CDP, the tree the browser hands a screen
+       reader — the note list is exposed while the rail is open and absent while it is collapsed; and
+       removing the `inert` attribute at runtime WHILE STILL COLLAPSED brings it back, which is what
+       attributes the guarantee to `inert` rather than to the zero-width box. Tab order was never in
+       doubt. `e2e/inert-a11y.spec.ts` holds all three.
+
+       The reason this needed measuring: the a11y half "did not reproduce" under Playwright's
+       `getByRole`, which still returned the entry. **`getByRole` and `toMatchAriaSnapshot` are not
+       reliable probes for `inert`** — they are Playwright's own accessibility model computed over the
+       DOM, not a read of the browser's tree, and they do not model it. Don't re-open this on their
+       evidence; use the CDP tree. -->
   <!-- The note list, ONE definition: it renders either inside the Notes tabpanel (this object has
        metadata) or bare under the plain "Notes · N" heading (it doesn't). A snippet, not a copy —
        the two branches must never drift. -->
@@ -502,7 +515,13 @@
     {#if annotations.length === 0}
       <p class="empty">No notes on this image yet.</p>
     {/if}
-    <ul>
+    <!-- Named, so the list is addressable as a list rather than an anonymous group — the embed's note
+         list already carries this exact name (reader-chrome.ts), and ADR-0019's note-list row says the
+         two surfaces are the same capability. It is also what makes Archie-9838's claim MEASURABLE:
+         e2e/inert-a11y.spec.ts reads Chromium's own accessibility tree for this name in both rail
+         states, and an unnamed list gives that probe nothing to find in EITHER state — which reads as
+         a pass. -->
+    <ul aria-label="Notes on this item">
       {#each annotations as it, i (it.id)}
         <li onmouseenter={() => onnotehover?.(it.id ?? null)} onmouseleave={() => onnotehover?.(null)}>
           <!-- Solo the mark on FOCUS too, not just hover (#11): keyboard tab + touch-focus light the
