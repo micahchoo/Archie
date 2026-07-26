@@ -497,7 +497,20 @@ test.describe("V49 · the temporal map clears the item strip (Archie-b135)", () 
     }
   });
 
-  test("the map is not pushed off the bottom INSTEAD of being covered", async ({ page }) => {
+  // ⚠ THIS TEST IS KNOWINGLY RED ON `dca4215` AND MUST NOT BE LOOSENED TO MAKE IT GREEN.
+  //
+  // It passes on `49327c0` (V49's original fix in place) and fails on `dca4215` (the docking work).
+  // Measured by applying ONLY the fixture/spec changes to a clean worktree at `49327c0`: 85/85 pass,
+  // this test among them. On `dca4215`, `.tl-track` reports `toBeInViewport` **ratio 0** — geometry
+  // below. So the assertion distinguishes the two states, which is exactly what a gate has to do; the
+  // red is a defect in the docked layout, filed to that slice, not a defect in this test.
+  //
+  // The temptation to re-scope this to "reachable by scrolling" is the thing to refuse. `Archie-40fe`'s
+  // whole premise is that floating chrome kept covering the controls; a design answering that by
+  // pushing a control 153px below the fold has not satisfied it. An overlapped control is at least
+  // visibly there. `.claude/rules/post-review-fixes-are-unreviewed.md` names the general form — a gate
+  // that goes green by lowering its own bar has stopped constraining anything.
+  test("the map is on screen ON ARRIVAL, not pushed off the bottom INSTEAD of being covered", async ({ page }) => {
     // THE HALF THAT MAKES THIS ITS OWN TEST, and it is written against the OUTCOME rather than the
     // mechanism — deliberately, because the mechanism changed under this test while it was being
     // written, which is the best possible argument for not asserting one.
@@ -509,13 +522,26 @@ test.describe("V49 · the temporal map clears the item strip (Archie-b135)", () 
     // `.player`'s computed height would now be red against correct code.
     //
     // What is invariant across both designs is the reader's side of it: **the temporal map has to be
-    // ON SCREEN.** "Not overlapping the strip" (the test above) is satisfied just as well by a map
-    // shoved below the fold — that is a different defect wearing the fix's clothes, and it is the one
-    // thing neither design gets for free. Asserting visibility is what separates them.
+    // ON SCREEN, on arrival, without scrolling.** That last clause is the claim, and it is why nothing
+    // here scrolls into view first: the temporal map is a persistent position signal — the AV analogue
+    // of the image reader's marks — and a position signal you must go looking for is not one. (It is
+    // also what `hyperaudio-lite` is designing around at `hyperaudio-lite.js:648-664`, where the spoken
+    // word is re-homed to `document.title` precisely so the signal survives its surface being hidden.)
+    //
+    // "Not overlapping the strip" (the test above) is satisfied just as well by a map shoved below the
+    // fold — a different defect wearing the fix's clothes, and the one thing neither design gets for
+    // free. Asserting arrival visibility is what separates them.
+    //
+    // Measured on `dca4215` at 1280x720, offline, with a decoded duration:
+    //   viewport   720          .player    y 53  → bottom 917  (h 864, i.e. 197px past the fold)
+    //   .timeline  y 837 → 917  .tl-track  y 873 → bottom 897  ← starts 153px BELOW the fold
+    //   .filmstrip y 926 → 1037 ← also entirely below the fold
+    //   document   scrollHeight 1045 vs clientHeight 720; every ancestor `overflow-y: visible`
     await openAudioObject(page, { media: true });
     await expect(page.locator(".timeline")).toBeVisible();
 
     const vh = page.viewportSize()!.height;
+    // `toBeInViewport` WITHOUT a preceding `scrollIntoViewIfNeeded` — the omission is the assertion.
     await expect(page.locator(".tl-track")).toBeInViewport();
     const map = await rectOf(page.locator(".tl-track"));
     expect(Math.round(map.y + map.height), `the temporal map's bottom edge is off-screen (viewport ${vh}px)`).toBeLessThanOrEqual(vh);
