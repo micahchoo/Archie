@@ -58,33 +58,84 @@ function distGzKB(dir) {
   walk(dir);
   return +(total / 1024).toFixed(1);
 }
+
+// The EAGER half. `distGzKB` sums every chunk in the tree, so it cannot tell 280KB added to page
+// load from 280KB parked behind `import()` — and studio's dist holds exactly that: the embed bundle
+// (`import("@render/archie-viewer/single?raw")`, publish-flows.svelte.ts) and the TIFF decoder
+// (`import("utif2")`, tiff-transcode.ts) are ~319KB gz that no visitor downloads at boot. A totals
+// ratchet is blind in both directions: it fires on lazy weight that costs nothing, and it stays
+// quiet when a lazy chunk is hoisted onto the load path (the leak measured in
+// .claude/rules/archie-viewer-eager-closure.md moved `totalGzKB` by +0KB).
+//
+// So measure what the browser actually fetches before it can paint: walk Vite's manifest from every
+// `isEntry`, following `imports` (static) and NEVER `dynamicImports` — the boundary, exactly as
+// packages/archie-viewer/build.mjs walks esbuild's metafile for `kind === "import-statement"`.
+// Returns null when a dist has no manifest; the check treats null-where-a-baseline-exists as a
+// FAILURE, because dropping `build.manifest` would otherwise silently retire this gate.
+function eagerGzKB(dist) {
+  const manifestPath = join(dist, ".vite", "manifest.json");
+  if (!existsSync(manifestPath)) return null;
+  const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  const files = new Set();
+  const walk = (key) => {
+    const node = manifest[key];
+    if (!node || files.has(node.file)) return;
+    files.add(node.file);
+    for (const css of node.css ?? []) files.add(css);
+    for (const imp of node.imports ?? []) walk(imp);
+  };
+  for (const [key, node] of Object.entries(manifest)) if (node.isEntry) walk(key);
+  let total = 0;
+  for (const f of files) {
+    const p = join(dist, f);
+    if (existsSync(p)) total += gzipSync(readFileSync(p)).length;
+  }
+  return +(total / 1024).toFixed(1);
+}
+
 const appBundles = [];
 for (const [label, dist] of [["apps/studio dist (js+css gz)", `${root}/apps/studio/dist`], ["apps/viewer dist (js+css gz)", `${root}/apps/viewer/dist`]]) {
-  if (existsSync(dist)) appBundles.push({ label, gzKB: distGzKB(dist) });
-  else console.warn(`(skip ${label} — no dist; build first)`);
+  if (existsSync(dist)) {
+    const eager = eagerGzKB(dist);
+    appBundles.push({ label, gzKB: distGzKB(dist), ...(eager === null ? {} : { eagerGzKB: eager }) });
+  } else console.warn(`(skip ${label} — no dist; build first)`);
 }
 
 const CHECK = process.argv.includes("--check");
 if (CHECK) {
   const baseline = JSON.parse(readFileSync(`${root}/docs/bundle-size.json`, "utf8"));
   let failed = false;
+  // Both metrics ratchet. `gzKB` bounds the whole artifact; `eagerGzKB` bounds the load path and is
+  // the one that catches a lazy boundary being lost. Neither substitutes for the other.
   for (const cur of appBundles) {
     const base = (baseline.appBundles ?? []).find((b) => b.label === cur.label);
     if (!base) { console.warn(`no baseline for "${cur.label}" — run without --check to set one`); continue; }
-    const allowed = Math.max(base.gzKB * 0.1, 10);
-    const delta = +(cur.gzKB - base.gzKB).toFixed(1);
-    const verdict = delta > allowed ? "FAIL" : "ok";
-    if (delta > allowed) failed = true;
-    console.log(`${verdict.padEnd(5)} ${cur.label.padEnd(32)} ${base.gzKB}KB → ${cur.gzKB}KB (Δ ${delta >= 0 ? "+" : ""}${delta}KB, allowed +${allowed.toFixed(1)}KB)`);
+    for (const [metric, suffix] of [["gzKB", "total"], ["eagerGzKB", "eager"]]) {
+      if (base[metric] === undefined) {
+        if (metric === "gzKB") console.warn(`no ${suffix} baseline for "${cur.label}" — run without --check to set one`);
+        continue;
+      }
+      if (cur[metric] === undefined) {
+        // A baseline exists and the measurement vanished: the manifest is gone, so the gate is off.
+        failed = true;
+        console.log(`FAIL  ${`${cur.label} [${suffix}]`.padEnd(40)} baseline ${base[metric]}KB, MEASUREMENT MISSING — is build.manifest still set?`);
+        continue;
+      }
+      const allowed = Math.max(base[metric] * 0.1, 10);
+      const delta = +(cur[metric] - base[metric]).toFixed(1);
+      const verdict = delta > allowed ? "FAIL" : "ok";
+      if (delta > allowed) failed = true;
+      console.log(`${verdict.padEnd(5)} ${`${cur.label} [${suffix}]`.padEnd(40)} ${base[metric]}KB → ${cur[metric]}KB (Δ ${delta >= 0 ? "+" : ""}${delta}KB, allowed +${allowed.toFixed(1)}KB)`);
+    }
   }
   process.exit(failed ? 1 : 0);
 }
 
 for (const r of rows) console.log(`${r.label.padEnd(36)} ${String(r.minKB).padStart(8)}KB min  ${String(r.gzKB).padStart(8)}KB gz`);
-for (const r of appBundles) console.log(`${r.label.padEnd(36)} ${"-".padStart(8)}        ${String(r.gzKB).padStart(8)}KB gz`);
+for (const r of appBundles) console.log(`${r.label.padEnd(36)} ${"-".padStart(8)}        ${String(r.gzKB).padStart(8)}KB gz${r.eagerGzKB === undefined ? "" : `  (eager ${r.eagerGzKB}KB)`}`);
 writeFileSync(`${root}/docs/bundle-size.json`, JSON.stringify({
   measuredAt: new Date().toISOString(),
-  note: "gz = minified+gzipped. Renderer floor has no tree-shaking applied. appBundles = the built apps (the ratchet baseline; check with `node scripts/bundle-size.mjs --check`). No aspirational budget — the baseline IS a measurement (retro 2026-06-11).",
+  note: "gz = minified+gzipped. Renderer floor has no tree-shaking applied. appBundles = the built apps (the ratchet baseline; check with `node scripts/bundle-size.mjs --check`). No aspirational budget — the baseline IS a measurement (retro 2026-06-11). TWO metrics ratchet per app: gzKB = every .js/.css in dist; eagerGzKB = the entry's STATIC closure walked from Vite's manifest, i.e. what a visitor fetches before first paint. They answer different questions — a lazy chunk moves gzKB and not eagerGzKB, and a lazy chunk hoisted onto the load path moves eagerGzKB and not gzKB. eagerGzKB is absent where the build emits no manifest (apps/viewer is Astro, multi-page).",
   rows,
   appBundles,
 }, null, 2) + "\n");
