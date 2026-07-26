@@ -259,7 +259,20 @@
 <style>
   /* Listening station: warm paper media ground (left) + warm paper transcript spine (right); the active
      line is a quiet signal — the NarrativeReader idiom, applied to time instead of space. */
-  .player { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
+  /* V49 (Archie-7b86): the temporal map — this surface's ONE novel affordance, the thing that makes a
+     recording navigable the way an image's marks do — shipped FULLY covered by the item strip. The
+     player is a 100vh column and `.timeline` is its last child, so the fixed bottom band sat straight
+     on top of it.
+     The ticket predicted this wants Archie-40fe's reservation rather than a local fix, and it does:
+     `--strip-h` is Filmstrip's live measured height, already the token every other bottom-anchored
+     surface clears. `box-sizing` so the padding comes OUT of the 100vh rather than adding to it —
+     otherwise the column overflows and the timeline is pushed off the bottom instead of covered by it,
+     which would look like a fix and be the same defect. */
+  .player {
+    position: relative; display: flex; height: 100vh; box-sizing: border-box;
+    padding-bottom: var(--strip-h, 0px);
+    background: var(--surface-canvas);
+  }
 
   /* Whole-object Note band (ADR-0018): a note about the WHOLE recording, persistent above the transcript
      — the AV analogue of the image frame-border (accent-left-stripe, the apparatus idiom). */

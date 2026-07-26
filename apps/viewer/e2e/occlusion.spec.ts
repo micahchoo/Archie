@@ -100,6 +100,12 @@ test.describe("an open note clears the filmstrip (V71)", () => {
   });
 });
 
+// V49 (the AV temporal map, covered by the item strip) is fixed by the same `--strip-h` reservation
+// and is NOT asserted here. The timeline renders only under `cues.length > 0 && !mediaError && dur > 0`,
+// and `dur` comes from media metadata — offline, the seed's sounded folio (archive.org) never loads,
+// so the element does not exist to measure. Same structural limit as the canvas assertions; see
+// selection.spec.ts's header. Verified by an online drive on 2026-07-25 instead.
+
 test.describe("the narrative spine can be read to its end (V87)", () => {
   test("the last spine card can be scrolled clear of the finder pill", async ({ page }) => {
     // The pill lives at the viewport's bottom-right, INSIDE the spine's x range (spine 860–1280, pill
