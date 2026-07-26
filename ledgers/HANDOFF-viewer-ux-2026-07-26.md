@@ -10,8 +10,51 @@ Worktrees `.claude/worktrees/chrome-occlusion` (driver) and `.claude/worktrees/m
 
 ## CURRENT STATE — read this and nothing else for state
 
-**All five slices are MERGED and PUSHED. `origin/main` = local `main` = `04d38ce`.
-CI GREEN — all ten jobs at `04d38ce`**, e2e included, read per-job rather than from a summary line.
+**`origin/main` = local `main` = `cb1bbfe`.** Four commits past `04d38ce`, in order:
+
+| sha | what |
+| --- | --- |
+| `40179bc` | the five human rulings, and the waves re-cut around them |
+| `49327c0` | `onopenfinder` threaded to the AV player — its new test found `Archie-d37d` |
+| `bbd3ea5` | the CI flaky reporter + the three rules the narrative review earned |
+| `cb1bbfe` | `5185` closed, `d37d` filed, `d6e9`+`d37d` blocked on the dock decision |
+
+CI at `cb1bbfe`: **Pages green, Checks still `in_progress`** as of 14:21. Read per-job, and read the
+run for the LATEST sha (see the concurrency-group trap below). Both runs at `49327c0` are green.
+
+**Next-actions 1–5 from the previous lead are all DONE** — the `onopenfinder` wire (`49327c0`),
+`5185` closed, the flaky reporter, the three rules. Only `ecf4` (item 3, tokens) is outstanding, and
+it is deliberately sequenced AFTER the dock work because `--finder-h`/`--topbar-h` may not survive it.
+
+### ⚠ WAVE 1 IS RUNNING, AND THE TWO AGENTS SHARE ONE WORKING TREE
+
+`impl-dock-chrome` (de08 + c30a + 9838) and `impl-fixture-reach` (b135, f4fb, 0cc6, 4524-fixture-half)
+were dispatched **without worktree isolation**. Both are operating in
+`.claude/worktrees/chrome-occlusion`. The reflog shows them checking out over each other:
+
+```
+49327c0 HEAD@{14:12}: checkout: moving from ux/dock-chrome to ux/fixture-reach
+49327c0 HEAD@{14:11}: checkout: moving from probe/rev-narrative-arrival to ux/dock-chrome
+```
+
+**Consequence: the dock agent's commits are landing on `ux/fixture-reach`.** `e8cef6f "wip: retire
+the fitBounds chrome reservation"` is dock work sitting on the fixture branch; `ux/dock-chrome` is
+still at the base `49327c0`. This is recoverable — the commits are linear from `49327c0`, so the
+branch LABEL can be re-pointed afterwards — and both agents have been told, mid-run:
+
+- do not `checkout` / `switch` / `branch -f` / `reset` / `stash` for any reason (a checkout now would
+  strand commits and could destroy the other's uncommitted edits in the same tree);
+- never `git add -A` or `commit -a` — that sweeps the sibling's in-flight work into your commit;
+- never `git checkout -- <file>` to undo a red-green probe.
+
+**Whoever picks this up: sort the branch topology yourself, do not ask the agents to.** And a
+snapshot of the dock work as it stood at 14:21 is at `/tmp/dock-wip-142149/` (patch + the deleted
+`zz-probe.spec.ts`), taken before any of this was understood.
+
+The lesson, which belongs in the fleet's habits and not just here: **`isolation: "worktree"` is a
+parameter, not a default.** Two agents briefed to work on disjoint file territory are still not
+disjoint if they share a checkout — territory separates their *edits*, nothing separates their *git
+state*. Verify the worktree list after dispatch, not the brief.
 
 Merged: `ux/note-surface`, `ux/offline-canvas`, `ux/embed-parity`, `ux/av-surface`,
 `ux/narrative-coupling`.
@@ -22,8 +65,10 @@ Merged: `ux/note-surface`, `ux/offline-canvas`, `ux/embed-parity`, `ux/av-surfac
 > twice in quick succession, check the run for the LATEST sha; the older one's `cancelled` is
 > self-inflicted and means nothing.
 
-**Merged-tree gates, all measured locally on `37783df` before the push, not inherited from any
-branch — and independently confirmed by CI at `04d38ce`:**
+**Merged-tree gates as of `04d38ce`** — measured locally on `37783df` before the push, not inherited
+from any branch, and independently confirmed by CI at `04d38ce`. The four commits since are docs,
+one small viewer wire, one CI reporter and three rules; **nothing since has re-run the full set**, so
+treat these as the last full measurement rather than as current:
 
 | gate | result |
 | --- | --- |
@@ -39,28 +84,51 @@ branch — and independently confirmed by CI at `04d38ce`:**
 
 ### The next actions, in order
 
-1. **Thread `onopenfinder`** into both `<MediaPlayerLazy.current …>` instances
-   (`ExhibitView.svelte` :570, :592) — see "Post-merge work this created" below for why it was
-   deliberately kept off both branches. The fixture note carrying a tag is already in place and
-   deliberately unasserted; write the assertion with the wire and red-green it in one pass. Do this
-   FIRST and alone: `ExhibitView` is the collision hotspot for two wave-1 slices.
-2. **Close `Archie-5185`** as a decision (flip-and-read stays removed — ruling 4 below).
+**Items 1, 2, 4 and 5 are DONE** (`49327c0`, `cb1bbfe`, `bbd3ea5`) — kept here because each records
+*why* it was sequenced where it was, which the commits don't.
+
+1. ~~**Thread `onopenfinder`**~~ — DONE in `49327c0`. Both `<MediaPlayerLazy.current …>` instances
+   (`ExhibitView.svelte` :570, :592). Doing it first and alone was right: `ExhibitView` is the
+   collision hotspot for two wave-1 slices. The new assertion drove the second tag chip deliberately,
+   and that routed around a real defect — **`Archie-d37d`**, the cite trigger occluding the FIRST
+   chip (`.cite-trigger` x 20–100 vs `#cadence` x 38–122; `elementFromPoint` at the chip centre
+   returns `SPAN.lbl`; 62px overlap). Filed and blocked on the dock work rather than fixed twice.
+2. ~~**Close `Archie-5185`**~~ — DONE in `cb1bbfe` (flip-and-read stays removed — ruling 4 below).
 3. **`ecf4` is mechanical, not a judgement call** — measured 2026-07-26: `render-core/src/tokens.css`
    (105 tokens) and `apps/studio/src/tokens.css` (102) share 100 names with **zero value
    disagreements**. The viewer no longer has its own copy at all. Studio-only: `--text-lede`,
    `--text-note`. Core-only: `--finder-h`, `--pane-top`, `--scrim-dim`, `--scrim-top`, `--topbar-h`.
    Move the two up, point studio at core, delete the copy. (Note `--finder-h`/`--topbar-h` may not
    survive the dock work — sequence it after.)
-4. **Surface retried-but-passed tests in CI** (ruling 5 below).
-5. **Write the three rules the narrative review earned** (below) — none exist yet.
-6. Then the waves.
+4. ~~**Surface retried-but-passed tests in CI**~~ — DONE in `bbd3ea5` (ruling 5 below).
+   `scripts/flaky-reporter.mjs`, shared by both apps' Playwright configs, wired only under `CI`.
+   Red-greened **both** directions, which for a reporter is the half people skip: a planted
+   fail-then-pass produced `1 flaky`, one `::warning::` carrying the FIRST run's error, and a job
+   summary; a clean run produced **zero** warnings and **no** summary file. A reporter that annotates
+   every green run is worse than none. It deliberately does not fail the build — that was put to the
+   human and declined, and the file names the one line to change if it ever reverses.
+5. ~~**Write the three rules the narrative review earned**~~ — DONE in `bbd3ea5`:
+   `wall-clock-quiet-is-a-load-sensitive-gate` (end on ARRIVAL, and a deadline only a callback can
+   notice cannot bound a wedge defined by that callback not arriving),
+   `stop-the-machine-not-just-the-token` (three of the four cancel inputs were correct **by luck**,
+   relying on undocumented Chromium smooth-scroll cancellation), and
+   `playwright-emulation-and-scroll-traps`.
+6. Then the waves. **Wave 1 is running now — see the shared-worktree warning above before you touch
+   either branch.**
 
 ### Tickets
 
-Closed this session on map `Archie-c97e`: `dbbc`, `01a6`, `f90d`, `c314`, `0d6c`, `c5cb` — all six
-indexed in Decisions-so-far, which now holds **27** entries. **13 remain open** on the map.
+Closed this session on map `Archie-c97e`: `dbbc`, `01a6`, `f90d`, `c314`, `0d6c`, `c5cb`, and then
+`5185` in `cb1bbfe` — all seven indexed in Decisions-so-far. **13 remain open** on the map.
 (An earlier "15" in this file and in chat was measured *before* the `f90d`/`c314` closes. 13 is a
-filtered read of the full open list, not a `head`-truncated one.)
+filtered read of the full open list, not a `head`-truncated one. The count survived `cb1bbfe`
+unchanged because that commit closed one — `5185` — and filed one — `d37d`.)
+
+**Two are blocked on the dock decision** (`cb1bbfe`): `d6e9` and `d37d`. Both remainders change
+shape depending on where the chrome lands, so both are to be **re-measured after docking, not fixed
+blind** — the same rule `01a6` imposed on `d6e9`, applied one level out. For `d37d` specifically, the
+question docking answers is whether `.cite-trigger` is even in its scope; the AV surface is what
+decides it, since an AV object has no canvas chrome at all.
 
 `Archie-7b86` stays OPEN deliberately: V53 is resolved (full eleven-drop enumeration in its body),
 V49 untaken, V50 deferred because the ticket's premise that wavesurfer.js is already a dependency is
