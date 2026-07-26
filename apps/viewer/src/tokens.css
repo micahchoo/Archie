@@ -119,6 +119,16 @@
      count) to keep its space, clear of the bar's "Open another library" zone. The CANVAS is exempt — its
      chrome floats over the image on purpose (dba2). One token so every panel clears the bar identically. */
  --pane-top: calc(var(--topbar-h) + var(--space-3));
+ /* The BOTTOM-edge counterparts of --topbar-h / --pane-top (Archie-40fe). The top band had one source
+     of truth and the bottom band had none, which is the whole of V22/V71/V87: the finder pill and the
+     note card were both pinned at `bottom: --space-5` — i.e. INSIDE the filmstrip — and the narrative
+     spine reserved nothing at all for the pill that floats over its column.
+     `--strip-h` is set at runtime by Filmstrip.svelte to the band's LIVE height (it is content-driven
+     and collapses to a handle, so a static value would be wrong in one of the two states); it falls
+     back to 0 wherever no strip is mounted. `--finder-h` is the pill's own footprint, static because
+     its content is a fixed glyph + label + kbd hint. Any new bottom-anchored floating surface clears
+     `--strip-h`, and anything SCROLLING under the pill reserves `--finder-h` too. */
+ --finder-h: 2.5rem;
  /* Modal backdrop dim (reading sheet, lightbox): the Verdant moss dusk, matching --shadow-lift-* — was a
      pre-Verdant mauve rgba(59,49,56,…) that cast a cool-purple wash behind the warm-paper focus surfaces. */
  --scrim-dim: rgba(26, 60, 35, 0.82);

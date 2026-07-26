@@ -115,6 +115,64 @@ describe("fitBoundsRect — breathing-room margin (V44)", () => {
   });
 });
 
+// The LEFT-flank reservation (Archie-40fe / V48). The right-hand sidebar is a panel the canvas ends
+// BEFORE; the legend and the note card are chrome the canvas continues UNDERNEATH. Measured in the
+// viewer, they stacked into a contiguous 502px column — ~22% of a 924x800 canvas, down its whole left
+// edge — at the moment the reader had just asked to zoom in on a detail.
+describe("fitBoundsRect — left-flank reservation for floating chrome (V48)", () => {
+  const base: FitOptions = { containerW: 1000, sidebarW: 0, sidebarIsSheet: true, detailOpen: false, margin: 0 };
+
+  it("widens LEFTWARD so the region sits clear of the occluding column", () => {
+    // f = 300/1000 = 0.3 → w = 200/0.7 = 285.71, and x slides left by the occluded share (w*0.3).
+    const r = fitBoundsRect(rect, { ...base, leftInsetW: 300 })!;
+    expect(r.w).toBeCloseTo(200 / 0.7, 6);
+    expect(r.x).toBeCloseTo(100 - (200 / 0.7) * 0.3, 6);
+    expect(r.y).toBe(50);
+    expect(r.h).toBe(80);
+  });
+
+  it("leaves the region exactly inside the VISIBLE window, which is the whole point", () => {
+    // The invariant worth asserting: whatever the reservation, the visible sub-rect must be the
+    // region itself. Anything else means the camera framed something the reader cannot see.
+    const r = fitBoundsRect(rect, { ...base, leftInsetW: 300 })!;
+    const visibleLeft = r.x + r.w * 0.3;
+    expect(visibleLeft).toBeCloseTo(100, 6);
+    expect(visibleLeft + r.w * 0.7).toBeCloseTo(300, 6); // 100 + 200
+  });
+
+  it("reserves BOTH flanks at once when a sidebar is open too", () => {
+    // fL 0.2 + fR 0.3 → visible 0.5 → w = 400; region starts 0.2*400 = 80 in.
+    const r = fitBoundsRect(rect, { containerW: 1000, sidebarW: 300, sidebarIsSheet: false, detailOpen: true, margin: 0, leftInsetW: 200 })!;
+    expect(r.w).toBeCloseTo(400, 6);
+    expect(r.x).toBeCloseTo(100 - 80, 6);
+    expect(r.x + r.w * 0.2).toBeCloseTo(100, 6); // region's left edge is where the chrome ends
+  });
+
+  it("caps the TOTAL reservation, not each side — two greedy flanks can't invert the rect", () => {
+    // 600 + 600 of 1000 would be 1.2 → a NEGATIVE visible width. The cap is over the sum.
+    const r = fitBoundsRect(rect, { containerW: 1000, sidebarW: 600, sidebarIsSheet: false, detailOpen: true, margin: 0, leftInsetW: 600 })!;
+    expect(r.w).toBeGreaterThan(0);
+    expect(r.w).toBeCloseTo(200 / 0.15, 6); // MAX_SIDEBAR_FRACTION 0.85
+  });
+
+  it("scales a capped pair proportionally, so the region lands BETWEEN them", () => {
+    // Equal greedy flanks stay equal after the cap: half the 0.85 each, so the region is centred.
+    const r = fitBoundsRect(rect, { containerW: 1000, sidebarW: 600, sidebarIsSheet: false, detailOpen: true, margin: 0, leftInsetW: 600 })!;
+    expect(r.x + r.w * 0.425).toBeCloseTo(100, 6);
+  });
+
+  it("is inert when nothing is occluding (the overwhelmingly common case)", () => {
+    expect(fitBoundsRect(rect, base)).toEqual({ x: 100, y: 50, w: 200, h: 80 });
+    expect(fitBoundsRect(rect, { ...base, leftInsetW: 0 })).toEqual({ x: 100, y: 50, w: 200, h: 80 });
+  });
+
+  it("composes with the breathing-room margin rather than replacing it", () => {
+    // The margin applies to the REGION first, then the flanks reserve around the breathing region.
+    const r = fitBoundsRect(rect, { ...base, margin: 0.15, leftInsetW: 300 })!;
+    expect(r.w).toBeCloseTo(230 / 0.7, 6); // 230 = the inflated width
+  });
+});
+
 describe("applyFitBounds — dispatch to an OSD-like viewport (the mockable gate seam)", () => {
   function mockViewport() {
     const calls: Array<{ rect: unknown; immediately: boolean | undefined }> = [];

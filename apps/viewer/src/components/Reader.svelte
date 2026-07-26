@@ -6,7 +6,7 @@
   // and that object's projected annotations; `onback` returns to the exhibit's object grid.
   import Canvas from "@render/svelte/Canvas.svelte";
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
-  import type { FrameOverlay } from "@render/svelte";
+  import type { FrameOverlay, FitOptions } from "@render/svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import ReadingSheet from "./ReadingSheet.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
@@ -297,16 +297,51 @@
     if (lightbox || readingSheet) return; // those surfaces own Esc while open
     if (e.key === "Escape" && selected !== null) { selected = null; e.preventDefault(); }
   }
+
+  // V48 (Archie-40fe) — tell the camera what is covering the canvas before it frames a region.
+  //
+  // `getFitOptions` is @render/mount's reservation seam. It has existed since the anvil delamination
+  // and the VIEWER HAS NEVER PASSED IT: every fit ran on PLAIN_FIT, so `fitBounds` centred the region
+  // in the whole container while the legend and the note card sat on top of the left flank. Measured
+  // with a reading active and a note open at 9.3x, the two stacked into a contiguous 502px column —
+  // ~22% of a 924x800 canvas, down its entire left edge, including the side the fitted region's own
+  // boundary lies on. The reader asks to look closely; the app zooms, then covers a fifth of the answer.
+  //
+  // Measured on demand rather than tracked reactively, because the seam is a CALLBACK invoked at the
+  // moment of the fit — which is exactly when the truth is knowable and cheapest to read. No
+  // ResizeObserver, no effect, nothing to keep in sync.
+  let mainEl = $state<HTMLElement | undefined>(undefined);
+  const OCCLUDING = [".legend", ".note-pop"]; // canvas-overlaying chrome anchored to the LEFT flank
+  function getFitOptions(): FitOptions {
+    const el = mainEl;
+    if (!el) return { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
+    const m = el.getBoundingClientRect();
+    let inset = 0;
+    for (const sel of OCCLUDING) {
+      const r = el.parentElement?.querySelector(sel)?.getBoundingClientRect();
+      if (!r || r.width === 0) continue; // absent or display:none — not occluding anything
+      inset = Math.max(inset, r.right - m.left);
+    }
+    // The aside is a flex SIBLING, not an overlay: the canvas ends before it, so there is nothing to
+    // reserve on the right. sidebarW stays 0 here deliberately — it models a different geometry.
+    return {
+      containerW: m.width,
+      sidebarW: 0,
+      sidebarIsSheet: true,
+      detailOpen: false,
+      leftInsetW: Math.max(0, Math.min(inset, m.width)),
+    };
+  }
 </script>
 
 <svelte:window onkeydown={onkey} />
 
 <div class="reader">
-  <main>
+  <main bind:this={mainEl}>
     <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
          objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
     {#key object.canvasId}
-      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={onCanvasZoom} />
+      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={onCanvasZoom} {getFitOptions} />
     {/key}
     <!-- Scale cue (Archie-93fd): the locator answers WHERE the viewport sits in the image; this answers
          HOW FAR IN. Top-right of the CANVAS — V40: it used to sit inside `.reader`, the flex row holding

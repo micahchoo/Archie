@@ -13,7 +13,7 @@
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import ProseCites from "./ProseCites.svelte";
-  import { type MarkerStyle, type FrameOverlay, formatZoomRatio, zoomBand } from "@render/svelte";
+  import { type MarkerStyle, type FrameOverlay, type FitOptions, formatZoomRatio, zoomBand } from "@render/svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, withZoomBand, type MarkerStyleSpec, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
   import { ownerObjectOf, arrivalSectionIndex } from "../narrative-landing.js";
@@ -228,12 +228,38 @@
     if (lightbox || readingSheet) return;
     if (e.key === "Escape" && selected !== null) { selected = null; e.preventDefault(); }
   }
+
+  // V48 (Archie-40fe) — the same left-flank reservation Reader.svelte wires, for the same reason and
+  // against the same two overlays. Duplicated deliberately rather than hoisted: the two readers have
+  // different container structures (`.reader` vs `.narrative`) and different chrome on the right (a
+  // note list vs the section spine), and the ONLY shared part is this six-line measurement. A shared
+  // helper would have to take the container and the selector list as arguments, which is the whole body.
+  let mainEl = $state<HTMLElement | undefined>(undefined);
+  const OCCLUDING = [".legend", ".note-pop"];
+  function getFitOptions(): FitOptions {
+    const el = mainEl;
+    if (!el) return { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
+    const m = el.getBoundingClientRect();
+    let inset = 0;
+    for (const sel of OCCLUDING) {
+      const r = el.parentElement?.querySelector(sel)?.getBoundingClientRect();
+      if (!r || r.width === 0) continue;
+      inset = Math.max(inset, r.right - m.left);
+    }
+    return {
+      containerW: m.width,
+      sidebarW: 0,
+      sidebarIsSheet: true,
+      detailOpen: false,
+      leftInsetW: Math.max(0, Math.min(inset, m.width)),
+    };
+  }
 </script>
 
 <svelte:window onkeydown={onkey} />
 
 <div class="narrative">
-  <main>
+  <main bind:this={mainEl}>
     {#if activeSection && !activeObject}
       <!-- A section references an object that's no longer in the exhibit (deleted, section not pruned).
            Surface it instead of silently showing the wrong image with this section's prose. -->
@@ -257,6 +283,7 @@
             focus={activeSection?.start ?? null}
             bind:selected
             onzoom={(r) => (zoomRatio = r)}
+            {getFitOptions}
           />
         {/key}
       {/if}
@@ -393,8 +420,16 @@
     /* Width = a token: responsive by default (clamp), drag-resizable via --narr-aside-w (Phase 2). */
     width: var(--narr-aside-w, clamp(360px, 32vw, 620px)); flex-shrink: 0; overflow: auto; box-sizing: border-box;
     /* Top reserves the fixed top bar (--pane-top) so the spine header (eyebrow · title · hint · credit)
-       keeps its own space, clear of the bar overhead. */
-    padding: var(--pane-top) var(--space-5) var(--space-6);
+       keeps its own space, clear of the bar overhead.
+
+       V87 (Archie-40fe): the BOTTOM had no equivalent reservation, so the fixed finder pill — which
+       lives at the viewport's bottom-right, inside this column's x range (spine 860–1280, pill
+       1102–1260) — sat on whatever the reader had scrolled to. Measured on the default view it cut
+       section 1's embedded cite card mid-word ("→ open obj|"). Note this got WORSE, not better, when
+       the pill was lifted clear of the filmstrip for V22: raising it moves it further UP this column.
+       So the spine reserves the pill's whole footprint — its lifted offset plus its own height — and
+       the last card can always be scrolled fully into the clear. */
+    padding: var(--pane-top) var(--space-5) calc(var(--strip-h, 0px) + var(--finder-h) + var(--space-6));
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
   }

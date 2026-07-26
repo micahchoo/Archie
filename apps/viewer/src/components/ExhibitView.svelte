@@ -660,9 +660,18 @@
   }
   /* Finder trigger — a quiet warm-paper pill pinned bottom-right of the canvas, the discoverable home
      for the ⌘K / `/` accelerators. Recedes (canvas inks, connector-blue hover) so the read stays the
-     star; rationed orange is left free for the one focal action. Below-band tokens keep it off the bar. */
+     star; rationed orange is left free for the one focal action. Below-band tokens keep it off the bar.
+
+     V22 (Archie-40fe): `bottom: var(--space-5)` put this pill INSIDE the filmstrip band, not above
+     it — measured rect (1102,748)–(1260,780) against frames at y 706–800, covering two of twelve
+     including the exhibit's only audio object, i.e. the one object a reader is most likely hunting
+     for. The strip does not scroll at 12 items, so those frames could not be moved out from under it.
+     `--strip-h` is the band's live measured height (Filmstrip.svelte), the bottom-edge mirror of
+     `--topbar-h`; it falls back to 0 where no strip is mounted (gallery, overview), which is why the
+     pill keeps its old position there. */
   .finder-trigger {
-    position: fixed; z-index: 30; right: var(--space-5); bottom: var(--space-5);
+    position: fixed; z-index: 30; right: var(--space-5);
+    bottom: calc(var(--strip-h, 0px) + var(--space-3));
     display: inline-flex; align-items: center; gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);

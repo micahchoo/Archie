@@ -115,11 +115,19 @@
        a real click there never opened the lightbox). 30 matches the existing "floats above the ambient
        Filmstrip" tier ExhibitView already uses for .finder-trigger/.arrival/.to-read/.partial-note — the
        popup is the user-opened foreground card, filmstrip is passive chrome; it should win the same way. */
-    position: absolute; left: var(--space-5); bottom: var(--space-5); z-index: 30;
+    /* V71 (Archie-40fe): winning the z-fight was the right call and is NOT the whole answer — the card
+       still overlapped the band by 74px and covered SIX of twelve frames, silently removing half the
+       survey affordance the reader was using a moment earlier, with no reflow and no acknowledgement.
+       Clearing `--strip-h` (Filmstrip's live measured height, the bottom mirror of --topbar-h) means
+       the card sits ABOVE the band instead of on it, so both surfaces stay usable at once. The z-index
+       note below still applies: the tiers are unchanged, they simply no longer overlap. */
+    position: absolute; left: var(--space-5);
+    bottom: calc(var(--strip-h, 0px) + var(--space-3)); z-index: 30;
     max-width: min(46ch, 46%);
     min-width: min(320px, calc(100vw - 2 * var(--space-5)));
     display: flex; flex-direction: column; gap: var(--space-3);
-    max-height: calc(100vh - var(--topbar-h) - var(--space-5) - var(--space-4));
+    /* Height budget shrinks by the band too, or a tall note reclaims the space the offset just bought. */
+    max-height: calc(100vh - var(--topbar-h) - var(--strip-h, 0px) - var(--space-5) - var(--space-4));
     padding: var(--space-4);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
     border: none; border-left: 2px solid var(--accent);
