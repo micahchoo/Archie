@@ -44,6 +44,7 @@
   import type { ManifestPlan } from "./iiif-import.js";
   import { summarizeFolderFiles, folderGroupCount, flattenedRelativePaths, type FolderSummary } from "./folder-import.js";
   import { readDroppedFolderFiles } from "./folder-drop.js";
+  import { isTauri, pickAndReadTauriFolder } from "./tauri-fs.js";
   import Spinner from "./Spinner.svelte";
   // Scrimmed surface via the shared helper (Archie-5968): the hand-rolled Esc handler, Tab-trap, and
   // focus-return this dialog carried are now the ONE modality implementation. `focusFirst` stays — it is
@@ -713,7 +714,29 @@
     if (iiifCollection) setAllChecked(iiifCollection.rows, checked);
   }
 
-  function pickFolder() {
+  // Archie-ce7a: desktop takes the NATIVE directory dialog, never the hidden <input webkitdirectory>.
+  // WebKitGTK does not implement `webkitdirectory`, so that input degrades to a single-FILE picker and
+  // the user's folder pick arrives as one file (the "Adding … 1 of 1" symptom). Same isTauri() branch
+  // folder-backend.ts:39 already uses for the project-binding picker; the two folder-picking surfaces
+  // reaching for two different mechanisms was the defect.
+  async function pickFolder() {
+    if (isTauri()) {
+      let picked: Awaited<ReturnType<typeof pickAndReadTauriFolder>>;
+      try {
+        picked = await pickAndReadTauriFolder();
+      } catch (err) {
+        console.error("[create-dialog] native folder pick failed", err);
+        window.alert("Couldn't read that folder.");
+        return;
+      }
+      if (picked === null) return; // cancelled — distinct from a folder holding no importable media
+      if (picked.files.length > 0) applyFolderFiles(picked.files);
+      else window.alert("That folder has no images, audio or video in it.");
+      // Same skip-and-tally surfacing the drop path uses (Archie-bf5b) — an unreadable entry must
+      // shrink the import visibly, not silently.
+      if (picked.skipped > 0) window.alert(`${picked.skipped} item${picked.skipped === 1 ? "" : "s"} couldn't be added.`);
+      return;
+    }
     dirEl?.click();
   }
   function onDirChange(e: Event) {

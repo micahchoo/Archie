@@ -9,6 +9,7 @@
 // path while still letting the packaged app load them from the bundle.
 
 import { TauriFilesystem, ZipStreamFilesystem, type TauriFsBridge, type TauriDirEntry } from "@render/core";
+import { readNativeFolderFiles, type NativeFolderResult } from "./folder-native.js";
 import type { StreamingZipTarget } from "./binding.js"; // type-only — erased, no runtime cycle
 
 /** True when running inside the Tauri webview. v2 always injects __TAURI_INTERNALS__. */
@@ -59,6 +60,26 @@ export async function pickTauriFolder(): Promise<string | null> {
   const { open } = await import("@tauri-apps/plugin-dialog");
   const picked = await open({ directory: true, multiple: false });
   return typeof picked === "string" ? picked : null;
+}
+
+/**
+ * Pick a folder of MEDIA and read it into the `File[]` the create dialog's folder path consumes
+ * (Archie-ce7a). The desktop replacement for `<input type="file" webkitdirectory>`, which WebKitGTK
+ * degrades to a single-file picker — see folder-native.ts for the full why and for the memory bound.
+ *
+ * Lives here rather than in the dialog because this module is the ONLY place `@tauri-apps/*` is
+ * touched (see the file header); folder-native.ts stays platform-free and unit-testable, and this is
+ * the three-line composition that binds it to the real bridge. Returns null when the user cancels —
+ * distinct from a folder that yielded no importable media, which is `files: []`.
+ *
+ * Path joining is a plain "/" join, not `@tauri-apps/api/path`'s async `join`: the walker needs a
+ * synchronous joiner, and forward slashes are accepted by the Rust std path handling behind
+ * plugin-fs on every platform Archie targets.
+ */
+export async function pickAndReadTauriFolder(): Promise<NativeFolderResult | null> {
+  const rootPath = await pickTauriFolder();
+  if (rootPath === null) return null;
+  return readNativeFolderFiles(rootPath, await tauriFsBridge());
 }
 
 /**
