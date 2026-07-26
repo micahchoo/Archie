@@ -10,27 +10,48 @@ Worktrees `.claude/worktrees/chrome-occlusion` (driver) and `.claude/worktrees/m
 
 ## CURRENT STATE — read this and nothing else for state
 
-**`origin/main` = local `main` = `ef7ef59`. CI green on all ten jobs** (svelte-check, test,
-typecheck, unit-scripts, e2e, gh-pages-build, archie-viewer-artifact, astro-check, embed-smoke,
-perf-ratchets).
+**All five slices are MERGED into local `main` (`37783df`). NOT PUSHED — `origin/main` is still
+`ef7ef59`.** The push is the next action and needs the human's word; everything below it is done.
 
-**Four of five slices merged and pushed:** `ux/note-surface`, `ux/offline-canvas`, `ux/embed-parity`,
-`ux/av-surface`. **`ux/narrative-coupling` is the only one outstanding** — reviewed at `6731987`,
-sent back for the guard-wedge fix, awaiting a new SHA.
+Merged: `ux/note-surface`, `ux/offline-canvas`, `ux/embed-parity`, `ux/av-surface`,
+`ux/narrative-coupling`.
+
+**Merged-tree gates, all measured on `37783df`, not inherited from any branch:**
+
+| gate | result |
+| --- | --- |
+| `pnpm -r run typecheck` | **6/6 Done** — render-core, render-mount, render-svelte, archie-viewer, studio, viewer (read the names, not a count) |
+| viewer `check:svelte` | **1521 files, 0 errors, 0 warnings** |
+| studio `check` | **1158 files, 0/0** |
+| vitest, per app | viewer 176 · studio 931 · render-core 1194 · render-mount 207 · archie-viewer 182 = **2690** |
+| viewer e2e | **132 passed, 0 failed**, `astro build` confirmed in the log |
+| studio e2e | **8 passed** |
+| `recipes/smoke.mjs` | **RESULT: PASS**, 41 labels, **41/41 present**, no phantoms/duplicates/strays |
+| `build.mjs --check` | ok — eager 38.9KB (Δ +2.9, allowed +10.0), total 274.9KB (Δ +8.6, allowed +26.6) |
+| `dist/` drift | **none** — rebuild + `sync-dist.mjs` left the tree clean, so the committed artifact matches current source |
 
 ### The next actions, in order
 
-1. **Verify the narrative fix independently**, then re-review it — a post-review commit is
-   unreviewed, and `.claude/rules/post-review-fixes-are-unreviewed.md` exists because exactly that
-   shipped a silent defect on this session.
-2. **Merge `ux/narrative-coupling`**, run the full sweep **on the merged tree** (the combination is
-   never what either side tested), push, watch CI.
-3. **Thread `onopenfinder`** into both `<MediaPlayerLazy.current …>` instances
-   (`ExhibitView.svelte` :570, :592) **on `main`** — see "Post-merge work this created" below for
-   why it is deliberately not on either branch. The fixture note carrying a tag is already in place
-   and deliberately unasserted; write the assertion with the wire and red-green it in one pass.
-4. **Close `Archie-0d6c` and `Archie-c5cb`** with resolutions; index the gists on map `Archie-c97e`.
-5. **Write the three rules the narrative review earned** (below).
+1. **Push `main`** and watch CI. Nothing else is blocked on anything.
+2. **Thread `onopenfinder`** into both `<MediaPlayerLazy.current …>` instances
+   (`ExhibitView.svelte` :570, :592) — see "Post-merge work this created" below for why it was
+   deliberately kept off both branches. The fixture note carrying a tag is already in place and
+   deliberately unasserted; write the assertion with the wire and red-green it in one pass.
+3. **Write the three rules the narrative review earned** (below) — none exist yet.
+4. **`Archie-4524`** — `ReadingLegend` on the AV surface. Fixture first, then the control, then
+   revert the fixture and watch it fail.
+
+### Tickets
+
+Closed this session on map `Archie-c97e`: `dbbc`, `01a6`, `f90d`, `c314`, `0d6c`, `c5cb` — all six
+indexed in Decisions-so-far, which now holds **27** entries. **15 remain open** on the map.
+
+`Archie-7b86` stays OPEN deliberately: V53 is resolved (full eleven-drop enumeration in its body),
+V49 untaken, V50 deferred because the ticket's premise that wavesurfer.js is already a dependency is
+**false**.
+
+**The map cannot fully close, and that should be stated rather than finessed:** V103/V104 depend on
+`Archie-a5b1`, which lives on `map:dc-metadata` and is open.
 
 ### The three rules the narrative review earned — none written yet
 
