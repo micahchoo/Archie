@@ -50,6 +50,13 @@ jobs:
       - name: scripts/lib unit suite
         run: node --test scripts/lib/*.test.mjs
 
+      # Archie-91e7: every TauriFsBridge method must be granted in the desktop capability manifest.
+      # Ungranted commands are denied at RUNTIME in the packaged app only — no unit suite, typecheck
+      # or build can see it (fs/tauri.test.ts runs over node:fs, which has no permission system), so
+      # this structural check is the only cheap gate for the class. Bare node, no toolchain needed.
+      - name: desktop capability manifest covers the fs bridge
+        run: node scripts/check-tauri-capabilities.mjs
+
   test:
     runs-on: ubuntu-latest
     steps:

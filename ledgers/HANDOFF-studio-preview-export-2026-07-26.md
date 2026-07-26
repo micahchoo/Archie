@@ -109,14 +109,54 @@ The panel names both as "aren't here yet" in its own copy, so the surface does n
 ## Next actions, ranked
 
 1. ~~Rebase, then merge this branch.~~ **DONE** — merged and on `origin/main`.
-2. **`Archie-b5c2` — measure FSA folder autosave vs OPFS.** One measurement that decides web
-   folder-canonical, a multi-week direction. **Blocked on a human**: needs a real
+2. **`Archie-9ece` — desktop verification (Critical). RUN, 2026-07-26. Found a P0 → `Archie-91e7`.**
+
+   > **Read `Archie-91e7` before any desktop work.** The native build proved the desktop store could
+   > not write ANYTHING: the capability manifest omits `fs:allow-rename`, and `TauriFilesystem`
+   > commits every write with temp-then-rename. First boot produced 18 directories, 4 files, **all 0
+   > bytes** — `library.json` empty, assets empty — while the app looked healthy behind a soft
+   > "Retry save". Adding that one permission flipped `library.json` from 0 → 21,606 bytes and the
+   > header from "Retry save" to "Saved". `fs:allow-stat` was added alongside (the bridge calls
+   > `fs.stat`); it is justified by code inspection, **not** independently red-greened.
+   >
+   > **P2-a PASSES** after the fix — an authored, user-owned exhibit survived a full relaunch with
+   > zero 0-byte files. **P2-b was NOT run**: this machine's Jul-5 app-data has no OPFS library to
+   > migrate (its WebKit `storage/` holds only `salt`), so the precondition does not exist. Flatpak
+   > remains untested — that is still `Archie-7e2e`.
+   >
+   > The uncomfortable part: `defaultLibraryRoot()` resolved **correctly**. The predicted failure
+   > mode was not the one that fired, and the one that fired was invisible to every headless gate
+   > because `fs/tauri.test.ts` runs over a node:fs bridge with no permission system at all.
+
+   Original framing, kept because the re-measurement below is what unblocked the run:
+
+   An earlier revision of this list said "blocked in this environment", on the strength of one check.
+   That check was of the **Flatpak** path only. Re-measured:
+
+   | probe | result |
+   |---|---|
+   | `flatpak-builder` | **MISSING** |
+   | `flatpak`, `cargo`, `rustc` | present |
+   | `webkit2gtk-4.1`, `javascriptcoregtk-4.1` | present (pkg-config OK) |
+   | `cargo check` in repo-root `src-tauri/` | **Finished `dev` profile in 32.50s** |
+   | `@tauri-apps/cli` ^2.11.3 · `node_modules/.bin/tauri` | present |
+
+   So a **native** (non-Flatpak) desktop build is buildable here, and the two ship-gating rows are
+   about the storage spine under a real webview — which a native build exercises exactly as well as a
+   packaged one: **P2-a** (author → relaunch → work survives) and **P2-b** (migrate a real OPFS
+   library). Expect the first build to be slow (full release compile), not hard.
+
+   What a native run does **NOT** cover: the Flatpak sandbox itself — path mapping, portals,
+   `tauri-plugin-opener` survival. That is a genuinely separate variable and already has its own
+   ticket, **`Archie-7e2e`**. Report the native result as a partial pass; do not close 9ece on it.
+
+   The lesson worth carrying, since it is the second instance this week: **the blocker was recorded
+   from the first probe that failed, and the probe answered a narrower question than the claim.**
+   `.claude/rules/post-review-fixes-are-unreviewed.md` states the general form.
+3. **`Archie-b5c2` — measure FSA folder autosave vs OPFS.** One measurement that decides web
+   folder-canonical, a multi-week direction. **Genuinely blocked on a human**: needs a real
    `showDirectoryPicker` handle, which requires a user gesture Playwright cannot supply. Wants a
    5-minute manual run against `scripts/perf/fsrun.mjs`, not an agent.
-3. **`Archie-9ece` — packaged desktop verification (Critical).** `main` carries a relocated storage
-   spine nobody has booted. **Blocked in this environment**: `cargo` present, **`flatpak-builder`
-   MISSING**. Needs your machine or CI. Cut to two rows for a ship gate: P2-a (author → relaunch →
-   work survives) and P2-b (migrate a real OPFS library).
 4. ~~Publishing an examples-only library produces an empty site, silently.~~ **DONE** (`3a3806e`).
 5. ~~Gate or delete two decision records.~~ **DONE** (`e1aa8e7`) — Q-6 ACCEPTED; Q-3 gated to
    REVISIT, sized in **Archie-babe**.
