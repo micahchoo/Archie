@@ -54,6 +54,14 @@ premise about the fixture was never checked.
 
 - **Inject the defect and watch it fail, before trusting the assertion.** Nothing else in this repo
   has reliably caught this class.
+- **Commit before you inject, and never revert an injection with `git checkout -- <file>`.** That
+  command silently discards *uncommitted* work, and an injection loop is exactly when you have
+  uncommitted work — the fix you just wrote and the probe you are about to throw away live in the
+  same file. Measured 2026-07-26: it destroyed an entire slice once and a set of review fixes twice,
+  across two independent agents, and one of those losses happened *hours after the same agent wrote
+  "commit before probing" into a report as a lesson learned*. Copy the file to `/tmp` and restore
+  from there, or commit first and revert with `git restore --source=HEAD`. Both losses were caught by
+  an output line that could not be true — not by remembering the rule.
 - **Check the injection did what you think.** Writing `if (false)` on a branch whose `else` holds the
   records forces the *normal* path — it comes back green and looks like a broken gate. Read the
   output for evidence the injected state was actually reached.
