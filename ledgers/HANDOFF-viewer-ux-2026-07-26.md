@@ -113,50 +113,78 @@ islands stay ignorant of the address grammar; `ExhibitView` alone decides preced
 One interaction to preserve: the writer **yields** to V4's honest-degrade path. While the arrival
 chrome explains a missing target, `normalizeAddressToExhibit` owns the bar.
 
-## STATE AS OF THE HANDOFF REFRESH — wave 1 is DONE and UNMERGED
+## STATE — wave 1 two-thirds LANDED (local `main`, NOT pushed), wave 2 running
 
-`main` is still `85c8ba5`. **Three branches sit finished on top of it, none merged, none pushed.**
-Verified from the coordinator, not taken on report:
+Local `main` is at **`c4d14d5`**, three commits past `origin/main` (`85c8ba5`). **Nothing is pushed.**
 
-| branch | SHA | commits | gates as reported by its impl agent |
+| commit | what |
+| --- | --- |
+| `1c131c9` | three measurement rules + this ledger |
+| `273bea7` | merge `ux/note-surface` (`cd9b33f`) — `Archie-dbbc` + `Archie-01a6` |
+| `c4d14d5` | merge `ux/offline-canvas` (`109d394`) — verification debt, V48 gap pinned |
+
+**Gates on the MERGED tree — the combination neither branch had ever been tested in:**
+typecheck clean · viewer vitest **176 / 21 files** · svelte-check **1519 files 0/0** ·
+viewer e2e **100 passed / 0 failed / 0 skipped** (port 4371).
+
+Tickets closed with full resolutions appended to their bodies: **`Archie-dbbc`**, **`Archie-01a6`**.
+Map open count 18 → **16**.
+
+### Two wrong ticket ids in those merge commit messages
+
+`273bea7` says flip-and-read was recorded as `Archie-c30a`; it is **`Archie-5185`**. `c4d14d5` says
+the V48 horizontal-only gap was filed as `Archie-b135`; it is **`Archie-c30a`**. (`Archie-b135` is
+"the seed has no local audio/video".) Not rewritten because all three in-flight agents are based on
+`c4d14d5` and moving `main` under them would orphan their base. The correct ids are here and in the
+closed tickets' resolution text.
+
+### `ux/embed-parity` (`8e949c8`, 5 commits) — still UNMERGED and now UNDER REVIEW
+
+Gates as reported by its impl agent: archie-viewer 180/180 · render-core 1194/1194 · smoke 36/36 with
+35/35 contracted labels · typecheck 7/7 · check:svelte 1513 0/0 · eager 36 → 38.9KB gz (Δ+2.9/+10.0).
+
+Verified here, do not redo: merges clean, **zero** file overlap with the other two slices (12 / 5 / 56
+files, empty pairwise intersections), and `bundle-size.json` is blob **`6acd6b6`** — byte-identical to
+`85c8ba5`'s, so the pre-branch floor was carried forward rather than re-anchored. That is the check
+that matters most on this branch, because of the trapdoor below.
+
+A first reviewer was stopped mid-run; a second is going now against brief
+`/tmp/rev-embed-parity-brief.md`. Seven items; the two blocking ones: (1) is the smoke MUST-label
+completeness check a hand-maintained **literal** list or a tautology derived from the same source as
+the labels, and (2) does the new V56 assertion drive *pick a reading THEN step objects* — the order
+that was actually broken — rather than re-picking after stepping, which proves nothing.
+**Treat this slice as unverified until those are answered.**
+
+## Wave 2 — DISPATCHED, running now
+
+Both branch from `c4d14d5`, disjoint territory, impl agents in flight:
+
+| branch | tickets | exclusive territory | port |
 | --- | --- | --- | --- |
-| `ux/note-surface` | `cd9b33f` | 2 | svelte-check 1518 0/0 · typecheck 7/7 · vitest 176 · **e2e 85 pass / 0 fail / 0 skip** |
-| `ux/offline-canvas` | `109d394` | 2 | e2e 74 pass (three clean runs) · vitest 157 · typecheck clean |
-| `ux/embed-parity` | `8e949c8` | 5 | archie-viewer 180/180 · render-core 1194/1194 · smoke 36/36 · typecheck 7/7 · check:svelte 1513 0/0 |
+| `ux/narrative-coupling` | `0d6c` + `c5cb` | `NarrativeReader` `ExhibitView` `aside-persistence` `narrative-landing` + spine e2e | 4361 |
+| `ux/av-surface` | `7b86` **V53 only** | `MediaPlayer` AV player modules + AV e2e | 4362 |
 
-**Independently verified here (do not redo):**
+`ExhibitView.svelte` is the one plausible collision and belongs to the narrative slice; the AV agent
+was told to **escalate rather than edit it**. Both were told `packages/archie-viewer/**` and
+`recipes/**` are off limits while embed-parity is unmerged.
 
-- All three `merge-tree` **CLEAN** against `main`.
-- **Zero** pairwise file overlap: note-surface 12 files, offline-canvas 5, embed-parity 56, empty
-  intersections in all three pairs. The territory split held exactly.
-- `bundle-size.json` on `ux/embed-parity` is blob `6acd6b6` — **byte-identical to `85c8ba5`'s**. The
-  pre-branch floor was carried forward, not re-anchored. This is the check that matters most on that
-  branch, because of the trapdoor below.
+Two corrections were baked into the briefs so they are not rediscovered:
 
-**Reviewed:** note-surface and offline-canvas each went through a full impl+reviewer round.
-**NOT reviewed:** `ux/embed-parity`. A reviewer was dispatched and **stopped by the user before it
-produced anything**. Its brief survives at `/tmp/rev-embed-parity-brief.md` — seven items, the two
-blocking ones being (1) is the smoke MUST-label completeness check a hand-maintained literal list or
-a tautology derived from the same source as the labels, and (2) does the new V56 assertion drive
-*pick a reading THEN step objects*, the order that was actually broken, rather than re-picking after
-stepping (which tests nothing). **Treat the embed slice as unverified until someone answers those.**
+- `0d6c` cites **scrollama** for the IntersectionObserver choice. That supports *"use
+  IntersectionObserver, don't hand-roll scroll math"* and nothing else — scrollama has **no
+  reentrancy guard**, and no corpus system solves the two-directions-fight problem (they all dodge it
+  architecturally). The instruction: keep IntersectionObserver, port quire's `goToFigureState`
+  one-function shape, and build the guard as **acknowledged original design** with no citation
+  claimed.
+- `7b86` claims **wavesurfer.js is already a dependency**. It is **not**. V50 is deferred; adding it
+  trips `.claude/rules/viewer-optimizedeps-bare-includes.md` (needs BOTH a direct dep and an
+  `optimizeDeps.include` entry). The AV agent was also told not to take the ticket's "four dropped
+  affordances" on faith but to enumerate them against the *newly reshaped* `Reader.svelte`.
 
-## Uncommitted work that must ride along with the merge
+## Still uncommitted / on branches
 
-In `.claude/worktrees/merge-main`, not on any branch:
-
-- `ledgers/HANDOFF-viewer-ux-2026-07-26.md` (this file)
-- `.claude/rules/viewer-e2e-shared-port.md` — new
-- `.claude/rules/osd-overlay-wrapper.md` — amended to scope the bare-`DIV` `elementFromPoint`
-  signature to the DOM-overlay renderer (the embed). It does **not** hold on the viewer, where
-  Annotorious's `canvas.a9s-gl-canvas` stacks above OSD's wrappers. Viewer-side, check the wrapper's
-  computed style instead.
-- `.claude/rules/playwright-count-does-not-wait.md` — new, deliberately narrowed to `count()` **after
-  a navigation**; post-action `count()` was attacked at 1x/6x/20x throttle and read zero in 0 of 18
-  trials.
-
-`ux/embed-parity` additionally carries its own `vitest-css-id-empty-string.md` and an eager-closure
-rule amendment.
+`ux/embed-parity` carries its own `vitest-css-id-empty-string.md` and an eager-closure rule
+amendment; those land with that merge.
 
 ## The trapdoor found this session — read before touching the bundle ratchet
 
