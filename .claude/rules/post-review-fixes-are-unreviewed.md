@@ -123,6 +123,14 @@ favour, and it survived only until someone opened the file in order to apply it.
 be wrong in the same direction for it to get that far. When a review hands you good news, that is the
 moment to open the file.
 
+**One counting trap in this repo, made twice on 2026-07-26 by two different people.**
+`pnpm -r run typecheck | grep -c "typecheck: Done"` returns **7**. The answer is **6** — the seventh
+match is `apps/viewer pretypecheck: Done`, the astro sync step. The second instance is the instructive
+one: the first was caught, corrected, and written into the handoff *with the cause recorded so it
+could not be re-derived* — and it was re-derived anyway, hours later, from the same command. **A
+lesson written down is not a lesson installed.** Carry the grep, not the memory:
+`grep -E '[^e]typecheck: Done'`, or read the package names and count those.
+
 **2. Reconcile every number you report against a number you actually read.** The report said
 "41/41 contracted labels". That number was never measured — it was inferred from the *hard-assertion*
 count (41/41) on the assumption the two agreed. The completeness line said `35/35`. **The fact that
