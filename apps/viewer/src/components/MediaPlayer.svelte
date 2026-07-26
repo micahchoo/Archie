@@ -339,38 +339,6 @@
         </div>
       {/if}
 
-      <!-- THE NOTE (shared NotePopup), floating on any cue / whole-track selection — the same component,
-           at the same size, as the image reader's card. Nothing about it is AV-specific; what reaches it
-           is (a temporal note instead of a spatial one), which is the corpus's whole point.
-
-           IT IS ANCHORED INSIDE `.media-region`, NOT `.player`, AND THAT IS THE OCCLUSION FIX. `.note-pop`
-           is `position: absolute; left: …; bottom: calc(var(--strip-h) + …)` and takes its box from the
-           nearest positioned ancestor. `.player` is positioned, so mounting the card as its child would
-           have parked it on the `.timeline` — the temporal map is `main`'s LAST child, so the card's
-           bottom-left is exactly where the map is. That is V49's defect (the map shipped fully covered by
-           the item strip) re-created by the fix for V53. `.media-region` is already `position: relative`
-           and already sits ABOVE the map in the column, so anchoring here reserves the map structurally
-           rather than by a magic offset — Archie-40fe's model.
-
-           `--strip-h: 0px` on the slot for the same reason: `.player` already takes the filmstrip out of
-           the column with its own `padding-bottom`, and `.media-region` ends above that padding. Leaving
-           the card's own strip reservation in place would double-count it and float the card into the
-           middle of the picture. -->
-      {#if current}
-        <div class="note-slot" class:hidden-behind-sheet={readingSheet}>
-          <NotePopup
-            eyebrow={object.label}
-            text={noteParts.text}
-            media={noteParts.media}
-            tags={onopenfinder ? tagsOf(current) : []}
-            {geoCoord}
-            onclose={() => (selected = null)}
-            onexpand={() => { if (noteParts.text) readingSheet = true; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }}
-            onopenfinder={(t) => onopenfinder?.(t)}
-            onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
-          />
-        </div>
-      {/if}
     </div>
 
     <!-- Temporal MAP: where each transcript note falls across the recording's length — a read-only
@@ -390,6 +358,30 @@
           {/each}
           {#if dur}<div class="tl-cursor" style={`left:${(currentTime / dur) * 100}%`} aria-hidden="true"></div>{/if}
         </div>
+      </div>
+    {/if}
+    <!-- THE NOTE (shared NotePopup), on any cue / whole-track selection — the same component, at the
+         same size, as the image reader's card. Nothing about it is AV-specific; what reaches it is (a
+         temporal note instead of a spatial one), which is the corpus's whole point.
+
+         It is a ROW of the media column now (ADR-0019's layout row), not an absolutely-positioned card
+         that had to be anchored inside `.media-region` rather than `.player` so it would not park on
+         the temporal map. That anchoring choice was Archie-40fe's model applied structurally, and it is
+         the same instinct docking generalises: a surface that must not cover another one should be
+         beside it, not offset from it. -->
+    {#if current}
+      <div class="note-slot" class:hidden-behind-sheet={readingSheet}>
+        <NotePopup
+          eyebrow={object.label}
+          text={noteParts.text}
+          media={noteParts.media}
+          tags={onopenfinder ? tagsOf(current) : []}
+          {geoCoord}
+          onclose={() => (selected = null)}
+          onexpand={() => { if (noteParts.text) readingSheet = true; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }}
+          onopenfinder={(t) => onopenfinder?.(t)}
+          onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+        />
       </div>
     {/if}
   </main>
@@ -490,17 +482,13 @@
   /* Listening station: warm paper media ground (left) + warm paper transcript spine (right); the active
      line is a quiet signal — the NarrativeReader idiom, applied to time instead of space. */
   /* V49 (Archie-7b86): the temporal map — this surface's ONE novel affordance, the thing that makes a
-     recording navigable the way an image's marks do — shipped FULLY covered by the item strip. The
-     player is a 100vh column and `.timeline` is its last child, so the fixed bottom band sat straight
-     on top of it.
-     The ticket predicted this wants Archie-40fe's reservation rather than a local fix, and it does:
-     `--strip-h` is Filmstrip's live measured height, already the token every other bottom-anchored
-     surface clears. `box-sizing` so the padding comes OUT of the 100vh rather than adding to it —
-     otherwise the column overflows and the timeline is pushed off the bottom instead of covered by it,
-     which would look like a fix and be the same defect. */
+     recording navigable the way an image's marks do — shipped FULLY covered by the item strip, because
+     the player was a 100vh column with `.timeline` as its last child and the strip was a fixed bottom
+     band sitting straight on top of it. The fix then was a `--strip-h` padding reservation. The fix now
+     is that the strip is docked in ExhibitView's chrome bar BELOW this whole column, so the map cannot
+     be covered by it and the player simply takes the height it is given. */
   .player {
-    position: relative; display: flex; height: 100vh; box-sizing: border-box;
-    padding-bottom: var(--strip-h, 0px);
+    position: relative; display: flex; height: 100%; min-height: 0; box-sizing: border-box;
     background: var(--surface-canvas);
   }
 
@@ -524,23 +512,23 @@
   .wt-note.active { background: var(--accent-muted); color: var(--ink-paper-primary); }
   .wt-note:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
 
-  /* The note card's slot. `display: contents` so it generates no box — `.note-pop` keeps `.media-region`
-     as its containing block and its own anchoring is untouched. `--strip-h: 0px` cancels the card's
-     filmstrip reservation, which `.player`'s `padding-bottom` has already made on its behalf (see the
-     slot's comment in the markup). `display: none` while the reading sheet is open takes the card out of
-     rendering AND the a11y tree without unmounting the ⤢ that `use:dialog` returns focus to — the same
-     mechanism, and the same reason, as `Reader.svelte`'s `.note-slot`. */
-  .note-slot { display: contents; --strip-h: 0px; }
+  /* The note card's row — the AV twin of Reader.svelte's `.note-dock`, capped for the same reason (a
+     long note must not squeeze the stage to nothing). `display: none` while the reading sheet is open
+     takes the card out of rendering AND the a11y tree without unmounting the ⤢ that `use:dialog` returns
+     focus to — the same mechanism, and the same reason, as `Reader.svelte`'s `.note-slot`. */
+  .note-slot {
+    flex: none; max-height: 38%; min-height: 0; overflow: auto;
+    border-top: 1px solid var(--border-canvas);
+  }
   .note-slot.hidden-behind-sheet { display: none; }
 
   /* Escape-out from an index-opened AV recording (ADR-0016 §137 precision-in/escape-out, §223 anti-trap):
-     a quiet step back to the index grid, anchored canvas-relative (top-left of the media column). Cleared
-     below the persistent top-bar band via the shared --topbar-h token (ViewerShell .topbar owns top-left
-     for the breadcrumb; the index-AV player also emits the top-bar carousel) — same clearance as the
-     sibling .to-read/.to-index escapes. Mirrors that escape language — transparent chrome, canvas inks, connector-blue (--accent-2)
+     a quiet step back to the index grid, at the top-left of the media column. There is no fixed top bar
+     to clear any more, so no `--topbar-h`; and a listening station has no image for it to obscure.
+     Mirrors the sibling escapes' language — transparent chrome, canvas inks, connector-blue (--accent-2)
      hover keeps the rationed orange free. */
   .to-index {
-    position: absolute; z-index: 20; top: var(--topbar-h); left: var(--space-5);
+    position: absolute; z-index: 20; top: var(--space-3); left: var(--space-5);
     display: inline-flex; align-items: center; gap: var(--space-1);
     background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-1);
     color: var(--ink-canvas-secondary);
@@ -549,11 +537,8 @@
   }
   .to-index:hover { color: var(--accent-2); }
   .to-index .back-mark { font-size: 1.05rem; line-height: 1; }
-  main { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--surface-canvas); }
-  /* Top padding reserves the fixed top bar (#9 / --pane-top): the centred audio title (and the carousel
-     + "Back to the index" escape that share this top edge) used to ride up under the bar on a short
-     viewport — this is the listening station, the one AV surface with no deep image to anchor attention. */
-  .media-region { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: var(--pane-top) var(--space-8) var(--space-8); }
+  main { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface-canvas); }
+  .media-region { position: relative; flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: var(--space-6) var(--space-8) var(--space-8); }
   /* Loading veil (#10) — the shell's breathing-dot idiom over the dark stage until metadata arrives. */
   .media-loading { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; gap: var(--space-3); background: var(--surface-canvas); color: var(--ink-canvas-secondary); font-family: var(--font-ui), sans-serif; font-size: 0.8125rem; letter-spacing: 0.16em; text-transform: uppercase; }
   .media-loading .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: media-pulse 1.4s ease-in-out infinite; }
@@ -592,9 +577,9 @@
        OVERRIDE from the drag. The ResizeDivider's min/max (320/560) are the same numbers, so the handle
        cannot drag the transcript outside its designed measure. */
     width: var(--av-aside-w, 420px); min-width: 320px; flex-shrink: 0; overflow: auto; box-sizing: border-box;
-    /* Top reserves the fixed top bar (--pane-top) so the transcript header (eyebrow · label · hint ·
+    /* (The `--pane-top` reservation retired with the fixed bar.) Transcript header (eyebrow · label · hint ·
        credit) keeps its own space, clear of the bar overhead. */
-    padding: var(--pane-top) var(--space-5) var(--space-6);
+    padding: var(--space-5) var(--space-5) var(--space-6);
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
   }

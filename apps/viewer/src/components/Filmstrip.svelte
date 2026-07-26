@@ -24,25 +24,10 @@
   //
   // The rove cursor follows the CURRENT object when there is one, so tabbing in lands on where the reader
   // actually is rather than always at the first frame.
-  // V22/V71 (Archie-40fe) — publish the band's LIVE height as `--strip-h`, the bottom-edge mirror of
-  // `--topbar-h`. That token exists precisely so every surface escaping the top band clears it by the
-  // same number and they "can't drift apart" (ExhibitView.svelte:633); the bottom band had no
-  // equivalent, so the finder pill and the note card were both positioned `bottom: --space-5` — i.e.
-  // INSIDE the strip. Measured: the pill's rect (1102,748)–(1260,780) sat over frames running
-  // y 706–800, covering two of twelve including the exhibit's only audio object; an open note card
-  // overlapped the band by 74px and covered six of twelve.
-  //
-  // Measured rather than tokenised because the strip's height is CONTENT-driven and changes at
-  // runtime: collapsing it leaves only the handle. A hard-coded token would be right in one state and
-  // wrong in the other, which is how the pill ended up where it is.
-  let bandH = $state(0);
-  $effect(() => {
-    const px = `${bandH}px`;
-    document.documentElement.style.setProperty("--strip-h", px);
-    // Unset on unmount: the gallery and overview have no strip, and a stale value there would push
-    // the pill up against nothing.
-    return () => document.documentElement.style.removeProperty("--strip-h");
-  });
+  // The band used to publish its live height as `--strip-h` so the finder pill and the note card could
+  // reserve room above it (Archie-40fe / V22 / V71). It is DOCKED now — a flow member of ExhibitView's
+  // `.chrome-dock` — so the surfaces that reserved against it are siblings in the same row, and there is
+  // no measurement to publish and nothing to keep in sync. The token is gone with the reservation.
 
   let roveId = $state<string | null>(null);
   const roveIndex = $derived.by(() => {
@@ -68,7 +53,7 @@
   }
 </script>
 
-<div class="filmstrip" class:collapsed bind:clientHeight={bandH}>
+<div class="filmstrip" class:collapsed>
   <!-- Bottom-edge handle: the one affordance that opens/closes the strip (collapsed by default in the
        narrative, so the authored read stays primary — spike-0005 §1). -->
   <button class="handle" onclick={ontoggle} aria-expanded={!collapsed}
@@ -102,15 +87,14 @@
 </div>
 
 <style>
-  /* A quiet warm-paper band pinned to the bottom edge — the survey-and-jump surface floating over the
-     read. Recedes (canvas inks, connector-blue hover) so the reading stays the star. Full-width so a long
-     object set scrolls horizontally within it; the finder pill floats above at the bottom-right. */
+  /* A quiet warm-paper band, DOCKED in the exhibit's chrome bar — the survey-and-jump surface BESIDE
+     the read rather than over it. Recedes (canvas inks, connector-blue hover) so the reading stays the
+     star. It no longer needs `pointer-events: none` on the band and `auto` on the children: that trick
+     existed only so clicks would fall through the band's gaps onto the canvas underneath, and there is
+     no canvas underneath any more. */
   .filmstrip {
-    position: fixed; z-index: 25; left: 0; right: 0; bottom: 0;
-    display: flex; flex-direction: column; align-items: center; gap: 0;
-    pointer-events: none; /* the band itself is inert; its children re-enable — clicks fall through the gaps */
+    display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0;
   }
-  .filmstrip > * { pointer-events: auto; }
 
   /* Handle tab — sits just above the strip (or alone when collapsed), a small centred grip. */
   .handle {
@@ -118,7 +102,7 @@
     margin-bottom: var(--space-1);
     padding: var(--space-1) var(--space-4);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
-    border: none; border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border: none; border-radius: var(--radius-md);
     box-shadow: var(--shadow-lift-low); cursor: pointer;
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 500;
     letter-spacing: 0.1em; text-transform: uppercase;
@@ -131,11 +115,10 @@
   /* The thumbnail rail — horizontal scroll, one small plate per object. */
   .strip {
     list-style: none; margin: 0; width: 100%; box-sizing: border-box;
-    padding: var(--space-3) var(--space-5);
+    padding: var(--space-2) var(--space-3);
     display: flex; gap: var(--space-3); overflow-x: auto;
     background: var(--surface-canvas-raised);
-    border-top: 1px solid var(--border-canvas);
-    box-shadow: var(--shadow-lift-low);
+    border-radius: var(--radius-sm);
   }
   .frame {
     flex: 0 0 auto; width: 88px; padding: 0; cursor: pointer;

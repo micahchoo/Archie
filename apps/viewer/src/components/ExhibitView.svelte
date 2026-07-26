@@ -542,6 +542,10 @@
 
 <svelte:window onkeydown={onWindowKey} />
 
+<!-- THE EXHIBIT FRAME (ADR-0019 layout row). A flex column: status strip · the reading surface ·
+     the docked chrome bar. The reading surface is the only flexible row, so every bar takes its space
+     OUT of the canvas rather than sitting on it. -->
+<div class="exhibit">
 {#if status === "loading"}
   <div class="state"><span class="dot"></span><span>Loading the exhibit…</span></div>
 {:else if status === "error"}
@@ -692,33 +696,39 @@
     />
   {/if}
 
-  <!-- Filmstrip (Phase 4): the shared survey-and-jump strip. One instance for BOTH readers — clicking a
-       thumb routes through `reader.set`, so a grid click lands on selectedObjectId and a narrative click
-       opens the object's own Reader (indexObjectId). Hidden on a full-grid surface (it would double it). -->
-  {#if showFilmstrip && layout}
-    <Filmstrip
-      objects={layout.objects}
-      currentId={reader.obj?.id ?? null}
-      collapsed={filmstripCollapsed}
-      onjump={(id) => reader.set(id)}
-      ontoggle={() => (filmstripCollapsed = !filmstripCollapsed)}
-    />
-  {/if}
+  <!-- THE DOCKED CHROME BAR. Cite · the item strip · Find — one flow row BELOW the reading surface.
+       Everything in it used to be `position: fixed` over the canvas's bottom edge, and the whole of
+       Archie-40fe (`--strip-h`, the pill-vs-filmstrip geometry tests, the note card's bottom offset)
+       existed to keep those three surfaces off each other and off the image. Siblings in a row cannot
+       overlap, so the reservation has nothing left to do. tropy's default is the same posture:
+       `hasOverlayToolbar` is FALSE (`src/components/esper/container.js:11,39`) and the toolbar lives
+       outside the canvas. -->
+  <div class="chrome-dock">
+    <!-- Cite affordance (V102, Archie-3ea1). -->
+    <button class="cite-trigger" onclick={() => (citeOpen = true)} aria-label="Cite this view">
+      <span class="mark" aria-hidden="true">❝</span><span class="lbl">Cite</span>
+    </button>
 
-  <!-- Finder affordance (Q-4): a quiet visible search trigger in the exhibit chrome — the discoverable
-       home for the Cmd/Ctrl-K + `/` accelerators, present in BOTH grid and narrative layouts. -->
-  <button class="finder-trigger" onclick={() => openFinder()} aria-label="Find a note (⌘K)">
-    <span class="glass" aria-hidden="true">⌕</span><span class="lbl">Find a note</span>
-    <span class="kbd" aria-hidden="true">⌘K</span>
-  </button>
+    <!-- Filmstrip (Phase 4): the shared survey-and-jump strip. One instance for BOTH readers — clicking a
+         thumb routes through `reader.set`, so a grid click lands on selectedObjectId and a narrative click
+         opens the object's own Reader (indexObjectId). Hidden on a full-grid surface (it would double it). -->
+    {#if showFilmstrip && layout}
+      <Filmstrip
+        objects={layout.objects}
+        currentId={reader.obj?.id ?? null}
+        collapsed={filmstripCollapsed}
+        onjump={(id) => reader.set(id)}
+        ontoggle={() => (filmstripCollapsed = !filmstripCollapsed)}
+      />
+    {/if}
 
-  <!-- Cite affordance (V102, Archie-3ea1). Sits in the SAME chrome row as the finder pill, which is
-       the one strip Archie-40fe's geometric tests already hold clear of the filmstrip and the note
-       card — adding a second free-floating surface elsewhere would re-open V22/V71 by another route.
-       The panel it opens is a dialog, so nothing new ever covers the canvas. -->
-  <button class="cite-trigger" onclick={() => (citeOpen = true)} aria-label="Cite this view">
-    <span class="mark" aria-hidden="true">❝</span><span class="lbl">Cite</span>
-  </button>
+    <!-- Finder affordance (Q-4): a quiet visible search trigger in the exhibit chrome — the discoverable
+         home for the Cmd/Ctrl-K + `/` accelerators, present in BOTH grid and narrative layouts. -->
+    <button class="finder-trigger" onclick={() => openFinder()} aria-label="Find a note (⌘K)">
+      <span class="glass" aria-hidden="true">⌕</span><span class="lbl">Find a note</span>
+      <span class="kbd" aria-hidden="true">⌘K</span>
+    </button>
+  </div>
 
   {#if citeOpen && CitePanelLazy.current}
     <CitePanelLazy.current
@@ -752,12 +762,28 @@
     </button>
   {/if}
 {/if}
+</div>
 
 <style>
+  /* The exhibit frame (see the template's head comment). Everything in flow stretches except the bars,
+     which take exactly their own height; `min-height: 0` is what stops the reading surface refusing to
+     shrink below its content and pushing the dock off the bottom of the viewport. */
+  .exhibit { position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  .exhibit > :global(*) { flex: 1 1 auto; min-height: 0; }
+  .exhibit > .chrome-dock, .exhibit > .partial-note { flex: none; }
+
+  /* THE DOCKED CHROME BAR — cite (left) · item strip (centre, flexible) · find (right). */
+  .chrome-dock {
+    display: flex; align-items: flex-end; gap: var(--space-4);
+    padding: var(--space-2) var(--space-5);
+    background: var(--surface-canvas); border-top: 1px solid var(--border-canvas);
+  }
+  .chrome-dock > :global(.filmstrip) { flex: 1 1 auto; min-width: 0; }
+
   /* Load / error states — quiet found-meta chrome over the warm atmospheric ground (Soft Static).
      Spline Sans Mono eyebrow: tracked, uppercase, reduced opacity — it feels found, not announced. */
   .state {
-    display: flex; align-items: center; justify-content: center; gap: var(--space-3); height: 100vh;
+    display: flex; align-items: center; justify-content: center; gap: var(--space-3); height: 100%;
     background: transparent; color: var(--ink-canvas-secondary);
     font-family: var(--font-ui), monospace; font-size: 0.8125rem; letter-spacing: 0.16em;
     text-transform: uppercase; opacity: 0.62;
@@ -765,18 +791,18 @@
   .state.error { color: var(--semantic-error); opacity: 0.85; }
   .warn { font-size: 1.1rem; }
 
-  /* Partial-load indicator (Issue 23) — a quiet found-meta strip, pinned top-RIGHT so it clears the
-     centered arrival toast and the left breadcrumb/escape chrome. Non-interactive (pointer-events:none):
-     it informs, it never gates. Semantic-error ink on a raised paper surface, understated like .arrival. */
+  /* Partial-load indicator (Issue 23) — a quiet found-meta strip. DOCKED (2026-07-26): it was pinned
+     top-right over the canvas, positioned by trial against the arrival toast and the breadcrumb. It is
+     PERSISTENT — it stands for as long as the exhibit is incomplete — so under the layout row it takes
+     a row of its own rather than a corner of the image. Non-interactive (pointer-events: none): it
+     informs, it never gates. */
   .partial-note {
-    position: fixed; z-index: 30; top: calc(var(--topbar-h) + var(--space-2)); right: var(--space-5);
-    display: inline-flex; align-items: center; gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-2) var(--space-5);
     background: var(--surface-canvas-raised); color: var(--semantic-error);
-    border: 1px solid color-mix(in srgb, var(--semantic-error) 32%, transparent);
-    border-radius: var(--radius-sm);
+    border-bottom: 1px solid color-mix(in srgb, var(--semantic-error) 32%, transparent);
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); letter-spacing: 0.02em;
-    opacity: 0.92; pointer-events: none; max-width: min(64vw, 24rem);
+    opacity: 0.92; pointer-events: none;
   }
   .partial-note .warn { font-size: 1rem; }
   /* Soft signal dot — the one rationed orange mark, gently breathing (no hard pixel steps). */
@@ -788,10 +814,10 @@
      transparent chrome, canvas inks, connector-blue (--accent-2) hover (the secondary up/nav signal,
      and the green-on-dark contrast rescue) — the rationed orange stays free for the one focal action. */
   .to-read {
-    /* Cleared below the persistent top-bar band via the shared --topbar-h token (ViewerShell .topbar owns
-       the top-left for the breadcrumb) — S-4: at top:space-5 it collided with that band. One token now
-       sets the clearance for every below-band escape (legend, .to-index), so they can't drift apart. */
-    position: fixed; z-index: 30; top: var(--topbar-h); left: var(--space-5);
+    /* The top bar is DOCKED now, so there is no band to clear and no `--topbar-h` to clear it by; this
+       sits at the top-left of the index grid it belongs to. The grid is a scrolling paper column, not a
+       canvas, so this is chrome over a page rather than over an image. */
+    position: absolute; z-index: 30; top: var(--space-3); left: var(--space-5);
     display: inline-flex; align-items: center; gap: var(--space-1);
     background: none; border: none; cursor: pointer; padding: var(--space-2) var(--space-1);
     color: var(--ink-canvas-secondary);
@@ -805,7 +831,7 @@
      top-bar band (--topbar-h): at top:space-5 it landed on the centered carousel when a deep-link opened
      a multi-object exhibit (both centered) — now it clears it and stacks under it. */
   .arrival {
-    position: fixed; z-index: 30; top: calc(var(--topbar-h) + var(--space-2)); left: 50%; transform: translateX(-50%);
+    position: fixed; z-index: 30; top: var(--space-3); left: 50%; transform: translateX(-50%);
     display: flex; align-items: center; gap: var(--space-3); cursor: pointer;
     padding: var(--space-3) var(--space-4);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
@@ -816,20 +842,18 @@
     font-family: var(--font-body), sans-serif; font-size: 0.8125rem;
     letter-spacing: 0; text-transform: none;
   }
-  /* Finder trigger — a quiet warm-paper pill pinned bottom-right of the canvas, the discoverable home
-     for the ⌘K / `/` accelerators. Recedes (canvas inks, connector-blue hover) so the read stays the
-     star; rationed orange is left free for the one focal action. Below-band tokens keep it off the bar.
+  /* Finder trigger — a quiet warm-paper pill, the discoverable home for the ⌘K / `/` accelerators.
+     Recedes (canvas inks, connector-blue hover) so the read stays the star.
 
-     V22 (Archie-40fe): `bottom: var(--space-5)` put this pill INSIDE the filmstrip band, not above
-     it — measured rect (1102,748)–(1260,780) against frames at y 706–800, covering two of twelve
-     including the exhibit's only audio object, i.e. the one object a reader is most likely hunting
-     for. The strip does not scroll at 12 items, so those frames could not be moved out from under it.
-     `--strip-h` is the band's live measured height (Filmstrip.svelte), the bottom-edge mirror of
-     `--topbar-h`; it falls back to 0 where no strip is mounted (gallery, overview), which is why the
-     pill keeps its old position there. */
+     V22 (Archie-40fe) is HISTORY, and worth keeping as a record of why this is a flow child now: as a
+     fixed pill at `bottom: var(--space-5)` it sat INSIDE the filmstrip band — measured rect
+     (1102,748)–(1260,780) against frames running y 706–800, covering two of twelve including the
+     exhibit's only audio object, i.e. the one a reader is most likely hunting for. The strip does not
+     scroll at 12 items, so those frames could not be moved out from under it. The fix then was a
+     measured `--strip-h` reservation; the fix now is that the pill and the strip are siblings in a row
+     and neither can be on top of the other. */
   .finder-trigger {
-    position: fixed; z-index: 30; right: var(--space-5);
-    bottom: calc(var(--strip-h, 0px) + var(--space-3));
+    flex: none; align-self: center;
     display: inline-flex; align-items: center; gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);
@@ -839,11 +863,9 @@
     transition: color 160ms ease, box-shadow 160ms ease;
   }
   .finder-trigger:hover { color: var(--accent-2); box-shadow: var(--shadow-lift-mid); }
-  /* Beside the finder pill on the same reserved row — same bottom offset, so the `--strip-h`
-     reservation that keeps the pill off the filmstrip (V22) covers this too. */
+  /* Beside the finder pill in the same docked bar — the leading end of the row. */
   .cite-trigger {
-    position: fixed; z-index: 30; left: var(--space-5);
-    bottom: calc(var(--strip-h, 0px) + var(--space-3));
+    flex: none; align-self: center;
     display: inline-flex; align-items: center; gap: var(--space-2);
     padding: var(--space-2) var(--space-4);
     background: var(--surface-canvas-raised); color: var(--ink-canvas-secondary);

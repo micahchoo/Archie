@@ -13,7 +13,7 @@
   import Credit from "./Credit.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
   import ProseCites from "./ProseCites.svelte";
-  import { type MarkerStyle, type FrameOverlay, type FitOptions, formatZoomRatio, zoomBand } from "@render/svelte";
+  import { type MarkerStyle, type FrameOverlay, formatZoomRatio, zoomBand } from "@render/svelte";
   import { loadAsideWidth, saveAsideWidth, scopedKey, loadSessionCollapsed, saveSessionCollapsed, type AsideState } from "../aside-persistence.js";
   import { untrack } from "svelte";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, overlay, geoOf, geoCenter, formatLngLat, readingIdOf, stripMarkdown, withZoomBand, type MarkerStyleSpec, type AObject, type NoteMediaItem, type Reading, type RightsFields, type W3CAnnotation, type Section } from "@render/core";
@@ -637,77 +637,34 @@
     if (onindex) { onindex(); e.preventDefault(); }
   }
 
-  // V48 (Archie-40fe) — the same left-flank reservation Reader.svelte wires, for the same reason and
-  // against the same two overlays. Duplicated deliberately rather than hoisted: the two readers have
-  // different container structures (`.reader` vs `.narrative`) and different chrome on the right (a
-  // note list vs the section spine), and the ONLY shared part is this six-line measurement. A shared
-  // helper would have to take the container and the selector list as arguments, which is the whole body.
+  // V48 (Archie-40fe)'s left-flank reservation was wired here too, and is gone for the same reason it
+  // is gone from Reader.svelte: under ADR-0019's layout row the legend and the note card are flow rows,
+  // not overlays, so the canvas is the visible window and the plain fit is the correct one.
   let mainEl = $state<HTMLElement | undefined>(undefined);
-  const OCCLUDING = [".legend", ".note-pop"];
-  function getFitOptions(): FitOptions {
-    const el = mainEl;
-    if (!el) return { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
-    const m = el.getBoundingClientRect();
-    let inset = 0;
-    for (const sel of OCCLUDING) {
-      const r = el.parentElement?.querySelector(sel)?.getBoundingClientRect();
-      if (!r || r.width === 0) continue;
-      inset = Math.max(inset, r.right - m.left);
-    }
-    return {
-      containerW: m.width,
-      sidebarW: 0,
-      sidebarIsSheet: true,
-      detailOpen: false,
-      leftInsetW: Math.max(0, Math.min(inset, m.width)),
-    };
-  }
 </script>
 
 <svelte:window onkeydown={onkey} />
 
 <div class="narrative">
-  <!-- tabindex="-1": the landing place Escape hands focus to when leaving the canvas (V25). -->
-  <main bind:this={mainEl} tabindex="-1">
-    {#if activeSection && !activeObject}
-      <!-- A section references an object that's no longer in the exhibit (deleted, section not pruned).
-           Surface it instead of silently showing the wrong image with this section's prose. -->
-      <div class="missing-obj"><span aria-hidden="true">⚠</span><span>This section points to an item that’s no longer in the exhibit.</span></div>
-    {:else if activeObject}
-      {#if isAV}
-        <!-- Keyed so an AV→AV section step remounts the player (its media/error state has no per-object
-             reset); mirrors the Canvas branch's {#key activeObject.id} below. -->
-        {#key activeObject.id}
-          <MediaPlayer object={activeObject} annotations={activeNotes} />
-        {/key}
+  <!-- THE STAGE (ADR-0019 layout row) — canvas chrome bar · canvas · the open note, as ROWS. Same shape
+       as Reader.svelte's; see the head comment there. -->
+  <div class="stage">
+    <!-- Canvas chrome, DOCKED: readings at the leading end, section nav + escapes + readout trailing. -->
+    <div class="canvas-dock">
+      {#if onreading && readings.length > 0}
+        <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
       {:else}
-        {#key activeObject.id}
-          <Canvas
-            source={activeObject.source}
-            tileSource={activeObject.tileSource}
-            canvasId={canvasIdOf(activeObject.id)}
-            annotations={canvasNotes}
-            styleOf={activeStyleOf}
-            frame={canvasFrame}
-            focus={activeSection?.start ?? null}
-            bind:selected
-            onzoom={(r) => (zoomRatio = r)}
-            {getFitOptions}
-          />
-        {/key}
+        <span class="dock-spacer"></span>
       {/if}
-    {/if}
-    <!-- V80: this group lived OUTSIDE `main`, so "top-right canvas chrome" was positioned against the
-         row holding the canvas AND the prose spine — and landed on the spine. Structurally the same bug
-         as V40's zoom readout in the grid reader. Inside `main` it anchors to the canvas it describes. -->
-    <!-- Top-right canvas chrome group (ADR-0016 keystone + Archie-93fd): the grid-index escape and the
-         scale cue share ONE anchored flex row instead of two separately-positioned absolutes, so they
-         stack deterministically (gap, not guessed offsets) instead of risking overlap when both are
-         present. Grid-index escape: the narrative leads, but the object grid stays reachable BEHIND it
-         as an index (§137 precision-in/escape-out; §223 anti-trap) — shown only when there's a grid to
-         reach (>1 object). Scale cue: the locator's missing companion, HOW FAR IN vs WHERE — hidden
-         during an AV section (no OSD zoom to report then). -->
-    <div class="canvas-chrome-right">
+      <!-- Trailing end of the docked bar (ADR-0016 keystone + Archie-93fd): the grid-index escape, the
+           section nav and the scale cue. V80 was this group living OUTSIDE `main` and so anchoring to the
+           row that also held the prose spine — it landed ON the spine; moving it inside `main` fixed that
+           by giving it the canvas as its containing block. Docking makes the whole question moot: there
+           is no containing block to get wrong, because there is no absolute positioning left. Grid-index
+           escape: the narrative leads, but the object grid stays reachable BEHIND it as an index (§137
+           precision-in/escape-out; §223 anti-trap) — shown only when there's a grid to reach (>1 object).
+           Scale cue: the locator's companion, HOW FAR IN vs WHERE — hidden during an AV section. -->
+      <div class="canvas-chrome-right">
       {#if canvasNav}
         <!-- Archie-01a6: the section nav, present in BOTH aside states, speaking its noun VISIBLY —
              "Section 3 of 6", the same string the spine's own position indicator carries and the same
@@ -747,12 +704,62 @@
       {#if !isAV}
         <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
       {/if}
+      </div>
     </div>
-  </main>
 
-  {#if onreading && readings.length > 0}
-    <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
-  {/if}
+    <!-- tabindex="-1": the landing place Escape hands focus to when leaving the canvas (V25). -->
+    <main bind:this={mainEl} tabindex="-1">
+    {#if activeSection && !activeObject}
+      <!-- A section references an object that's no longer in the exhibit (deleted, section not pruned).
+           Surface it instead of silently showing the wrong image with this section's prose. -->
+      <div class="missing-obj"><span aria-hidden="true">⚠</span><span>This section points to an item that’s no longer in the exhibit.</span></div>
+    {:else if activeObject}
+      {#if isAV}
+        <!-- Keyed so an AV→AV section step remounts the player (its media/error state has no per-object
+             reset); mirrors the Canvas branch's {#key activeObject.id} below. -->
+        {#key activeObject.id}
+          <MediaPlayer object={activeObject} annotations={activeNotes} />
+        {/key}
+      {:else}
+        {#key activeObject.id}
+          <Canvas
+            source={activeObject.source}
+            tileSource={activeObject.tileSource}
+            canvasId={canvasIdOf(activeObject.id)}
+            annotations={canvasNotes}
+            styleOf={activeStyleOf}
+            frame={canvasFrame}
+            focus={activeSection?.start ?? null}
+            bind:selected
+            onzoom={(r) => (zoomRatio = r)}
+          />
+        {/key}
+      {/if}
+    {/if}
+    </main>
+    {#if current}
+      <!-- THE NOTE (shared NotePopup), in narrative form: the eyebrow is "Section · object" where the
+           Reader's is the object label — the mode difference is DATA, which is why one component still
+           serves both (Archie-c982). It carries no stepper: section nav is canvas chrome now.
+           `hidden-behind-sheet` and the `display: contents` wrapper: see Reader.svelte's note, which
+           records the full reasoning — anvil's mount guard (EmbeddedReader.svelte:670/:689) is the
+           stronger form and is unavailable here, because unmounting the card takes the ⤢ that
+           `use:dialog` returns focus to out of the document (V62/V63). -->
+      <div class="note-slot note-dock" class:hidden-behind-sheet={readingSheet}>
+      <NotePopup
+        eyebrow={noteEyebrow}
+        text={noteParts.text}
+        media={noteParts.media}
+        tags={tagsOf(current)}
+        {geoCoord}
+        onclose={() => (selected = null)}
+        onexpand={() => { if (noteParts.text) readingSheet = true; }}
+        onopenfinder={(t) => onopenfinder?.(t)}
+        onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+      />
+      </div>
+    {/if}
+  </div>
 
 
   <!-- min/max match the spine's responsive clamp(360px … 620px) so a resize can't escape the designed
@@ -837,28 +844,6 @@
     {/if}
   </aside>
 
-  {#if current}
-    <!-- THE NOTE (shared NotePopup), in narrative form: the eyebrow is "Section · object" where the
-         Reader's is the object label — the mode difference is DATA, which is why one component still
-         serves both (Archie-c982). It carries no stepper: section nav is canvas chrome now.
-         `hidden-behind-sheet` and the `display: contents` wrapper: see Reader.svelte's note, which
-         records the full reasoning — anvil's mount guard (EmbeddedReader.svelte:670/:689) is the
-         stronger form and is unavailable here, because unmounting the card takes the ⤢ that
-         `use:dialog` returns focus to out of the document (V62/V63). -->
-    <div class="note-slot" class:hidden-behind-sheet={readingSheet}>
-    <NotePopup
-      eyebrow={noteEyebrow}
-      text={noteParts.text}
-      media={noteParts.media}
-      tags={tagsOf(current)}
-      {geoCoord}
-      onclose={() => (selected = null)}
-      onexpand={() => { if (noteParts.text) readingSheet = true; }}
-      onopenfinder={(t) => onopenfinder?.(t)}
-      onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
-    />
-    </div>
-  {/if}
 
   {#if readingSheet && current}
     <!-- Same note, same eyebrow, reading size. `noteEyebrow` is ONE derived value feeding both surfaces,
@@ -888,10 +873,20 @@
      the prose spine reads as a field journal on warm paper (right); section nav chrome is quiet mono,
      the active section is marked by a single rationed signal-orange edge — not a loud fill. Soft serif
      headings, generous radii, wide low-opacity warm shadows. No hard pixel edge anywhere. */
-  .narrative { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
-  /* `position: relative` so the canvas chrome moved inside it (V80) anchors to the CANVAS rather than
-     escaping to the row that also holds the prose spine. */
-  main { position: relative; flex: 1; min-width: 0; background: var(--surface-canvas); }
+  .narrative { position: relative; display: flex; height: 100%; min-height: 0; background: var(--surface-canvas); }
+  /* THE STAGE — canvas chrome bar · canvas · the open note, as rows (ADR-0019's layout row). */
+  .stage { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+  main { position: relative; flex: 1 1 auto; min-height: 0; min-width: 0; background: var(--surface-canvas); }
+  .canvas-dock {
+    flex: none; display: flex; align-items: center; justify-content: space-between;
+    gap: var(--space-4); padding: var(--space-2) var(--space-5);
+    background: var(--surface-canvas); border-bottom: 1px solid var(--border-canvas);
+  }
+  .dock-spacer { flex: 1 1 auto; }
+  .note-dock {
+    flex: none; max-height: 38%; min-height: 0; overflow: auto;
+    background: var(--surface-canvas); border-top: 1px solid var(--border-canvas);
+  }
   /* Broken-reference state: a section points at a deleted object. Quiet found-meta chrome over the canvas
      ground, not a loud error — the rest of the spine still reads. */
   .missing-obj { display: flex; gap: var(--space-3); align-items: center; justify-content: center; height: 100%; padding: var(--space-6); color: var(--ink-canvas-secondary); font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm); }
@@ -899,17 +894,15 @@
   aside {
     /* Width = a token: responsive by default (clamp), drag-resizable via --narr-aside-w (Phase 2). */
     width: var(--narr-aside-w, clamp(360px, 32vw, 620px)); flex-shrink: 0; overflow: auto; box-sizing: border-box;
-    /* Top reserves the fixed top bar (--pane-top) so the spine header (eyebrow · title · hint · credit)
-       keeps its own space, clear of the bar overhead.
-
-       V87 (Archie-40fe): the BOTTOM had no equivalent reservation, so the fixed finder pill — which
-       lives at the viewport's bottom-right, inside this column's x range (spine 860–1280, pill
-       1102–1260) — sat on whatever the reader had scrolled to. Measured on the default view it cut
-       section 1's embedded cite card mid-word ("→ open obj|"). Note this got WORSE, not better, when
-       the pill was lifted clear of the filmstrip for V22: raising it moves it further UP this column.
-       So the spine reserves the pill's whole footprint — its lifted offset plus its own height — and
-       the last card can always be scrolled fully into the clear. */
-    padding: var(--pane-top) var(--space-5) calc(var(--strip-h, 0px) + var(--finder-h) + var(--space-6));
+    /* Plain padding. Two reservations used to live in this one declaration and both are retired: the
+       top reserved the FIXED top bar (`--pane-top`), and the bottom reserved the fixed finder pill's
+       whole footprint (`--strip-h` + `--finder-h`) because the pill lived at the viewport's
+       bottom-right, inside this column's x range (spine 860–1280, pill 1102–1260), and sat on whatever
+       the reader had scrolled to — measured cutting section 1's embedded cite card mid-word
+       ("→ open obj|"), and getting WORSE when V22 lifted the pill clear of the filmstrip. Both the bar
+       and the pill are docked now, so the spine's last card cannot be under either of them. That is
+       V87 closing the same way V22/V71/V48 do: obviated. */
+    padding: var(--space-5) var(--space-5) var(--space-6);
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
   }
@@ -976,11 +969,8 @@
   /* Pulled quotes read as soft serif set off by a warm clay hairline rule. */
   .prose :global(blockquote) { margin: var(--space-3) 0; padding: 0 0 0 var(--space-4); border-left: 1px solid var(--accent-3); font-family: var(--font-display-2); font-weight: 600; font-style: italic; font-size: 1.2rem; line-height: 1.5; color: var(--ink-paper-secondary); }
 
-  /* Top-right canvas chrome group (Archie-93fd) — the grid-index escape and the scale cue anchor
-     together, top-right of the canvas (the legend owns top-left), so a gap keeps them apart instead
-     of each guessing an offset around the other. */
+  /* Trailing end of the docked chrome bar (Archie-93fd) — grid-index escape, section nav, scale cue. */
   .canvas-chrome-right {
-    position: absolute; z-index: 20; top: var(--topbar-h); right: var(--space-5);
     display: flex; align-items: center; gap: var(--space-2);
   }
   /* Section nav (Archie-01a6) — the twin of Reader.svelte's object nav, ported verbatim so the two
@@ -1071,6 +1061,5 @@
      `.narrative` as its containing block and its absolute anchoring is unchanged; `display: none`
      takes the whole card off screen and out of the a11y tree while the reading sheet — the SAME note,
      larger — is open, without unmounting the ⤢ that `use:dialog` returns focus to. */
-  .note-slot { display: contents; }
   .note-slot.hidden-behind-sheet { display: none; }
 </style>

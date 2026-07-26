@@ -286,6 +286,7 @@
      chrome recedes — the image is the star. -->
 <!-- Origin-drift badge renders UNGATED (review r8): the worst drift case — the old host gone,
      the library failing to load — is exactly when it must still surface. -->
+<div class="shell">
 {#if originDrift}
   <span class="drift" title="This site is loading from a different web address than the one it was published for, so share links and link previews won’t work. The exhibits still read fine here; whoever published this site can fix the links by publishing again from its current address.">Site address mismatch</span>
 {/if}
@@ -343,6 +344,7 @@
   </div>
 {/if}
 
+<div class="route">
 {#if phase === "probing"}
   <div class="state"><span class="dot"></span><span>Opening the library…</span></div>
 {:else if phase === "empty" || choosing}
@@ -382,32 +384,41 @@
 {:else if gallery}
   <Gallery {gallery} {imageIndex} />
 {/if}
+</div>
+</div>
 
 <style>
-  /* Persistent top bar (dba2) — ONE thin three-zone bar over the dark table; chrome recedes, the image is
-     the star. Transparent so it floats over the canvas without a hard band; the carousel pill carries its
-     own surface. left | center | right via a 3-column grid so the carousel stays truly centered. */
+/* THE APP FRAME (ADR-0019 layout row, 2026-07-26). The shell is a flex COLUMN and every persistent
+     bar is a flow sibling of the routed view, so the canvas's box is bounded by the chrome rather than
+     running underneath it. clover-iiif does exactly this — `<ViewerHeader>` and `<ViewerContent>` are
+     flex siblings (`Viewer/Viewer.tsx:180-184`, `Viewer.styled.tsx:15-22`) — and it is why its header
+     can be `background-color: transparent` without a legibility problem: nothing is behind it.
+     `min-height: 0` on `.route` is what lets the routed view actually shrink to the space left over
+     instead of overflowing it (the default `min-height: auto` on a flex item). */
+  .shell { display: flex; flex-direction: column; min-height: 100dvh; }
+  /* The routed view gets whatever the bars leave. It is a plain block, not a flex parent: a routed
+     component emits SEVERAL root elements (ExhibitView emits its strips and its reader), so a
+     `flex: 1` on every child would stretch a status strip to fill the page. Each view fills the row
+     with `height: 100%` from its own stylesheet instead. */
+  .route { flex: 1 1 auto; min-height: 0; }
+
+  /* Persistent top bar (dba2) — ONE thin three-zone bar; chrome recedes, the image is the star.
+     DOCKED (2026-07-26): it used to be `position: fixed` over the canvas, which is what made the
+     `--topbar-h` clearance token and the `--scrim-top` wash necessary. Both retired with it — a bar
+     that owns its own row needs no reservation from anything below it and no scrim to be legible over
+     an arbitrary image, because there is no image beneath it. */
   .topbar {
-    position: fixed; z-index: 35; top: 0; left: 0; right: 0;
+    flex: none;
     display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
     padding: var(--space-3) var(--space-4); gap: var(--space-3);
-    pointer-events: none; /* the bar's gaps don't steal canvas clicks — zones re-enable below */
+    background: var(--surface-canvas); border-bottom: 1px solid var(--border-canvas);
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-sm);
   }
-  .topbar .zone { display: flex; align-items: center; pointer-events: auto; }
+  .topbar.on-paper { background: var(--surface-paper); border-bottom-color: var(--border-paper); }
+  .topbar .zone { display: flex; align-items: center; }
   .topbar .left { justify-self: start; }
   .topbar .center { justify-self: center; }
   .topbar .right { justify-self: end; }
-  .topbar .zone:empty { pointer-events: none; }
-  /* Soft backing (R3): the chrome floats over the deep-zoom image, where a breadcrumb can get lost on a
-     busy region. A partial wash at the top edge — behind the zones (z-index -1, no pointer capture) —
-     gives every floating control a consistent backdrop, then fades to nothing within the band so the
-     chrome still recedes and the image stays the star. */
-  .topbar::before {
-    content: ""; position: absolute; left: 0; right: 0; top: 0;
-    height: calc(100% + var(--space-4)); z-index: -1; pointer-events: none;
-    background: var(--scrim-top);
-  }
 
   /* Breadcrumb — understated; the way back up (CONTEXT §125). Connector-blue hover (the secondary
      signal for links/up-nav) keeps the rationed orange free for the one focal action. */
@@ -453,14 +464,11 @@
      whichever rung produced it. It sits on paper here (the Gallery) rather than over a canvas, so it takes
      the paper ink token instead of the canvas one. */
   .degrade {
-    /* Was fixed top-CENTER, borrowed from ExhibitView's `.arrival`. On the Gallery — where the slug rung
-       actually lands — its bottom edge grazed the "Archie Library" title, which is the same
-       covering-other-things class this sweep exists to fix (Archie-4635 flagged it here on purpose).
-       Right-aligned under the bar instead: clear of the left-aligned title block at every width, still
-       under the reader's eye on arrival, and it never overlaps the search field below it. */
-    position: fixed; z-index: 30; top: calc(var(--topbar-h) + var(--space-2)); right: var(--space-5);
-    max-width: min(32rem, calc(100vw - var(--space-8)));
-    box-sizing: border-box;
+    /* DOCKED (2026-07-26). It was `position: fixed` and had already been moved twice to dodge whatever
+       it landed on — first the "Archie Library" title, then the gallery's search field. That chase is
+       what a flow row ends: it takes its own strip under the bar and there is nothing left to collide
+       with, on either surface family. */
+    flex: none;
     display: flex; align-items: center; gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
     background: var(--surface-paper-card); color: var(--ink-paper-primary);
@@ -469,22 +477,16 @@
     box-shadow: var(--shadow-lift-low);
     font-family: var(--font-body), sans-serif; font-size: 0.8125rem;
   }
-  /* On the GALLERY the page is a paper column with a wide display title at the top, so no top anchor is
-     safe at every library-title length — right-aligning only moved the collision. The gallery's
-     bottom-right is genuinely empty (the drift badge owns bottom-CENTRE), so the notice lands there and
-     the title keeps the whole top band. In an exhibit the top band is the right home: the canvas fills
-     the viewport and bottom-right is the locator minimap. */
-  .degrade.on-paper { top: auto; bottom: var(--space-5); }
   .degrade .seal { color: var(--accent-2); }
   .degrade .dismiss { font-size: var(--text-ui-xs); text-transform: uppercase; letter-spacing: 0.08em; }
 
   .drift {
-    /* Bottom-CENTER. Top-right is the bar's "Open another library" zone (this z-60 badge stole its click);
-       bottom-right is now the sidebar object-nav's stepper (SidebarObjectNav, flush to the aside corner) —
-       same click-theft there. Bottom-center sits over the canvas, clear of the aside nav (right) and the
-       note popups (bottom-LEFT), and clear of the cold-arrival toast (top, below the band). */
-    position: fixed; z-index: 60; bottom: var(--space-3); left: 50%; transform: translateX(-50%);
-    padding: 4px var(--space-2);
+    /* DOCKED (2026-07-26) — the FIRST row of the shell, above the bar. Its whole history is a tour of
+       corners it had to be evicted from for stealing someone's click (top-right = the bar's "Open
+       another library"; bottom-right = the sidebar object nav). A persistent alert about a broken
+       config has no business floating over a reading surface at all; it gets a strip. */
+    flex: none; align-self: center;
+    margin-top: var(--space-2); padding: 4px var(--space-2);
     font-family: var(--font-ui), sans-serif; font-size: var(--text-ui-xs); font-weight: 500;
     text-transform: uppercase; letter-spacing: 0.14em;
     color: var(--semantic-error);
@@ -516,7 +518,7 @@
   .topbar.on-paper .crumbs .sep { color: var(--ink-paper-muted); }
 
   .state {
-    display: flex; align-items: center; justify-content: center; gap: 10px; height: 100vh;
+    display: flex; align-items: center; justify-content: center; gap: 10px; height: 100%;
     background: var(--surface-canvas); color: var(--ink-canvas-secondary);
     font-family: var(--font-ui), sans-serif; font-size: 0.9375rem; text-transform: uppercase; letter-spacing: 0.16em;
   }

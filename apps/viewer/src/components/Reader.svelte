@@ -6,7 +6,7 @@
   // and that object's projected annotations; `onback` returns to the exhibit's object grid.
   import Canvas from "@render/svelte/Canvas.svelte";
   import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
-  import type { FrameOverlay, FitOptions } from "@render/svelte";
+  import type { FrameOverlay } from "@render/svelte";
   import NoteLightbox from "./NoteLightbox.svelte";
   import ReadingSheet from "./ReadingSheet.svelte";
   import ReadingLegend from "./ReadingLegend.svelte";
@@ -358,62 +358,40 @@
     if (onback) { onback(); e.preventDefault(); }
   }
 
-  // V48 (Archie-40fe) — tell the camera what is covering the canvas before it frames a region.
+  // Escape's landing place (V25) — the canvas frame itself, so a keyboard reader leaving OSD does not
+  // blur to <body>.
   //
-  // `getFitOptions` is @render/mount's reservation seam. It has existed since the anvil delamination
-  // and the VIEWER HAS NEVER PASSED IT: every fit ran on PLAIN_FIT, so `fitBounds` centred the region
-  // in the whole container while the legend and the note card sat on top of the left flank. Measured
-  // with a reading active and a note open at 9.3x, the two stacked into a contiguous 502px column —
-  // ~22% of a 924x800 canvas, down its entire left edge, including the side the fitted region's own
-  // boundary lies on. The reader asks to look closely; the app zooms, then covers a fifth of the answer.
-  //
-  // Measured on demand rather than tracked reactively, because the seam is a CALLBACK invoked at the
-  // moment of the fit — which is exactly when the truth is knowable and cheapest to read. No
-  // ResizeObserver, no effect, nothing to keep in sync.
+  // V48 (Archie-40fe) used to be wired beside it: a `getFitOptions` callback that measured the legend
+  // and the note card and told the camera which flank of the canvas was covered, so `fitBounds` could
+  // frame a region in the part the reader could actually see. It is GONE, with its subject. Under the
+  // layout row (ADR-0019) the legend, the object nav, the readout and the note card are all flow
+  // siblings of the canvas box, so the canvas IS the visible window and the plain fit is the right fit.
   let mainEl = $state<HTMLElement | undefined>(undefined);
-  const OCCLUDING = [".legend", ".note-pop"]; // canvas-overlaying chrome anchored to the LEFT flank
-  function getFitOptions(): FitOptions {
-    const el = mainEl;
-    if (!el) return { containerW: 0, sidebarW: 0, sidebarIsSheet: true, detailOpen: false };
-    const m = el.getBoundingClientRect();
-    let inset = 0;
-    for (const sel of OCCLUDING) {
-      const r = el.parentElement?.querySelector(sel)?.getBoundingClientRect();
-      if (!r || r.width === 0) continue; // absent or display:none — not occluding anything
-      inset = Math.max(inset, r.right - m.left);
-    }
-    // The aside is a flex SIBLING, not an overlay: the canvas ends before it, so there is nothing to
-    // reserve on the right. sidebarW stays 0 here deliberately — it models a different geometry.
-    return {
-      containerW: m.width,
-      sidebarW: 0,
-      sidebarIsSheet: true,
-      detailOpen: false,
-      leftInsetW: Math.max(0, Math.min(inset, m.width)),
-    };
-  }
 </script>
 
 <svelte:window onkeydown={onkey} />
 
 <div class="reader">
-  <!-- `tabindex="-1"` so Escape can hand focus back HERE when leaving the canvas (V25) — a landing
-       place inside the reader, never a tab stop of its own. -->
-  <main bind:this={mainEl} tabindex="-1">
-    <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
-         objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
-    {#key object.canvasId}
-      <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={onCanvasZoom} {getFitOptions} />
-    {/key}
-    <!-- Top-right canvas chrome group — the shape NarrativeReader already used (Archie-93fd/V80),
-         adopted here so the object nav and the scale cue share ONE anchored flex row instead of two
-         separately-positioned absolutes guessing offsets around each other. That is 40fe's reservation
-         model, and it is why adding nav to this surface cannot land on the readout.
-         V40 is the reason the group is inside `main`: the cue used to sit inside `.reader`, the flex row
-         holding the canvas AND the notes aside, so `right:` measured from the aside's right edge and
-         painted the readout 264px inside the sidebar, on top of the object title. -->
-    <div class="canvas-chrome-right">
-      {#if canvasNav && siblings}
+  <!-- THE STAGE (ADR-0019 layout row). A flex COLUMN: the canvas chrome bar · the canvas · the open
+       note. Every one of those used to be `position: absolute` over `main`; now the canvas is one row
+       among siblings and nothing can be on top of it. clover-iiif's `<ViewerHeader>`/`<ViewerContent>`
+       (`Viewer/Viewer.tsx:180-184`) is the same shape. -->
+  <div class="stage">
+    <!-- Canvas chrome — readings (leading) · object nav + zoom readout (trailing). One docked row.
+         `.legend` and `.canvas-chrome-right` were separate absolutes at top-left and top-right of the
+         image; they are the two ends of this bar now, which is also why neither needs a plate, a
+         shadow or a contrast floor against arbitrary imagery (V42/Archie-de08 closes obviated). -->
+    <div class="canvas-dock">
+      {#if onreading && readings.length > 0}
+        <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
+      {:else}
+        <span class="dock-spacer"></span>
+      {/if}
+      <!-- Trailing end of the docked bar: object nav + the zoom readout. It was an absolutely-positioned
+           group at the canvas's top-right (Archie-93fd/V80 gave it ONE anchor so its two members could not
+           land on each other); docking makes that guarantee structural and extends it to the image. -->
+      <div class="canvas-chrome-right">
+        {#if canvasNav && siblings}
         <!-- Archie-01a6: the object nav, present in BOTH sidebar states, speaking its noun VISIBLY.
              It used to read `‹ Prev  2 / 12  Next ›` on screen while announcing "Object 2 of 12" to a
              screen reader — honest in one channel, mute in the other, beside a filmstrip and a
@@ -430,17 +408,84 @@
             aria-label={navStepName("object", "next", siblings[navIdx + 1]?.label)}
             title={navStepName("object", "next", siblings[navIdx + 1]?.label)}><span aria-hidden="true">›</span></button>
         </nav>
-      {/if}
-      <!-- Scale cue (Archie-93fd): the locator answers WHERE the viewport sits in the image; this
-           answers HOW FAR IN. Quiet by design: small, muted, no button chrome — a readout, not an
-           action. aria-live so a screen-reader user hears it change without it stealing focus. -->
-      <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
+        {/if}
+        <!-- Scale cue (Archie-93fd): the locator answers WHERE the viewport sits in the image; this
+             answers HOW FAR IN. Quiet by design: small, muted, no button chrome — a readout, not an
+             action. aria-live so a screen-reader user hears it change without it stealing focus. -->
+        <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
+      </div>
     </div>
-  </main>
 
-  {#if onreading && readings.length > 0}
-    <ReadingLegend {readings} active={activeReading} onselect={onreading} hidden={notesHidden} {onhiddenchange} count={readingCount} />
-  {/if}
+    <!-- `tabindex="-1"` so Escape can hand focus back HERE when leaving the canvas (V25) — a landing
+         place inside the reader, never a tab stop of its own. -->
+    <main bind:this={mainEl} tabindex="-1">
+      <!-- Key on the object so the OSD viewer REMOUNTS (loads the new image) when the carousel switches
+           objects — Canvas creates the viewer once in onMount, so without this only annotations swap. -->
+      {#key object.canvasId}
+        <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={onCanvasZoom} />
+      {/key}
+    </main>
+    {#if current}
+      <!-- THE NOTE (shared NotePopup), on ANY marker/note selection — parity with the narrative. It
+           carries no stepper: object nav is canvas chrome now (Archie-01a6).
+
+           DOCKED (2026-07-26). It floated at the canvas's bottom-left, and that is the surface
+           Archie-c30a measured clipping a fitted region: `fitBoundsRect`'s reservation slides a region
+           HORIZONTALLY, so a region tall enough to make the fit height-constrained could not be lifted
+           clear of a card anchored to the bottom — two of `screenshots`' 67 halo notes were in that
+           state on the shipped build, and no amount of tuning could fix it because the model had no
+           vertical axis. As the stage's last ROW it cannot clip anything: the canvas ends where the card
+           begins. That is c30a closing OBVIATED rather than fixed.
+
+           `hidden-behind-sheet` (Archie-dbbc / V60): while the reading sheet is open this card is the same
+           note a second time, sitting legibly behind a scrim — the third copy V60 counted.
+
+           PRIOR ART, and a deliberate deviation from it. anvil solved this with a MOUNT GUARD —
+           `app/src/embed/EmbeddedReader.svelte:670` renders the popup under `… && !detailOpen` and `:689`
+           renders the expanded Sidebar under `… && detailOpen`, so the two can never be mounted at once
+           and there is nothing to leak. That is the stronger form and it was the first choice here.
+
+           It is not available to Archie, because Archie has a focus contract anvil's embed does not:
+           `use:dialog` (dialog-a11y.ts) captures its restore target from `document.activeElement` at
+           ACTION MOUNT and restores it on destroy only `if (trigger && document.contains(trigger))`. The
+           trigger is this card's ⤢. Under a mount guard the card unmounts in the same flush the sheet
+           mounts, and the failure is ORDER-INDEPENDENT: unmount-first snapshots `BODY`, action-first
+           snapshots the ⤢ and then finds `document.contains` false by the time it restores. Either way
+           Escape out of the sheet strands a keyboard reader — note.spec.ts's V63 guard, "Escape closes it
+           and returns focus to the ⤢ that opened it". "We'll order the effects correctly" is not an
+           escape hatch; there is no order that works.
+
+           The one form that WOULD work is restore-by-RE-QUERY — an `onrestore` on the shared action plus
+           a host callback focusing the freshly-remounted ⤢ after a `tick()`. A restore-target PARAMETER
+           cannot work: the remounted ⤢ is a different node than the one captured, so no node reference
+           survives the round trip. That is ~10 lines across three files plus a dependence on flush
+           ordering that only a driven browser test can keep honest — to buy an observable guarantee these
+           two CSS lines already deliver.
+
+           So: hidden, and hidden the way that gives the same OBSERVABLE guarantee. `display: none` takes
+           the card out of rendering AND out of the a11y tree — the ticket's defect was "in the DOM and
+           LEGIBLE", and e2e/note-surface.spec.ts asserts the count of VISIBLE `.note-body` elements is
+           exactly one. The wrapper is `display: contents` when shown, so it generates no box: `.note-pop`
+           takes no row in the stage, so the canvas reclaims the height while the sheet is up. (This used
+           to also have to be right for the `getFitOptions` reservation, which read `.note-pop`'s 0×0 box
+           as "not occluding"; that reservation is gone.) -->
+
+      <div class="note-slot note-dock" class:hidden-behind-sheet={readingSheet}>
+      <NotePopup
+        eyebrow={object.label}
+        text={noteParts.text}
+        media={noteParts.media}
+        tags={tagsOf(current)}
+        {geoCoord}
+        onclose={() => (selected = null)}
+        onexpand={() => { if (noteParts.text) readingSheet = true; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }}
+        onopenfinder={(t) => onopenfinder?.(t)}
+        onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+      />
+      </div>
+    {/if}
+  </div>
+
 
   <!-- min/max match the aside's responsive clamp(320px … 560px) so a resize can't escape the designed
        reading-measure (#14) — the floor and ceiling are the same numbers the CSS clamp uses. -->
@@ -535,60 +580,6 @@
     {/if}
   </aside>
 
-  {#if current}
-    <!-- THE NOTE (shared NotePopup), floating on ANY marker/note selection — parity with the narrative.
-         It carries no stepper: object nav is canvas chrome now (Archie-01a6).
-
-         `hidden-behind-sheet` (Archie-dbbc / V60): while the reading sheet is open this card is the same
-         note a second time, sitting legibly behind a scrim — the third copy V60 counted.
-
-         PRIOR ART, and a deliberate deviation from it. anvil solved this with a MOUNT GUARD —
-         `app/src/embed/EmbeddedReader.svelte:670` renders the popup under `… && !detailOpen` and `:689`
-         renders the expanded Sidebar under `… && detailOpen`, so the two can never be mounted at once
-         and there is nothing to leak. That is the stronger form and it was the first choice here.
-
-         It is not available to Archie, because Archie has a focus contract anvil's embed does not:
-         `use:dialog` (dialog-a11y.ts) captures its restore target from `document.activeElement` at
-         ACTION MOUNT and restores it on destroy only `if (trigger && document.contains(trigger))`. The
-         trigger is this card's ⤢. Under a mount guard the card unmounts in the same flush the sheet
-         mounts, and the failure is ORDER-INDEPENDENT: unmount-first snapshots `BODY`, action-first
-         snapshots the ⤢ and then finds `document.contains` false by the time it restores. Either way
-         Escape out of the sheet strands a keyboard reader — note.spec.ts's V63 guard, "Escape closes it
-         and returns focus to the ⤢ that opened it". "We'll order the effects correctly" is not an
-         escape hatch; there is no order that works.
-
-         The one form that WOULD work is restore-by-RE-QUERY — an `onrestore` on the shared action plus
-         a host callback focusing the freshly-remounted ⤢ after a `tick()`. A restore-target PARAMETER
-         cannot work: the remounted ⤢ is a different node than the one captured, so no node reference
-         survives the round trip. That is ~10 lines across three files plus a dependence on flush
-         ordering that only a driven browser test can keep honest — to buy an observable guarantee these
-         two CSS lines already deliver.
-
-         So: hidden, and hidden the way that gives the same OBSERVABLE guarantee. `display: none` takes
-         the card out of rendering AND out of the a11y tree — the ticket's defect was "in the DOM and
-         LEGIBLE", and e2e/note-surface.spec.ts asserts the count of VISIBLE `.note-body` elements is
-         exactly one. The wrapper is `display: contents` when shown, so it generates no box: `.note-pop`
-         keeps `.reader` as its containing block and its absolute anchoring is untouched.
-         What the hidden card does to the `getFitOptions` reservation, precisely: `.note-pop` measures
-         0×0 while the sheet is open, so the loop's `if (!r || r.width === 0) continue` skips it and the
-         card reads as NOT OCCLUDING. That is the correct answer, not a lucky one — the canvas behind a
-         full-screen scrim is not being read, so there is no left flank to reserve. -->
-
-    <div class="note-slot" class:hidden-behind-sheet={readingSheet}>
-    <NotePopup
-      eyebrow={object.label}
-      text={noteParts.text}
-      media={noteParts.media}
-      tags={tagsOf(current)}
-      {geoCoord}
-      onclose={() => (selected = null)}
-      onexpand={() => { if (noteParts.text) readingSheet = true; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }}
-      onopenfinder={(t) => onopenfinder?.(t)}
-      onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
-    />
-    </div>
-  {/if}
-
   {#if lightbox}
     <NoteLightbox media={lightbox.media} text={lightbox.text} index={lightbox.index} onclose={() => (lightbox = null)} />
   {/if}
@@ -638,15 +629,30 @@
 <style>
   /* The published reading experience: the object floats on the soft warm ground (left); notes read
      like quiet catalog entries on warm paper (right); a hushed callout echoes the selection. */
-  .reader { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
-  main { position: relative; flex: 1; min-width: 0; background: var(--surface-canvas); }
-  /* Top-right canvas chrome group (ported from NarrativeReader, Archie-93fd/V80 — the two readers'
-     canvas chrome should read identically). One anchored flex row under the fixed top bar: members
-     stack by `gap`, so adding the object nav beside the readout cannot land ON it. `.legend` owns
-     top-left; this owns top-right. */
+  .reader { position: relative; display: flex; height: 100%; min-height: 0; background: var(--surface-canvas); }
+  /* THE STAGE — the canvas and its chrome, as ROWS. `min-width: 0` / `min-height: 0` are what let the
+     canvas actually shrink into the space the bars leave rather than overflowing the column. */
+  .stage { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+  main { position: relative; flex: 1 1 auto; min-height: 0; min-width: 0; background: var(--surface-canvas); }
+  /* The canvas chrome bar: readings at the leading end, object nav + readout at the trailing end. Both
+     were absolutes over the image (`.legend` top-left, this group top-right, each clearing the fixed
+     top bar via `--topbar-h`). As the ends of one docked row they cannot reach the image at all, which
+     is what makes "the image is never obscured by chrome" structural instead of a set of offsets. */
+  .canvas-dock {
+    flex: none; display: flex; align-items: center; justify-content: space-between;
+    gap: var(--space-4); padding: var(--space-2) var(--space-5);
+    background: var(--surface-canvas); border-bottom: 1px solid var(--border-canvas);
+  }
+  /* Keeps the trailing group at the trailing end when there is no legend to push it there. */
+  .dock-spacer { flex: 1 1 auto; }
   .canvas-chrome-right {
-    position: absolute; z-index: 20; top: var(--topbar-h); right: var(--space-5);
     display: flex; align-items: center; gap: var(--space-2);
+  }
+  /* The open note's row. Capped so a long note can never squeeze the image to nothing — it scrolls
+     inside its own row instead, which is the trade a docked surface makes and a floating one dodged. */
+  .note-dock {
+    flex: none; max-height: 38%; min-height: 0; overflow: auto;
+    background: var(--surface-canvas); border-top: 1px solid var(--border-canvas);
   }
   /* Object nav (Archie-01a6) — a quiet canvas pill in the same warm-paper-over-dark language as the
      narrative's "All items" escape. Louder than the readout beside it (it is an action, not a cue) and
@@ -707,9 +713,8 @@
   aside {
     /* Width = a token: responsive by default (clamp), drag-resizable via --reader-aside-w (Phase 2). */
     width: var(--reader-aside-w, clamp(320px, 27vw, 560px)); flex-shrink: 0; overflow: auto; box-sizing: border-box;
-    /* Top reserves the fixed top bar (--pane-top) so the header — object label · summary · credit · the
-       "Notes · N" count — keeps its own space, clear of the bar's "Open another library" zone overhead. */
-    padding: var(--pane-top) var(--space-5) var(--space-6);
+    /* Plain padding: the top bar is docked, so there is no fixed band overhead to reserve against. */
+    padding: var(--space-5) var(--space-5) var(--space-6);
     background: var(--surface-paper); color: var(--ink-paper-primary);
     border-left: 1px solid var(--border-canvas);
     box-shadow: var(--shadow-lift-low);
@@ -785,10 +790,10 @@
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); background: var(--surface-paper-hover); border-radius: var(--radius-md); }
 
   /* The standalone note card's styles now live in the shared NotePopup.svelte component. */
-  /* The card's slot (Archie-dbbc / V60). `display: contents` generates no box, so the card keeps
-     `.reader` as its containing block and its absolute anchoring is unchanged; `display: none` takes
-     the whole card off screen and out of the a11y tree while the reading sheet — the SAME note,
-     larger — is open, without unmounting the ⤢ that `use:dialog` returns focus to. */
-  .note-slot { display: contents; }
+  /* The card's slot (Archie-dbbc / V60) IS the docked row now — it used to be `display: contents` so
+     the absolutely-positioned card could keep `.reader` as its containing block, and there is no
+     absolute positioning left to preserve. `display: none` still takes the whole card off screen and
+     out of the a11y tree while the reading sheet — the SAME note, larger — is open, without unmounting
+     the ⤢ that `use:dialog` returns focus to; and now it also gives the height back to the image. */
   .note-slot.hidden-behind-sheet { display: none; }
 </style>

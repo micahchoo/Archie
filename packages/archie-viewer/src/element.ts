@@ -92,16 +92,32 @@ const TEMPLATE_STYLES = `
   .topbar button { font: inherit; font-family: var(--font-ui); font-size: var(--text-ui-sm); padding: var(--space-2) var(--space-4); border: 1px solid var(--border-canvas-emphasis); border-radius: var(--radius-sm); background: transparent; color: inherit; cursor: pointer; }
   .topbar button:hover { color: var(--accent-2); border-color: var(--accent-2); }
   .topbar .title { font-family: var(--font-display-2); font-size: 1.05rem; }
-  /* The reader is a canvas + a reading pane (the shell's Reader.svelte proportions in plain DOM). The
-     pane is where the note LIST and the object stepper mount — see reader-chrome.ts, which is lazy. */
+  /* The reader is a canvas STAGE + a reading pane (the shell's Reader.svelte proportions in plain DOM).
+     The pane is where the note LIST and the object stepper mount — see reader-chrome.ts, which is lazy.
+
+     THE STAGE IS A COLUMN, and that is ADR-0019's layout row honoured on this side of the contract:
+     the reading legend takes `.reader-dock` above the canvas and the note card takes `.reader-note`
+     below it, so neither is ever on the image. Both used to be `position: absolute` over
+     `.reader-surface` — the legend at its top-left, the card at its bottom-right offset above the OSD
+     locator by a MEASURED `--archie-locator-h`. That measurement is gone with the overlap.
+
+     The cost is real and it lands hardest here, which the ruling named and accepted: a small embed is
+     short before it is narrow, and two docked bars come out of the image's height. `:empty` on both
+     rows is what keeps the bill at zero until there is something to show — an object with no readings
+     pays nothing for the legend, and the note row exists only while a note is open. */
   .reader { display: flex; align-items: stretch; width: 100%; height: 70vh; min-height: 320px; }
-  .reader-surface { position: relative; flex: 1 1 auto; min-width: 0; height: 100%; background: var(--moss-shadow); }
+  .reader-stage { display: flex; flex-direction: column; flex: 1 1 auto; min-width: 0; min-height: 0; }
+  .reader-surface { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; background: var(--moss-shadow); }
+  .reader-dock { flex: none; }
+  .reader-dock:not(:empty) { padding: var(--space-2) var(--space-4); background: var(--surface-canvas); border-bottom: 1px solid var(--border-canvas); }
+  .reader-note { flex: none; max-height: 38%; min-height: 0; overflow: auto; }
+  .reader-note:not(:empty) { border-top: 1px solid var(--border-canvas); }
   /* The pane RESERVES its width from the first paint, before the lazy chrome lands in it. It used to
      collapse while empty, so mounting the chrome shrank the canvas and every region overlay jumped —
      measured as a moving hit target (a click computed against the pre-mount layout landed on nothing).
      An unstyled-but-sized pane for one frame is the correct trade against reflowing the image. */
   .reader-aside { flex: 0 0 clamp(240px, 26%, 360px); overflow-y: auto; background: var(--surface-paper); border-left: 1px solid var(--border-paper); }
-  @media (max-width: 720px) { .reader { flex-direction: column; height: auto; } .reader-surface { height: 60vh; } .reader-aside { flex: none; max-height: 40vh; border-left: none; border-top: 1px solid var(--border-paper); } }
+  @media (max-width: 720px) { .reader { flex-direction: column; height: auto; } .reader-stage { height: 60vh; } .reader-aside { flex: none; max-height: 40vh; border-left: none; border-top: 1px solid var(--border-paper); } }
   .notice { padding: var(--space-8); text-align: center; color: var(--ink-canvas-secondary); }
   .err { padding: 0 var(--space-8); color: var(--semantic-error); }
   /* Credit line (V105) — apps/viewer Credit.svelte's idiom in plain DOM: one quiet mono line, plus an
@@ -475,7 +491,8 @@ export class ArchieViewerElement extends HTMLElement {
     // The TEXT-ONLY note card: floats on the reader surface, shows the SELECTED annotation's body
     // (commentOfAnnotation → renderMarkdown, the SANITIZED pipeline the full viewer uses). Created
     // before the mount so the overlay's first onSelect has a card to drive; torn down with the surface.
-    this.#noteCard = createNoteCard(host);
+    // The card is a ROW under the canvas, not a float over its corner (ADR-0019's layout row).
+    this.#noteCard = createNoteCard(this.#root.querySelector<HTMLElement>(".reader-note") ?? host);
     const onSelect = (id: string | null): void => {
       // noteBodyHtml returns "" for null/unknown ids → show() hides the card.
       this.#noteCard?.show(noteBodyHtml(annotations, id));
@@ -546,7 +563,7 @@ export class ArchieViewerElement extends HTMLElement {
     const { mountReaderChrome } = await import("./reader-chrome.js");
     // #markColours is set by #openObject, BEFORE the canvas paints — see the note there (V56).
     const notes = liveAnnotations ?? this.#layerNotes ?? ((): W3CAnnotation[] => []);
-    this.#chrome = mountReaderChrome(aside, host, {
+    this.#chrome = mountReaderChrome(aside, this.#root.querySelector<HTMLElement>(".reader-dock") ?? host, {
       exhibit,
       object,
       annotations: notes(),
@@ -871,7 +888,11 @@ export class ArchieViewerElement extends HTMLElement {
              (#mountAside) — it renders empty (and `:empty` hides it) if they never load, so a failed
              lazy import costs the pane, never the image. */ ""}
         <div class="reader">
-          <div class="reader-surface"></div>
+          <div class="reader-stage">
+            <div class="reader-dock"></div>
+            <div class="reader-surface"></div>
+            <div class="reader-note"></div>
+          </div>
           <div class="reader-aside"></div>
         </div>
       </div>`;

@@ -33,10 +33,10 @@
       "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/0000000009XRYSFH35VWAC69FV.json"
     },
     {
-      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001JPVQXJ8KWYHKWFCZA/v1",
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001KF44F5CVRY6CV4YPM/v1",
       "type": "Annotation",
       "target": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/ex-voynich.o9",
-      "modified": "1970-01-01T00:00:00.050Z",
+      "modified": "1970-01-01T00:00:00.051Z",
       "body": [
         {
           "type": "TextualBody",
@@ -45,13 +45,41 @@
         }
       ],
       "motivation": "commenting",
-      "created": "1970-01-01T00:00:00.050Z",
+      "created": "1970-01-01T00:00:00.051Z",
       "creator": {
         "type": "Person",
         "name": "curator"
       },
-      "archie:logicalId": "000000001JPVQXJ8KWYHKWFCZA",
-      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001JPVQXJ8KWYHKWFCZA.json"
+      "archie:logicalId": "000000001KF44F5CVRY6CV4YPM",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001KF44F5CVRY6CV4YPM.json"
+    },
+    {
+      "id": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/000000001N4RWYX076AQQ349VE/v1",
+      "type": "Annotation",
+      "target": {
+        "type": "SpecificResource",
+        "source": "https://micahchoo.github.io/Archie/viewer/published/voynich/canvas/ex-voynich.o9",
+        "selector": {
+          "type": "SvgSelector",
+          "value": "<svg><polygon points=\"1980,740 2498,924 2937,1268 3030,1820 2855,2325 2525,2764 1980,2880 1470,2703 1032,2368 935,1820 1053,1285 1465,928\" /></svg>"
+        }
+      },
+      "modified": "1970-01-01T00:00:00.053Z",
+      "body": [
+        {
+          "type": "TextualBody",
+          "value": "**The north-west rosette.** One medallion of the nine, traced round its rim rather than boxed: the causeways that leave it at four and eight o'clock belong to the joins, not to this circle, and a rectangle drawn here would claim them. The manuscript's own geometry is round, so the annotation is too.",
+          "purpose": "commenting"
+        }
+      ],
+      "motivation": "commenting",
+      "created": "1970-01-01T00:00:00.053Z",
+      "creator": {
+        "type": "Person",
+        "name": "curator"
+      },
+      "archie:logicalId": "000000001N4RWYX076AQQ349VE",
+      "archie:hasHistory": "https://micahchoo.github.io/Archie/viewer/published/voynich/annotations/history/000000001N4RWYX076AQQ349VE.json"
     }
   ]
 }

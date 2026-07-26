@@ -69,27 +69,32 @@
 {/if}
 
 <style>
-  /* A canvas overlay, sibling to Reader's `.popup` — same warm-paper/soft-shadow language. Absolute
-     within Reader's `position: relative` container, so it anchors to the canvas, not the viewport. */
+  /* DOCKED (2026-07-26, ADR-0019's layout row) — the leading end of the host's canvas chrome bar, not
+     an overlay on the image. It was `position: absolute` at the canvas's top-left, cleared below the
+     fixed top bar by `--topbar-h` and capped against `100vh` so a contested object's readings could not
+     grow off the bottom. None of that survives docking: a row cannot grow off anything, and the reason
+     clover-iiif's header can be transparent applies here too — nothing is behind it (`Viewer.tsx:180-184`,
+     `Header.styled.ts:57-73`).
+
+     Its layout flips with its home: the radios ran as a vertical column when it was a panel, and read as
+     a HORIZONTAL row of chips in a bar. Same controls, same roles, same swatches. */
   .legend {
-    position: absolute; z-index: 20; top: var(--topbar-h); left: var(--space-5); max-width: 17rem;
-    /* Cap + scroll like the note popups (#6): a contested object with many readings + a long description
-       used to grow off the bottom, stranding the lower readings and the Hide-all toggle. Same token math. */
-    max-height: calc(100vh - var(--topbar-h) - var(--space-5) - var(--space-4)); overflow-y: auto;
-    padding: var(--space-3) var(--space-4);
-    background: var(--surface-canvas-raised); color: var(--ink-canvas-primary);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-low);
+    display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2) var(--space-3);
+    min-width: 0; color: var(--ink-canvas-primary);
     font-family: var(--font-body), sans-serif;
   }
   .title {
-    display: block; font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 500;
+    font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 500;
     letter-spacing: 0.18em; text-transform: uppercase;
-    color: var(--ink-canvas-secondary); margin-bottom: 2px;
+    color: var(--ink-canvas-secondary);
   }
-  /* One-line gloss under the eyebrow — what readings are FOR (compare interpretations). Mirrors the Studio rail. */
-  .gloss { display: block; font-family: var(--font-body), sans-serif; font-size: var(--text-ui-xs, 0.7rem); color: var(--ink-canvas-secondary); margin-bottom: var(--space-2); }
-  .opts { display: flex; flex-direction: column; gap: 2px; transition: opacity 160ms ease; }
+  /* The gloss is the one thing a row has no space for at small widths — it is an explanation, not a
+     control, so it is the first thing to go rather than pushing a radio off the bar. */
+  .gloss { display: none; }
+  @media (min-width: 1100px) {
+    .gloss { display: inline; font-family: var(--font-body), sans-serif; font-size: var(--text-ui-xs, 0.7rem); color: var(--ink-canvas-secondary); }
+  }
+  .opts { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-1); transition: opacity 160ms ease; }
   /* Hidden: the layer choices recede (markers are off the canvas) but stay legible + pickable. */
   .opts.dimmed { opacity: 0.5; }
   .opt {
@@ -102,7 +107,7 @@
   .opt:hover { color: var(--ink-canvas-primary); }
   /* Selected = the reading's OWN colour (ADR-0007), a left stripe over a neutral fill — never the
      global accent, and border-only so any user-picked hue stays AA-legible behind ink text. */
-  .opt.on { color: var(--ink-canvas-primary); font-weight: 600; background: var(--surface-canvas-overlay); box-shadow: inset 2px 0 0 var(--rd); }
+  .opt.on { color: var(--ink-canvas-primary); font-weight: 600; background: var(--surface-canvas-overlay); box-shadow: inset 0 -2px 0 var(--rd); }
   /* The swatch is a miniature of the MARK (V47) — its fill/stroke come from readingMarkerStyle, so
      nothing here may restate them. What CSS still owns is the box: a fixed square that never shrinks,
      and a hairline ring so ANY author-picked hue (incl. a pale one that vanishes on the cream pill)
@@ -116,17 +121,20 @@
   /* Per-layer note count on the current image — a quiet tabular figure pinned to the trailing edge
      (flex:none so it never shrinks or gets pushed out). Tabular nums so multi-digit counts don't jitter. */
   .ct { flex: none; padding-left: var(--space-3); font-family: var(--font-mono), monospace; font-variant-numeric: tabular-nums; font-size: 0.78rem; color: var(--ink-canvas-muted); }
+  /* The active reading's one intent line (principle #1). In a row it sits after the radios behind a
+     hairline, and it is allowed to be the thing that wraps. */
   .desc {
-    margin: var(--space-2) 0 0; padding-top: var(--space-2);
-    border-top: 1px solid var(--border-canvas);
+    margin: 0; padding-left: var(--space-3);
+    border-left: 1px solid var(--border-canvas);
     font-family: var(--font-body), sans-serif;
-    font-size: 0.82rem; font-style: italic; line-height: 1.6; color: var(--ink-canvas-secondary);
+    font-size: 0.82rem; font-style: italic; line-height: 1.5; color: var(--ink-canvas-secondary);
+    min-width: 0; max-width: 28ch;
   }
   /* Hide-all toggle — a quiet footer action under a hairline rule, distinct from the layer radios.
      Pressed (notes hidden) flips to the rationed cord-blue connector accent so the off-state reads. */
   .hide-toggle {
-    display: block; width: 100%; margin-top: var(--space-2); padding: var(--space-2) var(--space-2) 0;
-    border: none; border-top: 1px solid var(--border-canvas); background: transparent; cursor: pointer;
+    flex: none; padding: var(--space-1) var(--space-2);
+    border: none; border-left: 1px solid var(--border-canvas); background: transparent; cursor: pointer;
     text-align: left; font-family: var(--font-ui), monospace; font-size: 0.65rem; font-weight: 500;
     letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-canvas-muted);
     transition: color 160ms ease;

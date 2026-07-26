@@ -151,6 +151,42 @@ export const voynichWholeObjectNotes: VoynichWholeNote[] = [
   { objectId: "ex-voynich.o12", comment: "This note is about the whole recording, not any moment in it: the Kryptogramm sonification reads folio 18v end to end. Whether you hear enciphered speech, a grille's rhythm, or an unknown real language is the manuscript's whole condition — so the claim attaches to the track entire." },
 ];
 
+// POLYGON REGIONS (Archie-f4fb) — the ONLY non-rectangular geometry in the whole seed corpus.
+//
+// A NEW array rather than a `points` field on VoynichReadingNote, per `.claude/rules/test-fixtures.md`:
+// every existing note is untouched, and consumers append these LAST (after the whole-object notes) so
+// no existing note's deterministic logical id moves (ADR-0014 durable anchors — the same reason
+// voynichWholeObjectNotes is appended last).
+//
+// WHY A POLYGON IS THE RIGHT SHAPE HERE, not a demonstration of the feature. A rosette is a drawn
+// circular medallion inside a six-panel foldout; a box around one necessarily swallows the causeways
+// and the corners of its neighbours, so the box is a claim about the wrong thing. The twelve vertices
+// below trace the rim of the north-west medallion on o9 (7925×7268) with the slight radius wobble a
+// hand-drawn circle actually has. Bounding box 935,740 2095×2140 = 7.8% of the canvas, comfortably
+// under `coverage.ts`'s 75% whole-object threshold, so the reader draws it as a REGION (halo) rather
+// than routing it to the object frame.
+//
+// PRIOR ART, opened rather than recalled. anvil — Archie's direct predecessor, same Voynich subject —
+// ships polygon annotations in its shipped template, not merely in its editor:
+// `anvil/template/exhibits/voynich-manuscript/annotations/88fc0925.json:38` is a 5-vertex irregular
+// region and `:91` an 11-vertex traced outline, both in exactly the `<svg><polygon points="x,y x,y …"
+// /></svg>` form `parsePolygonPoints` (render-core `geometry/selector.ts:32`) matches. So seeding a
+// polygon into shipped content is precedent from this project's own lineage; Archie's rewrite dropped
+// it, which is the gap f4fb records. The SVG string is minted here rather than in each consumer
+// because render-core exports no SvgSelector constructor (only `fragmentSelector`,
+// `geometry/mediafragment.ts:20`) — one source of truth for the value, the same reason geo.ts
+// pre-computes its pin geometry for both seeds.
+export interface VoynichPolygonNote { objectId: string; points: string; comment: string; reading?: string }
+/** The WADM `SvgSelector.value` for a points list — the one place the seed's polygon markup is built. */
+export const polygonSelectorValue = (points: string): string => `<svg><polygon points="${points}" /></svg>`;
+export const voynichPolygonNotes: VoynichPolygonNote[] = [
+  {
+    objectId: "ex-voynich.o9",
+    points: "1980,740 2498,924 2937,1268 3030,1820 2855,2325 2525,2764 1980,2880 1470,2703 1032,2368 935,1820 1053,1285 1465,928",
+    comment: "**The north-west rosette.** One medallion of the nine, traced round its rim rather than boxed: the causeways that leave it at four and eight o'clock belong to the joins, not to this circle, and a rectangle drawn here would claim them. The manuscript's own geometry is round, so the annotation is too.",
+  },
+];
+
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 // AUTHORED READINGS CONTENT (ADR-0007). The SINGLE SOURCE OF TRUTH for the genuinely-plural Voynich
 // exhibit — extracted here so BOTH the Viewer (sample-data.ts → published tree) AND the Studio
@@ -258,6 +294,22 @@ export const voynichAvNotes: VoynichAvNote[] = [
   { t: "45,80", comment: "A repeated cadence surfaces. Under the abjad reading this resembles a root-and-pattern morphology (Bax); under the grille reading it is the predictable repetition the prefix/stem/suffix tables force; under the cipher reading it is enciphered structure showing through." },
   { t: "120,160", comment: "Here the “words” cluster like labels. Cryptanalysts attacked exactly such short tokens as cribs (cipher); Rugg's tables emit them just as readily (grille); Bax read them as proper names (abjad)." },
   { t: "250,296", comment: "The reading ends without resolving. That the ear can't decide between language and noise is the manuscript's whole condition — undeciphered, even when sounded." },
+  // A FIFTH note, appended (never folded into the four above — `.claude/rules/test-fixtures.md`), and the
+  // FIRST AV note in any fixture to carry a `reading`. Archie-4524: the AV surface has no ReadingLegend,
+  // and the reason it was not built is that a legend over no reading-bearing AV note would list nothing
+  // and any assertion over it would be vacuous — the exact failure Archie-0cc6 records. This is the
+  // fixture half, landed on its own so the control has something real to legend when it lands.
+  //
+  // IT IS DELIBERATELY NOT ASSERTED YET, and that is the point rather than an omission. `ExhibitView`'s
+  // `annotationsOf` (:388-392) returns the base notes alone while `activeReading === null`, and the AV
+  // surface has no control that can set it — so this note is present in the published data and
+  // currently unreachable in the AV reader. That is exactly why the count in `av-surface.spec.ts`
+  // (`.cues li` toHaveCount(4)) is UNCHANGED by adding it: it drives the default view. When the legend
+  // lands, that count becomes the red-green — activate this reading and the fifth cue appears.
+  //
+  // `abjad` because the natural-language claim is the one that turns on how the recording SOUNDS, which
+  // is the only reading an AV note can argue better than a folio can.
+  { t: "165,205", reading: "abjad", comment: "Listen to this stretch for word length rather than sound: the runs come in the short, repeating shapes a root-and-pattern morphology produces, and they fall where a reader of an unknown but real language would expect breaks. Under the cipher and hoax readings the same seconds are an artefact of the encoding; here they are speech." },
 ];
 
 // A self-contained narrative reading beat (ADR-0005): its own camera target (`start`) + curator prose,

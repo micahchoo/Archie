@@ -158,34 +158,24 @@
     max-width: 62ch;
   }
 
-  /* THE CARD — a warm paper callout floating bottom-left over the canvas ground. A header (eyebrow +
+  /* THE CARD — a warm paper callout in the host's note row, BELOW the canvas. A header (eyebrow +
      ⤢/× icons) tops the card and the note body scrolls if tall. Green (--accent) left edge = the note
-     signal. Positioned absolute against the host's relative container. */
+     signal.
+
+     DOCKED (2026-07-26, ADR-0019's layout row). Its whole positional history was a chase: z-index 5 →
+     30 to stop the Filmstrip painting over its media tiles and eating their clicks (Archie-b42d), then
+     a `--strip-h` offset because winning the z-fight still left it covering SIX of twelve filmstrip
+     frames (V71/Archie-40fe), and it was STILL the surface clipping a height-constrained fitted region
+     (Archie-c30a) because the reservation could only slide a region sideways. In flow it has no z-index,
+     no offsets and no reservation: the surfaces it kept colliding with are its siblings.
+
+     Height comes from the host's row (`.note-dock` / `.player .note-dock`), which caps it — a docked
+     card must not be able to squeeze the image to nothing. */
   .note-pop {
-    /* z-index 30 (Archie-b42d), not the original 5: the popup is anchored near the viewport BOTTOM and,
-       for a short note, its trailing NoteMedia tile row commonly lands inside the Filmstrip's fixed
-       bottom band (.filmstrip, z-index 25, full-width) — at z:5 the filmstrip painted over the tile AND
-       ate its clicks (measured: elementFromPoint at the tile's center returned the filmstrip's <ul>, and
-       a real click there never opened the lightbox). 30 matches the existing "floats above the ambient
-       Filmstrip" tier ExhibitView already uses for .finder-trigger/.arrival/.to-read/.partial-note — the
-       popup is the user-opened foreground card, filmstrip is passive chrome; it should win the same way. */
-    /* V71 (Archie-40fe): winning the z-fight was the right call and is NOT the whole answer — the card
-       still overlapped the band by 74px and covered SIX of twelve frames, silently removing half the
-       survey affordance the reader was using a moment earlier, with no reflow and no acknowledgement.
-       Clearing `--strip-h` (Filmstrip's live measured height, the bottom mirror of --topbar-h) means
-       the card sits ABOVE the band instead of on it, so both surfaces stay usable at once. The z-index
-       note below still applies: the tiers are unchanged, they simply no longer overlap. */
-    position: absolute; left: var(--space-5);
-    bottom: calc(var(--strip-h, 0px) + var(--space-3)); z-index: 30;
-    max-width: min(46ch, 46%);
-    min-width: min(320px, calc(100vw - 2 * var(--space-5)));
-    /* Height budget shrinks by the band too, or a tall note reclaims the space the offset just bought. */
-    max-height: calc(100vh - var(--topbar-h) - var(--strip-h, 0px) - var(--space-5) - var(--space-4));
-    padding: var(--space-4);
+    display: flex; flex-direction: column; min-height: 0;
+    padding: var(--space-4) var(--space-5);
     background: var(--surface-canvas-raised);
     border: none; border-left: 2px solid var(--accent);
-    border-radius: var(--radius-md);
-    box-shadow: var(--shadow-lift-mid);
   }
   /* Header — eyebrow on the left, the ⤢ expand / × close icons on the right (flowed in a row, not
      absolutely positioned over the body's first line). At sheet size the icons are absent and the

@@ -83,9 +83,9 @@
 <style>
   /* The light table: objects laid out on warm near-black, each plate glowing under lamplight.
      Cards elevate by warming (surface-shift, no shadows) per system.md depth strategy. */
-  /* Top reserves the fixed top bar (--pane-top) so the exhibit header (eyebrow · title · summary · credit)
+  /* (The `--pane-top` reservation retired with the fixed bar.) The exhibit header (eyebrow · title · summary · credit)
      keeps its own space below the bar (breadcrumb / "Open another library" float over the top corners). */
-  .overview { min-height: 100vh; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); padding: var(--pane-top) var(--space-8) var(--space-12); }
+  .overview { height: 100%; overflow-y: auto; box-sizing: border-box; background: var(--surface-canvas); color: var(--ink-canvas-primary); padding: var(--space-6) var(--space-8) var(--space-12); }
   header { max-width: 60rem; margin: 0 auto var(--space-10); }
   h1 { font-family: var(--font-display); font-weight: 300; font-size: 3rem; line-height: 1.1; margin: var(--space-2) 0 var(--space-3); color: var(--ink-canvas-primary); text-shadow: var(--shadow-text-haze); }
   .summary { font-family: var(--font-body); font-size: 1.25rem; line-height: 1.6; color: var(--ink-canvas-secondary); margin: 0; max-width: 42rem; }
