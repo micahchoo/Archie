@@ -109,16 +109,27 @@ async function main() {
     notFound.push(`${res.status()} ${url.slice(base.length)}`);
   });
 
-  // ADR-0019's DROP-justified row (Annotorious/PixiJS out, the canvas engine lazy) made drivable: every
-  // deep-zoom chunk fetched BEFORE the first object is opened. `eagerGzKB` ratchets the same claim from
-  // the metafile; this watches the wire. Collection stops at the first object click below.
-  const readerChunkBeforeOpen = [];
+  // ADR-0019's DROP-justified row (Annotorious/PixiJS out, the canvas engine lazy) made drivable:
+  // every bundle chunk fetched BEFORE the first object is opened, scanned for the deep-zoom engine.
+  // `eagerGzKB` ratchets the same claim from the metafile; this watches the wire.
+  //
+  // BY CONTENT, NOT BY FILENAME — and that distinction was earned. The first version of this matched
+  // `/dist/reader-*.js`, and the 2026-07-24 leak REINTRODUCED ON PURPOSE sailed straight past it: a
+  // static re-export from reader.js makes esbuild hoist OSD into a shared `chunk-*.js` that the entry
+  // imports, so the engine arrives eagerly under a name the filter never looked at. Measured — the
+  // assertion passed at 33/33 against a build whose `eagerGzKB` had gone 37.6KB → 270.5KB. An
+  // assertion that passes against the broken code is worse than no assertion; this one reads the
+  // bytes it just downloaded and asks whether OpenSeadragon is in them.
+  const galleryPathScripts = [];
   let watchingGalleryPath = true;
-  page.on("request", (req) => {
+  page.on("response", (res) => {
     if (!watchingGalleryPath) return;
-    const url = req.url();
-    if (!url.startsWith(base)) return;
-    if (/\/dist\/(reader|av-player)-[^/]*\.js$/.test(url)) readerChunkBeforeOpen.push(url.slice(base.length));
+    const url = res.url();
+    if (!url.startsWith(base) || !/\/dist\/[^/]*\.js$/.test(url)) return;
+    void res.text().then(
+      (t) => galleryPathScripts.push({ name: url.slice(base.length), osd: /openseadragon/i.test(t), bytes: t.length }),
+      () => {},
+    );
   });
 
   let canvasMounted = false;
@@ -717,9 +728,14 @@ async function main() {
     // the leak. This is its behavioural twin: it asserts nothing was FETCHED, from the same drive the
     // rest of the contract uses, which is the claim a host actually cares about. The 2026-07-24 leak
     // shipped a top-level `import … from "./chunk-<osd>.js"` in the entry — it would fail here too.
-    record(readerChunkBeforeOpen.length === 0,
-      "ADR-0019 DROP-justified · the gallery path fetches no deep-zoom chunk",
-      readerChunkBeforeOpen.length ? readerChunkBeforeOpen.join(" | ") : "none (OSD arrives only on object open)");
+    const eagerOsd = galleryPathScripts.filter((s) => s.osd);
+    const eagerBytes = galleryPathScripts.reduce((n, s) => n + s.bytes, 0);
+    record(galleryPathScripts.length > 0 && eagerOsd.length === 0,
+      "ADR-0019 DROP-justified · the canvas engine is NOT on the gallery path",
+      galleryPathScripts.length === 0
+        ? "no /dist/*.js responses observed — the check would be vacuous"
+        : `${galleryPathScripts.length} chunk(s), ${Math.round(eagerBytes / 1024)}KB raw` +
+          (eagerOsd.length ? ` — OpenSeadragon found in ${eagerOsd.map((s) => s.name).join(", ")}` : "; no OpenSeadragon in any of them"));
 
     // ASSERTED LAST, deliberately. Covers are `loading="lazy"`, so the request that exposed V11 is
     // not made until the image is near the viewport — checking earlier in the drive passed against

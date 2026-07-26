@@ -112,7 +112,7 @@ missing — a bug by definition; no row may sit here).
 | cite hovercards in prose | `ProseCites.svelte` | — | DEFER-tracked | — | — (needs a ticket) |
 | full-text search | `SearchOverlay.svelte` + minisearch | — | DEFER-tracked | — | — (needs a ticket; the index and minisearch are real weight, so this one may well resolve as DROP-justified — but *undecided* is not the same as *dropped*) |
 | authoring / drawing | Studio | — | DROP-justified | — | the element is read-only by definition (ADR-0020 owns the round-trip) |
-| `@annotorious/openseadragon` + `@annotorious/plugin-tools` + PixiJS | Studio and the shell | — | DROP-justified — ~194 KB gz and the `script-src 'unsafe-eval'` grant, for an edit capability a read-only embed does not have | — | `eagerGzKB` in `build.mjs --check` |
+| `@annotorious/openseadragon` + `@annotorious/plugin-tools` + PixiJS | Studio and the shell | — | DROP-justified — ~194 KB gz and the `script-src 'unsafe-eval'` grant, for an edit capability a read-only embed does not have | — | `eagerGzKB` in `build.mjs --check`, **and** smoke: every `/dist/*.js` fetched before the first object open is read and scanned for OpenSeadragon |
 
 **How to use this table.**
 
@@ -124,6 +124,12 @@ missing — a bug by definition; no row may sit here).
   that reaches that state is the bug the table exists to surface.
 - A `DEFER-tracked` row without a ticket is a half-measure. The four above are named here so they
   are at least *visible*; filing them is follow-up work.
+- **Every MUST assertion was proven RED-GREEN**: the capability was deleted, smoke failed, it was
+  restored. This is not ceremony. The first version of the DROP-justified row's driven check matched
+  `/dist/reader-*.js` by NAME, and the 2026-07-24 eager leak — reintroduced deliberately, taking
+  `eagerGzKB` from 37.6KB to 270.5KB — passed it at 33/33, because a static re-export makes esbuild
+  hoist OpenSeadragon into a `chunk-*.js` the filter never looked at. It now reads the bytes. An
+  assertion nobody has watched fail is a guess about what it covers.
 - The gate column is load-bearing in one specific way: `eagerGzKB` is the only thing that can see the
   weight claims, and `recipes/smoke.mjs` is the only thing that can see the behavioural ones (it
   drives the BUILT bundle in real Chromium). Neither `entryGzKB`, `totalGzKB`, nor any unit suite can
