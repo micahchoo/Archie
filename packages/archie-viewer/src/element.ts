@@ -28,7 +28,11 @@
 //                   `target`/`iiif-content` (or a card click once shown) is UNAFFECTED — reachability is
 //                   unchanged either way.
 
-import { parseRoute, thumbnailCandidates, licenseLabel, metadataRows, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit, type RightsFields, type W3CAnnotation } from "@render/core";
+// `validateArchieMarker` is a VALUE import, and safe on the eager path: marker.ts is pure JSON
+// validation with no canvas graph behind it, and @render/core is already statically imported here.
+// The rule that governs this file's static edges is .claude/rules/archie-viewer-eager-closure.md —
+// `node build.mjs --check` is what proves the closure did not grow.
+import { parseRoute, thumbnailCandidates, licenseLabel, metadataRows, validateArchieMarker, type Filesystem, type ViewerRoute, type ExhibitsJson, type AObject, type PortableExhibit, type RightsFields, type W3CAnnotation } from "@render/core";
 // Type-only (erased): naming the reader's surface costs the eager graph nothing. A VALUE import from
 // either module is the leak — .claude/rules/archie-viewer-eager-closure.md.
 import type { EmbedReaderSurface } from "./reader.js";
@@ -36,6 +40,7 @@ import type { ReaderChrome } from "./reader-chrome.js";
 import type { NarrativeAside } from "./narrative.js";
 import { TOKENS_CSS } from "./tokens.js";
 import {
+  openFilesystem,
   openLibraryFromFile,
   openLibraryFromSrc,
   readExhibit,
@@ -300,16 +305,16 @@ export class ArchieViewerElement extends HTMLElement {
     return openLibraryFromSrc(src);
   }
 
-  /** The drop/file-pick handler calls THIS — the no-src load seam. Public-ish (used by the drop UI and
-   *  exercised by tests): open a dropped File into this instance's library, then show the gallery. */
-  async openFile(file: Blob): Promise<void> {
+  /** The no-src load body, shared by every public opener (`openFile`, `openLibraryFs`). Sequenced by
+   *  `#loadSeq` so a superseding open discards the loser's library instead of clobbering the winner's. */
+  async #adopt(open: () => Promise<LoadedLibrary>): Promise<void> {
     const seq = ++this.#loadSeq;
     this.#teardownSurface();
     this.#library?.revoke();
     this.#library = null;
     this.#setView({ kind: "loading" });
     try {
-      const lib = await openLibraryFromFile(file);
+      const lib = await open();
       if (seq !== this.#loadSeq) { lib.revoke(); return; }
       this.#library = lib;
       this.#setView({ kind: "gallery" });
@@ -318,6 +323,33 @@ export class ArchieViewerElement extends HTMLElement {
       if (seq !== this.#loadSeq) return;
       this.#setView({ kind: "empty", error: e instanceof Error ? e.message : "Couldn't open the library." });
     }
+  }
+
+  /** The drop/file-pick handler calls THIS — the no-src load seam. Public-ish (used by the drop UI and
+   *  exercised by tests): open a dropped File into this instance's library, then show the gallery. */
+  async openFile(file: Blob): Promise<void> {
+    return this.#adopt(() => openLibraryFromFile(file));
+  }
+
+  /**
+   * Open an ALREADY-BUILT published tree IN-PROCESS — the Studio preview door (archie-ux Q-6).
+   *
+   * Studio holds the whole tree in memory the moment it publishes (`buildZipFs`), so preview hands
+   * over the `Filesystem` itself: no `toZip()` (which builds a second full copy — publish-flows
+   * records the ≈2× peak that OOMs a tab on large libraries), no Blob, and crucially no URL. A
+   * `blob:` src would be refused on desktop anyway: the Tauri CSP allows `https:` on `connect-src`
+   * but NOT `blob:` (.claude/rules/tauri-csp.md), which is why IIIF `info.json` is fetched as parsed
+   * JSON rather than through the blob trick. Handing the object over sidesteps that entirely.
+   *
+   * The ADR-0020 marker is STILL validated. A first-party caller is not a reason to skip the check —
+   * preview catching a malformed publish is exactly the value, and an unvalidated bad tree would
+   * render as an empty gallery ("nothing authored") rather than an error ("this artifact is broken").
+   */
+  async openLibraryFs(fs: Filesystem): Promise<void> {
+    return this.#adopt(async () => {
+      await validateArchieMarker(fs);
+      return openFilesystem(fs);
+    });
   }
 
   // --- ADDRESS dispatch: native `target` vs `iiif-content` (PRECEDENCE: native target WINS) -----------

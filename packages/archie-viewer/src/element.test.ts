@@ -31,6 +31,12 @@ function mount(): ArchieViewerElement {
 // --- a real one-exhibit .archie.zip fixture (donor: load.test.ts buildArchiveBytes) ----------------
 // Parameterized by slug/title/libTitle so the two-instance test can open DIFFERENT libraries.
 async function buildArchiveBytes(opts: { slug: string; title: string; libTitle: string }): Promise<Uint8Array> {
+  return (await buildArchiveFs(opts)).toZip();
+}
+
+/** The SAME fixture as a live tree, un-serialized — what Studio's preview hands over (openLibraryFs).
+ *  buildArchiveBytes is now this plus `.toZip()`, so the two paths can never drift apart. */
+async function buildArchiveFs(opts: { slug: string; title: string; libTitle: string }): Promise<ZipFilesystem> {
   const library: Library = {
     id: asLibraryId("L"),
     title: opts.libTitle,
@@ -46,7 +52,7 @@ async function buildArchiveBytes(opts: { slug: string; title: string; libTitle: 
   const fs = new ZipFilesystem();
   const logs: Record<string, AnnotationLog> = {};
   await publishLibrary(fs, library, (id) => logs[id] ?? [], { baseUrl: "https://u.gh.io/lib/" });
-  return fs.toZip();
+  return fs;
 }
 
 /** Flush the element's load microtasks (openFile → openZipBytes → setView). */
@@ -116,6 +122,54 @@ describe("attribute ⇄ property reactivity", () => {
     await Promise.resolve();
     const err = el.shadowRoot!.querySelector(".err");
     expect(err?.textContent).toMatch(/offline/i);
+  });
+});
+
+describe("openLibraryFs — the in-process door (Studio preview)", () => {
+  it("opens an ALREADY-BUILT tree without serializing it, and renders the gallery", async () => {
+    const fs = await buildArchiveFs({ slug: "alpha", title: "Alpha Exhibit", libTitle: "Preview Lib" });
+    // The point of this door: no .toZip(), no Blob, no URL. Spy proves the tree is never serialized —
+    // publish-flows.svelte.ts:72 records that materializing the zip builds a 2nd full copy (peak ≈2×).
+    const toZip = vi.spyOn(fs, "toZip");
+    const el = mount();
+    await el.openLibraryFs(fs);
+    await settle();
+
+    expect(el.shadowRoot!.querySelector(".intro h1")?.textContent).toBe("Preview Lib");
+    expect(el.shadowRoot!.querySelector('[data-slug="alpha"]')).not.toBeNull();
+    expect(toZip).not.toHaveBeenCalled();
+  });
+
+  it("still validates the ADR-0020 marker — a forged tree errors instead of showing an empty gallery", async () => {
+    const fs = await buildArchiveFs({ slug: "alpha", title: "Alpha Exhibit", libTitle: "Forged" });
+    // Overwrite the marker with a foreign one. A first-party caller is not a reason to skip the check:
+    // preview catching a malformed publish is the feature, and an empty gallery would look like "no
+    // exhibits authored" rather than "this artifact is broken".
+    const marker = await (await fs.root()).getFile("archie.json", { create: true });
+    const w = await marker.writable();
+    await w.write(JSON.stringify({ format: "not-archie", version: 1 }));
+    await w.close();
+
+    const el = mount();
+    await el.openLibraryFs(fs);
+    await settle();
+
+    expect(el.shadowRoot!.querySelector('[data-slug="alpha"]')).toBeNull();
+    expect(el.shadowRoot!.querySelector(".err")?.textContent).toMatch(/isn't an Archie library/i);
+  });
+
+  it("a second openLibraryFs replaces the first library (no stale gallery)", async () => {
+    const [a, b] = await Promise.all([
+      buildArchiveFs({ slug: "alpha", title: "Alpha", libTitle: "Lib A" }),
+      buildArchiveFs({ slug: "beta", title: "Beta", libTitle: "Lib B" }),
+    ]);
+    const el = mount();
+    await el.openLibraryFs(a);
+    await settle();
+    await el.openLibraryFs(b);
+    await settle();
+    expect(el.shadowRoot!.querySelector(".intro h1")?.textContent).toBe("Lib B");
+    expect(el.shadowRoot!.querySelector('[data-slug="alpha"]')).toBeNull();
   });
 });
 
