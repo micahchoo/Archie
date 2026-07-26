@@ -75,14 +75,33 @@ test.describe("dismissing a note (V62)", () => {
     // The whole finding: Escape already did the right thing and the button never learned it. A
     // keyboard reader reaches × in two presses and was being dropped on <body> — losing their place
     // in a twelve-object exhibit. Both dismissals must land in the same spot.
+    //
+    // Asserted by ELEMENT IDENTITY, not by a text snapshot (changed 2026-07-25, Archie-dbbc). The
+    // snapshot form read the trigger's text WHILE the note was open and compared it after close —
+    // which silently assumed the list entry looks the same in both states. It no longer does: an
+    // entry whose note is open marks position ("Note 1 of 7 · Open") instead of restating the note
+    // (V60), so the text changes back on close and the old assertion failed against correct
+    // behaviour. Comparing the node to `document.activeElement` is what the test always meant, and
+    // it cannot be invalidated by what the entry chooses to display.
     const trigger = await openFirstNote(page);
-    const triggerText = (await trigger.innerText()).trim().slice(0, 40);
     await page.locator(".note-pop button.close").click();
     await expect(page.locator(".note-pop")).toHaveCount(0);
 
     const a = await active(page);
     expect(a?.tag).toBe("button");
-    expect(a?.text).toBe(triggerText); // the trigger itself, not <body>
+    expect(await trigger.evaluate((el) => el === document.activeElement)).toBe(true); // the trigger itself, not <body>
+  });
+
+  test("dismissing also clears the canvas's selection, not just the card", async ({ page }) => {
+    // anvil ADR-0007 F5: "on close, the WC must call `anno.cancelSelected()` to clear the canvas's
+    // selected state." A close that only unmounts the card leaves the canvas believing a region is
+    // still selected. Archie's equivalent is that × routes through the same `selected = null` the
+    // list drives, which the sidebar entry's `aria-current` reflects.
+    const trigger = await openFirstNote(page);
+    await expect(trigger).toHaveAttribute("aria-current", "true");
+    await page.locator(".note-pop button.close").click();
+    await expect(page.locator(".note-pop")).toHaveCount(0);
+    await expect(page.locator("aside li button[aria-current]")).toHaveCount(0);
   });
 });
 

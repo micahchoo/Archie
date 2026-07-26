@@ -15,6 +15,7 @@
   import Credit from "./Credit.svelte";
   import MetadataList from "./MetadataList.svelte";
   import { loadAsideWidth, loadAsideCollapsed, saveAside, type AsideState } from "../aside-persistence.js";
+  import { navPosition, navRegionName, navStepName, noteIndexOpenMark } from "../product-copy.js";
   import { stripMarkdown, metadataRows } from "@render/core";
   import { type MarkerStyle, formatZoomRatio, zoomBand } from "@render/svelte";
   import { splitNoteMedia, commentOfAnnotation as commentOf, tagsOfAnnotation as tagsOf, readingIdOf, geoOf, geoCenter, formatLngLat, arrivalPulseIntensity, withArrivalPulse, withZoomBand, type MarkerStyleSpec, type NoteMediaItem, type RightsFields, type W3CAnnotation, type Reading, type TileSourceDescriptor } from "@render/core";
@@ -26,8 +27,10 @@
   const ASIDE_COLLAPSED_KEY = "archie.readerAsideCollapsed.v1";
   let asideWidth = $state<number | null>(loadAsideWidth(ASIDE_W_KEY));
   let asideCollapsed = $state<boolean>(loadAsideCollapsed(ASIDE_COLLAPSED_KEY));
-  // Expand a long note into the centred reading sheet (Phase-3 focus surface).
-  let readingSheet = $state<{ text: string } | null>(null);
+  // Expand the open note into the centred reading sheet (Phase-3 focus surface). A BOOLEAN, not a text
+  // snapshot: the sheet renders the same `current` note the card does (Archie-dbbc), so there is nothing
+  // to copy into it and no way for the two to describe different notes.
+  let readingSheet = $state(false);
 
   let {
     object,
@@ -98,27 +101,43 @@
     readingCount?: (id: string | null) => number;
   } = $props();
 
-  // Show the sidebar object-nav only with real siblings to step AND the wiring to drive it. When present
-  // it owns "back to the overview", so the top "← Back to exhibit" would be redundant — suppressed below.
+  // Show the sidebar footer only with real siblings AND the wiring to drive it. When present it owns
+  // "back to the overview", so the top "← Back to exhibit" would be redundant — suppressed below.
   const objectNav = $derived(
     !!siblings && siblings.length > 1 && !!currentId && !!onstep && !!onoverview,
   );
-  // Index of the current object among siblings — drives the collapsed-mode popup's footer stepper (mirrors
-  // SidebarObjectNav). `stepIntoReading` is set just before a popup step so the object-change effect below
-  // re-selects the new object's first note instead of clearing — flip-and-read keeps the popup open.
+  // Index of the current object among siblings — drives the CANVAS-CHROME object nav below.
   const navIdx = $derived(siblings ? siblings.findIndex((s) => s.id === currentId) : -1);
-  let stepIntoReading = false;
+
+  // Archie-01a6 — object nav belongs to the canvas, in BOTH sidebar states.
+  //
+  // Before: `SidebarObjectNav` held the visible stepper, inside the collapsible aside; collapsing the
+  // aside took it away, so a stepper had grown into the NOTE CARD to cover the gap (V65). That control
+  // stepped OBJECTS from inside a note — a different noun than its container — and it was reachable
+  // only from a state most visitors never enter, which is the more serious half of the finding.
+  //
+  // Fixing the cause rather than the label: the nav lives where the thing it navigates lives, so it is
+  // present whether the aside is open or closed and the note card has nothing to cover for. The card's
+  // stepper is gone and `SidebarObjectNav` is now the "Back to Exhibit" footer only — one object nav in
+  // the reader at a time, which is also the half of V23 this ticket can honestly move.
+  //
+  // Stepping here does NOT carry the reading (the old popup stepper's `stepIntoReading` flip-and-read).
+  // A control that steps objects steps objects; auto-opening a note on the object it lands on is the
+  // note surface making a decision on the reader's behalf, and it is exactly what let a nav affordance
+  // and a note card fuse into one thing in the first place.
+  const canvasNav = $derived(!!siblings && siblings.length > 1 && !!currentId && !!onstep && navIdx >= 0);
   function stepObject(delta: number) {
     if (!siblings) return;
     const i = navIdx + delta;
     const target = siblings[i]; // bounds-checked below; the local narrows the indexed access for TS
     if (i < 0 || i >= siblings.length || !target) return;
-    stepIntoReading = true;
     onstep?.(target.id);
   }
   // NOTE (dba2): the prev/next carousel that occluded the image TOP-CENTER stays lifted out into the
-  // persistent top bar (ViewerShell) — its home for sidebar-open reading. The collapsed-mode popup's footer
-  // stepper is bottom-left, so it never re-creates that occlusion. ExhibitView drives both from `selectedObjectId`.
+  // persistent top bar (ViewerShell). The canvas nav added here anchors TOP-RIGHT, joining the same
+  // reserved `.canvas-chrome-right` flex row as the scale cue (Archie-40fe's model: chrome that shares
+  // one anchored row stacks by gap and cannot drift onto its neighbour), so it re-creates neither the
+  // top-center occlusion nor a collision with the readout.
 
   // Descriptive metadata (Archie-b50f) — the OBJECT's own entries, projected to display rows. It joins
   // the sidebar as a TAB beside Notes, not as another stacked slip: the sidebar is already spoken for,
@@ -248,12 +267,9 @@
   let prevCanvas: string | undefined;
   $effect(() => {
     const c = object.canvasId;
-    // Object actually changed: clear the selection — UNLESS a popup step asked to carry the reading, in
-    // which case land on the new object's first note (flip-and-read) so the collapsed-mode popup persists.
-    if (prevCanvas !== undefined && prevCanvas !== c) {
-      selected = stepIntoReading ? (annotations[0]?.id ?? null) : null;
-      stepIntoReading = false;
-    }
+    // Object actually changed: clear the selection. (The `stepIntoReading` carry that used to keep a
+    // note open across a popup-stepper step went with the popup stepper — Archie-01a6.)
+    if (prevCanvas !== undefined && prevCanvas !== c) selected = null;
     prevCanvas = c;
     armArrival = true; // every landing (first paint or carousel switch) arms the reveal; the
                        // canvas-ready onzoom below fires it once marks are actually on screen
@@ -381,15 +397,37 @@
     {#key object.canvasId}
       <Canvas source={object.source} tileSource={object.tileSource} canvasId={object.canvasId} annotations={canvasAnnotations} styleOf={pulsedStyleOf} frame={canvasFrame} focus={focusRegion} zoomOnSelect locator bind:selected onzoom={onCanvasZoom} {getFitOptions} />
     {/key}
-    <!-- Scale cue (Archie-93fd): the locator answers WHERE the viewport sits in the image; this answers
-         HOW FAR IN. Top-right of the CANVAS — V40: it used to sit inside `.reader`, the flex row holding
-         the canvas AND the notes aside, so `right:` measured from the aside's right edge and painted the
-         readout 264px inside the sidebar, on top of the object title. Its own comment already claimed the
-         canvas's top-right corner; it just wasn't in a container that could give it one. `main` is
-         already `position: relative`, so moving it in is the whole fix.
-         Quiet by design: small, muted, no button chrome — a readout, not an action. aria-live so a
-         screen-reader user hears it change without it stealing focus. -->
-    <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
+    <!-- Top-right canvas chrome group — the shape NarrativeReader already used (Archie-93fd/V80),
+         adopted here so the object nav and the scale cue share ONE anchored flex row instead of two
+         separately-positioned absolutes guessing offsets around each other. That is 40fe's reservation
+         model, and it is why adding nav to this surface cannot land on the readout.
+         V40 is the reason the group is inside `main`: the cue used to sit inside `.reader`, the flex row
+         holding the canvas AND the notes aside, so `right:` measured from the aside's right edge and
+         painted the readout 264px inside the sidebar, on top of the object title. -->
+    <div class="canvas-chrome-right">
+      {#if canvasNav && siblings}
+        <!-- Archie-01a6: the object nav, present in BOTH sidebar states, speaking its noun VISIBLY.
+             It used to read `‹ Prev  2 / 12  Next ›` on screen while announcing "Object 2 of 12" to a
+             screen reader — honest in one channel, mute in the other, beside a filmstrip and a
+             breadcrumb that also count things (V23/V65). Both channels are now the same string, from
+             `product-copy`, so they cannot drift apart again. -->
+        <nav class="canvas-nav" aria-label={navRegionName("object")}>
+          <button type="button" class="cn-step" disabled={navIdx <= 0}
+            onclick={() => stepObject(-1)}
+            aria-label={navStepName("object", "prev", siblings[navIdx - 1]?.label)}
+            title={navStepName("object", "prev", siblings[navIdx - 1]?.label)}><span aria-hidden="true">‹</span></button>
+          <span class="cn-pos">{navPosition(navIdx, siblings.length, "object")}</span>
+          <button type="button" class="cn-step" disabled={navIdx >= siblings.length - 1}
+            onclick={() => stepObject(1)}
+            aria-label={navStepName("object", "next", siblings[navIdx + 1]?.label)}
+            title={navStepName("object", "next", siblings[navIdx + 1]?.label)}><span aria-hidden="true">›</span></button>
+        </nav>
+      {/if}
+      <!-- Scale cue (Archie-93fd): the locator answers WHERE the viewport sits in the image; this
+           answers HOW FAR IN. Quiet by design: small, muted, no button chrome — a readout, not an
+           action. aria-live so a screen-reader user hears it change without it stealing focus. -->
+      <span class="scale-cue" aria-live="polite"><span class="sc-label">Zoom</span> {formatZoomRatio(zoomRatio)}</span>
+    </div>
   </main>
 
   {#if onreading && readings.length > 0}
@@ -399,10 +437,11 @@
   <!-- min/max match the aside's responsive clamp(320px … 560px) so a resize can't escape the designed
        reading-measure (#14) — the floor and ceiling are the same numbers the CSS clamp uses. -->
   <ResizeDivider side="right" label="notes" min={320} max={560} bind:width={asideWidth} bind:collapsed={asideCollapsed} oncommit={(s: AsideState) => saveAside(ASIDE_W_KEY, ASIDE_COLLAPSED_KEY, s)} />
-  <!-- Collapsed = the floating card is the sole note + nav surface, so the clipped aside (width:0,
-       overflow:hidden) must leave the a11y tree + tab order too — `inert` stops its note list and
-       SidebarObjectNav being announced or tabbed as invisible duplicates of the card (and its footer
-       stepper). The ResizeDivider is a sibling, so un-collapsing stays reachable. -->
+  <!-- Collapsed = the floating card is the sole note surface (object nav is canvas chrome in BOTH
+       states now — Archie-01a6), so the clipped aside (width:0, overflow:hidden) must leave the a11y
+       tree + tab order too: `inert` stops its note list and its "Back to Exhibit" footer being
+       announced or tabbed while invisible. The ResizeDivider is a sibling, so un-collapsing stays
+       reachable. -->
   <!-- The note list, ONE definition: it renders either inside the Notes tabpanel (this object has
        metadata) or bare under the plain "Notes · N" heading (it doesn't). A snippet, not a copy —
        the two branches must never drift. -->
@@ -411,13 +450,24 @@
       <p class="empty">No notes on this image yet.</p>
     {/if}
     <ul>
-      {#each annotations as it (it.id)}
+      {#each annotations as it, i (it.id)}
         <li onmouseenter={() => onnotehover?.(it.id ?? null)} onmouseleave={() => onnotehover?.(null)}>
           <!-- Solo the mark on FOCUS too, not just hover (#11): keyboard tab + touch-focus light the
                note's mark on the canvas before commit — the connect-note-to-region affordance was
-               hover-only, invisible to tablet/phone readers. Reuses the same hoverNote/MarkerStyle path. -->
-          <button class:active={it.id === selected} style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)} onfocus={() => onnotehover?.(it.id ?? null)} onblur={() => onnotehover?.(null)}>
-            <span class="card-preview">{stripMarkdown(commentOf(it))}</span>
+               hover-only, invisible to tablet/phone readers. Reuses the same hoverNote/MarkerStyle path.
+
+               Archie-dbbc / V60: this list is the INDEX. While its note is open the entry MARKS POSITION
+               and stops restating the text — measured, the selected card and the floating card showed
+               the same sentence in two type treatments ~900px apart, and expanding made it three. The
+               entry keeps everything only an index can give (reading colour, tags, where you are in the
+               list); what it drops is the copy of the prose that is, right now, fully legible on screen.
+               `aria-current` says the same thing to a screen reader that `.active` says to the eye. -->
+          <button class:active={it.id === selected} aria-current={it.id === selected ? "true" : undefined} style="border-left-color: {readingColourOf(it) ?? 'transparent'}" onclick={() => (selected = it.id)} onfocus={() => onnotehover?.(it.id ?? null)} onblur={() => onnotehover?.(null)}>
+            {#if it.id === selected}
+              <span class="card-open">{noteIndexOpenMark(i, annotations.length)}</span>
+            {:else}
+              <span class="card-preview">{stripMarkdown(commentOf(it))}</span>
+            {/if}
           </button>
           <!-- Card tags live OUTSIDE the card button (no nested buttons) and are their own facet
                triggers (Q-4): click one to open the finder pre-scoped with that tag. -->
@@ -472,37 +522,71 @@
       <h2 class="eyebrow">Notes · {annotations.length}</h2>
       {@render notesPanel()}
     {/if}
-    {#if objectNav && siblings && currentId}
-      <SidebarObjectNav {siblings} {currentId} onstep={(id) => onstep?.(id)} onoverview={() => onoverview?.()} />
+    {#if objectNav}
+      <SidebarObjectNav onoverview={() => onoverview?.()} />
     {/if}
   </aside>
 
   {#if current}
-    <!-- The standalone note card (shared NotePopup), floating on ANY marker/note selection — parity with
-         the narrative. The footer stepper (steps OBJECTS, flip-and-read via stepObject) appears only when
-         the sidebar is COLLAPSED; with it open, SidebarObjectNav owns object stepping, so the card carries
-         no stepper then — one object-nav at a time, no duplicate "Objects in this exhibit" landmark. -->
+    <!-- THE NOTE (shared NotePopup), floating on ANY marker/note selection — parity with the narrative.
+         It carries no stepper: object nav is canvas chrome now (Archie-01a6).
+
+         `hidden-behind-sheet` (Archie-dbbc / V60): while the reading sheet is open this card is the same
+         note a second time, sitting legibly behind a scrim — the third copy V60 counted.
+
+         PRIOR ART, and a deliberate deviation from it. anvil solved this with a MOUNT GUARD —
+         `app/src/embed/EmbeddedReader.svelte:670` renders the popup under `… && !detailOpen` and `:689`
+         renders the expanded Sidebar under `… && detailOpen`, so the two can never be mounted at once
+         and there is nothing to leak. That is the stronger form and it was the first choice here.
+
+         It is not available to Archie, because Archie has a focus contract anvil's embed does not:
+         `use:dialog` (dialog-a11y.ts) restores focus on close only `if (trigger && document.contains(
+         trigger))`, and the trigger is this card's ⤢. Under a mount guard the card unmounts in the same
+         flush the sheet mounts, so the action snapshots `<body>` and Escape out of the sheet strands a
+         keyboard reader — measured as note.spec.ts's V63 guard "Escape closes it and returns focus to
+         the ⤢ that opened it". Closing V60 by reopening V62 is not a trade worth making, and the
+         alternative (hand-rolling focus return in the host, past the shared action that exists to own
+         it) is worse than the CSS.
+
+         So: hidden, and hidden the way that gives the same OBSERVABLE guarantee. `display: none` takes
+         the card out of rendering AND out of the a11y tree — the ticket's defect was "in the DOM and
+         LEGIBLE", and e2e/note-surface.spec.ts asserts the count of VISIBLE `.note-body` elements is
+         exactly one. The wrapper is `display: contents` when shown, so it generates no box: `.note-pop`
+         keeps `.reader` as its containing block, its absolute anchoring is untouched, and the
+         `getFitOptions` reservation that queries `.note-pop` still measures the right rect. -->
+    <div class="note-slot" class:hidden-behind-sheet={readingSheet}>
     <NotePopup
       eyebrow={object.label}
       text={noteParts.text}
       media={noteParts.media}
       tags={tagsOf(current)}
       {geoCoord}
-      step={objectNav && siblings && asideCollapsed ? { index: navIdx, total: siblings.length, prevLabel: siblings[navIdx - 1]?.label, nextLabel: siblings[navIdx + 1]?.label, unit: "object", navLabel: "Objects in this exhibit" } : null}
       onclose={() => (selected = null)}
-      onexpand={() => { if (noteParts.text) readingSheet = { text: noteParts.text }; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }}
-      onstep={(d) => stepObject(d)}
+      onexpand={() => { if (noteParts.text) readingSheet = true; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }}
       onopenfinder={(t) => onopenfinder?.(t)}
       onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
     />
+    </div>
   {/if}
 
   {#if lightbox}
     <NoteLightbox media={lightbox.media} text={lightbox.text} index={lightbox.index} onclose={() => (lightbox = null)} />
   {/if}
 
-  {#if readingSheet}
-    <ReadingSheet text={readingSheet.text} onclose={() => (readingSheet = null)} />
+  {#if readingSheet && current}
+    <!-- The sheet is the SAME note at reading size: it takes the card's props, not a text snapshot. That
+         is what makes the sheet's header identical to the card's by construction (V64) and what stops
+         media/tags/geo vanishing on expand. -->
+    <ReadingSheet
+      eyebrow={object.label}
+      text={noteParts.text}
+      media={noteParts.media}
+      tags={tagsOf(current)}
+      {geoCoord}
+      onclose={() => (readingSheet = false)}
+      onopenfinder={(t) => onopenfinder?.(t)}
+      onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+    />
   {/if}
 </div>
 
@@ -511,12 +595,53 @@
      like quiet catalog entries on warm paper (right); a hushed callout echoes the selection. */
   .reader { position: relative; display: flex; height: 100vh; background: var(--surface-canvas); }
   main { position: relative; flex: 1; min-width: 0; background: var(--surface-canvas); }
-  /* Scale cue (Archie-93fd) — a canvas overlay, same anchoring strategy as .legend (absolute within
-     the reader's positioned container, top-aligned under the fixed top bar). Deliberately the
-     quietest thing on the canvas: no card/shadow/border like .legend or the note popup — just muted
-     mono text, low-contrast, easy to read past. */
-  .scale-cue {
+  /* Top-right canvas chrome group (ported from NarrativeReader, Archie-93fd/V80 — the two readers'
+     canvas chrome should read identically). One anchored flex row under the fixed top bar: members
+     stack by `gap`, so adding the object nav beside the readout cannot land ON it. `.legend` owns
+     top-left; this owns top-right. */
+  .canvas-chrome-right {
     position: absolute; z-index: 20; top: var(--topbar-h); right: var(--space-5);
+    display: flex; align-items: center; gap: var(--space-2);
+  }
+  /* Object nav (Archie-01a6) — a quiet canvas pill in the same warm-paper-over-dark language as the
+     narrative's "All items" escape. Louder than the readout beside it (it is an action, not a cue) and
+     quieter than the image. Tabular numerals so stepping never reflows the row, and connector-blue
+     (--accent-2) hover keeps the rationed orange for the focal signal.
+
+     LEGIBILITY over arbitrary imagery: `--surface-canvas-raised` is `#FDFCF5` — a fully OPAQUE plate,
+     not a translucent scrim. That is deliberate and it is the strongest of the corpus's four
+     techniques: clover-iiif's `PanelToggle` is the only thing it floats over a canvas and it is
+     likewise an opaque theme-coloured plate with a drop shadow, sidestepping contrast rather than
+     negotiating it (universalviewer, anvil and immarkus all use scrims and then need blur, borders or
+     text-shadow halos to rescue them). It also happens to be Archie's own existing idiom — `.to-index`,
+     `.scale-cue` and the note card are the same plate — so the nav needs no new mechanism and adds no
+     new failure mode at either luminance pole (dark Voynich parchment, near-white screenshots).
+     Contrast legibility in general is V42/Archie-de08 and is not this ticket; the obligation here is
+     only not to make it worse. */
+  .canvas-nav {
+    display: inline-flex; align-items: center; gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+    background: var(--surface-canvas-raised); border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lift-low);
+  }
+  .cn-step {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 28px; min-height: 28px; /* a real touch target, not a glyph's ink box (Fitts) */
+    background: none; border: none; padding: 0; cursor: pointer;
+    font-size: 1.05rem; line-height: 1; color: var(--ink-canvas-secondary);
+    border-radius: var(--radius-sm); transition: color 160ms ease;
+  }
+  .cn-step:hover:not(:disabled) { color: var(--accent-2); }
+  .cn-step:disabled { opacity: 0.32; cursor: default; }
+  .cn-step:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+  .cn-pos {
+    font-family: var(--font-ui), sans-serif; font-variant-numeric: tabular-nums;
+    font-size: var(--text-ui-sm); letter-spacing: 0.04em; color: var(--ink-canvas-secondary);
+    white-space: nowrap;
+  }
+  /* Scale cue (Archie-93fd) — deliberately the quietest thing in the group: no card/shadow/border like
+     .legend or the note popup — just muted mono text, low-contrast, easy to read past. */
+  .scale-cue {
     padding: var(--space-1) var(--space-2);
     font-family: var(--font-mono), monospace; font-size: 0.72rem; letter-spacing: 0.02em;
     color: var(--ink-canvas-muted);
@@ -590,6 +715,10 @@
   /* 3-line preview clamp + a per-card tag row — the documented scan contract (system.md §Craft Notes):
      a dense list scans by shape, and tags (the cross-cutting discovery affordance) surface on the card. */
   .card-preview { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  /* The open entry's position mark (Archie-dbbc / V60), in the index's own chrome voice — tracked
+     uppercase mono, never body prose. The switch of VOICE is the point: the entry stops looking like
+     a reading of the note and starts looking like a place in a list. */
+  .card-open { display: block; font-family: var(--font-ui); font-size: var(--text-ui-xs); font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--ink-paper-secondary); }
   .card-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); }
 
   /* Return to the exhibit's object grid (only shown for multi-object exhibits) — quiet soft button
@@ -611,4 +740,10 @@
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); background: var(--surface-paper-hover); border-radius: var(--radius-md); }
 
   /* The standalone note card's styles now live in the shared NotePopup.svelte component. */
+  /* The card's slot (Archie-dbbc / V60). `display: contents` generates no box, so the card keeps
+     `.reader` as its containing block and its absolute anchoring is unchanged; `display: none` takes
+     the whole card off screen and out of the a11y tree while the reading sheet — the SAME note,
+     larger — is open, without unmounting the ⤢ that `use:dialog` returns focus to. */
+  .note-slot { display: contents; }
+  .note-slot.hidden-behind-sheet { display: none; }
 </style>
