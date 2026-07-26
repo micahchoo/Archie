@@ -87,6 +87,45 @@ stays an empty label. Both agents are now adding explicit paths only. The fixtur
 in its report, which of its files landed inside `dca4215`, so a reviewer of that commit knows two
 hands are in it.
 
+### The fixture slice — FINISHED, and its report exists nowhere but here
+
+`ux/fixture-slice` = **`1cdf706`**, parent `49327c0`, not merged, not pushed. The agent's operating
+instructions forbid writing report files, so its findings came back as chat text only — which is why
+they are transcribed here rather than linked. **A sweep of the repo for a report file is correct and
+will find nothing.** Worth knowing before dispatching: an agent that cannot write files has a report
+with the lifetime of a conversation.
+
+Path set verified independently by the lead (`git diff --name-only 49327c0..ux/fixture-slice`), not
+taken from the agent: 36 paths, **0 outside the allowed set**. Gates, all run in its own worktree on
+port **4355** (confirmed free first, both runs logging `vite-node gen-published` + `astro build`,
+server killed after): `pnpm -r typecheck` 6/6 · viewer `check:svelte` 1522 files 0/0 · studio `check`
+1159 files 0/0 · viewer vitest 184/184 · studio vitest 934/934 · **viewer e2e 137/137**. `git status`
+empty after the e2e prebuild's regen, so the committed published tree matches a fresh generation.
+
+**The file partition, which is the thing a reviewer of the tangled branch needs:**
+
+| dock commit | fixture files swept into it |
+| --- | --- |
+| `dca4215` | `e2e/av-surface.spec.ts` (+82, the V49 gate), `fixtures/fixture-reach.test.ts` (+8) |
+| `96f3933` | `e2e/note-surface.spec.ts` (+85, both media-route tests) |
+| `b93785b` | none |
+
+Converse: **11 of dock's files** inside the fixture agent's `5252f69`.
+
+**`Archie-0cc6`'s premise is FALSE, and that is the finding.** The ticket says no fixture note is both
+expandable and media-bearing. Driving every object and every note in both readers, offline, against
+the built bundle: the sampler already had **two** — `si1`'s whole-object note (original sampler
+content, predating the ticket) and V53's `t=240,270` cue — each rendering a tile inside the open
+sheet. The voynich sweep found none, which is almost certainly the exhibit the ticket's own
+measurement was taken on. The route was reachable; only the assertion was missing. So: **no fixture
+added, two assertions added**, one per reader, because the guard is implemented twice.
+
+The set-difference check was **broken twice before it worked**, and the agent reported that rather
+than only the clean run: the first fed `comm` unsorted input; the second derived the allowed list's
+directory prefixes from the commit under test, which is tautologically empty for the prefixes holding
+32 of 36 paths. The run that counts states the allowed set independently — four literal filenames,
+two literal directory prefixes.
+
 ### ⚠ V49 HAS REGRESSED ON THE DOCKED BUILD — found by the gate `b135` asked for
 
 The best thing wave 1 has produced so far, and it is a *finding*, not a deliverable. `Archie-b135`
