@@ -113,6 +113,10 @@ it is a byte-for-byte directory comparison that writes nothing, and a plain buil
 differ is the check working, not failing. **`build.mjs` was the only instance in the repo.**
 
 **How to apply:**
+- This is one instance of a pattern with a second, unrelated-looking sibling in this repo (the
+  completeness check's `CONTRACTED_LABELS`); the general form — *a gate's reference point must not be
+  writable by the thing it gates* — is stated once in
+  `[[post-review-fixes-are-unreviewed]]`, with the detection question and the three fixes.
 - A build never moves a ratchet. If you add another size gate, the baseline write is opt-in from the
   start, with its own script name so moving it reads as an intentional line in review.
 - A diff that touches `bundle-size.json` deserves the same scrutiny as a diff that touches a test

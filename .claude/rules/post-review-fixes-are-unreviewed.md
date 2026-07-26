@@ -36,17 +36,34 @@ Every gate was green. `RESULT: PASS` either way.
 
 ## Three habits, each of which would have caught it alone
 
-**1. Assert the anchor is UNIQUE, not that it exists.** The patch was applied with a
-first-occurrence string replace whose anchor occurred **twice** — once as a `record()` label, once as
-the array entry — and it hit the wrong one. The guard in use was `assert old in s`, which proves the
-anchor *exists* and can never prove it is *unambiguous*. For any scripted edit:
+**1. Beware positional assumptions wearing the costume of a check.** A probe with an implicit scope
+answers a *narrower* question than the one you think you asked, and reports the narrow answer with the
+confidence of the broad one. Two independent instances, in the same review loop, on opposite sides of
+the same defect:
+
+| the probe | what it answers | what was assumed |
+| --- | --- | --- |
+| `assert old in s` before a first-occurrence replace | *does this exist* | *is this unique* |
+| `sed -n '890,905p'` to check a commit for strays | *is it here* | *is it anywhere* |
+
+The first put five labels in the wrong place. The second then read the guilty commit as clean, because
+the strays sat at line 878 — outside the window — which is how the defect got attributed to the wrong
+commit even during the audit *of that defect*. Neither probe was wrong about what it measured. Both
+were wrong about what they were taken to have shown.
+
+So, before trusting any probe: **name the question it actually answers, and check that it is the
+question you need.** A scope that is implicit — a line range, a first match, a single directory, one
+file extension, the head of a list — is the place to look.
+
+The worked example, because it is the one that recurs. For any scripted edit, existence is not enough:
 
 ```python
 assert s.count(old) == 1, f"anchor is ambiguous: {s.count(old)} occurrences"
 ```
 
 An ambiguous anchor plus "replace the first" is a coin toss that looks like a patch. This applies to
-`sed -i`, to `Edit` with a short `old_string`, and to any codemod.
+`sed -i`, to `Edit` with a short `old_string`, and to any codemod. The general form applies to
+`grep` over a line window, to `find` in one directory, and to a `head -n` you drew a conclusion from.
 
 **2. Reconcile every number you report against a number you actually read.** The report said
 "41/41 contracted labels". That number was never measured — it was inferred from the *hard-assertion*
@@ -64,6 +81,40 @@ The text after the em-dash is the assertion's `detail`, and it is a *label* — 
 diagnostic. That line was pasted into a status report as evidence of a pass. Grepping for
 `PASS|FAIL|RESULT` filters out exactly the field that carries the meaning.
 
+## A gate's reference point must not be writable by the thing it gates
+
+Stated once here because it now has **two independent instances in this codebase**, and they looked
+unrelated until the second one was red-greened.
+
+| the gate | what it measures | its reference | how the reference moved |
+| --- | --- | --- | --- |
+| `eagerGzKB` (`packages/archie-viewer/build.mjs`) | the entry's static-closure gz | `bundle-size.json` | `node build.mjs` REWROTE it — and that build is mandatory, because `dist/` is a committed artifact CI enforces |
+| the completeness check (`recipes/smoke.mjs`) | which contracted assertions ran | `CONTRACTED_LABELS` | a patch that moved five entries out of the array silently lowered the bar to 35 |
+
+Same trapdoor both times: **the gate is satisfiable by moving its own reference**, so it reports
+success at the moment it stops constraining anything. Worse in the first case, where the allowance is
+`max(10%, 10KB)` of the baseline — a bigger regression bought a bigger allowance, so the gate got
+*looser* the worse things got.
+
+Neither instance was a needle problem. Both metrics were correctly aimed and would have fired; they
+were switched off by their own bookkeeping.
+
+**How to spot it:** for any gate, ask *what writes the reference, and can the thing being gated reach
+that writer?* If the answer is yes, it is not a gate yet.
+
+**How to fix it, in order of preference:**
+
+1. **Derive the reference** instead of storing it, so there is nothing to move.
+2. **Make writing it a deliberate, separately-named act** — `node build.mjs --update`, surfaced as
+   `pnpm bundle:baseline`, so moving the baseline appears as an intentional line in review rather
+   than a side effect of building. See `[[archie-viewer-eager-closure]]`.
+3. **Add an independent invariant over the reference itself** where it must stay hand-maintained —
+   `auditOwnSource()` in `recipes/smoke.mjs` asserts no phantoms, no duplicates, no strays, and that
+   check is what catches a deleted array entry. Note the ordering that proves it is load-bearing: with
+   the historical splice reproduced, the completeness check **passed at 40/40** (the label was no
+   longer listed, so it was no longer required) while the invariant check failed. The second one is
+   the only thing that can see a reference shrinking.
+
 ## How to apply
 
 - **Post-review commits get the same treatment as pre-review ones.** Red-green the new assertion,
@@ -74,6 +125,14 @@ diagnostic. That line was pasted into a status report as evidence of a pass. Gre
   hand-maintained list beside derived data, verify the two agree *mechanically* — for `smoke.mjs`:
   every array entry is genuinely recorded (no phantoms), and every recorded label is either in the
   array or deliberately excluded (failure-only fixture guards, the completeness check itself).
+- **Noticing a failure mode and naming it is not the same as having changed the behaviour.** In the
+  same session that produced this rule, uncommitted work was destroyed twice by a `git checkout --`
+  meant to revert a red-green probe. After the first, "commit before probing" was written into a
+  status report as a lesson learned — and the second happened anyway, a few hours later, in the same
+  shape. What caught it was not the resolution; it was reading an output line that could not be true
+  (a `PASS` count that did not fit, and a missing assertion). **Treat a written lesson as a claim you
+  have not yet tested on yourself.** The habit that actually holds is a mechanical one — commit, then
+  probe — not an intention to remember.
 - **Prose that claims coverage is a claim about the check.** A doc paragraph saying "every row is
   covered now" is false the moment the list disagrees, and it is worst when it appears in the same
   commit that was supposed to make it true — the reader trusts it precisely because it looks
