@@ -34,7 +34,7 @@
 import { describe, it, expect } from "vitest";
 import { selectorOf, selectorBBox, shapeLabel, isWholeObjectFor, wholeObjectFlagOf, isV1Shape, parsePolygonPoints, type W3CAnnotation } from "@render/core";
 import { getLog } from "./sample-data.js";
-import { voynichPolygonNotes, voynichAvNotes } from "./voynich.js";
+import { voynichPolygonNotes, polygonSelectorValue, voynichAvNotes } from "./voynich.js";
 
 /** o9's native pixel dimensions (fixtures/voynich.ts:99) — the canvas the coverage test measures against. */
 const O9 = { w: 7925, h: 7268 };
@@ -63,6 +63,26 @@ describe("Archie-f4fb — the seed carries a polygon region, and it renders as o
   // surfaced in front of a reader. It is filed low BECAUSE the selector is implemented — this asserts
   // the seed reaches it, not that the feature works.
   const polygonsIn = (exhibitId: string) => selectorsOf(exhibitId).filter((s) => shapeLabel(s) === "Polygon");
+
+  /**
+   * The published selector for ONE NAMED fixture polygon, chosen by its own geometry.
+   *
+   * Not `.find(s => shapeLabel(s) === "Polygon")`, which the tests below used to say and which means
+   * "whichever polygon the log happens to hold first". That is stable here — `getLog` returns the bake's
+   * APPEND-ordered log, and the bake threads a seeded rng — but it is coupled to fixture ORDER rather
+   * than to fixture IDENTITY, so reordering `voynichPolygonNotes` would silently retarget the
+   * twelve-vertex assertion at the ten-vertex polygon and fail against correct data.
+   *
+   * That is the same class as the flake this file's studio twin shipped (`seed-carry.test.ts`, which DID
+   * read a nondeterministic order and failed 9 times in 20 against a correct tree). The twin's order was
+   * unstable; this one's is merely implicit. Both are fixed by naming what you mean.
+   */
+  const polygonNamed = (exhibitId: string, note: (typeof voynichPolygonNotes)[number]) => {
+    const want = polygonSelectorValue(note.points);
+    const hit = polygonsIn(exhibitId).find((s) => s.value === want);
+    expect(hit, `the published log carries no polygon matching ${note.objectId}`).toBeDefined();
+    return hit!;
+  };
 
   it("publishes BOTH polygons into the exhibits that carry both objects", () => {
     // The grid has every folio and the narrative carries the full set, so both polygons (o9's rosette,
@@ -104,7 +124,7 @@ describe("Archie-f4fb — the seed carries a polygon region, and it renders as o
     // `shapeLabel` only reads for the substring `<polygon`, so it alone would pass on markup the
     // renderer cannot use. `selectorBBox` runs the SAME `parsePolygonPoints` the overlay builder does,
     // and returns null on empty/NaN points — this is what makes the assertion about geometry.
-    const poly = selectorsOf("ex-voynich").find((s) => shapeLabel(s) === "Polygon")!;
+    const poly = polygonNamed("ex-voynich", voynichPolygonNotes[0]!);
     const box = selectorBBox(poly);
     expect(box, "the published polygon's points do not parse").not.toBeNull();
     expect(box!.w).toBeGreaterThan(0);
@@ -117,9 +137,13 @@ describe("Archie-f4fb — the seed carries a polygon region, and it renders as o
     // `parsePolygonPoints` is the parser that turns the markup into the points the `<polygon>` element
     // gets. A fixture that lost a vertex, or gained a `<path>`, fails here rather than in front of a
     // reader.
-    const poly = selectorsOf("ex-voynich").find((s) => shapeLabel(s) === "Polygon")!;
+    // Named, so "twelve" is a claim about the ROSETTE specifically. The o5 wheel has ten, and a
+    // positional `.find` would swap them silently if the fixture array were ever reordered.
+    const poly = polygonNamed("ex-voynich", voynichPolygonNotes[0]!);
     expect(isV1Shape(poly)).toBe(true);
     expect(parsePolygonPoints(poly.value)).toHaveLength(12);
+    // The second polygon is real geometry too — asserted here rather than left to the count above.
+    expect(parsePolygonPoints(polygonNamed("ex-voynich", voynichPolygonNotes[1]!).value)).toHaveLength(10);
   });
 
   it("is drawn as a REGION, not routed to the whole-object frame", () => {

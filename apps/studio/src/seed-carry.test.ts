@@ -29,13 +29,36 @@ describe("the Studio seed carries what the Viewer's bake carries", () => {
     // published demo shows. Comparing the VALUE is what would catch one side reformatting the points.
     // LITERAL counts, not `voynichPolygonNotes.length` — the grid seeds BOTH polygons, the o9-only
     // exhibit seeds one. Deriving either number from the fixture would make emptying it assert nothing.
+    //
+    // SORTED, AND THAT IS A BUG FIX, NOT A WEAKENING (2026-07-26). The first version of the two-polygon
+    // assertion compared the seeded values to the fixture array with `toEqual`, which is ORDER-SENSITIVE.
+    // It failed 9 times in 20 against a completely correct tree — a FALSE RED, and it reached `main`
+    // because four people each ran it once and a single sample of a coin flip looks like a pass.
+    //
+    // The cause, read from source rather than guessed at:
+    //   · `seededVoynich` calls `AnnotationSession.createNote`, which mints its record through
+    //     `newRecord` with NO seeded rng — so the ULID's random suffix is `Math.random` per run. (The
+    //     VIEWER's bake is different and deterministic: `buildVoynichLog` threads `seededRng(slugSeed)`
+    //     into `appendNew` for exactly this reason, ADR-0014 durable anchors.)
+    //   · `notes()` → `heads()` → `projectHeads` (`spine/heads.ts:52-59`) returns
+    //     `.sort((x, y) => cmp(x.logicalId, y.logicalId) || cmp(x.rev, y.rev))`.
+    // Two notes created in the same millisecond share a ULID time prefix, so the random suffix decides
+    // their order — a 50/50 flip on every run.
+    //
+    // Sorting both sides drops ONLY the ordering, which was never part of the claim. Every byte of every
+    // polygon is still compared, so this still answers *which* polygons, not merely how many — the
+    // property BLOCKER-1's fix exists for. A count, or a set-membership check, would not.
     const values = (slug: string) =>
       notesOf(slug)
         .map((r) => selectorOf(r as unknown as W3CAnnotation))
         .filter((s): s is W3CSelector => s !== null && shapeLabel(s) === "Polygon")
-        .map((s) => s.value);
+        .map((s) => s.value)
+        .sort(); // stable content key — the seed's head order is not deterministic (see above)
+    const expected = voynichPolygonNotes.map((n) => polygonSelectorValue(n.points)).sort();
     expect(values("voynich"), "the grid does not seed both polygons").toHaveLength(2);
-    expect(values("voynich")).toEqual(voynichPolygonNotes.map((n) => polygonSelectorValue(n.points)));
+    expect(values("voynich")).toEqual(expected);
+    // The o9-only exhibit: one polygon, and the RIGHT one. Single-element, so order cannot bite here —
+    // but it is asserted by VALUE rather than by count for the same reason as above.
     expect(values("voynich-rosettes"), "the o9-only exhibit seeds the wrong number").toHaveLength(1);
     expect(values("voynich-rosettes")[0]).toBe(polygonSelectorValue(voynichPolygonNotes[0]!.points));
   });
