@@ -143,7 +143,31 @@ branch cannot clobber them — but they need committing from there, by whoever o
 
 ## Next actions, ranked
 
-1. ~~Rebase, then merge this branch.~~ **DONE** — merged and on `origin/main`.
+1. **Rebase and merge — the P0 is STRANDED.** The strikethrough below refers to an *earlier* merge;
+   it is no longer the state. Measured at end of session 3: `git rev-list --left-right --count
+   main...HEAD` → **14 ahead, 2 behind**. The two unmerged commits are `7124ded` (the
+   `fs:allow-rename` P0 + its CI gate) and `b8ff174` (this handoff). **`main` today still ships a
+   desktop build that loses 100% of authored work**, and the fix has zero value where it sits. `main`
+   moved 10 → 14 during one session, so rebase against a freshly measured count, re-run
+   `pnpm capabilities:check` (bare node, cheap) plus the normal gates, and merge.
+
+   ~~Rebase, then merge this branch.~~ *(done for the pre-session-3 commits only.)*
+
+   The rest of the ranking, decided at the end of session 3:
+
+   | # | action | why it sits here |
+   |---|---|---|
+   | 2 | fix **`Archie-ce7a`**, and finish **P2-a** inside the same drive | desktop cannot import media at all — for this tool that is the product. One packaged drive (import folder → relaunch → media survives) proves the fix *and* re-runs the author→relaunch cycle on an uncontaminated origin, which is the piece the correction downgraded. |
+   | 3 | turn the desktop drive recipe into a **gate** | the systemic item, and it arguably outranks the remaining verification rows: two P0-class defects in one session were invisible to every existing gate, and `Archie-a09d` predicted exactly this hole. Recipe is mechanical — packaged build, clean profile, `WEBKIT_DISABLE_COMPOSITING_MODE=1`, **assert origin is `tauri_localhost_0`**, assert `library.json` non-empty and no 0-byte files. That last pair alone catches the rename defect on run 1. Size it under `xvfb` before committing to CI. |
+   | 4 | **Flatpak / `Archie-7e2e`** — `flatpak install --user flathub org.flatpak.Builder`, build from `src-tauri/flatpak` | deliberately *after* 2, so it tests a build that can actually import. This is the variable 9ece calls catastrophic: a wrong `defaultLibraryRoot()` under the sandbox means the app refuses to boot for every existing desktop user. |
+   | 5 | **P2-b**, the last ship-gating row | needs a pre-flip OPFS-canonical binary in a *scratch* worktree to author a real OPFS library, then boot current and watch the copy land with `migrated.json` written LAST and OPFS retained. |
+   | 6 | the library home says **"Living in this browser"** on desktop | one line, visible, belongs in whatever desktop commit lands next. |
+
+   The fix for 2 is scoped: `isTauri()` → `pickTauriFolder()` → walk the directory over the bridge →
+   construct `File`s with `webkitRelativePath` assigned, following `folder-drop.ts:42-45` rather than
+   inventing a third shape. Decide memory-on-a-large-folder **deliberately** — drop already
+   materialises whole files, so parity is defensible, but say so on purpose.
+
 2. **`Archie-9ece` — desktop verification (Critical). RUN, 2026-07-26. Found a P0 → `Archie-91e7`.**
 
    > **Read `Archie-91e7` before any desktop work.** The native build proved the desktop store could
@@ -154,8 +178,12 @@ branch cannot clobber them — but they need committing from there, by whoever o
    > header from "Retry save" to "Saved". `fs:allow-stat` was added alongside (the bridge calls
    > `fs.stat`); it is justified by code inspection, **not** independently red-greened.
    >
-   > **P2-a PASSES** after the fix — an authored, user-owned exhibit survived a full relaunch with
-   > zero 0-byte files. **P2-b was NOT run**: this machine's Jul-5 app-data has no OPFS library to
+   > **P2-a is PARTIAL, not a pass** (corrected later the same day — the original text here said it
+   > passed). Writes are re-proven on a properly packaged binary: `library.json` 21,606 bytes, zero
+   > 0-byte files. But the author→relaunch→survives *cycle* ran on `cargo build` binaries, whose
+   > frontend was the **main checkout's dev server on :5174** — a sibling's code. The store path is
+   > identical and the writes stand; the persistence cycle itself needs re-running packaged. Do that
+   > inside the `Archie-ce7a` drive (rank 2 above). **P2-b was NOT run**: this machine's Jul-5 app-data has no OPFS library to
    > migrate (its WebKit `storage/` holds only `salt`), so the precondition does not exist. Flatpak
    > remains untested — that is still `Archie-7e2e`.
    >
