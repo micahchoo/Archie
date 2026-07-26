@@ -106,7 +106,12 @@ function buildSamplerLog(slug: string): AnnotationLog {
   for (const n of [...samplerVideoNotes, ...samplerAudioNotes]) {
     ({ log } = appendNew(log, {
       target: { type: "SpecificResource", source: canvasIdFor(slug, n.objectId), selector: { type: "FragmentSelector", conformsTo: "http://www.w3.org/TR/media-frags/", value: `t=${n.t}` } },
-      body: [{ type: "TextualBody" as const, value: n.comment, purpose: "commenting" as const }],
+      // Tagging bodies alongside the comment (V53) — `SamplerTimeNote.tags` is read HERE and in
+      // `apps/studio/src/seed-data.ts`; a tag only one of them carries is a silent seed divergence.
+      body: [
+        { type: "TextualBody" as const, value: n.comment, purpose: "commenting" as const },
+        ...(n.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" as const })),
+      ],
       motivation: "commenting", lastEditor: author, now: ++now, rng,
     }));
   }

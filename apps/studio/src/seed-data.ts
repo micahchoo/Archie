@@ -161,7 +161,12 @@ function seededSampler(author: ClientId): AnnotationSession {
     const [start, end] = n.t.split(",").map(Number) as [number, number];
     s.createNote({
       target: timeSel(canvasIdFor(BASE, "sampler", n.objectId), start, end),
-      body: [{ type: "TextualBody", value: n.comment, purpose: "commenting" }],
+      // Tags carried here too (V53) — the other reader of `SamplerTimeNote.tags` is
+      // `apps/viewer/fixtures/sample-data.ts`. Same shape as the voynich AV loop above.
+      body: [
+        { type: "TextualBody", value: n.comment, purpose: "commenting" },
+        ...(n.tags ?? []).map((tg) => ({ type: "TextualBody" as const, value: tg, purpose: "tagging" })),
+      ],
     });
   }
   for (const n of samplerMediaNotes) {

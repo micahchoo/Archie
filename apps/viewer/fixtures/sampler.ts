@@ -81,6 +81,13 @@ export interface SamplerTimeNote {
   objectId: string;
   t: string; // "start,end" in seconds
   comment: string;
+  /** Tag values (purpose:tagging bodies). Added 2026-07-26 with the AV note-surface slice — see
+   *  `samplerAudioNotes`. CARRY CONTRACT: this field is read in TWO places and a new one must update
+   *  both, or the tag silently exists in one seed and not the other —
+   *  `apps/viewer/fixtures/sample-data.ts` (the published tree the Viewer reads) and
+   *  `apps/studio/src/seed-data.ts` (the Studio's seeded session). `voynichAvNotes` already carries
+   *  the same field and is the pattern both loops follow. */
+  tags?: string[];
 }
 export const samplerVideoNotes: SamplerTimeNote[] = [
   { objectId: "ex-sampler.sv1", t: "0,3", comment: "The title card fades in — the moment to frame for a cover still." },
@@ -93,6 +100,33 @@ export const samplerAudioNotes: SamplerTimeNote[] = [
   { objectId: "ex-sampler.sa1", t: "0,30", comment: "The recording opens: the page is read aloud, letter by letter." },
   { objectId: "ex-sampler.sa1", t: "45,80", comment: "A repeated cadence surfaces — a rhythm under the spoken marks." },
   { objectId: "ex-sampler.sa1", t: "120,160", comment: "Here the sounds cluster like labels, as if naming the drawings." },
+  // Two NEW notes (2026-07-26, Archie-7b86 / V53), appended rather than folded into the three above —
+  // `.claude/rules/test-fixtures.md`: never edit a shared fixture to serve one test. Each exists to make
+  // one AV note-surface path REACHABLE for the first time. Until now every AV note in every fixture was
+  // comment-only, so the tag chips and the media tiles on an AV note could not be exercised in either
+  // direction, and an unexercised path recorded as covered is how Archie-0cc6 got filed.
+  //
+  // The tagged one: its chips are honestly ABSENT until `ExhibitView` threads `onopenfinder` to
+  // MediaPlayer (escalated — MediaPlayer gates tags on that handler rather than shipping inert chips).
+  // Deliberately NO assertion on it yet; it would be vacuous today. The wire and its test land together.
+  {
+    objectId: "ex-sampler.sa1",
+    t: "180,220",
+    comment: "A passage worth finding again from elsewhere — the tags on this note are how you would.",
+    tags: ["cadence", "transcript"],
+  },
+  // The media one: the markdown image embed makes `splitNoteMedia` lift the picture out of the prose, so
+  // `NoteMedia` renders a clickable tile → `NoteLightbox`. Same idiom as `samplerMediaNotes` below, but
+  // on a TIME-RANGED note rather than a whole-object one, which is the case nothing covered. (The tile
+  // renders and is clickable whether or not the remote image arrives, so this is assertable in the
+  // hermetic e2e suite — a blocked image shows `.tile-failed` inside the same button.)
+  {
+    objectId: "ex-sampler.sa1",
+    t: "240,270",
+    comment:
+      "The passage names a folio; the folio itself is held here beside it. " +
+      `![f1r — the folio this passage names](${NOTE_IMAGE})`,
+  },
 ];
 
 // A WHOLE-OBJECT note that CARRIES MEDIA: the markdown image embed makes render-core's splitNoteMedia
