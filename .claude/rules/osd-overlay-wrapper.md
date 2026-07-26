@@ -32,6 +32,26 @@ Measured: the region's bbox was byte-identical after one click and after two, zo
 **The diagnostic signature:** `shadowRoot.elementFromPoint(cx, cy)` over a region returns a bare
 unnamed `DIV`. If you see that, a wrapper is shielding the geometry.
 
+**Scope: that signature is the DOM-overlay renderer's (`read-mount` — the embed). It does NOT hold on
+the viewer's Annotorious/WebGL renderer (`createMount`).** Measured 2026-07-25 against the built
+viewer bundle with `neutraliseOverlayWrapper` forced to write `pointer-events: auto`:
+`elementsFromPoint` over a mark returns `CANVAS.a9s-gl-canvas > DIV. > DIV. > DIV.openseadragon-canvas`
+— Annotorious paints to a WebGL canvas that stacks **above** OSD's overlay wrappers, so on that
+renderer no wrapper can become the topmost hit target and the bare-`DIV` signature can never appear.
+A reader who runs the hit test on the viewer and sees the geometry would wrongly conclude "no wrapper
+bug here" from a probe that is structurally incapable of reporting one.
+
+`neutraliseOverlayWrapper` is still called on the viewer and is still correct — a wrapper left at
+`auto` is a latent lid if the stacking ever changes — but the thing that *proves* it there is the
+**computed style** of `#overlay-wrapper-archie-selection-halo` (`apps/viewer/e2e/selection.spec.ts:76`),
+not a hit test. Making the GL layer itself `pointer-events: none` is likewise a no-op on the viewer:
+Annotorious binds to an ancestor and hit-tests in its own geometry model, so a real click still lands
+on the right mark. (Measured — an injection doing exactly that stayed green, correctly: it has no
+user-visible effect. What *does* go red when the click seam is genuinely cut is
+`selection.spec.ts:96`.)
+
+So: **`recipes/smoke.mjs` for the embed, the wrapper's computed style for the viewer.**
+
 ## Two halves, and each fails alone
 
 Proven by disabling one at a time against the built bundle:

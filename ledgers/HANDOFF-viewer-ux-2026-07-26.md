@@ -1,8 +1,8 @@
 # HANDOFF — Viewer UX, third wave (2026-07-26)
 
 Worktree `.claude/worktrees/chrome-occlusion`. **Everything below is MERGED AND PUSHED to `main`**
-(unlike the two prior handoffs, which described unmerged branches). CI green through `4e21416`;
-`c903371` was still running at write time.
+(unlike the two prior handoffs, which described unmerged branches). `main` is at **`85c8ba5`**,
+CI green.
 
 Supersedes nothing — `HANDOFF-viewer-ux-2026-07-25b.md` stays accurate for the second wave.
 
@@ -15,8 +15,34 @@ Supersedes nothing — `HANDOFF-viewer-ux-2026-07-25b.md` stays accurate for the
 | `4df71ee` | **Archie-b681** — the embed ships attribution, licence, metadata (V105) |
 | `4e21416` | **Archie-67b6** — the note rung resolves (V100) |
 | `c903371` | **Archie-99b1** — the address writes every rung (V101/V24/V84/V52) |
+| `532ebdc` | **Archie-3ea1** — the cite panel (V102/V106) |
+| `85c8ba5` | publish bakes REAL canvas ids; the committed zip re-exported from the repaired tree |
 
-Tickets closed: `b681`, `67b6`, `99b1`.
+Tickets closed: `b681`, `67b6`, `99b1`, `3ea1`.
+
+## `85c8ba5` — the working-store namespace was being published
+
+`WORKING_IRI_BASE` (`https://archie.demo/`) is the Studio's internal identifier namespace and its
+own doc says it is "never published". It was in fact the base **every** publish sink baked, so every
+deployed site carried manifest ids, canvas ids and annotation targets on a domain nobody owns, and
+ADR-0021's cite ladder resolved to nothing. Nothing caught it because the tree was internally
+CONSISTENT — ids matched targets, so every round-trip test passed.
+
+The rule now (`apps/studio/src/deploy/remembered.ts`, `publishBaseFor`): a published id says where
+the thing actually lives, or says nothing — never a placeholder.
+
+- **deploying** → `pagesUrlFor(owner, repo)`, computed BEFORE staging and passed explicitly
+- **published before** → that library's remembered live URL
+- **never deployed** → `""`, i.e. relative ids (`voynich/canvas/o1`)
+
+Relative is the honest answer for a tree with no destination yet: it is self-contained and correct
+wherever it lands, and a later deploy re-mints every id — including annotation targets, via
+`rebaseCanvasId` — which is what makes changing the base non-destructive at all.
+
+The committed `apps/viewer/libraries/archie-library.archie.zip` was re-exported from the repaired
+tree by the new `apps/viewer/scripts/reexport-library-zip.mts`: **3 → 87 inline annotations, 185
+records**. A committed artifact does not update itself; the script exists so the next model change
+has an inverse to run.
 
 ## The big one: publishLibrary was dropping every annotation on a base change
 
@@ -87,19 +113,116 @@ islands stay ignorant of the address grammar; `ExhibitView` alone decides preced
 One interaction to preserve: the writer **yields** to V4's honest-degrade path. While the arrival
 chrome explains a missing target, `normalizeAddressToExhibit` owns the bar.
 
-## Next
+## STATE AS OF THE HANDOFF REFRESH — wave 1 is DONE and UNMERGED
 
-1. **`Archie-3ea1`** — the cite panel (link / citation / Content State at equal weight). Now
-   unblocked and the audit's headline finding. Its link grain must READ `location.hash`, never
-   re-derive it. Must be a DIALOG (`ReadingSheet` shape, `dialog-a11y.ts`) — a floating panel over
-   the canvas is V48 again under a new name. Prior art to read first: `quire`
-   `packages/11ty/_includes/components/citation/`; `encodeContentState`/`decodeContentState` already
-   exist unused in `url/deeplink.ts`.
-2. `Archie-dbbc`/`01a6` (one note surface), then `0d6c`/`c5cb` (narrative scroll coupling).
-3. `Archie-f90d` before `c314` (embed contract, then parity).
-4. `Archie-7b86`'s remainder: V50 (waveform-as-canvas — a NEW dependency, so it trips
-   `.claude/rules/viewer-optimizedeps-bare-includes.md`) and V53's six.
-5. Move the hand-driven canvas assertions onto `screenshots` now that it's proven offline-capable.
+`main` is still `85c8ba5`. **Three branches sit finished on top of it, none merged, none pushed.**
+Verified from the coordinator, not taken on report:
+
+| branch | SHA | commits | gates as reported by its impl agent |
+| --- | --- | --- | --- |
+| `ux/note-surface` | `cd9b33f` | 2 | svelte-check 1518 0/0 · typecheck 7/7 · vitest 176 · **e2e 85 pass / 0 fail / 0 skip** |
+| `ux/offline-canvas` | `109d394` | 2 | e2e 74 pass (three clean runs) · vitest 157 · typecheck clean |
+| `ux/embed-parity` | `8e949c8` | 5 | archie-viewer 180/180 · render-core 1194/1194 · smoke 36/36 · typecheck 7/7 · check:svelte 1513 0/0 |
+
+**Independently verified here (do not redo):**
+
+- All three `merge-tree` **CLEAN** against `main`.
+- **Zero** pairwise file overlap: note-surface 12 files, offline-canvas 5, embed-parity 56, empty
+  intersections in all three pairs. The territory split held exactly.
+- `bundle-size.json` on `ux/embed-parity` is blob `6acd6b6` — **byte-identical to `85c8ba5`'s**. The
+  pre-branch floor was carried forward, not re-anchored. This is the check that matters most on that
+  branch, because of the trapdoor below.
+
+**Reviewed:** note-surface and offline-canvas each went through a full impl+reviewer round.
+**NOT reviewed:** `ux/embed-parity`. A reviewer was dispatched and **stopped by the user before it
+produced anything**. Its brief survives at `/tmp/rev-embed-parity-brief.md` — seven items, the two
+blocking ones being (1) is the smoke MUST-label completeness check a hand-maintained literal list or
+a tautology derived from the same source as the labels, and (2) does the new V56 assertion drive
+*pick a reading THEN step objects*, the order that was actually broken, rather than re-picking after
+stepping (which tests nothing). **Treat the embed slice as unverified until someone answers those.**
+
+## Uncommitted work that must ride along with the merge
+
+In `.claude/worktrees/merge-main`, not on any branch:
+
+- `ledgers/HANDOFF-viewer-ux-2026-07-26.md` (this file)
+- `.claude/rules/viewer-e2e-shared-port.md` — new
+- `.claude/rules/osd-overlay-wrapper.md` — amended to scope the bare-`DIV` `elementFromPoint`
+  signature to the DOM-overlay renderer (the embed). It does **not** hold on the viewer, where
+  Annotorious's `canvas.a9s-gl-canvas` stacks above OSD's wrappers. Viewer-side, check the wrapper's
+  computed style instead.
+- `.claude/rules/playwright-count-does-not-wait.md` — new, deliberately narrowed to `count()` **after
+  a navigation**; post-action `count()` was attacked at 1x/6x/20x throttle and read zero in 0 of 18
+  trials.
+
+`ux/embed-parity` additionally carries its own `vitest-css-id-empty-string.md` and an eager-closure
+rule amendment.
+
+## The trapdoor found this session — read before touching the bundle ratchet
+
+`packages/archie-viewer/build.mjs` wrote `bundle-size.json` **unconditionally at the end of every
+non-`--check` run**. `--check` itself is innocent. Proved red-green-red:
+
+```
+A. leak + committed baseline:  FAIL eager 36 → 270.5KB (Δ +234.5, allowed +10.0)  exit 1
+B. node build.mjs            → baseline silently rewritten to 270.5
+C. same leak, same command:    ok   eager 270.5 → 270.5KB (Δ +0, allowed +27.1)   exit 0
+```
+
+The trigger is `pnpm build` at the repo root (`pnpm -r build` reaches it), and `dist/` is a committed
+CDN artifact CI enforces — so the rebuild is *mandatory*, i.e. the bypass sat on the happy path. Note
+C's allowance is **looser** than A's: `allowed = max(base * 0.1, 10)`, so a rewritten baseline raises
+the ceiling it is measured against. Fixed on `ux/embed-parity` (write gated behind `--update`, exposed
+as `pnpm bundle:baseline`); allowance held at +10.0. Repo-wide sweep found exactly one instance — the
+root ratchet and `sync-dist:check` are clean, so don't redo that sweep.
+
+## Wave 2 — not started, unblocks the moment wave 1 merges
+
+- `0d6c` + `c5cb` — narrative scroll coupling. Collides with `note-surface` on `NarrativeReader` and
+  `ExhibitView`. `c5cb` must land WITH `0d6c`: once the spine is an input device, hiding it silently
+  removes the interaction the mode is named for. **Open design question, never ruled on by the user:**
+  prior art does not support the ticket's premise — scrollama has no reentrancy guard, and all three
+  corpus systems dodge the problem architecturally rather than solving it. Recommendation on the table
+  was: keep IntersectionObserver, port quire's `goToFigureState` one-function shape, and build the
+  guard as **acknowledged original design** with no corpus precedent claimed.
+- `7b86`'s V53 — the AV reader's six dropped affordances. Collides with `note-surface` on
+  `NotePopup`/`ReadingSheet`, which it must consume in their NEW shape. Brief backbone at
+  `/tmp/av-surface-prior-art.md`. **V50 deferred** — the ticket's premise that wavesurfer.js is
+  already a dependency is FALSE, so it is a new viewer dep and trips
+  `.claude/rules/viewer-optimizedeps-bare-includes.md`.
+
+## Ticket arithmetic — the map cannot close
+
+Started at **7** open, now **18**. Eleven were filed this session; every one is a thing that was
+already true and unrecorded, not new scope: `9eeb`, `de08`, `f4fb`, `ecf4`, `b135`, `1820`, `d6e9`,
+`9838`, `5185`, `c30a`, `0cc6`. Four are ready to close on merge (`dbbc`, `01a6`, `f90d`, `c314`).
+
+Three filed findings have full write-ups on disk: `/tmp/b1-media-route.md` (the `onmedia` guard is
+correct, unfalsifiable, and on a route **no fixture can reach** — no note is both expandable and
+media-bearing, since a note needs `text` to show the ⤢), `/tmp/v48-tall-regions.md` (chrome-clearance
+reservation is horizontal-only and **structurally** cannot clear a height-constrained region;
+`fitBoundsRect` never touches `y`/`h`; 2 of 67 halo notes offend, ratcheted at today's two),
+`/tmp/flip-and-read.md` (`stepIntoReading` removal recorded as a decision, with the one test to invert
+if it should be reversed).
+
+Independent of all that, **viewer-ux cannot fully close**: V103/V104 depend on `Archie-a5b1`, which
+lives on `map:dc-metadata` and is open. State that plainly at close time rather than counting it done.
+
+## The session's dominant lesson, for whoever picks this up
+
+Nearly every wrong turn was **a measurement that looked valid and wasn't**, and the false-*green*
+direction is the dangerous one because nothing prompts you to investigate a pass. Catalogued: e2e runs
+reusing a sibling worktree's server (both directions); a reviewer's own leftover `astro preview`
+reporting an **injected** assertion as passing; `Locator.count()` after `goto` skipping two tests into
+silent green while the fixture was fine; a sweep at `slice(0,10)` tuned only against a false green;
+five bad prior-art citations; a landmark assertion **I** wrote that was green pre-fix because two
+different `<nav>`s carried the same accessible name.
+
+Two standards adopted mid-session and worth keeping: verify a file with `git hash-object` against
+HEAD's blob rather than trusting `git status` clean, and prefer **self-validating measurements** —
+values only producible against the intended code.
+
+## Gates
 
 ## Gates
 
@@ -107,15 +230,19 @@ chrome explains a missing target, `normalizeAddressToExhibit` owns the bar.
 pnpm --filter @archie/viewer run check:svelte     # 0/0
 pnpm --filter @archie/studio run check            # 0/0
 pnpm -r run typecheck                             # TS7; never bare `tsc`
-cd apps/viewer && pnpm exec vitest run            # 157
-cd apps/studio && pnpm exec vitest run            # 925
-cd packages/render-core && pnpm exec vitest run   # 1178
-cd packages/render-mount && pnpm exec vitest run  # 207
-cd packages/archie-viewer && pnpm exec vitest run # 138
+cd apps/viewer && pnpm exec vitest run            # per-app; the ROOT binary fails rune tests
+cd apps/studio && pnpm exec vitest run
+cd packages/render-core && pnpm exec vitest run
+cd packages/render-mount && pnpm exec vitest run
+cd packages/archie-viewer && pnpm exec vitest run
 node recipes/smoke.mjs                            # 15/15
-pnpm --filter @archie/viewer run e2e              # 53
-cd packages/archie-viewer && node build.mjs --check   # eager 36KB gz
+pnpm --filter @archie/viewer run e2e              # 59
+pnpm --filter @archie/studio run e2e              # 8; needs --config e2e/playwright.config.ts
+cd packages/archie-viewer && node build.mjs --check   # eager 36.1KB / total 266.4KB gz
 ```
+
+At `85c8ba5`: **2621+ unit tests**, 59 viewer e2e, 8 studio e2e, smoke 15/15, svelte-check 0/0 in
+both apps, TS7 clean.
 
 **Two traps that each cost a wrong measurement this session:**
 
