@@ -7,9 +7,30 @@
   // Two read surfaces share that one `activeIdx`: the sequential transcript SPINE (right) and a
   // temporal MAP — a marker strip under the media showing WHERE on the recording each note falls
   // (read-only mirror of the Studio annotation timeline; HANDOFF "AV affordance pareto-hybrid").
-  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
+  //
+  // V53 (Archie-7b86) — THE READING SURFACE DOES NOT KNOW WHAT MEDIA IT IS READING.
+  //
+  // This surface used to render an authored note as a bare `{c.text}` string in the spine and stop
+  // there: no note card, no reading sheet, no media tiles, no live cites, and a resize handle on the
+  // image reader's aside but not on this one. The corpus is unanimous that this asymmetry is a defect
+  // rather than a legitimate divergence — every multi-media viewer swaps the PAINTING ENGINE by media
+  // type and keeps the annotation reading surface identical:
+  //   · clover-iiif `src/components/Viewer/Viewer/Content.tsx` — `<Painting … isMedia={isAudioVideo}>`
+  //     (:133-138) carries the media flag; `<InformationPanel …>` (:178-186) is handed seven props and
+  //     NOT one of them is the media flag. Verified in the file 2026-07-26.
+  //   · mirador `src/components/WindowSideBarAnnotationsPanel.jsx:14-42` — the reading panel's whole
+  //     signature is `{ annotationCount, canvasIds, windowId, id }`; the media branch lives in
+  //     `PrimaryWindow.jsx:46-70`, on the canvas alone.
+  // So the note surface, the sheet, the lightbox and the rich prose renderer are shared components
+  // here, not re-implementations: ONE note renderer (Archie-c982/dbbc), reached from a temporal spine.
+  import { parseMediaFragment, activeNoteIndex, transcriptTextOf, splitNoteMedia, stripMarkdown, tagsOfAnnotation as tagsOf, geoOf, geoCenter, formatLngLat, type NoteMediaItem, type RightsFields, type W3CAnnotation, type TimeRange } from "@render/core";
+  import ResizeDivider from "@render/svelte/ResizeDivider.svelte";
   import { clampSeekStart } from "../av-landing.js";
+  import { loadAsideWidth, saveAside, type AsideState } from "../aside-persistence.js";
   import Credit from "./Credit.svelte";
+  import NoteLightbox from "./NoteLightbox.svelte";
+  import NotePopup from "./NotePopup.svelte";
+  import ReadingSheet from "./ReadingSheet.svelte";
   import SidebarObjectNav from "./SidebarObjectNav.svelte";
 
   let {
@@ -23,6 +44,7 @@
     currentId,
     onstep,
     onoverview,
+    onopenfinder,
   }: {
     object: { source: string; label: string; mediaType?: "image" | "sound" | "video"; duration?: number };
     annotations?: W3CAnnotation[];
@@ -48,6 +70,16 @@
     currentId?: string;
     onstep?: (id: string) => void;
     onoverview?: () => void;
+    /** A tag chip on the open note was clicked (Q-4) — open the finder pre-scoped with that tag.
+     *
+     *  DELIBERATELY OPTIONAL AND GATED. `NotePopup` renders every tag as a `<button>` whose click calls
+     *  `onopenfinder?.(t)`, so handing it tags with no handler wired would ship a control that renders
+     *  and does nothing — the AV note-list row's exact defect, and the `oncancel` shape
+     *  `.claude/rules/svelte-no-typecheck-net.md` records (typed, unbound, statically silent). So the
+     *  tags below are passed ONLY when this is wired; until `ExhibitView` threads it, an AV note's tags
+     *  are honestly absent rather than dishonestly inert. (No fixture AV note carries tags today, so
+     *  this path is currently unexercised either way — recorded rather than inferred.) */
+    onopenfinder?: (tag: string) => void;
   } = $props();
 
   const objectNav = $derived(
@@ -122,6 +154,85 @@
       .map((c) => ({ id: c.id, box: c.box!, active: cues[activeIdx]?.id === c.id })),
   );
 
+  // ---- V53: THE NOTE (the surface this player had no way to reach) ----------------------------
+  //
+  // `selected` is the note the reader OPENED — deliberately a different state from `activeIdx`, the cue
+  // the playhead is inside. Playback must never open a card: that would be the note surface deciding on
+  // the reader's behalf, which is the same failure Archie-01a6 named when a nav affordance and a note
+  // card fused. Selection is explicit-click only, and it survives playback moving on.
+  //
+  // ONE CLICK, BOTH MOTIONS — and this is parity, not invention. `Reader.svelte:473` gives a list entry
+  // a single `onclick={() => (selected = it.id)}`, and because `selected` is bound into `Canvas` with
+  // `zoomOnSelect`, that one click BOTH travels the viewport to the note and opens it. The temporal
+  // analogue of "travel the viewport" is "seek", so a cue row does both here for the same reason.
+  // The corpus splits on this and the split is about PURPOSE, not media: clover-iiif's transcript cue
+  // seeks on click and offers nothing to open (`.../InformationPanel/Annotation/VTT/Cue.tsx:121-127`
+  // — `video.pause(); video.currentTime = start; video.play()`), while osd-audio-video's annotation
+  // list separates them — the card body selects (`audio-canvas.html:598-603` → `selectAnnotation`) and
+  // a dedicated `▶ Play` button seeks (`:583-596`). Archie's spine rows are BOTH: transcript lines you
+  // follow along, and authored notes with cites and media. Doing both from the one row is what keeps
+  // the follow-along click the hint already promises while making the note reachable at all.
+  let selected = $state<string | null>(null);
+  let readingSheet = $state(false);
+  let lightbox = $state<{ media: NoteMediaItem[]; text: string; index: number } | null>(null);
+
+  const current = $derived(annotations.find((a) => a.id === selected));
+  // `transcriptTextOf`, NOT `commentOfAnnotation` — and the difference is load-bearing on THIS surface.
+  // A transcript-imported cue's body carries `purpose: "supplementing"` (`av/transcript.ts:70`), which
+  // `commentOfAnnotation` does not match, so it would render every imported cue as "(untitled)".
+  // `transcriptTextOf` joins all non-tagging bodies, so it reads an authored comment and an imported
+  // cue alike — the same read the spine already uses, so the card and the line cannot disagree.
+  const noteParts = $derived(
+    current ? splitNoteMedia(transcriptTextOf(current)) : { media: [] as NoteMediaItem[], text: "" },
+  );
+  const geoCoord = $derived.by(() => {
+    if (!current) return null;
+    const g = geoOf(current);
+    return g ? formatLngLat(geoCenter(g)) : null;
+  });
+  function openNote(id: string) {
+    selected = id;
+  }
+
+  // Escape LADDER (V26/V25's shape, ported): this surface had NO key handler at all, so Escape did
+  // nothing here even though the image reader walks a reader out level by level. Rungs, innermost first:
+  //   1. a note is open → close it
+  //   2. otherwise      → up a level
+  // Reader's middle rung ("leave the canvas") has no analogue: there is no OpenSeadragon here holding
+  // the arrow keys, so there is nothing to hand focus back from.
+  //
+  // "Up a level" is `onback` OR `onoverview`, and taking both is what makes the ladder real rather than
+  // decorative. The two AV call sites wire DIFFERENT escapes: the narrative-index player gets `onback`
+  // (return to the index) and the grid player gets `onoverview` (return to the object grid) — see the
+  // two `<MediaPlayerLazy.current …>` instances in ExhibitView. Binding only `onback` would leave the
+  // grid player — the ordinary way a reader meets an AV object — with an Escape that does nothing, which
+  // is V26's exact finding on the image reader ("measured, still `#/voynich`, still Object 2 of 12").
+  const escapeUp = $derived(onback ?? onoverview);
+  function onkey(e: KeyboardEvent) {
+    if (lightbox || readingSheet) return; // those surfaces own Esc while open (use:dialog)
+    if (e.key !== "Escape") return;
+    if (selected !== null) { selected = null; e.preventDefault(); return; }
+    if (escapeUp) { escapeUp(); e.preventDefault(); }
+  }
+
+  // Resizable transcript aside (V53) — clover-iiif is the direct donor and did NOT build a second panel
+  // for AV: the VTT transcript renders in the very same aside as the image annotation list, and that
+  // aside carries a drag handle with pointer capture and a 20–60% clamp
+  // (`.../Viewer/Viewer/Content.tsx:97-118`, verified 2026-07-26).
+  //
+  // COLLAPSE IS DELIBERATELY WITHHELD, and this is the one place this surface must NOT copy the image
+  // reader. `SidebarObjectNav` — the AV object nav — lives INSIDE this aside, because an AV object has
+  // no canvas chrome to host it (the note-surface slice's finding). A collapsible aside would therefore
+  // take the object nav away in the collapsed state: V65's exact defect, re-created here by a fix for
+  // V53. `ResizeDivider` already models this — `collapsible={false}` exists for Archie-b671's docked
+  // note editor, "resizable but NOT minimizable" — so the withholding is the component's own idiom, not
+  // a local exception. The `.timeline` strip is what answers hyperaudio-lite's collapse principle
+  // (`js/hyperaudio-lite.js:648-664`: hiding the transcript obliges you to re-home the position signal):
+  // it lives in `main`, so narrowing the spine never costs the reader their place in the recording.
+  const ASIDE_W_KEY = "archie.avAsideWidth.v1";
+  const ASIDE_COLLAPSED_KEY = "archie.avAsideCollapsed.v1";
+  let asideWidth = $state<number | null>(loadAsideWidth(ASIDE_W_KEY));
+
   const isVideo = $derived(object.mediaType === "video");
   // Travel the recording to a moment and play from there — the one motion both read surfaces share
   // (a transcript line, or a mark on the strip). Clamped so a stray click on the track can't overrun.
@@ -170,6 +281,8 @@
   }
 </script>
 
+<svelte:window onkeydown={onkey} />
+
 <div class="player" class:video={isVideo}>
   <!-- Escape-out (ADR-0016 §137/§223): an AV object opened from the narrative index returns to that
        index. Canvas-relative chrome, sibling to the OSD Reader's .to-read/.to-index escapes — present
@@ -213,6 +326,39 @@
           <audio bind:this={mediaEl} src={object.source} controls onerror={() => (mediaError = true)} onloadedmetadata={onMeta} onplay={() => (playing = true)} onpause={() => (playing = false)} ontimeupdate={() => (currentTime = mediaEl?.currentTime ?? 0)}></audio>
         </div>
       {/if}
+
+      <!-- THE NOTE (shared NotePopup), floating on any cue / whole-track selection — the same component,
+           at the same size, as the image reader's card. Nothing about it is AV-specific; what reaches it
+           is (a temporal note instead of a spatial one), which is the corpus's whole point.
+
+           IT IS ANCHORED INSIDE `.media-region`, NOT `.player`, AND THAT IS THE OCCLUSION FIX. `.note-pop`
+           is `position: absolute; left: …; bottom: calc(var(--strip-h) + …)` and takes its box from the
+           nearest positioned ancestor. `.player` is positioned, so mounting the card as its child would
+           have parked it on the `.timeline` — the temporal map is `main`'s LAST child, so the card's
+           bottom-left is exactly where the map is. That is V49's defect (the map shipped fully covered by
+           the item strip) re-created by the fix for V53. `.media-region` is already `position: relative`
+           and already sits ABOVE the map in the column, so anchoring here reserves the map structurally
+           rather than by a magic offset — Archie-40fe's model.
+
+           `--strip-h: 0px` on the slot for the same reason: `.player` already takes the filmstrip out of
+           the column with its own `padding-bottom`, and `.media-region` ends above that padding. Leaving
+           the card's own strip reservation in place would double-count it and float the card into the
+           middle of the picture. -->
+      {#if current}
+        <div class="note-slot" class:hidden-behind-sheet={readingSheet}>
+          <NotePopup
+            eyebrow={object.label}
+            text={noteParts.text}
+            media={noteParts.media}
+            tags={onopenfinder ? tagsOf(current) : []}
+            {geoCoord}
+            onclose={() => (selected = null)}
+            onexpand={() => { if (noteParts.text) readingSheet = true; else if (noteParts.media.length) lightbox = { media: noteParts.media, text: noteParts.text, index: 0 }; }}
+            onopenfinder={(t) => onopenfinder?.(t)}
+            onmedia={(idx) => (lightbox = { media: noteParts.media, text: noteParts.text, index: idx })}
+          />
+        </div>
+      {/if}
     </div>
 
     <!-- Temporal MAP: where each transcript note falls across the recording's length — a read-only
@@ -228,7 +374,7 @@
               style={`left:${(c.range.start / (dur || 1)) * 100}%; width:${Math.max(0.8, (((c.range.end ?? c.range.start) - c.range.start) / (dur || 1)) * 100)}%`}
               title={`${fmt(c.range.start)} · ${c.text}`}
               aria-label={`Note at ${fmt(c.range.start)}: ${c.text}`}
-              onclick={(e) => { e.stopPropagation(); seekTo(c.range.start); }}></button>
+              onclick={(e) => { e.stopPropagation(); seekTo(c.range.start); openNote(c.id); }}></button>
           {/each}
           {#if dur}<div class="tl-cursor" style={`left:${(currentTime / dur) * 100}%`} aria-hidden="true"></div>{/if}
         </div>
@@ -236,28 +382,59 @@
     {/if}
   </main>
 
-  <aside>
+  <!-- min/max are the aside's own floor and ceiling (see its `width` below), so a drag can't escape the
+       designed reading measure. `collapsible={false}`: this aside holds the AV object nav — see the
+       ASIDE_W_KEY block in the script for why collapsing it would re-create V65. -->
+  <ResizeDivider side="right" label="transcript" min={320} max={560} collapsible={false}
+    bind:width={asideWidth} oncommit={(s: AsideState) => saveAside(ASIDE_W_KEY, ASIDE_COLLAPSED_KEY, s)} />
+
+  <aside style:--av-aside-w={asideWidth != null ? `${asideWidth}px` : null}>
     {#if wholeTrackNotes.length > 0}
       <!-- Whole-object Notes (ADR-0018): about the WHOLE recording (no time range) — the AV analogue of
-           the image frame-border, always shown above the time-anchored transcript. -->
-      <div class="whole-track" role="note">
+           the image frame-border, always shown above the time-anchored transcript.
+           V53: these open THE NOTE too. A whole-track note is the one note on this surface with no cue
+           row to reach it by, so before this it was the only note in the app whose media, tags and cites
+           were structurally unreachable — it was printed, stripped of its markup, and that was all. -->
+      <div class="whole-track">
         <p class="eyebrow">About the whole recording</p>
-        {#each wholeTrackNotes as n (n.id)}<p class="wt-note">{n.text}</p>{/each}
+        {#each wholeTrackNotes as n (n.id)}
+          <button type="button" class="wt-note" class:active={n.id === selected}
+            aria-current={n.id === selected ? "true" : undefined}
+            onclick={() => openNote(n.id)}>{stripMarkdown(n.text)}</button>
+        {/each}
       </div>
     {/if}
     <p class="eyebrow">Transcript · {cues.length} {cues.length === 1 ? "line" : "lines"}</p>
     {#if isVideo}<h1 class="vid-label">{object.label}</h1>{/if}
-    <p class="hint">Select any line to jump there in the recording. As it plays, the line being spoken lights up.</p>
+    <p class="hint">Select any line to jump there in the recording and open its note. As it plays, the line being spoken lights up.</p>
     <p class="credit-row"><Credit {rights} tone="paper" /></p>
     {#if cues.length === 0}
       <p class="empty">No transcript for this recording.</p>
     {:else}
+      <!-- `.active` = the line being SPOKEN (playhead), `aria-current`/`.open` = the note the reader
+           OPENED. Two different states on purpose (see `selected` in the script).
+
+           `stripMarkdown` on the line, and a 3-line clamp: the spine's job is following along, and a
+           note's authored markup is not part of what is being said. Before this, `[Read the manuscript
+           through, page by page.](archie:voynich-reading/)` rendered LITERALLY, brackets and URL and all,
+           in the transcript of the seed recording. The rich read — that cite live, plus media tiles and
+           the geo readout — is what the card gives you, which is what makes it worth opening.
+
+           The line is NOT replaced by a position mark while its note is open, deliberately diverging from
+           the image list's V60 rule (Archie-dbbc). There, the entry is an INDEX and the prose it restated
+           was legible 900px away. Here the line is the RECORDING'S CONTENT at that moment: blanking it
+           punches a hole in the transcript you are reading along, and hyperaudio-lite states the general
+           form (`js/hyperaudio-lite.js:648-664` — when the transcript is hidden it re-homes the spoken
+           word to `document.title`, because the transcript is how you know where you are). The clamp is
+           what keeps the two from being the same block of text at two sizes. -->
       <ol class="cues">
         {#each cues as c, i (c.id)}
           <li>
-            <button class:active={i === activeIdx} onclick={() => seekTo(c.range.start)}>
+            <button class:active={i === activeIdx} class:open={c.id === selected}
+              aria-current={c.id === selected ? "true" : undefined}
+              onclick={() => { seekTo(c.range.start); openNote(c.id); }}>
               <span class="t">{fmt(c.range.start)}</span>
-              <span class="line">{c.text}</span>
+              <span class="line">{stripMarkdown(c.text)}</span>
             </button>
           </li>
         {/each}
@@ -267,6 +444,28 @@
       <SidebarObjectNav {siblings} {currentId} onstep={(id) => onstep?.(id)} onoverview={() => onoverview?.()} />
     {/if}
   </aside>
+
+  {#if lightbox}
+    <NoteLightbox media={lightbox.media} text={lightbox.text} index={lightbox.index} onclose={() => (lightbox = null)} />
+  {/if}
+
+  {#if readingSheet && current}
+    <!-- The SAME note at reading size — the card's whole prop set, not a text snapshot (V64/V60). Closing
+         is "read less", not "dismiss": it collapses back to the card and leaves `selected` alone; only
+         the card's × clears selection. Both routes out of the sheet (finder, lightbox) CLOSE it first —
+         one modal at a time, exactly as `Reader.svelte` does, because the sheet, the finder and the
+         lightbox all assert `aria-modal="true"` and two of them cannot both be telling the truth. -->
+    <ReadingSheet
+      eyebrow={object.label}
+      text={noteParts.text}
+      media={noteParts.media}
+      tags={onopenfinder ? tagsOf(current) : []}
+      {geoCoord}
+      onclose={() => (readingSheet = false)}
+      onopenfinder={(t) => { readingSheet = false; onopenfinder?.(t); }}
+      onmedia={(idx) => { readingSheet = false; lightbox = { media: noteParts.media, text: noteParts.text, index: idx }; }}
+    />
+  {/if}
 </div>
 
 <style>
@@ -290,7 +489,31 @@
   /* Whole-object Note band (ADR-0018): a note about the WHOLE recording, persistent above the transcript
      — the AV analogue of the image frame-border (accent-left-stripe, the apparatus idiom). */
   .whole-track { margin: 0 0 var(--space-4); padding: var(--space-2) var(--space-3); border-left: 3px solid var(--accent-2); }
-  .wt-note { font-family: var(--font-body); font-size: 0.92rem; line-height: 1.5; color: var(--ink-paper-secondary); margin: var(--space-1) 0 0; }
+  /* V53: a button, not a `<p>` — it opens THE NOTE. Button chrome is reset to nothing so the band keeps
+     its apparatus voice; the affordance shows on hover/focus, the index idiom this app uses everywhere. */
+  .wt-note {
+    display: block; width: 100%; text-align: left; cursor: pointer;
+    background: none; border: none; border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2); margin: var(--space-1) 0 0 calc(-1 * var(--space-2));
+    font-family: var(--font-body); font-size: 0.92rem; line-height: 1.5; color: var(--ink-paper-secondary);
+    transition: background 160ms ease, color 160ms ease;
+    /* Clamped for the same reason the cue lines are: this band is now an index ENTRY, not the note. The
+       whole note is one click away in the card, and an unclamped whole-track note pushed the first
+       transcript line 464px down the aside — under the sticky object nav. */
+    display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .wt-note:hover { background: var(--surface-paper-hover); color: var(--ink-paper-primary); }
+  .wt-note.active { background: var(--accent-muted); color: var(--ink-paper-primary); }
+  .wt-note:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+
+  /* The note card's slot. `display: contents` so it generates no box — `.note-pop` keeps `.media-region`
+     as its containing block and its own anchoring is untouched. `--strip-h: 0px` cancels the card's
+     filmstrip reservation, which `.player`'s `padding-bottom` has already made on its behalf (see the
+     slot's comment in the markup). `display: none` while the reading sheet is open takes the card out of
+     rendering AND the a11y tree without unmounting the ⤢ that `use:dialog` returns focus to — the same
+     mechanism, and the same reason, as `Reader.svelte`'s `.note-slot`. */
+  .note-slot { display: contents; --strip-h: 0px; }
+  .note-slot.hidden-behind-sheet { display: none; }
 
   /* Escape-out from an index-opened AV recording (ADR-0016 §137 precision-in/escape-out, §223 anti-trap):
      a quiet step back to the index grid, anchored canvas-relative (top-left of the media column). Cleared
@@ -347,7 +570,10 @@
   .rbox.active { border-color: var(--accent); background: var(--accent-muted); box-shadow: var(--shadow-signal-glow); }
 
   aside {
-    width: 420px; flex-shrink: 0; overflow: auto; box-sizing: border-box;
+    /* Width = a token (V53, the Reader idiom): 420px resting default, `--av-aside-w` is the reader's px
+       OVERRIDE from the drag. The ResizeDivider's min/max (320/560) are the same numbers, so the handle
+       cannot drag the transcript outside its designed measure. */
+    width: var(--av-aside-w, 420px); min-width: 320px; flex-shrink: 0; overflow: auto; box-sizing: border-box;
     /* Top reserves the fixed top bar (--pane-top) so the transcript header (eyebrow · label · hint ·
        credit) keeps its own space, clear of the bar overhead. */
     padding: var(--pane-top) var(--space-5) var(--space-6);
@@ -372,8 +598,16 @@
   }
   .cues button:hover { background: var(--surface-paper-hover); box-shadow: var(--shadow-lift-low); }
   .cues button.active { border-left-color: var(--accent); background: var(--accent-muted); }
+  /* The OPENED note (a different state from the spoken line — see the markup). Signalled on a different
+     channel from `.active` so the two can coexist rather than fight: playback owns the left accent edge
+     and the fill; selection owns a lift. immarkus's discipline, ported — "category owns hue, state owns
+     stroke width" (`src/pages/annotate/WorkspaceSection/useDrawingStyles.ts:11-33`, where `strokeWidth`
+     is state and `fill` is identity) — which is what lets a mark carry two facts without either winning. */
+  .cues button.open { box-shadow: var(--shadow-lift-mid); }
   .t { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--ink-paper-muted); }
   .cues button.active .t { color: var(--accent); }
-  .line { font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-primary); }
+  /* 3-line clamp — the documented scan contract (system.md §Craft Notes), and what keeps the spine a
+     spine once a note runs long. The whole note is one click away in the card. */
+  .line { display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-family: var(--font-body); font-size: 1.0625rem; line-height: 1.6; color: var(--ink-paper-primary); }
   .empty { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: var(--ink-paper-secondary); padding: var(--space-4); background: var(--surface-paper-card); border: none; border-radius: var(--radius-md); box-shadow: var(--shadow-inset-fog); }
 </style>
